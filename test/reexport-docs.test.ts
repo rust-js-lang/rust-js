@@ -37,7 +37,7 @@ test("a doc comment on a pub use of types is its re-export's, nowhere in the JS"
   expect(js).not.toContain("measure is a size");
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("// As a kit names it.\n/** A measure is a size, by the name a kit gives it. */\nexport type { Size as Measure };");
-  expect(declarations).toContain("/** The classes given, joined. */\nexport function cn(parts: string[]): string;");
+  expect(declarations).toContain("/** The classes given, joined. */\nexport function cn(parts: readonly string[]): string;");
 });
 
 // A `pub use` of a type and a value: its doc comment is its value's

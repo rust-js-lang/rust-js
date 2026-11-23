@@ -122,8 +122,8 @@ pub fn render_both(a: &ReactDOMRoot, b: &ReactDOMHydrationRoot) -> f64 {
   expect(js).not.toContain("$fieldCell");
   expect(ts).not.toMatch(/\binternalRoot\b/);
   expect(js).toContain("return a.render(1) + b.render(2, 3);");
-  expect(ts).toMatch(/class ReactDOMRoot \{[^}]*render\(children: number, \.\.\.args: number\[\]\): number;[^}]*unmount\(\): void;/);
-  expect(ts).toMatch(/class ReactDOMHydrationRoot \{[^}]*render\(children: number, \.\.\.args: number\[\]\): number;/);
+  expect(ts).toMatch(/class ReactDOMRoot \{[^}]*render\(children: number, \.\.\.args: readonly number\[\]\): number;[^}]*unmount\(\): void;/);
+  expect(ts).toMatch(/class ReactDOMHydrationRoot \{[^}]*render\(children: number, \.\.\.args: readonly number\[\]\): number;/);
   type Root = { render(children: number, ...args: number[]): number; unmount(): void };
   const Root = lib.ReactDOMRoot as new (root: number) => Root;
   const Hydration = lib.ReactDOMHydrationRoot as new (root: number) => Root;
