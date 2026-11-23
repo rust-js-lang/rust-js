@@ -1371,7 +1371,38 @@ const valued: Record<string, string> = {
   "--base": "--base=<commit>",
   "--retire": "--retire=<name>[,<name>..]",
   "--typecheck": "--typecheck=<base>",
+  "--control": "--control=<file>",
+  "--control-out": "--control-out=<file>",
 };
+
+/** A control a dispatch's shards share (`--control-out`, `--control`,
+ * #2375): of the compiler as it is, by its build, and the commit's tree,
+ * each test set's verdict, by its key, as the compiler is, passed, failed
+ * or ran nothing, and whether it passed with one that compiles nothing; and
+ * what it printed where it didn't pass. Its verdicts alone, a few hundred
+ * bytes, where each shard of a `--corpus` run ran the whole corpus twice
+ * for them, 12 to 20 minutes. */
+export type SharedControl = {
+  build: string;
+  tree: string;
+  sets: Record<string, { asIs: boolean | null; broken: boolean; printed: string }>;
+};
+
+/** Why `control` can't stand for this run's, of `build` and `tree`: another
+ * build's or another tree's is refused, never read as this one's. */
+export function staleControl(control: SharedControl, build: string, tree: string): string | undefined {
+  if (control.build === build && control.tree === tree) return undefined;
+  return `the shared control is of build ${control.build} and tree ${control.tree}, this run's ${build} and ${tree}: a stale control is refused`;
+}
+
+/** The build `compiler` says it is, `--version-json`'s, which a shared
+ * control is keyed by (ADR 1003). */
+function buildOf(compiler: string): string {
+  const said = runSync([compiler, "--version-json"], root, 60_000);
+  const build = /"build": *"([0-9a-f]+)"/.exec(said.stdout)?.[1];
+  if (build === undefined) throw new Error(`${compiler} --version-json says no build: ${said.stdout}${said.stderr}`);
+  return build;
+}
 
 /** The flags of `valued` whose value is a list, which may be empty: CI's
  * `--also={retry}` is `--also=` where no mutation is retried, the usual
@@ -2156,9 +2187,20 @@ async function main() {
   }));
   type Run = { compiler: string; snapshots: boolean; env: Record<string, string>; file: string; pattern?: string; part?: string; weight: number };
   const runs: Run[] = [];
+  // A control the dispatch's control job ran once, its sets' verdicts read,
+  // not run again; one of another build or tree refused (#2375).
+  const controlIn = args.find((arg) => arg.startsWith("--control="))?.slice("--control=".length);
+  const controlOut = args.find((arg) => arg.startsWith("--control-out="))?.slice("--control-out=".length);
+  const identity = { build: buildOf(unmutated), tree: runSync(["git", "rev-parse", "HEAD^{tree}"], root, 30_000).stdout.trim() };
+  const shared = controlIn === undefined ? undefined : (JSON.parse(readFileSync(controlIn, "utf8")) as SharedControl);
+  if (shared !== undefined) {
+    const stale = staleControl(shared, identity.build, identity.tree);
+    if (stale !== undefined) throw new Error(stale);
+  }
+  const unshared = sets.filter((set) => shared?.sets[testSetKey(set)] === undefined);
   const modes = [...new Map(sets.map((set) => [`${set.snapshots}\0${envKey(set.env)}`, { snapshots: set.snapshots, env: set.env }])).values()];
   for (const { snapshots, env } of modes) {
-    const ofMode = sets.filter((set) => set.snapshots === snapshots && envKey(set.env) === envKey(env));
+    const ofMode = unshared.filter((set) => set.snapshots === snapshots && envKey(set.env) === envKey(env));
     for (const file of new Set(ofMode.flatMap((set) => set.files))) {
       const naming = ofMode.filter((set) => set.files.includes(file));
       const pattern = naming.some((set) => set.pattern === undefined) ? undefined : naming.map((set) => `(?:${set.pattern})`).join("|");
@@ -2213,13 +2255,17 @@ async function main() {
   // doesn't leave a nightly shard's 950 mutations unjudged (#2304).
   const failedSets = new Map<string, string>();
   const failedUnits = new Map<string, string>();
+  const verdicts: SharedControl["sets"] = {};
   for (const set of sets) {
-    const as = setPasses(set, ran.get(ranOf({ compiler: unmutated, ...set })) ?? new Map());
+    const read = shared?.sets[testSetKey(set)];
+    const as = read !== undefined ? (read.asIs ?? undefined) : setPasses(set, ran.get(ranOf({ compiler: unmutated, ...set })) ?? new Map());
+    const brokenPasses = read !== undefined ? read.broken : setPasses(set, ran.get(ranOf({ compiler: broken, ...set })) ?? new Map()) === true;
+    const printed = read !== undefined ? read.printed : as === true ? "" : set.files.map((file) => printedBy.get(`${set.snapshots}\0${envKey(set.env)}\0${file}`) ?? "").join("\n").slice(-1500);
+    verdicts[testSetKey(set)] = { asIs: as ?? null, broken: brokenPasses, printed };
     if (as !== true) {
-      const printed = set.files.map((file) => printedBy.get(`${set.snapshots}\0${envKey(set.env)}\0${file}`) ?? "").join("\n");
       problems.push(`\`bun test ${set.tests.join(" ")}\` ${as === undefined ? "runs nothing" : "doesn't pass"} as the compiler is:\n${printed.slice(-1500)}`);
       failedSets.set(testSetKey(set), `INCONCLUSIVE: its tests ${as === undefined ? "run nothing" : "don't pass"} as the compiler is`);
-    } else if (setPasses(set, ran.get(ranOf({ compiler: broken, ...set })) ?? new Map()) === true) {
+    } else if (brokenPasses) {
       problems.push(`\`bun test ${set.tests.join(" ")}\` passes with a compiler that compiles nothing: it isn't using the one it's given`);
       failedSets.set(testSetKey(set), "INCONCLUSIVE: its tests pass with a compiler that compiles nothing");
     }
@@ -2245,6 +2291,14 @@ async function main() {
     console.error(`${unjudged.size} of ${chosen.length} mutations can't be judged, their tests as the compiler is:\n\n${problems.join("\n\n")}`);
   }
   phaseEnded("each mutation's tests as the compiler is");
+  // The control job's run: its verdicts written for the shards, no mutant
+  // built (#2375).
+  if (controlOut !== undefined) {
+    mkdirSync(dirname(controlOut), { recursive: true });
+    writeFileSync(controlOut, JSON.stringify({ ...identity, sets: verdicts } satisfies SharedControl));
+    console.error(`the control of ${Object.keys(verdicts).length} test sets written to ${controlOut}`);
+    return;
+  }
   // Each build by one of `--jobs` workers, each building in a crate of its
   // own, as many as the cores and the memory hold (`compilerBuilds`): two
   // on a CI machine's four cores, the second's first build cold, a minute or

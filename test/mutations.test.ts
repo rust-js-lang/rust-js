@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, failingOf, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
+import { againstWholeCorpus, failingOf, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, staleControl, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -504,6 +504,17 @@ test("--browser's stdout is its one answer, a wasm mutation selected", () => {
   const asked = runSync([process.execPath, join(root, "scripts", "mutations.ts"), wasm.name, plain.name, "--browser"], root, 120_000);
   expect(asked.code).toBe(0);
   expect(asked.stdout).toMatch(/^(browser|none)\n$/);
+});
+
+// A `--corpus` dispatch's control, run once by its control job and read by
+// each shard (#2375): one of another compiler build or another tree is
+// refused, never taken for this run's.
+test("a shared control of another build or tree is refused", () => {
+  const control = { build: "21f2c1277ce9e37a", tree: "030c6a88", sets: {} };
+  expect(staleControl(control, "21f2c1277ce9e37a", "030c6a88")).toBeUndefined();
+  expect(staleControl(control, "0000000000000000", "030c6a88")).toContain("a stale control is refused");
+  expect(staleControl(control, "21f2c1277ce9e37a", "ffffffff")).toContain("a stale control is refused");
+  expect(refusedFlags(["--control=target/c.json", "--control-out=target/c.json"])).toEqual([]);
 });
 
 test("each mutation list names one existing source file", () => {

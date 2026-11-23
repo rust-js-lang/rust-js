@@ -103,7 +103,10 @@ test("a check's mutation shards balance by the newest merged times of main, hand
   expect(check).toContain("mutation_timings: ${{ needs.plan.outputs.mutation_timings }}");
   const tests = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
   const runs = [...tests.matchAll(/bun scripts\/mutations\.ts \$ARGS (.*)--shard=/g)].map((m) => m[1]);
-  expect(runs).toEqual(["${{ steps.timings.outputs.args }} ", "${{ steps.timings.outputs.args }} "]);
+  // The run's shared control, of a `--corpus` dispatch, deals nothing: each
+  // shard is dealt by the same times as the browser's ask (#2375).
+  const control = "${{ contains(inputs.mutation_args, '--corpus') && '--control=target/mutants/shared/control.json' || '' }} ";
+  expect(runs).toEqual(["${{ steps.timings.outputs.args }} ", `\${{ steps.timings.outputs.args }} ${control}`]);
   // A run of every mutation, the nightly's, builds 5% of its builds again
   // fresh (ADR 0093's incremental amendment).
   expect(tests).toContain("ARGS: ${{ inputs.mutation_args || '--fresh=0.05' }}");

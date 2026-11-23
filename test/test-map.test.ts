@@ -579,7 +579,8 @@ test("CI's test map is the kept one, or recorded in parts and merged where none 
   expect(job(map, "test-map-merge")).not.toContain("actions/cache/restore");
   const tests = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
   expect(job(tests, "test-map")).toContain("uses: ./.github/workflows/test-map.yml");
-  expect(job(tests, "mutations")).toContain("needs: test-map");
+  // And of a `--corpus` dispatch, the control its shards share (#2375).
+  expect(job(tests, "mutations")).toContain("needs: [test-map, mutation-control]");
   expect(job(tests, "mutations")).toContain("needs.test-map.result == 'success'");
   for (const file of readdirSync(join(root, ".github/workflows"))) {
     expect([file, readFileSync(join(root, ".github/workflows", file), "utf8").includes("testMap.ts ensure")]).toEqual([file, false]);

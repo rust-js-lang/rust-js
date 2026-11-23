@@ -377,10 +377,58 @@ jobs:
 
   # Known bugs, each put back into the compiler, one at a time: the tests
   # named for each must fail against it, and pass as the compiler is.
-  mutations:
-    # Once the map's there: the kept one, or the merge of its recording.
-    if: ${{ inputs.mutations && !cancelled() && needs.test-map.result == 'success' }}
+  # The control a `--corpus` dispatch's shards share: the whole corpus run
+  # once, as the compiler is and with one that compiles nothing, its
+  # verdicts a few hundred bytes each shard reads, where each ran it again,
+  # 12 to 20 minutes a shard, and one didn't end in its limit (#2375).
+  mutation-control:
+    if: ${{ inputs.mutations && !cancelled() && needs.test-map.result == 'success' && contains(inputs.mutation_args, '--corpus') }}
     needs: test-map
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/rustc-tests-setup
+        with:
+          build: 'false'
+      - uses: actions/cache/restore@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/mutants/target
+          key: mutants-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: mutants-${{ runner.os }}-
+      - run: bun install --frozen-lockfile
+      - uses: actions/cache/restore@v6
+        with:
+          path: .cache/test-maps
+          key: ${{ needs.test-map.outputs.key }}
+          restore-keys: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
+      # Its verdicts alone, keyed by the compiler's build and the commit's
+      # tree, which a shard of another refuses (`staleControl`).
+      - name: Run the shards' control once
+        env:
+          ARGS: ${{ inputs.mutation_args }}
+          CARGO_INCREMENTAL: '1'
+        run: |
+          set -f
+          bun scripts/mutations.ts $ARGS --control-out=target/mutants/control.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mutation-control
+          path: target/mutants/control.json
+          retention-days: 1
+
+  mutations:
+    # Once the map's there: the kept one, or the merge of its recording;
+    # and of a `--corpus` dispatch, the control its shards share.
+    if: ${{ inputs.mutations && !cancelled() && needs.test-map.result == 'success' && needs.mutation-control.result != 'failure' }}
+    needs: [test-map, mutation-control]
     name: mutations (${{ matrix.shard }}/${{ inputs.mutation_shards }})
     runs-on: ubuntu-latest
     timeout-minutes: 300
@@ -468,6 +516,12 @@ jobs:
       - if: steps.browser.outputs.needed == 'browser'
         name: Install the browser
         run: bunx --bun playwright install chromium
+      # The control the dispatch's control job ran, of a `--corpus` one.
+      - if: contains(inputs.mutation_args, '--corpus')
+        uses: actions/download-artifact@v7
+        with:
+          name: mutation-control
+          path: target/mutants/shared
       # Incremental, as a dev build is on the Mac: Cargo gave CI's rustc no
       # `-C incremental`, so each mutant built alone compiled the crate
       # whole, 96–102 s, where a build that knows the last one's takes
@@ -491,7 +545,7 @@ jobs:
           set -f
           ( while sleep 20; do echo "memory: $(free -m | awk '/^Mem:/ { print $3 " MB used, " $7 " MB available" }'); largest: $(ps -eo rss=,comm= --sort=-rss | head -4 | awk '{ printf "%s %.1f GB, ", $2, $1 / 1048576 }')"; done ) &
           watching=$!
-          setsid bun scripts/mutations.ts $ARGS ${{ steps.timings.outputs.args }} --shard=${{ matrix.shard }}/${{ inputs.mutation_shards }} &
+          setsid bun scripts/mutations.ts $ARGS ${{ steps.timings.outputs.args }} ${{ contains(inputs.mutation_args, '--corpus') && '--control=target/mutants/shared/control.json' || '' }} --shard=${{ matrix.shard }}/${{ inputs.mutation_shards }} &
           runner=$!
           status=0
           wait "$runner" || status=$?
