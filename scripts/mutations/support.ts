@@ -67,4 +67,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/support.test.ts", "-t", "a bless replaces a snapshot's generated files"],
   },
+  {
+    name: "fixture-claim-takes-a-held-one",
+    breaks: "a run's fixture is the first index whether or not a live process holds it, so a guide run beside another compiles in, and empties, the other's directory (#2198, #2422)",
+    file: "test/support.ts",
+    find: "  for (let n = counts.get(counted) ?? 0; ; n++) {\n    const dir = join(base, `${name}_${n}`);\n    if (!takeClaim(`${dir}.owner`)) continue;\n",
+    replace: "  for (let n = counts.get(counted) ?? 0; ; n++) {\n    const dir = join(base, `${name}_${n}`);\n    takeClaim(`${dir}.owner`);\n",
+    tests: ["test/docs.test.ts", "-t", "a guide run compiles in its own directory"],
+  },
 ];

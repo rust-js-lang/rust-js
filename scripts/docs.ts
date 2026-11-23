@@ -176,7 +176,11 @@ async function compile(example: Example, n: number): Promise<{ bodies: string[];
   try {
     return await compileIn(example, n, dir, kept, { code, crate, next });
   } finally {
-    if (!kept && !process.env.RUST_JS_KEEP_FIXTURES) rmSync(dir, { recursive: true, force: true });
+    // Kept, said where: a fixture its process left lasts until another
+    // process's sweep, so what this run compiled in is read here, not
+    // looked for after it (#2422).
+    if (!kept && process.env.RUST_JS_KEEP_FIXTURES) console.error(`kept ${dir}`);
+    else if (!kept) rmSync(dir, { recursive: true, force: true });
   }
 }
 

@@ -545,7 +545,8 @@ export function installStd(app: string) {
 // `exit`) or as a script exits; and the first claim of a process removes
 // each a process gone left, one killed before it could (#914). Before
 // that, each run left all of them: 7.6 GB after one `check:fast --all`.
-// `RUST_JS_KEEP_FIXTURES=1` keeps a run's to look at, until the next run.
+// `RUST_JS_KEEP_FIXTURES=1` keeps a run's to look at, until the next run:
+// its process gone, the next process's sweep removes it (#2422).
 // Not by age: what a tarball unpacks into is as old as the tarball says.
 // Removing a directory removes the links in it, not what they link to.
 export const fixtures = join(target, "fixtures");
@@ -828,6 +829,14 @@ export class KeptApp {
 
 export function fixture(name: string): string {
   return claim(join(fixtures, scope), name);
+}
+
+/** A fixture claimed as the script or test file `main`'s runs claim theirs,
+ * in its fixtures (`fixturesOf`), this process's: the first index no live
+ * process holds, taken as theirs are, so a run of `main` beside it claims
+ * another (#2422). */
+export function fixtureOf(main: string, name: string): string {
+  return claim(fixturesOf(main), name);
 }
 
 /** The run's seed, `<seed>/target`: an app's Cargo target with the binding
