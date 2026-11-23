@@ -354,4 +354,28 @@ export const mutations: Mutation[] = [
     replace: "  leftToTheWasmJob = split.elsewhere.map((m) => m.name);\n  for (const m of split.elsewhere) console.log(`${m.name}\\t${judgedInTheWasmJob}`);\n",
     tests: ["test/mutations.test.ts", "-t", "--browser's stdout is its one answer"],
   },
+  {
+    name: "control-stale-part-read",
+    breaks: "a shared control's part of another build or tree is read as this run's, its results another compiler's or commit's (#2375)",
+    file: "scripts/mutations.ts",
+    find: "    if (part.build !== build || part.tree !== tree) {\n",
+    replace: "    if (false) {\n",
+    tests: ["test/mutations.test.ts", "-t", "a shared control is its parts merged"],
+  },
+  {
+    name: "control-part-missing-read",
+    breaks: "a shared control with a part missing is read as whole, the sets of that part's runs judged by what the others ran, a failure in it unseen (#2375)",
+    file: "scripts/mutations.ts",
+    find: "  if (!whole) throw new Error(",
+    replace: "  if (false) throw new Error(",
+    tests: ["test/mutations.test.ts", "-t", "a shared control is its parts merged"],
+  },
+  {
+    name: "control-part-failure-overwritten",
+    breaks: "a test that failed in one part of a shared control and passed in another is taken to pass, by whichever part was read last (#2375)",
+    file: "scripts/mutations.ts",
+    find: "      for (const [name, passed] of results) if (merged.get(name) !== false) merged.set(name, passed);\n",
+    replace: "      for (const [name, passed] of results) merged.set(name, passed);\n",
+    tests: ["test/mutations.test.ts", "-t", "a shared control is its parts merged"],
+  },
 ];

@@ -1373,26 +1373,58 @@ const valued: Record<string, string> = {
   "--typecheck": "--typecheck=<base>",
   "--control": "--control=<file>",
   "--control-out": "--control-out=<file>",
+  "--control-part": "--control-part=<k>/<n>",
 };
 
-/** A control a dispatch's shards share (`--control-out`, `--control`,
- * #2375): of the compiler as it is, by its build, and the commit's tree,
- * each test set's verdict, by its key, as the compiler is, passed, failed
- * or ran nothing, and whether it passed with one that compiles nothing; and
- * what it printed where it didn't pass. Its verdicts alone, a few hundred
- * bytes, where each shard of a `--corpus` run ran the whole corpus twice
- * for them, 12 to 20 minutes. */
-export type SharedControl = {
+/** A part of the control a dispatch's shards share (`--control-out`,
+ * `--control-part`, `--control`, #2375): of the compiler as it is, by its
+ * build, and the commit's tree, part `part` of `parts`, every `parts`th of
+ * the control's runs; the keys of the test sets the control is of; and
+ * what its runs gave, each test's result, as the compiler is or with one
+ * that compiles nothing, and what each printed. The shards merge the parts
+ * and judge each set as of a control they ran, where each ran the whole
+ * corpus twice for it, 12 to 20 minutes, and in one job, 16 minutes on
+ * every shard's way. */
+export type ControlPart = {
   build: string;
   tree: string;
-  sets: Record<string, { asIs: boolean | null; broken: boolean; printed: string }>;
+  part: number;
+  parts: number;
+  sets: string[];
+  ran: [run: string, file: string, results: [test: string, passed: boolean][]][];
+  printed: [key: string, text: string][];
 };
 
-/** Why `control` can't stand for this run's, of `build` and `tree`: another
- * build's or another tree's is refused, never read as this one's. */
-export function staleControl(control: SharedControl, build: string, tree: string): string | undefined {
-  if (control.build === build && control.tree === tree) return undefined;
-  return `the shared control is of build ${control.build} and tree ${control.tree}, this run's ${build} and ${tree}: a stale control is refused`;
+/** What the control's `parts` ran, merged, of this run's `build` and
+ * `tree`: each run's results, a test that failed in one part failed; what
+ * each printed; and the sets it's of. A part of another build or tree, or
+ * parts that aren't each of one control's once, are refused, never read as
+ * this one's. */
+export function mergedControl(parts: ControlPart[], build: string, tree: string): { sets: Set<string>; ran: Map<string, Map<string, Map<string, boolean>>>; printed: Map<string, string> } {
+  for (const part of parts) {
+    if (part.build !== build || part.tree !== tree) {
+      throw new Error(`the shared control's part ${part.part} is of build ${part.build} and tree ${part.tree}, this run's ${build} and ${tree}: a stale control is refused`);
+    }
+  }
+  const count = parts[0]?.parts ?? 0;
+  const numbers = parts.map((part) => part.part).sort((a, b) => a - b);
+  const whole = count > 0 && numbers.length === count && numbers.every((n, i) => n === i + 1) && parts.every((part) => part.parts === count);
+  if (!whole) throw new Error(`the shared control's parts are ${numbers.join(", ") || "none"} of ${count}: a control with a part missing or twice is refused`);
+  const sets = new Set(parts[0]!.sets);
+  if (parts.some((part) => part.sets.length !== sets.size || part.sets.some((key) => !sets.has(key)))) throw new Error("the shared control's parts are of other test sets: a control of mixed runs is refused");
+  const ran = new Map<string, Map<string, Map<string, boolean>>>();
+  const printed = new Map<string, string>();
+  for (const part of parts) {
+    for (const [run, file, results] of part.ran) {
+      const byFile = ran.get(run) ?? new Map<string, Map<string, boolean>>();
+      ran.set(run, byFile);
+      const merged = byFile.get(file) ?? new Map<string, boolean>();
+      for (const [name, passed] of results) if (merged.get(name) !== false) merged.set(name, passed);
+      byFile.set(file, merged);
+    }
+    for (const [key, text] of part.printed) printed.set(key, `${printed.get(key) ?? ""}${text}`);
+  }
+  return { sets, ran, printed };
 }
 
 /** The build `compiler` says it is, `--version-json`'s, which a shared
@@ -2187,17 +2219,25 @@ async function main() {
   }));
   type Run = { compiler: string; snapshots: boolean; env: Record<string, string>; file: string; pattern?: string; part?: string; weight: number };
   const runs: Run[] = [];
-  // A control the dispatch's control job ran once, its sets' verdicts read,
-  // not run again; one of another build or tree refused (#2375).
+  // A control the dispatch's control jobs ran once, in parts, their runs'
+  // results read, not run again; parts of another build or tree, or with
+  // one missing, refused (#2375). A control job runs its part, every
+  // `count`th run, the whole corpus's parts cut as its share of the cases.
   const controlIn = args.find((arg) => arg.startsWith("--control="))?.slice("--control=".length);
   const controlOut = args.find((arg) => arg.startsWith("--control-out="))?.slice("--control-out=".length);
+  const [index, count] = (args.find((arg) => arg.startsWith("--control-part="))?.slice("--control-part=".length) ?? "1/1").split("/").map(Number);
+  if (!(Number.isInteger(index) && Number.isInteger(count) && index! >= 1 && index! <= count!)) throw new Error("--control-part is <k>/<n>, of 1 <= k <= n");
+  const controlPart = { index: index!, count: count! };
   const identity = { build: buildOf(unmutated), tree: runSync(["git", "rev-parse", "HEAD^{tree}"], root, 30_000).stdout.trim() };
-  const shared = controlIn === undefined ? undefined : (JSON.parse(readFileSync(controlIn, "utf8")) as SharedControl);
-  if (shared !== undefined) {
-    const stale = staleControl(shared, identity.build, identity.tree);
-    if (stale !== undefined) throw new Error(stale);
-  }
-  const unshared = sets.filter((set) => shared?.sets[testSetKey(set)] === undefined);
+  const shared =
+    controlIn === undefined
+      ? undefined
+      : mergedControl(
+          readdirSync(controlIn).filter((file) => file.endsWith(".json")).map((file) => JSON.parse(readFileSync(join(controlIn, file), "utf8")) as ControlPart),
+          identity.build,
+          identity.tree,
+        );
+  const unshared = sets.filter((set) => !shared?.sets.has(testSetKey(set)));
   const modes = [...new Map(sets.map((set) => [`${set.snapshots}\0${envKey(set.env)}`, { snapshots: set.snapshots, env: set.env }])).values()];
   for (const { snapshots, env } of modes) {
     const ofMode = unshared.filter((set) => set.snapshots === snapshots && envKey(set.env) === envKey(env));
@@ -2209,22 +2249,26 @@ async function main() {
       // pattern, `caseParts`' parts, the cores each keeps busy.
       const whole = file === "test/corpus.test.ts" && pattern === undefined;
       const cores = machine().cores;
-      const parts = whole ? wholeCorpusParts(cores, corpusCaseNames().length, testTimeout) : file === "test/corpus.test.ts" ? caseParts(cores) : 1;
+      const parts = whole ? controlPart.count * wholeCorpusParts(cores, Math.ceil(corpusCaseNames().length / controlPart.count), testTimeout) : file === "test/corpus.test.ts" ? caseParts(cores) : 1;
       const weight = whole ? 1 : parts > 1 ? casePartCores(cores) : 1;
       for (const compiler of [unmutated, broken]) {
         for (let part = 1; part <= parts; part++) runs.push({ compiler, snapshots, env, file, pattern, part: parts > 1 ? `${part}/${parts}` : undefined, weight });
       }
     }
   }
-  const ran = new Map<string, Map<string, Map<string, boolean>>>();
-  const ranOf = (run: { compiler: string; snapshots: boolean; env: Record<string, string> }) => `${run.compiler}\0${run.snapshots}\0${envKey(run.env)}`;
+  const ran = shared?.ran ?? new Map<string, Map<string, Map<string, boolean>>>();
+  // Of a run, the compiler's role, not its path, which is each machine's own.
+  const ranOf = (run: { compiler: string; snapshots: boolean; env: Record<string, string> }) => `${run.compiler === unmutated ? "as-is" : "broken"}\0${run.snapshots}\0${envKey(run.env)}`;
   let reports = 0;
-  const printedBy = new Map<string, string>();
+  const printedBy = shared?.printed ?? new Map<string, string>();
+  // This job's part of the control's runs: every `count`th, the same parts
+  // as the compiler is and with one that compiles nothing.
+  const mine = runs.filter((_, i) => i % controlPart.count === controlPart.index - 1);
   // Each run in the cores' slots, a corpus part the cores it keeps busy
   // (`casePartCores`), not one each.
   const slot = slots(machine().cores);
   await Promise.all(
-    runs.map((run) =>
+    mine.map((run) =>
       slot(async () => {
         const report = join(work, "reports", `${++reports}.xml`);
         mkdirSync(dirname(report), { recursive: true });
@@ -2248,6 +2292,24 @@ async function main() {
       }, undefined, run.weight),
     ),
   );
+  // A control job's part: its runs' results written for the shards, which
+  // judge each set of every part's, no set judged of this part's alone and
+  // no mutant built (#2375).
+  if (controlOut !== undefined) {
+    const part: ControlPart = {
+      ...identity,
+      part: controlPart.index,
+      parts: controlPart.count,
+      sets: sets.map((set) => testSetKey(set)),
+      ran: [...ran].flatMap(([run, byFile]) => [...byFile].map(([file, results]) => [run, file, [...results]] as ControlPart["ran"][number])),
+      printed: [...printedBy],
+    };
+    mkdirSync(dirname(controlOut), { recursive: true });
+    writeFileSync(controlOut, JSON.stringify(part));
+    phaseEnded("each mutation's tests as the compiler is");
+    console.error(`part ${controlPart.index} of ${controlPart.count} of the control of ${sets.length} test sets, ${mine.length} of its ${runs.length} runs, written to ${controlOut}`);
+    return;
+  }
   const problems: string[] = [];
   // Each mutation whose tests can't judge it, as the compiler is, and why:
   // only its own are left unjudged, inconclusive, and the rest still run, so
@@ -2255,13 +2317,10 @@ async function main() {
   // doesn't leave a nightly shard's 950 mutations unjudged (#2304).
   const failedSets = new Map<string, string>();
   const failedUnits = new Map<string, string>();
-  const verdicts: SharedControl["sets"] = {};
   for (const set of sets) {
-    const read = shared?.sets[testSetKey(set)];
-    const as = read !== undefined ? (read.asIs ?? undefined) : setPasses(set, ran.get(ranOf({ compiler: unmutated, ...set })) ?? new Map());
-    const brokenPasses = read !== undefined ? read.broken : setPasses(set, ran.get(ranOf({ compiler: broken, ...set })) ?? new Map()) === true;
-    const printed = read !== undefined ? read.printed : as === true ? "" : set.files.map((file) => printedBy.get(`${set.snapshots}\0${envKey(set.env)}\0${file}`) ?? "").join("\n").slice(-1500);
-    verdicts[testSetKey(set)] = { asIs: as ?? null, broken: brokenPasses, printed };
+    const as = setPasses(set, ran.get(ranOf({ compiler: unmutated, ...set })) ?? new Map());
+    const brokenPasses = setPasses(set, ran.get(ranOf({ compiler: broken, ...set })) ?? new Map()) === true;
+    const printed = as === true ? "" : set.files.map((file) => printedBy.get(`${set.snapshots}\0${envKey(set.env)}\0${file}`) ?? "").join("\n").slice(-1500);
     if (as !== true) {
       problems.push(`\`bun test ${set.tests.join(" ")}\` ${as === undefined ? "runs nothing" : "doesn't pass"} as the compiler is:\n${printed.slice(-1500)}`);
       failedSets.set(testSetKey(set), `INCONCLUSIVE: its tests ${as === undefined ? "run nothing" : "don't pass"} as the compiler is`);
@@ -2291,14 +2350,6 @@ async function main() {
     console.error(`${unjudged.size} of ${chosen.length} mutations can't be judged, their tests as the compiler is:\n\n${problems.join("\n\n")}`);
   }
   phaseEnded("each mutation's tests as the compiler is");
-  // The control job's run: its verdicts written for the shards, no mutant
-  // built (#2375).
-  if (controlOut !== undefined) {
-    mkdirSync(dirname(controlOut), { recursive: true });
-    writeFileSync(controlOut, JSON.stringify({ ...identity, sets: verdicts } satisfies SharedControl));
-    console.error(`the control of ${Object.keys(verdicts).length} test sets written to ${controlOut}`);
-    return;
-  }
   // Each build by one of `--jobs` workers, each building in a crate of its
   // own, as many as the cores and the memory hold (`compilerBuilds`): two
   // on a CI machine's four cores, the second's first build cold, a minute or

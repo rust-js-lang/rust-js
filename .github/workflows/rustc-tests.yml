@@ -381,13 +381,39 @@ jobs:
   # once, as the compiler is and with one that compiles nothing, its
   # verdicts a few hundred bytes each shard reads, where each ran it again,
   # 12 to 20 minutes a shard, and one didn't end in its limit (#2375).
-  mutation-control:
+  # How many jobs the control is run in: each under half its limit, as a
+  # whole-corpus part is (`controlParts`, #2375). After the test map, not
+  # beside it, where it held a runner more than a nightly's 14 at once.
+  mutation-control-plan:
     if: ${{ inputs.mutations && !cancelled() && needs.test-map.result == 'success' && contains(inputs.mutation_args, '--corpus') }}
     needs: test-map
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      parts: ${{ steps.plan.outputs.parts }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - id: plan
+        run: bun scripts/ci.ts control-parts >> "$GITHUB_OUTPUT"
+
+  mutation-control:
+    if: ${{ inputs.mutations && !cancelled() && needs.test-map.result == 'success' && needs.mutation-control-plan.result == 'success' }}
+    needs: [test-map, mutation-control-plan]
+    name: mutation control (${{ matrix.part }}/${{ needs.mutation-control-plan.outputs.count }})
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '16') }}
+      matrix:
+        part: ${{ fromJSON(needs.mutation-control-plan.outputs.parts) }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -409,19 +435,19 @@ jobs:
           path: .cache/test-maps
           key: ${{ needs.test-map.outputs.key }}
           restore-keys: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
-      # Its verdicts alone, keyed by the compiler's build and the commit's
-      # tree, which a shard of another refuses (`staleControl`).
-      - name: Run the shards' control once
+      # Its part's results alone, keyed by the compiler's build and the
+      # commit's tree, which a shard of another refuses (`mergedControl`).
+      - name: Run the shards' control once, a part of it
         env:
           ARGS: ${{ inputs.mutation_args }}
           CARGO_INCREMENTAL: '1'
         run: |
           set -f
-          bun scripts/mutations.ts $ARGS --control-out=target/mutants/control.json
+          bun scripts/mutations.ts $ARGS --control-part=${{ matrix.part }}/${{ needs.mutation-control-plan.outputs.count }} --control-out=target/mutants/control/${{ matrix.part }}.json
       - uses: actions/upload-artifact@v7
         with:
-          name: mutation-control
-          path: target/mutants/control.json
+          name: mutation-control-${{ matrix.part }}
+          path: target/mutants/control/${{ matrix.part }}.json
           retention-days: 1
 
   mutations:
@@ -516,11 +542,13 @@ jobs:
       - if: steps.browser.outputs.needed == 'browser'
         name: Install the browser
         run: bunx --bun playwright install chromium
-      # The control the dispatch's control job ran, of a `--corpus` one.
+      # The control the dispatch's control jobs ran, of a `--corpus` one,
+      # each part's.
       - if: contains(inputs.mutation_args, '--corpus')
         uses: actions/download-artifact@v7
         with:
-          name: mutation-control
+          pattern: mutation-control-*
+          merge-multiple: true
           path: target/mutants/shared
       # Incremental, as a dev build is on the Mac: Cargo gave CI's rustc no
       # `-C incremental`, so each mutant built alone compiled the crate
@@ -545,7 +573,7 @@ jobs:
           set -f
           ( while sleep 20; do echo "memory: $(free -m | awk '/^Mem:/ { print $3 " MB used, " $7 " MB available" }'); largest: $(ps -eo rss=,comm= --sort=-rss | head -4 | awk '{ printf "%s %.1f GB, ", $2, $1 / 1048576 }')"; done ) &
           watching=$!
-          setsid bun scripts/mutations.ts $ARGS ${{ steps.timings.outputs.args }} ${{ contains(inputs.mutation_args, '--corpus') && '--control=target/mutants/shared/control.json' || '' }} --shard=${{ matrix.shard }}/${{ inputs.mutation_shards }} &
+          setsid bun scripts/mutations.ts $ARGS ${{ steps.timings.outputs.args }} ${{ contains(inputs.mutation_args, '--corpus') && '--control=target/mutants/shared' || '' }} --shard=${{ matrix.shard }}/${{ inputs.mutation_shards }} &
           runner=$!
           status=0
           wait "$runner" || status=$?

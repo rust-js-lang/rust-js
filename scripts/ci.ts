@@ -7,6 +7,7 @@
 //   bun scripts/ci.ts test-timings <times>  # in CI: the test files' times `plan` gave every shard, for them to balance by
 //   bun scripts/ci.ts mutation-timings <times>   # in CI: the mutations' times `plan` gave every shard, for them to balance by
 //   TIMES=<times> bun scripts/ci.ts merge-mutation-timings <ran>  # in CI: those and this run's shards' merged, for the next plan
+//   bun scripts/ci.ts control-parts          # in CI: the jobs a `--corpus` dispatch's shared control runs in, `parts` and `count` for $GITHUB_OUTPUT
 //   bun scripts/ci.ts nets                  # in CI: which of a job of nets' nets ran, and which failed, from its `STEPS`
 //   bun scripts/ci.ts prune-cache [--dry-run]    # in CI, after each check, nightly and test map: each cache family's newest 8 kept
 //
@@ -19,10 +20,10 @@ import { join } from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 
 import { changedCases, changePicks, ROWS_PARTS, rowsShards, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
-import { changedSince, controlRuns, corpusCaseNames, type Mutation, mutationFile, mutations, TESTS_AS_IT_IS, testSet, wasmSplit } from "./mutations";
+import { changedSince, controlRuns, corpusCaseNames, type Mutation, mutationFile, mutations, TESTS_AS_IT_IS, testSet, testTimeout, wasmSplit } from "./mutations";
 import { outcome, type Selection, selectChange, suiteFiles } from "./select";
 import { downloaded } from "./artifacts";
-import { browsers, caseFiles, dealtByGroup, drivesBrowser, fewestShards, type ShardFacts, shardFacts, shardTimings, testFileSeconds, timingsByShard, timingsUnder } from "./shard";
+import { browsers, caseFiles, controlParts, dealtByGroup, machine, drivesBrowser, fewestShards, type ShardFacts, shardFacts, shardTimings, testFileSeconds, timingsByShard, timingsUnder } from "./shard";
 import { timed, timings } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -984,6 +985,12 @@ function bless(branch: string) {
   console.log("Read every change (git diff --cached) before committing it, as a local bless's.");
 }
 
+/** `count` control jobs as `$GITHUB_OUTPUT`'s lines: the matrix's `parts`,
+ * 1 to `count`, and `count`, each job's `--control-part=<k>/<count>`. */
+export function controlPartsOutput(count: number): string {
+  return `parts=${JSON.stringify(Array.from({ length: count }, (_, i) => i + 1))}\ncount=${count}`;
+}
+
 if (import.meta.main) {
   const [command, ...rest] = process.argv.slice(2);
   const branch = rest.find((arg) => !arg.startsWith("--"))
@@ -999,10 +1006,11 @@ if (import.meta.main) {
     else if (command === "test-timings") writeTestTimings(rest[0] ?? "");
     else if (command === "mutation-timings") writeMutationTimings(rest[0] ?? "");
     else if (command === "merge-mutation-timings") mergeMutationTimings(process.env.TIMES ?? "", rest[0] ?? "");
+    else if (command === "control-parts") console.log(controlPartsOutput(controlParts(machine().cores, corpusCaseNames().length, testTimeout)));
     else if (command === "nets") console.log(netsSummary(JSON.parse(process.env.STEPS ?? "{}")));
     else if (command === "prune-cache") await pruneCache(rest.includes("--dry-run"));
     else {
-      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan [--since=<rev>] [--test-shards=<n>] | test-timings <times> | mutation-timings <times> | merge-mutation-timings <ran> | nets | prune-cache [--dry-run]");
+      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan [--since=<rev>] [--test-shards=<n>] | test-timings <times> | mutation-timings <times> | merge-mutation-timings <ran> | control-parts | nets | prune-cache [--dry-run]");
       process.exit(2);
     }
   } catch (error) {

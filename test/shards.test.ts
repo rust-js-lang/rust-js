@@ -8,11 +8,11 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
-import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, mutationShardPlan, heldJobs, freeJobs, normalizedShardTimes, shardSummary, CONCURRENT_JOBS, SHARD_BUDGET_SECONDS, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, shardList, testShards, testShardSeconds, timingsRuns } from "../scripts/ci";
+import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, mutationShardPlan, heldJobs, freeJobs, normalizedShardTimes, shardSummary, CONCURRENT_JOBS, SHARD_BUDGET_SECONDS, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, shardList, testShards, testShardSeconds, timingsRuns, controlPartsOutput } from "../scripts/ci";
 import { controlRuns, mutations, testsAsItIsRuns, testsAsItIsSeconds } from "../scripts/mutations";
 import { jobs } from "../scripts/checkFast";
 import { runs } from "../scripts/iteratorSlice";
-import { balancedByGroup, browsers, casePartCores, dealtByGroup, fewestShards, shardFacts, shareOfShard, slots, testFileSeconds, testShardFiles, timingsByShard, wholeCorpusCaseSeconds, wholeCorpusParts } from "../scripts/shard";
+import { balancedByGroup, browsers, casePartCores, dealtByGroup, fewestShards, shardFacts, shareOfShard, slots, testFileSeconds, testShardFiles, timingsByShard, wholeCorpusCaseSeconds, wholeCorpusParts, controlParts } from "../scripts/shard";
 import { corpusCaseNames, testTimeout } from "../scripts/mutations";
 import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, compilerBuildsAsked, memoryBudget, nightly, parts, peakGB, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
 import { fixture, root } from "./support";
@@ -105,7 +105,7 @@ test("a check's mutation shards balance by the newest merged times of main, hand
   const runs = [...tests.matchAll(/bun scripts\/mutations\.ts \$ARGS (.*)--shard=/g)].map((m) => m[1]);
   // The run's shared control, of a `--corpus` dispatch, deals nothing: each
   // shard is dealt by the same times as the browser's ask (#2375).
-  const control = "${{ contains(inputs.mutation_args, '--corpus') && '--control=target/mutants/shared/control.json' || '' }} ";
+  const control = "${{ contains(inputs.mutation_args, '--corpus') && '--control=target/mutants/shared' || '' }} ";
   expect(runs).toEqual(["${{ steps.timings.outputs.args }} ", `\${{ steps.timings.outputs.args }} ${control}`]);
   // A run of every mutation, the nightly's, builds 5% of its builds again
   // fresh (ADR 0093's incremental amendment).
@@ -353,6 +353,25 @@ test("a whole-corpus part's measured time is under half its limit", () => {
   // Twice the cases, twice the parts on a runner it already filled.
   expect(wholeCorpusParts(4, 6000, 20 * 60_000)).toBe(10);
   expect(wholeCorpusParts(4, 100, 20 * 60_000)).toBe(4);
+});
+
+// A `--corpus` dispatch's control in as many jobs as keep each under half
+// its limit: in one, 16 min on every shard's way (#2375). Each job's
+// share, the whole corpus as the compiler is and with one that compiles
+// nothing, its parts each a core's.
+test("a shared control's job is under half its limit, its part of the runs each part's once", () => {
+  const cases = corpusCaseNames().length;
+  const jobs = controlParts(4, cases, testTimeout);
+  expect(jobs).toBeGreaterThan(1);
+  expect((2 * cases * wholeCorpusCaseSeconds * 1000) / 4 / jobs).toBeLessThan(testTimeout / 2);
+  expect(controlParts(4, 2910, 20 * 60_000)).toBe(3);
+  expect(controlParts(4, 100, 20 * 60_000)).toBe(1);
+  expect(controlPartsOutput(3)).toBe("parts=[1,2,3]\ncount=3");
+  const tests = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
+  expect(tests).toContain("run: bun scripts/ci.ts control-parts >> \"$GITHUB_OUTPUT\"");
+  expect(tests).toContain("part: ${{ fromJSON(needs.mutation-control-plan.outputs.parts) }}");
+  expect(tests).toContain("--control-part=${{ matrix.part }}/${{ needs.mutation-control-plan.outputs.count }} --control-out=target/mutants/control/${{ matrix.part }}.json");
+  expect(tests).toContain("pattern: mutation-control-*\n          merge-multiple: true");
 });
 
 // The corpus runs in parts, one for each two cores where they all run at

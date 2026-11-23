@@ -358,6 +358,16 @@ export function wholeCorpusParts(cores: number, cases: number, limitMs: number):
   return Math.max(pooledParts(cores), Math.ceil((cases * wholeCorpusCaseSeconds * 1000) / (limitMs / 2)));
 }
 
+/** How many jobs a `--corpus` dispatch's shared control is run in, each of
+ * `cores`: enough that each job's share of the whole corpus, `cases` run
+ * as the compiler is and with one that compiles nothing, at
+ * `wholeCorpusCaseSeconds` a case, is under half its limit, `limitMs`, as
+ * each of `wholeCorpusParts`' parts is. In one job it was 16 min on every
+ * shard's way, as the shards wait for it (rustc tests 45155212621, #2375). */
+export function controlParts(cores: number, cases: number, limitMs: number): number {
+  return Math.max(1, Math.ceil((2 * cases * wholeCorpusCaseSeconds * 1000) / cores / (limitMs / 2)));
+}
+
 /** How many of the suite's parts of a file of cases, the corpus's and the
  * metamorphic sample's, `bun run test` runs at once on `cores` (its
  * pool, scripts/test.ts): one for each two cores while the rest of the

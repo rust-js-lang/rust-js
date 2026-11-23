@@ -186,4 +186,12 @@ export const mutations: Mutation[] = [
     replace: "  return 2;\n",
     tests: ["test/shards.test.ts", "-t", "measured time is under half its limit"],
   },
+  {
+    name: "control-parts-one",
+    breaks: "a `--corpus` dispatch's shared control is run in one job, 16 min on every shard's way, where in parts each is under half its limit (#2375)",
+    file: "scripts/shard.ts",
+    find: "  return Math.max(1, Math.ceil((2 * cases * wholeCorpusCaseSeconds * 1000) / cores / (limitMs / 2)));\n",
+    replace: "  return 1;\n",
+    tests: ["test/shards.test.ts", "-t", "a shared control's job is under half its limit"],
+  },
 ];

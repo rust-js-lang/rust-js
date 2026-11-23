@@ -7,7 +7,8 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, failingOf, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, staleControl, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
+import { againstWholeCorpus, failingOf, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
+import type { ControlPart } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -509,12 +510,27 @@ test("--browser's stdout is its one answer, a wasm mutation selected", () => {
 // A `--corpus` dispatch's control, run once by its control job and read by
 // each shard (#2375): one of another compiler build or another tree is
 // refused, never taken for this run's.
-test("a shared control of another build or tree is refused", () => {
-  const control = { build: "21f2c1277ce9e37a", tree: "030c6a88", sets: {} };
-  expect(staleControl(control, "21f2c1277ce9e37a", "030c6a88")).toBeUndefined();
-  expect(staleControl(control, "0000000000000000", "030c6a88")).toContain("a stale control is refused");
-  expect(staleControl(control, "21f2c1277ce9e37a", "ffffffff")).toContain("a stale control is refused");
-  expect(refusedFlags(["--control=target/c.json", "--control-out=target/c.json"])).toEqual([]);
+test("a shared control is its parts merged, and one of another build or tree, or with a part missing, is refused", () => {
+  const part = (n: number, of: number, results: [string, boolean][], build = "21f2c1277ce9e37a"): ControlPart => ({
+    build,
+    tree: "030c6a88",
+    part: n,
+    parts: of,
+    sets: ["corpus"],
+    ran: [["as-is\0true\0", "test/corpus.test.ts", results]],
+    printed: [["true\0\0test/corpus.test.ts", `part ${n}\n`]],
+  });
+  // A test that failed in any part failed; each part's printing kept.
+  const merged = mergedControl([part(2, 2, [["b.rs", false], ["c.rs", true]]), part(1, 2, [["a.rs", true], ["b.rs", true]])], "21f2c1277ce9e37a", "030c6a88");
+  expect([...merged.ran.get("as-is\0true\0")!.get("test/corpus.test.ts")!]).toEqual([["b.rs", false], ["c.rs", true], ["a.rs", true]]);
+  expect(merged.printed.get("true\0\0test/corpus.test.ts")).toBe("part 2\npart 1\n");
+  expect([...merged.sets]).toEqual(["corpus"]);
+  expect(() => mergedControl([part(1, 1, [], "0000000000000000")], "21f2c1277ce9e37a", "030c6a88")).toThrow("a stale control is refused");
+  expect(() => mergedControl([part(1, 1, [])], "21f2c1277ce9e37a", "ffffffff")).toThrow("a stale control is refused");
+  expect(() => mergedControl([part(1, 3, []), part(3, 3, [])], "21f2c1277ce9e37a", "030c6a88")).toThrow("a part missing or twice is refused");
+  expect(() => mergedControl([part(1, 2, []), part(1, 2, [])], "21f2c1277ce9e37a", "030c6a88")).toThrow("a part missing or twice is refused");
+  expect(() => mergedControl([], "21f2c1277ce9e37a", "030c6a88")).toThrow("a part missing or twice is refused");
+  expect(refusedFlags(["--control=target/c", "--control-out=target/c/1.json", "--control-part=1/3"])).toEqual([]);
 });
 
 test("each mutation list names one existing source file", () => {
