@@ -334,4 +334,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && (self.tcx.trait_of_assoc(f)).is_some_and(|t| crate::serde::serde_trait(self.tcx, t).is_some()) {\n",
     tests: ["test/serde-attributes.test.ts", "-t", "its own reader that isn't there"],
   },
+  {
+    name: "serde-untagged-written-tagged",
+    breaks: "a `#[rust_js::untagged]` enum serde writes is read as `out._0`, which its payload hasn't, `42`'s (#2388)",
+    file: "crates/rust-js-lower/src/serde.rs",
+    find: "                            true => value.clone(),\n",
+    replace: "                            true => Expr::member(value.clone(), variant_field(self.tcx, variant, i)),\n",
+    tests: ["test/serde-attributes.test.ts", "-t", "untagged enum of rust-js's is its payload"],
+  },
 ];

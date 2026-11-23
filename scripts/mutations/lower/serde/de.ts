@@ -165,4 +165,20 @@ export const mutations: Mutation[] = [
     replace: "                Some(_) => read,\n",
     tests: ["test/serde-attributes.test.ts", "-t", "its own reader that isn't there"],
   },
+  {
+    name: "serde-untagged-read-tagged",
+    breaks: "a `#[rust_js::untagged]` enum serde reads is made `{ TAG: \"Number\", _0: 42 }`, where its value is its payload, `42` (#2388)",
+    file: "crates/rust-js-lower/src/serde/de.rs",
+    find: "                if let Ok([payload]) = <[Expr; 1]>::try_from(items.clone()) {\n                    return payload;\n                }\n",
+    replace: "",
+    tests: ["test/serde-attributes.test.ts", "-t", "untagged enum of rust-js's is its payload"],
+  },
+  {
+    name: "serde-untagged-unit-read-by-name",
+    breaks: "a `#[rust_js::untagged]` enum's fieldless variant serde reads is its name, `\"Empty\"`, where its `#[rust_js::null]` is `null` (#2388)",
+    file: "crates/rust-js-lower/src/serde/de.rs",
+    find: "                if let Some(value) = crate::untagged::unit_value(self.tcx, variant) {\n                    return value;\n                }\n",
+    replace: "",
+    tests: ["test/serde-attributes.test.ts", "-t", "untagged enum of rust-js's is its payload"],
+  },
 ];

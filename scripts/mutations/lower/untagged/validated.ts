@@ -57,15 +57,6 @@ export const mutations: Mutation[] = [
     tests: ["test/diagnostics.test.ts", "-t", "one kind, cloned"],
   },
   {
-    name: "untagged-serde-accepted",
-    breaks:
-      "serde of an untagged enum is accepted, and its codec reads a `TAG` its values haven't",
-    file: "crates/rust-js-lower/src/untagged/validated.rs",
-    find: "        if serde_impl(tcx, def_id.to_def_id()).is_some()\n",
-    replace: "        if false\n",
-    tests: ["test/diagnostics.test.ts", "-t", "serde of an untagged"],
-  },
-  {
     name: "otherwise-anywhere",
     breaks:
       "an untagged enum's `#[rust_js::otherwise]` variant before another is taken, shadowing it",

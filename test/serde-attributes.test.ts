@@ -606,3 +606,148 @@ pub fn report() -> Vec<String> {
   const { report } = await compiled(dir);
   expect(JSON.stringify(report())).toBe(expected.trim());
 }, 300_000);
+
+// A `#[rust_js::untagged]` enum serde reads and writes, by each of serde's
+// representations of it: its value is its payload, TypeScript's `number |
+// string`, as every other maker of one makes it, read and written as
+// native serde does (ADR 0214, #2388). zod's `z.union`, coming-from-zod's
+// chapter 8, is `#[serde(untagged)]` beside it.
+test("serde: an untagged enum of rust-js's is its payload, read and written by each of serde's representations", async () => {
+  const dir = fixture("serde-rust-js-untagged");
+  writeFileSync(join(dir, "cases.rs"), String.raw`
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(untagged)]
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Id {
+    Number(u32),
+    Text(String),
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct Email {
+    #[cfg_attr(rust_js, rust_js::test(key))]
+    pub email: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct Phone {
+    #[cfg_attr(rust_js, rust_js::test(key))]
+    pub phone: String,
+    pub ext: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(untagged)]
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Contact {
+    Email(Email),
+    Phone(Phone),
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(untagged)]
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Cell {
+    Number(f64),
+    Text(String),
+    #[cfg_attr(rust_js, rust_js::null)]
+    Empty,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum External {
+    Number(u32),
+    Text(String),
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(tag = "kind")]
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Internal {
+    Email(Email),
+    Phone(Phone),
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(tag = "t", content = "c")]
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Adjacent {
+    Number(u32),
+    Text(String),
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct Row {
+    pub id: Id,
+    pub contact: Option<Contact>,
+    pub cells: Vec<Cell>,
+}
+
+fn label(id: &Id) -> String {
+    match id {
+        Id::Number(n) => format!("#{n}"),
+        Id::Text(t) => t.clone(),
+    }
+}
+
+fn reach(contact: &Contact) -> String {
+    match contact {
+        Contact::Email(e) => format!("write {}", e.email),
+        Contact::Phone(p) => format!("call {}", p.phone),
+    }
+}
+
+fn round<T: Serialize + for<'de> Deserialize<'de> + std::fmt::Debug>(text: &str) -> String {
+    match serde_json::from_str::<T>(text) {
+        Ok(value) => format!("{value:?} -> {}", serde_json::to_string(&value).unwrap()),
+        Err(error) => format!("Err({error})"),
+    }
+}
+
+pub fn report() -> Vec<String> {
+    let mut lines = Vec::new();
+    for text in ["42", r#""a7""#, "-1", "1.5", "true", "null"] {
+        lines.push(round::<Id>(text));
+    }
+    for text in [r#"{"email":"a@b.c"}"#, r#"{"phone":"555","ext":"9"}"#, r#"{"email":"a@b.c","phone":"555"}"#, r#"{"fax":"1"}"#, "[]"] {
+        lines.push(round::<Contact>(text));
+    }
+    for text in ["1.5", r#""x""#, "null", "[1]"] {
+        lines.push(round::<Cell>(text));
+    }
+    for text in [r#"{"Number":7}"#, r#"{"Text":"x"}"#, r#"{"Other":1}"#, "7"] {
+        lines.push(round::<External>(text));
+    }
+    for text in [r#"{"kind":"Email","email":"a@b.c"}"#, r#"{"kind":"Phone","phone":"555"}"#, r#"{"kind":"Fax"}"#] {
+        lines.push(round::<Internal>(text));
+    }
+    for text in [r#"{"t":"Number","c":7}"#, r#"{"t":"Text","c":"x"}"#, r#"{"t":"Number","c":"x"}"#] {
+        lines.push(round::<Adjacent>(text));
+    }
+    for text in [r#"{"id":"r1","contact":{"phone":"555"},"cells":[1,"two",null]}"#, r#"{"id":3,"contact":null,"cells":[]}"#, r#"{"id":{},"contact":null,"cells":[]}"#] {
+        lines.push(round::<Row>(text));
+    }
+    if let Ok(row) = serde_json::from_str::<Row>(r#"{"id":12,"contact":{"email":"a@b.c"},"cells":[]}"#) {
+        lines.push(format!("{} / {}", label(&row.id), row.contact.as_ref().map_or("none".to_string(), reach)));
+    }
+    lines
+}
+
+pub fn parse_row(text: &str) -> Option<Row> {
+    serde_json::from_str(text).ok()
+}
+`);
+  const expected = run([native(dir)]);
+  const { report, parseRow } = await compiled(dir);
+  expect(JSON.stringify(report())).toBe(expected.trim());
+  // Each value its payload: no `TAG`, a fieldless one `null`.
+  expect(parseRow('{"id":"r1","contact":{"phone":"555"},"cells":[1,"two",null]}')).toEqual({
+    id: "r1",
+    contact: { phone: "555", ext: undefined },
+    cells: [1, "two", null],
+  });
+  expect(parseRow('{"id":7,"contact":{"email":"a@b.c"},"cells":[]}')).toEqual({ id: 7, contact: { email: "a@b.c" }, cells: [] });
+}, 300_000);

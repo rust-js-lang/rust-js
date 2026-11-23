@@ -6,7 +6,7 @@
 use super::FnCx;
 use super::bindings;
 use super::declarations::{Written, written_types};
-use super::recognition::{Recognition, StdItem, deref_target, serde_impl, std_item};
+use super::recognition::{Recognition, StdItem, deref_target, std_item};
 use super::representation::{Num, is_string_enum};
 use rust_js_program::js::{self, Expr, Op, UnaryOp};
 use rustc_abi::VariantIdx;

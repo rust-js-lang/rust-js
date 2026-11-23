@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-23 (#2388, ADR 0214 amended): test/serde-attributes.test.ts gains a test, a `#[rust_js::untagged]` enum serde reads and writes against native serde, by each of its representations, and its JS values its payloads; test/diagnostics.test.ts loses its case of the refusal, now compiled.
+
 Changed on 2026-11-23 (#2382, #2383): test/serde-attributes.test.ts gains a test, a field of its own reader that isn't there against native serde: `deserialize_with` of a function of the crate's and of `Option::deserialize` and `Vec::deserialize`, beside `#[serde(default)]`, `with = "module"`, `serialize_with` beside `skip_serializing_if` and of `Option::serialize`, and an adjacently tagged newtype variant's reader given its missing content.
 
 Changed on 2026-11-23 (#2379, ADR 1188): test/serde-path.test.ts, new, four tests: serde_path_to_error's read against native serde_path_to_error, every rule of where in the value it places a mistake; its `Error` shown padded, as `{:x?}`, into a writer and as a `dyn Error`, and a type's own `deserialize` of serde_json's reader of text; what's refused of either; and its `Error` and `Path` declared `@rust-js/std`'s opaque `JsonPathError` and `JsonPath`.

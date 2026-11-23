@@ -23,7 +23,8 @@ that JS once, no test of the variant, below. Amended (2026-11-04, #555):
 a class is told in any realm, a DOM node by its `nodeType`, or refused,
 below and in [1062](1062-a-unions-one-class-is-what-its-other-kinds-leave.md).
 Amended (2026-11-14, #1775): only a `From` that's the variant of its
-argument is the value; any other's body is called, below.
+argument is the value; any other's body is called, below. Amended
+(2026-11-23, #2388): serde reads and writes one, below.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -129,7 +130,8 @@ impl<'a> From<&'a str> for Src<'a> {
   webapi crate's do: its body, a cast of a pointer, is never lowered, as
   a call of it is the object itself.
 - Not yet: a variant of no fields, a string literal; a serde
-  representation, which serde's own `#[serde(untagged)]` says.
+  representation, which serde's own `#[serde(untagged)]` says. (Both
+  since: a fieldless variant's string below, and serde's codecs, #2388.)
 
 ## Since
 
@@ -718,3 +720,32 @@ in `lower/untagged/froms.ts`, `lower/patterns.ts`,
 `lower/traits/dictionaries/conversions.ts`, `lower/mir/dispatch.ts`,
 `runs_nothing.ts` and `may_run.ts`, each caught. The diagnostics case
 "a From into an untagged enum that does more", now compiled, is gone.
+
+## Amendment: serde reads and writes one (#2388)
+
+A `#[rust_js::untagged]` enum with `Serialize` or `Deserialize` was
+refused (`untagged/validated.rs`). Its codecs made and read each variant
+by a rule of their own, `{ TAG: "Number", _0: 42 }` and `out._0`, where
+the enum's value is its payload. That is #2360's and #2364's family.
+
+Now serde's reader makes the variant as every maker of one does
+(`aggregates.rs`' `adt_value`): its payload, `$json.u32(content)`, or a
+fieldless one's own value, `null` of `#[rust_js::null]`. Its writer reads
+the payload as the value itself, `json.int(out)`, having told the variant
+by the test a `match` makes, `typeof out === "number"`. Which JSON serde
+reads is serde's to say, by any of its representations: untagged, as
+zod's `z.union` is, or tagged externally, internally or adjacently. The
+JS value is rust-js's, whichever it is. So `#[serde(untagged)]` beside
+`#[rust_js::untagged]` makes TypeScript's `number | string` of JSON's,
+as chapter 8 of coming-from-zod writes it.
+
+Held by test/serde-attributes.test.ts' "an untagged enum of rust-js's is
+its payload, read and written by each of serde's representations", which
+runs against native serde: numbers, strings, two structs told by
+`#[rust_js::test(key)]`, a `#[rust_js::null]` variant, each representation
+read and written back, refusals and nesting in an `Option` and a `Vec`.
+It also checks the JS objects, `cells: [1, "two", null]`. Mutations:
+`serde-untagged-read-tagged`, `serde-untagged-unit-read-by-name` and
+`serde-untagged-written-tagged`, each caught. The diagnostics case
+"serde of an untagged enum" and its mutation `untagged-serde-accepted`,
+of the refusal, are gone.
