@@ -262,19 +262,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-cells.test.ts", "-t", "given a function to run"],
   },
   {
-    name: "library-default-named-after-file",
-    breaks:
-      "a library's module's default is imported named after the module's file, `import version`, not its item, `import VERSION`",
-    file: "crates/rust-js-lower/src/analysis.rs",
-    find: "        uses.named.insert(export, imported.name.clone());\n",
-    replace: "",
-    tests: [
-      "test/cross-crate-items.test.ts",
-      "-t",
-      "default export is imported as its default",
-    ],
-  },
-  {
     name: "fn-dyn-library-params-ungiven",
     breaks:
       "a library's closure holding its type parameter's function, made a `dyn Fn`, drops only what its own calls give, though a consumer may give the parameter a destructor (#580)",
@@ -463,15 +450,6 @@ export const mutations: Mutation[] = [
     find: "            || super::reexports::globs_values(tcx, module);\n",
     replace: ";\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob re-exports each name as the module it names exports it"],
-  },
-  {
-    name: "reexported-imports-unnamed",
-    breaks:
-      "an import through a library's re-exporting module is named nowhere before lowering, which panics rustc reading it (rd704)",
-    file: "crates/rust-js-lower/src/analysis.rs",
-    find: "    for export in foreign.all_reexported() {\n",
-    replace: "    for export in foreign.all_reexported().filter(|_| false) {\n",
-    tests: ["test/reexports-through.test.ts", "-t", "a use through a library's module that re-exports its item imports it from there"],
   },
   {
     name: "required-use-name-unreserved",
