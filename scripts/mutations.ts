@@ -40,7 +40,7 @@ import { resultsFile, verdictOf, type Result as CrateResult, type Verdict } from
 import { devTimes, ownsTimes } from "./devTimes";
 import { floorBytes } from "../test/bounded";
 import { freeBytes } from "../tooling/bounded.js";
-import { type CompilerCrate, compilerCrates, crateOf, crateOfModule, modulePath } from "./compiler-crates";
+import { type CompilerCrate, compilerCrates, crateOf, crateOfModule, cratesBuilding, modulePath } from "./compiler-crates";
 
 const root = join(import.meta.dir, "..");
 
@@ -1739,7 +1739,9 @@ export function unjudgedSaid(asked: number, unjudged: string[]): string | undefi
 async function everyUnit(files: Map<string, string> | undefined, what: string): Promise<{ failed: Set<string>; passed: number }> {
   const failed = new Set<string>();
   let passed = 0;
-  for (const crate of compilerCrates()) {
+  // A mutant's, of the crates its files' build holds (`cratesBuilding`):
+  // another's tests aren't compiled again with it.
+  for (const crate of files ? cratesBuilding(files.keys()) : compilerCrates()) {
     const binary = await build(files, 0, crate);
     if (typeof binary !== "string") throw new Error(`${what} ${binary.problem}`);
     const of = await unitFailures(binary);
@@ -1751,7 +1753,19 @@ async function everyUnit(files: Map<string, string> | undefined, what: string): 
 
 async function unitFailures(binary: string): Promise<{ failed: Set<string>; passed: number }> {
   const p = await unitTest(binary, "");
-  if (judgeUnit(p) === "inconclusive") throw new Error(`the compiler's unit tests (${binary}) said nothing: ${endedAs(p)}\n${(p.stdout + p.stderr).slice(-1500)}`);
+  const of = unitsAsItIs(p);
+  if (of === undefined) throw new Error(`the compiler's unit tests (${binary}) said nothing: ${endedAs(p)}\n${(p.stdout + p.stderr).slice(-1500)}`);
+  return of;
+}
+
+/** What a crate's unit tests, all of them, say as it is: each that failed,
+ * and how many passed. One with none, `rust-js-jsx`'s, ran to its end and
+ * failed none, which says nothing failed: not a run that said nothing,
+ * which stopped `--retire` at its control. `undefined` of one that said
+ * nothing (`judgeUnit`). */
+export function unitsAsItIs(p: Exit): { failed: Set<string>; passed: number } | undefined {
+  const none = p.code === 0 && !stopped(p, testTimeout) && /^test result: ok\. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;/m.test(p.stdout);
+  if (!none && judgeUnit(p) === "inconclusive") return undefined;
   return { failed: new Set([...p.stdout.matchAll(/^test (\S+) \.\.\. FAILED$/gm)].map((m) => m[1]!)), passed: Number(p.stdout.match(/^test result: \w+\. (\d+) passed;/m)?.[1] ?? 0) };
 }
 

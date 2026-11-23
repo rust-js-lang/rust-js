@@ -5,7 +5,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { binaryCrate, compilerCrates, compilerRustFiles, crateOf, crateOfModule, isBinarySource, isCompilerSource, memberFeatures, modulePath, topModules, type MemberPackage } from "../scripts/compiler-crates";
+import { binaryCrate, compilerCrates, compilerRustFiles, crateOf, crateOfModule, cratesBuilding, isBinarySource, isCompilerSource, memberFeatures, modulePath, topModules, type MemberPackage } from "../scripts/compiler-crates";
 import { root } from "./support";
 
 type Manifest = { package?: { name: string }; dependencies?: Record<string, unknown>; workspace?: { members?: string[]; exclude?: string[] } };
@@ -70,6 +70,20 @@ test("each Cargo package of the checkout is the workspace's or its own", () => {
   expect(orphans).toEqual([]);
   // Each member is a crate of `crates/`, by its package's name.
   for (const crate of members) expect(crate.dir).toBe(`crates/${crate.package}`);
+});
+
+// A mutant's unit tests are those of the crates its files' build holds,
+// read of their manifests: a crate that doesn't depend on the mutated one,
+// rust-js-jsx's of a mutant of rust-js-lower, isn't compiled again with it,
+// and `--retire` stopped there, "cargo didn't compile the crate again".
+test("the crates a file's build holds are its own and each that depends on it", () => {
+  const of = (file: string) => cratesBuilding([file]).map((crate) => crate.package).sort();
+  expect(of("src/main.rs")).toEqual(["rust-js"]);
+  expect(of("crates/rust-js-jsx/src/lib.rs")).toEqual(["rust-js", "rust-js-jsx"]);
+  expect(of("crates/rust-js-lower/src/copies.rs")).not.toContain("rust-js-jsx");
+  expect(of("crates/rust-js-lower/src/copies.rs")).toContain("rust-js");
+  expect(of("crates/rust-js-program/src/lib.rs")).toEqual(compilerCrates().map((crate) => crate.package).sort());
+  expect(cratesBuilding(["test/corpus/a.rs"])).toEqual([]);
 });
 
 test("which crate a file and a module are of is the layout's answer", () => {

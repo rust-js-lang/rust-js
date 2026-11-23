@@ -169,3 +169,36 @@ export function memberFeatures(packages: MemberPackage[], root: string, rootKind
   }
   return on;
 }
+
+/** The compiler's crates whose build holds any of `files`, paths from the
+ * checkout: each one's own crate, and each crate that depends on one of
+ * those, its `[dependencies]` or `[dev-dependencies]` naming it, through
+ * others too. A mutant's unit tests are these crates' alone: another's,
+ * `rust-js-jsx`'s of a mutant of `rust-js-lower`, isn't compiled again with
+ * it, so it says nothing of it. */
+export function cratesBuilding(files: Iterable<string>, at = checkout): CompilerCrate[] {
+  const crates = compilerCrates(at);
+  const packages = new Set(crates.map((crate) => crate.package));
+  const dependencies = new Map(
+    crates.map((crate) => {
+      const manifest = Bun.TOML.parse(readFileSync(join(at, crate.dir, "Cargo.toml"), "utf8")) as Record<string, unknown>;
+      const named = ["dependencies", "dev-dependencies"].flatMap((table) =>
+        Object.entries((manifest[table] ?? {}) as Record<string, unknown>).map(([key, spec]) =>
+          typeof spec === "object" && spec !== null && typeof (spec as { package?: unknown }).package === "string" ? (spec as { package: string }).package : key,
+        ),
+      );
+      return [crate.package, named.filter((name) => packages.has(name) && name !== crate.package)] as const;
+    }),
+  );
+  const reached = new Set([...files].flatMap((file) => crateOf(file, at)?.package ?? []));
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const crate of crates) {
+      if (!reached.has(crate.package) && dependencies.get(crate.package)!.some((name) => reached.has(name))) {
+        reached.add(crate.package);
+        grew = true;
+      }
+    }
+  }
+  return crates.filter((crate) => reached.has(crate.package));
+}
