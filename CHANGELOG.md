@@ -241,6 +241,12 @@ imports, and `rust-js build` the one way to build an app.
   `memrchr`s and their iterators, over the byte arrays slices are; another
   memchr, a fork or another version, is refused where it's called, saying
   which to depend on (ADR 0529).
+- **getrandom 0.1.16, 0.2.17, 0.3.4 and 0.4.3**, with no feature or cfg
+  needed: their fills and numbers are Web Crypto's, and their `Error` is
+  its code, shown as each version shows it, a `Box<dyn Error>` of it too.
+  rand's `thread_rng` and `OsRng` work, and so do itertools' quickcheck
+  tests. Another getrandom is refused where it's called, naming the
+  qualified version to depend on (ADR 1185).
 - **A `fuse` and an `enumerate` of a double-ended or exact-size
   iterator, from either end** (ADR 0528).
 - **An impl whose associated type is an iterator over its type

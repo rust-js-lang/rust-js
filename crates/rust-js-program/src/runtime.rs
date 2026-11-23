@@ -57,6 +57,7 @@ helpers! {
     Dropping,
     Cloning,
     Memchr,
+    Getrandom,
     Readers,
     Reduce,
     IntoIter,
@@ -972,6 +973,8 @@ impl Helper {
             Helper::Dropping => include_str!("runtime/dropping.js"),
             Helper::Cloning => include_str!("runtime/cloning.js"),
             Helper::Memchr => include_str!("runtime/memchr.js"),
+            // getrandom's fills and its `Error`'s words (#2326).
+            Helper::Getrandom => include_str!("runtime/getrandom.js"),
             // `io::Read`'s, `BufRead`'s and `Seek`'s dictionaries of std's byte
             // sources, and `append_to_string` (#1156).
             Helper::Readers => include_str!("runtime/readers.js"),

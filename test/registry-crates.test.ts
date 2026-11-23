@@ -139,3 +139,17 @@ test("a memchr that isn't crates.io's qualified one is refused where it's called
   expect(existsSync(join(at, "src", "lib.js"))).toBe(false);
 }, 600_000);
 
+
+// One qualified at several versions, getrandom (#2326): a fork's refusal
+// names the qualified one its own version's `^` requirement takes, 0.2's
+// 0.2.17, not the first of the catalog's.
+test("a getrandom that isn't crates.io's is refused, naming the qualified version it's compatible with", () => {
+  const dir = fixture("registry-getrandom-fork");
+  const fork = gitCrate(dir, "getrandom", "0.2.15", "pub fn getrandom(dest: &mut [u8]) -> Result<(), u32> {\n    dest.fill(4);\n    Ok(())\n}\n");
+  const at = app(dir, { getrandom: fork }, "pub fn fill(dest: &mut [u8]) -> bool {\n    getrandom::getrandom(dest).is_ok()\n}\n");
+  const built = build(at);
+  expect(built.code).not.toBe(0);
+  expect(built.stderr).toContain("`getrandom::getrandom`");
+  expect(built.stderr).toContain("isn't the getrandom rust-js writes the JS of, crates.io's 0.1.16 or 0.2.17 or 0.3.4 or 0.4.3");
+  expect(built.stderr).toContain("`cargo update -p getrandom --precise 0.2.17`");
+}, 600_000);

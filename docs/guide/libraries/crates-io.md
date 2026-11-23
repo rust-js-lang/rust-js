@@ -110,7 +110,8 @@ A few crates are read as rustc builds them, never compiled by rust-js,
 and rust-js writes their API as JS's own
 ([ADR 0423](../../decisions/0423-hashbrowns-maps-are-stds.md),
 [ADR 0424](../../decisions/0424-indexmaps-maps-are-js-maps.md),
-[ADR 0529](../../decisions/0529-a-shipped-memchr-searches-bytes.md)):
+[ADR 0529](../../decisions/0529-a-shipped-memchr-searches-bytes.md),
+[ADR 1185](../../decisions/1185-getrandom-is-a-shipped-crate.md)):
 
 | Crate | In JS |
 |---|---|
@@ -118,6 +119,7 @@ and rust-js writes their API as JS's own
 | `hashbrown` (with `foldhash`, `allocator-api2`) | its `HashMap` and `HashSet` are std's: a `Map` and a `Set` |
 | `indexmap` | its `IndexMap` and `IndexSet` are a `Map` and a `Set`, its methods by place, `get_index`, `swap_remove`, the runtime's |
 | `memchr` 2.8.3, crates.io's | its searches are the runtime's, over the byte arrays slices are, `memchr` being `indexOf` |
+| `getrandom` 0.1.16, 0.2.17, 0.3.4 and 0.4.3, crates.io's | its fills and numbers are Web Crypto's `crypto.getRandomValues`, whatever features you chose; its `Error` is its code, shown as that version shows it |
 
 ```toml
 [dependencies]
@@ -158,9 +160,18 @@ export function counts(words) {
 ```
 
 What one of these has that rust-js doesn't write is refused where it's
-called, `memchr::memmem::find` among them. A `memchr` of another version,
-a fork, or one by path or git is its types alone, and a call into it says
-which to depend on: `cargo update -p memchr --precise 2.8.3`.
+called, `memchr::memmem::find` and getrandom 0.4's `SysRng` among them. A
+`memchr` or `getrandom` of another version, a fork, or one by path or git
+is its types alone, and a call into it says which to depend on: `cargo
+update -p getrandom --precise 0.2.17`, the qualified version your
+requirement takes.
+
+getrandom needs no feature and no `getrandom_backend` cfg: rust-js picks
+the crate's own custom backend for rustc's check where you chose none, and
+fills with Web Crypto, 65,536 bytes at a time. rand's `thread_rng` and
+`OsRng` work through it. Where there's no `crypto`, a fill gives
+`Err(Error::UNSUPPORTED)`. An `Error` made of an OS's number shows that
+number's words as native unix getrandom does, which needs Node.
 
 ## Which crates work
 

@@ -233,6 +233,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(op) = self.memchr_op(def_id) {
             return Some(Some(Std::Memchr(op)));
         }
+        // getrandom's, of a qualified one rustc builds (#2326).
+        if let Some(op) = self.getrandom_op(def_id, args) {
+            return Some(Some(Std::Getrandom(op)));
+        }
         // The process a program runs in, and its files, Node's (ADR 0391).
         match node_only(tcx, def_id) {
             Some(NodeOnly::Process(op)) => return Some(Some(Std::Process(op))),

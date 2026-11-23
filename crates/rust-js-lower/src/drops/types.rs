@@ -533,6 +533,8 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             // no `from_reader`'s, so drops nothing, whatever its `ErrorCode`'s
             // `Io` would (ADR 0462, amended).
             ty::Adt(..) if self.recognition.is_json_error(ty) => Drops::Nothing,
+            // A qualified getrandom's error, its code (#2326).
+            ty::Adt(..) if self.recognition.getrandom_error(ty).is_some() => Drops::Nothing,
             // An `io::Error`: the error it may hold, a `Box<dyn Error + Send +
             // Sync>`, which its drop drops (ADR 0462, amended).
             ty::Adt(..)

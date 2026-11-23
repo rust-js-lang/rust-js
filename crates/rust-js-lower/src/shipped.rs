@@ -1,10 +1,12 @@
 //! The API of a crate rustc builds that rust-js writes the JS of, as it
 //! writes std's: memchr's searches (ADR 0529), over the byte arrays slices
-//! are, whose indices are the slice's.
+//! are, whose indices are the slice's; and getrandom's bytes, Web Crypto's,
+//! and its `Error`, its code (#2326).
 
 use super::recognition::Std;
 use super::{Expr, FnCx};
 use rust_js_program::js;
+use rust_js_program::js::Op;
 
 /// One of memchr's searches: the first or last index of one of its needles,
 /// or each, from either end.
@@ -17,7 +19,99 @@ pub enum MemchrOp {
     Iter { back: bool },
 }
 
+/// Which of getrandom's APIs a qualified one has, by its version (#2326):
+/// 0.1's and 0.2's `getrandom` and `Error` of a `NonZeroU32`, each with its
+/// own table of what its internal codes say, or 0.3's and 0.4's `fill`,
+/// `u32` and `u64` and `Error` of a `NonZeroI32`, whose tables are one
+/// under the custom backend rustc checks them with.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum GetrandomVersion {
+    V01,
+    V02,
+    V03,
+}
+
+impl GetrandomVersion {
+    /// The API of a qualified version, `0.2.17`'s.
+    pub(crate) fn of(version: &str) -> Option<Self> {
+        match version.split('.').take(2).collect::<Vec<_>>()[..] {
+            ["0", "1"] => Some(Self::V01),
+            ["0", "2"] => Some(Self::V02),
+            ["0", "3" | "4"] => Some(Self::V03),
+            _ => None,
+        }
+    }
+
+    /// Whether its `Error` has a `code()`, a `NonZeroU32`, and is made of
+    /// one: 0.1's and 0.2's.
+    pub(crate) fn has_code(self) -> bool {
+        self != Self::V03
+    }
+
+    /// Its name to the runtime, whose table of its `Error`'s words it picks.
+    pub(crate) fn key(self) -> &'static str {
+        match self {
+            Self::V01 => "0.1",
+            Self::V02 => "0.2",
+            Self::V03 => "0.3",
+        }
+    }
+}
+
+/// One of getrandom's functions rust-js writes (#2326).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum GetrandomOp {
+    /// 0.1's and 0.2's `getrandom`, 0.3's and 0.4's `fill`, or of `uninit`,
+    /// 0.2's `getrandom_uninit` and their `fill_uninit`: the slice filled
+    /// with Web Crypto's bytes in place, `Ok` of nothing, or of the slice.
+    Fill {
+        uninit: bool,
+        version: GetrandomVersion,
+    },
+    /// 0.3's and 0.4's `u32()` and `u64()`: a random number.
+    U32,
+    U64,
+    /// An `Error`'s `code()`, and one made of a code, `From<NonZeroU32>`:
+    /// the code itself, which it is.
+    Code,
+    /// An `Error`'s `raw_os_error()`: its OS's number, as its version reads
+    /// it of its code.
+    RawOsError(GetrandomVersion),
+    /// 0.3's and 0.4's `Error::new_custom(n)`: its code, past `CUSTOM_START`.
+    NewCustom,
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A call of getrandom's (#2326): `$getrandom(dest, ..)` of a fill, the
+    /// runtime's; a code as it is. `None` if `known` is another.
+    pub(crate) fn getrandom_call(&mut self, known: Std, values: &mut std::vec::IntoIter<Expr>) -> Option<Expr> {
+        let Std::Getrandom(op) = known else {
+            return None;
+        };
+        let mut given: Vec<Expr> = values.collect();
+        Some(match op {
+            GetrandomOp::Fill { uninit, version } => {
+                let dest = given.pop().expect("rustc checked the arguments");
+                let mut args = vec![dest, Expr::str(version.key())];
+                if uninit {
+                    args.push(Expr::bool(true));
+                }
+                Expr::call_helper("$getrandom", args)
+            }
+            GetrandomOp::U32 => Expr::call_helper("$getrandomU32", Vec::new()),
+            GetrandomOp::U64 => Expr::call_helper("$getrandomU64", Vec::new()),
+            GetrandomOp::Code => given.pop().expect("rustc checked the arguments"),
+            GetrandomOp::RawOsError(version) => {
+                let error = given.pop().expect("rustc checked the arguments");
+                Expr::call_helper("$getrandomRawOsError", vec![error, Expr::str(version.key())])
+            }
+            GetrandomOp::NewCustom => {
+                let n = given.pop().expect("rustc checked the arguments");
+                Expr::bin(Op::Add, Expr::int(1 << 17), n)
+            }
+        })
+    }
+
     /// A call of memchr's: its needles, then the haystack, the runtime's
     /// helper given the haystack and the needles, `$memchr(text, [111])`.
     /// `None` if `known` is another.

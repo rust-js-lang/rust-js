@@ -1203,6 +1203,15 @@ pub fn refusal(metadata: &std::path::Path) -> std::path::PathBuf {
     metadata.with_extension("rust-js-refused")
 }
 
+/// Where a crate of the catalog's that rustc checked at a version of
+/// crates.io's it's qualified at says which, beside its metadata (ADR
+/// 0529, #2326): the version, `0.2.17`, which a crate that uses it reads
+/// to know which version's API it calls. Written as the metadata is, so
+/// one is of the other.
+pub fn qualified(metadata: &std::path::Path) -> std::path::PathBuf {
+    metadata.with_extension("rust-js-qualified")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

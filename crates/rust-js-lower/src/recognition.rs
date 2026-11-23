@@ -37,6 +37,7 @@ mod lends;
 mod owners;
 pub(super) mod registry;
 mod serde;
+mod shipped;
 mod slice_steps;
 mod sorts;
 mod specialization;
@@ -51,6 +52,7 @@ mod unrecognized;
 mod wrappers;
 mod zip_folds;
 
+pub(crate) use self::shipped::getrandom_error_type;
 pub use self::{
     adapter_types::*, calls::*, compiled_std::*, fmt::*, iterators::*, js_items::*, json::*, serde::*,
     specialization::*, std_crates::*, std_items::*, std_paths::*, std_steps::*, traits::*, type_facts::*, types::*,
@@ -268,6 +270,9 @@ pub enum Std {
     Fs(FsOp),
     /// memchr's searches, of the crate rustc builds (ADR 0529).
     Memchr(super::shipped::MemchrOp),
+    /// getrandom's bytes and its `Error`'s code, of a qualified getrandom
+    /// rustc builds (#2326).
+    Getrandom(super::shipped::GetrandomOp),
     /// `panic::Location`'s (ADR 0427).
     Location(super::std_types::location::LocationOp),
     /// A `Backtrace`'s (ADR 0568).

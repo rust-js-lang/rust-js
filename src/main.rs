@@ -595,9 +595,10 @@ fn run() -> ExitCode {
         cargo::Invocation::RustJs(args) => args,
         cargo::Invocation::Rustc(exit) => return exit,
         cargo::Invocation::Clippy(flags, lints, value) => return linted(clippy::args(flags, lints), value),
-        // Why rust-js refused a crate of crates.io's, beside its metadata.
-        cargo::Invocation::Refused(exit, note, why) => {
-            if let Err(error) = rust_js_emit::publish::publish_file(&note, why.into_bytes()) {
+        // Why rust-js refused a crate of crates.io's, or the version a crate
+        // of the catalog's is qualified at, beside its metadata.
+        cargo::Invocation::Noted(exit, note, said) => {
+            if let Err(error) = rust_js_emit::publish::publish_file(&note, said.into_bytes()) {
                 eprintln!("rust-js: cannot write {}: {error}", note.display());
             }
             return exit;

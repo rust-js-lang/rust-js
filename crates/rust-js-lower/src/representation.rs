@@ -345,12 +345,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A path is its text, a string (ADR 0173), whatever its fields; and a
         // struct of std's that's a number, a `Duration`'s nanoseconds (ADRs
-        // 0177, 0188, 0447), has none in JS.
+        // 0177, 0188, 0447), or a qualified getrandom's error, its code
+        // (#2326), has none in JS.
         if self.is_std_wrapper(ty)
             || self.is_js_object(ty)
             || self.recognition().is_symbol_for(ty)
             || self.recognition().is_path_like(ty)
             || Num::of(ty).is_some()
+            || self.recognition().getrandom_error(ty).is_some()
         {
             return Shape::Other;
         }

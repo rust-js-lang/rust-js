@@ -328,6 +328,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_json_error(ty) {
             return Ok(Expr::call(Expr::helper("$debugJsonError"), vec![value]));
         }
+        // A qualified getrandom's error, as its version shows it, given the
+        // `Formatter`'s options, which its numbers read (#2326).
+        if let Some(version) = self.recognition().getrandom_error(ty) {
+            let mut list = vec![value, Expr::str(version.key())];
+            if !matches!(pretty, Pretty::Plain) {
+                list.push(pretty.options());
+            }
+            return Ok(Expr::call_helper("$debugGetrandomError", list));
+        }
         // An `io::Error`'s, std's `Custom { kind, error }` or `Kind(..)`, as
         // pretty as it's asked (ADR 0462).
         if self.recognition().is_io_error(ty) {

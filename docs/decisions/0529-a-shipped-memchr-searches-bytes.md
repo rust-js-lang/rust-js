@@ -84,3 +84,15 @@ const it = $memchrIter(text, [111, 114]);
   where it's backward, step a `memrchr_iter` forward, look for the first
   needle alone, skip the first byte, pass the iterator's back, restart a
   clone, and refuse its back and its clone.
+
+## Amendment: a qualified crate says so beside its metadata (2026-11-23, #2326)
+
+[ADR 1185](1185-getrandom-is-a-shipped-crate.md) adds getrandom to the
+catalog at four versions, each with the `--cfg`s rustc's check of it is
+given and when it isn't. A qualified crate's check now writes its version
+beside its metadata, `library::qualified`, which a consumer reads to know
+which version's API it calls. getrandom's recognition needs it. memchr's
+check writes it too, but its recognition doesn't read it yet, since
+serde's build (`serde/build.sh`) makes memchr with plain Cargo. An
+unqualified crate's refusal names the qualified version that its own
+`^` requirement takes, not the catalog's first.

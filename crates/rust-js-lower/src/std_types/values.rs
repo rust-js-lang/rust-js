@@ -546,6 +546,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.memchr_call(known, &mut values) {
             return Ok(js);
         }
+        if let Some(js) = self.getrandom_call(known, &mut values) {
+            return Ok(js);
+        }
         if let Some(js) = self.io_error_call(known, call, &mut values)? {
             return Ok(js);
         }
@@ -785,6 +788,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Fs(_) => unreachable!("lowered by fs_call"),
             Std::Unwind(_) => unreachable!("lowered by unwind_call"),
             Std::Memchr(_) => unreachable!("lowered by memchr_call"),
+            Std::Getrandom(_) => unreachable!("lowered by getrandom_call"),
             Std::Location(_) => unreachable!("lowered by location_call"),
             Std::Backtrace(_) => unreachable!("lowered by backtrace_call"),
             Std::CStr(_) => unreachable!("lowered by c_str_call"),

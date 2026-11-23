@@ -431,3 +431,15 @@ has crates.io's copy of a crate the patch names, the build moves it onto
 rust-js's first, `cargo update -p`, whether or not the patch changed.**
 Held by `test/compat.test.ts`'s lock put back under a settled patch, whose
 graph takes wasm-bindgen 0.2.92 anew by a feature.
+
+## Amendment: getrandom is a shipped crate (2026-11-23, #2326)
+
+[ADR 1185](1185-getrandom-is-a-shipped-crate.md) supersedes this ADR's
+getrandom part: "the `$fillRandom` backend planned for getrandom is
+dropped" no longer holds. Every qualified getrandom is rustc's, and its API
+is one runtime helper over `crypto.getRandomValues`, whatever features its
+user chose, 0.2 with no feature among them, which this layer never served.
+`tooling/compat/covered.txt` keeps getrandom 0.1 and 0.3 and adds 0.4, now
+meaning that rustc checks their backends against rust-js's wasm-bindgen,
+so a graph with them and chrono or uuid keeps the patch. Its tests' git
+stand-ins named getrandom are uuid's and chrono's.

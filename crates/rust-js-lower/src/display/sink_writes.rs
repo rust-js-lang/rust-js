@@ -345,6 +345,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 SinkWrite::Str(Expr::call_helper("$ioKindText", vec![value]))
             }
             Std::FmtDebug if recognition.is_io_error_kind(ty) => SinkWrite::Str(value),
+            // A qualified getrandom's error, as its version writes it (#2326).
+            Std::FmtDisplay | Std::FmtDebug if let Some(version) = recognition.getrandom_error(ty) => {
+                let helper = match kind {
+                    Std::FmtDisplay => "$writeGetrandomError",
+                    _ => "$writeGetrandomErrorDebug",
+                };
+                SinkWrite::Helper(helper, vec![value, Expr::str(version.key()), options])
+            }
             _ => return None,
         })
     }

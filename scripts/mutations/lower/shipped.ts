@@ -1,4 +1,4 @@
-// Mutations of crates/rust-js-lower/src/shipped.rs (ADR 0529).
+// Mutations of crates/rust-js-lower/src/shipped.rs (ADRs 0529, 1185).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -19,5 +19,21 @@ export const mutations: Mutation[] = [
     replace:
       '                    true => Expr::call_helper("$rev", vec![it]),\n',
     tests: ["test/shipped-crates.test.ts", "-t", "memchr's searches"],
+  },
+  {
+    name: "getrandom-02-as-01",
+    breaks: "getrandom 0.2's `Error` shows 0.1's words for its internal codes, `Unknown std::io::Error` for its `UNEXPECTED`",
+    file: "crates/rust-js-lower/src/shipped.rs",
+    find: '            Self::V02 => "0.2",\n',
+    replace: '            Self::V02 => "0.1",\n',
+    tests: ["test/shipped-crates.test.ts", "-t", "getrandom's API runs"],
+  },
+  {
+    name: "getrandom-uninit-as-fill",
+    breaks: "`fill_uninit` gives `Ok` of nothing, as `fill` does, not of its bytes",
+    file: "crates/rust-js-lower/src/shipped.rs",
+    find: "                if uninit {\n                    args.push(Expr::bool(true));\n                }\n",
+    replace: "",
+    tests: ["test/shipped-crates.test.ts", "-t", "getrandom's API runs"],
   },
 ];

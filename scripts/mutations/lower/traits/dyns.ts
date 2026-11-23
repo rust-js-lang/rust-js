@@ -660,4 +660,12 @@ export const mutations: Mutation[] = [
     replace: "        let what = || format!(\"a counted `{source}` made elsewhere as a `{target}`\");\n        let _ = what();\n",
     tests: ["test/phase-times.test.ts", "-t", "a lowering forces no walk of every crate"],
   },
+  {
+    name: "getrandom-error-dyn-unknown",
+    breaks: "a getrandom `Error` boxed as a `dyn Error` asks its crate's impl for a dictionary, which rustc built and rust-js never wrote, so rand_core's `From<getrandom::Error>` is refused (#2326)",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
+    find: "        if let Some(version) = self.recognition().getrandom_error(ty) {\n            let args = vec![Expr::str(self.type_id_key(ty)), Expr::str(version.key())];\n",
+    replace: "        if let Some(version) = self.recognition().getrandom_error(ty).filter(|_| false) {\n            let args = vec![Expr::str(self.type_id_key(ty)), Expr::str(version.key())];\n",
+    tests: ["test/shipped-crates.test.ts", "-t", "getrandom's API runs"],
+  },
 ];

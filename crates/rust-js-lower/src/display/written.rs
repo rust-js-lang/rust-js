@@ -625,6 +625,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_json_error(ty) {
             return Ok(Expr::call(Expr::helper("$displayJsonError"), vec![value]));
         }
+        // A qualified getrandom's error, as its version shows it, given the
+        // `Formatter`'s options, which the OS's words' `pad` reads (#2326).
+        if let Some(version) = self.recognition().getrandom_error(ty) {
+            let mut args = vec![value, Expr::str(version.key())];
+            if let Pretty::When(given) | Pretty::Given(given, _) = pretty {
+                args.push(given.clone());
+            }
+            return Ok(Expr::call_helper("$displayGetrandomError", args));
+        }
         // An `io::Error`'s, as std shows it, given the `Formatter`'s options,
         // which its message's `pad` and the error it holds read (#1689); and
         // an `ErrorKind`'s words, its `write_str` (ADR 0462).

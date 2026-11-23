@@ -20,10 +20,12 @@ pub enum Invocation {
     RustJs(Vec<String>),
     /// rustc was run as Cargo asked, and ended so.
     Rustc(ExitCode),
-    /// A crate of crates.io's rust-js refused, which rustc checked, its types
-    /// alone, ended so: why, to be written where `library::refusal` says
-    /// (ADR 0415).
-    Refused(ExitCode, PathBuf, String),
+    /// rustc checked a crate, ended so, and what's to be written beside its
+    /// metadata, where: why rust-js refused a crate of crates.io's, its
+    /// types alone, where `library::refusal` says (ADR 0415); or the version
+    /// of crates.io's a crate of the catalog's is qualified at, where
+    /// `library::qualified` says (#2326).
+    Noted(ExitCode, PathBuf, String),
     /// A crate of the app's own, linted, not compiled (ADR 0888): Cargo's
     /// flags, `CLIPPY`'s lint flags, and its value, as it was read.
     Clippy(Vec<String>, Vec<String>, String),
@@ -63,14 +65,45 @@ const TRYING: &str = "RUST_JS_TRYING";
 /// the versions of crates.io's it's qualified at, and none else (ADR 0529).
 struct ReadAsRustc {
     name: &'static str,
-    qualified: Option<&'static [&'static str]>,
+    qualified: Option<&'static [Qualified]>,
+}
+
+/// A version of crates.io's a crate of the catalog is qualified at, and the
+/// `--cfg`s rustc's check of it is given: the crate's own documented choice
+/// of a backend, where it refuses rust-js's target without one, getrandom
+/// 0.2's `custom` feature (#2326), unless the check chooses one already, a
+/// `--cfg` given that starts with one of `unless`. Its JS is rust-js's,
+/// never the backend's.
+struct Qualified {
+    version: &'static str,
+    cfgs: &'static [&'static str],
+    unless: &'static [&'static str],
+}
+
+impl Qualified {
+    /// The `--cfg`s rustc's check given `flags` is given: `cfgs`, unless a
+    /// `--cfg` of `flags` chooses a backend already.
+    fn cfgs_given(&self, flags: &[String]) -> &'static [&'static str] {
+        let given: Vec<&str> = (flags.iter().enumerate())
+            .filter_map(|(i, flag)| match flag.strip_prefix("--cfg") {
+                Some("") => flags.get(i + 1).map(String::as_str),
+                Some(rest) => rest.strip_prefix('='),
+                None => None,
+            })
+            .collect();
+        match (self.unless.iter()).any(|chosen| given.iter().any(|cfg| cfg.starts_with(chosen))) {
+            true => &[],
+            false => self.cfgs,
+        }
+    }
 }
 
 /// The crates of crates.io's rust-js reads as rustc builds them: serde's
 /// (ADR 0077), and hashbrown, with what it alone uses, and indexmap, whose
 /// maps are std's (ADRs 0423, 0424); and memchr, whose searches rust-js
-/// writes (ADR 0529). The one catalog.
-const READ_AS_RUSTC_BUILDS_THEM: [ReadAsRustc; 8] = [
+/// writes (ADR 0529), and getrandom, whose bytes it writes (#2326). The one
+/// catalog.
+const READ_AS_RUSTC_BUILDS_THEM: [ReadAsRustc; 9] = [
     ReadAsRustc {
         name: "serde",
         qualified: None,
@@ -101,7 +134,42 @@ const READ_AS_RUSTC_BUILDS_THEM: [ReadAsRustc; 8] = [
     },
     ReadAsRustc {
         name: "memchr",
-        qualified: Some(&["2.8.3"]),
+        qualified: Some(&[Qualified {
+            version: "2.8.3",
+            cfgs: &[],
+            unless: &[],
+        }]),
+    },
+    // 0.1 takes its always-failing backend on rust-js's target with none
+    // chosen; 0.2 refuses it but for its `custom` feature, which its `js`
+    // feature's backend comes before; 0.3 and 0.4 but for their
+    // `getrandom_backend = "custom"`, unless one is chosen already, and 0.4's
+    // `wasm_js` feature chooses its own, whose `Error::WEB_CRYPTO` its
+    // `Display` names (#2326).
+    ReadAsRustc {
+        name: "getrandom",
+        qualified: Some(&[
+            Qualified {
+                version: "0.1.16",
+                cfgs: &[],
+                unless: &[],
+            },
+            Qualified {
+                version: "0.2.17",
+                cfgs: &["feature=\"custom\""],
+                unless: &[],
+            },
+            Qualified {
+                version: "0.3.4",
+                cfgs: &["getrandom_backend=\"custom\""],
+                unless: &["getrandom_backend="],
+            },
+            Qualified {
+                version: "0.4.3",
+                cfgs: &["getrandom_backend=\"custom\""],
+                unless: &["getrandom_backend=", "feature=\"wasm_js\""],
+            },
+        ]),
     },
 ];
 
@@ -151,7 +219,8 @@ pub fn translate(args: Vec<String>) -> Invocation {
         Ok(Whose::Dependency) if clippy.is_some() => return rustc_itself(&rustc, given),
         Ok(Whose::Dependency) if std::env::var_os(TRYING).is_none() => return try_dependency(&rustc, given, &flags),
         Ok(Whose::Dependency) => {}
-        Ok(Whose::Rustc) => return rustc_itself(&rustc, given),
+        Ok(Whose::Rustc(None)) => return rustc_itself(&rustc, given),
+        Ok(Whose::Rustc(Some(qualified))) => return checked_qualified(&rustc, given, &flags, qualified),
         Ok(Whose::Unqualified(why)) => return refused(&rustc, given, &flags, why),
         Err(error) => {
             eprintln!("rust-js: {error}");
@@ -189,8 +258,9 @@ enum Whose {
     /// rust-js where it can, rustc where it can't: a crate of crates.io's or
     /// git's, which `RUST_JS_DEPENDENCIES` names (ADR 0415).
     Dependency,
-    /// rustc: a binding crate, or one rust-js reads as rustc builds it.
-    Rustc,
+    /// rustc: a binding crate, or one rust-js reads as rustc builds it, and
+    /// of one whose API rust-js writes, the version it's qualified at.
+    Rustc(Option<&'static Qualified>),
     /// A crate of the catalog's not at a version it's qualified at, or not
     /// crates.io's: its types alone, as rustc builds it, and why (ADR 0529).
     Unqualified(String),
@@ -204,24 +274,30 @@ fn whose() -> Result<Whose, String> {
     // qualified at (ADR 0529).
     let name = std::env::var("CARGO_PKG_NAME").unwrap_or_default();
     if let Some(read) = READ_AS_RUSTC_BUILDS_THEM.iter().find(|read| read.name == name) {
-        let Some(versions) = read.qualified else {
-            return Ok(Whose::Rustc);
+        let Some(qualified) = read.qualified else {
+            return Ok(Whose::Rustc(None));
         };
         let version = std::env::var("CARGO_PKG_VERSION").unwrap_or_default();
         let crates_io =
             (dir.components()).any(|part| part.as_os_str().to_string_lossy().starts_with("index.crates.io-"));
-        if crates_io && versions.contains(&version.as_str()) {
-            return Ok(Whose::Rustc);
+        if crates_io && let Some(at) = qualified.iter().find(|at| at.version == version) {
+            return Ok(Whose::Rustc(Some(at)));
         }
+        let versions: Vec<&str> = qualified.iter().map(|at| at.version).collect();
         let from = match crates_io {
             true => String::new(),
             false => format!(" from {}, not crates.io,", dir.display()),
         };
+        // The one Cargo's requirement of it may take, of its semver's
+        // compatible releases, else the newest.
+        let precise = (qualified.iter())
+            .find(|at| semver_compatible(at.version, &version))
+            .unwrap_or(&qualified[qualified.len() - 1]);
         return Ok(Whose::Unqualified(format!(
             "{name} {version}{from} isn't the {name} rust-js writes the JS of, crates.io's {}: depend on it, \
              `cargo update -p {name} --precise {}`",
             versions.join(" or "),
-            versions[0]
+            precise.version
         )));
     }
     if listed(CRATES)?.contains(&dir) {
@@ -229,8 +305,17 @@ fn whose() -> Result<Whose, String> {
     }
     Ok(match listed(DEPENDENCIES)?.contains(&dir) {
         true => Whose::Dependency,
-        false => Whose::Rustc,
+        false => Whose::Rustc(None),
     })
+}
+
+/// Whether two versions are compatible as Cargo's `^` requirement reads
+/// them: the same up to their first part that isn't 0, `0.2.17`'s `0.2`.
+fn semver_compatible(a: &str, b: &str) -> bool {
+    let parts = |v: &str| -> Vec<u64> { v.split(['.', '-', '+']).take(3).map_while(|p| p.parse().ok()).collect() };
+    let (a, b) = (parts(a), parts(b));
+    let leading = a.iter().position(|&p| p != 0).map_or(a.len(), |at| at + 1);
+    leading <= a.len() && a.len() == 3 && b.len() == 3 && a[..leading] == b[..leading]
 }
 
 /// The crates the tooling lists in `var`, by their directories, a JSON
@@ -286,8 +371,27 @@ fn try_dependency(rustc: &str, given: &[String], flags: &[String]) -> Invocation
 fn refused(rustc: &str, given: &[String], flags: &[String], why: String) -> Invocation {
     match (rustc_itself(rustc, given), metadata_path(flags)) {
         (Invocation::Rustc(exit), Some(metadata)) => {
-            Invocation::Refused(exit, rust_js_program::library::refusal(&metadata), why)
+            Invocation::Noted(exit, rust_js_program::library::refusal(&metadata), why)
         }
+        (checked, _) => checked,
+    }
+}
+
+/// A crate of the catalog's at a version it's qualified at (ADR 0529),
+/// checked by rustc given its version's `--cfg`s, and that version written
+/// beside its metadata, where it checked, for a crate that uses it to read
+/// which version's API it calls (#2326).
+fn checked_qualified(rustc: &str, given: &[String], flags: &[String], qualified: &Qualified) -> Invocation {
+    let cfgs = qualified.cfgs_given(flags);
+    let given: Vec<String> = (given.iter().cloned())
+        .chain(cfgs.iter().flat_map(|cfg| ["--cfg".to_string(), cfg.to_string()]))
+        .collect();
+    match (rustc_itself(rustc, &given), metadata_path(flags)) {
+        (Invocation::Rustc(exit), Some(metadata)) if exit == ExitCode::SUCCESS => Invocation::Noted(
+            exit,
+            rust_js_program::library::qualified(&metadata),
+            qualified.version.to_string(),
+        ),
         (checked, _) => checked,
     }
 }
@@ -619,7 +723,55 @@ fn rustc_itself(rustc: &str, given: &[String]) -> Invocation {
 
 #[cfg(test)]
 mod tests {
-    use super::refused_for;
+    use super::{READ_AS_RUSTC_BUILDS_THEM, refused_for, semver_compatible};
+
+    /// getrandom's custom backend is given where its check chooses none,
+    /// and not where a backend is chosen already: a `getrandom_backend`
+    /// `--cfg` of the user's, or 0.4's `wasm_js` feature, whose
+    /// `Error::WEB_CRYPTO` the custom backend leaves undefined (#2326).
+    #[test]
+    fn getrandoms_custom_backend_only_where_none_is_chosen() {
+        let getrandom = READ_AS_RUSTC_BUILDS_THEM.iter().find(|read| read.name == "getrandom");
+        let qualified = getrandom.and_then(|read| read.qualified).expect("getrandom's versions");
+        let at = |version: &str| qualified.iter().find(|at| at.version == version).expect(version);
+        let flags = |given: &[&str]| -> Vec<String> { given.iter().map(|flag| flag.to_string()).collect() };
+        let custom = ["getrandom_backend=\"custom\""];
+        assert_eq!(at("0.3.4").cfgs_given(&flags(&["--cfg", "feature=\"std\""])), custom);
+        assert_eq!(at("0.4.3").cfgs_given(&flags(&[])), custom);
+        assert!(
+            at("0.3.4")
+                .cfgs_given(&flags(&["--cfg", "getrandom_backend=\"wasm_js\""]))
+                .is_empty()
+        );
+        assert!(
+            at("0.3.4")
+                .cfgs_given(&flags(&["--cfg=getrandom_backend=\"wasm_js\""]))
+                .is_empty()
+        );
+        assert!(
+            at("0.4.3")
+                .cfgs_given(&flags(&["--cfg", "feature=\"wasm_js\""]))
+                .is_empty()
+        );
+        assert_eq!(
+            at("0.3.4").cfgs_given(&flags(&["--cfg", "feature=\"wasm_js\""])),
+            custom
+        );
+        assert_eq!(
+            at("0.2.17").cfgs_given(&flags(&["--cfg", "feature=\"js\""])),
+            ["feature=\"custom\""]
+        );
+    }
+
+    /// The version an unqualified one's hint names is the one its `^`
+    /// requirement takes (#2326).
+    #[test]
+    fn a_hint_names_the_compatible_version() {
+        assert!(semver_compatible("0.2.17", "0.2.15"));
+        assert!(!semver_compatible("0.1.16", "0.2.15"));
+        assert!(semver_compatible("2.8.3", "2.7.4"));
+        assert!(!semver_compatible("0.3.4", "0.4.3"));
+    }
 
     /// Why rust-js refused a crate, however it said it: rustc's JSON, an
     /// error it wrote as text past compiling, or a panic, never nothing

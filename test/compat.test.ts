@@ -23,9 +23,10 @@ const git = (dir: string, ...args: string[]) => runSync(["git", "-c", "user.name
 
 /** A crate `name` in a git repository of its own, at `dir/name`, whose
  * dependencies are `deps` and root `source`, committed: by default a
- * stand-in for getrandom 0.3, which rust-js's crates serve
- * (`tooling/compat/covered.txt`). */
-function gitCrate(dir: string, deps: string, source: string, name = "getrandom", version = "0.3.4") {
+ * stand-in for uuid 1, which rust-js's crates serve
+ * (`tooling/compat/covered.txt`). Not getrandom's: a getrandom that isn't
+ * crates.io's is refused, rust-js writing its API itself (#2326). */
+function gitCrate(dir: string, deps: string, source: string, name = "uuid", version = "1.18.1") {
   const crate = join(dir, name);
   mkdirSync(join(crate, "src"), { recursive: true });
   writeFileSync(join(crate, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "${version}"\nedition = "2024"\n\n[dependencies]\n${deps}`);
@@ -38,7 +39,7 @@ function gitCrate(dir: string, deps: string, source: string, name = "getrandom",
 /** An app at `dir/app` of no npm packages that depends on each git crate
  * of `crates`, its root `source`: the binding crates rust-js's own use are
  * the checkout's. */
-function app(dir: string, crates: string | string[], source = "pub fn answer() -> u32 {\n    getrandom::answer()\n}\n") {
+function app(dir: string, crates: string | string[], source = "pub fn answer() -> u32 {\n    uuid::answer()\n}\n") {
   const at = join(dir, "app");
   mkdirSync(join(at, "src"), { recursive: true });
   const deps = [crates].flat().map((crate) => `${crate.split("/").at(-1)} = { git = ${JSON.stringify(`file://${crate}`)} }`).join("\n");
@@ -80,21 +81,21 @@ test("a dependency's wasm-bindgen is rust-js's own, named while the graph has on
   // A crate as Cargo packaged it, `Cargo.toml.orig` beside its manifest, is
   // a dependency's source wherever it is, here a path's, vendored, as the
   // Crater's copy of a crate is: given rust-js's own.
-  const gitLine = `getrandom = { git = ${JSON.stringify(`file://${crate}`)} }`;
-  writeFileSync(join(at, "Cargo.toml"), readFileSync(join(at, "Cargo.toml"), "utf8").replace('wasm-bindgen = "0.2"\n', "").replace(gitLine, 'getrandom = { path = "vendored" }'));
+  const gitLine = `uuid = { git = ${JSON.stringify(`file://${crate}`)} }`;
+  writeFileSync(join(at, "Cargo.toml"), readFileSync(join(at, "Cargo.toml"), "utf8").replace('wasm-bindgen = "0.2"\n', "").replace(gitLine, 'uuid = { path = "vendored" }'));
   mkdirSync(join(at, "vendored", "src"), { recursive: true });
-  const vendoredManifest = `[package]\nname = "getrandom"\nversion = "0.3.4"\nedition = "2024"\n\n[dependencies]\n${usesWasmBindgen}`;
+  const vendoredManifest = `[package]\nname = "uuid"\nversion = "1.18.1"\nedition = "2024"\n\n[dependencies]\n${usesWasmBindgen}`;
   writeFileSync(join(at, "vendored", "Cargo.toml"), vendoredManifest);
   writeFileSync(join(at, "vendored", "src", "lib.rs"), answer);
   const unpackaged = build(at);
   expect(unpackaged.code).not.toBe(0);
-  expect(unpackaged.stderr).toContain("rust-js: getrandom depends on");
+  expect(unpackaged.stderr).toContain("rust-js: uuid depends on");
   writeFileSync(join(at, "vendored", "Cargo.toml.orig"), vendoredManifest);
   const vendored = build(at);
   expect(vendored.stderr).toBe("");
   expect(vendored.code).toBe(0);
   // None in the graph: no patch of them, nor a word of it in the lockfile.
-  writeFileSync(join(at, "Cargo.toml"), readFileSync(join(at, "Cargo.toml"), "utf8").replace('getrandom = { path = "vendored" }', gitLine));
+  writeFileSync(join(at, "Cargo.toml"), readFileSync(join(at, "Cargo.toml"), "utf8").replace('uuid = { path = "vendored" }', gitLine));
   gitCrate(dir, "", "pub fn answer() -> u32 {\n    42\n}\n");
   expect(runSync(["cargo", "update", "-q", "--manifest-path", join(at, "Cargo.toml")], at, 120_000).code).toBe(0);
   const without = build(at);
@@ -129,7 +130,7 @@ test("a lock of crates.io's wasm-bindgen put back under a patch already written 
   expect(lock).toMatch(/name = "wasm-bindgen"\nversion = "0\.2\.92"\nsource = "registry\+/);
   // The feature on, as the Crater turns it on, and the patch as builds
   // leave it, settled: a build that finds it so changes nothing of it.
-  writeFileSync(join(at, "Cargo.toml"), manifest.replace(/^getrandom = \{ (.*) \}$/m, 'getrandom = { $1, features = ["js"] }'));
+  writeFileSync(join(at, "Cargo.toml"), manifest.replace(/^uuid = \{ (.*) \}$/m, 'uuid = { $1, features = ["js"] }'));
   rmSync(join(at, "Cargo.lock"), { force: true });
   for (let i = 0; i < 2; i++) expect(build(at).code).toBe(0);
   const settled = config(at);
@@ -216,12 +217,12 @@ pub fn refused(n: u32) -> Option<u32> {
 test("a dependency's inline JS imports are rust-js bindings: a slice JS fills, one it reads, one it threw at", () => {
   const dir = fixture("compat-imports");
   const crate = gitCrate(dir, usesWasmBindgen, imports);
-  const at = app(dir, crate, "pub use getrandom::{flipped, random, refused, summed};\n");
+  const at = app(dir, crate, "pub use uuid::{flipped, random, refused, summed};\n");
   writePatch(at, [...compatCrates().keys()]);
   const built = build(at);
   expect(built.stderr).toBe("");
   expect(built.code).toBe(0);
-  const js = readFileSync(join(at, "rust-js", "crates", "getrandom-0.3.4", "src", "lib.js"), "utf8");
+  const js = readFileSync(join(at, "rust-js", "crates", "uuid-1.18.1", "src", "lib.js"), "utf8");
   // One copy each way: a `Uint8Array` made, given, and read back once.
   expect(js).toContain("function getRandomValues(buf) {\n  const uint8Array = new Uint8Array(buf.length);\n  const value$1 = $try(() => globalThis.crypto.getRandomValues(uint8Array));");
   expect(js).toContain("function sumBytes(buf) {\n  return globalThis.sumBytes(Uint8Array.from(buf));\n}");
@@ -346,15 +347,15 @@ extern "C" {
 }
 `;
 
-test("getrandom 0.1's backend: imported types, methods, getters, its static `module`'s require, a Uint8Array", () => {
+test("getrandom 0.1's backend, in a stand-in for chrono: imported types, methods, getters, its static `module`'s require, a Uint8Array", () => {
   const dir = fixture("compat-getrandom-01");
-  const crate = gitCrate(dir, 'bindgen = { package = "wasm-bindgen", version = "0.2.29" }\njs-sys = "0.3"\n', getrandom01, "getrandom", "0.1.16");
-  const at = app(dir, crate, "pub use getrandom::random;\n");
+  const crate = gitCrate(dir, 'bindgen = { package = "wasm-bindgen", version = "0.2.29" }\njs-sys = "0.3"\n', getrandom01, "chrono", "0.4.42");
+  const at = app(dir, crate, "pub use chrono::random;\n");
   writePatch(at, [...compatCrates().keys()]);
   const built = build(at);
   expect(built.stderr).toBe("");
   expect(built.code).toBe(0);
-  const js = readFileSync(join(at, "rust-js", "crates", "getrandom-0.1.16", "src", "lib.js"), "utf8");
+  const js = readFileSync(join(at, "rust-js", "crates", "chrono-0.4.42", "src", "lib.js"), "utf8");
   // The browser's \`self\` read where it's asked, as upstream's \`catch\`.
   expect(js).toContain("return $try(() => self.self);");
   const run = (prelude: string) => {
@@ -400,12 +401,12 @@ test("an import rust-js's wasm-bindgen doesn't know is a compile error naming wh
 // rust-js's crates serve, here a stand-in for instant, whose `Date::now()`
 // they don't have yet, would fail to type-check against them: its graph
 // keeps crates.io's, as before ADR 1112, the crate types alone, and so does
-// a graph beside it with getrandom too (#1129).
+// a graph beside it with a crate they serve too (#1129).
 test("a graph with a crate rust-js's wasm-bindgen doesn't serve builds as before, of crates.io's", () => {
   const dir = fixture("compat-uncovered");
-  const getrandom = gitCrate(dir, usesWasmBindgen, answer);
+  const served = gitCrate(dir, usesWasmBindgen, answer);
   const instant = gitCrate(dir, usesWasmBindgen, "use js_sys::Date;\n\npub fn now() -> f64 {\n    Date::now()\n}\n", "instant", "0.1.13");
-  for (const crates of [[instant], [getrandom, instant]]) {
+  for (const crates of [[instant], [served, instant]]) {
     const at = app(dir, crates, "pub fn answer() -> u32 {\n    42\n}\n");
     rmSync(join(at, ".cargo"), { recursive: true, force: true });
     rmSync(join(at, "Cargo.lock"), { force: true });
@@ -477,9 +478,9 @@ test("a crate's #[wasm_bindgen_test]s are #[test]s rust-js test runs, of the fea
   const dir = fixture("compat-wasm-tests");
   const tests = (body: string) => `pub fn answer() -> u32 {\n    42\n}\n\n#[cfg(test)]\nmod tests {\n    use wasm_bindgen_test::*;\n\n    wasm_bindgen_test_configure!(run_in_browser);\n\n${body}}\n`;
   const sync = tests("    #[wasm_bindgen_test]\n    fn answers() {\n        assert_eq!(super::answer(), 42);\n    }\n\n    #[cfg(feature = \"extra\")]\n    #[wasm_bindgen_test]\n    fn extra() {\n        assert_eq!(super::answer() + 1, 43);\n    }\n");
-  const crate = join(dir, "getrandom");
+  const crate = join(dir, "uuid");
   mkdirSync(join(crate, "src"), { recursive: true });
-  writeFileSync(join(crate, "Cargo.toml"), '[package]\nname = "getrandom"\nversion = "0.3.4"\nedition = "2024"\n\n[features]\nextra = []\n\n[dev-dependencies]\nwasm-bindgen-test = "0.3"\n');
+  writeFileSync(join(crate, "Cargo.toml"), '[package]\nname = "uuid"\nversion = "1.18.1"\nedition = "2024"\n\n[features]\nextra = []\n\n[dev-dependencies]\nwasm-bindgen-test = "0.3"\n');
   writeFileSync(join(crate, "Cargo.toml.orig"), readFileSync(join(crate, "Cargo.toml"), "utf8"));
   writeFileSync(join(crate, "src", "lib.rs"), sync);
   writePatch(crate, [...compatCrates().keys()]);
@@ -501,14 +502,14 @@ test("a crate's #[wasm_bindgen_test]s are #[test]s rust-js test runs, of the fea
   expect(imported.stdout + imported.stderr).toContain("imported");
 }, 600_000);
 
-// The patch is of the graph the build's features make: getrandom's
-// `wasm_js` feature brings wasm-bindgen in, which the patch names then,
+// The patch is of the graph the build's features make: a feature as
+// getrandom's `wasm_js` is, in a stand-in for uuid, brings wasm-bindgen in, which the patch names then,
 // so its tests use rust-js's own, not crates.io's (ADR 1112).
 test("the patch is of the graph of the features rust-js test is given", () => {
   const dir = fixture("compat-feature-graph");
-  const crate = join(dir, "getrandom");
+  const crate = join(dir, "uuid");
   mkdirSync(join(crate, "src"), { recursive: true });
-  writeFileSync(join(crate, "Cargo.toml"), '[package]\nname = "getrandom"\nversion = "0.3.4"\nedition = "2024"\n\n[features]\nwasm_js = ["dep:wasm-bindgen"]\n\n[dependencies]\nwasm-bindgen = { version = "0.2", optional = true }\n');
+  writeFileSync(join(crate, "Cargo.toml"), '[package]\nname = "uuid"\nversion = "1.18.1"\nedition = "2024"\n\n[features]\nwasm_js = ["dep:wasm-bindgen"]\n\n[dependencies]\nwasm-bindgen = { version = "0.2", optional = true }\n');
   writeFileSync(join(crate, "Cargo.toml.orig"), readFileSync(join(crate, "Cargo.toml"), "utf8"));
   writeFileSync(join(crate, "src", "lib.rs"), "#[cfg(feature = \"wasm_js\")]\npub fn answer() -> u32 {\n    format!(\"{:?}\", wasm_bindgen::JsValue::from_f64(42.0)).len() as u32\n}\n\n#[cfg(test)]\nmod tests {\n    #[test]\n    #[cfg(feature = \"wasm_js\")]\n    fn answers() {\n        assert_eq!(super::answer(), 11);\n    }\n}\n");
   const ran = runSync([process.execPath, cli, "test", "--features", "wasm_js"], crate, 300_000, { RUST_JS_COMPILER: compiler });
@@ -560,7 +561,7 @@ pub fn fine() -> String {
 test("unwrap_throw is native Rust's expect, caught by catch_unwind, a JsValue shown as upstream's JS shows it", () => {
   const dir = fixture("compat-throws");
   const crate = gitCrate(dir, 'wasm-bindgen = "0.2.98"\n', throws);
-  const at = app(dir, crate, "pub use getrandom::{array, fine, none, thrown};\n");
+  const at = app(dir, crate, "pub use uuid::{array, fine, none, thrown};\n");
   writePatch(at, [...compatCrates().keys()]);
   const built = build(at);
   expect(built.stderr).toBe("");

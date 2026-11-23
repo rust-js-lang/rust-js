@@ -183,6 +183,12 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
         let [key] = &items[..] else { return None };
         return Some(symbol_for(const_js_by(tcx, key.try_to_value()?, unit)?));
     }
+    // A qualified getrandom's error's is its code, inside its `NonZero`
+    // (#2326): 0.1's and 0.2's a `u32`, 0.3's and 0.4's an `i32`.
+    if let Some(version) = crate::recognition::getrandom_error_type(tcx, ty) {
+        let num = if version.has_code() { Num::U32 } else { Num::I32 };
+        return Some(num_literal(innermost(value)?.try_to_leaf()?.to_bits_unchecked(), num));
+    }
     // A `Discriminant`'s is its number, inside std's struct (ADR 0393).
     if crate::recognition::is_discriminant_type(tcx, ty) {
         let leaf = innermost(value)?.try_to_leaf()?;

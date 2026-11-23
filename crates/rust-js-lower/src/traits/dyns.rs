@@ -186,10 +186,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The `Error` dictionary of one of std's errors rust-js holds as its own
     /// value, shown as std shows it: a parse error's, its message (ADR
-    /// 0063), serde_json's, and an `io::Error`'s (ADR 0462). Each given its
+    /// 0063), serde_json's, an `io::Error`'s (ADR 0462), and a qualified
+    /// getrandom's, its code (#2326). Each given its
     /// type's `TypeId`, its `type_id`'s, which a `dyn Error`'s downcasts
     /// compare (ADR 0331, amended); a parse error's names it too.
     pub(super) fn std_error_dictionary(&self, ty: Ty<'tcx>) -> Option<Expr> {
+        // A qualified getrandom's, its code shown as its version shows it
+        // (#2326).
+        if let Some(version) = self.recognition().getrandom_error(ty) {
+            let args = vec![Expr::str(self.type_id_key(ty)), Expr::str(version.key())];
+            return Some(Expr::call(Expr::helper("$getrandomErrorDyn"), args));
+        }
         let helper = match () {
             _ if self.is_parse_error(ty) => "$parseErrorDyn",
             _ if self.is_json_error(ty) => "$jsonErrorDyn",
