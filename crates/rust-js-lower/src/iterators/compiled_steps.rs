@@ -246,38 +246,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let takes = takes.into_iter().map(Expr::str).collect();
             props.push(rust_js_program::js::Prop::Field("takes".into(), Expr::array(takes)));
         }
-        // Its `advance_by`, std's: a `Rev`'s its source's `advance_back_by`,
-        // a `Vec`'s, which drops what it passes as one slice (#286).
-        let advance = self.recognition().reversed(ty).map(|source| {
-            let dictionary = self
-                .iterator_evidence(source, iterator)
-                .unwrap_or_else(Expr::js_undefined);
-            let back = (self.recognition().double_ended_iterator())
-                .and_then(|back| self.iterator_evidence(source, back))
-                .unwrap_or_else(Expr::js_undefined);
-            ("$revAdvanceBy", vec![dictionary, back])
-        });
-        // Not where std's is compiled, `steps.advance` (ADR 0913).
-        let advance = advance.filter(|_| !self.compiled_step(ty, iterator, "advance_by"));
-        if let Some((helper, given)) = advance {
-            let [it, m, drop] = ["it", "m", "drop"].map(|word| js::Name::declared(word.to_string()));
-            let mut args = vec![Expr::var(&it), Expr::var(&m), Expr::var(&drop)];
-            args.extend(given);
-            // Its trailing `undefined`s left off, as a call writes none.
-            while args.len() > 3
-                && matches!(
-                    args.last().map(|a| &a.kind),
-                    Some(js::ExprKind::Undefined | js::ExprKind::Bool(false))
-                )
-            {
-                args.pop();
-            }
-            let advance = Expr::arrow(
-                vec![it.into(), m.into(), drop.into()],
-                vec![StmtKind::Return(Some(Expr::call_helper(helper, args))).at(js::Span::NONE)],
-            );
-            props.push(rust_js_program::js::Prop::Field("advanceBy".into(), advance));
-        }
         // Of a kind dropped by closing, `Rev`'s, which an adapter over it
         // closes as it's closed: closing it drops what it holds, each field
         // by its drop, as Rust drops the struct (ADR 0871), the rest still

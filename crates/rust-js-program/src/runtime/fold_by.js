@@ -14,18 +14,3 @@ function $advanceBy(it, m, drop) {
   const left = $advanceByOf(it, m, drop);
   return left === 0 ? { TAG: "Ok" } : { TAG: "Err", _0: left };
 }
-
-// A `Rev`'s `advance_by`, std's: its source's `advance_back_by`, by its
-// dictionaries, `iterator` and `back`: its own, which drops what it passes
-// itself, a `Vec`'s as one slice (`$slicing`); else each `next_back`, given
-// to `drop`, a `Drain`'s and a B-tree's (#704).
-function $revAdvanceBy(rev, m, drop, iterator, back) {
-  const it = back === undefined ? rev.iter : $given(rev.iter, iterator, true, back);
-  if ($ownMethod(it, "advanceBackBy")) return it.advanceBackBy(m, drop);
-  for (; m > 0; m--) {
-    const step = it.back();
-    if (step.done) break;
-    drop?.(step.value);
-  }
-  return m;
-}

@@ -249,15 +249,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_payload_where_read.rs$"],
   },
   {
-    name: "option-filter-unrecognized",
-    breaks: "an `Option`'s `filter` isn't a present item, so what it shows of a `Vec` isn't known (rd376)",
-    file: "crates/rust-js-lower/src/recognition/types.rs",
-    find: "            Some(PresentItem::Filtered)\n",
-    replace: "            None\n",
-    tests: ["test/corpus.test.ts", "-t", "^filtered_not_empty.rs$"],
-    snapshots: true,
-  },
-  {
     name: "phantom-data-hash-unrecognized",
     breaks:
       "a derived `Hash` of a struct holding a `PhantomData<K>`, litemap's `LiteMap`, is refused at `Hash::hash` of the marker, which std's impl writes nothing of (#514)",

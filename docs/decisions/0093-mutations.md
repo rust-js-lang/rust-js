@@ -1190,6 +1190,20 @@ is refused, as any other), and `in-place-part-copied-held`
 `own-bindings-of-its-name-counted`, the fourth of the coverage run, was
 already retired. Mutation `unreached-trailer-refused` is caught.
 
+The second sweep (2026-11-23, #1979's 128 survivors at 530abe1e6) built
+the compiler counting its crates (scripts/counting-rustc.sh) in release,
+over check:fast with it as the compiler, every net whole
+(`iteratorSlice.ts run <net> 8`), React's port at its pin, the crate
+corpus and `cargo test`. Of the 89 Rust sites, 84 ran; four are rows of a
+table, with no counter, left to `--corpus`; one ran in none, and went with
+its code: `option-filter-unrecognized` (crates/rust-js-lower/src/recognition/types.rs,
+an `Option`'s `filter` as a present item, whose fact MIR's intervals give
+since 19246947d). Of the runtime's, `rev-advance-by-stepped`'s helper,
+`$revAdvanceBy`, was given only by compiled_steps.rs's `advance` of a
+`Rev` whose `advance_by` isn't std's compiled one, but compiled_std.rs
+compiles every `Rev`'s: the closure ran, its `filter` dropped it each
+time, and the branch that writes the helper counted none; both went.
+
 ## Amendment: what caught a mutant is named (2026-11-18)
 
 Each caught mutant's result line names the first test that failed with

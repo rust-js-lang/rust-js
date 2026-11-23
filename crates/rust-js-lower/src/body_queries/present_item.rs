@@ -58,7 +58,7 @@ fn present_index<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> Optio
     let (def_id, generic_args) = fn_def(thir[strip(thir, fun)].ty)?;
     match present_item(tcx, def_id, generic_args) {
         Some(PresentItem::Get) => var_of(thir, *args.get(1)?),
-        Some(PresentItem::Passed | PresentItem::Filtered) => present_index(tcx, thir, *args.first()?),
+        Some(PresentItem::Passed) => present_index(tcx, thir, *args.first()?),
         None => None,
     }
 }
