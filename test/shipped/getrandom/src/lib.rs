@@ -3,9 +3,14 @@ use std::fmt::{self, Write};
 use std::num::NonZeroU32;
 
 /// Whether each window of `bytes` has a byte that isn't 0: of 64 random
-/// bytes, all 0 is a chance of 2^-512.
+/// bytes, all 0 is a chance of 2^-512. Each window is 64 bytes, the last
+/// one ending at the end, where `chunks` gave a short one: of 65,537
+/// bytes a window of 1, which is 0 once in 256 runs.
 fn filled(bytes: &[u8]) -> bool {
-    bytes.chunks(64).all(|window| window.iter().any(|&b| b != 0))
+    let from = |at: usize| at.min(bytes.len().saturating_sub(64));
+    (0..bytes.len())
+        .step_by(64)
+        .all(|at| bytes[from(at)..].iter().take(64).any(|&b| b != 0))
 }
 
 /// What a fill of each length gives: its bytes filled, across the edge of
