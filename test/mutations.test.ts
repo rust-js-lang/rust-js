@@ -893,7 +893,7 @@ test("a flag that takes a value, given none, is refused with its form", () => {
   expect(refusedFlags(["--changed"])).toEqual(["--changed takes a value: --changed=<base>"]);
   expect(refusedFlags(["--base="])).toEqual(["--base takes a value: --base=<commit>"]);
   expect(refusedFlags(["--changed=origin/main", "--list", "--browser", "--shard=2/16", "a-mutation"])).toEqual([]);
-  expect(refusedFlags(["--bogus"])[0]).toStartWith("no flag --bogus; there are --list, --browser, --corpus, --wasm, --changed=<base>");
+  expect(refusedFlags(["--bogus"])[0]).toStartWith("no flag --bogus; there are --list, --browser, --corpus, --wasm, --build-only, --changed=<base>");
   // A list's flag given `=` and nothing is an empty list: check.yml's form,
   // `--also={retry}` where none is retried; bare, it's refused.
   expect(refusedFlags(["--changed=0123abc", "--also=", "--base=0123abc"])).toEqual([]);

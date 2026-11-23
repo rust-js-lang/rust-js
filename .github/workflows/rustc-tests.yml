@@ -401,9 +401,51 @@ jobs:
       - id: plan
         run: bun scripts/ci.ts control-parts >> "$GITHUB_OUTPUT"
 
+  # The compiler as it is, built once for the control's parts, as
+  # scripts/mutations.ts builds it (`--build-only`), beside the test map,
+  # which it needs nothing of: each part built it itself, 2 to 3 minutes of
+  # one tree each, on the way to the shards (#2404). A part given it keeps
+  # it as its own, its crate's stamp the same, and builds nothing.
+  mutation-compiler:
+    if: ${{ inputs.mutations && contains(inputs.mutation_args, '--corpus') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/rustc-tests-setup
+        with:
+          build: 'false'
+      - uses: actions/cache/restore@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/mutants/target
+          key: mutants-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: mutants-${{ runner.os }}-
+      - run: bun install --frozen-lockfile
+      - name: Build the compiler as it is, once
+        env:
+          ARGS: ${{ inputs.mutation_args }}
+          CARGO_INCREMENTAL: '1'
+        run: |
+          set -f
+          bun scripts/mutations.ts $ARGS --build-only
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mutation-compiler
+          path: |
+            target/mutants/bin/unmutated
+            target/mutants/unmutated.stamp
+          retention-days: 1
+
   mutation-control:
-    if: ${{ inputs.mutations && !cancelled() && needs.test-map.result == 'success' && needs.mutation-control-plan.result == 'success' }}
-    needs: [test-map, mutation-control-plan]
+    if: ${{ inputs.mutations && !cancelled() && needs.test-map.result == 'success' && needs.mutation-control-plan.result == 'success' && needs.mutation-compiler.result == 'success' }}
+    needs: [test-map, mutation-control-plan, mutation-compiler]
     name: mutation control (${{ matrix.part }}/${{ needs.mutation-control-plan.outputs.count }})
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -435,6 +477,13 @@ jobs:
           path: .cache/test-maps
           key: ${{ needs.test-map.outputs.key }}
           restore-keys: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
+      # The compiler as it is, the one `mutation-compiler` built, where the
+      # run keeps it, executable again, as an artifact keeps no mode.
+      - uses: actions/download-artifact@v8
+        with:
+          name: mutation-compiler
+          path: target/mutants
+      - run: chmod +x target/mutants/bin/unmutated
       # Its part's results alone, keyed by the compiler's build and the
       # commit's tree, which a shard of another refuses (`mergedControl`).
       - name: Run the shards' control once, a part of it

@@ -1390,7 +1390,7 @@ function writeResults(results: Map<string, string>, caughtBy: Map<string, string
 let leftToTheWasmJob: string[] = [];
 
 /** The flags `main` takes alone. */
-const alone = ["--list", "--browser", "--corpus", "--wasm"];
+const alone = ["--list", "--browser", "--corpus", "--wasm", "--build-only"];
 
 /** The flags `main` takes with `=` and a value, each with the form it's
  * given in. */
@@ -2192,6 +2192,7 @@ async function main() {
   // wasm job's run of the same selection; said to be judged there by any
   // other run (#2346).
   const wasm = args.includes("--wasm");
+  const buildOnly = args.includes("--build-only");
   const split = wasmSplit(chosen, wasm);
   chosen = split.run;
   leftToTheWasmJob = split.elsewhere.map((m) => m.name);
@@ -2269,14 +2270,21 @@ async function main() {
   // the run to end.
   const given = resolve(process.env.RUST_JS_COMPILER ?? join(root, "target/debug/rust-js"));
   const buildsItself = buildsUnmutated({ crate: chosen.some(m => !sources.has(m)), harness, given: existsSync(given) });
-  if (buildsItself) snapshotCrate(join(work, "snapshot"));
+  if (buildsItself || buildOnly) snapshotCrate(join(work, "snapshot"));
   if (retiring !== undefined) return retire(chosen);
   phaseEnded("setup");
   // The checkout's own build, where it's the one, is the run's own link of
   // it (scripts/own-compiler.ts): the agent's next edit builds it again.
-  const unmutated = buildsItself ? await build() : process.env.RUST_JS_COMPILER === undefined ? ownCompiler(root, "mutations") : given;
+  const unmutated = buildsItself || buildOnly ? await build() : process.env.RUST_JS_COMPILER === undefined ? ownCompiler(root, "mutations") : given;
   if (typeof unmutated !== "string") throw new Error(`the compiler as it is ${unmutated.problem}`);
   phaseEnded("the compiler as it is");
+  // The compiler as it is built and kept, `--build-only`, no mutation run:
+  // a dispatch's one build its control's parts download (#2404), each
+  // given it as its own, `build`'s stamp of the crate's files the same.
+  if (buildOnly) {
+    console.log(`built ${unmutated}`);
+    return;
+  }
   // And they use the compiler they're given: with one that compiles
   // nothing, each fails, or a mutation passing them would say nothing.
   // Its directory too: a run of source mutations alone builds no
