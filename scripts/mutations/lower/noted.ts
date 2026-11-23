@@ -36,4 +36,12 @@ export const mutations: Mutation[] = [
     replace: "                js::ExprKind::Var(_) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_lent_as_a_handle.rs$"],
   },
+  {
+    name: "held-handle-unnoted",
+    breaks: "a handle `hold_handle` holds isn't noted, so a `&mut dyn`'s pair on its `value` assigns its place as it's given, `fiber.owner = value` and `task = value` (#2429, #2427)",
+    file: "crates/rust-js-lower/src/noted.rs",
+    find: "            self.locals.mir.made.note_handle(name, &made);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^stored_place_made_a_mut_dyn.rs$"],
+  },
 ];

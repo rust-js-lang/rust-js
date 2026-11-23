@@ -252,4 +252,12 @@ export const mutations: Mutation[] = [  {
     replace: "        bindings::is_untagged(self.tcx, adt.did()) || self.is_write_result(ty.ty) && variant.as_u32() != 0\n",
     tests: ["test/corpus.test.ts", "-t", "^an_otherwise_variant_bound_by_its_match\\.rs$"],
   },
+  {
+    name: "held-ok-payload-unread",
+    breaks: "an `Ok` made of a flattened state's held handle, `try_borrow_mut()`'s, has its payload read as `_6._0`, so `Cell::from_mut(&mut *state)` lends a handle on its `value` that assigns the variable holding the class's object (#2429)",
+    file: "crates/rust-js-mir/src/places.rs",
+    find: "            && let Some(handle) = self.locals.mir.made.held_ok(&state.locals.names[place.local])\n",
+    replace: "            && let Some(handle) = None::<&Expr>\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_lent_through_what_holds_it.rs$"],
+  },
 ];

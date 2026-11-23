@@ -178,10 +178,27 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             let name = state.locals.names[local].clone();
             state.locals.declared[local] = true;
             note_marks(state, local, &expr);
+            self.note_held_handle(state, local, &name, &expr);
             made.push(StmtKind::Const(name, expr).at(js::Span::NONE));
         }
         state.pending = kept;
         self.unwinding_to(state, unwind, made, out, Vec::new())
+    }
+
+    /// What `local`, the variable `name` written here `made`, a `const` or
+    /// a `let` declared first, holds of a handle on a place that stores its
+    /// own way, where it's written once, its guard's `&mut` reborrowed into
+    /// `deref_mut` aside (`derefed`), and no part of it is borrowed, so
+    /// it's `made` wherever it's read:
+    /// such a handle, or another name of one (`Made::note_handle`), whose
+    /// `value` lent on is that handle (`mut_refs/handles.rs`); or an `Ok`
+    /// made of one, a flattened state's `try_borrow_mut()`'s, whose payload
+    /// read is that handle (`Made::held_ok`, #2429).
+    pub(super) fn note_held_handle(&mut self, state: &mut State<'_, 'tcx>, local: Local, name: &js::Name, made: &Expr) {
+        if state.locals.writes[local] - state.locals.derefed[local] != 1 || state.locals.borrowed[local] {
+            return;
+        }
+        self.locals.mir.made.note_handle(name, made);
     }
 
     /// What a cell's box of type `ty` holds, `x` of `{ value: x }`, where

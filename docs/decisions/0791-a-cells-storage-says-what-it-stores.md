@@ -202,3 +202,70 @@ and `get_or_insert`, `insert` and `get_or_insert_with`. Mutations
 (`mut_refs/handles.ts`). `held-handle-given-on-as-a-handle-on-it` is
 retired: its guard is now the maker's. A flattened state's repair in
 tidy, the second place that stores into a handle, is #2429.
+
+## Amendment: a flattened state's handle is held where it's made (2026-11-24, #2429)
+
+Tidy repaired two things on a flattened state's handle (`Storage::InPlace`),
+`task.state.get_mut()`'s. A `dyn`'s pair on its `value` became a pair on
+its place that sets each key (#977). A handle on its `value` became the
+handle itself (#678). Both were a second place that stored into a
+handle, because the MIR made each of them as-given, and only tidy knew
+the variable held such a handle.
+
+**Each handle a variable holds of a place that stores its own way is now
+recorded where the MIR's lowering holds it**, so `mut_refs/handles.rs`
+answers for a flattened state as it does for a nullable place:
+
+- `Handled::of` is the rule: any storage but `AsGiven`.
+- `Made::note_handle` records it.
+- `hold_handle` (noted.rs) is the spill that records it. It's used by
+  `through_handle` and by a flattened state's lend in cell.rs:
+  `get_mut`, `Cell::from_mut` and `try_borrow_mut`'s guard.
+- `note_held_handle` (temporaries.rs) records a `const` the MIR writes
+  once with no part borrowed: flush's, and `mir_store`'s. It also
+  records such a `const` that's another name of a held handle.
+- An `Ok` made of a held handle, `try_borrow_mut()`'s, is recorded too
+  (`Made::held_ok`), and its payload read is that handle.
+- A guard borrowed `&mut` only to be reborrowed into `deref_mut`,
+  `kept(&mut state)`'s, is written once, and so is the `let` that holds
+  it, recorded where it's assigned (`derefs_guard`, `Locals::derefed`).
+
+`mem::swap` and `replace` through a held handle assign its place only
+where its storage writes the value whole (`Storage::assigns_its_place`).
+A flattened state's handle keeps its keys set in place. Tidy's two
+repairs are gone.
+
+Without the last three of those, the repairs' removal was a wrong answer
+that `main` got right. `if let Ok(mut state) = task.state.try_borrow_mut()
+{ halt(Cell::from_mut(&mut *state)); }` assigned `task = value`, and so
+did `*kept(&mut state) = ..`, because the handle was reached only through
+the `Ok`'s payload and the guard's binding.
+
+One output moved, and it's case A of
+[0262](0262-when-rust-and-js-disagree.md) (no observable difference).
+`flattened_state_got_mut`'s lent `get_mut()` no longer writes its
+copy-back on unwind. Its place is now seen as `task`, a variable of the
+body's own that nothing reads once it has unwound, the rule a nullable
+place's handle already followed. With a `Drop` holder that reads the
+state, the copy-back on unwind is kept and agrees with native Rust.
+
+Held by:
+- The corpus cases `stored_place_made_a_mut_dyn`, `flattened_state_handed_on`,
+  `flattened_state_lent_through_what_holds_it` (new) and
+  `flattened_state_chosen_in_branches` (new), each against native.
+- The mutations `flattened-state-lent-unheld`, `held-handle-unnoted`,
+  `guard-handle-unnoted`, `flattened-state-assigns-its-place` and
+  `swap-into-a-nullable-place-as-given` (retargeted), with the others the
+  change lists.
+- `pair-of-a-handle-stores-as-given` is retired with the repair it mutated.
+- Three checks are kept without a mutation, as nothing found can tell them
+  apart. Flush's `const` of a held handle is recorded, but no case lends
+  one: the whole corpus and a probe of a nullable `RefCell` and `Cell`
+  field lent five ways ran the same without it. A handle stored as it's
+  given isn't recorded; recording it gives the same JS in every case
+  tried, since a pair on its place and one on its `value` read and write
+  alike. A guard's `&mut` counts as reborrowed into `deref_mut` only where
+  nothing else uses it (`used_once`); only a write of a whole guard through
+  that `&mut` could use it again, which no program found writes.
+- `flattened_state_chosen_in_branches` (new) holds the "written once" rule:
+  a variable written in two branches records neither handle.

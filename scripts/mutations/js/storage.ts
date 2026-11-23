@@ -119,4 +119,12 @@ export const mutations: Mutation[] = [
     replace: "            let _ = cleared;\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "variant lacks"],
   },
+  {
+    name: "flattened-state-assigns-its-place",
+    breaks: "a flattened state's held handle is taken to assign its place, so `mem::replace(task.state.get_mut(), ..)` writes `task = ..`, the variable holding the class's object, not each key (#2429)",
+    file: "crates/rust-js-program/src/js/storage.rs",
+    find: "            Storage::AsGiven | Storage::NullForNone => true,\n            Storage::InPlace(..) | Storage::Assigned => false,\n",
+    replace: "            Storage::AsGiven | Storage::NullForNone | Storage::InPlace(..) => true,\n            Storage::Assigned => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_got_mut.rs$"],
+  },
 ];

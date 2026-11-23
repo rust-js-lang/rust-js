@@ -143,46 +143,6 @@ pub(in crate::tidy) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: 
             }
         }
     });
-    // A `dyn`'s pair on a flattened state's handle's `value`, `&mut
-    // *task.state.get_mut() as &mut dyn Trait`'s: a pair on the handle's
-    // place that sets its keys, not one whose setter assigns the place as
-    // it's given (#977). A nullable place's is made so where it's made
-    // (`pair_made`, #2427); a flattened state's handle is a
-    // variable's only here.
-    js::each_expr_mut(body, &mut |e| {
-        if let ExprKind::Pair(place, dictionary, js::Storage::AsGiven) = &e.kind
-            && let ExprKind::Member(of, key) = &place.kind
-            && key == js::HELD
-            && let ExprKind::Var(v) = &of.kind
-            && let Some((_, on, _, storage)) = handles.iter().find(|(name, ..)| v == name)
-            && matches!(storage, js::Storage::InPlace(..))
-        {
-            *e = Expr {
-                span: e.span,
-                ..Expr::stored_pair(on.clone(), (**dictionary).clone(), *storage)
-            };
-        }
-    });
-    // A handle on a flattened state's handle's `value`, `&mut *state` given
-    // on, `Cell::from_mut(&mut *state)`'s or a call's that keeps it: that
-    // handle, whose setter sets each key, not one on its place, whose
-    // setter would assign the variable holding the class's object (#678).
-    let states: IndexSet<js::Name> = (handles.iter())
-        .filter(|(.., storage)| matches!(storage, js::Storage::InPlace(..)))
-        .map(|(name, ..)| name.clone())
-        .collect();
-    js::each_expr_mut(body, &mut |e| {
-        if let ExprKind::Handle(place, js::Storage::AsGiven) = &e.kind
-            && let ExprKind::Member(of, key) = &place.kind
-            && key == js::HELD
-            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v))
-        {
-            *e = Expr {
-                span: e.span,
-                ..(**of).clone()
-            };
-        }
-    });
     // Written through, `h.value = 5`, a closure's too (#192): its place
     // where its `value` is, read and written there, never read at once.
     let changed = js::Writes::of(body).changed;

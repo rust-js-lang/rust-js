@@ -382,7 +382,8 @@ task.value = "w";
   `value`, whose place is the class's object: `{ get value() { return
   task; }, set value(value) { task = value; } }`, a write the caller
   never saw (#678, P0, on `main` before too). A handle on a flattened
-  state's handle's `value` is that handle (`read_handles`), whose setter
+  state's handle's `value` is that handle (`read_handles`; since #2429
+  `mut_refs/handles.rs`' `handle_on`, ADR 0791, amended), whose setter
   sets each key. It's the one rule of a handle on the state's handle's
   `value`: #482's three, a whole write through one followed to the
   state (`written_whole` through each handle's place), the state's

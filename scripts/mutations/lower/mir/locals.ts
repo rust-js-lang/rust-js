@@ -213,4 +213,13 @@ export const mutations: Mutation[] = [
     replace: "                            Rvalue::RawPtr(kind, _) => kind.to_mutbl_lossy().is_mut(),\n",
     tests: ["test/rustlantis.test.ts", "-t", "a copy read through a \\*const"],
   },
+  {
+    name: "guard-reborrow-uncounted",
+    breaks: "a guard's `&mut` reborrowed into `deref_mut` alone, `kept(&mut state)`'s, isn't counted apart from its writes, so its binding is never noted and lends a handle that assigns the variable holding the class's object (#2429)",
+    file: "crates/rust-js-mir/src/locals.rs",
+    find: "                            locals.derefed[guard.local] += 1;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_lent_through_what_holds_it.rs$"],
+  },
+
 ];

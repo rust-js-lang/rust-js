@@ -823,5 +823,20 @@ export const mutations: Mutation[] = [
     replace: "Expr::raised_at(Expr::std_site(\"refCellSwap\", 0), || {",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped_borrowed.rs$"],
   },
+  {
+    name: "flattened-state-lent-unheld",
+    breaks: "a flattened state's `get_mut()` is a handle in a `const` no one notes, so a `&mut dyn`'s pair on its `value` assigns the variable holding the class's object, `task = value`, not each key (#2429, #977)",
+    file: "crates/rust-js-lower/src/std_types/cell.rs",
+    find: "                self.hold_handle(Role::State, handle, out)\n",
+    replace: "                self.spill(Role::State, handle, out)\n",
+    tests: ["test/corpus.test.ts", "-t", "^stored_place_made_a_mut_dyn.rs$"],
+  },
+  {
+    name: "flattened-state-tried-unheld",
+    breaks: "a flattened state's `try_borrow_mut()` guard is a handle in a `const` no one notes, so what's lent of its `value` assigns the variable holding the class's object, not each key (#2429)",
+    file: "crates/rust-js-lower/src/std_types/cell.rs",
+    find: "                result::ok(self.hold_handle(Role::State, handle, out))\n",
+    replace: "                result::ok(self.spill(Role::State, handle, out))\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_lent_through_what_holds_it.rs$"],
+  },
 ];
-

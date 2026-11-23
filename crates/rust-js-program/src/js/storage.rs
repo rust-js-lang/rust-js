@@ -70,6 +70,17 @@ impl Storage {
         }
     }
 
+    /// Whether a write through a handle on a place stored so assigns the
+    /// place what `written` makes of the value, as it's given or a `None`
+    /// `null`: not a flattened state's keys each set, nor an object
+    /// `$assign`ed (`written_in_place`), whose place a write would rebind.
+    pub fn assigns_its_place(self) -> bool {
+        match self {
+            Storage::AsGiven | Storage::NullForNone => true,
+            Storage::InPlace(..) | Storage::Assigned => false,
+        }
+    }
+
     /// The helper a write through a handle on a place stored so is written
     /// with, `$assign` of `Assigned`, which preparation writes out: asked
     /// for where the handle is written (#968).

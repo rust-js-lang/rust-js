@@ -605,19 +605,16 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         // and written as a path (ADR 1078).
         // A swap's either side too, `mem::swap(&mut x, &mut other.0)` of a
         // nullable parameter: each place given what's written to it so (#1018).
-        let stored = |stores: bool, e: Expr| match stores {
-            true => rust_js_lower::representation::NoneForm::Null
-                .storage()
-                .written(e, js::Undefined::ByForm),
-            false => e,
-        };
+        // Not a flattened state's held handle, whose write sets its keys, its
+        // `value` written as any place (`Handled::assigned_place`, #2429).
+        let stored = |stores: js::Storage, e: Expr| stores.written(e, js::Undefined::ByForm);
         let (a, a_stores) = match self.unhandled(&a) {
-            Some(place) => (place, true),
-            None => (a, false),
+            Some((place, storage)) => (place, storage),
+            None => (a, js::Storage::AsGiven),
         };
         let (b, b_place, b_stores) = match b_place.as_ref().and_then(|b| self.unhandled(b)) {
-            Some(place) => (place.clone(), Some(place), true),
-            None => (b, b_place, false),
+            Some((place, storage)) => (place.clone(), Some(place), storage),
+            None => (b, b_place, js::Storage::AsGiven),
         };
         let b = match b_place.is_none() {
             true => stored(a_stores, b),

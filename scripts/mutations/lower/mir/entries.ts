@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "swap-into-a-nullable-place-as-given",
     breaks: "`mem::swap(&mut x, &mut other.0)` of a nullable parameter writes `undefined` for `None`, which its `=== null` test reads as `Some` (#1018)",
     file: "crates/rust-js-mir/src/entries.rs",
-    find: "            true => rust_js_lower::representation::NoneForm::Null\n                .storage()\n                .written(e, js::Undefined::ByForm),\n",
-    replace: "            true => e,\n",
+    find: "        let stored = |stores: js::Storage, e: Expr| stores.written(e, js::Undefined::ByForm);\n",
+    replace: "        let stored = |_: js::Storage, e: Expr| e;\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_beside_a_wrapper.rs$"],
   },
   {

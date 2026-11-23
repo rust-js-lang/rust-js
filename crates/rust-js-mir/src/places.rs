@@ -63,6 +63,14 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         {
             return Ok(cut.clone());
         }
+        // An `Ok` made of a held handle's payload: that handle, so what's
+        // lent of its `value` is it (`note_held_handle`, #2429).
+        if let [PlaceElem::Downcast(_, ok), PlaceElem::Field(..)] = place.projection.as_slice()
+            && ok.as_u32() == 0
+            && let Some(handle) = self.locals.mir.made.held_ok(&state.locals.names[place.local])
+        {
+            return Ok(handle.clone());
+        }
         if let Some((tried, ty)) = state.branches.get(&place.local).cloned() {
             return match place.projection.as_slice() {
                 [PlaceElem::Downcast(_, variant), PlaceElem::Field(..)] if variant.as_u32() == 0 => {

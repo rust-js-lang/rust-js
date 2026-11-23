@@ -645,12 +645,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::CellGetMut if self.is_value_cell(tys[0].peel_refs()) => arg(),
             // Of a flattened state's, its handle on its class's object, held
             // as a guard's is, so a whole write through it sets each key
-            // there (`read_handles`, ADR 1044, #687); and so is
+            // there (`read_handles`, ADR 1044, #687), and what's lent of
+            // its `value` is that handle (`hold_handle`, #2429); and so is
             // `Cell::from_mut`'s of one, `Cell::from_mut(&mut
             // *chunk.state.borrow_mut())`.
             Std::CellGetMut | Std::CellFromMut if flattened => {
                 let handle = arg();
-                self.spill(Role::State, handle, out)
+                self.hold_handle(Role::State, handle, out)
             }
             // Of what a `&mut` to is a cell (`is_cell_pointee`), a number's,
             // a text's or a type parameter's, generic code's box (ADR 0454),
@@ -827,7 +828,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::TryBorrow { lock: false, .. } if flattened => {
                 rust_js_program::decisions::record("refcell-try-borrow", "flattened");
                 let handle = arg();
-                result::ok(self.spill(Role::State, handle, out))
+                result::ok(self.hold_handle(Role::State, handle, out))
             }
             Std::TryBorrow { lock: false, .. } if unchecked || self.quiet_ref_cell(tys[0].peel_refs(), false) => {
                 rust_js_program::decisions::record("refcell-try-borrow", "unchecked");

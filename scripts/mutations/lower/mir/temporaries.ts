@@ -646,4 +646,21 @@ export const mutations: Mutation[] = [  {
     replace: "            .any(|&(local, ref value)| does_nothing(value) && value_reads(value, &reads) && later(local) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^format_argument_read_before_its_variable_moves.rs$"],
   },
+
+  {
+    name: "guard-reborrow-taken-for-a-write",
+    breaks: "a guard's `&mut` reborrowed into `deref_mut` alone counts as a write of the guard, so its binding is never noted and `kept(&mut state)` lends a handle that assigns the variable holding the class's object (#2429)",
+    file: "crates/rust-js-mir/src/temporaries.rs",
+    find: "state.locals.writes[local] - state.locals.derefed[local] != 1",
+    replace: "state.locals.writes[local] != 1",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_lent_through_what_holds_it.rs$"],
+  },
+  {
+    name: "written-again-handle-noted",
+    breaks: "a variable written in two branches is noted as holding the handle lowered last, so a `&mut dyn`'s pair on it sets the keys of the other branch's object (#2429)",
+    file: "crates/rust-js-mir/src/temporaries.rs",
+    find: "state.locals.writes[local] - state.locals.derefed[local] != 1",
+    replace: "false",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_chosen_in_branches.rs$"],
+  },
 ];

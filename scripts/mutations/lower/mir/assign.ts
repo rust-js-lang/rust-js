@@ -918,8 +918,8 @@ export const mutations: Mutation[] = [  {
     breaks:
       "a local declared before it's assigned, one dropped as its body unwinds, keeps nothing its value's maker marked it, so a `rev()` made knowing its back held so is refused where it's stepped from its back (#730)",
     file: "crates/rust-js-mir/src/assign.rs",
-    find: "        if place.projection.is_empty() {\n            super::temporaries::note_marks(state, local, &value);\n        }\n",
-    replace: "",
+    find: "            super::temporaries::note_marks(state, local, &value);\n            // A `let` declared first",
+    replace: "            // A `let` declared first",
     tests: ["test/corpus.test.ts", "-t", "^(rev_made_knowing_its_back|own_iterator_flattened_from_its_back).rs$"],
   },
   {
@@ -1035,5 +1035,21 @@ export const mutations: Mutation[] = [  {
     find: "            && !rust_js_lower::iterators::made_again_runs_nothing(&source)\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_of_a_call_made_once\\.rs$"],
+  },
+  {
+    name: "guard-handle-unnoted",
+    breaks: "a flattened state's guard, `let mut state = task.state.borrow_mut()`, a handle in a `const` no one notes, so `Cell::from_mut(&mut *state)` given on is a handle on its `value` that assigns the variable holding the class's object, `task = value` (#2429, #678)",
+    file: "crates/rust-js-mir/src/assign.rs",
+    find: "            self.note_held_handle(state, local, &name, &expr);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_handed_on.rs$"],
+  },
+  {
+    name: "let-handle-unnoted",
+    breaks: "a `let` declared first and written a flattened state's guard once, `try_borrow_mut()`'s binding reborrowed into `deref_mut`, isn't noted, so `kept(&mut state)` lends a handle on its `value` that assigns the variable holding the class's object (#2429)",
+    file: "crates/rust-js-mir/src/assign.rs",
+    find: "                self.note_held_handle(state, local, &name, &value);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_state_lent_through_what_holds_it.rs$"],
   },
 ];

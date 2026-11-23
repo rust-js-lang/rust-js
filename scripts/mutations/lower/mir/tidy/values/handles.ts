@@ -136,15 +136,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "handle-on-a-state-handles-value-kept",
-    breaks:
-      "`Cell::from_mut(&mut *state)` of a flattened state's guard given to a function, or `&mut *state` given to one that gives it back, is a handle on the class's object, `set value(value) { task = value; }`, which assigns the variable, not each key (#659)",
-    file: "crates/rust-js-mir/src/tidy/values/handles.rs",
-    find: "            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v))\n",
-    replace: "            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v) && v.word().is_empty())\n",
-    tests: ["test/corpus.test.ts", "-t", "^flattened_state_handed_on.rs$"],
-  },
-  {
     name: "in-place-spills-share-a-name",
     breaks:
       "two whole writes through a flattened state's handle in one list each spill what they write as `state`, declared twice (#687)",
@@ -170,13 +161,5 @@ export const mutations: Mutation[] = [
     replace: "        if true {\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_written_whole_of_other_places.rs$"],
-  },
-  {
-    name: "pair-of-a-handle-stores-as-given",
-    breaks: "a `&mut dyn`'s pair on a flattened state's handle assigns the place as it's given, `task = value`, so the class's object is replaced (#977)",
-    file: "crates/rust-js-mir/src/tidy/values/handles.rs",
-    find: "            && matches!(storage, js::Storage::InPlace(..))\n",
-    replace: "            && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^stored_place_made_a_mut_dyn.rs$"],
   },
 ];

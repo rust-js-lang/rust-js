@@ -225,6 +225,10 @@ struct Locals {
     writes: IndexVec<Local, usize>,
     /// Each one whose place is borrowed: it stays a variable.
     borrowed: IndexVec<Local, bool>,
+    /// Of its `writes`, how many are a guard's whole `&mut` reborrowed into
+    /// `deref_mut` alone, `kept(&mut state)`'s, which never write it
+    /// (`derefs_guard`, #2429).
+    derefed: IndexVec<Local, usize>,
     /// The fields each is read by, as an operand, `copy _5.0`.
     fields: IndexVec<Local, Vec<usize>>,
     /// Each one a `&mut` is the place of, a number's: a call made while

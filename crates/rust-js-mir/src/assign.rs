@@ -914,6 +914,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 return Ok(());
             }
             super::temporaries::note_marks(state, local, &expr);
+            self.note_held_handle(state, local, &name, &expr);
             out.push(
                 match state.locals.borrowed[local] {
                     true => StmtKind::Let(name, Some(expr)),
@@ -1059,6 +1060,11 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         }
         if place.projection.is_empty() {
             super::temporaries::note_marks(state, local, &value);
+            // A `let` declared first, written here alone (`note_held_handle`).
+            if !state.facts.pointed().locals.contains(&local) {
+                let name = state.locals.names[local].clone();
+                self.note_held_handle(state, local, &name, &value);
+            }
         }
         // `*p = v` of a pointer made where it's written, `*(&raw mut v) =
         // ..`: of an object JS holds as itself, the object's in place (#1352).

@@ -667,8 +667,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a handle a variable holds on a nullable place isn't known to be that place's, so a copy back from a callee that may throw is made in a `finally`, as if the place outlived the body (#541)",
     file: "crates/rust-js-mir/src/rvalues.rs",
-    find: "            self.locals.mir.made.handles.insert(name.clone(), on);\n",
-    replace: "            _ = (name, on);\n",
+    find: "        Expr::held(self.hold_handle(Role::Place, handle, out))\n",
+    replace: "        Expr::held(self.spill(Role::Place, handle, out))\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
     snapshots: true,
   },

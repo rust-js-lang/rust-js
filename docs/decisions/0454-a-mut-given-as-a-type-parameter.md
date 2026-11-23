@@ -648,7 +648,8 @@ the handle's place, so the pair's setter assigned the place as it's given:
 `task = value` replaced the variable holding the class's object instead of
 setting its keys. Now a pair on a handle's `value` is a pair on its place
 that stores as the handle does (`Expr::stored_pair`, #968's), its setter
-`fiber.owner = value ?? null` or each key set.
+`fiber.owner = value ?? null` or each key set. Since #2429 the MIR's
+lowering makes it so (`pair_on`, ADR 0791, amended), not tidy.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change;
 Rust's preserved. Held by corpus `stored_place_made_a_mut_dyn`

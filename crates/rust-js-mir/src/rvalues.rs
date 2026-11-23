@@ -33,24 +33,15 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// #541). `Expr::held` of the handle itself would be the place alone,
     /// which stores what it's written.
     pub(super) fn through_handle(&mut self, handle: Expr, out: &mut Vec<Stmt>) -> Expr {
-        let on = match &handle.kind {
-            js::ExprKind::Handle(on, storage) => Some(rust_js_lower::noted::Handled {
-                on: (**on).clone(),
-                storage: *storage,
-            }),
-            _ => None,
-        };
-        let handle = self.spill(Role::Place, handle, out);
-        if let (js::ExprKind::Var(name), Some(on)) = (&handle.kind, on) {
-            self.locals.mir.made.handles.insert(name.clone(), on);
-        }
-        Expr::held(handle)
+        Expr::held(self.hold_handle(Role::Place, handle, out))
     }
 
-    /// The place `place` is, of a handle `through_handle` holds, `fiber.owner`
-    /// of `place.value`; `None` of any other.
-    pub(super) fn unhandled(&self, place: &Expr) -> Option<Expr> {
-        self.held_handle(place).map(|handled| handled.on.clone())
+    /// The place `place` is, of a handle a variable holds whose write
+    /// assigns its place (`Handled::assigned_place`), `fiber.owner` of
+    /// `place.value`, and how it stores; `None` of any other.
+    pub(super) fn unhandled(&self, place: &Expr) -> Option<(Expr, js::Storage)> {
+        let handled = self.held_handle(place)?;
+        Some((handled.assigned_place()?.clone(), handled.storage))
     }
 
     pub(super) fn mir_rvalue(

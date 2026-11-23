@@ -205,7 +205,8 @@ take one too. The other 70 run as native Rust does.
   cell's own `replace` reads its handle's object; #636's refusals,
   `through_flattened` and `Made::flattened` are gone. A handle on a
   flattened state's handle's `value`, `&mut *state` handed on, is that
-  handle, whose setter sets each key (tidy's `read_handles`, #678). The
+  handle, whose setter sets each key (tidy's `read_handles`, #678; since
+  #2429 `handle_on`'s, ADR 0791, amended). The
   lend site isn't
   changed: every function a flattened state's `&mut` is lent to has it as
   the flattened enum, and copies where it moves it out; generic code,

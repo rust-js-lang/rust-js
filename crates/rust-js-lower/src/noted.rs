@@ -26,6 +26,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `handle`, a handle on a `&mut`'s place, held in a `const` of its
+    /// own named for `base`, that variable: of one that stores its own way,
+    /// noted (`Made::note_handle`), so what's lent of its `value` is that
+    /// handle, a nullable place's (#541) or a flattened state's lent,
+    /// `task.state.get_mut()`'s (#2429).
+    pub fn hold_handle<'b>(
+        &mut self,
+        base: impl Into<crate::temporary_names::Base<'b>>,
+        handle: Expr,
+        out: &mut Vec<js::Stmt>,
+    ) -> Expr {
+        let made = handle.clone();
+        let held = self.spill(base, handle, out);
+        if let js::ExprKind::Var(name) = &held.kind {
+            self.locals.mir.made.note_handle(name, &made);
+        }
+        held
+    }
+
     /// Whether `name`, a local of the body lowered from its MIR, reads the
     /// same wherever it's read: assigned once and never borrowed.
     pub fn alike_local(&self, name: &js::Name) -> bool {
