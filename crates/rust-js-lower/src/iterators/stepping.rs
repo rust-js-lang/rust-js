@@ -627,7 +627,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let lends = self.wrapper_lends(given)
             && !lends.is_empty()
         {
-            let held = std::mem::replace(value, Expr::taken());
+            // What it holds made knowing what the callee asks of the box,
+            // its length and its back, which `Box<I>` passes on, as one given
+            // unboxed is below (ADR 0456, ADR 0429; #2419).
+            let mut held = std::mem::replace(value, Expr::taken());
+            let inner = crate::recognition::held_unboxed(given);
+            let back = self.double_ended_param(callee, input);
+            if self.exact_size_param(callee, input) {
+                held = self.as_exact_size(held, inner, back, span)?;
+            } else if back {
+                held = self.as_double_ended(held, inner, span)?;
+            }
             *value = self.lent_through(held, &lends);
             return Ok(());
         }

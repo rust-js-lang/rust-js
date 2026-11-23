@@ -2266,3 +2266,27 @@ skip and a chain of boxes, and `count`, `last`, `fold` and `nth` of a
 `Box<dyn>`. It also checks that a `&mut`, a `&mut dyn`, a sized `Box` and a
 `Peekable` pass on what std's do, in both builds. A `skip(n).last()` of a
 `&mut dyn` is #2218's.
+
+## Amendment: a `Box` given to generic code knows what it's asked (2026-11-24, #2419)
+
+A sized `Box` of an adapter given for a type parameter bound by
+`Iterator` is lent as std's `Box<I>`, `$lent(it, "boxed")`, which passes
+on `len`, `size_hint` and the back steps where what it holds has them
+(`wrapper_lends`, #2179). But what it held was made as nothing asked of
+it: `given_iterator`'s box branch returned before the steps that make a
+value knowing its length and its back where the callee's bounds ask them
+(`as_exact_size`, `as_double_ended`, ADRs 0456 and 0429), which an
+unboxed one takes. Generic code that knows its callers' `I` is exact-sized
+asks `it.len()`, which the box hadn't: a `TypeError` where Rust runs, and
+the crate's own `next_back` and `size_hint` unreached. Found by the paths
+table's `library Box` path (step 2b′): 188 cases in both builds, and the
+crate's own generic code alike.
+
+Case (ADR 0262): R. What the box gives and which of the crate's steps it
+reaches is observable.
+
+The box branch now makes what the box holds knowing what the callee asks
+of the box, then lends it. Corpus
+`box_of_an_adapter_given_to_generic_code_knows_its_length_and_back`, a box
+and a box of a box, holds it against native. Mutation:
+`boxed-given-unknowing`.

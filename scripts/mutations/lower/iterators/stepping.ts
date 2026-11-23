@@ -116,8 +116,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range given where generic code asks its length is the range, which has no `len()`, and JS throws",
     file: "crates/rust-js-lower/src/iterators/stepping.rs",
-    find: "        if self.exact_size_param(callee, input) {\n",
-    replace: "        if false {\n",
+    find: "        if self.exact_size_param(callee, input) {\n            let held = std::mem::replace(value, Expr::taken());\n",
+    replace: "        if false {\n            let held = std::mem::replace(value, Expr::taken());\n",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
   },
   {
@@ -651,5 +651,13 @@ export const mutations: Mutation[] = [
     find: "            true => self.clone_items(left, item, span)?,\n",
     replace: "            true => Expr::builtin(left, \"map\", vec![self.clone_fn(\"item\", item, span)?]),\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_into_iter_clone_(that_panics_drops_what_it_cloned|whose_dropped_clone_panics_aborts)\\.rs$"],
+  },
+  {
+    name: "boxed-given-unknowing",
+    breaks: "a `Box` of an adapter given to generic code that asks its length and its back isn't made knowing them, so `$lent(.., \"boxed\")` has no `len` to pass on and generic code's `it.len()` throws where std's `Box<I>` passes it on (#2419)",
+    file: "crates/rust-js-lower/src/iterators/stepping.rs",
+    find: "            if self.exact_size_param(callee, input) {\n                held = self.as_exact_size(held, inner, back, span)?;\n            } else if back {\n                held = self.as_double_ended(held, inner, span)?;\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^box_of_an_adapter_given_to_generic_code_knows_its_length_and_back.rs$"],
   },
 ];
