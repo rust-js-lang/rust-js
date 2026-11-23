@@ -5309,10 +5309,10 @@ export function $collectUnwinding(run, it, items, drop, restFirst) {
 // `it`, an iterator a variable or a temporary holds, which its owner drops
 // where Rust drops it, at its scope's or its statement's end: held, so
 // nothing it steps is dropped as it's done or ends early, but as it's
-// closed (ADR 0570 amended, #206). A unit struct's, given as it is, is
-// `undefined`, which holds nothing (itertools' laziness tests).
+// closed (ADR 0570 amended, #206). A unit struct's is a `$iterator` of it
+// wherever it's given, an object, never its own `undefined` (#1979).
 export function $held(it) {
-  it?.hold?.();
+  it.hold?.();
   return it;
 }
 
@@ -20211,9 +20211,9 @@ export function $sizeHint(it, iterator) {
   // `{ next: $rangeFromNext }`, `usize::MAX` and none known (ADR 0918, #400).
   const ranged = iterator === undefined ? undefined : $rangeHintOf(iterator.next);
   if (ranged !== undefined) return ranged(it);
-  // An explicit adapter's, its own, of what it steps (ADR 0542). Of a unit
-  // struct given as it is, `undefined`, none of these (itertools' laziness tests).
-  if (it?.sizeHint !== undefined) return it.sizeHint();
+  // An explicit adapter's, its own, of what it steps (ADR 0542). A unit
+  // struct's is a `$iterator` of it wherever it's given, never `undefined`.
+  if (it.sizeHint !== undefined) return it.sizeHint();
   // What a `$iterator` steps, a JS iterator's, an array's `$iter` given as
   // it is (ADR 0411).
   if (typeof it?.of?.next === "function") return $sizeHint(it.of);

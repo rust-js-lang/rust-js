@@ -10,9 +10,9 @@ function $sizeHint(it, iterator) {
   // `{ next: $rangeFromNext }`, `usize::MAX` and none known (ADR 0918, #400).
   const ranged = iterator === undefined ? undefined : $rangeHintOf(iterator.next);
   if (ranged !== undefined) return ranged(it);
-  // An explicit adapter's, its own, of what it steps (ADR 0542). Of a unit
-  // struct given as it is, `undefined`, none of these (itertools' laziness tests).
-  if (it?.sizeHint !== undefined) return it.sizeHint();
+  // An explicit adapter's, its own, of what it steps (ADR 0542). A unit
+  // struct's is a `$iterator` of it wherever it's given, never `undefined`.
+  if (it.sizeHint !== undefined) return it.sizeHint();
   // What a `$iterator` steps, a JS iterator's, an array's `$iter` given as
   // it is (ADR 0411).
   if (typeof it?.of?.next === "function") return $sizeHint(it.of);

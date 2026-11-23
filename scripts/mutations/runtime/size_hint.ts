@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "size-hint-not-adapters-own",
     breaks: "an explicit adapter's size hint isn't its own",
     file: "crates/rust-js-program/src/runtime/size_hint.js",
-    find: "  if (it?.sizeHint !== undefined) return it.sizeHint();\n",
+    find: "  if (it.sizeHint !== undefined) return it.sizeHint();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^held_enumerate.rs$"],
   },
@@ -84,13 +84,5 @@ export const mutations: Mutation[] = [
     find: "  if (!(it instanceof $Steps)) $hintUnknown = true;\n",
     replace: "  $hintUnknown = true;\n",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
-  },
-  {
-    name: "size-hint-unit-value-read",
-    breaks: "a unit struct's iterator, `undefined`, given as it is to std's struct with a dictionary that has no `size_hint`, is asked its own `sizeHint`, which throws (itertools' laziness tests)",
-    file: "crates/rust-js-program/src/runtime/size_hint.js",
-    find: "  if (it?.sizeHint !== undefined) return it.sizeHint();\n",
-    replace: "  if (it.sizeHint !== undefined) return it.sizeHint();\n",
-    tests: ["test/iterator-forms.test.ts", "-t", "^trait_default_takes_an_iterator_as_its_callers_give_it with"],
   },
 ];
