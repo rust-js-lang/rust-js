@@ -101,6 +101,20 @@ test("a float's sign is asked only of a number", () => {
   expect(first).toMatch(/\{ let f: f(32|64) = .*; !f\.is_nan\(\) && f\.is_sign_negative\(\) \}/);
 });
 
+// std's float `min` and `max` of two that compare equal give either, and
+// native's choice is the platform's, so a program's output can't depend on
+// which: nightly seed 12467626's `(-0.0).min(0.0)`, its sign asked, printed
+// on x86-64 what an M1 and JS don't (#2432).
+test("a float's min or max of two equal ones is the first", () => {
+  let made = 0;
+  for (let seed = 0; seed < 2000; seed++) {
+    const text = print(generate(seed), seed);
+    const guarded = text.match(/\{ let \(a, b\): \((f32|f64), \1\) = \(.*?\); if a == b \{ a \} else \{ a\.(min|max)\(b\) \} \}/g) ?? [];
+    made += guarded.length;
+  }
+  expect(made).toBeGreaterThan(20);
+});
+
 test("a program is `main` and `id`, which hides each literal from rustc", () => {
   const text = print(generate(1), 1);
   expect(text).toStartWith("// Generated from seed 1.\nfn id<T>(x: T) -> T {");

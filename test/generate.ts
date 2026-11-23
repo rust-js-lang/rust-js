@@ -1177,6 +1177,12 @@ function show(e: Expr): string {
       // A NaN's sign isn't kept (the guide's differences, 4), so a float's
       // sign is asked only of a number, -0.0's still.
       if (e.name === "is_sign_negative") return `{ let f: ${e.a.ty} = ${show(e.a)}; !f.is_nan() && f.is_sign_negative() }`;
+      // Of two floats that compare equal, `+0.0` and `-0.0`, std's `min`
+      // and `max` give either, "non-deterministically" (its docs): x86-64's
+      // native gave `+0.0` where an M1's and JS's give `-0.0` (#2432). So
+      // the first of two equal ones, whose answer is one.
+      if ((e.name === "min" || e.name === "max") && e.b && !isInt(e.ty))
+        return `{ let (a, b): (${e.ty}, ${e.ty}) = (${show(e.a)}, ${show(e.b)}); if a == b { a } else { a.${e.name}(b) } }`;
       return e.b ? `${show(e.a)}.${e.name}(${show(e.b)})` : `${show(e.a)}.${e.name}()`;
     case "cast":
       return `(${show(e.a)} as ${e.ty})`;
