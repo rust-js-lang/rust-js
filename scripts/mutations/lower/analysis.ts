@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a module of only `pub type`s and structs writes no `.d.ts`, so TypeScript importing its types finds no module (ADR 1005)",
     file: "crates/rust-js-lower/src/analysis.rs",
-    find: "        if types && seen_modules.insert(module) {\n",
-    replace: "        if false && types && seen_modules.insert(module) {\n",
+    find: "        if super::reexports::exports_types(tcx, module) && seen_modules.insert(module) {\n",
+    replace: "        if false && super::reexports::exports_types(tcx, module) && seen_modules.insert(module) {\n",
     tests: ["test/cargo-in-source.test.ts", "-t", "declarations in source"],
   },
 

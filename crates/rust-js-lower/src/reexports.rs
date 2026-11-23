@@ -297,71 +297,109 @@ pub(super) fn type_reexports<'tcx>(
 ) -> Vec<TypeReexport> {
     let mut found = Vec::new();
     for leaf in super::uses::module_leaves(tcx, module) {
-        let (super::uses::Leaf::Single(ident), Some(named)) = (leaf.kind, type_alone(tcx, &leaf)) else {
-            continue;
-        };
         if !tcx.visibility(leaf.def_id).is_public() {
             continue;
         }
-        // A trait, the crate's: what its declarations declare, its
-        // dictionaries' interface, by the name a `use .. as` gives it, and
-        // its type map's aliases, each by its own (#2095).
-        if tcx.def_kind(named) == DefKind::Trait {
-            let Some(local) = named.as_local() else {
+        // The type it names alone, or each a glob gives, `pub use m::*;`
+        // (#2399).
+        let types = match leaf.kind {
+            super::uses::Leaf::Single(ident) => {
+                (type_alone(tcx, &leaf).map(|named| (ident, named)).into_iter()).collect()
+            }
+            super::uses::Leaf::Glob => globbed_types(tcx, module, leaf.item.owner_id.to_def_id()),
+        };
+        for (ident, named) in types {
+            // A trait, the crate's: what its declarations declare, its
+            // dictionaries' interface, by the name a `use .. as` gives it, and
+            // its type map's aliases, each by its own (#2095).
+            if tcx.def_kind(named) == DefKind::Trait {
+                let Some(local) = named.as_local() else {
+                    continue;
+                };
+                let home = tcx.parent_module_from_def_id(local);
+                let Some(file) = paths.get(&home) else {
+                    continue;
+                };
+                let from = (home != module).then(|| js::ImportFrom::Module(file.clone()));
+                let (interface, aliases) = super::declarations::trait_types(tcx, foreign, named);
+                let local = |own: &str| match ident.name == tcx.item_name(named) {
+                    true => own.to_string(),
+                    false => ident.to_string(),
+                };
+                let names = (interface.map(|own| (own.clone(), local(&own))).into_iter())
+                    .chain(aliases.into_iter().map(|alias| (alias.clone(), alias)));
+                for named in names {
+                    found.push((statement_of(&leaf), from.clone(), named, leaf.item.owner_id.to_def_id()));
+                }
                 continue;
+            }
+            // Each by the name its declarations give it, `ISODate` of
+            // `#[rust_js::name = "ISODate"] pub type IsoDate` (#1829), and
+            // re-exported by it, or by the name a `use .. as` gives it.
+            let (from, export, own) = match named.as_local() {
+                Some(local) => {
+                    let home = tcx.parent_module_from_def_id(local);
+                    let declared = tcx.visibility(named).is_public() && super::declarations::declares_type(tcx, named);
+                    let name = super::declarations::type_name(tcx, named);
+                    match paths.get(&home) {
+                        Some(_) if declared && home == module => (None, name.clone(), name),
+                        Some(from) if declared => (Some(js::ImportFrom::Module(from.clone())), name.clone(), name),
+                        _ => continue,
+                    }
+                }
+                None => match foreign.declared_type(named) {
+                    Some((from, name, default)) => (
+                        Some(js::ImportFrom::Specifier(from.clone())),
+                        if *default { "default".to_string() } else { name.clone() },
+                        name.clone(),
+                    ),
+                    None => continue,
+                },
             };
-            let home = tcx.parent_module_from_def_id(local);
-            let Some(file) = paths.get(&home) else {
-                continue;
-            };
-            let from = (home != module).then(|| js::ImportFrom::Module(file.clone()));
-            let (interface, aliases) = super::declarations::trait_types(tcx, foreign, named);
-            let local = |own: &str| match ident.name == tcx.item_name(named) {
-                true => own.to_string(),
+            let local = match ident.name == tcx.item_name(named) {
+                true => own,
                 false => ident.to_string(),
             };
-            let names = (interface.map(|own| (own.clone(), local(&own))).into_iter())
-                .chain(aliases.into_iter().map(|alias| (alias.clone(), alias)));
-            for named in names {
-                found.push((statement_of(&leaf), from.clone(), named, leaf.item.owner_id.to_def_id()));
-            }
-            continue;
+            found.push((
+                statement_of(&leaf),
+                from,
+                (export, local),
+                leaf.item.owner_id.to_def_id(),
+            ));
         }
-        // Each by the name its declarations give it, `ISODate` of
-        // `#[rust_js::name = "ISODate"] pub type IsoDate` (#1829), and
-        // re-exported by it, or by the name a `use .. as` gives it.
-        let (from, export, own) = match named.as_local() {
-            Some(local) => {
-                let home = tcx.parent_module_from_def_id(local);
-                let declared = tcx.visibility(named).is_public() && super::declarations::declares_type(tcx, named);
-                let name = super::declarations::type_name(tcx, named);
-                match paths.get(&home) {
-                    Some(_) if declared && home == module => (None, name.clone(), name),
-                    Some(from) if declared => (Some(js::ImportFrom::Module(from.clone())), name.clone(), name),
-                    _ => continue,
-                }
-            }
-            None => match foreign.declared_type(named) {
-                Some((from, name, default)) => (
-                    Some(js::ImportFrom::Specifier(from.clone())),
-                    if *default { "default".to_string() } else { name.clone() },
-                    name.clone(),
-                ),
-                None => continue,
-            },
-        };
-        let local = match ident.name == tcx.item_name(named) {
-            true => own,
-            false => ident.to_string(),
-        };
-        found.push((
-            statement_of(&leaf),
-            from,
-            (export, local),
-            leaf.item.owner_id.to_def_id(),
-        ));
     }
     found
+}
+
+/// The types alone the glob `glob`, `pub use m::*;`, gives `module`, as
+/// `type_alone` says of one `use`'s: each public struct, enum, union,
+/// alias or trait it re-exports that no value of its name, nor a class,
+/// makes JS (#2399).
+fn globbed_types(tcx: TyCtxt<'_>, module: LocalModId, glob: DefId) -> Vec<(rustc_span::Ident, DefId)> {
+    use rustc_middle::middle::resolve::Reexport as Via;
+    let children = tcx.module_children_local(module.to_local_def_id());
+    let given = |chain: &[Via]| matches!(chain.first(), Some(Via::Glob(used)) if *used == glob);
+    let valued = |name: rustc_span::Symbol| {
+        (children.iter()).any(|child| {
+            given(&child.reexport_chain)
+                && child.ident.name == name
+                && matches!(
+                    child.res,
+                    Res::Def(DefKind::Fn | DefKind::Const | DefKind::Static { .. }, _)
+                )
+        })
+    };
+    (children.iter())
+        .filter(|child| given(&child.reexport_chain))
+        .filter_map(|child| match child.res {
+            Res::Def(DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias | DefKind::Trait, named)
+                if child.vis.is_public() && !valued(child.ident.name) && !super::classes::is_class(tcx, named) =>
+            {
+                Some((child.ident, named))
+            }
+            _ => None,
+        })
+        .collect()
 }
 
 /// The type `leaf` names, where it names one alone, of no JS: a struct, an
@@ -1182,5 +1220,26 @@ pub(super) fn globs_values(tcx: TyCtxt<'_>, module: rustc_span::def_id::LocalMod
                 child.res,
                 rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const | DefKind::Static { .. }, _)
             )
+    })
+}
+
+/// Whether `module` exports a type, which gives a module of types alone its
+/// `.d.ts` (the user's decision, ADR 1005): one of its own, or another's it
+/// re-exports, `pub use money::Money`, a glob's or a library's, its `export
+/// type` where it has no JS of its own (ADR 1005, amended, #2399).
+pub(super) fn exports_types(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
+    let is_type = |kind: DefKind, def_id: DefId| {
+        matches!(
+            kind,
+            DefKind::TyAlias | DefKind::Struct | DefKind::Enum | DefKind::Union
+        ) && !super::bindings::is_binding(tcx, def_id)
+    };
+    tcx.hir_module_free_items(module).any(|id| {
+        let def_id = id.owner_id.to_def_id();
+        is_type(tcx.def_kind(def_id), def_id) && tcx.visibility(def_id).is_public()
+    }) || (tcx.module_children_local(module.to_local_def_id()).iter()).any(|child| {
+        !child.reexport_chain.is_empty()
+            && child.vis.is_public()
+            && matches!(child.res, Res::Def(kind, def_id) if is_type(kind, def_id))
     })
 }
