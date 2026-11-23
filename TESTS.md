@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-23 (#2334, ADR 1186): test/helper-calls.test.ts, one test, holds each file's reads of a helper call by its callee's name, `helper_name()`, at most and exactly test/helper-shapes-known.txt's, a ratchet migrating a file onto `helper_call_of` lowers; rust-js-program's unit tests gain `runtime::signatures`' parse of a parameter list and `js::helper_call`'s, each name a call is read by one its helper declares, of every compiler source.
+
 Changed on 2026-11-23 (#2324, ADR 0427 amended): test/binaries.test.ts gains two tests, a panic std's impl raises at its caller through a dictionary (integers' `/` and `%`, `clamp` of integers, a `char`, a `String`'s default, a generic `SliceIndex`'s) and a `Repeat`'s `count` and `last`, directly, through generic code, nested in another count and after one caught; test/runtime-marks.test.ts, ten tests, a library's `Repeat` counted by its app; the corpus's `own_ne_max_min_clamp` and `repeat_drops_what_it_holds` compare their locations again.
 
 Changed on 2026-11-23 (#2343): test/std-sites.test.ts gains two tests: no committed JS rust-js wrote, std/, the runtime, the corpus's and the snapshots', names a machine's own copy of std's source or its home; and std's bodies, compiled into a fixture, name std's files `/rustc/<commit>/library/..`.

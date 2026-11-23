@@ -380,4 +380,12 @@ export const mutations: Mutation[] = [
     replace: "            }\n            let _ = location;\n",
     tests: ["test/binaries.test.ts", "-t", "a `Repeat`'s `count` and `last` name where they're called"],
   },
+  {
+    name: "pads-unmarked",
+    breaks: "a located call's pads are no different from an `undefined` given, so a reader by name takes `$count(it, undefined, ..)`'s pad for its `drop` (#2334)",
+    file: "crates/rust-js-program/src/js/make.rs",
+    find: "                    facts: pad.facts.with(Known::Padded),\n",
+    replace: "                    facts: pad.facts,\n",
+    unitTests: "js::helper_call::tests::a_located_call_s_pads_are_not_given",
+  },
 ];

@@ -199,7 +199,7 @@ test("a suffix is a js::Suffix, never written as text", () => {
 // through `Name` (`given_apart_of`, `is_origin_of`).
 test("a name's kinship and form are never asked by parsing its word outside its owners", () => {
   const owners = (file: string) => file === "crates/rust-js-program/src/js/name.rs" || file === "crates/rust-js-program/src/names.rs"
-    || file === "crates/rust-js-program/src/runtime.rs" || file.startsWith("crates/rust-js-emit/src/to_oxc")
+    || file === "crates/rust-js-program/src/runtime.rs" || file.startsWith("crates/rust-js-program/src/runtime/") || file.startsWith("crates/rust-js-emit/src/to_oxc")
     || file === "crates/rust-js-program/src/prepare.rs" || file.startsWith("crates/rust-js-program/src/prepare/");
   const patterns = [/\.apart_of\(\)/g, /names::apart\(/g, /split\('\$'\)/g, /split_once\('\$'\)/g,
     /starts_with\('\$'\)/g, /starts_with\("_\$"\)/g, /strip_prefix\("__arg"\)/g, /\bparam\.root\(\)/g];

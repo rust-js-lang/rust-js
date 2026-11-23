@@ -2,7 +2,10 @@
 //! `@rust-js/std`'s `runtime.js`, the module of every one (ADR 0103, #1095).
 
 /// Declares the helpers, and `Helper::ALL`, every one, for the package.
-use crate::collections::{IndexMap, IndexSet};
+use crate::collections::IndexSet;
+
+mod signatures;
+pub use signatures::{Param, ParamKind, params};
 macro_rules! helpers {
     ($($name:ident,)*) => {
         /// Runtime helpers, each imported by the modules that use it.
@@ -404,16 +407,8 @@ pub const PACKAGE: &str = "@rust-js/std";
 pub const MODULE: &str = "runtime.js";
 
 /// The `$` names a helper's JS declares at its top level: what the package exports.
-fn declared(source: &str) -> impl Iterator<Item = &str> {
-    source.lines().filter_map(|line| {
-        let rest = ["async function ", "function* ", "function ", "class ", "const ", "let "]
-            .iter()
-            .find_map(|keyword| line.strip_prefix(keyword))?;
-        let name = &rest[..rest
-            .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_' || c == '$'))
-            .unwrap_or(rest.len())];
-        name.starts_with('$').then_some(name)
-    })
+fn declared(source: &'static str) -> impl Iterator<Item = &'static str> {
+    signatures::declared_in(source).map(|(name, _)| name)
 }
 
 /// The helpers that only read what they're given and make a value of it,
@@ -535,12 +530,7 @@ pub(crate) fn never_throws(name: &str) -> bool {
 
 /// The helper that declares `name`, an export of the runtime's.
 pub fn helper_of(name: &str) -> Option<Helper> {
-    static OWNERS: std::sync::LazyLock<IndexMap<&'static str, Helper>> = std::sync::LazyLock::new(|| {
-        (Helper::ALL.iter())
-            .flat_map(|&helper| declared(helper.source()).map(move |name| (name, helper)))
-            .collect()
-    });
-    OWNERS.get(name).copied()
+    signatures::declarations().get(name).map(|declared| declared.helper)
 }
 
 /// Where a helper `name` takes the location a panic it raises names, of
@@ -566,24 +556,9 @@ pub fn location_where_asked(name: &str) -> Option<usize> {
 /// and whether only where its call asks (`raisedAt = undefined`), read of
 /// its own parameter list, the one authority.
 fn located(name: &str) -> Option<(usize, bool)> {
-    static AT: std::sync::LazyLock<IndexMap<&'static str, (usize, bool)>> = std::sync::LazyLock::new(|| {
-        (Helper::ALL.iter())
-            .flat_map(|&helper| helper.source().lines())
-            .filter_map(|line| {
-                let rest = ["function ", "async function ", "function* "]
-                    .iter()
-                    .find_map(|keyword| line.strip_prefix(keyword))?;
-                let (name, params) = rest.split_once('(')?;
-                let params = &params[..params.find(')')?];
-                let at = params
-                    .split(',')
-                    .position(|param| matches!(param.trim(), "raisedAt" | "raisedAt = undefined"))?;
-                let asked = params.split(',').nth(at)?.trim() != "raisedAt";
-                name.starts_with('$').then_some((name, (at, asked)))
-            })
-            .collect()
-    });
-    AT.get(name).copied()
+    let params = params(name)?;
+    let at = params.iter().position(|param| param.name == "raisedAt")?;
+    Some((at, params[at].kind == ParamKind::Defaulted))
 }
 
 /// Whether `name` is a helper whose call names a place, the same one each
@@ -613,13 +588,7 @@ pub(crate) fn runs_given_values(name: &str) -> bool {
 
 /// Whether `@rust-js/std`'s helpers export `name`: a name any module may import.
 pub fn exports(name: &str) -> bool {
-    static EXPORTS: std::sync::LazyLock<IndexSet<&'static str>> = std::sync::LazyLock::new(|| {
-        Helper::ALL
-            .iter()
-            .flat_map(|helper| declared(helper.source()))
-            .collect()
-    });
-    EXPORTS.contains(name)
+    signatures::declarations().contains_key(name)
 }
 
 /// `@rust-js/std`'s module of the helpers, `runtime.js`: every helper, each

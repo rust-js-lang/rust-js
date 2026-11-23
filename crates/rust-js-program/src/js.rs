@@ -11,6 +11,8 @@
 mod applied;
 mod borrow_checks;
 mod expr_walk;
+mod helper_call;
+pub use helper_call::{HelperCall, HelperCallMut};
 mod imports;
 mod known;
 mod make;

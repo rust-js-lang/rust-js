@@ -327,6 +327,11 @@ knowns! {
     /// evaluated first in its statement, `if (cell.borrows)
     /// $alreadyBorrowed();`, then the cell (ADR 1141, amended).
     Momentary,
+    /// An `undefined` a call is given only so an argument after it is where
+    /// its helper declares it, `$count(it, undefined, "lib.rs:4:9")`'s
+    /// (`Expr::call_located`): no argument given, as a reader by name takes
+    /// it (`HelperCall::arg`), never by its being `undefined` (#2334).
+    Padded,
     /// A `dyn Iterator` a binding's call made, JS's own iterator, a `Set`'s
     /// `values()` or `js::keys_in`'s: its hint is the binding's contract's,
     /// `(0, None)`, which asking runs nothing of, so a collect of it asks
@@ -425,7 +430,8 @@ impl Known {
             | Known::IterMappedAsItIs
             | Known::NullStored
             | Known::HandledObject
-            | Known::Momentary => Role::Form,
+            | Known::Momentary
+            | Known::Padded => Role::Form,
         }
     }
 

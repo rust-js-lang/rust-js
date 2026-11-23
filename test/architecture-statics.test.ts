@@ -34,12 +34,9 @@ type Class =
   | "identity";
 
 const statics: Record<string, Class> = {
-  "crates/rust-js-program/src/runtime.rs OWNERS": "constant",
-  "crates/rust-js-program/src/runtime.rs EXPORTS": "constant",
   // The compiler's build, `build.rs`'s hash, given once as main starts
   // (ADR 1181): the same in every build a process compiles.
   "crates/rust-js-program/src/manifest.rs BUILD": "constant",
-  "crates/rust-js-program/src/runtime.rs AT": "constant",
   "crates/rust-js-program/src/decisions.rs PATH": "process",
   "crates/rust-js-program/src/decisions.rs GIVEN": "process",
   "crates/rust-js-program/src/decisions.rs BODY": "process",
@@ -54,6 +51,7 @@ const statics: Record<string, Class> = {
   "crates/rust-js-program/src/js/storage.rs KEYS": "constant",
   "crates/rust-js-program/src/js/name.rs NEXT": "identity",
   "crates/rust-js-program/src/js/validate.rs ON": "constant",
+  "crates/rust-js-program/src/runtime/signatures.rs DECLARED": "constant",
   "crates/rust-js-jsx/src/resolved.rs STATE": "compile",
   "crates/rust-js-jsx/src/resolved.rs HOLD": "compile",
   "crates/rust-js-lower/src/session.rs SESSION": "compile",

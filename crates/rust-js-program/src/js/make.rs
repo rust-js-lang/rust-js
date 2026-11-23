@@ -728,7 +728,11 @@ impl Expr {
             && let Some(location) = RAISED_AT.with_borrow(Clone::clone)
         {
             while args.len() < at {
-                args.push(Expr::js_undefined());
+                let pad = Expr::js_undefined();
+                args.push(Expr {
+                    facts: pad.facts.with(Known::Padded),
+                    ..pad
+                });
             }
             args.insert(at, location);
         }
