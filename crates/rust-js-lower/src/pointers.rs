@@ -821,23 +821,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// here, `$ptr(object, key)`, `object` of `$ptrTo(object)`, `x` of a
     /// cell `{ value: x }`, else its `value`.
     pub fn pointee_place(&self, pointer: Expr) -> Expr {
-        if let js::ExprKind::Call(callee, args) = &pointer.kind {
-            match (callee.helper_name(), args.as_slice()) {
-                (Some("$ptr"), [object, key] | [object, key, _]) => {
-                    return match &key.kind {
-                        js::ExprKind::Str(name) => Expr::member(object.clone(), name.as_str()),
-                        _ => Expr::index(object.clone(), key.clone()),
-                    };
-                }
-                // Marked, so a whole write of it is the object's in place
-                // (`written_through`, #1352).
-                (Some("$ptrTo"), [object]) => {
-                    let mut object = object.clone();
-                    object.facts = object.facts.with(js::Known::HandledObject);
-                    return object;
-                }
-                _ => {}
-            }
+        // Of `$ptr(object, key)`, an offset or not, but no root nor place
+        // of its own.
+        if let Some(ptr) = pointer
+            .helper_call_of("$ptr")
+            .filter(|ptr| !ptr.given("root") && !ptr.given("at"))
+            && let (Some(object), Some(key)) = (ptr.arg("object"), ptr.arg("key"))
+        {
+            return match &key.kind {
+                js::ExprKind::Str(name) => Expr::member(object.clone(), name.as_str()),
+                _ => Expr::index(object.clone(), key.clone()),
+            };
+        }
+        // Marked, so a whole write of it is the object's in place
+        // (`written_through`, #1352).
+        if let Some(object) = pointer.helper_call_of("$ptrTo").and_then(|to| to.arg("object")) {
+            let mut object = object.clone();
+            object.facts = object.facts.with(js::Known::HandledObject);
+            return object;
         }
         // A cell made here, `{ value: x }`: `x`.
         if let js::ExprKind::Object(props, ..) = &pointer.kind
@@ -1286,32 +1287,34 @@ pub(crate) fn checked_item(e: &Expr) -> Option<&[Expr]> {
 /// of the item being its place, its index checked where the handle's was,
 /// `$index`. `None` of any other.
 pub(crate) fn same_object(a: &Expr, b: &Expr, items: bool) -> Option<Expr> {
-    let object_of = |e: &Expr| match &e.kind {
-        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$ptrTo") && args.len() == 1 => {
-            Some(args[0].clone())
+    let object_of = |e: &Expr| e.helper_call_of("$ptrTo").and_then(|to| to.arg("object")).cloned();
+    // An array's item, `$ptr(items, at)`, no more given.
+    let item_of = |e: &Expr| {
+        let ptr = e.helper_call_of("$ptr").filter(|ptr| !ptr.given("offset"))?;
+        let (items, at) = (ptr.arg("object")?, ptr.arg("key")?);
+        if matches!(at.kind, js::ExprKind::Str(_)) {
+            return None;
         }
-        _ => None,
-    };
-    let handle = |e: &Expr| match &e.kind {
-        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$ptr") => Some(args.clone()),
-        _ => None,
-    };
-    let item_of = |e: &Expr| match handle(e)?.as_slice() {
-        [items, at] if !matches!(at.kind, js::ExprKind::Str(_)) => Some(match &at.kind {
-            js::ExprKind::Call(check, given)
-                if check.helper_name() == Some("$at") && given.first().is_some_and(|of| js::same_path(of, items)) =>
-            {
+        // Its index checked where it was, `$at(items, i, ..)`: the item
+        // checked there, `$index(items, i, ..)`, of the same arguments.
+        Some(match at.helper_call_of("$at") {
+            Some(check) if check.arg("items").is_some_and(|of| js::same_path(of, items)) => {
+                let js::ExprKind::Call(_, given) = &at.kind else {
+                    unreachable!("a call of `$at`")
+                };
                 Expr::call(Expr::helper("$index"), given.clone())
             }
             _ => Expr::index(items.clone(), at.clone()),
-        }),
-        _ => None,
+        })
     };
-    let field_of = |e: &Expr| match handle(e)?.as_slice() {
-        [object, key, rest @ ..] if let js::ExprKind::Str(key) = &key.kind => {
-            Some((object.clone(), key.clone(), rest.first().and_then(Expr::as_int)))
-        }
-        _ => None,
+    // A field, `$ptr(object, "key", offset)`.
+    let field_of = |e: &Expr| {
+        let ptr = e.helper_call_of("$ptr")?;
+        let (object, key) = (ptr.arg("object")?, ptr.arg("key")?);
+        let js::ExprKind::Str(key) = &key.kind else {
+            return None;
+        };
+        Some((object.clone(), key.clone(), ptr.arg("offset").and_then(Expr::as_int)))
     };
     let (x, y) = match (object_of(a), object_of(b)) {
         (Some(x), Some(y)) => (x, y),
@@ -1332,9 +1335,8 @@ pub(crate) fn same_object(a: &Expr, b: &Expr, items: bool) -> Option<Expr> {
 /// parameter's, its `$ptrTo` an object's: `x === y` where `same_object`
 /// says so, once what each was made of is read in place.
 pub fn same_object_in_place(e: &mut Expr) {
-    if let js::ExprKind::Call(callee, args) = &e.kind
-        && callee.helper_name() == Some("$ptrEq")
-        && let [a, b, _] = args.as_slice()
+    if let Some(eq) = e.helper_call_of("$ptrEq").filter(|eq| eq.given("size"))
+        && let (Some(a), Some(b)) = (eq.arg("p"), eq.arg("q"))
         && let Some(same) = same_object(a, b, true)
     {
         *e = Expr { span: e.span, ..same };

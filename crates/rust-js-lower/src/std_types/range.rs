@@ -764,18 +764,14 @@ fn reversed_step(e: &Expr) -> Option<Expr> {
 /// `$lazyRange(a, b, s)`'s bounds and step, each read once where it's used;
 /// its owner's reader of the form, a collect's `count_bound`'s too (#1441).
 pub(crate) fn lazy_range_parts(e: &Expr) -> Option<(Expr, Option<Expr>, Option<Expr>)> {
-    let js::ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    if callee.helper_name() != Some(LAZY_RANGE) || !args.iter().all(Expr::reads_same) {
+    let range = e.helper_call_of(LAZY_RANGE)?;
+    // Its start, and its end and its step where they're given, each read
+    // the same each time.
+    let (start, end, step) = (range.arg("start")?, range.arg("end"), range.arg("step"));
+    if !range.args_from("start").iter().all(Expr::reads_same) {
         return None;
     }
-    match &args[..] {
-        [start] => Some((start.clone(), None, None)),
-        [start, end] => Some((start.clone(), Some(end.clone()), None)),
-        [start, end, step] => Some((start.clone(), Some(end.clone()), Some(step.clone()))),
-        _ => None,
-    }
+    Some((start.clone(), end.cloned(), step.cloned()))
 }
 
 fn range_step(e: &Expr) -> Option<Expr> {

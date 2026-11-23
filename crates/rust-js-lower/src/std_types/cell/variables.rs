@@ -139,10 +139,9 @@ pub fn plain_statics(
             js::each_item_block_mut(items, &mut |stmts| {
                 for stmt in stmts.iter_mut() {
                     if let StmtKind::Expr(e) = &mut stmt.kind
-                        && let js::ExprKind::Call(callee, args) = &mut e.kind
-                        && callee.helper_name() == Some("$assign")
-                        && let [target, _] = args.as_slice()
-                        && matches!(&target.kind, js::ExprKind::Var(v) if v.is(&name))
+                        && (e.helper_call_of("$assign").and_then(|assign| assign.arg("target")))
+                            .is_some_and(|target| matches!(&target.kind, js::ExprKind::Var(v) if v.is(&name)))
+                        && let js::ExprKind::Call(_, args) = &mut e.kind
                     {
                         let value = args.pop().expect("what it's given");
                         let target = args.pop().expect("the variable");
@@ -195,26 +194,25 @@ pub fn plain_statics(
 /// used, `$local(() => ({ value: init }))`, what its initializer returns
 /// (#541).
 fn nullable_cell(made: &mut Expr) {
-    match &mut made.kind {
-        js::ExprKind::Object(props, ..) if is_box(&Expr::object(props.clone())) => {
-            if let Some(js::Prop::Field(_, init)) = props.pop() {
-                *made = Expr::call_helper("$nullableCell", vec![init]);
-            }
-        }
-        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$local") => {
-            if let [arrow] = args.as_mut_slice()
-                && let js::ExprKind::Arrow(_, body) = &mut arrow.kind
-            {
-                js::statement_lists(body, &mut |stmts| {
-                    for stmt in stmts.iter_mut() {
-                        if let StmtKind::Return(Some(cell)) = &mut stmt.kind {
-                            nullable_cell(cell);
-                        }
+    if let Some(mut local) = made.helper_call_of_mut("$local") {
+        if let Some(arrow) = local.arg_mut("init")
+            && let js::ExprKind::Arrow(_, body) = &mut arrow.kind
+        {
+            js::statement_lists(body, &mut |stmts| {
+                for stmt in stmts.iter_mut() {
+                    if let StmtKind::Return(Some(cell)) = &mut stmt.kind {
+                        nullable_cell(cell);
                     }
-                });
-            }
+                }
+            });
         }
-        _ => {}
+        return;
+    }
+    if let js::ExprKind::Object(props, ..) = &mut made.kind
+        && is_box(&Expr::object(props.clone()))
+        && let Some(js::Prop::Field(_, init)) = props.pop()
+    {
+        *made = Expr::call_helper("$nullableCell", vec![init]);
     }
 }
 
@@ -387,31 +385,36 @@ pub fn nullable_made(made: Expr) -> Expr {
 /// as `outside_writes` holds.
 pub(crate) fn imported_variables(items: &mut [js::Item], variable: &dyn Fn(&Expr) -> bool) {
     let mut changed = false;
-    js::each_item_expr_mut(items, &mut |e| match &mut e.kind {
-        js::ExprKind::Member(of, key) if key == js::HELD && variable(of) => {
-            let read = std::mem::replace(&mut **of, Expr::taken());
-            *e = Expr {
-                span: e.span,
-                facts: js::Facts::of(js::Known::Live),
-                ..read
-            };
-            changed = true;
+    js::each_item_expr_mut(items, &mut |e| {
+        // Its location, where a borrow would raise, none of a variable's
+        // value, which no borrow guards: `$withBorrow(x, f, at)`.
+        let borrowed = (e.helper_call_of("$withBorrow").filter(|with| !with.given("itself"))).is_some_and(|with| {
+            with.arg("cell").is_some_and(variable)
+                && with
+                    .arg("raisedAt")
+                    .is_some_and(|at| matches!(at.kind, js::ExprKind::RaisedAt(_)))
+        });
+        match &mut e.kind {
+            js::ExprKind::Member(of, key) if key == js::HELD && variable(of) => {
+                let read = std::mem::replace(&mut **of, Expr::taken());
+                *e = Expr {
+                    span: e.span,
+                    facts: js::Facts::of(js::Known::Live),
+                    ..read
+                };
+                changed = true;
+            }
+            js::ExprKind::Call(_, args) if borrowed => {
+                let (mut key, f) = (args.remove(0), args.remove(0));
+                key.facts = js::Facts::of(js::Known::Live);
+                *e = Expr {
+                    span: e.span,
+                    ..apply(f, vec![key])
+                };
+                changed = true;
+            }
+            _ => {}
         }
-        js::ExprKind::Call(callee, args)
-            // Its location, where a borrow would raise, none of a variable's
-            // value, which no borrow guards.
-            if callee.helper_name() == Some("$withBorrow")
-                && matches!(args.as_slice(), [key, _, at] if variable(key) && matches!(at.kind, js::ExprKind::RaisedAt(_))) =>
-        {
-            let (mut key, f) = (args.remove(0), args.remove(0));
-            key.facts = js::Facts::of(js::Known::Live);
-            *e = Expr {
-                span: e.span,
-                ..apply(f, vec![key])
-            };
-            changed = true;
-        }
-        _ => {}
     });
     if changed {
         applied_in_place(items);

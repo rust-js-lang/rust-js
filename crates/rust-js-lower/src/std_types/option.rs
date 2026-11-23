@@ -682,13 +682,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What a `Some` just made holds, `$some(x)`'s `x`; and of `t ?
         // $some(x) : undefined`, a `then`'s, `flatten()` say, `t ? x :
         // undefined`, as `None` is `undefined` either way (ADR 0647).
-        let made = |e: &Expr| match &e.kind {
-            js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$some") => match args.as_slice() {
-                [x] => Some(x.clone()),
-                _ => None,
-            },
-            _ => None,
-        };
+        let made = |e: &Expr| e.helper_call_of("$some").and_then(|some| some.arg("x")).cloned();
         if let Some(x) = made(&option) {
             return x;
         }
@@ -696,18 +690,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // map's own `get`, `map.get(key)`, its `undefined` where the key
         // isn't there, and what's there, `None`'s `null` too, as it is
         // (ADR 0950).
-        if let js::ExprKind::Call(callee, args) = &option.kind
-            && callee.helper_name() == Some("$someGet")
-            && let [map, key] = args.as_slice()
+        if let Some(get) = option.helper_call_of("$someGet")
+            && let (Some(map), Some(key)) = (get.arg("map"), get.arg("key"))
         {
             return Expr::call(Expr::member(map.clone(), "get"), vec![key.clone()]);
         }
         // An optional call's, `$someDefined(hop.closest?.(selector))`,
         // flattened: the call itself, its `undefined` and its `null` a
         // `None` alike (ADR 0950, amended, #1859).
-        if let js::ExprKind::Call(callee, args) = &option.kind
-            && callee.helper_name() == Some("$someDefined")
-            && let [called] = args.as_slice()
+        if let Some(called) = option
+            .helper_call_of("$someDefined")
+            .and_then(|defined| defined.arg("value"))
         {
             return called.clone();
         }
@@ -722,13 +715,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// What `$someValue(option)` reads, of an `Option` of a generic `T`.
 pub fn some_value_of(e: &Expr) -> Option<&Expr> {
-    match &e.kind {
-        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$someValue") => match args.as_slice() {
-            [option] => Some(option),
-            _ => None,
-        },
-        _ => None,
-    }
+    e.helper_call_of("$someValue")?.arg("x")
 }
 
 /// Of `$unwrap(option)` or `$unwrap(option, "message")`, an `unwrap()`'s
@@ -736,26 +723,18 @@ pub fn some_value_of(e: &Expr) -> Option<&Expr> {
 /// panics, `option == null`, as `$unwrap`'s is, the option, its value
 /// where it doesn't, and the panic it throws where it does.
 pub fn unwrap_tested(e: &Expr) -> Option<(Expr, &Expr, Expr)> {
-    let js::ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    if callee.helper_name() != Some("$unwrap") {
-        return None;
-    }
+    let unwrap = e.helper_call_of("$unwrap")?;
+    let (option, at) = (unwrap.arg("value")?, unwrap.arg("raisedAt")?);
     // `unwrap()`'s payload is a `&str`, `panic("..")`'s; `expect(msg)`'s a
     // `String`, std's `expect_failed` showing it (ADR 0660, amended).
     // Each raised where its `unwrap()` is, `at` (#2292).
-    let (option, at, message, payload) = match args.as_slice() {
-        [option, at] => (
-            option,
-            at,
+    let (message, payload) = match unwrap.arg("message") {
+        None => (
             Expr::str("called `Option::unwrap()` on a `None` value"),
             js::Payload::Str,
         ),
-        [option, at, message] if matches!(message.kind, js::ExprKind::Str(_)) => {
-            (option, at, message.clone(), js::Payload::String)
-        }
-        _ => return None,
+        Some(message) if matches!(message.kind, js::ExprKind::Str(_)) => (message.clone(), js::Payload::String),
+        Some(_) => return None,
     };
     let js::ExprKind::RaisedAt(at) = &at.kind else {
         return None;

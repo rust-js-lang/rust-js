@@ -172,8 +172,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`$position($lent($iter(ids)), ..)` of an iterator made for it, not `$position(ids, ..)`",
     file: "crates/rust-js-lower/src/iterators/eager.rs",
-    find: '        if callee.helper_name() == Some("$position")\n',
-    replace: '        if false && callee.helper_name() == Some("$position")\n',
+    find: "        if let Some(position) = e.helper_call_of(\"$position\")\n",
+    replace: "        if let Some(position) = e.helper_call_of(\"$position\").filter(|_| false)\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
@@ -220,8 +220,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`next()` of an array's fresh iterator from MIR is `$next($iter(keys))`, not `keys[0]`",
     file: "crates/rust-js-lower/src/iterators/eager.rs",
-    find: '        if callee.helper_name() == Some("$next")\n',
-    replace: '        if false && callee.helper_name() == Some("$next")\n',
+    find: "        if let Some(chain) = e.helper_call_of(\"$next\").and_then(|next| next.arg(\"it\"))\n",
+    replace: "        if let Some(chain) = e.helper_call_of(\"$next\").filter(|_| false).and_then(|next| next.arg(\"it\"))\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
@@ -274,8 +274,8 @@ export const mutations: Mutation[] = [
     breaks:
       "two arrays zipped and collected from MIR stay `Array.from(Iterator.from($lazyZip($iter(a), $iter(b)))\u2026)`",
     file: "crates/rust-js-lower/src/iterators/eager.rs",
-    find: 'zip.helper_name() == Some("$lazyZip")',
-    replace: "false",
+    find: "            && let (Some(a), Some(b)) = (zip.arg(\"a\"), zip.arg(\"b\"))\n",
+    replace: "            && let (Some(a), Some(b)) = (None::<&Expr>, zip.arg(\"b\"))\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
@@ -392,9 +392,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a chain collected, `$lazyChain(a, b)`, isn't spread, `[...a, ...b]`",
     file: "crates/rust-js-lower/src/iterators/eager.rs",
-    find: '    (callee.helper_name() == Some("$lazyChain")).then(|| part(e))\n',
-    replace:
-      '    (callee.helper_name() == Some("$lazyChained")).then(|| part(e))\n',
+    find: "    e.helper_call_of(\"$lazyChain\").is_some().then(|| part(e))\n",
+    replace: "    e.helper_call_of(\"$lazyChain\").filter(|_| false).is_some().then(|| part(e))\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_sources.rs$"],
     snapshots: true,
   },
@@ -402,8 +401,8 @@ export const mutations: Mutation[] = [
     name: "zip-of-arrays-unfused",
     breaks: "`$lazyZip` of two arrays' items, collected, isn't `$zip(a, b)`",
     file: "crates/rust-js-lower/src/iterators/eager.rs",
-    find: '            if zip.helper_name() == Some("$lazyZip")\n',
-    replace: '            if zip.helper_name() == Some("$lazyZipped")\n',
+    find: ".filter(|zip| !zip.given(\"dropA\"))",
+    replace: ".filter(|zip| !zip.given(\"dropA\") && false)",
     tests: [
       "test/lowering-branches.test.ts",
       "test/lowering-cells.test.ts",

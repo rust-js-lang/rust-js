@@ -405,8 +405,8 @@ export const mutations: Mutation[] = [  {
     breaks:
       "an `expect` whose message is a variable's is its test too, the message read after the drops, which changed it: `changed` where Rust's is `no impl`",
     file: "crates/rust-js-lower/src/std_types/option.rs",
-    find: "        [option, at, message] if matches!(message.kind, js::ExprKind::Str(_)) => {\n",
-    replace: "        [option, at, message] => {\n",
+    find: "        Some(message) if matches!(message.kind, js::ExprKind::Str(_)) => (message.clone(), js::Payload::String),\n",
+    replace: "        Some(message) => (message.clone(), js::Payload::String),\n",
     tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
   },
   {
@@ -414,8 +414,8 @@ export const mutations: Mutation[] = [  {
     breaks:
       "React's `cache.data.get(resourceType)` flattened is `$someValue($someGet(data, key))` (ADR 0950)",
     file: "crates/rust-js-lower/src/std_types/option.rs",
-    find: '            && callee.helper_name() == Some("$someGet")\n',
-    replace: '            && callee.helper_name() == Some("$someGot")\n',
+    find: "        if let Some(get) = option.helper_call_of(\"$someGet\")\n",
+    replace: "        if let Some(get) = option.helper_call_of(\"$someGet\").filter(|_| false)\n",
     tests: ["test/lowering-collections.test.ts", "-t", "get flattened"],
   },
   {
@@ -567,8 +567,8 @@ export const mutations: Mutation[] = [  {
     name: "optional-call-flattened-boxed",
     breaks: "`flatten()` of an optional call's `$someDefined(..)` boxes and unboxes it again, `$someValue($someDefined(hop.closest?.(selector)))`, where upstream's `hop.closest?.(selector)` is the same value (ADR 0950, amended, #1859)",
     file: "crates/rust-js-lower/src/std_types/option.rs",
-    find: "            && callee.helper_name() == Some(\"$someDefined\")\n",
-    replace: "            && callee.helper_name() == Some(\"$someDefinedNot\")\n",
+    find: "            .helper_call_of(\"$someDefined\")\n",
+    replace: "            .helper_call_of(\"$someDefined\").filter(|_| false)\n",
     tests: ["test/js-optional-call.test.ts", "-t", "upstream's"],
   },
   {
@@ -619,8 +619,8 @@ export const mutations: Mutation[] = [  {
     name: "expect-a-str",
     breaks: "`expect`'s payload, a `String`, downcasts as a `&str`",
     file: "crates/rust-js-lower/src/std_types/option.rs",
-    find: "            (option, at, message.clone(), js::Payload::String)\n",
-    replace: "            (option, at, message.clone(), js::Payload::Str)\n",
+    find: "        Some(message) if matches!(message.kind, js::ExprKind::Str(_)) => (message.clone(), js::Payload::String),\n",
+    replace: "        Some(message) if matches!(message.kind, js::ExprKind::Str(_)) => (message.clone(), js::Payload::Str),\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_payload_kinds\\.rs$"],
   },
 ];

@@ -196,8 +196,7 @@ pub fn eager_chains(stmts: &mut [Stmt]) {
         };
         // `next()`'s, `$next(chain)`, of an iterator made here of an array
         // whose stages do nothing: its first item, `xs[0]`.
-        if callee.helper_name() == Some("$next")
-            && let [chain] = &args[..]
+        if let Some(chain) = e.helper_call_of("$next").and_then(|next| next.arg("it"))
             && let Some((items, _)) = eager_items(chain, false, None)
         {
             *e = Expr {
@@ -234,8 +233,8 @@ pub fn eager_chains(stmts: &mut [Stmt]) {
         }
         // `$position`'s, of the array, lent or not: what it steps has no
         // `return` to close.
-        if callee.helper_name() == Some("$position")
-            && let [chain, f] = &args[..]
+        if let Some(position) = e.helper_call_of("$position")
+            && let (Some(chain), Some(f)) = (position.arg("items"), position.arg("found"))
             && let Some((items, _)) = eager_items(chain, false, None)
         {
             *e = Expr {
@@ -368,10 +367,11 @@ pub fn eager_spreads(stmts: &mut [Stmt]) {
 /// `drop`, as a helper given `drop` closes an array it's given (#423): `xs`.
 fn closed_by_its_drop<'e>(chain: &'e Expr, drop: &Expr) -> Option<&'e Expr> {
     let closed = closed(chain).filter(|closed| !closed.passes_each)?;
-    let js::ExprKind::Call(drop_each, dropped) = &closed.drop.kind else {
-        return None;
-    };
-    let by_drop = drop_each.helper_name() == Some("$dropEach") && matches!(&dropped[..], [d] if d.kind == drop.kind);
+    let by_drop = (closed
+        .drop
+        .helper_call_of("$dropEach")
+        .and_then(|each| each.arg("drop")))
+    .is_some_and(|d| d.kind == drop.kind);
     by_drop.then(|| fresh_iter_source(closed.it)).flatten()
 }
 
@@ -435,11 +435,10 @@ fn eager_items_of(chain: &Expr, whole: bool, taker: Option<&Expr>, owns: bool) -
     // `$zip(a, b)`, whose items pairing them make nothing else do.
     let source = match (&args[..], &at.kind) {
         ([source], _) if is_stepped_items(at) => source.clone(),
-        (_, js::ExprKind::Call(zip, sides))
-            if zip.helper_name() == Some("$lazyZip")
-                && let [a, b] = &sides[..]
-                && is_stepped_items(a)
-                && is_stepped_items(b) =>
+        _ if let Some(zip) = at.helper_call_of("$lazyZip").filter(|zip| !zip.given("dropA"))
+            && let (Some(a), Some(b)) = (zip.arg("a"), zip.arg("b"))
+            && is_stepped_items(a)
+            && is_stepped_items(b) =>
         {
             Expr::call(Expr::helper("$zip"), vec![iterated(a.clone()), iterated(b.clone())])
         }
@@ -530,7 +529,11 @@ fn chained(e: &Expr) -> Option<Vec<Expr>> {
     fn part(e: &Expr) -> Vec<Expr> {
         match &e.kind {
             js::ExprKind::Call(callee, args) => match (&callee.kind, args.as_slice()) {
-                (_, [a, b]) if callee.helper_name() == Some("$lazyChain") => [part(a), part(b)].concat(),
+                _ if let Some(chain) = e.helper_call_of("$lazyChain")
+                    && let (Some(a), Some(b)) = (chain.arg("a"), chain.arg("b")) =>
+                {
+                    [part(a), part(b)].concat()
+                }
                 (js::ExprKind::Member(of, m), [f]) if m == "map" && f.is_identity() => part(of),
                 _ if is_stepped_items(e) || is_iterator_from(e) => part(&args[0]),
                 _ => vec![e.clone()],
@@ -538,10 +541,7 @@ fn chained(e: &Expr) -> Option<Vec<Expr>> {
             _ => vec![e.clone()],
         }
     }
-    let js::ExprKind::Call(callee, _) = &e.kind else {
-        return None;
-    };
-    (callee.helper_name() == Some("$lazyChain")).then(|| part(e))
+    e.helper_call_of("$lazyChain").is_some().then(|| part(e))
 }
 
 /// Whether `e` is `Iterator.from(x)`.

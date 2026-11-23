@@ -628,9 +628,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // One made so already, `$skipping(source, n)` of `as_exact_size`'s
         // own, a `rev()`'s source (#385); not `closing`'s, given a drop.
         if let Some((_, skip)) = crate::recognition::counted_source(self.tcx, ty)
-            && let js::ExprKind::Call(callee, args) = &value.kind
-            && args.len() == 2
-            && callee.helper_name() == Some(if skip { "$skipping" } else { "$taking" })
+            && (value.helper_call_of(if skip { "$skipping" } else { "$taking" }))
+                .is_some_and(|counted| !counted.given("drop"))
             && !self.counted_lacks_its_back(&value, ty, back)
         {
             return Ok(value);
@@ -799,8 +798,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (js::ExprKind::Member(source_value, method), [each]) if method == "flatMap" => {
                     Some((&**source_value, each))
                 }
-                (_, [source_value, each, ..]) if callee.helper_name() == Some("$flatMap") => Some((source_value, each)),
-                _ => None,
+                _ => value
+                    .helper_call_of("$flatMap")
+                    .and_then(|flat| Some((flat.arg("it")?, flat.arg("f")?))),
             }
             && let Some(inner) = made.or_else(|| self.iterator_item(source.peel_refs()))
         {
@@ -867,9 +867,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // own and steps `b`'s then `a`'s from the back, as std's `Chain`
         // does (#739).
         if let Some((first, second)) = crate::recognition::chained_sources(self.tcx, ty)
-            && let js::ExprKind::Call(callee, args) = &value.kind
-            && callee.helper_name() == Some("$lazyChain")
-            && let [a, b] = args.as_slice()
+            && let Some(chain) = value.helper_call_of("$lazyChain")
+            && let (Some(a), Some(b)) = (chain.arg("a"), chain.arg("b"))
         {
             let a = stepped_value(a).unwrap_or_else(|| a.clone());
             let b = stepped_value(b).unwrap_or_else(|| b.clone());
@@ -997,10 +996,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (js::ExprKind::Member(source_value, method), [p]) if method == "filter" => {
                     Some(((**source_value).clone(), vec![p.clone()]))
                 }
-                (_, [source_value, p, drop]) if callee.helper_name() == Some("$filterDropping") => {
-                    Some((source_value.clone(), vec![p.clone(), drop.clone()]))
-                }
-                _ => None,
+                _ => value.helper_call_of("$filterDropping").and_then(|filter| {
+                    let (source_value, keep, drop) = (filter.arg("it")?, filter.arg("keep")?, filter.arg("drop")?);
+                    Some((source_value.clone(), vec![keep.clone(), drop.clone()]))
+                }),
             };
             if let Some((source_value, given)) = filtered {
                 let source_value = self.as_double_ended(source_value, source.peel_refs(), span)?;
@@ -1145,17 +1144,20 @@ fn counted_parts(value: &Expr, skip: bool) -> Option<(Expr, Expr, Option<Expr>)>
         return None;
     };
     let method = if skip { "drop" } else { "take" };
-    match (&callee.kind, args.as_slice()) {
-        (js::ExprKind::Member(source, name), [n]) if name == method => Some(((**source).clone(), n.clone(), None)),
-        (_, [source, n, drop]) if skip && callee.helper_name() == Some("$skipping") => {
-            Some((source.clone(), n.clone(), Some(drop.clone())))
-        }
-        // One a maker made `$taking` or `$skipping` where generic code asks
-        // its hint (`made_knowing_its_hint`), of a source whose form may
-        // lack what its back steps (#2194).
-        (_, [source, n]) if callee.helper_name() == Some(if skip { "$skipping" } else { "$taking" }) => {
-            Some((source.clone(), n.clone(), None))
-        }
-        _ => None,
+    if let (js::ExprKind::Member(source, name), [n]) = (&callee.kind, args.as_slice())
+        && name == method
+    {
+        return Some(((**source).clone(), n.clone(), None));
+    }
+    // A skip's of items with a destructor, given its `drop`; or one a maker
+    // made `$taking` or `$skipping` where generic code asks its hint
+    // (`made_knowing_its_hint`), of a source whose form may lack what its
+    // back steps, given none (#2194).
+    let counted = value.helper_call_of(if skip { "$skipping" } else { "$taking" })?;
+    let (source, n) = (counted.arg("iter")?, counted.arg("n")?);
+    match counted.arg("drop") {
+        Some(drop) if skip => Some((source.clone(), n.clone(), Some(drop.clone()))),
+        Some(_) => None,
+        None => Some((source.clone(), n.clone(), None)),
     }
 }

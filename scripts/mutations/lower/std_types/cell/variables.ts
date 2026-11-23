@@ -102,9 +102,8 @@ export const mutations: Mutation[] = [  {
     breaks:
       "another module's `with_borrow` of an exported variable stays `$withBorrow(label, ..)`, which counts borrows of a string (ADR 0270, amended)",
     file: "crates/rust-js-lower/src/std_types/cell/variables.rs",
-    find: '                && matches!(args.as_slice(), [key, _, at] if variable(key) && matches!(at.kind, js::ExprKind::RaisedAt(_))) =>\n',
-    replace:
-      '                && matches!(args.as_slice(), [key, _, at] if variable(key) && matches!(at.kind, js::ExprKind::RaisedAt(_)) && false) =>\n',
+    find: "            with.arg(\"cell\").is_some_and(variable)\n",
+    replace: "            with.arg(\"cell\").is_some_and(variable) && false\n",
     tests: [
       "test/lowering-module-variables.test.ts",
       "-t",
@@ -116,9 +115,8 @@ export const mutations: Mutation[] = [  {
     breaks:
       "an importer's read of another module's variable is taken for one of a function, which nothing sets, so `const rendering = isRendering` is read where it's used, after its module set it again (ADR 0270, amended)",
     file: "crates/rust-js-lower/src/std_types/cell/variables.rs",
-    find: "                facts: js::Facts::of(js::Known::Live),\n                ..read\n",
-    replace:
-      "                facts: js::Facts::of(js::Known::Item),\n                ..read\n",
+    find: "                    facts: js::Facts::of(js::Known::Live),\n",
+    replace: "                    facts: js::Facts::of(js::Known::Item),\n",
     tests: ["test/corpus.test.ts", "-t", "^exported_cells.rs$"],
   },
   {
@@ -139,9 +137,8 @@ export const mutations: Mutation[] = [  {
     breaks:
       "a thread-local of an array its module sets whole is written in place, `$assign(callbacks, [])`, where React's `callbacks = []` gives the variable the new one (ADR 0270, amended)",
     file: "crates/rust-js-lower/src/std_types/cell/variables.rs",
-    find: '                    && callee.helper_name() == Some("$assign")\n',
-    replace:
-      '                    && callee.helper_name() == Some("$assign ")\n',
+    find: "                        && (e.helper_call_of(\"$assign\").and_then(|assign| assign.arg(\"target\")))\n",
+    replace: "                        && (e.helper_call_of(\"$assign\").filter(|_| false).and_then(|assign| assign.arg(\"target\")))\n",
     tests: [
       "test/lowering-module-variables.test.ts",
       "-t",
@@ -271,8 +268,8 @@ export const mutations: Mutation[] = [  {
     breaks:
       "a nullable thread-local made where it's first used is `$local(() => ({ value: init }))`, so what's written through it is stored as it is, `undefined` for `None` (#541, #554)",
     file: "crates/rust-js-lower/src/std_types/cell/variables.rs",
-    find: '        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$local") => {\n',
-    replace: '        js::ExprKind::Call(callee, args) if false && callee.helper_name() == Some("$local") => {\n',
+    find: "    if let Some(mut local) = made.helper_call_of_mut(\"$local\") {\n",
+    replace: "    if let Some(mut local) = made.helper_call_of_mut(\"$local\").filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_lazy_where_observable.rs$"],
     snapshots: true,
   },

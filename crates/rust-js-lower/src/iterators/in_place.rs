@@ -54,7 +54,8 @@ pub(crate) fn item_drop_given<'e>(name: &str, args: &'e [Expr]) -> Option<&'e Ex
 /// back and length already, no longer reaches here (#1109).
 pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
     let (reversed, knowing) = (is_reversed(e), is_knowing(e));
-    let own_steps = iterator_parts(e).is_some_and(|given| given.len() >= 6);
+    // The crate's own iterator, given its `size_hint`, `hint`.
+    let own_steps = iterator_parts(e).is_some() && e.helper_call_of("$iterator").is_some_and(|made| made.given("hint"));
     let js::ExprKind::Call(callee, given) = &mut e.kind else {
         return;
     };
@@ -62,17 +63,23 @@ pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
     // iterator of `xs` has none of: generic code's `t.into_iter().rev()`
     // of a `T` its caller gives a `Vec` (#1604).
     let back_of_into_iter = reversed
-        && given.first().is_some_and(
-            |source| matches!(&source.kind, js::ExprKind::Call(of, _) if of.helper_name() == Some("$intoIter")),
-        );
+        && given
+            .first()
+            .is_some_and(|source| source.helper_call_of("$intoIter").is_some());
     if (reversed || knowing) && !given.is_empty() && !back_of_into_iter {
         stepped_in_place(&mut given[0], false, fuse);
     }
     // An iterator of the crate's stepped till it ends, which nothing asks
     // its size: given no `size_hint`, nor the places before it it needs.
     if own_steps {
-        given[5] = Expr::js_undefined();
-        fewest_iterator_args(given);
+        if let Some(mut made) = e.helper_call_of_mut("$iterator")
+            && let Some(hint) = made.arg_mut("hint")
+        {
+            *hint = Expr::js_undefined();
+        }
+        if let js::ExprKind::Call(_, given) = &mut e.kind {
+            fewest_iterator_args(given);
+        }
         return;
     }
     let fused = matches!(&callee.kind, js::ExprKind::Var(name) if Some(name.word()) == fuse); // word: an import's local, `fuse`, kept as its `use` names it (rd650)

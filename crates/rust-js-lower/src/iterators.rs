@@ -704,12 +704,9 @@ pub fn is_items_map(e: &Expr) -> bool {
     if let js::ExprKind::Call(callee, args) = &e.kind
         && let [f] = args.as_slice()
         && let js::ExprKind::Member(source, method) = &callee.kind
-        && let js::ExprKind::Call(iter, items) = &source.kind
+        && let Some(made) = source.helper_call_of("$iter")
     {
-        method == "map"
-            && f.reads_only_vars()
-            && iter.helper_name() == Some("$iter")
-            && items.iter().all(Expr::reads_only_vars)
+        method == "map" && f.reads_only_vars() && made.args_from("items").iter().all(Expr::reads_only_vars)
     } else {
         false
     }
@@ -751,9 +748,8 @@ pub fn mapped_var(e: &Expr) -> Option<&js::Name> {
 /// that held one was read in place: the one, as the runtime's `$iter` gives
 /// one back as it is, an outer `lowerless` unread (#1152).
 pub fn stepped_once(e: &mut Expr) {
-    while let js::ExprKind::Call(callee, args) = &mut e.kind
-        && callee.helper_name() == Some("$iter")
-        && args.first().is_some_and(is_stepped_items)
+    while (e.helper_call_of("$iter").and_then(|made| made.arg("items"))).is_some_and(is_stepped_items)
+        && let js::ExprKind::Call(_, args) = &mut e.kind
     {
         *e = args.swap_remove(0);
     }

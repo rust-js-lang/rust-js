@@ -1028,14 +1028,13 @@ fn locked(helper: &'static str, cell: Expr, mutable: bool) -> Expr {
 /// what it holds, `$unpoisoned(cell).value`, each panicking as `unwrap` of
 /// its `Err` would where the lock is poisoned (ADR 0144, amended).
 pub(crate) fn unwrapped_lock(result: &Expr, message: Option<&Expr>) -> Option<Expr> {
-    let js::ExprKind::Call(callee, given) = &result.kind else {
-        return None;
-    };
-    let (helper, cell) = match (callee.helper_name()?, given.as_slice()) {
-        ("$locked", [cell, mutable]) if matches!(mutable.kind, js::ExprKind::Bool(true)) => ("$lock", cell),
-        ("$locked", [cell]) => ("$lockRead", cell),
-        ("$lockedValue", [cell]) => ("$unpoisoned", cell),
-        _ => return None,
+    // A lock's write, `mutable` given `true`, or its read; or its value's.
+    let locked = result.helper_call_of("$locked");
+    let (helper, cell) = match locked.map(|locked| (locked.arg("mutable"), locked.arg("cell"))) {
+        Some((Some(mutable), cell)) if matches!(mutable.kind, js::ExprKind::Bool(true)) => ("$lock", cell?),
+        Some((Some(_), _)) => return None,
+        Some((None, cell)) => ("$lockRead", cell?),
+        None => ("$unpoisoned", result.helper_call_of("$lockedValue")?.arg("cell")?),
     };
     let mut given = vec![cell.clone()];
     given.extend(message.cloned());
@@ -1070,10 +1069,9 @@ pub fn taken<'tcx>(
 /// value)`. The one reader of its forms.
 fn taken_parts(e: &Expr) -> Option<(&Expr, Expr)> {
     match &e.kind {
-        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$take") => match args.as_slice() {
-            [target, value] => Some((target, value.clone())),
-            _ => None,
-        },
+        js::ExprKind::Call(..) if let Some(take) = e.helper_call_of("$take") => {
+            Some((take.arg("target")?, take.arg("value")?.clone()))
+        }
         js::ExprKind::Call(callee, args)
             if let js::ExprKind::Member(target, method) = &callee.kind
                 && method == "splice"
@@ -1088,11 +1086,9 @@ fn taken_parts(e: &Expr) -> Option<(&Expr, Expr)> {
 /// What a cell holds, `cell.value`: of one `Cell::from_mut` made of an
 /// object, `$cellOf(object)`, the object.
 fn cell_contents(cell: Expr) -> Expr {
-    match &cell.kind {
-        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$cellOf") && args.len() == 1 => {
-            args[0].clone()
-        }
-        _ => Expr::held(cell),
+    match cell.helper_call_of("$cellOf").and_then(|of| of.arg("object")) {
+        Some(object) => object.clone(),
+        None => Expr::held(cell),
     }
 }
 

@@ -64,9 +64,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `$skipping` `as_exact_size` made already, a `rev()`'s source, is refused as an `ExactSizeIterator`: `first((0..10).skip(6).rev())` (#385)",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: '            && args.len() == 2\n            && callee.helper_name() == Some(if skip { "$skipping" } else { "$taking" })\n',
-    replace:
-      '            && args.len() == 99\n            && callee.helper_name() == Some(if skip { "$skipping" } else { "$taking" })\n',
+    find: "                .is_some_and(|counted| !counted.given(\"drop\"))\n",
+    replace: "                .is_some_and(|counted| !counted.given(\"drop\") && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
     snapshots: true,
   },
@@ -310,8 +309,8 @@ export const mutations: Mutation[] = [
     name: "chain-made-unstepped",
     breaks: "`rev()` of a chain made in place is refused",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: '            && callee.helper_name() == Some("$lazyChain")\n',
-    replace: '            && callee.helper_name() == Some("$unchained")\n',
+    find: "            && let Some(chain) = value.helper_call_of(\"$lazyChain\")\n",
+    replace: "            && let Some(chain) = value.helper_call_of(\"$lazyChain\").filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_chain.rs$"],
   },
   {
@@ -446,8 +445,8 @@ export const mutations: Mutation[] = [
     name: "flat-map-helper-backless",
     breaks: "a `$flatMap(src, each)` stepped from its back isn't made `$flattenEnds`, so an `rfold` of a mapped `Vec`'s flatten of what has a destructor folds it from its front (#644)",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: "                (_, [source_value, each, ..]) if callee.helper_name() == Some(\"$flatMap\") => Some((source_value, each)),\n",
-    replace: "",
+    find: "                    .helper_call_of(\"$flatMap\")\n",
+    replace: "                    .helper_call_of(\"$flatMap\").filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
   },
   {
@@ -489,8 +488,8 @@ export const mutations: Mutation[] = [
     name: "dropping-skip-uncounted",
     breaks: "a `skip(n)` of items with a destructor, `$skipping(source, n, drop)`, isn't made knowing its back and its length, so an enumeration of the crate's iterator's `skip()` folded from its back is refused (#778), and so is a `Vec`'s `skip(1).rev()` (#718)",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: '        (_, [source, n, drop]) if skip && callee.helper_name() == Some("$skipping") => {\n',
-    replace: '        (_, [source, n, drop]) if skip && callee.helper_name() == Some("$skipping") && false => {\n',
+    find: "        Some(drop) if skip => Some((source.clone(), n.clone(), Some(drop.clone()))),\n",
+    replace: "        Some(drop) if skip && false => Some((source.clone(), n.clone(), Some(drop.clone()))),\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_of_own_iterator_folded_from_its_back.rs$"],
     snapshots: true,
   },
@@ -913,8 +912,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `take(n)` made `$taking(source, n)` isn't read apart, so its source, std's compiled `Fuse`, is never made knowing its back, and generic code's `rfold` of it throws (#2194)",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: "        (_, [source, n]) if callee.helper_name() == Some(if skip { \"$skipping\" } else { \"$taking\" }) => {\n",
-    replace: "        (_, [source, n]) if false => {\n",
+    find: "        None => Some((source.clone(), n.clone(), None)),\n",
+    replace: "        None => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
   },
   {
