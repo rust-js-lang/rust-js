@@ -101,6 +101,31 @@ test("a drop through a box's deref is the box's, as rustc's box derefs read it",
   expect(put.map(([verdict, , , , detail]) => `${verdict} ${detail}`)).toEqual(["agree behind a pointer, whole"]);
 });
 
+// What had no rustc drop to be compared with, each now compared, none on
+// the normal path unmatched (#2177): a closure's body as `call_once` runs
+// it, its own drop as rustc's `ClosureOnce` shim drops it; an `async`
+// body, rustc's passes run on it but the state machine's, its coroutine
+// drop path, where the future is dropped suspended, left out, as JS's
+// `await` has none, so what's held across an `.await` isn't refused; and
+// what's left of a box something moved out of, its contents dropped as
+// `open_drop_for_box_contents` writes it, `(*_p)` of `_p = copy ((_b.0).0)
+// as *const T (Transmute)`, a field's box too.
+test("a closure called once, an async body and a box's rest are compared with rustc's", () => {
+  const cases: [string, string, number][] = [
+    ["called_once_closure_drops_after.rs", "borrowed::{closure#0}", 2],
+    ["fn_closure_moved_into_a_once_callee.rs", "main::{closure#3}", 1],
+    ["future_size_unwinds.rs", "single::{closure#0}", 4],
+    ["drop_held_across_an_await.rs", "held_twice::{closure#0}", 2],
+    ["boxed_value_partly_moved_drops.rs", "main", 3],
+    ["boxed_field_moved_out_drops_the_rest.rs", "main", 1],
+  ];
+  for (const [name, owner, least] of cases) {
+    const lines = shadowOf(name).filter(([, path]) => path === "normal");
+    expect([name, lines.filter(([verdict]) => verdict !== "agree").map((line) => line.slice(2).join(" "))]).toEqual([name, []]);
+    expect([name, lines.filter(([, , of]) => of === owner).length >= least]).toEqual([name, true]);
+  }
+});
+
 // Two drops of one place written alike, an early return's and the end's,
 // of a place with parts: each part compared as a multiset, the drop that
 // drops a part never left out as rustc's elaboration leaves a dead one out

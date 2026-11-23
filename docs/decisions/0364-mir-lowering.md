@@ -2045,3 +2045,113 @@ alone. Held by corpus case or_pattern_arm_skips_the_shared_body (the
 repro, and std's `Bound` given to a `pub fn`, whose tag is held) and the
 mutations `switch-split-never`, `switch-split-of-the-crates-alone` and
 `switch-split-of-assignments`.
+
+## Amendment: a closure called once, an `async` body and a box's rest compared (2026-11-23, #2177)
+
+Of the normal path's 27 unmatched drops over the corpus, 23 are now
+compared, each agreeing with rustc's elaboration:
+
+- **A closure's body as `call_once` runs it (13).** rust-js lowers a `Fn`
+  closure a binding calls once from its body with `self` by value, rustc's
+  `ClosureOnce` shim inlined (`Mir::called_once`), and kept no rustc body
+  for it. It now keeps the closure's own elaborated body (`Mir::called_once`
+  says it's taken by value), and its drop of itself, where it returns and
+  where it unwinds, is compared with the drop of `_1` rustc's shim makes
+  (`Instance::fn_once_adapter_instance`, `instance_mir`). No such body of
+  the corpus drops a capture, which rustc's reads through its `&self`.
+- **An `async` body (6).** rustc's elaborated body of a coroutine is its
+  state machine, its locals fields of it, so none was kept. Now its built
+  MIR is run through the passes rustc's query runs,
+  `run_analysis_to_runtime_passes` (public for drivers that run them
+  themselves), with no yield type said, so `StateTransform` leaves it as
+  it is: rustc's own drop elaboration of the body rust-js lowers. Its
+  coroutine drop path, what each `Yield`'s `drop` edge drops where the
+  future is dropped while it's suspended, isn't compared, of either body
+  (`running`): JS's `await` has no such path, as a promise runs on to its
+  end (ADR 0029). Compared, a value with a destructor held across an
+  `.await` was refused, rustc's two drops of it at the body's end against
+  rust-js's one: every case of the async table (test/async-points.ts) and
+  rustc's dynamic-drop-async.rs, which no corpus case had shown. Nor is
+  either body's drop of what an `.await` awaits, `__awaitee` (`awaited`):
+  an `async` block's future, awaited, is its promise's from then on, whose
+  body drops what it took as it ends or throws, and rustc's drop of it
+  after is of a future that has returned, which drops nothing. Compared,
+  awaiting a block that took a value with a destructor was refused
+  (test/lowering-async.test.ts' "an async block or closure drops what it
+  took").
+- **What's left of a box something moved out of (4).** rustc drops it as
+  `open_drop_for_box_contents` writes it, `_p = copy ((_b.0: Unique<T>).0:
+  NonNull<T>) as *const T (Transmute); drop((*_p).1)`, of a box anywhere,
+  a field's `(_5.1)` too: `(*_p)` is read as `(*_b)`, as `ElaborateBoxDerefs`'
+  `BoxDerefTransmute` is.
+
+Measured over the corpus's 2,925 cases (2,835 compile): on the normal path
+8,043 agree (8,018 before), none disagree, 7 `flag-ours`, 4 unmatched (27
+before); on cleanup paths 11 unmatched (35). No case compiles otherwise,
+no JS changes. The 4 left are or_pattern_part_moves' alike drops of an
+enum's variant, which rustc's ladder drops under a test of the
+discriminant on every path where rust-js's dataflow says the variant isn't
+there: comparing them needs rust-js's "never" told apart, the variant
+inactive from it moved.
+
+A difference only of the rest of a value is now a disagreement, as any
+other is: the guard that made it `unmatched` (the amendment "an array's
+rest taken apart") stood behind a box's contents rustc frees by a call,
+which are read as the box's now. Over the corpus, the React port (890
+verdicts), the crate corpus (78,463) and rustc's drop/ tests (910, and its
+skipped tests compiled alone) no verdict was such a difference, so lifting
+the guard refuses nothing; its mutation, `shadow-rest-difference-refused`,
+goes with it.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, no output
+changes. Held by test/drops-shadow.test.ts' "a closure called once, an
+async body and a box's rest are compared with rustc's", corpus case
+drop_held_across_an_await, and mutations `called-once-shim-unread`,
+`box-contents-pointer-unread`, `coroutine-left-unelaborated`,
+`called-once-unelaborated`, `coroutine-drop-path-compared` and
+`awaited-future-compared`;
+`shadow-elaborated-only-where-recorded` retargeted.
+
+## Amendment: the cleanup paths' differences, classified (2026-11-24, #2177, #2112's change D3)
+
+Before cleanup paths are compared and their disagreements refused (D3),
+each difference the corpus shows there was traced to the terminators whose
+unwinding reaches it, in rustc's MIR (`--emit=mir -Zmir-include-spans`),
+and every kind a JS throw can reach was run against native Rust. Over the
+corpus's cleanup paths: 25 `disagree`, 14 `flag-theirs`, 11 `unmatched`.
+None is a wrong answer. Each is a cleanup, or a flag's set edge into one,
+that only a terminator that can't throw in JS reaches:
+
+- **An allocation's unwind (25 `disagree`, 7 `flag-theirs`).** rustc drops
+  what's live where `Box::new` (a `vec!`'s elements, a boxed closure, a
+  field's box) unwinds; rust-js never. `Box::new` unwinds only where
+  allocation fails, which aborts natively (`handle_alloc_error`) and can't
+  happen in JS.
+- **Printing, formatting and a length (4 `flag-theirs`).** `_print`
+  unwinds natively only where stdout can't be written; `console.log`
+  doesn't throw. `Arguments::new` and `str::len` never unwind.
+- **A drop of what JS drops nothing of (1 `flag-theirs`).** It runs nothing
+  in JS, so it can't throw (`quiet_drops`).
+- **A call the value moved into (1 `flag-theirs`).** On its unwind the
+  flag is clear: rust-js's "never" is the flag's only value there.
+- **An overflow's assert (4 `unmatched`).** Overflow wraps in JS (the
+  guide's semantics, ADR 0011), so the assert never panics.
+- **A sibling's drop, a match's flag (2 `flag-theirs`).** arm_temporaries'
+  tuple, whose first part's drop could panic, can't reach its `_` arm with
+  both parts there; match_binding_moves_what_a_partial_arm_keeps' `new` is
+  there on every edge into its cleanup, which rust-js drops always.
+- **No rustc body (2 `unmatched`).** std's thread-local initializers.
+
+The rest of the `unmatched`, and each kind's general form (a callee that
+panics before `?`'s value is made, a constrained generic's constructor that
+panics, an iterator whose second `next` panics inside an array, a tuple's
+second maker that panics, a guard that sends a tuple whose first part's
+drop panics to `_`, a `*state =` whose old value's drop panics, a call
+after an `Arc::new` that panics, a failing `let`-`else`), ran as native
+Rust does. So did the crate corpus' 3 cleanup disagreements (itertools'
+permutations, aho-corasick's prefilter, regex-syntax's class parser) and
+rustc's or-pattern-drop-order.rs' `let`-`else`.
+
+So D3 models these edges as unreachable in JS. A cleanup is compared only
+where a terminator that can throw in JS unwinds to it, and a flag only on
+those edges. They are not matched one by one.

@@ -65,6 +65,7 @@ impl<'tcx> MirCx<'_, '_, 'tcx> {
             promoted: mir.promoted.clone(),
             awaits: mir.awaits.clone(),
             elaborated: mir.elaborated.clone(),
+            called_once: mir.called_once,
             cases,
         })
     }

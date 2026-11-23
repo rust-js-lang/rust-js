@@ -35,7 +35,15 @@ pub struct Mir<'tcx> {
     pub cases: IndexMap<BasicBlock, Span>,
     /// rustc's own body of it, its drops elaborated, where the session
     /// compares them with rust-js's (`--drops-shadow`, `elaborated.rs`).
+    /// Of a closure's body as `call_once` runs it (`called_once`), the
+    /// closure's own: its drops but those of itself, whose are rustc's
+    /// `ClosureOnce` shim's. Its captures, which rustc's reads through its
+    /// `&self`, `(*_1).0`, aren't dropped there: none of the corpus's is.
     pub elaborated: Option<mir::Body<'tcx>>,
+    /// Whether it's a closure's body as `call_once` runs it (`called_once`):
+    /// itself taken by value, and dropped where the body returns or
+    /// unwinds, as rustc's shim drops it (#2177).
+    pub called_once: bool,
 }
 
 impl<'tcx> Mir<'tcx> {
@@ -53,6 +61,7 @@ impl<'tcx> Mir<'tcx> {
             awaits: self.awaits.clone(),
             cases: self.cases.clone(),
             elaborated: self.elaborated.as_ref().map(of),
+            called_once: self.called_once,
         }
     }
 
@@ -153,6 +162,7 @@ impl<'tcx> Mir<'tcx> {
             awaits,
             cases: IndexMap::default(),
             elaborated: None,
+            called_once: false,
         }
     }
 
@@ -238,7 +248,8 @@ impl<'tcx> Mir<'tcx> {
             promoted: self.promoted.clone(),
             awaits: self.awaits.clone(),
             cases: self.cases.clone(),
-            elaborated: None,
+            elaborated: self.elaborated.clone(),
+            called_once: true,
         })
     }
 }
@@ -463,14 +474,30 @@ impl<'tcx> Visitor<'tcx> for ReadLocals {
 
 /// Keeps rustc's body of `local`, its drops elaborated, beside rust-js's
 /// own of it, which every compile compares them by: of a function or a
-/// closure, not a coroutine, whose elaborated body is its state machine's.
-/// rustc's query steals `local`'s built MIR alone, which `mir` is a copy of
-/// already; borrowck, which it runs first, only borrows the built MIR of the
-/// closures in it.
-pub(crate) fn with_elaborated<'tcx>(tcx: TyCtxt<'tcx>, local: LocalDefId, mir: &mut Mir<'tcx>) {
-    if !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure)
-        || tcx.is_coroutine(local.to_def_id())
-    {
+/// closure. rustc's query steals `local`'s built MIR alone, which `mir` is
+/// a copy of already; borrowck, which it runs first, only borrows the built
+/// MIR of the closures in it. Of a coroutine, an `async` body, whose
+/// elaborated body is its state machine's, its locals fields of it: its
+/// built MIR, `built`, run through the passes rustc's query runs
+/// (`run_analysis_to_runtime_passes`, which a driver may run itself) but
+/// the state machine's, where no yield is said, so its drops are rustc's
+/// elaboration of the body rust-js lowers (#2177).
+pub(crate) fn with_elaborated<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    local: LocalDefId,
+    built: &rustc_data_structures::steal::Steal<mir::Body<'tcx>>,
+    mir: &mut Mir<'tcx>,
+) {
+    if !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure) {
+        return;
+    }
+    if tcx.is_coroutine(local.to_def_id()) {
+        let mut body = built.borrow().clone();
+        if let Some(coroutine) = body.coroutine.as_mut() {
+            coroutine.yield_ty = None;
+        }
+        rustc_mir_transform::run_analysis_to_runtime_passes(tcx, &mut body);
+        mir.elaborated = Some(body);
         return;
     }
     let elaborated = tcx.mir_drops_elaborated_and_const_checked(local);

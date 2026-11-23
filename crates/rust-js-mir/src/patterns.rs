@@ -1000,6 +1000,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             promoted: mir.promoted.clone(),
             awaits: mir.awaits.clone(),
             elaborated: mir.elaborated.clone(),
+            called_once: mir.called_once,
             cases: mir.cases.clone(),
         })
     }

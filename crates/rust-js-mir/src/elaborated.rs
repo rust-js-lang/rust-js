@@ -100,6 +100,45 @@ impl Theirs {
 /// and how many variants it has.
 type Tested = (PathKey, Vec<(u128, u32)>, u32);
 
+/// A closure's `self`, `_1`.
+const SELF: Local = Local::from_u32(1);
+
+/// The blocks `body` runs to from its start, but a coroutine's drop path:
+/// what a `Yield`'s `drop` edge drops, where the future is dropped while
+/// it's suspended. JS's `await` has no such path, as a promise runs on to
+/// its end (ADR 0029), so neither rust-js's body nor rustc's is compared
+/// there (#2177).
+fn running(body: &mir::Body<'_>) -> rustc_index::bit_set::DenseBitSet<BasicBlock> {
+    let mut seen = rustc_index::bit_set::DenseBitSet::new_empty(body.basic_blocks.len());
+    let mut next = vec![mir::START_BLOCK];
+    while let Some(block) = next.pop() {
+        if !seen.insert(block) {
+            continue;
+        }
+        match &body.basic_blocks[block].terminator().kind {
+            TerminatorKind::Yield { resume, .. } => next.push(*resume),
+            kind => next.extend(kind.successors()),
+        }
+    }
+    seen
+}
+
+/// The locals of `body` that hold what an `.await` awaits, `__awaitee`. An
+/// `async` block's or closure's future, awaited, is its promise's from then
+/// on, whose body drops what it holds as it ends or throws, so JS drops
+/// nothing of it after; rustc's drop of it there is of a future that has
+/// returned, which drops nothing either. Neither body's drop of one is
+/// compared (#2177).
+fn awaited(body: &mir::Body<'_>) -> IndexSet<Local> {
+    (body.var_debug_info.iter())
+        .filter(|info| rust_js_lower::recognition::is_awaitee(info.name))
+        .filter_map(|info| match info.value {
+            mir::VarDebugInfoContents::Place(place) if place.projection.is_empty() => Some(place.local),
+            _ => None,
+        })
+        .collect()
+}
+
 /// Each `Drop` rustc's elaboration left in `body` of what JS drops: whether
 /// a drop flag guards it, a test of a `bool` local only constants are
 /// written to, above the tests of discriminants that lead to it, and the
@@ -145,6 +184,28 @@ fn theirs<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, js_drops: &dyn Fn(Ty<
                     && field.as_u32() == 0
                 {
                     entry.1 = Some(Place::from(of.local));
+                }
+                // And its contents' drop as `open_drop_for_box_contents`
+                // writes it, of what's left of a box something moved out of,
+                // `_p = copy ((_b.0: Unique<T>).0: NonNull<T>) as *const T
+                // (Transmute)`, of a box anywhere, a field's `(_5.1)` too:
+                // `(*_p)` is `(*_b)` (#2177).
+                if let Rvalue::Cast(mir::CastKind::Transmute, Operand::Copy(of), _) = &assign.1
+                    && let [
+                        base @ ..,
+                        ProjectionElem::Field(unique, _),
+                        ProjectionElem::Field(pointer, _),
+                    ] = of.projection.as_slice()
+                    && unique.as_u32() == 0
+                    && pointer.as_u32() == 0
+                {
+                    let boxed = Place {
+                        local: of.local,
+                        projection: tcx.mk_place_elems(base),
+                    };
+                    if boxed.ty(&body.local_decls, tcx).ty.is_box() {
+                        entry.1 = Some(boxed);
+                    }
                 }
             }
         }
@@ -192,7 +253,8 @@ fn theirs<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, js_drops: &dyn Fn(Ty<
             .collect();
         Some((path_key_through(*of, &derefs), values, adt.variants().len() as u32))
     };
-    let reachable = mir::traversal::reachable_as_bitset(body);
+    let reachable = running(body);
+    let awaited = awaited(body);
     let predecessors = body.basic_blocks.predecessors();
     let mut found = Vec::new();
     for (block, data) in body.basic_blocks.iter_enumerated() {
@@ -200,7 +262,7 @@ fn theirs<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, js_drops: &dyn Fn(Ty<
             continue;
         };
         let ty = place.ty(&body.local_decls, tcx).ty;
-        if !reachable.contains(block) || !js_drops(ty) {
+        if !reachable.contains(block) || !js_drops(ty) || awaited.contains(&place.local) {
             continue;
         }
         // Up through the tests of discriminants that lead to it, each the
@@ -362,11 +424,13 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             let ty = (tcx.try_normalize_erasing_regions(self.typing_env, unnormalized)).unwrap_or(ty);
             self.drops(ty) != Drops::Nothing
         };
-        let reachable = mir::traversal::reachable_as_bitset(body);
+        let reachable = running(body);
+        let awaited = awaited(body);
         let sites: Vec<(BasicBlock, Place<'tcx>)> = (body.basic_blocks.iter_enumerated())
             .filter_map(|(block, data)| match &data.terminator().kind {
                 TerminatorKind::Drop { place, .. }
                     if reachable.contains(block)
+                        && !awaited.contains(&place.local)
                         && js_drops(place.ty(&body.local_decls, tcx).ty)
                         && !(place.projection.is_empty() && quiet_guards.contains(&place.local)) =>
                 {
@@ -399,7 +463,26 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             self.say_shadowed(function, &out, &site_of, source_map);
             return;
         };
-        let theirs = theirs(tcx, elaborated, &js_drops);
+        let mut theirs = theirs(tcx, elaborated, &js_drops);
+        // A closure's body as `call_once` runs it: its drop of itself, where
+        // it returns and where it unwinds, is rustc's `ClosureOnce` shim's,
+        // which calls its body by `&mut` and then drops it, each where
+        // rust-js's body writes its own, of the path it's on (#2177).
+        if mir.called_once {
+            let shim = self.shim_drops_of_self(body);
+            for &(block, place) in sites
+                .iter()
+                .filter(|(_, place)| place.local == SELF && place.projection.is_empty())
+            {
+                let site = site_of(block);
+                theirs.extend((shim.iter()).filter(|t| t.site.2 == site.2).map(|t| Theirs {
+                    site,
+                    place: path_key(place),
+                    when: t.when,
+                    except: Vec::new(),
+                }));
+            }
+        }
         // What rust-js's elaboration drops of all of `place` where `block`
         // ends, as the writer asks it (`Elaboration::style`, and behind a
         // pointer `Elaboration::drops`); none where it drops it a part at a
@@ -530,14 +613,18 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 // A difference only of whether a flag is asked runs alike
                 // where the flag holds the other's answer, which only
                 // running it says: counted apart. Judged by the parts that
-                // differ where any does: the rest of a value, whose parts
-                // `rest_drops` may not take apart (a box's contents rustc
-                // frees by a call), never makes a disagreement the
-                // comparison can't stand behind, only an unmatched (#2177).
+                // differ where any does, the rest of a value beside them
+                // following them; and a difference only of the rest is a
+                // difference all the same: a box's contents rustc frees by
+                // a call are read as the box's (`theirs`), so none is left
+                // the comparison can't stand behind (#2177).
                 Ok((differ, _)) => {
                     let parts: Vec<&Differ> = differ.iter().filter(|&&(.., rest)| !rest).collect();
-                    let only_the_rest = parts.is_empty();
-                    let judged = if only_the_rest { differ.iter().collect() } else { parts };
+                    let judged = if parts.is_empty() {
+                        differ.iter().collect()
+                    } else {
+                        parts
+                    };
                     let ours = judged.iter().all(|&&(_, ours, ..)| ours == When::Flagged);
                     let theirs = judged.iter().all(|&&(_, _, theirs, _)| theirs == When::Flagged);
                     match (ours, theirs) {
@@ -545,11 +632,6 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                         (true, false) => (Verdict::FlagOurs, block, said(&differ)),
                         // rustc asks one where rust-js knows.
                         (false, true) => (Verdict::FlagTheirs, block, said(&differ)),
-                        _ if only_the_rest => (
-                            Verdict::Unmatched,
-                            block,
-                            format!("the rest, which isn't taken apart (#2177); {}", said(&differ)),
-                        ),
                         _ => (Verdict::Disagree, block, said(&differ)),
                     }
                 }
@@ -565,6 +647,24 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// where the session records them (`--drops-shadow`). The function's
     /// path is printed only where one is said: printing a path walks every
     /// crate's modules, 37 ms of a compile (#2314).
+    /// Of a closure's body as `call_once` runs it, `body`, rustc's drops of
+    /// the closure itself, `_1` whole, as its `ClosureOnce` shim makes them
+    /// (`Instance::fn_once_adapter_instance`): one where the call returns
+    /// and one where it unwinds, each sited in the shim (`Mir::called_once`).
+    fn shim_drops_of_self(&self, body: &mir::Body<'tcx>) -> Vec<Theirs> {
+        let tcx = self.tcx;
+        let rustc_middle::ty::Closure(closure, args) = *body.local_decls[SELF].ty.kind() else {
+            return Vec::new();
+        };
+        let shim = rustc_middle::ty::Instance::fn_once_adapter_instance(tcx, closure, args);
+        let shim_body = tcx.instance_mir(shim.def);
+        // Its `_1` is the trait's `Self`, the shim's own generic body's: what
+        // it drops is the closure, which JS drops, as rust-js's body asks.
+        (theirs(tcx, shim_body, &|_| true).into_iter())
+            .filter(|t| t.place == (SELF, Vec::new()))
+            .collect()
+    }
+
     fn say_shadowed(
         &self,
         function: DefId,

@@ -1173,6 +1173,12 @@ pub fn held_types<'tcx>(ty: Ty<'tcx>) -> Option<(DefId, &'tcx ty::List<Ty<'tcx>>
     })
 }
 
+/// Whether `name` is a MIR local's that holds what an `.await` awaits,
+/// `__awaitee`, as rustc's lowering of `.await` names it.
+pub fn is_awaitee(name: rustc_span::Symbol) -> bool {
+    name == rustc_span::sym::__awaitee
+}
+
 /// Whether `def_id` is an `async` block's coroutine, `async move { .. }`:
 /// what it took is its own, as a closure's is, where an `async fn`'s holds
 /// its arguments, which its body drops.
