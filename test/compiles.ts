@@ -181,6 +181,8 @@ export function parseRecord(text: string): { wrote: string[]; read: string[]; en
 }
 
 type Entry = {
+  /** The build that made it, the compiler's identity as it ran (#2363). */
+  identity: string;
   read: [string, string][];
   wrote: [string, number][];
   stdout: string;
@@ -191,7 +193,7 @@ type Entry = {
  * written again where they aren't so, and what it printed. Where a
  * manifest of a build before is there, which a compile reads for what's
  * stale, it's one the kept compile wrote, or its compile isn't this one. */
-function found(dir: string, cwd: string, manifest: string | undefined): Exit | undefined {
+function found(dir: string, cwd: string, manifest: string | undefined, identity: string): Exit | undefined {
   let entries: string[];
   try {
     entries = readdirSync(dir).filter((name) => !name.startsWith("."));
@@ -206,6 +208,8 @@ function found(dir: string, cwd: string, manifest: string | undefined): Exit | u
     } catch {
       continue;
     }
+    // Made by this build, never another's kept where this one's is (#2363).
+    if (entry.identity !== identity) continue;
     if (!entry.read.every(([file, hash]) => fingerprint(resolve(cwd, file)) === hash)) continue;
     if (manifest !== undefined && existsSync(manifest)) {
       const kept = entry.wrote.find(([file]) => resolve(cwd, file) === manifest);
@@ -263,14 +267,14 @@ function room(bytes: number, freeNow: Free): boolean {
 /** `entry` of the compile kept in `dir`: its files written whole beside
  * it, then moved into place, so a process reading the cache never reads
  * half of one; one kept at the same time by another is the same. */
-function keep(dir: string, read: [string, string][], wrote: string[], cwd: string, p: Exit, free: Free) {
+function keep(dir: string, identity: string, read: [string, string][], wrote: string[], cwd: string, p: Exit, free: Free) {
   const files = wrote.map((file) => readFileSync(resolve(cwd, file)));
   const key = sha(JSON.stringify(read)).slice(0, 24);
   if (existsSync(dir) && readdirSync(dir).some((name) => name.startsWith(`${key}-`))) return;
   const building = join(dir, `.building-${process.pid}-${Math.random().toString(36).slice(2)}`);
   mkdirSync(building, { recursive: true });
   files.forEach((file, i) => writeFileSync(join(building, String(i)), file));
-  const entry: Entry = { read, wrote: wrote.map((file, i) => [file, i]), stdout: p.bytes.stdout.toString("base64"), stderr: p.bytes.stderr.toString("base64") };
+  const entry: Entry = { identity, read, wrote: wrote.map((file, i) => [file, i]), stdout: p.bytes.stdout.toString("base64"), stderr: p.bytes.stderr.toString("base64") };
   writeFileSync(join(building, "entry.json"), JSON.stringify(entry));
   // Its size as it lies on the disk, every file's blocks, `entry.json`'s
   // too, `bytesOf`'s, as every store of the loop's is counted: its files'
@@ -305,14 +309,22 @@ function plan(cmd: string[], cwd: string, env: Record<string, string | undefined
   const record = join(store, ".records", `${process.pid}-${Math.random().toString(36).slice(2)}.d`);
   const separated = args.includes("--") ? cmd : [...cmd, "--"];
   const manifest = ours.includes("--manifest") ? resolve(cwd, ours[ours.indexOf("--manifest") + 1] ?? "") : undefined;
-  return { dir, record, recorded: [...separated, `--emit=dep-info=${record}`], compiler, manifest };
+  return { dir, record, recorded: [...separated, `--emit=dep-info=${record}`], compiler, manifest, program };
 }
+
+/** Whether `a` and `b` are one file as it was: its inode, size and time. */
+const sameFile = (a: Stat | undefined, b: Stat) =>
+  a !== undefined && a.dev === b.dev && a.ino === b.ino && a.size === b.size && a.mtimeMs === b.mtimeMs;
 
 /** Keep what `p`, the compile that wrote `record`, did, if it can be. */
 function settle(p: Exit, planned: NonNullable<ReturnType<typeof plan>>, cwd: string, free: Free) {
-  const { dir, record, compiler } = planned;
+  const { dir, record, compiler, program } = planned;
   try {
     if (p.code !== 0 || p.signal || p.timedOut || p.overflowed || !existsSync(record)) return;
+    // The compiler that ran is the one whose identity was read before it:
+    // where Cargo linked another in its place meanwhile, what it wrote is
+    // that build's, which no key of this one may give again (#2363).
+    if (!sameFile(statOf(program), compiler.file)) return;
     const { wrote, read, env } = parseRecord(readFileSync(record, "utf8"));
     const written = new Set(wrote.map((file) => resolve(cwd, file)));
     const fingerprints: [string, string][] = [];
@@ -331,7 +343,7 @@ function settle(p: Exit, planned: NonNullable<ReturnType<typeof plan>>, cwd: str
     // An `env!`'s variable is in the key, as all the environment is.
     if (env.some((line) => unread.includes(line.slice("# env-dep:".length).split("=")[0]))) return;
     mkdirSync(dir, { recursive: true });
-    keep(dir, fingerprints, wrote, cwd, p, free);
+    keep(dir, compiler.identity, fingerprints, wrote, cwd, p, free);
   } catch {
     // Not kept: compiled again next time.
   } finally {
@@ -372,7 +384,7 @@ function keeping(cmds: string[][], cwd: string, env: Record<string, string | und
     const p = plan(cmd, cwd, env);
     return p && !existsSync(join(p.dir, unrecordableMark)) ? p : undefined;
   });
-  const exits: (Exit | undefined)[] = planned.map((p) => p && found(p.dir, cwd, p.manifest));
+  const exits: (Exit | undefined)[] = planned.map((p) => p && found(p.dir, cwd, p.manifest, p.compiler.identity));
   const left = exits.flatMap((exit, i) => (exit ? [] : [i]));
   if (left.length > 0 && planned.some(Boolean)) mkdirSync(join(store, ".records"), { recursive: true });
   const given = left.map((i) => planned[i]?.recorded ?? cmds[i]);

@@ -26,4 +26,20 @@ export const mutations: Mutation[] = [
     replace: "  const building = buildingBytes(store);\n  const all = entries(store);\n",
     tests: ["test/compiles.test.ts", "-t", "a compile being built counts in the store's size"],
   },
+  {
+    name: "relinked-compile-kept",
+    breaks: "a compile whose compiler Cargo linked again as it ran is kept under the identity read before it, so another build's output is given again where this one's is asked (#2363)",
+    file: "test/compiles.ts",
+    find: "    if (!sameFile(statOf(program), compiler.file)) return;\n",
+    replace: "",
+    tests: ["test/compiles.test.ts", "-t", "linked again as it runs"],
+  },
+  {
+    name: "another-builds-entry-given",
+    breaks: "an entry another build kept is given again where this build's key finds it (#2363)",
+    file: "test/compiles.ts",
+    find: "    if (entry.identity !== identity) continue;\n",
+    replace: "",
+    tests: ["test/compiles.test.ts", "-t", "an entry another build kept is never given again"],
+  },
 ];

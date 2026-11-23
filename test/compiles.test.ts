@@ -381,3 +381,50 @@ test("what the key leaves out of the environment, the compiler never reads", () 
   // `_`, the shell's last command, is no name a source would spell.
   expect(unread.filter((name) => name !== "_" && text.includes(`"${name}"`))).toEqual([]);
 });
+
+// A compile is kept under the build that ran it (#2363): where the
+// compiler is linked again while it runs, as Cargo does, its output is
+// another build's, kept under none. The one test that moves the
+// compiler's time, put back as it was.
+test("a compile whose compiler is linked again as it runs isn't kept", () => {
+  const dir = fixture("kept-relinked");
+  writeFileSync(join(dir, "lib.rs"), "pub fn one() -> u32 {\n    1\n}\n");
+  const { ran, compile, own } = counting();
+  const cmd = [compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "-Awarnings"];
+  const before = statSync(compiler);
+  // Another link of it in its place as it compiles: its time moved.
+  const relinking = (given: string[]) => {
+    const p = compile(given);
+    utimesSync(compiler, before.atime, new Date(before.mtimeMs + 2000));
+    return p;
+  };
+  try {
+    expect(keptCompile(cmd, root, own, relinking, room).code).toBe(0);
+    utimesSync(compiler, before.atime, before.mtime);
+    expect(keptCompile(cmd, root, own, compile, room).code).toBe(0);
+    expect(ran.length).toBe(2);
+  } finally {
+    utimesSync(compiler, before.atime, before.mtime);
+  }
+}, 300_000);
+
+// And an entry another build kept is never given again where this one's
+// is asked, however its key came to be shared (#2363).
+test("an entry another build kept is never given again", () => {
+  const dir = fixture("kept-of-another-build");
+  writeFileSync(join(dir, "lib.rs"), "pub fn two() -> u32 {\n    2\n}\n");
+  const { ran, compile, own } = counting();
+  const cmd = [compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "-Awarnings"];
+  expect(keptCompile(cmd, root, own, compile, room).code).toBe(0);
+  const store = join(compileCache, "v2");
+  const mine = readdirSync(store)
+    .filter((build) => !build.startsWith("."))
+    .flatMap((build) => readdirSync(join(store, build)).map((key) => join(store, build, key)))
+    .flatMap((at) => (statSync(at).isDirectory() ? readdirSync(at).filter((name) => !name.startsWith(".")).map((name) => join(at, name, "entry.json")) : []))
+    .filter((file) => existsSync(file) && readFileSync(file, "utf8").includes(join(dir, "lib.rs").slice(root.length + 1)));
+  expect(mine.length).toBeGreaterThan(0);
+  for (const file of mine) writeFileSync(file, JSON.stringify({ ...JSON.parse(readFileSync(file, "utf8")), identity: "another build" }));
+  const compiled = ran.length;
+  expect(keptCompile(cmd, root, own, compile, room).code).toBe(0);
+  expect(ran.length).toBe(compiled + 1);
+}, 300_000);
