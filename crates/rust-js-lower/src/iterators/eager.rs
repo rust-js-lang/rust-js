@@ -607,7 +607,7 @@ pub fn consumed_into_iters(body: &mut Vec<Stmt>, fuse: Option<&str>) {
             stepped_through(object, false, fuse);
         } else if callee
             .helper_name()
-            .is_some_and(|name| steps_all(name) || LAST_HELPERS.contains(&name))
+            .is_some_and(|name| steps_all(name) && !asks_its_hint(name) || LAST_HELPERS.contains(&name))
             && let Some(first) = args.first_mut()
         {
             stepped_through(first, false, fuse);

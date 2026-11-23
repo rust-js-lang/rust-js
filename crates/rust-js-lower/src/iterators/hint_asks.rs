@@ -73,8 +73,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// The iterator a call of `callee` grows a `Vec` by, whose hint std asks
-    /// as it fills: a `collect()`'s into what grows as a `Vec`, or an
-    /// `extend`'s (`extend_grows`), in `typing_env`. The one answer, of what
+    /// as it fills: a `collect()`'s into what grows as a `Vec`, an
+    /// `unzip()`'s into one on either side, which reserves each side the
+    /// hint's lower bound (`default_extend`, #2405), or an `extend`'s
+    /// (`extend_grows`), in `typing_env`. The one answer, of what
     /// generic code grows (`hint_asked.rs`) and of a string's `chars()` a
     /// crate that reads capacities asks the hint of (`chars_asked.rs`, #1316).
     pub(crate) fn vec_grown_by(
@@ -86,6 +88,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let iterator = crate::recognition::std_item(self.tcx, crate::recognition::StdItem::Iterator);
         let collect = crate::recognition::trait_method(self.tcx, iterator, "collect");
         if callee == collect && args.types().nth(1).is_some_and(|into| self.grows_as_vec(into)) {
+            return args.types().next();
+        }
+        let unzip = crate::recognition::trait_method(self.tcx, iterator, "unzip");
+        if callee == unzip && args.types().skip(3).any(|side| self.grows_as_it_extends(side)) {
             return args.types().next();
         }
         (self.extend_grows(callee, args))
@@ -105,7 +111,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         typing_env: ty::TypingEnv<'tcx>,
     ) -> bool {
         let iterator = crate::recognition::std_item(self.tcx, crate::recognition::StdItem::Iterator);
-        let at = match callee == crate::recognition::trait_method(self.tcx, iterator, "collect") {
+        let receiver = ["collect", "unzip"].map(|name| crate::recognition::trait_method(self.tcx, iterator, name));
+        let at = match receiver.contains(&callee) {
             true => 0,
             false => 1,
         };
@@ -290,6 +297,17 @@ pub(crate) enum Shunted {
     Reserved,
 }
 
+/// What `unzip()` gives `$unzip` of the room std's `default_extend`
+/// reserves its sides (`FnCx::unzip_reserved`, #2405).
+pub(crate) struct UnzipRoom {
+    /// Each side's items' size, where its capacity is kept.
+    pub(crate) sizes: [Option<Expr>; 2],
+    /// Whether what it steps is `TrustedLen`, its lower bound how many it gives.
+    pub(crate) trusted: bool,
+    /// std's lower bound where it's always 0, a `filter`'s.
+    pub(crate) lower: Option<Expr>,
+}
+
 /// What a collect into a `Vec` std grows asks of its iterator's hint, as
 /// std's `SpecFromIter` does, where it asks any (`FnCx::grown_ask`).
 pub(crate) struct Grown<'tcx> {
@@ -423,6 +441,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 exact,
                 parts,
             }))
+    }
+
+    /// What `unzip()` of `it`, an iterator of type `iter_ty`, into `sides`,
+    /// each with its items' type, asks of its hint, as std's
+    /// `default_extend` does: its lower bound, by which each side is
+    /// reserved, a `Vec`'s as `reserve` grows it, then grown by each `push`
+    /// (#2405). Of a crate that keeps capacities, each side std's `extend`
+    /// grows (`grows_as_it_extends`), its items' size; `it` is made where
+    /// it's made so JS's hint has std's lower bound, as a collect's is, or
+    /// refused (`grown_ask`). Of a `TrustedLen`, `true`: its lower
+    /// bound is how many it gives, whatever JS's form of it hints, and its
+    /// hint runs nothing of the crate's. And std's lower bound where it's
+    /// always 0, a `filter`'s, which an array JS filters at once counts
+    /// otherwise.
+    pub(crate) fn unzip_reserved(
+        &mut self,
+        it: Expr,
+        iter_ty: Ty<'tcx>,
+        sides: [(Ty<'tcx>, Ty<'tcx>); 2],
+        span: Span,
+    ) -> R<(Expr, UnzipRoom)> {
+        let sizes = sides.map(|(side, item)| {
+            (self.krate.keeps_capacity && self.recognition().grows_as_it_extends(side))
+                .then(|| self.capacity_item_size(item))
+                .flatten()
+        });
+        let kept = (sides.iter().zip(&sizes)).find_map(|(&side, size)| size.as_ref().map(|_| side));
+        let room = |trusted: bool, lower: Option<Expr>| UnzipRoom { sizes, trusted, lower };
+        let Some((side, item)) = kept else {
+            return Ok((it, room(false, None)));
+        };
+        let trusted = is_trusted_len(self.tcx, self.typing_env, iter_ty);
+        if trusted {
+            return Ok((it, room(true, None)));
+        }
+        // What it's made as is made knowing what this growth asks where
+        // it's made (`vec_grown_by`, back_stepped's `lengths_asked`); one
+        // whose JS hint can't be std's is refused, as a collect's is.
+        self.grown_ask(side, Some(item), (iter_ty, false, false), false, span)?;
+        let lower = (self.recognition().lower_bound_kept(iter_ty) == Some(false)).then(|| Expr::int(0));
+        Ok((it, room(false, lower)))
     }
 
     /// `it`, of type `ty`, a chain or a zip, `$lazyChain(a, b)` or

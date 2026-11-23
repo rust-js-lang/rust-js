@@ -682,7 +682,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.fillable_sides("unzip", &sides, span)?;
                 // What each side collected dropped as a panic stepping it
                 // unwinds, `A`'s then `B`'s (#1150).
-                let mut args = vec![items];
                 let drops = [generic_args.types().nth(1), generic_args.types().nth(2)]
                     .into_iter()
                     .map(|side| match side {
@@ -690,12 +689,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         None => Ok(None),
                     })
                     .collect::<R<Vec<_>>>()?;
-                if let Some(last) = drops.iter().rposition(Option::is_some) {
+                // What std's `default_extend` asks of its hint, its lower
+                // bound, by which each side's room is reserved (#2405).
+                let items_of = [generic_args.type_at(1), generic_args.type_at(2)];
+                let (items, room) = self.unzip_reserved(
+                    items,
+                    receiver_ty,
+                    [(sides[0], items_of[0]), (sides[1], items_of[1])],
+                    span,
+                )?;
+                let mut args = vec![items];
+                let given: Vec<Option<Expr>> = drops
+                    .into_iter()
+                    .chain(room.sizes)
+                    .chain([room.trusted.then(|| Expr::bool(true)), room.lower])
+                    .collect();
+                if let Some(last) = given.iter().rposition(Option::is_some) {
                     args.extend(
-                        drops
+                        given
                             .into_iter()
                             .take(last + 1)
-                            .map(|drop| drop.unwrap_or_else(Expr::js_undefined)),
+                            .map(|arg| arg.unwrap_or_else(Expr::js_undefined)),
                     );
                 }
                 let pairs = Expr::call(Expr::helper("$unzip"), args);

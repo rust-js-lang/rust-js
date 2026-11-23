@@ -115,6 +115,15 @@ function $reserve(v, additional, size) {
   $capacities.set(v, grown);
 }
 
+// `v`, of items of `size` bytes, empty till it was reserved room for as
+// many as it now has, then given them, which grew it no more: of none,
+// none; else `$reserve`'s of an empty one, as many and `MIN_NON_ZERO_CAP`
+// (#2405).
+function $reservedFor(v, size) {
+  if (v.length === 0 || $capacityUnknown(v)) return;
+  $capacities.set(v, size === 0 ? v.length : Math.max(v.length, $leastCapacity(size)));
+}
+
 // `v.reserve_exact(n)`: where it hasn't room for `n` more, as many as it
 // needs (raw_vec/mod.rs `grow_exact`).
 function $reserveExact(v, additional) {

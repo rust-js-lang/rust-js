@@ -95,4 +95,13 @@ export const mutations: Mutation[] = [
     replace: "    if (reversed || knowing) && !given.is_empty() {\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^into_iter_bound_stepped_from_its_back.rs$|^into_iter_bound_stepped_from_its_back with"],
   },
+  {
+    name: "unzip-asks-no-hint-of-own",
+    breaks: "`$unzip` is taken to ask no hint, so the crate's iterator given it loses its `size_hint`, which std's `default_extend` asks once (#2405)",
+    file: "crates/rust-js-lower/src/iterators/in_place.rs",
+    find: "    (\"$unzip\", None, true),\n",
+    replace: "    (\"$unzip\", None, false),\n",
+    tests: ["test/corpus.test.ts", "-t", "^unzip_asks_its_hint.rs$"],
+    snapshots: true,
+  },
 ];

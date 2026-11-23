@@ -1152,7 +1152,10 @@ What's refused is in [the limitations](limitations.md).
   iterator, `append`, `resize` and `extend_from_slice` reserve as many as
   they add; a `collect()` or an `extend` of another grows by its hint's
   lower bound as it fills, `$grownVec` and `$grownBy`, a `GenericShunt`'s
-  none, generic code's into the `Vec` its caller gives as `B:
+  none, an `unzip()`'s sides each reserved that lower bound once, then
+  grown by each `push`, as std's `default_extend` does,
+  `$unzip(pairs, undefined, undefined, 4, 4)`, a `filter`'s 0 given,
+  which an array JS filters at once would count otherwise (#2405), generic code's into the `Vec` its caller gives as `B:
   FromIterator` too, by the way std collects what its caller gives
   (`IVecCollect`, #1263), and an adapter a variable holds that it's made
   of, `let d = v.iter().map(f)` grown by `d.inspect(g)`, made knowing the

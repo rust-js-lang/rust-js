@@ -1155,3 +1155,46 @@ them (`library_hint_asked_of_what_its_given`,
 giving a library in-place adapters, growing a `Vec` by them with its
 capacity asked, and taking some before asking the hint of the rest, each
 against native. They are removed; `$hintAsked` answers them.
+
+## Amendment (2026-11-23, #2405): `unzip()` reserves its hint's lower bound
+
+std's `unzip()` fills its two sides by `default_extend`. It asks the
+source's `size_hint()` once, before the first item, reserves each side
+its lower bound (`extend_reserve`, a `Vec`'s `reserve`), then adds each
+pair by `extend_one`, a `Vec`'s `push`. Its `TrustedLen` specialization
+only swaps in the unchecked `extend_one` after the same reserve, so both
+paths give the same capacities. `$unzip` asked no hint and kept no
+growth: a `Vec`'s `into_iter()` of 10 unzipped gave capacity 10 and a
+`filter`'s 6 gave 6, where std gives 10 and 8. The crate's own
+`size_hint()`, which std asks even where no capacity is read, never ran.
+Both are ADR 0262's "results change" case: Rust's behaviour is kept.
+
+- `$unzip` asks the hint first, of an array its length, always. Of a
+  crate that keeps capacities, it's given each side's items' size where
+  std's `extend` grows that side (`grows_as_it_extends`: a `Vec`, a
+  `VecDeque`, a `BinaryHeap`). It `$reserve`s each the lower bound and
+  `$grew`s it per `push`.
+- Of a `TrustedLen` source, the lower bound is how many it gives, and
+  no `TrustedLen`'s hint runs the crate's code. So `$unzip` is told so
+  and gives each side, once filled, the room an empty one reserved for
+  that many would have (`$reservedFor`), whatever JS's form of it hints:
+  `$iter(v).map(f)` of a named `f` hints none.
+- Whether another source's JS hint can be std's is the collect's one
+  owner, `grown_ask`, through `FnCx::unzip_reserved` (`hint_asks.rs`):
+  one whose JS hint isn't std's, `chars().skip(1)`, is refused as a
+  collect's is (`refuse_unkept_lower_bound`). A `filter`,
+  whose lower bound is always 0 (`lower_bound_kept`'s `Some(false)`), is
+  given that 0, as JS may filter an array at once, whose length it
+  would count.
+- `unzip()` asks the hint of what it's given: `vec_grown_by` counts it,
+  so what it steps is made knowing what that growth asks where it's made
+  (back_stepped's `lengths_asked`), a `BTreeMap`'s `iter().skip(2)` its
+  length, as a collect's is. `HELPERS_STEPPING_ALL` says `$unzip` asks its
+  hint, so the tidy that drops an unread `size_hint` from what a helper
+  steps leaves it.
+
+Tests: `unzip_sides_grow_as_std_extends_them.rs` (an array, a `filter`, a
+`skip(n)`, chains, a `map` by a named function, two `u8`s, a `BTreeMap`'s
+`iter()` skipped and chained, the crate's own), `unzip_asks_its_hint.rs`
+(the crate's own, through a `filter`, a `map`, a chain and a `flat_map`),
+against native; and diagnostics' refusal of `chars().skip(1)` unzipped.

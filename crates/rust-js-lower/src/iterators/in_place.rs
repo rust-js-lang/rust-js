@@ -19,29 +19,39 @@ pub(super) const LAST_HELPERS: [&str; 2] = ["$last", "$lastSome"];
 /// `done` with, each item as it comes (#179): the extremes', `partition`'s
 /// and `unzip`'s; and of each that may be given its items' drop, which
 /// argument it is. An array given with it is the helper's own, closed as
-/// `$closing($iter(xs), $dropEach(drop))` (#423).
-const HELPERS_STEPPING_ALL: [(&str, Option<usize>); 9] = [
-    ("$max", None),
-    ("$min", None),
-    ("$reduceBy", Some(3)),
-    ("$maxBy", Some(3)),
-    ("$minBy", Some(3)),
-    ("$maxByKey", Some(4)),
-    ("$minByKey", Some(4)),
-    ("$partition", Some(2)),
-    ("$unzip", None),
+/// `$closing($iter(xs), $dropEach(drop))` (#423). And whether it asks its
+/// hint first, `unzip`'s, as std's `default_extend` does (#2405), so what
+/// it's given keeps the `size_hint` it has.
+const HELPERS_STEPPING_ALL: [(&str, Option<usize>, bool); 9] = [
+    ("$max", None, false),
+    ("$min", None, false),
+    ("$reduceBy", Some(3), false),
+    ("$maxBy", Some(3), false),
+    ("$minBy", Some(3), false),
+    ("$maxByKey", Some(4), false),
+    ("$minByKey", Some(4), false),
+    ("$partition", Some(2), false),
+    ("$unzip", None, true),
 ];
 
 /// Whether `name` is one of the runtime's helpers that steps its first
 /// argument till its first `done` (`HELPERS_STEPPING_ALL`).
 pub(super) fn steps_all(name: &str) -> bool {
-    HELPERS_STEPPING_ALL.iter().any(|(helper, _)| *helper == name)
+    HELPERS_STEPPING_ALL.iter().any(|(helper, ..)| *helper == name)
+}
+
+/// Whether `name`, a helper stepping all, asks its first argument's hint
+/// before it steps it (`HELPERS_STEPPING_ALL`).
+pub(super) fn asks_its_hint(name: &str) -> bool {
+    HELPERS_STEPPING_ALL
+        .iter()
+        .any(|&(helper, _, asks)| helper == name && asks)
 }
 
 /// The drop of its items `name`, a helper stepping all, is given among
 /// `args`, its call's; `None` where it's given none.
 pub(crate) fn item_drop_given<'e>(name: &str, args: &'e [Expr]) -> Option<&'e Expr> {
-    let (_, at) = HELPERS_STEPPING_ALL.iter().find(|(helper, _)| *helper == name)?;
+    let (_, at, _) = HELPERS_STEPPING_ALL.iter().find(|(helper, ..)| *helper == name)?;
     args.get((*at)?)
         .filter(|drop| !matches!(drop.kind, js::ExprKind::Undefined))
 }

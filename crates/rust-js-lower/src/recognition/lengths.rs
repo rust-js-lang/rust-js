@@ -555,7 +555,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// others that may give none of what they step, through std's adapters
     /// that keep each item. `None` where only what it holds as it runs
     /// says: a chain of one of each, a `peekable()` of one always 0.
-    fn lower_bound_kept(&self, ty: Ty<'tcx>) -> Option<bool> {
+    pub(crate) fn lower_bound_kept(&self, ty: Ty<'tcx>) -> Option<bool> {
         let ty = self.reveal(ty.peel_refs());
         let exact = self
             .exact_size_iterator()

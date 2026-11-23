@@ -377,8 +377,8 @@ export const mutations: Mutation[] = [
     name: "unzip-drops-ungiven",
     breaks: "`unzip` of items with a destructor isn't given their drops, so what it unzipped before a panic is leaked (#1150)",
     file: "crates/rust-js-lower/src/combinators/adapters.rs",
-    find: "                if let Some(last) = drops.iter().rposition(Option::is_some) {\n",
-    replace: "                if let Some(last) = drops.iter().rposition(Option::is_some).filter(|_| false) {\n",
+    find: "                        Some(side) => self.std_drop_function(side, span),\n",
+    replace: "                        Some(_) => Ok(None),\n",
     tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
   },
   {

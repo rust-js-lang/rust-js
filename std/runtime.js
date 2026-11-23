@@ -16026,6 +16026,15 @@ export function $reserve(v, additional, size) {
   $capacities.set(v, grown);
 }
 
+// `v`, of items of `size` bytes, empty till it was reserved room for as
+// many as it now has, then given them, which grew it no more: of none,
+// none; else `$reserve`'s of an empty one, as many and `MIN_NON_ZERO_CAP`
+// (#2405).
+export function $reservedFor(v, size) {
+  if (v.length === 0 || $capacityUnknown(v)) return;
+  $capacities.set(v, size === 0 ? v.length : Math.max(v.length, $leastCapacity(size)));
+}
+
 // `v.reserve_exact(n)`: where it hasn't room for `n` more, as many as it
 // needs (raw_vec/mod.rs `grow_exact`).
 export function $reserveExact(v, additional) {
@@ -23488,18 +23497,44 @@ export function $fromFn(f, boxed = false) {
 // a panic, what's left of `pairs` closed by its fold, then what each side
 // collected dropped, `dropA`'s then `dropB`'s, as std's `(A, B)` drops its
 // fields as it unwinds (#1150).
-export function $unzip(pairs, dropA, dropB) {
+export function $unzip(pairs, dropA, dropB, sizeA, sizeB, trusted, stdLower) {
   const a = [];
   const b = [];
+  // std's `default_extend` of the pair of sides: the hint's lower bound
+  // asked first, each side given room for it, `extend_reserve`, a `Vec`'s
+  // `reserve` where its capacity is kept, of items of `sizeA` and `sizeB`
+  // bytes, then each pair's own pushed, as a `Vec` grows by `push`
+  // (#2405). Of a `TrustedLen`, `trusted`, whose lower bound is how many
+  // it gives and whose hint runs nothing of the crate's, room for that
+  // many, `$reservedFor` once they're in, whatever JS's form of it hints.
+  // Of another, its hint asked, of an array its length; where std's lower
+  // bound is always 0, a `filter`'s, which an array JS filtered at once
+  // counts otherwise, `stdLower`, std's.
+  const kept = (size) => size !== undefined && !trusted;
+  if (!trusted) {
+    const [asked] = Array.isArray(pairs) ? [pairs.length] : $sizeHint(pairs);
+    const lower = stdLower ?? asked;
+    if (lower > 0) {
+      if (kept(sizeA)) $reserve(a, lower, sizeA);
+      if (kept(sizeB)) $reserve(b, lower, sizeB);
+    }
+  }
   const put = ([x, y]) => {
+    const len = a.length;
     a.push(x);
+    if (kept(sizeA)) $grew(a, sizeA, len);
     b.push(y);
+    if (kept(sizeB)) $grew(b, sizeB, len);
   };
   $unwinds(
     () => (typeof pairs.fold === "function" ? pairs.fold(undefined, (_, pair) => put(pair)) : $eachOf(pairs, put)),
     dropA && (() => $dropItems(a, dropA)),
     dropB && (() => $dropItems(b, dropB)),
   );
+  if (trusted) {
+    if (sizeA !== undefined) $reservedFor(a, sizeA);
+    if (sizeB !== undefined) $reservedFor(b, sizeB);
+  }
   return [a, b];
 }
 

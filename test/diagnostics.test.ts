@@ -148,6 +148,9 @@ for (const [name, source, message, crate] of [
   // string's `chars()` skipped, which JS's own adapters know no hint of
   // (#1200, #1216).
   ["a Vec collected of a chain of a skip where a capacity is read", "pub fn f(s: &str) -> usize {\n    let v: Vec<char> = s.chars().skip(1).chain(\"ab\".chars()).collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
+  // An `unzip()`'s sides, reserved its source's lower bound, as a collect
+  // grows by it (#2405).
+  ["a Vec unzipped of chars where a capacity is read", "pub fn f(s: &str) -> usize {\n    let (a, _b): (Vec<char>, Vec<u32>) = s.chars().skip(1).map(|c| (c, c as u32)).unzip();\n    a.capacity()\n}", "whose lower bound JS's doesn't have"],
   ["a bound's extend of a Vec of a type parameter's items where a capacity is read", "fn fill<C: Extend<T>, T>(c: &mut C, x: T) {\n    c.extend(Some(x));\n}\npub fn f<T>(x: T) -> usize {\n    let mut v = Vec::new();\n    fill(&mut v, x);\n    v.capacity()\n}", "whose items' size std grows it by, a type parameter's"],
   // #470: a nullable `Option<Option<T>>` field is set whole.
   ["a &mut of a nullable Option of an Option", "pub struct Init {\n    #[rust_js::nullable]\n    pub mid: Option<Option<u32>>,\n}\npub fn f(init: &mut Init) { if let Some(mid) = &mut init.mid { *mid = None; } }", "set the field whole, `s.field = Some(None)`"],
