@@ -17,15 +17,15 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::{DefId, LocalModId};
 use serde_json::{Value, json};
 
-use super::bindings::{fn_name, is_binding, is_mark, is_rest, is_untagged};
+use super::bindings::{fn_name, is_binding, is_mark};
 use super::recognition::{StdItem, is_std_def};
-use super::representation::Num;
 
 mod aliases;
 mod bounds;
 mod cells;
 mod classes;
 mod comments;
+pub(crate) mod contract;
 mod dictionaries;
 pub(super) use dictionaries::trait_types;
 mod enums;
@@ -49,8 +49,8 @@ use bounds::{constraints, erasures};
 use classes::exported_class;
 use comments::documented;
 pub(crate) use comments::jsdoc_of;
+use contract::Contract;
 pub(crate) use dictionaries::declared_methods;
-use parts::{opaque_fn_signature, opaque_future_output};
 
 pub use written::validate_types;
 use written::{Member, Signature};
@@ -990,39 +990,46 @@ impl<'tcx> Declarations<'_, 'tcx> {
         if let Some((_, named)) = self.named.iter().rev().find(|(named, _)| *named == erased) {
             return named.clone();
         }
-        if let Some(num) = Num::of(ty) {
-            return keyword(if num.big() { "bigint" } else { "number" });
-        }
-        match ty.kind() {
-            ty::Bool => keyword("boolean"),
-            ty::Char | ty::Str => keyword("string"),
+        // What it is to JS is its contract's (#2403, ADR 1190): what's
+        // printed of each kind, and imported or declared on the way, is
+        // this one's.
+        let facts = contract::Facts {
+            tcx,
+            counted: self.counted,
+            ref_cells: self.ref_cells,
+            foreign: self.foreign,
+        };
+        match Contract::of(&facts, ty) {
+            Contract::Num(num) => keyword(if num.big() { "bigint" } else { "number" }),
+            Contract::Bool => keyword("boolean"),
+            Contract::Char | Contract::Str => keyword("string"),
             // A box or a handle, `bump(n: { value: number })`, as lowering
             // has it (`MutRefForm::ts_type`, #619); one to an object is the
             // object.
-            ty::Ref(_, inner, ty::Mutability::Mut) => {
-                let value = self.ts(*inner);
-                self.mut_ref_form(*inner).ts_type(value)
+            Contract::MutRef(inner) => {
+                let value = self.ts(inner);
+                self.mut_ref_form(inner).ts_type(value)
             }
             // A shared borrow is what it refers to, lent to be read: of an
             // array, a slice or a `Vec`, `readonly T[]`, shallow (ADR 1189).
-            ty::Ref(_, inner, _) => {
-                let mut referred = self.ts(*inner);
+            Contract::Shared(inner) => {
+                let mut referred = self.ts(inner);
                 if referred["kind"] == "array" {
                     referred["readonly"] = json!(true);
                 }
                 referred
             }
             // What a function that never returns returns (ADR 0386).
-            ty::Never => keyword("never"),
-            ty::Tuple(items) if items.is_empty() => keyword("undefined"),
-            ty::Tuple(items) => {
+            Contract::Never => keyword("never"),
+            Contract::Unit => keyword("undefined"),
+            Contract::Tuple(items) => {
                 let elements: Vec<Value> = items.iter().map(|t| self.ts(t)).collect();
                 json!({ "kind": "tuple", "elements": elements })
             }
-            ty::Array(item, _) | ty::Slice(item) => {
-                json!({ "kind": "array", "element": self.ts(*item), "readonly": false })
+            Contract::Items(item) | Contract::Vec(item) => {
+                json!({ "kind": "array", "element": self.ts(item), "readonly": false })
             }
-            ty::Param(param) => match self.erased.get(&param.index) {
+            Contract::Param(param) => match self.erased.get(&param.index) {
                 Some(erased) => erased.clone(),
                 // An `impl Trait` parameter has no name but rustc's, `impl
                 // js::Defined + 'a`, which isn't TypeScript, and `generics`
@@ -1032,65 +1039,31 @@ impl<'tcx> Declarations<'_, 'tcx> {
             },
             // A function of what Rust says it takes and gives:
             // `dyn Fn(&event::MouseEvent)` is `(event: MouseEvent<Element>) => void`.
-            ty::FnPtr(..) => {
+            Contract::FnPtr => {
                 let sig = ty.fn_sig(tcx).skip_binder();
                 let named = self.function_names(erased);
                 self.function_type(sig.inputs(), sig.output(), &named, true)
             }
-            ty::Dynamic(traits, ..)
-                if traits
-                    .principal_def_id()
-                    .is_some_and(|t| tcx.fn_trait_kind_from_def_id(t).is_some()) =>
-            {
-                let inputs = match traits.principal().map(|p| p.skip_binder().args.type_at(0).kind()) {
-                    Some(ty::Tuple(inputs)) => inputs.as_slice(),
-                    _ => &[],
-                };
-                let output = (traits.projection_bounds())
-                    .find_map(|output| output.skip_binder().term.as_type())
-                    .unwrap_or(tcx.types.unit);
+            Contract::DynFn { inputs, output } => {
                 let named = self.function_names(erased);
                 self.function_type(inputs, output, &named, true)
             }
             // A `dyn` of a trait that says what it is to TypeScript:
             // `dyn ReactNode` is a `ReactNode` (ADR 0242).
-            ty::Dynamic(traits, ..)
-                if let Some(t) = traits.principal_def_id()
-                    && let Some(declared) = written_types(tcx, t) =>
-            {
-                self.written(t, &declared, ty::List::empty())
-            }
+            Contract::DynWritten(t, declared) => self.written(t, &declared, ty::List::empty()),
             // A type map's associated type, of a reason `R`, its lookup's
             // `EventOf<R>` (ADR 1164).
-            ty::Alias(
-                _,
-                alias @ ty::AliasTy {
-                    kind: ty::Projection { def_id },
-                    ..
-                },
-            ) if type_maps::of_a_type_map(tcx, *def_id) => self.type_map_projection(*def_id, alias.args),
+            Contract::TypeMapProjection(def_id, args) => self.type_map_projection(def_id, args),
             // A binding trait's associated type that says what it is, of
             // the projection's `Self` and arguments: `<Target as
             // Listen<Name>>::Event`, `EventMapOf<Target>[Name]` (#1817).
-            ty::Alias(
-                _,
-                alias @ ty::AliasTy {
-                    kind: ty::Projection { def_id },
-                    ..
-                },
-            ) if written_types(tcx, *def_id).is_some() => self
-                .projection(*def_id, alias.args)
+            Contract::WrittenProjection(def_id, args) => self
+                .projection(def_id, args)
                 .expect("a projection that says what it is"),
             // An `impl Future`, an `async fn`'s result: the `Promise` its JS
             // gives, of what it resolves to, `Promise<string[]>`, of nothing
             // `Promise<void>` (ADR 0029, #1769).
-            ty::Alias(
-                _,
-                alias @ ty::AliasTy {
-                    kind: ty::Opaque { .. },
-                    ..
-                },
-            ) if let Some(output) = opaque_future_output(tcx, *alias) => {
+            Contract::Future(output) => {
                 let payload = if output.is_unit() {
                     keyword("void")
                 } else {
@@ -1101,31 +1074,15 @@ impl<'tcx> Declarations<'_, 'tcx> {
             // An `impl Iterator` a function gives, or one of its extensions:
             // the JS iterator it gives back, which knows its back or its
             // length where its bounds say (`boundary::of_opaque`, #1999).
-            ty::Alias(
-                _,
-                alias @ ty::AliasTy {
-                    kind: ty::Opaque { .. },
-                    ..
-                },
-            ) if let Some(boundary) = super::iterators::boundary::of_opaque(tcx, *alias) => {
-                self.boundary_ts(boundary, false)
-            }
+            Contract::Iterator(boundary) => self.boundary_ts(boundary, false),
             // An `impl Fn(A) -> R` a function gives: the function it says, as
             // a parameter's is, `cache`'s `(...args: unknown[]) => unknown`.
-            ty::Alias(
-                _,
-                alias @ ty::AliasTy {
-                    kind: ty::Opaque { .. },
-                    ..
-                },
-            ) if let Some((inputs, output)) = opaque_fn_signature(tcx, *alias) => {
-                self.function_type(&inputs, output, &[], true)
-            }
+            Contract::OpaqueFn(inputs, output) => self.function_type(&inputs, output, &[], true),
             // Any other `dyn`, its pair or `any` (#620).
-            ty::Dynamic(..) => self.dyn_value(ty),
+            Contract::Dyn => self.dyn_value(ty),
             // `(...args: any[]) => any`: a closure's own type, which no
             // signature names.
-            ty::Closure(..) => json!({
+            Contract::Closure => json!({
                 "kind": "function",
                 "typeParameters": [],
                 "params": [{
@@ -1136,189 +1093,141 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 }],
                 "returns": keyword("any"),
             }),
-            ty::Adt(adt, args) => {
-                let did = adt.did();
-                // `None` is JS's `null` too, as rust-js reads it `!= null` (ADR 0030).
-                if tcx.is_lang_item(did, LangItem::Option) {
-                    return self.option_ts(args.type_at(0));
-                }
-                if tcx.is_lang_item(did, LangItem::String) {
-                    return keyword("string");
-                }
-                // The js crate's literal types, `js::True`, the literal it is,
-                // `true`, which no module of it declares (ADR 1164).
-                if super::recognition::is_js_literal_type(tcx, did)
-                    && let Some(value) = named_unit(tcx, did)
-                {
-                    return json!({ "kind": "literal", "value": value.literal() });
-                }
-                // A `Location` is its text, `file:line:column` (ADR 0427,
-                // amended by #2292).
-                if tcx.is_lang_item(did, LangItem::PanicLocation) {
-                    return keyword("string");
-                }
-                if is_std_def(tcx, did, StdItem::Vec) {
-                    return json!({ "kind": "array", "element": self.ts(args.type_at(0)), "readonly": false });
-                }
-                // A `HashMap` or a `BTreeMap` is a `Map`, a `HashSet` or a
-                // `BTreeSet` a `Set`, each class the runtime keeps one in
-                // extending it (ADRs 0059, 0121, 0876).
-                if [StdItem::HashMap, StdItem::BTreeMap]
-                    .iter()
-                    .any(|&map| is_std_def(tcx, did, map))
-                {
-                    return reference("Map", vec![self.ts(args.type_at(0)), self.ts(args.type_at(1))]);
-                }
-                if [StdItem::HashSet, StdItem::BTreeSet]
-                    .iter()
-                    .any(|&set| is_std_def(tcx, did, set))
-                {
-                    return reference("Set", vec![self.ts(args.type_at(0))]);
-                }
-                if ty.is_box() {
-                    return self.ts(args.type_at(0));
-                }
-                // An uncounted `Rc` is what it points at, and its `Weak` that
-                // or `null`, `Weak::new()`'s (ADRs 0023, 0843); so is a counted
-                // one of a class, the instance itself (#1228).
-                if let Some(pointee) = super::recognition::rc_pointee(tcx, ty)
-                    && (!self.counted.counts(tcx, pointee) || super::std_types::rc::counted_as_instance(tcx, pointee))
-                {
-                    return self.ts(pointee);
-                }
-                if let Some(pointee) = super::recognition::weak_pointee(tcx, ty)
-                    && !self.counted.counts(tcx, pointee)
-                {
-                    return json!({ "kind": "union", "types": [self.ts(pointee), keyword("null")] });
-                }
-                // A `RefCell` of an object is the object (ADR 0863).
-                if self.ref_cells.is_value_cell(tcx, ty) {
-                    return self.ts(args.type_at(0));
-                }
-                // A `Cell` of its own, or one lent, is `{ value }` (ADRs 0023, 0288),
-                // and so is a `RefCell` that isn't what it holds (ADRs 0328, 0863).
-                if is_std_def(tcx, did, StdItem::Cell) || is_std_def(tcx, did, StdItem::RefCell) {
-                    let value = self.ts(args.type_at(0));
-                    return held(value);
-                }
-                if is_rest(tcx, ty) {
-                    return reference("Record", vec![keyword("string"), keyword("unknown")]);
-                }
-                // A typed class, `Class<fn(A) -> T>`, its constructor's type,
-                // `new (a: A) => T` (ADR 1009).
-                if super::recognition::is_js_class(tcx, did)
-                    && let Some(signature) = args.types().next()
-                    && let ty::FnPtr(..) = signature.kind()
-                {
-                    let sig = signature.fn_sig(tcx).skip_binder();
-                    let named = self.function_names(tcx.erase_and_anonymize_regions(signature));
-                    let mut constructor = self.function_type(sig.inputs(), sig.output(), &named, false);
-                    constructor["construct"] = json!(true);
-                    return constructor;
-                }
-                // One of std's opaque to TypeScript, `LazyLock<Point>`, as
-                // `@rust-js/std` declares it, which only rust-js's JS gives
-                // a value of (ADR 1149).
-                if let Some(opaque) = std_types::opaque(tcx, did) {
-                    let name = self.imported_from(Some(std_types::PACKAGE), opaque.name, None);
-                    let held = if opaque.holds() {
-                        vec![self.ts(args.type_at(0))]
-                    } else {
-                        Vec::new()
-                    };
-                    return reference(&name, held);
-                }
-                // A binding's, as it says it's typed: React's `MemoExoticComponent<P>`,
-                // `react#NamedExoticComponent`, is `NamedExoticComponent<P>`,
-                // and `react#AnchorHTMLAttributes<HTMLAnchorElement>` that.
-                if let Some(declared) = written_types(tcx, did) {
-                    self.declare_global(did, &declared);
-                    return self.written(did, &declared, args);
-                }
-                // A `Cow`, what it borrowed or owns, `{ TAG: "Borrowed"; _0:
-                // string } | { TAG: "Owned"; _0: string }`, each variant as
-                // an enum's is (ADR 0033), its `Owned` what `ToOwned` makes
-                // of what it borrows (#1748).
-                // A `Result` too, the value JS reads its `TAG` of, `{ TAG:
-                // "Ok"; _0: string[] } | { TAG: "Err"; _0: any }` (#1835).
-                if super::recognition::is_cow_type(tcx, ty) || is_std_def(tcx, did, StdItem::Result) {
-                    return union(self.tagged_variants(did, args, true));
-                }
-                // Another crate's untagged enum, `js::Json`: declared here, as
-                // this crate's are, the union of its payloads (ADR 0225).
-                if !did.is_local() && adt.is_enum() && is_untagged(tcx, did) {
-                    let name = type_name(tcx, did);
-                    if !self.unexported.contains_key(&name) {
-                        self.unexported.insert(name.clone(), None);
-                        let inner = self.erased(did);
-                        let outer = std::mem::replace(&mut self.erased, inner);
-                        let mut declared = self.enumeration(did);
-                        self.erased = outer;
-                        declared["exported"] = json!(false);
-                        self.unexported.insert(name.clone(), Some(declared));
-                    }
-                    let type_args = self.type_args(did, args);
-                    return reference(&name, type_args);
-                }
-                // A module's namespace, its module imported whole (ADR 1037).
-                if super::classes::is_namespace(tcx, did) {
-                    return self.namespace_type(did);
-                }
-                // A library's its declarations export, imported from them
-                // (ADR 0210, amended).
-                if let Some((from, name, default)) = self.foreign.declared_type(did) {
-                    self.library_imports.insert((from.clone(), name.clone(), *default));
-                    let type_args = self.type_args(did, args);
-                    return reference(name, type_args);
-                }
-                // One of the crate's, declared: this module's by its name,
-                // another's imported from it (ADR 0210). Any other is `any`.
-                let Some(local) = did.as_local() else {
-                    return keyword("any");
+            // `None` is JS's `null` too, as rust-js reads it `!= null` (ADR 0030).
+            Contract::Option(payload) => self.option_ts(payload),
+            // The js crate's literal types, `js::True`, the literal it is,
+            // `true`, which no module of it declares (ADR 1164).
+            Contract::JsLiteral(value) => json!({ "kind": "literal", "value": value.literal() }),
+            // A `HashMap` or a `BTreeMap` is a `Map`, a `HashSet` or a
+            // `BTreeSet` a `Set`, each class the runtime keeps one in
+            // extending it (ADRs 0059, 0121, 0876).
+            Contract::Map(key, value) => reference("Map", vec![self.ts(key), self.ts(value)]),
+            Contract::Set(item) => reference("Set", vec![self.ts(item)]),
+            // A `Box`, an uncounted `Rc` and a counted one of a class, the
+            // instance itself (#1228), and a `RefCell` of an object, are what
+            // they point at (ADRs 0023, 0843, 0863); an uncounted `Rc`'s
+            // `Weak` that or `null`, `Weak::new()`'s.
+            Contract::Pointee(pointee) => self.ts(pointee),
+            Contract::Weak(pointee) => json!({ "kind": "union", "types": [self.ts(pointee), keyword("null")] }),
+            // A `Cell` of its own, or one lent, is `{ value }` (ADRs 0023, 0288),
+            // and so is a `RefCell` that isn't what it holds (ADRs 0328, 0863).
+            Contract::Held(inner) => {
+                let value = self.ts(inner);
+                held(value)
+            }
+            Contract::Rest => reference("Record", vec![keyword("string"), keyword("unknown")]),
+            // A typed class, `Class<fn(A) -> T>`, its constructor's type,
+            // `new (a: A) => T` (ADR 1009).
+            Contract::JsClass(signature) => {
+                let sig = signature.fn_sig(tcx).skip_binder();
+                let named = self.function_names(tcx.erase_and_anonymize_regions(signature));
+                let mut constructor = self.function_type(sig.inputs(), sig.output(), &named, false);
+                constructor["construct"] = json!(true);
+                constructor
+            }
+            // One of std's opaque to TypeScript, `LazyLock<Point>`, as
+            // `@rust-js/std` declares it, which only rust-js's JS gives
+            // a value of (ADR 1149).
+            Contract::StdOpaque(opaque, args) => {
+                let name = self.imported_from(Some(std_types::PACKAGE), opaque.name, None);
+                let held = if opaque.holds() {
+                    vec![self.ts(args.type_at(0))]
+                } else {
+                    Vec::new()
                 };
-                if !declares_type(tcx, did) {
-                    return keyword("any");
-                }
-                // A class's where its constructor function is.
-                let home = super::classes::home(tcx, did).unwrap_or_else(|| tcx.parent_module_from_def_id(local));
-                // This module's own private type, `struct DiagramGroupProps`,
-                // which its exported function names: declared here, not
-                // exported (ADR 0385). Another module's isn't its to declare.
-                if !tcx.visibility(did).is_public() {
-                    if home != self.module {
-                        return keyword("any");
-                    }
-                    let name = type_name(tcx, did);
-                    if !self.unexported.contains_key(&name) {
-                        self.unexported.insert(name.clone(), None);
-                        let inner = self.erased(did);
-                        let outer = std::mem::replace(&mut self.erased, inner);
-                        let declared = match tcx.def_kind(did) {
-                            DefKind::Struct => self.struct_declaration(did),
-                            DefKind::Union => Some(self.union_type(did)),
-                            _ => Some(self.enumeration(did)),
-                        };
-                        self.erased = outer;
-                        let Some(mut declared) = declared else {
-                            self.unexported.remove(&name);
-                            return keyword("any");
-                        };
-                        declared["exported"] = json!(false);
-                        self.unexported.insert(name.clone(), Some(declared));
-                    }
-                    let type_args = self.type_args(did, args);
-                    return reference(&name, type_args);
-                }
-                // Another module's is imported from its file, which a module
-                // of a public type has, of types alone its `.d.ts` (ADR 1005).
-                if home != self.module {
-                    self.imported(self.files[&home].clone(), did, type_name(tcx, did));
+                reference(&name, held)
+            }
+            // A binding's, as it says it's typed: React's `MemoExoticComponent<P>`,
+            // `react#NamedExoticComponent`, is `NamedExoticComponent<P>`,
+            // and `react#AnchorHTMLAttributes<HTMLAnchorElement>` that.
+            Contract::Written(did, declared, args) => {
+                self.declare_global(did, &declared);
+                self.written(did, &declared, args)
+            }
+            // A `Cow`, what it borrowed or owns, `{ TAG: "Borrowed"; _0:
+            // string } | { TAG: "Owned"; _0: string }`, each variant as
+            // an enum's is (ADR 0033), its `Owned` what `ToOwned` makes
+            // of what it borrows (#1748).
+            // A `Result` too, the value JS reads its `TAG` of, `{ TAG:
+            // "Ok"; _0: string[] } | { TAG: "Err"; _0: any }` (#1835).
+            Contract::Tagged(did, args) => union(self.tagged_variants(did, args, true)),
+            // Another crate's untagged enum, `js::Json`: declared here, as
+            // this crate's are, the union of its payloads (ADR 0225).
+            Contract::ForeignUntagged(did, args) => {
+                let name = type_name(tcx, did);
+                if !self.unexported.contains_key(&name) {
+                    self.unexported.insert(name.clone(), None);
+                    let inner = self.erased(did);
+                    let outer = std::mem::replace(&mut self.erased, inner);
+                    let mut declared = self.enumeration(did);
+                    self.erased = outer;
+                    declared["exported"] = json!(false);
+                    self.unexported.insert(name.clone(), Some(declared));
                 }
                 let type_args = self.type_args(did, args);
-                reference(&type_name(tcx, did), type_args)
+                reference(&name, type_args)
             }
-            _ => keyword("any"),
+            // A module's namespace, its module imported whole (ADR 1037).
+            Contract::Namespace(did) => self.namespace_type(did),
+            // A library's its declarations export, imported from them
+            // (ADR 0210, amended).
+            Contract::Library(did, args) => {
+                let (from, name, default) = self.foreign.declared_type(did).expect("a library's declared type");
+                self.library_imports.insert((from.clone(), name.clone(), *default));
+                let type_args = self.type_args(did, args);
+                reference(name, type_args)
+            }
+            Contract::Local(did, args) => self.local_ts(did, args),
+            Contract::Any => keyword("any"),
         }
+    }
+
+    /// One of the crate's own types, `did` of `args`: declared, this
+    /// module's by its name, another's imported from it (ADR 0210). Any
+    /// other is `any`.
+    fn local_ts(&mut self, did: DefId, args: ty::GenericArgsRef<'tcx>) -> Value {
+        let tcx = self.tcx;
+        let local = did.expect_local();
+        if !declares_type(tcx, did) {
+            return keyword("any");
+        }
+        // A class's where its constructor function is.
+        let home = super::classes::home(tcx, did).unwrap_or_else(|| tcx.parent_module_from_def_id(local));
+        // This module's own private type, `struct DiagramGroupProps`,
+        // which its exported function names: declared here, not
+        // exported (ADR 0385). Another module's isn't its to declare.
+        if !tcx.visibility(did).is_public() {
+            if home != self.module {
+                return keyword("any");
+            }
+            let name = type_name(tcx, did);
+            if !self.unexported.contains_key(&name) {
+                self.unexported.insert(name.clone(), None);
+                let inner = self.erased(did);
+                let outer = std::mem::replace(&mut self.erased, inner);
+                let declared = match tcx.def_kind(did) {
+                    DefKind::Struct => self.struct_declaration(did),
+                    DefKind::Union => Some(self.union_type(did)),
+                    _ => Some(self.enumeration(did)),
+                };
+                self.erased = outer;
+                let Some(mut declared) = declared else {
+                    self.unexported.remove(&name);
+                    return keyword("any");
+                };
+                declared["exported"] = json!(false);
+                self.unexported.insert(name.clone(), Some(declared));
+            }
+            let type_args = self.type_args(did, args);
+            return reference(&name, type_args);
+        }
+        // Another module's is imported from its file, which a module
+        // of a public type has, of types alone its `.d.ts` (ADR 1005).
+        if home != self.module {
+            self.imported(self.files[&home].clone(), did, type_name(tcx, did));
+        }
+        let type_args = self.type_args(did, args);
+        reference(&type_name(tcx, did), type_args)
     }
 }
 

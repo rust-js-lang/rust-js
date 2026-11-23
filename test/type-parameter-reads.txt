@@ -38,7 +38,8 @@ crates/rust-js-lower/src/body_queries/in_place.rs	1
 crates/rust-js-lower/src/body_queries/present_item.rs	1
 crates/rust-js-lower/src/combinators/callbacks.rs	3
 crates/rust-js-lower/src/copies.rs	10
-crates/rust-js-lower/src/declarations.rs	2
+crates/rust-js-lower/src/declarations.rs	1
+crates/rust-js-lower/src/declarations/contract.rs	1
 crates/rust-js-lower/src/declarations/projections.rs	1
 crates/rust-js-lower/src/declarations/structures.rs	1
 crates/rust-js-lower/src/display.rs	2
