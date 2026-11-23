@@ -342,6 +342,22 @@ export function pooledParts(cores: number): number {
   return Math.max(2, cores);
 }
 
+/** Of CI's 4-core runners, the slowest a whole-corpus case was measured to
+ * take, seconds of a core: a `--corpus` control's part of some 1,450 cases
+ * took 12 min 3 s to 20 min 6 s across 15 shards, and one didn't finish in
+ * its 20 min (rustc tests 45093581580 and 45106468975, #2375), 0.83 s a
+ * case at the slowest; 1 s, with room. */
+export const wholeCorpusCaseSeconds = 1;
+
+/** How many parts a run of the whole corpus, `cases` of them, is cut in on
+ * `cores`: one a core, as `pooledParts` measured a part's, and enough that
+ * each, at `wholeCorpusCaseSeconds` a case, is under half its limit,
+ * `limitMs`, which still ends a hang: a mutation's control and its mutant
+ * judged against every case (`--corpus`, #2375). */
+export function wholeCorpusParts(cores: number, cases: number, limitMs: number): number {
+  return Math.max(pooledParts(cores), Math.ceil((cases * wholeCorpusCaseSeconds * 1000) / (limitMs / 2)));
+}
+
 /** How many of the suite's parts of a file of cases, the corpus's and the
  * metamorphic sample's, `bun run test` runs at once on `cores` (its
  * pool, scripts/test.ts): one for each two cores while the rest of the

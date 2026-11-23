@@ -12,7 +12,8 @@ import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestT
 import { controlRuns, mutations, testsAsItIsRuns, testsAsItIsSeconds } from "../scripts/mutations";
 import { jobs } from "../scripts/checkFast";
 import { runs } from "../scripts/iteratorSlice";
-import { balancedByGroup, browsers, casePartCores, dealtByGroup, fewestShards, shardFacts, shareOfShard, slots, testFileSeconds, testShardFiles, timingsByShard } from "../scripts/shard";
+import { balancedByGroup, browsers, casePartCores, dealtByGroup, fewestShards, shardFacts, shareOfShard, slots, testFileSeconds, testShardFiles, timingsByShard, wholeCorpusCaseSeconds, wholeCorpusParts } from "../scripts/shard";
+import { corpusCaseNames, testTimeout } from "../scripts/mutations";
 import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, compilerBuildsAsked, memoryBudget, nightly, parts, peakGB, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
 import { fixture, root } from "./support";
 
@@ -331,6 +332,24 @@ test("no runner counts the machine's cores or fixes how many jobs run at once it
   });
   // This test's own patterns aside.
   expect(found.filter((f) => !f.startsWith("test/shards.test.ts"))).toEqual([]);
+});
+
+// A run of the whole corpus, a `--corpus` mutation's control and its
+// mutant, is cut so each part, at CI's slowest measured case, is under half
+// its limit, which still ends a hang: two parts of some 1,450 cases on a
+// 4-core runner took 12 to 20 minutes, and one didn't end in its 20 (#2375).
+test("a whole-corpus part's measured time is under half its limit", () => {
+  // The slowest measured: 20 min 6 s for some 1,450 cases.
+  expect(wholeCorpusCaseSeconds).toBeGreaterThanOrEqual(1206 / 1450);
+  const cases = corpusCaseNames().length;
+  for (const cores of [4, 8, 12]) {
+    const parts = wholeCorpusParts(cores, cases, testTimeout);
+    expect(parts).toBeGreaterThanOrEqual(cores);
+    expect(Math.ceil(cases / parts) * wholeCorpusCaseSeconds * 1000).toBeLessThan(testTimeout / 2);
+  }
+  // Twice the cases, twice the parts on a runner it already filled.
+  expect(wholeCorpusParts(4, 6000, 20 * 60_000)).toBe(10);
+  expect(wholeCorpusParts(4, 100, 20 * 60_000)).toBe(4);
 });
 
 // The corpus runs in parts, one for each two cores where they all run at

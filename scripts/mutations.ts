@@ -25,7 +25,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
-import { caseParts, casePartCores, compilerBuilds, compilerBuildsAsked, drivesBrowser, machine, memoryBudget, peakGB, shardArg, shareOfShard, slots, timedShard } from "./shard";
+import { caseParts, casePartCores, compilerBuilds, compilerBuildsAsked, drivesBrowser, machine, memoryBudget, peakGB, shardArg, shareOfShard, slots, timedShard, wholeCorpusParts } from "./shard";
 import { casesReaching, ensureMap, noMap } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
@@ -441,7 +441,7 @@ export const crateFiles = [
   "test/snapshots",
 ];
 const buildTimeout = 20 * 60_000;
-const testTimeout = 20 * 60_000;
+export const testTimeout = 20 * 60_000;
 
 /** Where a run's builds read the crate from: the checkout until the run
  * takes its snapshot, `snapshotCrate`, then that, so an edit to `src/`
@@ -1117,11 +1117,11 @@ async function testsInParts(
   snapshots: Snapshots,
   env: Record<string, string> | undefined,
   beside: <T>(work: () => Promise<T>, weight?: number) => Promise<T>,
-  parts = caseParts(machine().cores),
+  parts = wholeCorpusParts(machine().cores, corpusCaseNames().length, testTimeout),
 ): Promise<{ passed: boolean; ran: number; output: string; exit: Exit }> {
   if (!ofWholeCorpus(tests)) return beside(() => test(tests, compiler, snapshots, { env }));
-  // Each part the cores it keeps busy of the slots (`casePartCores`).
-  const weight = casePartCores(machine().cores);
+  // Each part a core of the slots, as `wholeCorpusParts` cuts them (#2375).
+  const weight = 1;
   const ran = await Promise.all(
     Array.from({ length: parts }, (_, i) => beside(() => test(tests, compiler, snapshots, { env: { ...env, RUST_JS_CASES: `${i + 1}/${parts}` } }), weight)),
   );
@@ -2154,7 +2154,7 @@ async function main() {
     tests: m.tests!,
     ...testSet(m.tests!),
   }));
-  type Run = { compiler: string; snapshots: boolean; env: Record<string, string>; file: string; pattern?: string; part?: string };
+  type Run = { compiler: string; snapshots: boolean; env: Record<string, string>; file: string; pattern?: string; part?: string; weight: number };
   const runs: Run[] = [];
   const modes = [...new Map(sets.map((set) => [`${set.snapshots}\0${envKey(set.env)}`, { snapshots: set.snapshots, env: set.env }])).values()];
   for (const { snapshots, env } of modes) {
@@ -2162,9 +2162,15 @@ async function main() {
     for (const file of new Set(ofMode.flatMap((set) => set.files))) {
       const naming = ofMode.filter((set) => set.files.includes(file));
       const pattern = naming.some((set) => set.pattern === undefined) ? undefined : naming.map((set) => `(?:${set.pattern})`).join("|");
-      const parts = file === "test/corpus.test.ts" ? caseParts(machine().cores) : 1;
+      // The corpus whole in parts each under half its limit, a core each,
+      // where a slow runner's two parts didn't end in it (#2375); of a
+      // pattern, `caseParts`' parts, the cores each keeps busy.
+      const whole = file === "test/corpus.test.ts" && pattern === undefined;
+      const cores = machine().cores;
+      const parts = whole ? wholeCorpusParts(cores, corpusCaseNames().length, testTimeout) : file === "test/corpus.test.ts" ? caseParts(cores) : 1;
+      const weight = whole ? 1 : parts > 1 ? casePartCores(cores) : 1;
       for (const compiler of [unmutated, broken]) {
-        for (let part = 1; part <= parts; part++) runs.push({ compiler, snapshots, env, file, pattern, part: parts > 1 ? `${part}/${parts}` : undefined });
+        for (let part = 1; part <= parts; part++) runs.push({ compiler, snapshots, env, file, pattern, part: parts > 1 ? `${part}/${parts}` : undefined, weight });
       }
     }
   }
@@ -2197,7 +2203,7 @@ async function main() {
         const results = byFile.get(run.file) ?? new Map<string, boolean>();
         for (const [name, passed] of testResults(junit)) if (results.get(name) !== false) results.set(name, passed);
         byFile.set(run.file, results);
-      }, undefined, run.part ? casePartCores(machine().cores) : 1),
+      }, undefined, run.weight),
     ),
   );
   const problems: string[] = [];

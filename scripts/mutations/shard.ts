@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "    .map(() => dir)\n",
     tests: ["test/shards.test.ts", "-t", "each shard's times are merged at the plan's speed"],
   },
+  {
+    name: "whole-corpus-parts-two",
+    breaks: "a run of the whole corpus, a `--corpus` mutation's control and its mutant, is cut in two parts of some 1,450 cases each on a 4-core runner, which a slow runner didn't end in their 20 min, judging none of its shard's mutations (#2375)",
+    file: "scripts/shard.ts",
+    find: "  return Math.max(pooledParts(cores), Math.ceil((cases * wholeCorpusCaseSeconds * 1000) / (limitMs / 2)));\n",
+    replace: "  return 2;\n",
+    tests: ["test/shards.test.ts", "-t", "measured time is under half its limit"],
+  },
 ];
