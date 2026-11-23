@@ -90,15 +90,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "two crates: extension_default"],
   },
   {
-    name: "library-shape-any",
-    breaks:
-      "a library's contract read as counting every type of its `Rc`s, so its consumer counts its context, which it hands as the value itself (ADR 0852)",
-    file: "crates/rust-js-lower/src/library.rs",
-    find: "        (Some(of), Some((head, args))) => {\n            *of == head_key(tcx, &head)\n",
-    replace: "        (Some(of), Some((head, args))) => {\n            true\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: rc_counted_by_its_library_alone$"],
-  },
-  {
     name: "instance-imported",
     breaks:
       "a library's function the crate compiles itself is still the library's item, imported where it's called, `import { createContext }`, so its own is never called (ADR 0914)",
@@ -133,19 +124,6 @@ export const mutations: Mutation[] = [
     find: "        param(&mut params, index).marks.insert(ParamFact::Clone);\n",
     replace: "",
     tests: ["test/cross-crate-items.test.ts", "-t", "contract says it takes"],
-  },
-  {
-    name: "cell-shape-dyn-anywhere",
-    breaks:
-      "a library's checked `RefCell<Vec<Rc<dyn Fn()>>>` is taken to be any `RefCell<Vec<Rc<_>>>`, so its consumer's `RefCell<Vec<Rc<Node>>>` is checked, `$borrowMut(siblings, true)` (#374, ADR 0960)",
-    file: "crates/rust-js-lower/src/library.rs",
-    find: "        _ if dyn_shape && unsized_here => true,\n",
-    replace: "        _ if dyn_shape => true,\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "a library's checked cell of a Vec of dyn Fns",
-    ],
   },
   {
     name: "library-unboxed-unwritten",

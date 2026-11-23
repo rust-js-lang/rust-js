@@ -10,12 +10,17 @@ mod elided;
 mod exports;
 mod internal;
 mod reached;
+mod shapes;
 mod written_into;
+
 pub(super) use bound::bound;
 pub use compiled_here::merging;
 pub use elided::elided_through_calls;
 pub use exports::exports;
 pub use internal::{internal_exports, internal_state};
+use shapes::head_key;
+pub(super) use shapes::shapes;
+pub(crate) use shapes::{may_be_cell_shape, may_be_shape, rc_shape};
 
 use super::bindings::HeldBinding;
 use super::{FnInfo, module_path};
@@ -457,98 +462,6 @@ pub fn fields(
     (facts.into_iter())
         .map(|(key, facts)| rust_js_program::library::Field { key, facts })
         .collect()
-}
-
-/// What a library's contract calls each of `tys`, sorted, each once (ADR
-/// 0863): as it calls a type an `Rc` it counts points at (ADR 0852).
-pub(super) fn shapes<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    tys: impl IntoIterator<Item = rustc_middle::ty::Ty<'tcx>>,
-) -> Vec<RcShape> {
-    let mut shapes: Vec<RcShape> = tys.into_iter().map(|ty| rc_shape(tcx, ty)).collect();
-    shapes.sort();
-    shapes.dedup();
-    shapes
-}
-
-/// May `ty`, a `RefCell`'s type, be one `shape` names, a library's, as
-/// `analysis::may_be_cell` says of two (ADR 0863): a type parameter of
-/// either any type, a slice's what it's made of, and a `dyn`'s any type
-/// where a value may be made one in place (ADR 0960).
-pub(crate) fn may_be_cell_shape<'tcx>(tcx: TyCtxt<'tcx>, shape: &RcShape, ty: rustc_middle::ty::Ty<'tcx>) -> bool {
-    may_be_cell_shape_at(tcx, (shape, ty), true)
-}
-
-/// `may_be_cell_shape` of `shape` and `ty`, where `unsized_here`, a `dyn`
-/// there may be any type made one in place.
-fn may_be_cell_shape_at<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    (shape, ty): (&RcShape, rustc_middle::ty::Ty<'tcx>),
-    unsized_here: bool,
-) -> bool {
-    use rustc_middle::ty;
-    let dyn_shape = shape.of.as_deref().is_some_and(|of| of.starts_with("dyn "));
-    match ty.kind() {
-        ty::Dynamic(..) if unsized_here => true,
-        _ if dyn_shape && unsized_here => true,
-        ty::Slice(item) | ty::Array(item, _) => {
-            shape.of.as_deref().is_none_or(|of| matches!(of, "[]" | "[;]"))
-                && shape
-                    .args
-                    .first()
-                    .is_none_or(|arg| may_be_cell_shape_at(tcx, (arg, *item), false))
-        }
-        _ => match (&shape.of, super::analysis::head(tcx, ty)) {
-            (Some(of), Some((head, args))) => {
-                let tail = super::analysis::unsized_in_place(tcx, ty);
-                head_key(tcx, &head) == *of
-                    && shape.args.len() == args.len()
-                    && (shape.args.iter().zip(args).enumerate())
-                        .all(|(i, (shape, arg))| may_be_cell_shape_at(tcx, (shape, arg), tail == Some(i)))
-            }
-            _ => true,
-        },
-    }
-}
-
-/// What a library's contract calls `head`, a type's constructor (ADR 0852).
-fn head_key(tcx: TyCtxt<'_>, head: &super::analysis::Head) -> String {
-    match head {
-        super::analysis::Head::Def(kind, id) => format!("{kind}{}", key(tcx, *id)),
-        super::analysis::Head::Named(name) => name.clone(),
-    }
-}
-
-/// What a library's contract calls `ty`, a type an `Rc` it counts points
-/// at, `_` where it may be any (ADR 0852).
-pub(crate) fn rc_shape<'tcx>(tcx: TyCtxt<'tcx>, ty: rustc_middle::ty::Ty<'tcx>) -> RcShape {
-    match super::analysis::head(tcx, ty) {
-        Some((head, args)) => RcShape {
-            of: Some(head_key(tcx, &head)),
-            args: args.into_iter().map(|arg| rc_shape(tcx, arg)).collect(),
-        },
-        None => RcShape {
-            of: None,
-            args: Vec::new(),
-        },
-    }
-}
-
-/// May `ty` be the type `shape` names, a library's, a type parameter of
-/// either any type (ADR 0852)? As `rc_counts::may_be` says of two types.
-pub(crate) fn may_be_shape<'tcx>(tcx: TyCtxt<'tcx>, shape: &RcShape, ty: rustc_middle::ty::Ty<'tcx>) -> bool {
-    match (&shape.of, super::analysis::head(tcx, ty)) {
-        (Some(of), Some((head, args))) => {
-            *of == head_key(tcx, &head)
-                && shape.args.len() == args.len()
-                && shape
-                    .args
-                    .iter()
-                    .zip(args)
-                    .all(|(shape, arg)| may_be_shape(tcx, shape, arg))
-        }
-        _ => true,
-    }
 }
 
 /// What this crate's dependencies export, looked up by the `DefId`s rustc
