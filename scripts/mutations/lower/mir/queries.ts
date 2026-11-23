@@ -180,11 +180,11 @@ export const mutations: Mutation[] = [
   {
     name: "constant-index-checked",
     breaks:
-      "an array's constant index below its constant length is checked, `$index(grid, 1)`",
+      "a check rustc asks of constants, `19 < 32` of a shift by a constant `EXP` with overflow checks on, isn't answered at compile time, so `if (!(EXP < 32)) throw $panic(..)` is written before each such shift, as an array's constant index below its constant length would be checked, `$index(grid, 1)`",
     file: "crates/rust-js-mir/src/queries.rs",
     find: "                BinOp::Lt => Some(a < b),\n",
     replace: "                BinOp::Lt => None,\n",
-    tests: ["test/corpus.test.ts", "-t", "^array_repeat.rs$"],
+    tests: ["test/lowering-bits.test.ts", "-t", "a shift by a constant below its width is unchecked"],
     snapshots: true,
   },
   {

@@ -161,6 +161,23 @@ pub fn joined(a: i32, b: i32) -> i32 {
   expect([lib.masked(2147483647, 1, -1), lib.flipped(min, 1), lib.doubled(0x40000000), lib.joined(2, 3)]).toEqual([min, min, 2147483648, 3]);
 });
 
+// A shift by a constant below its type's width is JS's shift, unchecked:
+// overflow checks on, as this file's compile has them, rustc asks
+// \`19 < 32\` of itoa's \`(value * SIG) >> EXP\`, which the compiler
+// answers at compile time, where it wrote \`if (!(EXP < 32)) throw $panic(..)\`
+// before each such shift (#1979).
+test("a shift by a constant below its width is unchecked", async () => {
+  const { js, lib } = await compiled("bits-constant-shift", `pub fn divmod100(value: u32) -> u32 {
+    const EXP: u32 = 19;
+    const SIG: u32 = (1 << EXP) / 100 + 1;
+    (value * SIG) >> EXP
+}
+`);
+  expect(js).toContain("  return (value * SIG) >>> EXP;\n");
+  expect(js).not.toContain("with overflow");
+  expect([lib.divmod100!(1234), lib.divmod100!(99)]).toEqual([12, 0]);
+});
+
 // ADR 0156, amended: clippy's `manual_isolate_lowest_one` asks for
 // `lanes.isolate_lowest_one()`, React's `lanes & -lanes`; std's body is
 // `self & self.wrapping_neg()`, lowered of the operators, so an `i32`'s is
