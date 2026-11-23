@@ -38,7 +38,7 @@ export const negativeError = {
   Debug: () => negativeDebug,
   Display: () => negativeDisplay,
   source: $negativeError_source,
-  typeId: () => "lib::Negative",
+  typeId: () => "lib::Negative#1d8b1139",
   description: () => "description() is deprecated; use Display",
   cause: $negativeError_source,
 };

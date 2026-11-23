@@ -40,13 +40,13 @@ function boxed(value, TAny) {
 }
 
 function main() {
-  const noisyAny = { typeId: () => "lib::Noisy", $drop: noisyDrop_drop };
+  const noisyAny = { typeId: () => "lib::Noisy#1d8b1139", $drop: noisyDrop_drop };
   const _guard = ["guard"];
   try {
     console.log(`${$debugStr(describe(1))} ${$debugStr(describe(3))}`);
     const any = boxed(["boxed"], noisyAny);
     try {
-      console.log(`is noisy: ${any.impl.typeId() === "lib::Noisy"}`);
+      console.log(`is noisy: ${any.impl.typeId() === "lib::Noisy#1d8b1139"}`);
     } catch (error) {
       $cleanup(() => {
         any.impl.$drop?.(any.value);

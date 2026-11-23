@@ -77,7 +77,7 @@ export const readErrorError = {
   Debug: () => readErrorDebug,
   Display: () => readErrorDisplay,
   source: $readErrorError_source,
-  typeId: () => "lib::ReadError",
+  typeId: () => "lib::ReadError#1d8b1139",
   description: () => "description() is deprecated; use Display",
   cause: $readErrorError_source,
 };

@@ -25,7 +25,7 @@ function describe(payload) {
   if (n != null) {
     return `an i32, ${n}`;
   }
-  const code = payload.impl.typeId() === "lib::Code" ? payload.value : undefined;
+  const code = payload.impl.typeId() === "lib::Code#1d8b1139" ? payload.value : undefined;
   if (code != null) {
     return `a Code, ${codeDebug_fmt(code)}`;
   } else if (payload.impl.typeId() === "f64") {
@@ -36,7 +36,7 @@ function describe(payload) {
 }
 
 function main() {
-  const codeAny = { typeId: () => "lib::Code" };
+  const codeAny = { typeId: () => "lib::Code#1d8b1139" };
   const i32Any = { typeId: () => "i32" };
   console.log(`${describe(thrown(5, i32Any))}`);
   console.log(`${describe(thrown({ n: 3, why: "lost" }, codeAny))}`);
@@ -59,7 +59,9 @@ function main() {
   // `Box::downcast` takes the value out, or gives the box back.
   const any = thrown({ n: 9, why: "taken" }, codeAny);
   const downcast =
-    any.impl.typeId() === "lib::Code" ? { TAG: "Ok", _0: any.value } : { TAG: "Err", _0: any };
+    any.impl.typeId() === "lib::Code#1d8b1139"
+      ? { TAG: "Ok", _0: any.value }
+      : { TAG: "Err", _0: any };
   if (downcast.TAG === "Ok") {
     const code = downcast._0;
     console.log(`taken ${code.why}`);

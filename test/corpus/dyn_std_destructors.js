@@ -24,7 +24,7 @@ export const dError = {
   Debug: () => dDebug,
   Display: () => dDisplay,
   source: $dError_source,
-  typeId: () => "lib::D",
+  typeId: () => "lib::D#1d8b1139",
   description: () => "description() is deprecated; use Display",
   cause: $dError_source,
   $drop: dDrop_drop,
@@ -33,10 +33,10 @@ function fail(n) {
   return n > 1 ? { TAG: "Err", _0: { value: [n], impl: dError } } : { TAG: "Ok", _0: n };
 }
 function main() {
-  const dAny = { typeId: () => "lib::D", $drop: dDrop_drop };
+  const dAny = { typeId: () => "lib::D#1d8b1139", $drop: dDrop_drop };
   const a = { value: [1], impl: dAny };
   try {
-    console.log(`${a.impl.typeId() === "lib::D"}`);
+    console.log(`${a.impl.typeId() === "lib::D#1d8b1139"}`);
   } catch (error) {
     $cleanup(() => {
       a.impl.$drop?.(a.value);

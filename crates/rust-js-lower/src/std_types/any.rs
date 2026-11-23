@@ -3,7 +3,7 @@
 //! value and its `Any` dictionary, `{ type_id: () => "i32" }`.
 
 use crate::calls::Call;
-use crate::recognition::{Std, StdItem, TypeFact, any_trait, linked_twice, std_item};
+use crate::recognition::{Std, StdItem, TypeFact, any_trait, keyed_crate, std_item};
 use crate::temporary_names::Role;
 use crate::{FnCx, R};
 use rust_js_program::js::result;
@@ -279,28 +279,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// The key a `TypeId` is: rustc's name for the type, which each crate
-    /// rust-js compiles agrees on; and a type whose name doesn't tell it
-    /// apart has rustc's hash of it too, which each agrees on as well: a
-    /// function pointer's or a `dyn`'s, and so a closure's, `{{closure}}`,
-    /// whose type holds its signature, a function pointer.
+    /// The key a `TypeId` is, the same in every crate rust-js compiles,
+    /// whatever else each links (ADR 0331, amended, #2353): rustc's name for
+    /// the type, and of each crate but std's that names a part of it, its
+    /// stable id's first 32 bits, `lib::Mine#1a2b3c4d`, as a crate linked at
+    /// two versions has one path for two types; and a type whose name doesn't
+    /// tell it apart has rustc's hash of it instead, which each agrees on as
+    /// well: a function pointer's or a `dyn`'s, and so a closure's,
+    /// `{{closure}}`, whose type holds its signature, a function pointer.
     pub(crate) fn type_id_key(&self, of: Ty<'tcx>) -> String {
         let name = rustc_const_eval::util::type_name(self.tcx, of);
         // A name leaves out lifetimes, which tell a function pointer's or a
         // `dyn`'s types apart, `for<'a> fn(&'a str) -> &'a str` from `..
-        // -> &'static str`; and a crate linked at two versions has one path
-        // for two types.
-        let twice = of.walk().any(|part| {
-            part.as_type().is_some_and(|t| match t.kind() {
-                ty::Adt(adt, _) => linked_twice(self.tcx, adt.did()),
-                ty::FnPtr(..) | ty::Dynamic(..) => true,
-                _ => false,
-            })
-        });
-        match twice {
-            true => format!("{name}#{:x}", self.tcx.type_id_hash(of).as_u128()),
-            false => name,
+        // -> &'static str`.
+        let mut crates = Vec::new();
+        let mut whole = false;
+        for t in of.walk().filter_map(|part| part.as_type()) {
+            let item = match t.kind() {
+                ty::FnPtr(..) | ty::Dynamic(..) => {
+                    whole = true;
+                    None
+                }
+                ty::Adt(adt, _) => Some(adt.did()),
+                ty::Foreign(id) | ty::FnDef(id, _) | ty::Closure(id, _) | ty::Coroutine(id, _) => Some(*id),
+                _ => None,
+            };
+            if let Some(krate) = item.and_then(|id| keyed_crate(self.tcx, id))
+                && !crates.contains(&krate)
+            {
+                crates.push(krate);
+            }
         }
+        if whole {
+            return format!("{name}#{:x}", self.tcx.type_id_hash(of).as_u128());
+        }
+        if crates.is_empty() {
+            return name;
+        }
+        let ids: Vec<String> = (crates.iter())
+            .map(|&krate| format!("{:08x}", self.tcx.stable_crate_id(krate).as_u64() >> 32))
+            .collect();
+        format!("{name}#{}", ids.join("-"))
     }
 
     /// A `dyn` JS is given the value of, its trait nothing to JS: `Any`, or a

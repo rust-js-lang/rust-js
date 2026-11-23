@@ -664,19 +664,16 @@ fn bound_map_item(tcx: TyCtxt<'_>, id: DefId) -> Option<&'static str> {
     }
 }
 
-/// Is `id` of a crate linked at two versions, whose paths alone don't tell
-/// the two apart (ADR 0331)? Or of a crate named as one of std's is, a
-/// workspace's `core` beside std's, the crate compiled too, which every
-/// crate that sees it sees beside std's: never std's own, whose paths are
-/// then theirs alone, the same in every crate, as `@rust-js/std` reads
-/// a `String`'s (ADR 1054).
-pub(crate) fn linked_twice(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    let name = tcx.crate_name(id.krate);
-    !is_std_crate(tcx, id)
-        && (tcx.crates(()).iter().chain([&rustc_span::def_id::LOCAL_CRATE]))
-            .filter(|&&c| tcx.crate_name(c) == name)
-            .count()
-            > 1
+/// The crate whose stable id a `TypeId`'s key of an item of `id` carries,
+/// which every crate that sees it reads alike (ADR 0331, amended, #2353):
+/// any crate's but std's, whose paths are theirs alone in every program, as
+/// `@rust-js/std` reads a `String`'s (ADR 1054). A crate named as one of
+/// std's is, a workspace's `core` beside std's, carries its own. Whether
+/// the compile at hand links a second crate of the name can't decide it:
+/// a crate that sees one getrandom and an app that sees four keyed one
+/// type two ways.
+pub(crate) fn keyed_crate(tcx: TyCtxt<'_>, id: DefId) -> Option<CrateNum> {
+    (!is_std_crate(tcx, id)).then_some(id.krate)
 }
 
 /// A std item another module asks about by name: only recognition spells

@@ -31,7 +31,7 @@ export const mineError = {
   Debug: () => mineDebug,
   Display: () => mineDisplay,
   source: $mineError_source,
-  typeId: () => "lib::Mine",
+  typeId: () => "lib::Mine#1d8b1139",
   description: () => "description() is deprecated; use Display",
   cause: $mineError_source,
 };
@@ -53,7 +53,7 @@ export const otherError = {
   Debug: () => otherDebug,
   Display: () => otherDisplay,
   source: $otherError_source,
-  typeId: () => "lib::Other",
+  typeId: () => "lib::Other#1d8b1139",
   description: () => "description() is deprecated; use Display",
   cause: $otherError_source,
 };
@@ -102,8 +102,8 @@ function code(e) {
 }
 
 function describe(e) {
-  const mine = e.impl.typeId?.() === "lib::Mine" ? e.value : undefined;
-  const is = e.impl.typeId?.() === "lib::Other";
+  const mine = e.impl.typeId?.() === "lib::Mine#1d8b1139" ? e.value : undefined;
+  const is = e.impl.typeId?.() === "lib::Other#1d8b1139";
   const parsed = e.impl.typeId?.() === "core::num::error::ParseIntError" ? e.value : undefined;
   if (mine == null) {
     if (is) {
@@ -143,12 +143,12 @@ function main() {
   }
 
   const boxed = { value: [1], impl: mineError };
-  const mine = boxed.impl.typeId?.() === "lib::Mine" ? boxed.value : undefined;
+  const mine = boxed.impl.typeId?.() === "lib::Mine#1d8b1139" ? boxed.value : undefined;
   if (mine != null) {
     mine[0] = (mine[0] + 10) >>> 0;
   }
   const downcast =
-    boxed.impl.typeId?.() === "lib::Other"
+    boxed.impl.typeId?.() === "lib::Other#1d8b1139"
       ? { TAG: "Ok", _0: boxed.value }
       : { TAG: "Err", _0: boxed };
   if (downcast.TAG === "Ok") {
@@ -156,7 +156,9 @@ function main() {
   } else {
     const e = downcast._0;
     const value =
-      e.impl.typeId?.() === "lib::Mine" ? { TAG: "Ok", _0: e.value } : { TAG: "Err", _0: e };
+      e.impl.typeId?.() === "lib::Mine#1d8b1139"
+        ? { TAG: "Ok", _0: e.value }
+        : { TAG: "Err", _0: e };
     if (value.TAG === "Ok") {
       const mine = value._0;
       console.log(`got mine ${mine[0]}`);

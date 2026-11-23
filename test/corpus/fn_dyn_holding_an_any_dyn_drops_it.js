@@ -23,7 +23,7 @@ function run(f) {
 }
 
 function main() {
-  const loudAny = { typeId: () => "lib::Loud", $drop: loudDrop_drop };
+  const loudAny = { typeId: () => "lib::Loud#1d8b1139", $drop: loudDrop_drop };
   const held = { value: ["a"], impl: loudAny };
   const f = $dropping(
     () => {
@@ -82,7 +82,7 @@ function main() {
     const held = { value: [name], impl: loudAny };
     const value = $dropping(
       () => {
-        console.log(`is loud ${held.impl.typeId() === "lib::Loud"}`);
+        console.log(`is loud ${held.impl.typeId() === "lib::Loud#1d8b1139"}`);
       },
       () => {
         held.impl.$drop?.(held.value);

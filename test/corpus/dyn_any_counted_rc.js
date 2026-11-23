@@ -26,7 +26,7 @@ function main() {
   }
   const loud = {
     value: [1],
-    impl: { typeId: () => "lib::Loud", $drop: loudDrop_drop },
+    impl: { typeId: () => "lib::Loud#1d8b1139", $drop: loudDrop_drop },
     strong: 1,
     weak: 0,
   };
@@ -100,7 +100,9 @@ function main() {
   let found;
   try {
     result =
-      back.impl.typeId() === "lib::Loud" ? { TAG: "Ok", _0: back } : { TAG: "Err", _0: back };
+      back.impl.typeId() === "lib::Loud#1d8b1139"
+        ? { TAG: "Ok", _0: back }
+        : { TAG: "Err", _0: back };
     if (result.TAG === "Ok") {
       found = result._0;
     } else {

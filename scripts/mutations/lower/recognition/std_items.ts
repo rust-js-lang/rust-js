@@ -255,19 +255,20 @@ export const mutations: Mutation[] = [
   {
     name: "std-type-ids-hashed-beside-their-name",
     breaks:
-      "std's `TypeId`s have their hash beside a program's crate named `core`, and not in a crate that doesn't see it, so its `Option<i32>` isn't the one another crate boxed (#455, ADR 1054)",
+      "std's `TypeId`s carry their crate's id too, where one std a program has keys them by name alone, as `@rust-js/std`'s own JS does (ADR 1054, #2353)",
     file: "crates/rust-js-lower/src/recognition/std_items.rs",
-    find: "    !is_std_crate(tcx, id)\n        && (tcx.crates(()).iter().chain([&rustc_span::def_id::LOCAL_CRATE]))\n",
-    replace: "    (tcx.crates(()).iter().chain([&rustc_span::def_id::LOCAL_CRATE]))\n",
-    tests: ["test/crates.test.ts", "-t", "type_ids_beside_a_crate_named_core"],
+    find: "    (!is_std_crate(tcx, id)).then_some(id.krate)\n",
+    replace: "    Some(id.krate)\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_overflow_of_generic_items.rs$"],
+    snapshots: true,
   },
   {
     name: "type-id-census-without-the-crate-compiled",
     breaks:
-      "a crate named `core`, compiled, isn't counted among the crates of its name, so its own `option::Option<i32>` has std's `Option<i32>`'s `TypeId` (#455, ADR 1054)",
+      "a crate named `core`, compiled, isn't keyed by its crate's id, as std's isn't, so its own `option::Option<i32>` has std's `Option<i32>`'s `TypeId` (#455, ADR 1054, #2353)",
     file: "crates/rust-js-lower/src/recognition/std_items.rs",
-    find: "        && (tcx.crates(()).iter().chain([&rustc_span::def_id::LOCAL_CRATE]))\n",
-    replace: "        && (tcx.crates(()).iter())\n",
+    find: "    (!is_std_crate(tcx, id)).then_some(id.krate)\n",
+    replace: "    (!is_std_crate(tcx, id) && tcx.crate_name(id.krate).as_str() != \"core\").then_some(id.krate)\n",
     tests: ["test/crates.test.ts", "-t", "crate_named_core"],
   },
   {
@@ -406,5 +407,12 @@ export const mutations: Mutation[] = [
     replace: "            || (crate::recognition::is_compiled_std_iterator(self.tcx, inner)\n                && self.reaches_its_own(inner, crate::recognition::OwnStep::Fold, crate::recognition::Reach::May))\n",
     tests: ["test/corpus.test.ts", "-t", "^box_of_a_map_drops_as_std_box_does.rs$"],
   },
-
+  {
+    name: "type-id-key-crate-only-when-linked-twice",
+    breaks: "a `TypeId`'s key carries its crate's id only where the compile at hand links two crates of its name, so a `dyn Error` boxed in a crate that links one errs isn't found by a downcast in an app that links two (#2353)",
+    file: "crates/rust-js-lower/src/recognition/std_items.rs",
+    find: "    (!is_std_crate(tcx, id)).then_some(id.krate)\n",
+    replace: "    let name = tcx.crate_name(id.krate);\n    (!is_std_crate(tcx, id)\n        && (tcx.crates(()).iter().chain([&rustc_span::def_id::LOCAL_CRATE]))\n            .filter(|&&c| tcx.crate_name(c) == name)\n            .count()\n            > 1)\n        .then_some(id.krate)\n",
+    tests: ["test/registry-crates.test.ts", "-t", "links its crate at two versions"],
+  },
 ];

@@ -10,7 +10,10 @@ function pointDebug_fmt(point) {
   return `Point { x: ${point.x} }`;
 }
 
-const pointComponent = { Any: () => ({ typeId: () => "lib::Point" }), name: pointComponent_name };
+const pointComponent = {
+  Any: () => ({ typeId: () => "lib::Point#1d8b1139" }),
+  name: pointComponent_name,
+};
 function pointComponent_name(point) {
   return "point";
 }
@@ -23,8 +26,8 @@ function describe(value) {
   const s = value.impl.typeId() === "alloc::string::String" ? value.value : undefined;
   if (s != null) {
     return `string ${s}`;
-  } else if (value.impl.typeId() === "lib::Point") {
-    const downcastRef = value.impl.typeId() === "lib::Point" ? value.value : undefined;
+  } else if (value.impl.typeId() === "lib::Point#1d8b1139") {
+    const downcastRef = value.impl.typeId() === "lib::Point#1d8b1139" ? value.value : undefined;
     return `point ${downcastRef == null ? "None" : `Some(${pointDebug_fmt(downcastRef)})`}`;
   } else {
     return "other";
@@ -46,7 +49,7 @@ function main() {
   const items = [
     { value: 5, impl: i32Any },
     { value: "s", impl: stringAny },
-    { value: { x: 1 }, impl: { typeId: () => "lib::Point" } },
+    { value: { x: 1 }, impl: { typeId: () => "lib::Point#1d8b1139" } },
     { value: 1.5, impl: { typeId: () => "f64" } },
   ];
   for (let i = 0; i < items.length; i++) {
@@ -84,7 +87,7 @@ function main() {
   }
   console.log(`${"i32" === key(3, i32Any)} ${key(3, u8Any) === "i32"}`);
   const seen = new Map();
-  seen.set("lib::Point", "point");
+  seen.set("lib::Point#1d8b1139", "point");
   seen.set("i64", "i64");
   const get = seen.get("i64");
   console.log(`${get == null ? "None" : `Some(${$debugStr(get)})`} ${seen.size}`);
@@ -94,8 +97,8 @@ function main() {
   const component = { value: { x: 2 }, impl: pointComponent };
   const any = { value: component.value, impl: component.impl.Any() };
   console.log(
-    `${component.impl.name(component.value)} ${((value) => (value == null ? "None" : `Some(${pointDebug_fmt(value)})`))(any.impl.typeId() === "lib::Point" ? any.value : undefined)} Any { .. }`,
+    `${component.impl.name(component.value)} ${((value) => (value == null ? "None" : `Some(${pointDebug_fmt(value)})`))(any.impl.typeId() === "lib::Point#1d8b1139" ? any.value : undefined)} Any { .. }`,
   );
-  console.log(`${component.impl.Any().typeId() === "lib::Point"}`);
+  console.log(`${component.impl.Any().typeId() === "lib::Point#1d8b1139"}`);
 }
 //# sourceMappingURL=case.js.map

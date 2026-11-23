@@ -30,7 +30,7 @@ export const randErrorError = {
   Debug: () => randErrorDebug,
   Display: () => randErrorDisplay,
   source: $randErrorError_source,
-  typeId: () => "lib::RandError",
+  typeId: () => "lib::RandError#1d8b1139",
   description: () => "description() is deprecated; use Display",
   cause: $randErrorError_source,
 };

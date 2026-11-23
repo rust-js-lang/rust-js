@@ -112,7 +112,7 @@ export const mineError = {
   Debug: () => mineDebug,
   Display: () => mineDisplay,
   source: $mineError_source,
-  typeId: () => "lib::Mine",
+  typeId: () => "lib::Mine#1d8b1139",
   description: () => "description() is deprecated; use Display",
   cause: $mineError_source,
 };
@@ -159,7 +159,7 @@ export const wrapperError = {
   Debug: () => wrapperDebug,
   Display: () => wrapperDisplay,
   source: $wrapperError_source,
-  typeId: () => "lib::Wrapper",
+  typeId: () => "lib::Wrapper#1d8b1139",
   description: () => "description() is deprecated; use Display",
   cause: $wrapperError_source,
 };

@@ -33,7 +33,7 @@ export const missingError = {
   Debug: () => missingDebug,
   Display: () => missingDisplay,
   source: $missingError_source,
-  typeId: () => "lib::Missing",
+  typeId: () => "lib::Missing#1d8b1139",
   description: () => "description() is deprecated; use Display",
   cause: $missingError_source,
 };

@@ -167,3 +167,32 @@ Held by `dyn_error_downcast.rs` against native Rust in both builds (the
 crate's errors, `io::Error`, a parse error, a message, a generic impl's
 value, `downcast_mut` and `Box`'s `downcast`), by diagnostics' refusal of
 a downcast to a generic impl's type, and by mutations.
+
+## Amendment: a key carries its crate's stable id, in every crate (2026-11-23, #2353)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept, as the lead decided.
+
+A `TypeId`'s key was rustc's name for the type, with rustc's hash of it
+added only where the compile at hand linked two crates of a part's
+name. So two crates could key one type two ways. rand_core 0.5, which
+links one getrandom, boxed `getrandom::Error` keyed
+`getrandom::error::Error`. An app that links getrandom 0.1 to 0.4 downcast
+it as `getrandom::error::Error#f37f..`, and found it to be no
+`getrandom::Error`, `None` where Rust gives `Some` (found by #2326's
+property program). **A key is computed the same way by every crate,
+whatever the compile at hand links. Of each crate but std's that names a
+part of the type, the key carries the first 32 bits of that crate's
+stable id, which each crate that sees it reads alike:
+`lib::Mine#1a2b3c4d`.** Std's types keep their plain keys, one std a
+program (ADR 1054). A function pointer's, a `dyn`'s or a closure's keeps
+rustc's hash of the whole type, as before. `recognition::keyed_crate` is
+the one answer of which crates a key carries. `type_id_key` writes it.
+
+25 corpus snapshots and one guide example read the new keys, nothing else
+of them moving. `test/registry-crates.test.ts` boxes errs 0.1's `E` in a
+crate that links one errs and downcasts it in an app that links errs 0.1
+and 0.2, against native Rust. The mutation
+`type-id-key-crate-only-when-linked-twice` puts the old rule back, and
+`std-type-ids-hashed-beside-their-name` is retargeted to a key of std's
+carrying its crate.

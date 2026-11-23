@@ -767,7 +767,7 @@ export const configErrorError = {
   Debug: () => configErrorDebug,
   Display: () => configErrorDisplay,
   source: $configErrorError_source,
-  typeId: () => "example::ConfigError",
+  typeId: () => "example::ConfigError#7ebd57e3",
   description: () => "description() is deprecated; use Display",
   cause: $configErrorError_source,
 };

@@ -6,12 +6,12 @@ export function entry() {
 
 const ID_ISIZE = "isize";
 
-const IDS = ["usize", "&str", "lib::A"];
+const IDS = ["usize", "&str", "lib::A#1d8b1139"];
 
 function main() {
   console.log(`${ID_ISIZE === "isize"}`);
   console.log(`${ID_ISIZE === "usize"}`);
-  console.log(`${IDS[0] !== IDS[1]} ${IDS[0] === "usize"} ${IDS[2] === "lib::A"}`);
+  console.log(`${IDS[0] !== IDS[1]} ${IDS[0] === "usize"} ${IDS[2] === "lib::A#1d8b1139"}`);
   const F = [
     "fn(fn(lib::A) -> lib::A) -> lib::A#ed5db002f2d616eddbdaebca2bb6c110",
     "fn(fn() -> lib::A, lib::A) -> lib::A#ddfde33b8ddaef7c6536ad961f698a04",

@@ -19,7 +19,7 @@ export const innerError = {
   Debug: () => innerDebug,
   Display: () => innerDisplay,
   source: $innerError_source,
-  typeId: () => "lib::Inner",
+  typeId: () => "lib::Inner#1d8b1139",
   description: () => "description() is deprecated; use Display",
   cause: $innerError_source,
 };
@@ -37,7 +37,7 @@ export const outerError = {
   Debug: () => outerDebug,
   Display: () => outerDisplay,
   source: outerError_source,
-  typeId: () => "lib::Outer",
+  typeId: () => "lib::Outer#1d8b1139",
   description: () => "description() is deprecated; use Display",
   cause: outerError_source,
 };
@@ -58,7 +58,7 @@ export const oldError = {
   Debug: () => oldDebug,
   Display: () => oldDisplay,
   source: () => undefined,
-  typeId: () => "lib::Old",
+  typeId: () => "lib::Old#1d8b1139",
   description: oldError_description,
   cause: oldError_cause,
 };

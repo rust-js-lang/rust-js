@@ -43,7 +43,7 @@ export const loudError = {
   Debug: () => loudDebug,
   Display: () => loudDisplay,
   source: $loudError_source,
-  typeId: () => "lib::Loud",
+  typeId: () => "lib::Loud#1d8b1139",
   description: () => "description() is deprecated; use Display",
   cause: $loudError_source,
   $drop: loudDrop_drop,
@@ -101,7 +101,7 @@ export const randErrorError = {
   },
   source: $randErrorError_source,
   typeId() {
-    return "lib::RandError";
+    return "lib::RandError#1d8b1139";
   },
   description() {
     return "description() is deprecated; use Display";

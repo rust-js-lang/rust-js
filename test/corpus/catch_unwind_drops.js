@@ -73,7 +73,7 @@ function main() {
     const result$2 = $catchUnwind(() => {
       throw $unwinding({
         value: ["payload"],
-        impl: { typeId: () => "lib::Noisy", $drop: noisyDrop_drop },
+        impl: { typeId: () => "lib::Noisy#1d8b1139", $drop: noisyDrop_drop },
       });
     });
     console.log(`payload caught: ${result$2.TAG === "Err"}`);

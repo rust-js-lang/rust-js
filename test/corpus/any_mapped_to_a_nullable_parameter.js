@@ -13,7 +13,7 @@ function plain(frames) {
 function withStatement(frames) {
   function map(f) {
     noted();
-    return { value: f, impl: { typeId: () => "lib::Keyframes" } };
+    return { value: f, impl: { typeId: () => "lib::Keyframes#1d8b1139" } };
   }
   return JSON.stringify(((frames != null ? map(frames) : null) ?? { value: null }).value);
 }
@@ -24,7 +24,7 @@ function given(value) {
 
 function chosen(frames, pick) {
   if (pick) {
-    return { value: frames, impl: { typeId: () => "lib::Keyframes" } };
+    return { value: frames, impl: { typeId: () => "lib::Keyframes#1d8b1139" } };
   }
 }
 
@@ -36,7 +36,9 @@ function main() {
   const k = { opacity: 0.5 };
   console.log(`${plain()} ${withStatement()}`);
   console.log(`${plain(k)} ${withStatement(k)}`);
-  console.log(`${given()} ${given({ value: k, impl: { typeId: () => "lib::Keyframes" } })}`);
+  console.log(
+    `${given()} ${given({ value: k, impl: { typeId: () => "lib::Keyframes#1d8b1139" } })}`,
+  );
   console.log(`${called(k, false)} ${called(k, true)}`);
 }
 //# sourceMappingURL=case.js.map

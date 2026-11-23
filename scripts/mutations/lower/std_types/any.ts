@@ -87,8 +87,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`dyn for<'a> T<'a, 'a>` and `.. T<'a, 'static>` share a `TypeId`, their name",
     file: "crates/rust-js-lower/src/std_types/any.rs",
-    find: "                ty::FnPtr(..) | ty::Dynamic(..) => true,\n",
-    replace: "",
+    find: "                ty::FnPtr(..) | ty::Dynamic(..) => {\n                    whole = true;\n                    None\n                }\n",
+    replace: "                ty::FnPtr(..) | ty::Dynamic(..) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
   },
   {

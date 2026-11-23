@@ -153,3 +153,55 @@ test("a getrandom that isn't crates.io's is refused, naming the qualified versio
   expect(built.stderr).toContain("isn't the getrandom rust-js writes the JS of, crates.io's 0.1.16 or 0.2.17 or 0.3.4 or 0.4.3");
   expect(built.stderr).toContain("`cargo update -p getrandom --precise 0.2.17`");
 }, 600_000);
+
+// A `TypeId`'s key is the same in every crate, whatever else each links
+// (#2353): errs 0.1's `E`, boxed as a `dyn Error` by mid, which links one
+// errs, is downcast by an app that links errs 0.1 and 0.2, whose two `E`s
+// share a path. Its key carries its crate's stable id, which both read
+// alike, where it carried a hash only where the compile at hand linked two
+// crates of its name, and mid's box was found to be no `E` at all.
+test("a type boxed in one crate is found by a downcast in another that links its crate at two versions", () => {
+  const dir = fixture("registry-type-ids");
+  const errs = (version: string, n: number) =>
+    gitCrate(join(dir, `v${n}`), "errs", version, `#[derive(Debug)]\npub struct E(pub u32);\n\nimpl std::fmt::Display for E {\n    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(f, "errs ${version}: {}", self.0)\n    }\n}\n\nimpl std::error::Error for E {}\n`);
+  const [one, two] = [errs("0.1.0", 1), errs("0.2.0", 2)];
+  const mid = gitCrate(dir, "mid", "0.1.0", "pub fn boxed() -> Box<dyn std::error::Error> {\n    Box::new(errs::E(7))\n}\n");
+  writeFileSync(join(mid, "Cargo.toml"), `${readFileSync(join(mid, "Cargo.toml"), "utf8")}\n[dependencies]\nerrs = { git = ${JSON.stringify(`file://${one}`)} }\n`);
+  expect(runSync(["git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-am", "errs"], mid, 60_000).code).toBe(0);
+  const source = `use std::error::Error;
+
+pub fn shown() -> String {
+    let boxed: Box<dyn Error> = mid::boxed();
+    let local: Box<dyn Error> = Box::new(errs02::E(3));
+    let found = boxed.downcast_ref::<errs01::E>().map(|e| e.0);
+    format!(
+        "{boxed} {found:?} {} | {local} {} {}",
+        boxed.is::<errs02::E>(),
+        local.is::<errs02::E>(),
+        local.is::<errs01::E>(),
+    )
+}
+
+pub fn main() {
+    println!("{}", shown());
+}
+`;
+  const at = join(dir, "app");
+  mkdirSync(join(at, "src"), { recursive: true });
+  const git = (crate: string) => JSON.stringify(`file://${crate}`);
+  writeFileSync(join(at, "Cargo.toml"), `[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[dependencies]\nerrs01 = { package = "errs", git = ${git(one)} }\nerrs02 = { package = "errs", git = ${git(two)} }\nmid = { git = ${git(mid)} }\n\n[workspace]\n`);
+  writeFileSync(join(at, "src", "lib.rs"), source);
+  const built = build(at);
+  expect(built.stderr).toBe("");
+  expect(built.code).toBe(0);
+  const program = `(await import(${JSON.stringify(join(at, "src", "lib.js"))})).main();`;
+  const js = run([node ?? "node", "--input-type=module", "--eval", program]);
+  const native = join(dir, "native");
+  mkdirSync(join(native, "src"), { recursive: true });
+  writeFileSync(join(native, "Cargo.toml"), `[package]\nname = "native"\nversion = "0.0.0"\nedition = "2024"\n\n[dependencies]\napp = { path = ${JSON.stringify(at)} }\n\n[workspace]\n`);
+  writeFileSync(join(native, "src", "main.rs"), "fn main() {\n    app::main()\n}\n");
+  const ran = runSync(["cargo", "run", "-q"], native, 600_000);
+  expect(ran.code).toBe(0);
+  expect(ran.stdout).toBe("errs 0.1.0: 7 Some(7) false | errs 0.2.0: 3 true false\n");
+  expect(js).toBe(ran.stdout);
+}, 600_000);

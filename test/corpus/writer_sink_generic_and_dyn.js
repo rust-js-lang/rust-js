@@ -362,7 +362,7 @@ export const failureError = {
   Debug: () => failureDebug,
   Display: () => failureDisplay,
   source: $failureError_source,
-  typeId: () => "lib::Failure",
+  typeId: () => "lib::Failure#1d8b1139",
   description: () => "description() is deprecated; use Display",
   cause: $failureError_source,
 };

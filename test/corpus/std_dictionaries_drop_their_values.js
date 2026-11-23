@@ -44,9 +44,9 @@ function main() {
     throw error;
   }
   debugged.impl.$drop?.(debugged.value);
-  const any = { value: [4], impl: { typeId: () => "lib::Point", $drop: pointDrop_drop } };
+  const any = { value: [4], impl: { typeId: () => "lib::Point#1d8b1139", $drop: pointDrop_drop } };
   try {
-    console.log(`${any.impl.typeId() === "lib::Point"}`);
+    console.log(`${any.impl.typeId() === "lib::Point#1d8b1139"}`);
   } catch (error) {
     $cleanup(() => {
       any.impl.$drop?.(any.value);
