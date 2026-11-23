@@ -42,11 +42,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "provided-entry-bounds-unnormalized",
-    breaks: "the call's own bound `B: Extend<Self::Item>` given a crate's iterator's own `partition` isn't of its type's terms, `Extend<u32>`, so the impl's own isn't found and its entry is refused (#2421)",
+    breaks: "the call's own bound `B: Extend<Self::Item>` given a crate's iterator's own `partition` isn't of its type's terms, so its entry names its dictionary `BExtendSelfItem` where the impl's function names it `BExtendU32`: needless output, as `evidence_args_given` matches either spelling (#2421)",
     file: "crates/rust-js-lower/src/traits/evidence.rs",
     find: "                    let tr = (tcx.try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(tr)))\n",
     replace: "                    let tr = (None::<ty::TraitRef<'tcx>>)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_iterator_writing_partition_given_to_generic_code.rs$"],
+    snapshots: true,
   },
   {
     name: "provided-entry-never-eta-reduced",
