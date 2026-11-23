@@ -286,17 +286,7 @@ pub fn lower_crate<'tcx>(
     let mut lowered_copies: Vec<((DefId, usize), LoweredFn)> = Vec::new();
     // Each module's JS, where a JS file of the program's own imports it
     // from, and what it imports for its effects (`module_imports`).
-    let places: Vec<ModuleJs> = (modules.iter())
-        .map(|&module| ModuleJs {
-            module,
-            path: paths[&module].clone(),
-            file: module_file(tcx, module).name.clone().into_local_path(),
-            located: located(tcx, module),
-            effects: (bindings::marks(tcx, module, "import"))
-                .filter_map(|attr| Some(attr.value_str()?.to_string()))
-                .collect(),
-        })
-        .collect();
+    let places = ModuleJs::of(tcx, &modules, &paths);
     // What each module re-exports, decided once, before any is lowered: what
     // its JS writes, `export { one } from "./z.js"`, and its imports in the
     // load-order graph (`module_imports`, #295).

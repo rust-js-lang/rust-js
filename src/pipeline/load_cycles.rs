@@ -7,8 +7,8 @@
 //! dictionary that's its module's `const`, refused there (ADR 0592).
 
 use super::Pass;
-use rust_js_lower::FnInfo;
 use rust_js_lower::bindings::Export;
+use rust_js_lower::{FnInfo, bindings, located, module_file};
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rust_js_program::js;
 use rustc_hir::def::DefKind;
@@ -270,6 +270,27 @@ pub(super) struct ModuleJs {
     pub(super) file: Option<std::path::PathBuf>,
     pub(super) located: bool,
     pub(super) effects: Vec<String>,
+}
+
+impl ModuleJs {
+    /// Each of the crate's modules' JS, in `modules`' order.
+    pub(super) fn of(
+        tcx: TyCtxt<'_>,
+        modules: &[LocalModId],
+        paths: &IndexMap<LocalModId, Vec<String>>,
+    ) -> Vec<ModuleJs> {
+        (modules.iter())
+            .map(|&module| ModuleJs {
+                module,
+                path: paths[&module].clone(),
+                file: module_file(tcx, module).name.clone().into_local_path(),
+                located: located(tcx, module),
+                effects: (bindings::marks(tcx, module, "import"))
+                    .filter_map(|attr| Some(attr.value_str()?.to_string()))
+                    .collect(),
+            })
+            .collect()
+    }
 }
 
 /// A module and where a `pub use` of it re-exports from, as `reexports`
