@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/lazy_range.js",
     find: "    const left = (n) => (n === 0 ? 0 : 1 + Math.floor((n - 1) / step));\n",
     replace: "    const left = (n) => n;\n",
-    tests: ["test/corpus.test.ts", "-t", "^counted_iterators_held_ask_room.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^extend_of_a_reversed_stepped_range_grows_by_its_hint\\.rs$"],
   },
   {
     name: "lazy-range-advance-by-steps",

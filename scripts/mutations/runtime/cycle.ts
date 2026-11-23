@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/cycle.js",
     find: "          () => drop?.(cycled.orig),\n          () => drop?.(cycled.iter),\n",
     replace: "          () => drop?.(cycled.iter),\n          () => drop?.(cycled.orig),\n",
-    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cloned_apart_map_drops_its_closure\\.rs$"],
   },
   {
     name: "cycle-clone-restarts",

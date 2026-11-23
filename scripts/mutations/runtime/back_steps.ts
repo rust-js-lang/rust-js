@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/back_steps.js",
     find: "  if (it.len !== undefined) map.len = () => it.len();\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^back_folds_of_sources_made_knowing_their_back\\.rs$"],
   },
   {
     name: "filter-ends-keeps-all",
@@ -395,7 +395,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/back_steps.js",
     find: "    const [low, high] = $sizeHint(it);\n",
     replace: "    return [0, undefined];\n",
-    tests: ["test/corpus.test.ts", "-t", "^(step_by_range_size_hint|range_hints_given).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^capacity_exact_size_adapters\\.rs$"],
   },
   {
     name: "back-map-fold-unguarded",
@@ -698,7 +698,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/back_steps.js",
     find: "  $ownsAs(enumerated, iter, \"nthBack\");\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^step_by_folded_from_its_back_as_std.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^vec_stepped_by_from_its_back_through_adapters_drops_a_slice\\.rs$"],
   },
   {
     name: "enumerate-nth-back-len-asked-at-end",
