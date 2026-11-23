@@ -93,6 +93,12 @@ pub fn call(f: &dyn Fn(Option<f64>) -> bool, value: Option<f64>) -> bool {
     f(value)
 }
 
+// Given beside another argument, not laddered: Rust's \`None\`, \`undefined\`,
+// where JS gave \`null\`, \`value ?? undefined\` (#1840, #1979).
+pub fn call_pair(f: &dyn Fn(Option<f64>, u32) -> bool, value: Option<f64>) -> bool {
+    f(value, 1)
+}
+
 #[cfg_attr(rust_js, rust_js::nullable(value))]
 pub fn forwarded(value: Option<f64>) -> String {
     js::number::to_precision(1.25, value)
@@ -216,7 +222,7 @@ const answers = (m: Record<string, (...args: unknown[]) => any>) => {
     [each(() => m.ofField({ value: null })), each(() => m.ofField({}))],
     [each(() => m.passed(null) === undefined), each(() => m.fresh(0) === undefined), each(() => m.empty(null))],
     [each(() => m.make(null).digits === undefined), each(() => (m.set(shown, null), shown.digits === undefined))],
-    [each(() => m.call((v: unknown) => v === undefined, null))],
+    [each(() => m.call((v: unknown) => v === undefined, null)), each(() => m.callPair((v: unknown) => v === undefined, null))],
     [each(() => m.forwarded(null)), each(() => m.forwardedNone())],
     [
       each(() => m.throughDyn(null)),
@@ -243,7 +249,7 @@ const rust = [
   ["1.25", "1.25"],
   [true, true, true],
   [true, true],
-  [true],
+  [true, true],
   ["1.25", "1.25"],
   ["1.25", "true", "1.25"],
   ["1.25", "1.25", "1.25"],

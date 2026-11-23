@@ -149,14 +149,13 @@ impl Prints {
     }
 
     /// `stops_shown` of a std value's `Debug`, `Vec<Loud>`'s, `Option<Loud>`'s
-    /// or `(Loud, u8)`'s (#1521). Of a type of the crate's, whose writer is
-    /// the crate's own, none: its derived `Debug`'s fields are asked where
-    /// it shows them (`stops_shown`, #1495).
+    /// or `(Loud, u8)`'s (#1521). A type of the crate's is its callers' to
+    /// leave out, as each does: its `Debug` is the crate's own impl, derived
+    /// or written, as the orphan rule has it, whose fields are asked where it
+    /// shows them (`stops_shown`, #1495), and which `own_debug` excuses
+    /// (#1979).
     pub(crate) fn stops_composed<'tcx>(&self, ty: ty::Ty<'tcx>) -> Option<ty::Ty<'tcx>> {
-        match ty.ty_adt_def().is_some_and(|adt| adt.did().is_local()) {
-            true => None,
-            false => self.stops_shown(ty),
-        }
+        self.stops_shown(ty)
     }
 }
 

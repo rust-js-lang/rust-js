@@ -53,14 +53,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "stops-composed-of-the-crates-own",
-    breaks: "`{:?}` of the crate's own writer that prints and may panic, which streams its text through the line itself, is refused as a std value's composed `Debug` is (#1521, #1530)",
-    file: "crates/rust-js-lower/src/analysis/prints.rs",
-    find: "            true => None,\n            false => self.stops_shown(ty),\n",
-    replace: "            true => self.stops_shown(ty),\n            false => self.stops_shown(ty),\n",
-    tests: ["test/corpus.test.ts", "-t", "^printing_writer_stopped_part_way_where_caught.rs$"],
-  },
-  {
     name: "panicking-writer-unstreamed",
     breaks: "a writer that may panic, in a program that catches it, builds its text whole, so `println!(\"x {} y\", halfway)` caught loses `x half` where Rust's line buffer keeps it (#1496)",
     file: "crates/rust-js-lower/src/analysis/prints.rs",

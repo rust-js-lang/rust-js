@@ -91,6 +91,20 @@ pub fn derefs(values: &[Option<u32>], f: &dyn Fn(Option<u32>)) {
     }
 }
 
+// The inner \`None\` through a reference, pushed where JS reads it, not a
+// callback's: Rust's, \`undefined\`, not the \`null\` it's held as (#1979).
+pub fn last_values(values: &[Option<u32>]) -> Vec<Option<u32>> {
+    let mut last = None;
+    for value in values {
+        last = Some(value);
+    }
+    let mut out = Vec::new();
+    if let Some(&value) = last {
+        out.push(value);
+    }
+    out
+}
+
 pub fn returned(v: Option<u32>) -> Option<u32> {
     let o = if v.is_some() { Some(v) } else { Some(None) };
     match o {
@@ -126,6 +140,7 @@ pub fn tested(values: &[Option<u32>]) -> bool {
     [],
   ]);
   expect([[1, undefined], [undefined, 2], []].map((v) => given((f) => lib.derefs(v, f)))).toStrictEqual([[undefined], [2], []]);
+  expect([[1, undefined], [undefined, 2], []].map((v) => lib.lastValues(v))).toStrictEqual([[undefined], [2], []]);
   expect([undefined, 0, 3].map(lib.returned)).toStrictEqual([undefined, 0, 3]);
   expect([[], [1, undefined], [undefined, 1]].map(lib.tested)).toStrictEqual([false, false, true]);
 });
