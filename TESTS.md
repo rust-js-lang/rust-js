@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-23 (#2379, ADR 1188): test/serde-path.test.ts, new, four tests: serde_path_to_error's read against native serde_path_to_error, every rule of where in the value it places a mistake; its `Error` shown padded, as `{:x?}`, into a writer and as a `dyn Error`, and a type's own `deserialize` of serde_json's reader of text; what's refused of either; and its `Error` and `Path` declared `@rust-js/std`'s opaque `JsonPathError` and `JsonPath`.
+
 Changed on 2026-11-23 (#2325, ADR 0083 amended): test/binaries.test.ts gains a test, a registry crate's panic names its own line against native Rust, serde_json's three `IndexMut` panics, hashbrown's own map's and indexmap's `get_disjoint_mut`; test/shipped-crates.test.ts gains one, serde_json's sites noted by Cargo's check through rust-js and given; test/std-sites.test.ts gains one, std's build's libraries linked once; rust-js-program's unit tests gain `library::registry_sites`' finder.
 
 Changed on 2026-11-23 (#2334, ADR 1186): test/helper-calls.test.ts, one test, holds each file's reads of a helper call by its callee's name, `helper_name()`, at most and exactly test/helper-shapes-known.txt's, a ratchet migrating a file onto `helper_call_of` lowers; rust-js-program's unit tests gain `runtime::signatures`' parse of a parameter list and `js::helper_call`'s, each name a call is read by one its helper declares, of every compiler source.

@@ -535,6 +535,13 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             ty::Adt(..) if self.recognition.is_json_error(ty) => Drops::Nothing,
             // A qualified getrandom's error, its code (#2326).
             ty::Adt(..) if self.recognition.getrandom_error(ty).is_some() => Drops::Nothing,
+            // serde_path_to_error's `Error` and `Path`, its text and numbers,
+            // and serde_json's reader of text, the runtime's (ADR 1188).
+            ty::Adt(..)
+                if self.recognition.json_path_type(ty).is_some() || self.recognition.is_json_text_reader(ty) =>
+            {
+                Drops::Nothing
+            }
             // An `io::Error`: the error it may hold, a `Box<dyn Error + Send +
             // Sync>`, which its drop drops (ADR 0462, amended).
             ty::Adt(..)

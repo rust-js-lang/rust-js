@@ -263,6 +263,7 @@ helpers! {
     FromJson,
     JsonValue,
     JsonError,
+    JsonPath,
     JsonStdForms,
     StringError,
     Channel,
@@ -459,6 +460,10 @@ const PURE: &[&str] = &[
     "$debugJsonNumber",
     "$displayJsonError",
     "$debugJsonError",
+    "$displayJsonPath",
+    "$displayJsonPathError",
+    "$debugJsonPath",
+    "$debugJsonPathError",
     "$jsonValueAs",
     "$jsonGet",
     "$jsonIndex",
@@ -1083,6 +1088,9 @@ impl Helper {
             // A `serde_json::Error`, `{ message, line, column }`, shown as serde_json
             // shows one: a place only when it has one (line 0 is none).
             Helper::JsonError => include_str!("runtime/json_error.js"),
+            // serde_path_to_error's read and its `Error`, `{ path, original }`,
+            // shown as the crate shows it (ADR 1188).
+            Helper::JsonPath => include_str!("runtime/json_path.js"),
             Helper::JsonStdForms => include_str!("runtime/json_std_forms.js"),
             Helper::StringError => include_str!("runtime/string_error.js"),
             Helper::Channel => include_str!("runtime/channel.js"),

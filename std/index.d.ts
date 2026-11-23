@@ -22,6 +22,18 @@ export interface JsonError {
   readonly column: number;
 }
 
+declare const jsonPathError: unique symbol;
+/** A `serde_path_to_error::Error<serde_json::Error>`: serde_json's error, and where in the value it was made, which Rust's `path()`, `inner()` and `Display` read (ADR 1188). */
+export interface JsonPathError {
+  readonly [jsonPathError]: never;
+}
+
+declare const jsonPath: unique symbol;
+/** A `serde_path_to_error::Path`: where in a value a read failed, its `Display` `items[1].qty` (ADR 1188). */
+export interface JsonPath {
+  readonly [jsonPath]: never;
+}
+
 /** A `DoubleEndedIterator`: a JS iterator that knows its back, `back()` its last item, as `next()` its first (#1999). */
 export interface DoubleEndedIterator<T> extends IterableIterator<T> {
   back(): IteratorResult<T>;

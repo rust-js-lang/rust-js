@@ -110,6 +110,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call(Expr::helper("$fromJson"), vec![text, read]))
     }
 
+    /// `serde_path_to_error::deserialize::<_, T>(reader)`: `$jsonPathRead(reader,
+    /// read)`, `read` the function that reads a `T`, of serde_json's reader of
+    /// text, which keeps where in the value it is as it reads (ADR 1188).
+    pub(crate) fn json_path_value(&mut self, reader: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        self.refuse_dropping_read(ty, span)?;
+        let read = self.json_reader(ty, span)?;
+        self.use_reader();
+        Ok(Expr::call(Expr::helper("$jsonPathRead"), vec![reader, read]))
+    }
+
     /// `function orderDeserialize_deserialize(json) { .. }`: the derived
     /// `deserialize`, reading from serde_json's reader.
     pub(super) fn lower_deserialize(&mut self, method: DefId) -> R<js::Function> {

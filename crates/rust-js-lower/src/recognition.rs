@@ -54,7 +54,7 @@ mod unrecognized;
 mod wrappers;
 mod zip_folds;
 
-pub(crate) use self::shipped::getrandom_error_type;
+pub(crate) use self::shipped::{JsonPathType, getrandom_error_type, json_path_def};
 pub use self::{
     adapter_types::*, calls::*, compiled_std::*, fmt::*, iterators::*, js_items::*, json::*, serde::*,
     specialization::*, std_crates::*, std_items::*, std_paths::*, std_steps::*, traits::*, type_facts::*, types::*,
@@ -275,6 +275,9 @@ pub enum Std {
     /// getrandom's bytes and its `Error`'s code, of a qualified getrandom
     /// rustc builds (#2326).
     Getrandom(super::shipped::GetrandomOp),
+    /// serde_path_to_error's read of serde_json's text reader and its
+    /// `Error`'s parts, of a qualified one rustc builds (ADR 1188).
+    JsonPath(super::shipped::JsonPathOp),
     /// `panic::Location`'s (ADR 0427).
     Location(super::std_types::location::LocationOp),
     /// A `Backtrace`'s (ADR 0568).

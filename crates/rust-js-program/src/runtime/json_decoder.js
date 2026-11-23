@@ -137,9 +137,7 @@ class $JsonDecoder {
     const seen = new Array(fields.length).fill(false);
     const kept = [];
     while (map.next()) {
-      const keyContent = map.key().content();
-      const key = keyContent.value;
-      const i = $jsonField(key, fields, deny && !flatten);
+      const [keyContent, i] = map.key().field(fields, deny && !flatten);
       if (i < 0 && flatten) {
         kept.push([keyContent, map.value((json) => json.content())]);
         continue;

@@ -111,7 +111,8 @@ and rust-js writes their API as JS's own
 ([ADR 0423](../../decisions/0423-hashbrowns-maps-are-stds.md),
 [ADR 0424](../../decisions/0424-indexmaps-maps-are-js-maps.md),
 [ADR 0529](../../decisions/0529-a-shipped-memchr-searches-bytes.md),
-[ADR 1185](../../decisions/1185-getrandom-is-a-shipped-crate.md)):
+[ADR 1185](../../decisions/1185-getrandom-is-a-shipped-crate.md),
+[ADR 1188](../../decisions/1188-serde-path-to-error-is-a-shipped-crate.md)):
 
 | Crate | In JS |
 |---|---|
@@ -120,6 +121,7 @@ and rust-js writes their API as JS's own
 | `indexmap` | its `IndexMap` and `IndexSet` are a `Map` and a `Set`, its methods by place, `get_index`, `swap_remove`, the runtime's |
 | `memchr` 2.8.3, crates.io's | its searches are the runtime's, over the byte arrays slices are, `memchr` being `indexOf` |
 | `getrandom` 0.1.16, 0.2.17, 0.3.4 and 0.4.3, crates.io's | its fills and numbers are Web Crypto's `crypto.getRandomValues`, whatever features you chose; its `Error` is its code, shown as that version shows it |
+| `serde_path_to_error` 0.1.20, crates.io's | its `deserialize` of serde_json's reader of text is the runtime's reader, keeping where in the value it is; its `Error` says so as the crate does, `items[1].qty: ..` ([serde](README.md#serde)) |
 
 ```toml
 [dependencies]
@@ -160,8 +162,9 @@ export function counts(words) {
 ```
 
 What one of these has that rust-js doesn't write is refused where it's
-called, `memchr::memmem::find` and getrandom 0.4's `SysRng` among them. A
-`memchr` or `getrandom` of another version, a fork, or one by path or git
+called, `memchr::memmem::find`, getrandom 0.4's `SysRng` and
+serde_path_to_error's own `Track` among them. A `memchr`, `getrandom` or
+`serde_path_to_error` of another version, a fork, or one by path or git
 is its types alone, and a call into it says which to depend on: `cargo
 update -p getrandom --precise 0.2.17`, the qualified version your
 requirement takes.

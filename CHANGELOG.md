@@ -247,6 +247,12 @@ imports, and `rust-js build` the one way to build an app.
   rand's `thread_rng` and `OsRng` work, and so do itertools' quickcheck
   tests. Another getrandom is refused where it's called, naming the
   qualified version to depend on (ADR 1185).
+- **serde_path_to_error 0.1.20**: its `deserialize` of
+  `serde_json::Deserializer::from_str(text)` says where in the value a read
+  failed, `items[1].qty: invalid value: ..`, by the crate's own rules, and
+  its `Error` is shown, boxed and declared as the crate's. A type's own
+  `deserialize` of that reader works too. A plain `serde_json::from_str`
+  is unchanged and pays nothing (ADR 1188).
 - **A `fuse` and an `enumerate` of a double-ended or exact-size
   iterator, from either end** (ADR 0528).
 - **An impl whose associated type is an iterator over its type

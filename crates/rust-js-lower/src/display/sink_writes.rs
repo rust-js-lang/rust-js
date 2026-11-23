@@ -9,6 +9,7 @@
 
 use super::*;
 use crate::format_spec::{Radix, Spec, options_object};
+use crate::recognition::JsonPathType;
 use crate::representation::Num;
 
 /// One write into a writer's sink, `f` (`$writerSink`), as std makes it.
@@ -352,6 +353,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => "$writeGetrandomErrorDebug",
                 };
                 SinkWrite::Helper(helper, vec![value, Expr::str(version.key()), options])
+            }
+            // serde_path_to_error's `Error` and `Path`, as it writes them (ADR
+            // 1188).
+            Std::FmtDisplay | Std::FmtDebug if let Some(of) = recognition.json_path_type(ty) => {
+                let helper = match (kind, of) {
+                    (Std::FmtDisplay, JsonPathType::Error) => "$writeJsonPathError",
+                    (Std::FmtDisplay, JsonPathType::Path) => "$writeJsonPath",
+                    (_, JsonPathType::Error) => "$writeDebugJsonPathError",
+                    (_, JsonPathType::Path) => "$writeDebugJsonPath",
+                };
+                SinkWrite::Helper(helper, vec![value, options])
             }
             _ => return None,
         })

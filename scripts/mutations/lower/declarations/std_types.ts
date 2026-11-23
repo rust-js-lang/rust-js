@@ -52,4 +52,12 @@ export const mutations: Mutation[] = [
     replace: "        matches!(self.of, Of::Cell { .. } | Of::JsonError)\n",
     tests: ["test/declarations-json-error.test.ts", "test/std-package.test.ts", "-t", "JsonError|types are the catalog"],
   },
+  {
+    name: "json-path-declared-as-error",
+    breaks: "a serde_path_to_error `Path` is declared its `Error`, so TypeScript takes one for the other",
+    file: "crates/rust-js-lower/src/declarations/std_types.rs",
+    find: "        Of::JsonPath(of) => json_path_def(tcx, did) == Some(of),\n",
+    replace: "        Of::JsonPath(_) => json_path_def(tcx, did).is_some(),\n",
+    tests: ["test/serde-path.test.ts", "-t", "declared std's opaque"],
+  },
 ];

@@ -214,6 +214,11 @@ class $JsonValueKey {
     return { type: "str", value: this.key, borrowed: false };
   }
 
+  field(fields, deny) {
+    const key = this.content();
+    return [key, $jsonField(key.value, fields, deny)];
+  }
+
   number(read) {
     const json = new $JsonReader(this.key);
     const c = json.peek();

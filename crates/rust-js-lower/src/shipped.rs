@@ -1,7 +1,8 @@
 //! The API of a crate rustc builds that rust-js writes the JS of, as it
 //! writes std's: memchr's searches (ADR 0529), over the byte arrays slices
-//! are, whose indices are the slice's; and getrandom's bytes, Web Crypto's,
-//! and its `Error`, its code (#2326).
+//! are, whose indices are the slice's; getrandom's bytes, Web Crypto's,
+//! and its `Error`, its code (#2326); and serde_path_to_error's read, its
+//! `Error` serde_json's and where in the value it was made (ADR 1188).
 
 use super::recognition::Std;
 use super::{Expr, FnCx};
@@ -81,7 +82,43 @@ pub enum GetrandomOp {
     NewCustom,
 }
 
+/// One of serde_path_to_error's functions rust-js writes, or serde_json's
+/// reader of text, which its `deserialize` reads (ADR 1188).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum JsonPathOp {
+    /// serde_json's `Deserializer::from_str(text)`: the runtime's reader of
+    /// it, `new $JsonReader(text)`.
+    Reader,
+    /// `deserialize::<_, T>(reader)`: `$jsonPathRead(reader, read)`, `read`
+    /// the function that reads a `T`.
+    Read,
+    /// An `Error`'s `path()`: its segments.
+    Path,
+    /// An `Error`'s `inner()` and `into_inner()`: serde_json's error.
+    Inner,
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A call of serde_path_to_error's, or serde_json's reader of text made,
+    /// `given` its one argument (ADR 1188).
+    pub fn json_path_call(
+        &mut self,
+        op: JsonPathOp,
+        given: Expr,
+        args: rustc_middle::ty::GenericArgsRef<'tcx>,
+        span: rustc_span::Span,
+    ) -> crate::R<Expr> {
+        Ok(match op {
+            JsonPathOp::Reader => Expr::new_(Expr::helper("$JsonReader"), vec![given]),
+            JsonPathOp::Read => {
+                let ty = args.types().nth(1).expect("`deserialize::<D, T>`");
+                self.json_path_value(given, ty, span)?
+            }
+            JsonPathOp::Path => Expr::member(given, "path"),
+            JsonPathOp::Inner => Expr::member(given, "original"),
+        })
+    }
+
     /// A call of getrandom's (#2326): `$getrandom(dest, ..)` of a fill, the
     /// runtime's; a code as it is. `None` if `known` is another.
     pub(crate) fn getrandom_call(&mut self, known: Std, values: &mut std::vec::IntoIter<Expr>) -> Option<Expr> {

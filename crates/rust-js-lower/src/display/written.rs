@@ -2,6 +2,7 @@
 //! string of what a writer's calls write.
 
 use super::*;
+use crate::recognition::JsonPathType;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a call that writes to a formatter, `operation` of `def_id`,
@@ -624,6 +625,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.is_json_error(ty) {
             return Ok(Expr::call(Expr::helper("$displayJsonError"), vec![value]));
+        }
+        // serde_path_to_error's `Error` and `Path`, as it shows them, which
+        // read none of the `Formatter`'s options (ADR 1188).
+        if let Some(of) = self.recognition().json_path_type(ty) {
+            let helper = match of {
+                JsonPathType::Error => "$displayJsonPathError",
+                JsonPathType::Path => "$displayJsonPath",
+            };
+            return Ok(Expr::call(Expr::helper(helper), vec![value]));
         }
         // A qualified getrandom's error, as its version shows it, given the
         // `Formatter`'s options, which the OS's words' `pad` reads (#2326).

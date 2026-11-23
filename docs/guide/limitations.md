@@ -264,7 +264,8 @@ for a `Value`;
 `Value::pointer`, `pointer_mut` and `take`, assigning to a `Value`'s key,
 and collecting into one; `Map::clear` and `map::Entry::or_insert`;
 `to_vec`, `to_writer`, `from_slice`, `from_reader` and streams of values,
-serde_json's own `Deserializer`, `Deserializer::from_str` (#1626); an
+serde_json's own `Deserializer` but `from_str`'s, which a type's
+`deserialize` and serde_path_to_error read, its `end` among them (#1626); an
 `Error`'s `line`, `column`, `is_syntax` and `classify` (#1627);
 `#[serde(field_identifier)]`, `#[serde(variant_identifier)]` and
 `#[serde(crate = ..)]` (#1628); `#[serde(remote = ..)]` (#1615);

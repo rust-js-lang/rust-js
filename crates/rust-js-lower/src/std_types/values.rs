@@ -711,7 +711,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::DequeRemove
             | Std::Step(_)
             | Std::ToJson(_)
-            | Std::FromJson => {
+            | Std::FromJson
+            | Std::JsonPath(_) => {
                 unreachable!("handled above")
             }
             Std::Method(_)

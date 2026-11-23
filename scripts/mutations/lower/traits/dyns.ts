@@ -668,4 +668,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(version) = self.recognition().getrandom_error(ty).filter(|_| false) {\n            let args = vec![Expr::str(self.type_id_key(ty)), Expr::str(version.key())];\n",
     tests: ["test/shipped-crates.test.ts", "-t", "getrandom's API runs"],
   },
+  {
+    name: "json-path-error-dyn-as-json-error",
+    breaks: "a serde_path_to_error `Error` boxed as a `dyn Error` is shown as serde_json's, its path dropped",
+    file: "crates/rust-js-lower/src/traits/dyns.rs",
+    find: "                \"$jsonPathErrorDyn\"\n",
+    replace: "                \"$jsonErrorDyn\"\n",
+    tests: ["test/serde-path.test.ts", "-t", "shown as the crate"],
+  },
 ];

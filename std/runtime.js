@@ -7491,10 +7491,17 @@ export function $lazyScan(items, init, f, handle = true, drop = undefined) {
 }
 
 export class $JsonError extends Error {
+  // Of a read serde_path_to_error tracks, where in the value it is: the
+  // reader's place's segments (`$jsonPathRead`, ADR 1188).
+  static chain = undefined;
+
   constructor(message, line = 0, column = 0) {
     super(message);
     this.line = line;
     this.column = column;
+    // Where the reader was as it was made, serde_path_to_error's `Track`,
+    // whose path is the first place a mistake reached.
+    if ($JsonError.chain) this.path = $JsonError.chain.slice();
   }
 }
 export function $jsonError(message) {
@@ -16764,9 +16771,7 @@ export class $JsonDecoder {
     const seen = new Array(fields.length).fill(false);
     const kept = [];
     while (map.next()) {
-      const keyContent = map.key().content();
-      const key = keyContent.value;
-      const i = $jsonField(key, fields, deny && !flatten);
+      const [keyContent, i] = map.key().field(fields, deny && !flatten);
       if (i < 0 && flatten) {
         kept.push([keyContent, map.value((json) => json.content())]);
         continue;
@@ -16949,6 +16954,26 @@ export class $JsonReader extends $JsonDecoder {
     this.bytes = new TextEncoder().encode(text);
     this.index = 0;
     this.remainingDepth = 128;
+    // Of a read serde_path_to_error tracks, where in the value it is, each
+    // place's segment (`$jsonPathRead`, ADR 1188); and whether it reads a
+    // key's number, whose digits are the key.
+    this.chain = undefined;
+    this.keying = false;
+    this.variantText = undefined;
+  }
+
+  // A key read, as serde_path_to_error's `CaptureKey` keeps it: where the
+  // rest of the key's reading is, and its value's place.
+  captureKey(key) {
+    const chain = this.chain;
+    if (chain) chain[chain.length - 1] = key;
+  }
+
+  // A number read as a key: its digits, an integer's, are the key; a
+  // float's aren't, as serde_path_to_error keeps none of one.
+  captureNumber(n) {
+    if (this.keying && n.kind !== "f") this.captureKey(String(n.value));
+    return n;
   }
 
   // The next byte, or -1 at the end.
@@ -16978,8 +17003,12 @@ export class $JsonReader extends $JsonDecoder {
 
   // `fix_position`: a visitor's message has no place, until it gets where
   // the reader is.
+  // The same error placed, at the place in the value it was made.
   fixPosition(e) {
-    return e instanceof $JsonError && e.line === 0 ? this.error(e.message) : e;
+    if (!(e instanceof $JsonError) || e.line !== 0) return e;
+    const fixed = this.error(e.message);
+    fixed.path = e.path;
+    return fixed;
   }
 
   end() {
@@ -17044,9 +17073,9 @@ export class $JsonReader extends $JsonDecoder {
     try {
       if (peek === 45) {
         this.index++;
-        return visit(this.parseInteger(false));
+        return visit(this.captureNumber(this.parseInteger(false)));
       }
-      if (peek >= 48 && peek <= 57) return visit(this.parseInteger(true));
+      if (peek >= 48 && peek <= 57) return visit(this.captureNumber(this.parseInteger(true)));
       throw this.peekInvalidType(expected);
     } catch (e) {
       throw this.fixPosition(e);
@@ -17076,6 +17105,7 @@ export class $JsonReader extends $JsonDecoder {
     const digits = BigInt(new TextDecoder().decode(this.bytes.subarray(start, this.index)));
     const value = negative ? -digits : digits;
     if (value < min || value > max) throw this.error("number out of range");
+    this.captureNumber({ kind: "i", value });
     if (nonZero && value === 0n) throw this.error(`invalid value: integer \`0\`, expected a nonzero ${type}`);
     return value;
   }
@@ -17692,9 +17722,15 @@ export class $JsonReader extends $JsonDecoder {
   // `deserialize_enum`: `"Name"`, or `{"Name": ..}`. `visit` gets the
   // variant's name and a `$JsonVariant` to read what it holds. `enumName` is
   // the enum's, for a flattened one.
+  // Of a read serde_path_to_error tracks, what a variant holds is at its
+  // name's text, `shape.circle`; its name's own mistakes the enum's.
   enum(enumName, variants, visit, other) {
     const peek = this.parseWhitespace();
-    if (peek === 34) return visit(this.identifier(variants, other), new $JsonVariant(this, true));
+    if (peek === 34) {
+      const name = this.identifier(variants, other);
+      const variant = new $JsonVariant(this, true);
+      return this.chain ? this.within(() => visit(name, variant)) : visit(name, variant);
+    }
     if (peek !== 123) throw this.peekError(peek === -1 ? "EOF while parsing a value" : "expected value");
     if (--this.remainingDepth === 0) throw this.peekError("recursion limit exceeded");
     this.index++;
@@ -17708,7 +17744,8 @@ export class $JsonReader extends $JsonDecoder {
       }
       const name = this.identifier(variants, other);
       this.parseObjectColon();
-      value = visit(name, new $JsonVariant(this, false));
+      const variant = new $JsonVariant(this, false);
+      value = this.chain ? this.within(() => visit(name, variant)) : visit(name, variant);
     } finally {
       this.remainingDepth++;
     }
@@ -17720,9 +17757,20 @@ export class $JsonReader extends $JsonDecoder {
     throw this.error(c === -1 ? "EOF while parsing an object" : "expected value");
   }
 
-  // A variant's name, from a string.
+  // `read()` at the variant just named, of a read serde_path_to_error
+  // tracks.
+  within(read) {
+    this.chain.push({ variant: this.variantText });
+    try {
+      return read();
+    } finally {
+      this.chain.pop();
+    }
+  }
+
+  // A variant's name, from a string, whose text a tracked read's place is.
   identifier(variants, other) {
-    return this.deserializeStr("variant identifier", (name) => $jsonVariantNamed(name, variants, other));
+    return this.deserializeStr("variant identifier", (name) => $jsonVariantNamed((this.variantText = name), variants, other));
   }
 }
 
@@ -17861,6 +17909,7 @@ export class $JsonSeq {
   constructor(reader) {
     this.reader = reader;
     this.first = true;
+    this.index = 0;
   }
 
   // `has_next_element`.
@@ -17881,8 +17930,17 @@ export class $JsonSeq {
     return true;
   }
 
+  // Of a read serde_path_to_error tracks, the item is at its index:
+  // `items[1]`, its comma's and its `]`'s mistakes the sequence's own.
   value(read) {
-    return read(this.reader);
+    const chain = this.reader.chain;
+    if (!chain) return read(this.reader);
+    chain.push(this.index++);
+    try {
+      return read(this.reader);
+    } finally {
+      chain.pop();
+    }
   }
 
   // The `i`th of `expected`'s items.
@@ -17930,8 +17988,20 @@ export class $JsonMap {
     this.first = true;
   }
 
-  // `has_next_key`.
+  // Of a read serde_path_to_error tracks, the next key is `?` until its
+  // text is read, `a.?`, which a mistake finding it is at; its `}` the
+  // object's own.
   next() {
+    const chain = this.reader.chain;
+    if (!chain) return this.hasNextKey();
+    chain.push(null);
+    const more = this.hasNextKey();
+    if (!more) chain.pop();
+    return more;
+  }
+
+  // `has_next_key`.
+  hasNextKey() {
     const reader = this.reader;
     const peek = reader.parseWhitespace();
     if (peek === -1) throw reader.peekError("EOF while parsing an object");
@@ -17951,12 +18021,21 @@ export class $JsonMap {
   }
 
   key() {
-    return new $JsonKey(this.reader);
+    return new $JsonKey(this.reader, this);
   }
 
+  // Of a read serde_path_to_error tracks, the value is at its key, `a.b`,
+  // or `a.?` of one that wasn't text; its `:` the object's own.
   value(read) {
     this.reader.parseObjectColon();
-    return read(this.reader);
+    const chain = this.reader.chain;
+    if (!chain) return read(this.reader);
+    chain.push(this.keyRead);
+    try {
+      return read(this.reader);
+    } finally {
+      chain.pop();
+    }
   }
 }
 
@@ -17990,28 +18069,52 @@ export class $JsonContentMap {
 }
 
 // `MapKey`: an object's key, from its opening quote. A number or a `bool`
-// is read from inside the quotes.
+// is read from inside the quotes. Of a read serde_path_to_error tracks, the
+// key, once read, is where the rest of its reading is, its `CaptureKey`'s:
+// its text, a number's digits, or a `bool`'s word; each method ends its
+// reading, `read`, and the map keeps it for its value's place.
 export class $JsonKey {
-  constructor(reader) {
+  constructor(reader, map) {
     this.reader = reader;
+    this.map = map;
+  }
+
+  text() {
+    this.reader.index++;
+    const key = this.reader.parseStr();
+    this.reader.captureKey(key);
+    return key;
+  }
+
+  read(value) {
+    const chain = this.reader.chain;
+    if (chain) this.map.keyRead = chain.pop();
+    return value;
   }
 
   string() {
-    this.reader.index++;
-    return this.reader.parseStr();
+    return this.read(this.text());
   }
 
   char() {
-    return $jsonChar(this.string());
+    return this.read($jsonChar(this.text()));
   }
 
   ignore() {
-    this.string();
+    this.read(this.text());
   }
 
   content() {
-    const value = this.string();
-    return { type: "str", value, borrowed: !this.reader.escaped };
+    const value = this.text();
+    return this.read({ type: "str", value, borrowed: !this.reader.escaped });
+  }
+
+  // A struct's field it names, as serde's derived identifier reads it:
+  // an unknown one's mistake, `deny_unknown_fields`', at the key.
+  field(fields, deny) {
+    const key = this.text();
+    const i = $jsonField(key, fields, deny);
+    return this.read([{ type: "str", value: key, borrowed: !this.reader.escaped }, i]);
   }
 
   number(read) {
@@ -18019,10 +18122,12 @@ export class $JsonKey {
     reader.index++;
     const c = reader.peek();
     if (!(c === 45 || (c >= 48 && c <= 57))) throw reader.error("invalid value: expected key to be a number in quotes");
+    reader.keying = reader.chain !== undefined;
     const value = read(reader);
+    reader.keying = false;
     if (reader.peek() !== 34) throw reader.peekError('expected `"`');
     reader.index++;
-    return value;
+    return this.read(value);
   }
 
   bool() {
@@ -18033,12 +18138,15 @@ export class $JsonKey {
       if (c === -1) throw reader.peekError("EOF while parsing a value");
       if (c === 116) {
         reader.parseIdent('rue"');
-        return true;
+        reader.captureKey("true");
+        return this.read(true);
       }
       if (c === 102) {
         reader.parseIdent('alse"');
-        return false;
+        reader.captureKey("false");
+        return this.read(false);
       }
+      // Not visited: serde_json's own mistake, which isn't the key's.
       throw $jsonError(`invalid type: string ${$debugStr(reader.parseStr())}, expected a boolean`);
     } catch (e) {
       throw reader.fixPosition(e);
@@ -18051,6 +18159,11 @@ export class $JsonKey {
 export class $JsonContentKey {
   constructor(key, owned) {
     this.key = new $JsonContent(key, owned);
+  }
+
+  field(fields, deny) {
+    const key = this.content();
+    return [key, $jsonField(key.value, fields, deny)];
   }
 
   string() {
@@ -18499,6 +18612,11 @@ export class $JsonValueKey {
 
   content() {
     return { type: "str", value: this.key, borrowed: false };
+  }
+
+  field(fields, deny) {
+    const key = this.content();
+    return [key, $jsonField(key.value, fields, deny)];
   }
 
   number(read) {
@@ -19107,6 +19225,117 @@ export function $writeDebugJsonError(f, e) {
 }
 export function $debugJsonError(e) {
   return `Error(${$debugStr(e.message)}, line: ${e.line}, column: ${e.column})`;
+}
+
+// serde_path_to_error, a crate rustc builds whose API rust-js writes (ADR
+// 1188): `deserialize(&mut serde_json::Deserializer::from_str(text))`, what
+// `read` reads at the reader's place, not to the text's end, as the crate's
+// `deserialize` reads it. Its error is the crate's `Error`, `{ path, original
+// }`: where in the value the reader was as the first mistake was made, the
+// crate's `Track`, then serde_json's error. A path is its segments: an item's
+// index, a number; a key's text, a string; a variant's name, `{ variant }`;
+// a key that isn't text, `null`, `?`. The reader keeps them as it reads
+// (`$JsonSeq`, `$JsonMap`, `$JsonKey` and `$JsonReader`'s `enum`), and each
+// `$JsonError` made meanwhile keeps a copy; a plain `serde_json::from_str`
+// keeps none.
+export function $jsonPathRead(json, read) {
+  const outer = $JsonError.chain;
+  json.chain = $JsonError.chain = [];
+  try {
+    return { TAG: "Ok", _0: read(json) };
+  } catch (e) {
+    if (!(e instanceof $JsonError)) throw e;
+    return { TAG: "Err", _0: { path: e.path ?? [], original: $jsonErrorOf(e) } };
+  } finally {
+    json.chain = undefined;
+    json.keying = false;
+    $JsonError.chain = outer;
+  }
+}
+
+// A `Path`'s `Display` into a writer, as the crate writes it: `.` of none;
+// else each segment, a key's or a variant's text `write!`'s `{}`, an index
+// `[{}]`'s pieces, a key that isn't text `?`, each but an index after its
+// separator, `""` of the first and `.` after.
+export function $writeJsonPath(f, path) {
+  if (path.length === 0) return f.write(".");
+  let separator = "";
+  for (const segment of path) {
+    if (typeof segment === "number") {
+      f.write("[");
+      $writeInteger(f, segment);
+      f.write("]");
+    } else {
+      f.write(separator);
+      f.write(segment === null ? "?" : (segment.variant ?? segment));
+    }
+    separator = ".";
+  }
+}
+// Its `Error`'s `Display` into a writer: its path's and `: `, unless the
+// path is none or only keys that aren't text, then serde_json's error's.
+// Neither reads the `Formatter`'s options, as `write!` doesn't.
+export function $writeJsonPathError(f, e) {
+  if (!e.path.every((segment) => segment === null)) {
+    $writeJsonPath(f, e.path);
+    f.write(": ");
+  }
+  $writeJsonError(f, e.original);
+}
+// Each's derived `Debug` into a writer: `Error { path, original }`, the
+// path `Path { segments }`, each segment `Seq { index }`, `Map { key }`,
+// `Enum { variant }` or `Unknown`, an index given the `Formatter`'s options,
+// serde_json's error its own `Debug`.
+export function $writeDebugJsonPath(f, path, options = {}) {
+  const pretty = options.alternate;
+  const index = (g, n) => $writeDebugInteger(g, n, n.toString(16), n.toString(16).toUpperCase(), options);
+  const segment = (g, s) => {
+    if (s === null) return g.write("Unknown");
+    if (typeof s === "number") return $writeDebugStruct(g, "Seq", [["index", s, index]], pretty);
+    if (typeof s === "string") return $writeDebugStruct(g, "Map", [["key", s, $writeDebugStr]], pretty);
+    $writeDebugStruct(g, "Enum", [["variant", s.variant, $writeDebugStr]], pretty);
+  };
+  const segments = (g, items) => $writeDebugList(g, items, segment, pretty);
+  $writeDebugStruct(f, "Path", [["segments", path, segments]], pretty);
+}
+export function $writeDebugJsonPathError(f, e, options = {}) {
+  const path = (g, p) => $writeDebugJsonPath(g, p, options);
+  const fields = [["path", e.path, path], ["original", e.original, $writeDebugJsonError]];
+  $writeDebugStruct(f, "Error", fields, options.alternate);
+}
+// Each as text, written as into a writer.
+export function $jsonPathText(write, ...args) {
+  let text = "";
+  const f = { write: (s) => void (text += s), writeChar: (c) => void (text += c), armed: false };
+  write(f, ...args);
+  return text;
+}
+export function $displayJsonPath(path) {
+  return $jsonPathText($writeJsonPath, path);
+}
+export function $displayJsonPathError(e) {
+  return $jsonPathText($writeJsonPathError, e);
+}
+export function $debugJsonPath(path, options) {
+  return $jsonPathText($writeDebugJsonPath, path, options);
+}
+export function $debugJsonPathError(e, options) {
+  return $jsonPathText($writeDebugJsonPathError, e, options);
+}
+
+// Its `Error`, of `TypeId` `type`, as a `dyn Error` (ADR 0141): shown as the
+// crate shows it; its `source()` serde_json's error's, as its `Error` impl's
+// is its `original`'s, which has none; its `type_id` `type` (ADR 0331).
+export function $jsonPathErrorDyn(type) {
+  return {
+    Debug: () => ({
+      fmt: (e, options) => $debugJsonPathError(e, options),
+      fmtInto: (f, e, options) => $writeDebugJsonPathError(f, e, options),
+    }),
+    Display: () => ({ fmt: $displayJsonPathError, fmtInto: (f, e) => $writeJsonPathError(f, e) }),
+    source: () => undefined,
+    typeId: () => type,
+  };
 }
 
 // The checks of serde's own impls of std's types, a catalog row's (#1623,

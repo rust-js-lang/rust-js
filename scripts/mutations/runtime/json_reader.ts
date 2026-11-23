@@ -218,4 +218,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/serde-std.test.ts", "-t", "an i128, a u128 and a Saturating"],
   },
+  {
+    name: "json-path-float-key-captured",
+    breaks: "a float key is kept, `counts.1.5`, where serde_path_to_error keeps none of one, `counts.?`",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
+    find: "    if (this.keying && n.kind !== \"f\") this.captureKey(String(n.value));\n",
+    replace: "    if (this.keying) this.captureKey(String(n.value));\n",
+    tests: ["test/serde-path.test.ts", "-t", "says where"],
+  },
+  {
+    name: "json-path-variant-unplaced",
+    breaks: "what a variant holds is at its enum, `shape.radius`, not `shape.circle.radius`",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
+    find: "    this.chain.push({ variant: this.variantText });\n    try {\n      return read();\n    } finally {\n      this.chain.pop();\n    }\n",
+    replace: "    return read();\n",
+    tests: ["test/serde-path.test.ts", "-t", "says where"],
+  },
+  {
+    name: "json-path-placed-error-unplaced",
+    breaks: "a visitor's mistake, placed where the reader is, loses where in the value it was made, `point: invalid length 1` shown as the root's",
+    file: "crates/rust-js-program/src/runtime/json_reader.js",
+    find: "    fixed.path = e.path;\n",
+    replace: "",
+    tests: ["test/serde-path.test.ts", "-t", "says where"],
+  },
 ];
