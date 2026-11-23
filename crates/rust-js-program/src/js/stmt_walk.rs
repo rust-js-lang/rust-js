@@ -101,11 +101,17 @@ pub fn taken_place(place: &Expr) -> bool {
 /// the same place each time (ADR 0056)? The one answer, for each pass that
 /// asks whether two reads are of one place.
 pub fn same_path(a: &Expr, b: &Expr) -> bool {
-    let same_key = |i: &Expr, j: &Expr| {
-        same_path(i, j)
-            || matches!((&i.kind, &j.kind), (ExprKind::Str(i), ExprKind::Str(j)) if i == j)
-            || matches!((&i.kind, &j.kind), (ExprKind::Num(i), ExprKind::Num(j)) if i == j)
-    };
+    fn same_key(i: &Expr, j: &Expr) -> bool {
+        match (&i.kind, &j.kind) {
+            (ExprKind::Str(i), ExprKind::Str(j)) => i == j,
+            (ExprKind::Num(i), ExprKind::Num(j)) => i == j,
+            // Where a checked item's panic is raised, of one place only where
+            // it's the same line too: `v[i] = v[i] + 1` of two lines reads the
+            // right one first, and its panic names that one (#2334).
+            (ExprKind::RaisedAt(i), ExprKind::RaisedAt(j)) => same_key(i, j),
+            _ => same_path(i, j),
+        }
+    }
     match (&a.kind, &b.kind) {
         (ExprKind::Var(x), ExprKind::Var(y)) => x == y,
         // A function's `this`, which nothing sets: `this.count--`.

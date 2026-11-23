@@ -21,8 +21,7 @@ function bump(n) {
 function main() {
   const tokens = [["a"], ["b"]];
   const copy = tokens.map((item) => [item[0]]);
-  $index(copy, 0, "test/corpus/clone_changed_part.rs:20:9")[0] =
-    $index(copy, 0, "test/corpus/clone_changed_part.rs:20:9")[0] + "?";
+  $index(copy, 0, "test/corpus/clone_changed_part.rs:20:9")[0] += "?";
   console.log(
     `[${tokens.map((item) => tokenDebug_fmt(item)).join(", ")}] [${copy.map((item) => tokenDebug_fmt(item)).join(", ")}]`,
   );

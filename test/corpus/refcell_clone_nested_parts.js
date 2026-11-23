@@ -34,8 +34,7 @@ function main() {
     "test/corpus/refcell_clone_nested_parts.rs:13:24",
     true,
   );
-  $index(pairs, 0, "test/corpus/refcell_clone_nested_parts.rs:14:19").value[0] =
-    $index(pairs, 0, "test/corpus/refcell_clone_nested_parts.rs:14:19").value[0] + "b";
+  $index(pairs, 0, "test/corpus/refcell_clone_nested_parts.rs:14:19").value[0] += "b";
   const arg = $eq(pairs, copied, true);
   console.log(
     `RefCell { value: ${$showBorrowed(pairs, (value) => `[${value.map((item) => `RefCell { value: ${$showBorrowed(item, (value) => `(${$debugStr(value[0])}, ${value[1]})`)} }`).join(", ")}]`, true)} } RefCell { value: ${$showBorrowed(copied, (value) => `[${value.map((item) => `RefCell { value: ${$showBorrowed(item, (value) => `(${$debugStr(value[0])}, ${value[1]})`)} }`).join(", ")}]`, true)} } ${arg}`,
