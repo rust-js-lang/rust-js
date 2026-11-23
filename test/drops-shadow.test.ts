@@ -220,12 +220,18 @@ test("a normal path's drop that disagrees with rustc's elaboration is refused", 
   expect(compilePartial().code).toBe(0);
   const refused = compilePartial("--without-moves");
   expect(refused.code).not.toBe(0);
-  const errors = refused.stderr.split("\n").filter((line) => line.startsWith("error: rust-js: this drop") && line.includes("is elaborated otherwise"));
+  const errors = refused.stderr.split("\n").filter((line) => line.startsWith("error: rust-js: this drop") && !line.includes(", as a panic unwinds,") && line.includes("is elaborated otherwise"));
   expect(errors).toContain(
     "error: rust-js: this drop in `main` is elaborated otherwise than rustc's drop elaboration, so its JS would drop otherwise than Rust: `whole.0`: rust-js drops it always, rustc never (#2112's change D)",
   );
   expect(errors.length).toBe(4);
   expect(refused.stderr).toContain("drop_partial.rs:42:5");
+  // And on a cleanup path a panic in JS reaches, said so (change D3).
+  const unwinding = refused.stderr.split("\n").filter((line) => line.startsWith("error: rust-js: this drop") && line.includes(", as a panic unwinds, is elaborated otherwise"));
+  expect(unwinding).toContain(
+    "error: rust-js: this drop in `main`, as a panic unwinds, is elaborated otherwise than rustc's drop elaboration, so its JS would drop otherwise than Rust: `whole.0`: rust-js drops it always, rustc never (#2112's change D)",
+  );
+  expect(unwinding.length).toBe(4);
 });
 
 // Change D2: the comparison fails closed. A normal path's drop it can't
@@ -234,11 +240,13 @@ test("a normal path's drop that disagrees with rustc's elaboration is refused", 
 // rustc's elaboration left no drop to find, which no disagreement says.
 test("a normal path's drop that can't be compared with rustc's elaboration is refused", () => {
   const refused = compilePartial("--without-moves");
-  const errors = refused.stderr.split("\n").filter((line) => line.startsWith("error: rust-js: this drop") && line.includes("can't be compared"));
+  const errors = refused.stderr.split("\n").filter((line) => line.startsWith("error: rust-js: this drop") && !line.includes(", as a panic unwinds,") && line.includes("can't be compared"));
   expect(errors).toContain(
     "error: rust-js: this drop in `main` can't be compared with rustc's drop elaboration, so its JS can't be said to drop as Rust does: no rustc drop where it's written; `inner`: rust-js drops it always, rustc never (#2112's change D)",
   );
   expect(errors.length).toBe(13);
+  const unwinding = refused.stderr.split("\n").filter((line) => line.startsWith("error: rust-js: this drop") && line.includes(", as a panic unwinds, can't be compared"));
+  expect(unwinding.length).toBe(11);
 });
 
 // A body with no other side to compare, a thread-local's constant

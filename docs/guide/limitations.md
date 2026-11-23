@@ -27,8 +27,11 @@ otherwise than rustc's, a value dropped that Rust never drops there or the
 reverse, is refused with the place and both answers, ``rust-js: this drop
 in `main` is elaborated otherwise than rustc's drop elaboration``; so is
 one it can't find among rustc's drops to compare, ``rust-js: this drop in
-`main` can't be compared with rustc's drop elaboration``. No program is
-known to meet either; one that does is a rust-js bug to report
+`main` can't be compared with rustc's drop elaboration``. Each is
+checked on the way a panic unwinds too, where a panic in JS can reach,
+and said so, ``rust-js: this drop in `main`, as a panic unwinds, is
+elaborated otherwise than rustc's drop elaboration``. No program is
+known to meet any of them; one that does is a rust-js bug to report
 ([ADR 0364](../decisions/0364-mir-lowering.md), #2112).
 
 Where to see more:

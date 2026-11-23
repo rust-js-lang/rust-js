@@ -2365,3 +2365,28 @@ terminator that unwinds in JS reaches is unreached". Mutations
 
 Case of [0262](0262-when-rust-and-js-disagree.md): none. No output
 changes.
+
+## Amendment: a cleanup a panic in JS reaches is refused where it disagrees (2026-11-24, #2112's change D3)
+
+With cleanups only what can't throw in JS reaches set apart as
+`unreached` (the amendment before), what's left on cleanup paths is
+held as the normal path is: a disagreement, or a drop the comparison
+can't find among rustc's, is refused, and the refusal says the path,
+``rust-js: this drop in `main`, as a panic unwinds, is elaborated
+otherwise than rustc's drop elaboration``. A flag only one side asks
+stays apart, `flag-ours` or `flag-theirs`, as on the normal path: it
+runs alike where the flag holds the other's answer.
+
+Measured on the commit that lands it, none refused: the corpus, the
+crate corpus (every outcome as before), rustc's whole run-pass suite
+(2,149 of 2,224 in scope, its known failures as listed) and React's port
+at its pin (890 verdicts; on its cleanups 4 `unreached`, none else apart
+from `agree`). Blind to moves (`--without-moves`), drop_partial.rs'
+cleanups give 4 refusals of a disagreement and 11 of what can't be
+compared beside the normal path's 4 and 13; test drops-shadow's two
+refusal tests count each. Mutation `shadow-cleanups-unrefused` (the
+cleanups let through), caught; `shadow-refuses-cleanups`, whose rule
+this inverts, goes with its line. The guide's limitations page says it.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none. No output
+changes.

@@ -712,12 +712,14 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             .collect()
     }
 
-    /// Each of `function`'s verdicts said: on the normal path, a
-    /// disagreement refused, as the JS would drop otherwise than Rust does,
-    /// and an unmatched drop, which can't be said to drop as Rust does, so
-    /// the comparison fails closed (#2112's change D2); not one of a body
-    /// with no other side to compare, `uncompared`. A cleanup's apart, as rust-js's body has no unwinding of what can't
-    /// throw (ADR 0301), whose cleanups rustc's reaches. And each a line
+    /// Each of `function`'s verdicts said: a disagreement refused, as the
+    /// JS would drop otherwise than Rust does, and an unmatched drop, which
+    /// can't be said to drop as Rust does, so the comparison fails closed
+    /// (#2112's change D2); on a cleanup path too, one a panic in JS
+    /// reaches (D3), said so. Not one of a body with no other side to
+    /// compare, `uncompared`, nor a cleanup no terminator that unwinds in
+    /// JS reaches, `unreached`, whose rustc's reaches where what can't
+    /// throw in JS unwinds (ADR 0301). And each a line
     /// where the session records them (`--drops-shadow`). The function's
     /// path is printed only where one is said: printing a path walks every
     /// crate's modules, 37 ms of a compile (#2314).
@@ -733,7 +735,6 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         for (verdict, block, detail) in verdicts {
             let (span, _, cleanup) = site_of(*block);
             let why = match verdict {
-                _ if cleanup => continue,
                 Verdict::Disagree => {
                     "is elaborated otherwise than rustc's drop elaboration, so its JS would drop otherwise than Rust"
                 }
@@ -745,10 +746,11 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 }
             };
             let function = function();
+            let unwinding = if cleanup { ", as a panic unwinds," } else { "" };
             rust_js_lower::refusal::error(
                 self.tcx,
                 span,
-                format!("rust-js: this drop in `{function}` {why}: {detail} (#2112's change D)"),
+                format!("rust-js: this drop in `{function}`{unwinding} {why}: {detail} (#2112's change D)"),
             );
         }
         let caches = rust_js_lower::session::caches(self.tcx);
