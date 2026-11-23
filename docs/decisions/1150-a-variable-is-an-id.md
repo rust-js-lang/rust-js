@@ -1581,3 +1581,28 @@ Mutation `on-load-top-names-left-spelled`, caught;
 `on-load-earlier-names-unreserved` and `on-load-names-of-any-module` go
 with the table they mutated.
 
+
+## Amendment (2026-11-23): a name not spelled yet, given apart, is one (#2371)
+
+Tidy's `tuple reads` holds a tuple's part apart by `Name::given_apart`,
+which spelled it of the tuple's word, `node$0` of `node`. Of a tuple whose
+name lowering made and preparation hadn't spelled yet, `value#58`, that word
+was `value#58$0`: no made name's (`names::made_base` reads `58$0` as no
+`k`), so `reclaim::spelled` never spelled it and the validator refused the
+module. The plain build read the part in place in a later stage; tidy
+stopped after the `names` stage a drop's scope runs again, and any shape
+whose part stays held, gave no JS (generated programs' stage rows, 16 seeds).
+
+Now `Name::given_apart` decides: of a name not spelled yet, a name not
+spelled yet of its base, its `k` its own id, of it by its id, as
+`derived_apart` makes one, which preparation spells apart from what it's
+spelled, `value$1`; of a spelled one, its word given apart, as before. The
+textual `names::given_apart` is the crate's alone (`pub(crate)`, with a
+debug assertion that its base is no made word), so lowering's two callers,
+a block module's path and a shadowing label, give a name apart through
+`Name` too.
+
+Rows: corpus case `tuple_parts_held_in_a_drop_scope`, in
+test/tidy-stages.test.ts' few cases, which failed at `again/names/never
+taken`; `js::name::tests::an_unspelled_name_given_apart_is_unspelled_of_it`.
+Mutation `unspelled-given-apart-by-its-word`, caught.

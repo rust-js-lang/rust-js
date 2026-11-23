@@ -630,7 +630,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             .count();
         match around {
             0 => word,
-            k => rust_js_program::names::given_apart(&word, k),
+            k => js::Name::declared(word).given_apart(k).into_word(), // word: a label, which JS resolves by its word
         }
     }
 

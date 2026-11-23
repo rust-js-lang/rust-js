@@ -4,6 +4,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unspelled-given-apart-by-its-word",
+    breaks:
+      "a tuple's part held apart of a name not spelled yet, `value#58`, is given apart by its word, `value#58$0`, which nothing spells: tidy stopped after the stages a drop's scope runs again refuses the module (#2371)",
+    file: "crates/rust-js-program/src/js/name.rs",
+    find: "        if let Some(base) = crate::names::made_base(&self.0) {\n            let id = Id::fresh();\n",
+    replace: "        if let Some(base) = crate::names::made_base(&self.0).filter(|_| false) {\n            let id = Id::fresh();\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "^tuple_parts_held_in_a_drop_scope after"],
+  },
+  {
     name: "suggested-keeps-a-temporarys-form",
     breaks:
       "a temporary named after what it holds is a temporary still, so a flag of it records no origin and keeps `value`, `value$0$0$live` beside `tryLock` (#841)",

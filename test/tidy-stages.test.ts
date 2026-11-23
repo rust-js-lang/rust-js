@@ -110,6 +110,10 @@ const few = [
   // contract takes for guarded by `Known::NeverThrows`: forgotten, the
   // contract still reads it (ADR 1127).
   "flattened_state_got_mut.rs",
+  // A tuple's parts held apart where a drop's scope runs the stages that
+  // read temporaries in place again: each part of a name not spelled yet
+  // is one too, which preparation spells, wherever tidy stops (#2371).
+  "tuple_parts_held_in_a_drop_scope.rs",
 ];
 // Of the intervals' variant: cases whose proofs leave a check out, each
 // of a fact a write once reached unforgotten, a raw pointer's (#1782,

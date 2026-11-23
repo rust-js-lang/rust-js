@@ -29,8 +29,15 @@ pub fn fresh_apart(taken: &mut IndexSet<String>, base: &str) -> String {
 }
 
 /// `base` given apart the `k`th time, `caption$2`: the one spelling of a
-/// name given apart, which `apart` takes apart.
-pub fn given_apart(base: &str, k: usize) -> String {
+/// name given apart, which `apart` takes apart. Of a spelled word alone:
+/// the crate's, as a name not spelled yet, `value#58`, is given apart by
+/// `js::Name::given_apart`, which keeps it one (#2371). Its words are
+/// strings, so the crate's own callers are held to it as it runs.
+pub(crate) fn given_apart(base: &str, k: usize) -> String {
+    debug_assert!(
+        made_base(base).is_none(),
+        "`{base}`, a name not spelled yet, given apart by its word (#2371)"
+    );
     format!("{base}${k}")
 }
 

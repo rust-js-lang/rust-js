@@ -621,8 +621,24 @@ impl Name {
     }
 
     /// It given apart the `k`th time, `node$2` of `node`, a name of its form:
-    /// a temporary's still a temporary's (`names::given_apart`, S4).
+    /// a temporary's still a temporary's (`names::given_apart`, S4). Of one
+    /// not spelled yet, `value#58`, a name not spelled yet either, of its
+    /// base, its `k` its own id and of it by its id, which preparation
+    /// spells apart from what it's spelled, `value$1` (`derived_apart`,
+    /// `prepare::reclaim::spelled`): its word given apart, `value#58$0`,
+    /// is no made name's, which nothing would spell (#2371). The one way
+    /// a name is given apart: `names::given_apart` is the crate's.
     pub fn given_apart(&self, k: usize) -> Name {
+        if let Some(base) = crate::names::made_base(&self.0) {
+            let id = Id::fresh();
+            return Name(
+                crate::names::made(base, id.0 as usize),
+                self.1,
+                id,
+                self.kin(),
+                self.4.clone(),
+            );
+        }
         Name(
             crate::names::given_apart(&self.0, k),
             self.1,
@@ -734,7 +750,19 @@ impl fmt::Debug for Name {
 
 #[cfg(test)]
 mod tests {
-    use super::Suffix;
+    use super::{Name, Suffix};
+
+    // A name not spelled yet given apart, a tuple's part tidy holds of
+    // `value#1`, is one not spelled yet, which preparation spells, of it
+    // by its id; a spelled one's word is given apart, `node$2` (#2371).
+    #[test]
+    fn an_unspelled_name_given_apart_is_unspelled_of_it() {
+        let value = Name::made("value", 1);
+        let part = value.given_apart(0);
+        assert_eq!(part.made_base(), Some("value"));
+        assert!(value.is_origin_of(&part) && part.given_apart_of(&value));
+        assert!(Name::from("node").given_apart(2).is("node$2"));
+    }
 
     // A suffix lowering derives a name with is one of these, a deliberate
     // kind each: one added is a decision, this row its record (ADR 1150).

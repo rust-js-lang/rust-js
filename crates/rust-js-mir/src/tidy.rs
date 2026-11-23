@@ -1175,10 +1175,7 @@ mod tests {
     #[test]
     fn a_temporary_is_known_by_its_name_and_a_users_never_is() {
         assert!(is_temporary(&js::Name::temporary(temporary(5))));
-        assert!(is_temporary(&js::Name::temporary(rust_js_program::names::given_apart(
-            &temporary(5),
-            1
-        ))));
+        assert!(is_temporary(&js::Name::temporary(temporary(5)).given_apart(1)));
         assert!(!is_temporary(&js::Name::from(user_name("_5"))));
         assert!(!spelled_as_temporary(&user_name("_5")));
         assert_eq!(user_name("total"), "total");

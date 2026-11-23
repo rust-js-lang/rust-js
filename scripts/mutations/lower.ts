@@ -182,8 +182,8 @@ export const mutations: Mutation[] = [
     name: "block-modules-one-file",
     breaks: "two modules of one name in blocks of a module, bitflags' macro's, are one file",
     file: "crates/rust-js-lower/src/lib.rs",
-    find: "        Some(at) if at > 0 => path.push(rust_js_program::names::given_apart(&name.to_string(), at)),",
-    replace: "        Some(at) if false && at > 0 => path.push(rust_js_program::names::given_apart(&name.to_string(), at)),",
+    find: "        Some(at) if at > 0 => {\n            let apart = js::Name::declared(name.to_string()).given_apart(at);\n",
+    replace: "        Some(at) if false && at > 0 => {\n            let apart = js::Name::declared(name.to_string()).given_apart(at);\n",
     tests: ["test/corpus.test.ts","-t","block_modules"],
   },
   {
