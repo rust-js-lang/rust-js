@@ -20,4 +20,12 @@ export const mutations: Mutation[] = [
     replace: "      if (state !== \"held\") {\n",
     tests: ["test/leases.test.ts", "-t", "found absent"],
   },
+  {
+    name: "lock-wait-said-once",
+    breaks: "a run waiting on a lock says so once, and its wait, which sleeps the process, is unseen after: a mutation run waited 50 minutes saying nothing more (#2418)",
+    file: "scripts/leases.ts",
+    find: "      } else if (waiting && said !== undefined && Date.now() - said >= every) {",
+    replace: "      } else if (waiting && said !== undefined && Date.now() - said >= every * 1000) {",
+    tests: ["test/leases.test.ts", "-t", "a lock is one holder's at a time"],
+  },
 ];

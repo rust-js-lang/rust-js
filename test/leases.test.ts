@@ -60,6 +60,13 @@ test("a lock is one holder's at a time, and one whose owner is gone, or never na
   const release = acquire(lock);
   expect(release).toBeDefined();
   expect(acquire(lock, { wait: 100 })).toBeUndefined();
+  // And says it waits as it starts to and again each `every`, whose process
+  // holds it: its wait sleeps the process, so no timer of the run's says
+  // anything meanwhile (#2418).
+  const said: string[] = [];
+  expect(acquire(lock, { wait: 200, waiting: "waiting for the lock", every: 40, say: (line) => said.push(line) })).toBeUndefined();
+  expect(said[0]).toBe("waiting for the lock");
+  expect(said[1]).toBe(`waiting for the lock: 0 min so far, held by process ${process.pid}`);
   release!();
   expect(withLock(lock, () => "ran")).toBe("ran");
   expect(existsSync(lock)).toBe(false);

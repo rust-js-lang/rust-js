@@ -1502,3 +1502,21 @@ place. A probe that doesn't reach a site is no evidence that no program
 does: `step-by-fold-unheld` looked unreachable from probes whose folds sat
 in other bodies, and was reached, and caught, with the trigger beside the
 fold. A site is called unreached only by the marked whole evidence.
+
+## Amendment: a run says where it is while it runs (2026-11-24, #2418)
+
+One `--changed` run of 247 mutations said nothing for 50 minutes and was
+stopped by its timeout; the same mutations by name, 30 at a time, took 6.
+A run said each answer only at its end, and a wait on a lock, which
+sleeps the process, once. Now a run says each answer on stderr as it's
+given (`Answers`, "answered k of n"), each phase as it ends, and every
+minute where it is (`heartbeat`); `acquire` says its wait every minute,
+with whose process holds the lock. Its stdout, CI's answers, is as it
+was. Measured here with them, `--changed=7e3d83e73`, 401 mutations, in
+one run: 58 s of control, 6 min 23 s of mutants, 7.5 min in all, the
+answers steady at about 70 a minute. So one run costs no more than its
+parts, and isn't split: what held the 50 minutes was a wait, which a run
+now says. Tests mutations "a waiting mutation run says where it is, and
+each answer as it's given" and leases' lock test; mutations
+`answers-said-at-the-end-alone`, `heartbeat-silent` and
+`lock-wait-said-once`.

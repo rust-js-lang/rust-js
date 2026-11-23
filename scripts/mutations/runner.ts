@@ -378,4 +378,20 @@ export const mutations: Mutation[] = [
     replace: "      for (const [name, passed] of results) merged.set(name, passed);\n",
     tests: ["test/mutations.test.ts", "-t", "a shared control is its parts merged"],
   },
+  {
+    name: "answers-said-at-the-end-alone",
+    breaks: "a mutation's answer is said only with the rest at the run's end, so a run of hundreds says nothing for as long as it takes (#2418)",
+    file: "scripts/mutations.ts",
+    find: "    if (!this.has(mutation)) this.say(",
+    replace: "    if (false) this.say(",
+    tests: ["test/mutations.test.ts", "-t", "a waiting mutation run says where it is"],
+  },
+  {
+    name: "heartbeat-silent",
+    breaks: "a run's heartbeat says nothing, so where a run of hundreds waits is unseen (#2418)",
+    file: "scripts/mutations.ts",
+    find: "  const timer = setInterval(() => say(`mutations: ",
+    replace: "  const timer = setInterval(() => void (`mutations: ",
+    tests: ["test/mutations.test.ts", "-t", "a waiting mutation run says where it is"],
+  },
 ];

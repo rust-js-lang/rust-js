@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, failingOf, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, unitsAsItIs, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
+import { againstWholeCorpus, Answers, heartbeat, failingOf, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, unitsAsItIs, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
 import type { ControlPart } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
@@ -909,4 +909,27 @@ test("a shard whose mutations' tests launch a browser gets one", () => {
   expect(drivesABrowser([{ tests: [written, "-t", "^x$"] }, { tests: ["test/none-given.test.ts", "-t", "^y$"] }])).toBe(true);
   expect(drivesABrowser([{ tests: [written, "-t", "test/none-given.test.ts"] }])).toBe(false);
   expect(drivesABrowser([{ tests: [written] }, { tests: undefined }])).toBe(false);
+});
+
+// A run says where it is while it waits, and each mutation's answer as
+// it's given: one of 247 mutations said nothing for 50 minutes, its answers
+// all at its end, and was stopped by its timeout unseen (#2418).
+test("a waiting mutation run says where it is, and each answer as it's given", async () => {
+  const said: string[] = [];
+  const stop = heartbeat(() => "building and judging the mutants: 3 of 9 answered", (line) => said.push(line), 20);
+  await Bun.sleep(70);
+  stop();
+  const beats = said.length;
+  expect(beats).toBeGreaterThanOrEqual(2);
+  expect(said[0]).toMatch(/^mutations: .* in, building and judging the mutants: 3 of 9 answered$/);
+  await Bun.sleep(50);
+  expect(said.length).toBe(beats);
+  const lines: string[] = [];
+  const answers = new Answers(2, (line) => lines.push(line));
+  const [a, b] = mutations;
+  answers.set(a!, "caught");
+  answers.set(a!, "SURVIVED");
+  answers.set(b!, "caught");
+  expect(lines).toEqual([`answered 1 of 2\t${a!.name}\tcaught`, `answered 2 of 2\t${b!.name}\tcaught`]);
+  expect(answers.get(a!)).toBe("SURVIVED");
 });

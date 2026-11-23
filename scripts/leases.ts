@@ -103,15 +103,24 @@ export function leasedIn(dir: string, store = leaseStore): boolean {
 /** `lock` taken, a directory made at once or not at all, and what lets it
  * go: one whose owner's process is gone is taken, as is one whose maker
  * named no owner 5 s past making it, gone between. Waited for up to `wait`
- * ms, `waiting` said once if it must; past that, `undefined`. */
+ * ms, `waiting` said as it starts to and again each `every` ms, with how
+ * long and whose process holds it, by `say`: its wait sleeps the process,
+ * so no timer of the run's says anything meanwhile, and a mutation run
+ * that waited 50 minutes said it once (#2418). Past that, `undefined`. */
 export function acquire(
   lock: string,
-  { wait = 30_000, waiting }: { wait?: number; waiting?: string } = {},
+  {
+    wait = 30_000,
+    waiting,
+    every = 60_000,
+    say = (line: string) => console.log(line),
+  }: { wait?: number; waiting?: string; every?: number; say?: (line: string) => void } = {},
   stateOf: (lock: string) => LockState = lockState,
 ): (() => void) | undefined {
   const owner = join(lock, "owner");
-  const until = Date.now() + wait;
-  let said = false;
+  const began = Date.now();
+  const until = began + wait;
+  let said: number | undefined;
   for (;;) {
     try {
       mkdirSync(lock, { recursive: false });
@@ -133,9 +142,16 @@ export function acquire(
         continue;
       }
       if (Date.now() > until) return undefined;
-      if (waiting && !said) {
-        console.log(waiting);
-        said = true;
+      if (waiting && said === undefined) {
+        say(waiting);
+        said = Date.now();
+      } else if (waiting && said !== undefined && Date.now() - said >= every) {
+        let holder = "";
+        try {
+          holder = `, held by process ${readFileSync(owner, "utf8").trim()}`;
+        } catch {}
+        say(`${waiting}: ${Math.round((Date.now() - began) / 60_000)} min so far${holder}`);
+        said = Date.now();
       }
       Bun.sleepSync(25);
     }

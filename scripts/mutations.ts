@@ -2069,6 +2069,32 @@ export function retiredBy(message: string): Set<string> {
   return new Set([...message.matchAll(new RegExp(`^${retiredTrailer}: ([^:\\s]+): (?:with it|unreached), at [0-9a-f]+, `, "gm"))].map((m) => m[1]!));
 }
 
+/** Every `every` ms of a run, where it is, `at()`, said on stderr: a run of
+ * 247 mutations said nothing for 50 minutes, its answers all printed at its
+ * end, and was stopped by its timeout, where it waited unseen (#2418). Its
+ * stop. */
+export function heartbeat(at: () => string, say: (line: string) => void = (line) => console.error(line), every = 60_000): () => void {
+  const began = performance.now();
+  const timer = setInterval(() => say(`mutations: ${shown((performance.now() - began) / 1000)} in, ${at()}`), every);
+  timer.unref?.();
+  return () => clearInterval(timer);
+}
+
+/** Each mutation's answer, said on stderr as it's given, the first for
+ * each, with how many of `of` have one: a run's stdout is its answers
+ * together at its end, which CI reads (#2418). */
+export class Answers extends Map<Mutation, string> {
+  constructor(
+    private readonly of: number,
+    private readonly say: (line: string) => void = (line) => console.error(line),
+  ) {
+    super();
+  }
+  override set(mutation: Mutation, result: string): this {
+    if (!this.has(mutation)) this.say(`answered ${this.size + 1} of ${this.of}\t${mutation.name}\t${result}`);
+    return super.set(mutation, result);
+  }
+}
 
 async function main() {
   const args = process.argv.slice(2);
@@ -2077,11 +2103,19 @@ async function main() {
   // shard, its setup, the compiler as it is, the pre-check and its mutants.
   const phases: { phase: string; seconds: number }[] = [];
   let phaseBegan = performance.now();
+  // Where the run is, which its heartbeat says (#2418): the phase it's in,
+  // and how far through it.
+  let at = "choosing its mutations";
+  let through = () => "";
   const phaseEnded = (phase: string) => {
     const now = performance.now();
     phases.push({ phase, seconds: Math.round((now - phaseBegan) / 100) / 10 });
     phaseBegan = now;
+    console.error(`mutations: ${phase}, ${shown(phases.at(-1)!.seconds)}`);
+    at = `past ${phase}`;
+    through = () => "";
   };
+  heartbeat(() => `${at}${through()}`);
   // A flag it doesn't know is refused, not run past: `--list`, before it
   // was one, ran all a change's mutations (#923); and one that takes a
   // value given none, a bare `--changed`, which ran every one (#2001).
@@ -2281,6 +2315,9 @@ async function main() {
   // Each run in the cores' slots, a corpus part the cores it keeps busy
   // (`casePartCores`), not one each.
   const slot = slots(machine().cores);
+  let controlled = 0;
+  at = "running each mutation's tests as the compiler is";
+  through = () => `: ${controlled} of ${mine.length} runs`;
   await Promise.all(
     mine.map((run) =>
       slot(async () => {
@@ -2303,6 +2340,7 @@ async function main() {
         const results = byFile.get(run.file) ?? new Map<string, boolean>();
         for (const [name, passed] of testResults(junit)) if (results.get(name) !== false) results.set(name, passed);
         byFile.set(run.file, results);
+        controlled++;
       }, undefined, run.weight),
     ),
   );
@@ -2378,7 +2416,9 @@ async function main() {
   // `--batch=1` builds each alone.
   const size = Number(args.find((arg) => arg.startsWith("--batch="))?.slice("--batch=".length)) || 32;
   const read = crateText;
-  const results = new Map<Mutation, string>();
+  const results = new Answers(chosen.length);
+  at = "building and judging the mutants";
+  through = () => `: ${results.size} of ${chosen.length} answered`;
   // Of each caught, the first test that failed with it (`catchingTest`).
   const caughtBy = new Map<Mutation, string | undefined>();
   // One whose build wouldn't lex is said so by name, not built: a build of
