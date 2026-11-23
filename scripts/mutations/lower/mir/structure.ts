@@ -692,4 +692,12 @@ export const mutations: Mutation[] = [
     replace: "AssertKind::BoundsCheck { .. } => js::Payload::Str,",
     tests: ["test/corpus.test.ts", "-t", "^panic_payload_kinds\\.rs$"],
   },
+  {
+    name: "drop-cleanup-unwritten",
+    breaks: "a `Drop` whose drop runs something in JS (`unwinds`) is written without its cleanup, so a value's drop that panics leaves what its cleanup drops undropped (#2112's change D3)",
+    file: "crates/rust-js-mir/src/structure.rs",
+    find: "                        true => self.mir_unwind(state, *unwind)?,\n",
+    replace: "                        true => Vec::new(),\n",
+    tests: ["test/corpus.test.ts", "-t", "drop|refcell_"],
+  },
 ];

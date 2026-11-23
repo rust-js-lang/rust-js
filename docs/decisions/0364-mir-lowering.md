@@ -2290,3 +2290,78 @@ failures as listed, none of them a drop the comparison refuses.
 
 Case of [0262](0262-when-rust-and-js-disagree.md): none. No output
 changes; a program refused is compiled again.
+
+## Amendment: one answer of whether an unwind edge runs in JS, and cleanups only it reaches judged (2026-11-24, #2112's change D3)
+
+Before the cleanup paths' disagreements are refused, each non-agree
+cleanup verdict of the corpus, the crate corpus and rustc's drop/ tests
+was traced to the terminators whose unwinding reaches it. None is a wrong
+answer. They fall into three kinds:
+
+- **Unreached in JS.** rustc's cleanup is reached only where what can't
+  throw in JS unwinds: `Box::new`, a length, printing (cut by `Mir::new`,
+  ADR 0301), or a drop of what JS drops nothing of (`quiet_drops`).
+  Itertools' `Permutations::next` (`item`, reached only by `*state =`
+  dropping a `PermutationState` of boxed slices), aho-corasick's
+  prefilter (`finder`, by `pattern.len()`), regex-syntax's
+  `pop_class_op` (by `Box::new`).
+- **Reached only by a drop that runs nothing.** A value each part of
+  which has moved, `?`'s `ControlFlow` once its value's taken, a tuple a
+  pattern took apart, an `Option` whose payload moved: rustc's
+  `ElaborateDrops` makes its drop nothing, so its unwind edge goes, and
+  `SimplifyCfg` takes the cleanup only it reached: "no rustc drop where
+  it's written". rust-js's writer writes nothing for that drop either, no
+  `try`, but `Elaboration::drops` said it may drop, by its own path's
+  state, there still. The crate corpus' 154 unmatched (itertools'
+  `tuple_impl`, nom's sequences, `ziptuple`, writeable), its 3 remaining
+  disagreements, the corpus's 12 unmatched and or-pattern-drop-order.rs'
+  5 are this kind. So change D3's (b), or-patterns' cleanup sites, is no
+  siting problem.
+- **A flag one side asks.** On each edge JS has, rustc's flag holds
+  rust-js's known answer: aho-corasick's `Teddy::new` (`t`, the flag
+  cleared only by dropping a `BTreeMap` JS drops nothing of), itertools'
+  `count_new_keys` (`iter`, by `used.len()`). Counted apart, as before.
+
+rustc's `mir_drops_elaborated_and_const_checked` runs
+`RemoveNoopLandingPads` before `ElaborateDrops` and `AbortUnwindingCalls`
+after it, which under `panic=unwind` cuts only a `nounwind` callee's
+edge; neither explains the second kind.
+
+So one owner answers whether a terminator's unwind edge runs in JS,
+`MirCx::unwinds` (mir/drops.rs): only where the body keeps a cleanup
+edge, whose calls that can't throw `Mir::new` left none (ADR 0301's
+catalog); never a `match`'s or a loop's edge borrowck alone follows; and
+of a `Drop`, only where it runs something, `drops_anything`: a part of
+it with drop glue in JS may be there, a leaf or the rest of a part with
+parts of its own by its `rest_path`, as the writer's ladder drops them;
+of what JS drops nothing of, never (`quiet_drops`' rule). Two ask it:
+
+- **The writer** writes a `Drop`'s cleanup only where it unwinds, where
+  it wrote one wherever the drop wrote a statement, a flag's clearing
+  too, whose `catch` then held nothing that can throw. Byte-identical:
+  the corpus's 2,950 cases and the React port at its pin.
+- **The comparison** judges a cleanup only where a terminator that
+  unwinds reaches it; any other is `unreached`, never judged nor refused.
+
+The dataflow (`flowing`) still follows every edge but a quiet drop's:
+cutting a drop that runs nothing there, a call of the crate's that never
+unwinds or an assert proven to pass would move flags in the output, so
+it's a step of its own.
+
+Measured on this commit, cleanup verdicts as unique lines, of which
+none is a `disagree` or `unmatched`: the corpus 231 `flag-ours`, 14
+`flag-theirs`, 1,082 `unreached`; the crate corpus 1,451, 2 and 3,006;
+rustc's whole run-pass suite 13, 1 and 139 (2,149 of 2,224 in scope
+pass, its known failures as listed). The normal path's verdicts are
+unchanged. Corpus case partial_move_rest_panics_before_what_was_made_first
+holds a rest's drop that panics, past what was made before it, against
+native Rust. drops-shadow's tests "each cleanup verdict of the partial
+moves, behind a pointer and alike, is pinned" (164 agree, 11
+`flag-ours`, 1 `flag-theirs`, 70 `unreached`) and "a cleanup no
+terminator that unwinds in JS reaches is unreached". Mutations
+`drops-anything-by-its-own-path`, `drops-anything-of-a-quiet-drop`,
+`drops-anything-without-its-rest`, `drop-cleanup-unwritten` and
+`unreached-cleanup-judged`, each caught.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none. No output
+changes.

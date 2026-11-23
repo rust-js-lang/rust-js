@@ -184,6 +184,27 @@ test("each normal-path verdict of the partial moves, behind a pointer and alike,
   });
 });
 
+// Their cleanups' verdicts, pinned too: a cleanup no terminator that
+// unwinds in JS reaches (`unwinds`) is `unreached`, never judged, so their
+// number can't grow unseen (#2112's change D3).
+test("each cleanup verdict of the partial moves, behind a pointer and alike, is pinned", () => {
+  const tally = new Map<string, number>();
+  for (const name of [...partial, ...behind, ...alike]) {
+    for (const [verdict, path] of shadowOf(name)) {
+      if (path === "cleanup") tally.set(verdict, (tally.get(verdict) ?? 0) + 1);
+    }
+  }
+  const verdicts = ["agree", "disagree", "flag-ours", "flag-theirs", "unmatched", "unreached"];
+  expect(Object.fromEntries(verdicts.map((v) => [v, tally.get(v) ?? 0]))).toEqual({
+    agree: 164,
+    disagree: 0,
+    "flag-ours": 11,
+    "flag-theirs": 1,
+    unmatched: 0,
+    unreached: 70,
+  });
+});
+
 // Change D's (c): a drop the normal path's elaboration drops otherwise than
 // rustc's is refused, in every compile, the place and both answers named.
 // `--without-moves` makes rust-js's elaboration blind to moves, each drop
@@ -229,11 +250,16 @@ test("a drop of a body rustc keeps no elaborated body of is uncompared", () => {
   expect(lines.map(([verdict, path, , , detail]) => `${verdict} ${path} ${detail}`)).toEqual(["uncompared cleanup no rustc body"]);
 });
 
-// A cleanup's disagreement is apart, never refused: rust-js's body has no
-// unwinding of what can't throw (ADR 0301), whose cleanups rustc's reaches.
-test("a cleanup's drop that disagrees with rustc's elaboration compiles", () => {
-  const cleanups = shadowOf("drop_functions.rs").filter(([verdict, path]) => verdict === "disagree" && path === "cleanup");
-  expect(cleanups.length).toBeGreaterThan(0);
+// A cleanup only what can't throw in JS unwinds to, which rust-js's body
+// doesn't unwind from (ADR 0301), is unreached, never judged nor refused:
+// drop_functions.rs' `Box::new`'s and `vec!`'s, where rustc drops what's
+// there and rust-js's elaboration says nothing is (#2112's change D3).
+test("a cleanup no terminator that unwinds in JS reaches is unreached", () => {
+  const cleanups = shadowOf("drop_functions.rs").filter(([, path]) => path === "cleanup");
+  expect(cleanups.filter(([verdict]) => verdict === "disagree")).toEqual([]);
+  expect(cleanups.filter(([verdict]) => verdict === "unreached").map(([, , , , detail]) => detail)).toEqual(
+    Array(7).fill("no terminator that unwinds in JS reaches it"),
+  );
 });
 
 // A part of a packed struct that may be misaligned rustc drops by moving
@@ -243,7 +269,7 @@ test("a cleanup's drop that disagrees with rustc's elaboration compiles", () => 
 // refused as unmatched (rustc's packed/misaligned-reference-drop-field-99838.rs, #2112).
 test("a packed struct's part rustc moves out to drop is compared as the part", () => {
   const lines = shadowOf("packed_part_dropped_beside_a_moved_one.rs");
-  expect(lines.filter(([verdict]) => verdict !== "agree").map((line) => line.join(" "))).toEqual([]);
+  expect(lines.filter(([verdict]) => verdict !== "agree" && verdict !== "unreached").map((line) => line.join(" "))).toEqual([]);
   const end = lines.filter(([, path, , at]) => path === "normal" && at.includes(":43:1:"));
   expect(end.map(([verdict, , , , detail]) => `${verdict} ${detail}`).sort()).toContain("agree 2 compared");
 });

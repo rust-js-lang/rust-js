@@ -79,11 +79,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "shadow-refuses-cleanups",
-    breaks: "a cleanup's disagreement is refused, where rust-js's body has no unwinding of what can't throw (ADR 0301): a `dyn Fn`'s drop past a panic refuses the crate (#2112's change D (c))",
+    breaks: "a cleanup's disagreement is refused: blind to moves, `drop_partial`'s cleanups that a panic in JS reaches disagree too, four refusals more (#2112's change D (c))",
     file: "crates/rust-js-mir/src/elaborated.rs",
     find: "                _ if cleanup => continue,\n",
     replace: "                _ if cleanup && *verdict != Verdict::Disagree => continue,\n",
-    tests: ["test/drops-shadow.test.ts", "-t", "a cleanup's drop that disagrees with rustc's elaboration compiles"],
+    tests: refused,
   },
   {
     name: "shadow-compared-only-where-recorded",
@@ -212,5 +212,13 @@ export const mutations: Mutation[] = [
     find: "    match to == local && !variable && packed {\n        true => *from,\n",
     replace: "    match to == local && !variable && packed {\n        true => place,\n",
     tests: ["test/drops-shadow.test.ts", "-t", "a packed struct's part rustc moves out to drop is compared as the part"],
+  },
+  {
+    name: "unreached-cleanup-judged",
+    breaks: "a cleanup no terminator that unwinds in JS reaches is judged against rustc's elaboration all the same, so a `Box::new`'s, where rustc drops what's there and rust-js's elaboration says nothing is, reads as a disagreement (#2112's change D3)",
+    file: "crates/rust-js-mir/src/elaborated.rs",
+    find: "            if site.2 && !reached.contains(block) {\n",
+    replace: "            if site.2 && !reached.contains(block) && false {\n",
+    tests: ["test/drops-shadow.test.ts", "-t", "a cleanup no terminator that unwinds in JS reaches is unreached"],
   },
 ];

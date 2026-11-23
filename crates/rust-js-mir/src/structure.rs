@@ -594,7 +594,12 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 if !dropped.is_empty() {
                     self.flush(state, &mut out)?;
                     self.settle_reads(state, block, &mut out);
-                    let cleanup = self.mir_unwind(state, *unwind)?;
+                    // Of what runs something, which may panic (`unwinds`).
+                    let unwinds = (state.facts.drops()).is_some_and(|drops| self.unwinds(state.body, drops, block));
+                    let cleanup = match unwinds {
+                        true => self.mir_unwind(state, *unwind)?,
+                        false => Vec::new(),
+                    };
                     self.unwinding(dropped, cleanup, self.js_span(span), &mut out);
                 } else if place.projection.is_empty() && self.is_guard(state.body.local_decls[place.local].ty) {
                     self.settle_guard_reads(state, (block, place.local), &mut out);

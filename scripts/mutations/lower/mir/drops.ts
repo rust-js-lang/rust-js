@@ -451,4 +451,28 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(popped_variant_rest_dropped_at_the_match_end|or_pattern_part_moves).rs$"],
     snapshots: true,
   },
+  {
+    name: "drops-anything-by-its-own-path",
+    breaks: "a `Drop` of a value each part of which moved, `?`'s `ControlFlow` once its value's taken or a tuple a pattern took apart, is said to run in JS by its own path's state, there still, so the cleanup only it unwinds to is judged, where rustc's elaboration makes the drop nothing and leaves no cleanup: unmatched (#2112's change D3)",
+    file: "crates/rust-js-mir/src/drops.rs",
+    find: "            LookupResult::Exact(path) => path,\n            LookupResult::Parent(_) => return elaboration.drops(block, place),\n        };\n        let mut runs = false;\n",
+    replace: "            LookupResult::Exact(path) => return elaboration.drops(block, place) || path == path,\n            LookupResult::Parent(_) => return elaboration.drops(block, place),\n        };\n        let mut runs = false;\n",
+    tests: ["test/drops-shadow.test.ts", "-t", "each cleanup verdict of the partial moves"],
+  },
+  {
+    name: "drops-anything-of-a-quiet-drop",
+    breaks: "a `Drop` of what JS drops nothing of is said to unwind in JS, so the cleanups only it reaches are judged as reached (#2112's change D3)",
+    file: "crates/rust-js-mir/src/drops.rs",
+    find: "        if self.drops(place.ty(&body.local_decls, self.tcx).ty) == Drops::Nothing {\n            return false;\n        }\n        let move_data = &elaboration.move_data;\n",
+    replace: "        if self.drops(place.ty(&body.local_decls, self.tcx).ty) == Drops::Nothing {\n            return true;\n        }\n        let move_data = &elaboration.move_data;\n",
+    tests: ["test/drops-shadow.test.ts", "-t", "each cleanup verdict of the partial moves"],
+  },
+  {
+    name: "drops-anything-without-its-rest",
+    breaks: "the rest of a part with parts of its own, an enum's variants not taken apart or a struct's fields with no path, isn't counted as what a `Drop` runs, so a drop of only that rest is said not to unwind and the writer leaves out its cleanup (#2112's change D3)",
+    file: "crates/rust-js-mir/src/drops.rs",
+    find: "                    elaboration.presence(block, elaboration.rest_path(node)).0\n                        && self.rest_holds_glue(body, move_data, node)\n",
+    replace: "                    elaboration.presence(block, elaboration.rest_path(node)).0\n                        && self.rest_holds_glue(body, move_data, node)\n                        && false\n",
+    tests: ["test/corpus.test.ts", "-t", "partial_move_rest_panics_before_what_was_made_first"],
+  },
 ];

@@ -22,7 +22,7 @@ use rustc_middle::mir::{
 };
 use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{Ty, TyCtxt};
-use rustc_mir_dataflow::move_paths::{LookupResult, MovePathIndex};
+use rustc_mir_dataflow::move_paths::{LookupResult, MoveData, MovePathIndex};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
@@ -359,6 +359,7 @@ enum Verdict {
     FlagTheirs,
     Unmatched,
     Uncompared,
+    Unreached,
 }
 
 impl Verdict {
@@ -371,6 +372,7 @@ impl Verdict {
             Verdict::FlagTheirs => "flag-theirs",
             Verdict::Unmatched => "unmatched",
             Verdict::Uncompared => "uncompared",
+            Verdict::Unreached => "unreached",
         }
     }
 }
@@ -541,8 +543,21 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             }),
         };
         let overlapping = |a: &PathKey, b: &PathKey| holds(a, b) || holds(b, a);
+        let reached = self.cleanups_reached(body, elaboration, &reachable);
         for &(block, place) in &sites {
             let site = site_of(block);
+            // A cleanup no terminator that unwinds in JS reaches runs
+            // nothing in JS: rustc's reaches it where what can't throw in
+            // JS unwinds, or a drop of what JS drops nothing of (#2112's
+            // change D3).
+            if site.2 && !reached.contains(block) {
+                out.push((
+                    Verdict::Unreached,
+                    block,
+                    "no terminator that unwinds in JS reaches it".to_string(),
+                ));
+                continue;
+            }
             let key = path_key(place);
             // Two of rust-js's at one place where they're written, of what
             // holds the other: rustc's can't be told apart one by one.
@@ -725,7 +740,9 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 Verdict::Unmatched => {
                     "can't be compared with rustc's drop elaboration, so its JS can't be said to drop as Rust does"
                 }
-                Verdict::Agree | Verdict::FlagOurs | Verdict::FlagTheirs | Verdict::Uncompared => continue,
+                Verdict::Agree | Verdict::FlagOurs | Verdict::FlagTheirs | Verdict::Uncompared | Verdict::Unreached => {
+                    continue;
+                }
             };
             let function = function();
             rust_js_lower::refusal::error(
@@ -746,6 +763,50 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 let path = if cleanup { "cleanup" } else { "normal" };
                 format!("{}\t{path}\t{}\t{at}\t{detail}", verdict.word(), function())
             }));
+    }
+
+    /// The cleanup blocks of `body` a terminator that unwinds in JS
+    /// (`unwinds`) reaches, of those it runs to, `reachable`.
+    fn cleanups_reached(
+        &self,
+        body: &mir::Body<'tcx>,
+        elaboration: &Elaboration<'tcx>,
+        reachable: &rustc_index::bit_set::DenseBitSet<BasicBlock>,
+    ) -> rustc_index::bit_set::DenseBitSet<BasicBlock> {
+        let mut reached = rustc_index::bit_set::DenseBitSet::new_empty(body.basic_blocks.len());
+        let mut next: Vec<BasicBlock> = (body.basic_blocks.iter_enumerated())
+            .filter(|&(block, data)| {
+                !data.is_cleanup && reachable.contains(block) && self.unwinds(body, elaboration, block)
+            })
+            .filter_map(|(_, data)| match data.terminator().unwind() {
+                Some(mir::UnwindAction::Cleanup(start)) => Some(*start),
+                _ => None,
+            })
+            .collect();
+        while let Some(block) = next.pop() {
+            if reached.insert(block) {
+                next.extend(body.basic_blocks[block].terminator().successors());
+            }
+        }
+        reached
+    }
+
+    /// Whether what of `node`, a path with parts of its own, none of them
+    /// holds, has what JS drops: the rest an open drop drops by its
+    /// `rest_path`'s state.
+    pub(super) fn rest_holds_glue(
+        &self,
+        body: &mir::Body<'tcx>,
+        move_data: &MoveData<'tcx>,
+        node: MovePathIndex,
+    ) -> bool {
+        let mut below = Vec::new();
+        rustc_mir_dataflow::on_all_children_bits(move_data, node, |child| {
+            if child != node {
+                below.push(path_key(move_data.move_paths[child].place));
+            }
+        });
+        self.rest_drops(body, move_data.move_paths[node].place, &below, 4)
     }
 
     /// Whether what of `place` is none of `parts`, nor holds one, has what
@@ -804,7 +865,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
 
     /// Whether `place` is a variant of an enum, `(k as Text)`, none of whose
     /// fields JS drops.
-    fn variant_drops_nothing(&self, body: &mir::Body<'tcx>, place: Place<'tcx>) -> bool {
+    pub(super) fn variant_drops_nothing(&self, body: &mir::Body<'tcx>, place: Place<'tcx>) -> bool {
         let at = place.ty(&body.local_decls, self.tcx);
         let (Some(variant), rustc_middle::ty::Adt(adt, args)) = (at.variant_index, at.ty.kind()) else {
             return false;
@@ -983,14 +1044,14 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         });
         for &node in &inner {
             let key = key_of(node);
+            if !self.rest_holds_glue(body, move_data, node) {
+                continue;
+            }
             let below: Vec<PathKey> = (leaves.iter().chain(&inner))
                 .filter(|&&other| other != node)
                 .map(|&other| key_of(other))
                 .filter(|other| holds(&key, other))
                 .collect();
-            if !self.rest_drops(body, move_data.move_paths[node].place, &below, 4) {
-                continue;
-            }
             let rest = (theirs.iter())
                 .filter(|t| {
                     t.covers(&key)

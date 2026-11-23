@@ -125,6 +125,67 @@ impl<'tcx> Elaboration<'tcx> {
 }
 
 impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
+    /// Whether a panic of the terminator ending `block` unwinds to its
+    /// cleanup in JS (#2112's change D3, ADR 0301): the one answer the
+    /// writer, which writes a cleanup only there, and the comparison with
+    /// rustc's elaboration, which judges a cleanup only where one reaches
+    /// it, ask. Its inputs: the body, whose calls that can't throw
+    /// `Mir::new` left no unwind (ADR 0301's catalog); a `Drop` of what JS
+    /// drops nothing of (`quiet_drops`); and `elaboration`, as the
+    /// writer's ladder drops what's there (`drops_anything`). Never a `match`'s
+    /// or a loop's edges borrowck alone follows.
+    pub(super) fn unwinds(&self, body: &mir::Body<'tcx>, elaboration: &Elaboration<'tcx>, block: BasicBlock) -> bool {
+        let terminator = body.basic_blocks[block].terminator();
+        if !matches!(terminator.unwind(), Some(UnwindAction::Cleanup(_))) {
+            return false;
+        }
+        match &terminator.kind {
+            TerminatorKind::FalseEdge { .. } | TerminatorKind::FalseUnwind { .. } => false,
+            TerminatorKind::Drop { place, .. } => self.drops_anything(body, elaboration, block, *place),
+            _ => true,
+        }
+    }
+
+    /// Whether the `Drop` ending `block`, of `place`, runs anything in JS,
+    /// as the writer's ladder drops it: some part of it with drop glue in
+    /// JS may be there, a leaf, or the rest of a part with parts of its
+    /// own as its `rest_path` says. Not a value each part of which has
+    /// moved, `?`'s `ControlFlow` once its value's taken, or a tuple a
+    /// pattern took apart, whose drop rustc's elaboration makes nothing
+    /// too: a drop's own path's state, there still, isn't a part.
+    pub(super) fn drops_anything(
+        &self,
+        body: &mir::Body<'tcx>,
+        elaboration: &Elaboration<'tcx>,
+        block: BasicBlock,
+        place: Place<'tcx>,
+    ) -> bool {
+        if self.drops(place.ty(&body.local_decls, self.tcx).ty) == Drops::Nothing {
+            return false;
+        }
+        let move_data = &elaboration.move_data;
+        let path = match move_data.rev_lookup.find(place.as_ref()) {
+            LookupResult::Exact(path) => path,
+            LookupResult::Parent(_) => return elaboration.drops(block, place),
+        };
+        let mut runs = false;
+        on_all_children_bits(move_data, path, |node| {
+            let at = &move_data.move_paths[node];
+            runs |= match at.first_child {
+                None => {
+                    elaboration.presence(block, node).0
+                        && !self.variant_drops_nothing(body, at.place)
+                        && self.drops(at.place.ty(&body.local_decls, self.tcx).ty) != Drops::Nothing
+                }
+                Some(_) => {
+                    elaboration.presence(block, elaboration.rest_path(node)).0
+                        && self.rest_holds_glue(body, move_data, node)
+                }
+            };
+        });
+        runs
+    }
+
     /// Whether `place`, a call's destination, is a local holding an iterator
     /// dropped by closing it that the body drops, a variable's or a
     /// temporary's: held, `$held(..)`, so its owner drops what it steps
