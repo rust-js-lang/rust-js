@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/chunks.js",
     find: "cut(v, i * size, Math.min(i * size + size, v.length))",
     replace: "cut(v, i * size, i * size + size)",
-    tests: ["test/corpus.test.ts","-t","slice_views"],
+    tests: ["test/corpus.test.ts", "-t", "^slice_edit_drops\\.rs$"],
   },
   {
     name: "chunks-source-unkept",

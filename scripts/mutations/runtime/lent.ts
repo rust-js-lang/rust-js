@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/lent.js",
     find: "  lent: [\"next\", \"sizeHint\", \"advanceBy\", \"nth\", \"fold\", \"tryFold\", \"back\", \"advanceBackBy\", \"nthBack\", \"rfold\", \"tryRfold\", \"len\"],\n",
     replace: "  lent: [\"next\", \"sizeHint\", \"advanceBy\", \"nth\", \"fold\", \"back\", \"advanceBackBy\", \"nthBack\", \"rfold\", \"tryRfold\", \"len\"],\n",
-    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+    tests: ["test/corpus.test.ts", "-t", "^back_steps_of_a_source_that_writes_none\\.rs$"],
   },
   {
     name: "lent-struct-fields-unread",

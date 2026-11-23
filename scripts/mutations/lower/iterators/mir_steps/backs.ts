@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
     find: "            Some(IterMethod::Enumerate)\n                if self.knows_its_back(output)\n                    || self.knows_its_length(output)\n",
     replace: "            Some(IterMethod::Enumerate)\n                if false\n                    || false\n",
-    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_known_length.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapter_stepped_from_its_back_past_an_arguments_statement\\.rs$"],
   },
   {
     name: "rev-stored-items-lazy",
@@ -323,7 +323,8 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
     find: "                    || self.recognition().reaches_its_own(output, OwnStep::Nth, Reach::Sure)\n",
     replace: "                    || false\n",
-    tests: ["test/corpus.test.ts", "-t", "^(own_nth_through_adapters|repeat_count_panics).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^capacity_kept_of_a_lent_adapter\\.rs$"],
+    snapshots: true,
   },
   {
     name: "rev-of-held-rev-taken-out",
@@ -487,7 +488,8 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
     find: "        self.compiled_step(iter_ty, std_item(self.tcx, StdItem::Iterator), \"count\")\n",
     replace: "        false\n",
-    tests: ["test/corpus.test.ts", "-t", "^(enumerate_count_is_its_sources|enumerate_of_a_reversible_source).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_reversible_source\\.rs$"],
+    snapshots: true,
   },
   {
     name: "compiled-struct-has-its-back",

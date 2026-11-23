@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "            || recognition.array_source(source).is_none()\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(held_skip_take|size_hints_made_in_place|cycle_size_hint)\\.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_steps_its_source_by_next\\.rs$"],
     snapshots: true,
   },
   {

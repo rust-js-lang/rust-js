@@ -470,7 +470,8 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/eager.rs",
     find: "            && CONSUMED_TILL_DONE.contains(&method.as_str())\n",
     replace: "            && (CONSUMED_TILL_DONE.contains(&method.as_str()) || ADAPTED_TILL_DONE.contains(&method.as_str()))\n",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^double_ended_iterators\\.rs$"],
+    snapshots: true,
   },
   {
     name: "stepped-through-adapters-not",
@@ -488,7 +489,7 @@ export const mutations: Mutation[] = [
     find: "steps_all(name) || LAST_HELPERS.contains(&name)",
     replace: "steps_all(name)",
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cloned_of_generic_codes_source_asks_what_std_does\\.rs$"],
   },
   {
     name: "collected-helper-iterator-from-kept",

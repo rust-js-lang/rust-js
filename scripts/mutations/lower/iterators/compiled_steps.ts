@@ -18,7 +18,8 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/compiled_steps.rs",
     find: "        if !self.iterator_given_as_it_is(ty) {\n",
     replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(associated_iterator_dropped|associated_iterator_given_as_it_is|into_iter_of_ref_param|generic_associated_types|mut_kept_by_what_a_call_gives_back).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^impl_iterator_within_a_trait_methods_result\\.rs$"],
+    snapshots: true,
   },
   {
     name: "std-iterator-hint-missing",
@@ -235,7 +236,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/compiled_steps.rs",
     find: "        (exact && self.hinted_by_its_struct(ty)).then(|| {\n",
     replace: "        (exact && self.compiled_step(ty, std_item(self.tcx, StdItem::Iterator), \"size_hint\")).then(|| {\n",
-    tests: ["test/corpus.test.ts", "-t", "^skip_of_a_peekable_from_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_reversible_source\\.rs$"],
   },
   {
     name: "compiled-fold-f-undropped",

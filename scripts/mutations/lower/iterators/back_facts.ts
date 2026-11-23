@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/back_facts.rs",
     find: "            || r::filtered_source(self.tcx, ty).is_some()\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^generic_map_folded_and_rfolded.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^held_filter_map_reversed\\.rs$"],
     snapshots: true,
   },
 

@@ -228,7 +228,8 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        if drops_none\n            && (self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)\n                || self.compiled_struct(iter_ty, &it)\n                || unwinds_holding)\n",
     replace: "        if self.recognition().reaches_its_own(iter_ty, OwnStep::Last, Reach::Sure)\n            || drops_none && (self.compiled_struct(iter_ty, &it) || unwinds_holding)\n",
-    tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^count_of_a_flatten_skipped_from_its_back\\.rs$"],
+    snapshots: true,
   },
   {
     name: "dropping-last-folded-first",

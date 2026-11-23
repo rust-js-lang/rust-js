@@ -9,7 +9,8 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/mir_steps/sources.rs",
     find: "                ty::Ref(_, _, Mutability::Mut) => self.lent_iterator(it, ty),\n",
     replace: "                ty::Ref(_, _, Mutability::Mut) => it,\n",
-    tests: ["test/corpus.test.ts", "-t", "^by_ref_of_held_iterator.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^self_given_on_as_into_iter\\.rs$"],
+    snapshots: true,
   },
   {
     name: "step-by-count-unfolded",

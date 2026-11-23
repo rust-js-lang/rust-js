@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/taking.js",
     find: "    const folded = $consumed(taking.iter, () => tryFoldOf(init, g, () => false, unwind, true, ends), ends);\n",
     replace: "    const folded = $Steps.prototype.fold.call(taking, init, g, unwind, ends);\n",
-    tests: ["test/corpus.test.ts", "-t", "^fold_whose_rest_panics_as_dropped_leaks_its_result.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters\\.rs$"],
     snapshots: true,
   },
   {

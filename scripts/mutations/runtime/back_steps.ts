@@ -552,7 +552,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/back_steps.js",
     find: '    fold: folding(front, "next", "back"),\n',
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_holding_its_function_drops_it_after_its_source\\.rs$"],
   },
   {
     name: "flatten-ends-rfold-unforwarded",

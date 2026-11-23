@@ -123,7 +123,8 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition.rs",
     find: "        matches!(self, Std::Replace | Std::MemTake)\n",
     replace: "        matches!(self, Std::MemTake)\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_replaced_where_capacities_are_kept.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet\\.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-std-hash-dispatched",

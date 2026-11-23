@@ -604,7 +604,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/back_stepped.rs",
     find: "            at.extend([a, b]);\n",
     replace: "            let _ = (a, b);\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_adapters_whose_length_a_capacity_asks.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^inspect_chained_with_a_vecs_items_where_capacity_is_read\\.rs$"],
   },
   {
     name: "held-length-flips-held",

@@ -25,7 +25,8 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/transparent.rs",
     find: "    (ty.walk().filter_map(|part| part.as_type())).any(|part| recognition.is_user_iterator(part))\n",
     replace: "    (ty.walk().filter_map(|part| part.as_type())).any(|part| matches!(part.kind(), ty::Adt(..)) && recognition.is_user_iterator(part))\n",
-    tests: ["test/corpus.test.ts", "-t", "^impl_iterator_own_nth_skipped_in_a_flat_map.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^drops_of_consumed_iterators\\.rs$"],
+    snapshots: true,
   },
   {
     name: "transparent-held-unseen",

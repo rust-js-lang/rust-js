@@ -186,7 +186,8 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/value.rs",
     find: "    e.facts = e.facts.with(Known::IterEnumerate);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^enumerate_made_knowing_read_again.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^lazy_chains\\.rs$"],
+    snapshots: true,
   },
   {
     name: "held-loses-its-length-mark",

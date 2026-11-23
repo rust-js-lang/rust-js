@@ -83,6 +83,7 @@ export const mutations: Mutation[] = [
     find: "        taken.extend(self.names.borrow().iter().cloned());\n",
     replace: "",
     tests: perModule,
+    snapshots: true,
   },
   {
     name: "recursive-fn-imports-unmerged",

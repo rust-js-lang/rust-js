@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/steps.js",
     find: "    mapped.sizeHint = () => $sizeHint(this);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^map_of_own_size_hint.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow\\.rs$"],
   },
   {
     name: "steps-nth-by-next",

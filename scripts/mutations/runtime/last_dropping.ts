@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/last_dropping.js",
     find: "      () => b.return?.(),\n",
     replace: "      () => undefined,\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^rev_of_rev_last_folds\\.rs$"],
   },
   {
     name: "last-sides-a-last-leaked",

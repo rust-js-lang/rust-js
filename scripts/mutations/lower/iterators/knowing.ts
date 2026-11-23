@@ -227,7 +227,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
     find: "            return self.knows_its_back(source) || self.stepped_from_its_back(ty);\n",
     replace: "            return self.knows_its_back(source);\n",
-    tests: ["test/corpus.test.ts", "-t", "^associated_types.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapter_stepped_from_its_back_past_an_arguments_statement\\.rs$"],
     snapshots: true,
   },
   {
@@ -932,7 +932,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
     find: "        let ty = crate::recognition::held_unboxed(ty);\n        let js_iterator = match ty.kind() {\n",
     replace: "        let js_iterator = match ty.kind() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_box_enumerated_asks_its_own_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^boxed_source_dropped_after_its_fold\\.rs$"],
   },
   {
     name: "projection-js-iterator-to-generic-code",

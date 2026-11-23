@@ -36,11 +36,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition/adapter_types.rs",
     find: "                    StdPath::IterMap\n                        | StdPath::IterInspect\n                        | StdPath::IterCopied\n                        | StdPath::IterCloned\n                        | StdPath::IterEnumerate\n                        | StdPath::IterRev\n",
     replace: "                    StdPath::IterMap\n                        | StdPath::IterInspect\n                        | StdPath::IterCopied\n                        | StdPath::IterCloned\n                        | StdPath::IterRev\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(fuse_enumerate_ends|enumerate_of_known_length).rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^collect_room_of_generic_items\\.rs$"],
   },
   {
     name: "map-length-unknown",

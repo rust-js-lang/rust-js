@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition/std_items.rs",
     find: "            self.tcx.impl_of_assoc(instance.def_id()).is_some() && self.is_std(instance.def_id())",
     replace: "            self.is_std(instance.def_id())",
-    tests: ["test/corpus.test.ts", "-t", "^(std_method_of_a_mut_to_a_held_mut|by_ref_lends|boxed_iterator_stepped_as_what_it_boxes).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^box_of_a_map_drops_as_std_box_does\\.rs$"],
   },
   {
     name: "passed-on-of-shared-self",
