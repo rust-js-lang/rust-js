@@ -790,7 +790,10 @@ export function size(input) {
   ([ADR 0284](../../decisions/0284-discriminated-unions.md)). A tag is
   compared and written as its literal, `chunk.status === "fulfilled"`,
   never as a constant a JS original named it by (React's `INITIALIZED`):
-  an accepted port difference, the user's decision (rd435).
+  an accepted port difference, the user's decision (rd435). It says the
+  JS object, not the JSON: serde's `#[serde(tag)]` says that, and an enum
+  whose TypeScript is its JSON's shape writes both
+  ([serde](../libraries/README.md#serde)).
 - **`#[rust_js::untagged]` makes each value its payload**, as TypeScript's
   `string | number` is. `match` tests each payload's kind, `typeof`,
   `Array.isArray` or a member, so each variant holds one value, and no

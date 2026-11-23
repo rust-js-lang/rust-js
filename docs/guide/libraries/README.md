@@ -790,6 +790,98 @@ key inserted and a `null` made an object, its panics serde_json's; its
 `retain` and `entry`, are serde_json's too
 ([ADR 0083](../../decisions/0083-serde-json-value.md)).
 
+serde's attributes say the JSON, and rust-js's say the JS object: two
+questions, which an enum answers apart. `#[serde(tag = "type")]` reads
+`{"type":"circle","radius":2}`, but what it reads it into, the value a
+TypeScript caller holds, is rust-js's enum, `{ TAG: "Circle"; radius }`
+([ADR 0033](../../decisions/0033-enums-with-fields.md)), unless the enum
+says otherwise by `#[rust_js::tag]` and `#[rust_js::name]`
+([ADR 0284](../../decisions/0284-discriminated-unions.md),
+[Enums](../interop/types.md#enums)). To give TypeScript the JSON's
+shape, as zod's `z.infer` does, write both, matching:
+
+```rust
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+#[cfg_attr(rust_js, rust_js::tag = "type")]
+pub enum Shape {
+    #[cfg_attr(rust_js, rust_js::name = "circle")]
+    Circle { radius: f64 },
+    #[cfg_attr(rust_js, rust_js::name = "square")]
+    Square { side: f64 },
+}
+
+pub fn parse(text: &str) -> Result<Shape, serde_json::Error> {
+    serde_json::from_str(text)
+}
+
+pub fn area(shape: &Shape) -> f64 {
+    match shape {
+        Shape::Circle { radius } => std::f64::consts::PI * radius * radius,
+        Shape::Square { side } => side * side,
+    }
+}
+```
+
+```js
+import { $fromJson, $json } from "@rust-js/std";
+
+function shapeDeserialize_deserialize(json) {
+  return json.internallyTagged(
+    "type",
+    "internally tagged enum Shape",
+    ["circle", "square"],
+    (variant, content) => {
+      if (variant === "circle") {
+        return content.struct(
+          "struct variant Shape::Circle",
+          [["radius", $json.f64]],
+          ([radius]) => ({ type: "circle", radius }),
+        );
+      }
+      return content.struct("struct variant Shape::Square", [["side", $json.f64]], ([side]) => ({
+        type: "square",
+        side,
+      }));
+    },
+  );
+}
+
+export function parse(text) {
+  return $fromJson(text, shapeDeserialize_deserialize);
+}
+
+export function area(shape) {
+  return shape.type === "circle" ? Math.PI * shape.radius * shape.radius : shape.side * shape.side;
+}
+```
+
+```ts
+export type Shape = {
+    type: "circle";
+    radius: number;
+} | {
+    type: "square";
+    side: number;
+};
+
+export function parse(text: string): {
+    TAG: "Ok";
+    _0: Shape;
+} | {
+    TAG: "Err";
+    _0: any;
+};
+
+export function area(shape: Shape): number;
+```
+
+Without `#[rust_js::tag]` and the names, the JSON is the same and the
+declaration is rust-js's, `{ TAG: "Circle"; radius: number } | { TAG:
+"Square"; side: number }`.
+
 A hand-written `Serialize` or `Deserialize` is its body over serde_json's
 writer and reader, `s.serialize_str(x)` the writer's `s.string(x)`. A
 protocol call's `Result` the impl only gives on by `?`, or returns, is its
