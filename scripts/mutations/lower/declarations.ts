@@ -1066,4 +1066,12 @@ export const mutations: Mutation[] = [
     replace: "        DefKind::Struct => structures::declared(tcx, did) && !structures::sealed(tcx, did),\n",
     tests: ["test/declarations-sealed.test.ts", "-t", "a tuple struct of a private field"],
   },
+  {
+    name: "shared-borrow-array-mutable",
+    breaks: "a shared borrow of an array, `&[String]`, is declared `string[]`, so TypeScript can't pass a `readonly` array where Rust only reads (#2392)",
+    file: "crates/rust-js-lower/src/declarations.rs",
+    find: "                    referred[\"readonly\"] = json!(true);\n",
+    replace: "                    referred[\"readonly\"] = json!(false);\n",
+    tests: ["test/declarations-readonly.test.ts"],
+  },
 ];

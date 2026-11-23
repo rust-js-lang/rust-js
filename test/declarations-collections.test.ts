@@ -119,7 +119,8 @@ pub fn shouted(value: &str) -> Cow<'_, str> {
   const cow = (borrowed: string, owned: string) =>
     `{\n    TAG: "Borrowed";\n    _0: ${borrowed};\n} | {\n    TAG: "Owned";\n    _0: ${owned};\n};`;
   expect(declarations).toContain(`export function text(value: string): ${cow("string", "string")}`);
-  expect(declarations).toContain(`export function numbers(value: number[]): ${cow("number[]", "number[]")}`);
+  // What it borrowed is lent to be read, `readonly`; what it owns, its own (#2392).
+  expect(declarations).toContain(`export function numbers(value: readonly number[]): ${cow("readonly number[]", "number[]")}`);
   expect(declarations).toContain(`export function shouted(value: string): ${cow("string", "string")}`);
   writeFileSync(join(dir, "use.ts"), `import { numbers, shouted } from "./lib.js";
 const said = shouted("hi");

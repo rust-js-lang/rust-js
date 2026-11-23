@@ -1054,6 +1054,11 @@ imports, and `rust-js build` the one way to build an app.
 
 ### Fixed
 
+- **A shared borrow of an array is declared `readonly`**: `&[T]`, `&[T;
+  N]` and `&Vec<T>` are `readonly T[]` as a parameter, a result or a
+  field, so TypeScript passes a `readonly` array where Rust only reads it,
+  where it was refused; `&mut` stays `T[]` (ADR 1189, #2392).
+
 - **A discriminated union's `otherwise` variant serde reads is the object it
   holds**, as every other maker of one makes it, where it was `{ type:
   "Other", _0: .. }` (ADR 0284): a variant that's its one value is one

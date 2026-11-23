@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-23 (#2392, ADR 1189): test/declarations-readonly.test.ts, new, one test, type-checked: a shared borrow of an array declared `readonly T[]` as a parameter, a result and a field, a `readonly` array accepted where Rust reads and refused where it takes `&mut`; five declarations tests' expectations say `readonly` where they declare such a borrow.
+
 Changed on 2026-11-23 (ADRs 0214, 0284): test/serde-attributes.test.ts gains a test, a discriminated union's `otherwise` variant serde reads, against native serde, and its JS value the object it holds.
 
 Changed on 2026-11-23 (#2388, ADR 0214 amended): test/serde-attributes.test.ts gains a test, a `#[rust_js::untagged]` enum serde reads and writes against native serde, by each of its representations, and its JS values its payloads; test/diagnostics.test.ts loses its case of the refusal, now compiled.
