@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`.map(Src::Number)` makes tagged objects of an untagged enum's values",
     file: "crates/rust-js-lower/src/aggregates.rs",
-    find: "        } else if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
+    find: "        } else if self.variant_is_payload(adt_def, variant) {\n",
     replace:
       "        } else if bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
     // js-any-values' own build of `test/untagged.rs`, not compiler.test.ts's:
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     breaks:
       '`.map(Message::Other)` makes `{ type: "Other", _0: value }` of each, not the object',
     file: "crates/rust-js-lower/src/aggregates.rs",
-    find: "        } else if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {\n",
+    find: "        } else if self.variant_is_payload(adt_def, variant) {\n",
     replace: "        } else if self.untagged(ty).is_some() {\n",
     tests: [
       "test/lowering-structs-enums.test.ts",
@@ -480,8 +480,8 @@ export const mutations: Mutation[] = [
     name: "keyed-tag-kept",
     breaks: "a keyed enum's variant is made with a `TAG` too (#504)",
     file: "crates/rust-js-lower/src/aggregates.rs",
-    find: "        (adt.is_enum() && !keyed).then(|| {\n",
-    replace: "        (adt.is_enum()).then(|| {\n",
+    find: "        (adt.is_enum() && !keyed && !self.variant_is_payload(adt, variant)).then(|| {\n",
+    replace: "        (adt.is_enum() && !self.variant_is_payload(adt, variant)).then(|| {\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "intersection"],
   },
   {
@@ -549,5 +549,21 @@ export const mutations: Mutation[] = [
     find: "                bindings::tag_key(self.tcx, adt.did()),\n                bindings::variant_tag(self.tcx, variant),\n",
     replace: "                bindings::tag_key(self.tcx, adt.did()),\n                Expr::str(bindings::variant_name(self.tcx, variant)),\n",
     tests: ["test/serde-attributes.test.ts", "-t", "an enum read by its internal tag"],
+  },
+  {
+    name: "serde-untagged-unit-read-by-name",
+    breaks: "a `#[rust_js::untagged]` enum's fieldless variant is its name, `\"Empty\"`, where its `#[rust_js::null]` is `null`, serde's reading too (#2388)",
+    file: "crates/rust-js-lower/src/aggregates.rs",
+    find: "        if self.untagged(ty).is_some()\n            && let Some(value) = super::untagged::unit_value(self.tcx, variant)\n",
+    replace: "        if false\n            && let Some(value) = super::untagged::unit_value(self.tcx, variant)\n",
+    tests: ["test/serde-attributes.test.ts", "-t", "untagged enum of rust-js's is its payload"],
+  },
+  {
+    name: "payload-variant-not-otherwise",
+    breaks: "a discriminated union's `otherwise` variant is no payload to `variant_is_payload`, so serde reads it `{ type: \"Other\", _0: .. }`, not the object it holds (ADR 0284)",
+    file: "crates/rust-js-lower/src/aggregates.rs",
+    find: "            || bindings::is_tagged_otherwise(self.tcx, adt.did(), variant)\n",
+    replace: "",
+    tests: ["test/serde-attributes.test.ts", "-t", "otherwise variant read is the object it holds"],
   },
 ];

@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-23 (ADRs 0214, 0284): test/serde-attributes.test.ts gains a test, a discriminated union's `otherwise` variant serde reads, against native serde, and its JS value the object it holds.
+
 Changed on 2026-11-23 (#2388, ADR 0214 amended): test/serde-attributes.test.ts gains a test, a `#[rust_js::untagged]` enum serde reads and writes against native serde, by each of its representations, and its JS values its payloads; test/diagnostics.test.ts loses its case of the refusal, now compiled.
 
 Changed on 2026-11-23 (#2382, #2383): test/serde-attributes.test.ts gains a test, a field of its own reader that isn't there against native serde: `deserialize_with` of a function of the crate's and of `Option::deserialize` and `Vec::deserialize`, beside `#[serde(default)]`, `with = "module"`, `serialize_with` beside `skip_serializing_if` and of `Option::serialize`, and an adjacently tagged newtype variant's reader given its missing content.

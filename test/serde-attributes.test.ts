@@ -751,3 +751,37 @@ pub fn parse_row(text: &str) -> Option<Row> {
   });
   expect(parseRow('{"id":7,"contact":{"email":"a@b.c"},"cells":[]}')).toEqual({ id: 7, contact: { email: "a@b.c" }, cells: [] });
 }, 300_000);
+
+// A discriminated union's `otherwise` variant serde reads is the object it
+// holds, as every maker of one makes it (ADR 0284), `variant_is_payload`'s
+// answer: it was made `{ type: "Other", _0: .. }`, and written back by
+// reading that `_0`, so only its JS value was wrong.
+test("serde: a discriminated union's otherwise variant read is the object it holds", async () => {
+  const dir = fixture("serde-tagged-otherwise");
+  writeFileSync(join(dir, "cases.rs"), String.raw`
+use serde::{Deserialize, Serialize};
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Note { pub text: String }
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+#[cfg_attr(rust_js, rust_js::tag = "type")]
+pub enum Message {
+    #[cfg_attr(rust_js, rust_js::name = "ping")]
+    Ping { at: u32 },
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    Other(Note),
+}
+pub fn report() -> Vec<String> {
+    [r#"{"at":3}"#, r#"{"text":"hi"}"#, "1"].iter().map(|t| match serde_json::from_str::<Message>(t) {
+        Ok(m) => serde_json::to_string(&m).unwrap(),
+        Err(e) => format!("Err({e})"),
+    }).collect()
+}
+pub fn parse(t: &str) -> Option<Message> { serde_json::from_str(t).ok() }
+`);
+  const expected = run([native(dir)]);
+  const { report, parse } = await compiled(dir);
+  expect(JSON.stringify(report())).toBe(expected.trim());
+  expect(parse('{"text":"hi"}')).toEqual({ text: "hi" });
+  expect(parse('{"at":3}')).toEqual({ type: "ping", at: 3 });
+}, 300_000);
