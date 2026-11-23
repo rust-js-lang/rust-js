@@ -112,6 +112,9 @@ export const shared: Record<string, keyof typeof why> = {
   "$byteLen": "collections",
   "$checkedSplitAtMut": "collections",
   "$capacity": "collections",
+  "$reserve": "collections",
+  "$roomFor": "collections",
+  "$unwinds": "glue",
   "$catchable": "glue",
   "$catchUnwind": "glue",
   "$chars": "js-own", // ADR 1117: a string's `Chars`, the runtime's lazy one

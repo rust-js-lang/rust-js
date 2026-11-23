@@ -8,7 +8,7 @@
 
 use super::{
     COMPILED_STD, COMPILED_STD_FNS, COMPILED_STD_IO, COMPILED_STD_IO_PROVIDED, COMPILED_STD_NET, COMPILED_STD_PROVIDED,
-    HELD_COMPILED, PROVED_LINKS, std_iter_trait,
+    COMPILED_STD_TUPLES, HELD_COMPILED, PROVED_LINKS, std_iter_trait,
 };
 use super::{StdCrate, StdPath, registry, std_path_id};
 use rust_js_program::collections::IndexMap;
@@ -35,6 +35,9 @@ pub struct Rows {
     pub(crate) fns: Vec<(DefId, Option<StdPath>)>,
     /// `PROVED_LINKS`' methods, each an iterator trait's.
     pub(crate) proved: rust_js_program::collections::IndexSet<DefId>,
+    /// `COMPILED_STD_TUPLES`' methods, of each impl of its trait for a tuple
+    /// of its arity.
+    pub(crate) tuples: Vec<DefId>,
 }
 
 impl Rows {
@@ -147,6 +150,26 @@ pub(super) fn resolve(tcx: TyCtxt<'_>) -> Rows {
                 .unwrap_or_else(|| unresolved((trait_name, method)))
         })
         .collect();
+    // Of a tuple of its arity, the impls rustc keeps under that simplified
+    // type, as an ADT's are under its own (`impls_for`).
+    let tuples = (COMPILED_STD_TUPLES.iter())
+        .flat_map(|&(trait_name, arity)| {
+            let trait_def = std_iter_trait(tcx, trait_name).unwrap_or_else(|| unresolved((trait_name, "")));
+            let impls = tcx.trait_impls_of(trait_def);
+            let bucket = impls
+                .non_blanket_impls()
+                .get(&ty::fast_reject::SimplifiedType::Tuple(arity));
+            let found: Vec<DefId> = (bucket.into_iter().flatten())
+                .flat_map(|&imp| tcx.associated_items(imp).in_definition_order())
+                .filter(|item| matches!(item.kind, ty::AssocKind::Fn { .. }))
+                .map(|item| item.def_id)
+                .collect();
+            if found.is_empty() {
+                unresolved((trait_name, ""));
+            }
+            found
+        })
+        .collect();
     Rows {
         iter,
         io,
@@ -154,5 +177,6 @@ pub(super) fn resolve(tcx: TyCtxt<'_>) -> Rows {
         io_provided,
         fns,
         proved,
+        tuples,
     }
 }

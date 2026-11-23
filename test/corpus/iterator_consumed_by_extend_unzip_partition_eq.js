@@ -24,6 +24,7 @@ import {
   $reserveHint,
   $sortedEntries,
   $sortedKeys,
+  $textRoomFor,
   $unwindsOn,
   $unzip,
   iterator_map,
@@ -59,6 +60,9 @@ function main() {
       $extendText($reserveHint(items, 1, undefined, collection.value), (piece) => {
         collection.value += piece;
       });
+    },
+    extendReserve(collection, additional) {
+      $textRoomFor(collection.value, additional);
     },
   };
   const v = [0];

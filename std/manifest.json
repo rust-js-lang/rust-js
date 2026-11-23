@@ -12,6 +12,222 @@
     "crate_hash": "5ca403e745b9e31c",
     "items": [
       {
+        "key": "core::iter::traits::collect::{impl#4}",
+        "rust_path": "rust_js_std::<(ExA, ExB) as core::iter::Extend<(A, B)>>",
+        "module": [
+          "iter"
+        ],
+        "export": "tuple2Extend",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::traits::collect::{impl#4}::extend",
+        "rust_path": "rust_js_std::<(ExA, ExB) as core::iter::Extend<(A, B)>>::extend",
+        "module": [
+          "iter"
+        ],
+        "export": "tuple2Extend_extend",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::traits::collect::{impl#4}::extend_one",
+        "rust_path": "rust_js_std::<(ExA, ExB) as core::iter::Extend<(A, B)>>::extend_one",
+        "module": [
+          "iter"
+        ],
+        "export": "tuple2Extend_extendOne",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::traits::collect::{impl#4}::extend_one_unchecked",
+        "rust_path": "rust_js_std::<(ExA, ExB) as core::iter::Extend<(A, B)>>::extend_one_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "tuple2Extend_extendOneUnchecked",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::traits::collect::{impl#4}::extend_reserve",
+        "rust_path": "rust_js_std::<(ExA, ExB) as core::iter::Extend<(A, B)>>::extend_reserve",
+        "module": [
+          "iter"
+        ],
+        "export": "tuple2Extend_extendReserve",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::traits::collect::default_extend::{impl#0}::extend",
+        "rust_path": "rust_js_std::<ExtendT as core::iter::traits::collect::default_extend::SpecExtend<I>>::extend",
+        "module": [
+          "iter"
+        ],
+        "export": "extendTSpecExtendI_extend",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::filter::{impl#9}::assume_count_le_upper_bound",
         "rust_path": "rust_js_std::<I as core::iter::adapters::filter::SpecAssumeCount>::assume_count_le_upper_bound",
         "module": [
@@ -14001,7 +14217,7 @@
         "module": [
           "net"
         ],
-        "export": "socketAddrFrom_I__u16_",
+        "export": "socketAddrFromTuple2",
         "member": null,
         "params": [
           {
@@ -14018,7 +14234,7 @@
         "module": [
           "net"
         ],
-        "export": "socketAddrFrom_I__u16__from",
+        "export": "socketAddrFromTuple2_from",
         "member": null,
         "params": [
           {
@@ -14859,6 +15075,52 @@
         ]
       },
       {
+        "key": "core::iter::traits::collect::Extend::extend_one_unchecked",
+        "rust_path": "rust_js_std::core::iter::Extend::extend_one_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "extend_extendOneUnchecked",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::traits::collect::Extend::extend_reserve",
+        "rust_path": "rust_js_std::core::iter::Extend::extend_reserve",
+        "module": [
+          "iter"
+        ],
+        "export": "extend_extendReserve",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::inspect::{impl#2}::do_inspect",
         "rust_path": "rust_js_std::core::iter::Inspect::<I, F>::do_inspect",
         "module": [
@@ -15638,6 +15900,47 @@
           },
           {
             "index": 2,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::traits::iterator::Iterator::unzip",
+        "rust_path": "rust_js_std::core::iter::Iterator::unzip",
+        "module": [
+          "iter"
+        ],
+        "export": "iterator_unzip",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
             "marks": [
               "drop"
             ]
@@ -16828,6 +17131,8 @@
       "core::iter::sources::successors::{impl#0}",
       "core::iter::sources::successors::{impl#2}",
       "core::iter::sources::successors::{impl#3}",
+      "core::iter::traits::collect::default_extend::{impl#0}",
+      "core::iter::traits::collect::{impl#4}",
       "core::net::ip_addr::{impl#0}",
       "core::net::ip_addr::{impl#10}",
       "core::net::ip_addr::{impl#11}",
@@ -16940,6 +17245,13 @@
       }
     ],
     "changed": [
+      {
+        "of": "()",
+        "args": [
+          {},
+          {}
+        ]
+      },
       {
         "of": "core::iter::adapters::flatten::FlattenCompat",
         "args": [
@@ -17338,8 +17650,15 @@
         "iterator_zip",
         "iterator_cycle",
         "iterator_partition",
+        "iterator_unzip",
         "extend_extendOne",
+        "extend_extendReserve",
+        "extend_extendOneUnchecked",
         "trustedRandomAccessNoCoerce_size",
+        "tuple2Extend_extend",
+        "tuple2Extend_extendOne",
+        "tuple2Extend_extendReserve",
+        "tuple2Extend_extendOneUnchecked",
         "repeatN",
         "repeat",
         "successors",
@@ -17402,6 +17721,7 @@
         "zipZipImplAB_new",
         "zipZipImplABTrustedRandomAccessTrustedRandomAccess_new",
         "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_new",
+        "extendTSpecExtendI_extend",
         "andThenOrClear$2",
         "flattenCompatIUIterator_last_last",
         "intoItem",
@@ -17460,12 +17780,13 @@
         "cycleDebug",
         "successorsClone",
         "successorsDebug",
+        "tuple2Extend",
         "flattenCompatDebug"
       ],
       "links": [
         {
-          "start": 850,
-          "end": 862,
+          "start": 889,
+          "end": 901,
           "file": "runtime.js"
         }
       ],
@@ -17527,8 +17848,8 @@
       ],
       "links": [
         {
-          "start": 390,
-          "end": 402,
+          "start": 403,
+          "end": 415,
           "file": "runtime.js"
         }
       ],
@@ -17618,8 +17939,8 @@
         "ipv6AddrFrom_u16__8__from",
         "socketAddrFromSocketAddrV4_from",
         "socketAddrFromSocketAddrV6_from",
-        "socketAddrFrom_I__u16__from",
-        "socketAddrFrom_I__u16_"
+        "socketAddrFromTuple2_from",
+        "socketAddrFromTuple2"
       ],
       "links": [
         {
@@ -17634,7 +17955,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "ef562147e26df9a3"
+      "hash": "3d8faf5f35d158f4"
     },
     {
       "file": "iter.js.map",
@@ -17642,7 +17963,7 @@
     },
     {
       "file": "io.js",
-      "hash": "b542f59fdcce5ae1"
+      "hash": "53ed51d1cad0bc78"
     },
     {
       "file": "io.js.map",
@@ -17650,7 +17971,7 @@
     },
     {
       "file": "net.js",
-      "hash": "ddf1496368c0867a"
+      "hash": "46e0d4c380e6a547"
     },
     {
       "file": "net.js.map",

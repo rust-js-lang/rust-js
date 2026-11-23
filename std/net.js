@@ -462,7 +462,7 @@ export const ipv6AddrFrom_u8__16_ = { from: ipv6AddrFrom_u8__16__from };
 export const ipv6AddrFrom_u16__8_ = { from: ipv6AddrFrom_u16__8__from };
 export const socketAddrFromSocketAddrV4 = { from: socketAddrFromSocketAddrV4_from };
 export const socketAddrFromSocketAddrV6 = { from: socketAddrFromSocketAddrV6_from };
-const $socketAddrFrom_I__u16_ = new WeakMap();
+const $socketAddrFromTuple2 = new WeakMap();
 
 export function ipv4AddrClone_clone(ipv4Addr) {
   return { ...ipv4Addr, octets: ipv4Addr.octets.slice() };
@@ -696,7 +696,7 @@ export function socketAddrFromSocketAddrV6_from(sock6) {
   return { TAG: "V6", _0: { ...sock6, ip: { ...sock6.ip, octets: sock6.ip.octets.slice() } } };
 }
 
-export function socketAddrFrom_I__u16__from(pieces, IIntoIpAddr, dropI) {
+export function socketAddrFromTuple2_from(pieces, IIntoIpAddr, dropI) {
   const value = IIntoIpAddr.into(pieces[0]);
   const value$1 = pieces[1];
   if (value.TAG === "V4") {
@@ -716,9 +716,9 @@ export function socketAddrFrom_I__u16__from(pieces, IIntoIpAddr, dropI) {
   };
 }
 
-export function socketAddrFrom_I__u16_(IIntoIpAddr, dropI) {
-  return $traitImpl($socketAddrFrom_I__u16_, [IIntoIpAddr, dropI], () => ({
-    from: (pieces) => socketAddrFrom_I__u16__from(pieces, IIntoIpAddr, dropI),
+export function socketAddrFromTuple2(IIntoIpAddr, dropI) {
+  return $traitImpl($socketAddrFromTuple2, [IIntoIpAddr, dropI], () => ({
+    from: (pieces) => socketAddrFromTuple2_from(pieces, IIntoIpAddr, dropI),
   }));
 }
 //# sourceMappingURL=net.js.map

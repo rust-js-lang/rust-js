@@ -4,6 +4,7 @@ import {
   $advanceBackBy,
   $advanceBy,
   $assertFailed,
+  $cellOf,
   $cleanup,
   $consume,
   $controlFlowTry,
@@ -29,6 +30,7 @@ import {
   $lastSome,
   $lent,
   $live,
+  $madeInTurn,
   $neverShortCircuitTry,
   $next,
   $nextBack,
@@ -40,6 +42,7 @@ import {
   $overflowing,
   $panic,
   $peekableHint,
+  $provided,
   $rem,
   $rev,
   $sink,
@@ -968,6 +971,7 @@ const $cycleClone = new WeakMap();
 const $cycleDebug = new WeakMap();
 const $successorsClone = new WeakMap();
 const $successorsDebug = new WeakMap();
+const $tuple2Extend = new WeakMap();
 const $flattenCompatDebug = new WeakMap();
 
 export function peekableIterator_next(peekable, IIterator = { next: $next }, dropI, dropIItem) {
@@ -12458,34 +12462,36 @@ export function iterator_partition(
         throw error;
       }
       if (tmp) {
-        extend_extendOne(
-          {
-            get value() {
-              return left;
-            },
-            set value(value) {
-              left = value;
-            },
+        const arg = {
+          get value() {
+            return left;
           },
-          x,
+          set value(value) {
+            left = value;
+          },
+        };
+        $provided(
           BExtendSelfItem,
-          dropB,
-          dropSelfItem,
+          "extendOne",
+          extend_extendOne,
+          [arg, x],
+          [arg, x, BExtendSelfItem, dropB, dropSelfItem],
         );
       } else {
-        extend_extendOne(
-          {
-            get value() {
-              return right;
-            },
-            set value(value) {
-              right = value;
-            },
+        const arg = {
+          get value() {
+            return right;
           },
-          x,
+          set value(value) {
+            right = value;
+          },
+        };
+        $provided(
           BExtendSelfItem,
-          dropB,
-          dropSelfItem,
+          "extendOne",
+          extend_extendOne,
+          [arg, x],
+          [arg, x, BExtendSelfItem, dropB, dropSelfItem],
         );
       }
     },
@@ -12522,6 +12528,76 @@ export function iterator_partition(
   return [left, right];
 }
 
+export function iterator_unzip(
+  self,
+  FromADefault,
+  FromAExtendA,
+  FromBDefault,
+  FromBExtendB,
+  dropSelf,
+  dropA,
+  dropB,
+  dropFromA,
+  dropFromB,
+) {
+  let unzipped;
+  try {
+    unzipped = $madeInTurn((made) => [
+      made(FromADefault.default(), dropFromA),
+      FromBDefault.default(),
+    ]);
+  } catch (error) {
+    $cleanup(() => {
+      dropSelf?.(self);
+    }, error);
+    throw error;
+  }
+  try {
+    extendTSpecExtendI_extend(
+      $cellOf(unzipped),
+      Iterator.from(self),
+      tuple2Extend(FromAExtendA, FromBExtendB, dropA, dropB, dropFromA, dropFromB),
+      (value) => {
+        try {
+          dropFromA?.(value[0]);
+        } catch (error) {
+          $cleanup(() => {
+            dropFromB?.(value[1]);
+          }, error);
+          throw error;
+        }
+        dropFromB?.(value[1]);
+      },
+      $givenDrop(dropSelf),
+      (value) => {
+        try {
+          dropA?.(value[0]);
+        } catch (error) {
+          $cleanup(() => {
+            dropB?.(value[1]);
+          }, error);
+          throw error;
+        }
+        dropB?.(value[1]);
+      },
+    );
+  } catch (error) {
+    $cleanup(() => {
+      try {
+        dropFromA?.(unzipped[0]);
+      } catch (error) {
+        $cleanup(() => {
+          dropFromB?.(unzipped[1]);
+        }, error);
+        throw error;
+      }
+      dropFromB?.(unzipped[1]);
+    }, error);
+    throw error;
+  }
+  return unzipped;
+}
+
 export function extend_extendOne(self, item, SelfExtendT, dropSelf, dropT) {
   const option = $some(item);
   SelfExtendT.extend(
@@ -12541,6 +12617,18 @@ export function extend_extendOne(self, item, SelfExtendT, dropSelf, dropT) {
   );
 }
 
+export function extend_extendReserve(self, additional, SelfExtendT, dropSelf, dropT) {}
+
+export function extend_extendOneUnchecked(self, item, SelfExtendT, dropSelf, dropT) {
+  $provided(
+    SelfExtendT,
+    "extendOne",
+    extend_extendOne,
+    [self, item],
+    [self, item, SelfExtendT, dropSelf, dropT],
+  );
+}
+
 export function trustedRandomAccessNoCoerce_size(
   self,
   SelfIterator = { next: $next },
@@ -12548,6 +12636,188 @@ export function trustedRandomAccessNoCoerce_size(
   dropSelfItem,
 ) {
   return $sizeHint(self, SelfIterator)[0];
+}
+
+export function tuple2Extend_extend(
+  self,
+  iter,
+  ExAExtendA,
+  ExBExtendB,
+  dropA,
+  dropB,
+  dropExA,
+  dropExB,
+  dropIter,
+  dropIterIntoIter,
+) {
+  extendTSpecExtendI_extend(
+    $cellOf(self),
+    $intoIter(iter),
+    tuple2Extend(ExAExtendA, ExBExtendB, dropA, dropB, dropExA, dropExB),
+    (value) => {
+      try {
+        dropExA?.(value[0]);
+      } catch (error) {
+        $cleanup(() => {
+          dropExB?.(value[1]);
+        }, error);
+        throw error;
+      }
+      dropExB?.(value[1]);
+    },
+    dropIterIntoIter,
+    (value) => {
+      try {
+        dropA?.(value[0]);
+      } catch (error) {
+        $cleanup(() => {
+          dropB?.(value[1]);
+        }, error);
+        throw error;
+      }
+      dropB?.(value[1]);
+    },
+  );
+}
+
+export function tuple2Extend_extendOne(
+  self,
+  item,
+  ExAExtendA,
+  ExBExtendB,
+  dropA,
+  dropB,
+  dropExA,
+  dropExB,
+) {
+  const arg = {
+    get value() {
+      return self[0];
+    },
+    set value(value) {
+      self[0] = value;
+    },
+  };
+  try {
+    $provided(
+      ExAExtendA,
+      "extendOne",
+      extend_extendOne,
+      [arg, item[0]],
+      [arg, item[0], ExAExtendA, dropExA, dropA],
+    );
+  } catch (error) {
+    $cleanup(() => {
+      dropB?.(item[1]);
+    }, error);
+    throw error;
+  }
+  const arg$1 = {
+    get value() {
+      return self[1];
+    },
+    set value(value) {
+      self[1] = value;
+    },
+  };
+  $provided(
+    ExBExtendB,
+    "extendOne",
+    extend_extendOne,
+    [arg$1, item[1]],
+    [arg$1, item[1], ExBExtendB, dropExB, dropB],
+  );
+}
+
+export function tuple2Extend_extendReserve(
+  self,
+  additional,
+  ExAExtendA,
+  ExBExtendB,
+  dropA,
+  dropB,
+  dropExA,
+  dropExB,
+) {
+  const arg = {
+    get value() {
+      return self[0];
+    },
+    set value(value) {
+      self[0] = value;
+    },
+  };
+  $provided(
+    ExAExtendA,
+    "extendReserve",
+    extend_extendReserve,
+    [arg, additional],
+    [arg, additional, ExAExtendA, dropExA, dropA],
+  );
+  const arg$1 = {
+    get value() {
+      return self[1];
+    },
+    set value(value) {
+      self[1] = value;
+    },
+  };
+  $provided(
+    ExBExtendB,
+    "extendReserve",
+    extend_extendReserve,
+    [arg$1, additional],
+    [arg$1, additional, ExBExtendB, dropExB, dropB],
+  );
+}
+
+export function tuple2Extend_extendOneUnchecked(
+  self,
+  item,
+  ExAExtendA,
+  ExBExtendB,
+  dropA,
+  dropB,
+  dropExA,
+  dropExB,
+) {
+  const arg = {
+    get value() {
+      return self[0];
+    },
+    set value(value) {
+      self[0] = value;
+    },
+  };
+  try {
+    $provided(
+      ExAExtendA,
+      "extendOneUnchecked",
+      extend_extendOneUnchecked,
+      [arg, item[0]],
+      [arg, item[0], ExAExtendA, dropExA, dropA],
+    );
+  } catch (error) {
+    $cleanup(() => {
+      dropB?.(item[1]);
+    }, error);
+    throw error;
+  }
+  const arg$1 = {
+    get value() {
+      return self[1];
+    },
+    set value(value) {
+      self[1] = value;
+    },
+  };
+  $provided(
+    ExBExtendB,
+    "extendOneUnchecked",
+    extend_extendOneUnchecked,
+    [arg$1, item[1]],
+    [arg$1, item[1], ExBExtendB, dropExB, dropB],
+  );
 }
 
 export function repeatN(element, count, TClone, dropT) {
@@ -16175,6 +16445,63 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
   );
 }
 
+export function extendTSpecExtendI_extend(self, iter, ExtendTExtendT, dropExtendT, dropI, dropT) {
+  $held(iter);
+  let lowerBound;
+  try {
+    lowerBound = $sizeHint(iter)[0];
+  } catch (error) {
+    $cleanup(() => {
+      dropI?.(iter);
+    }, error);
+    throw error;
+  }
+  if (lowerBound > 0) {
+    try {
+      $provided(
+        ExtendTExtendT,
+        "extendReserve",
+        extend_extendReserve,
+        [self, lowerBound],
+        [self, lowerBound, ExtendTExtendT, dropExtendT, dropT],
+      );
+    } catch (error) {
+      $cleanup(() => {
+        dropI?.(iter);
+      }, error);
+      throw error;
+    }
+  }
+  try {
+    $consume(
+      Iterator.from(iter),
+      "fold",
+      undefined,
+      (_, x) => {
+        $provided(
+          ExtendTExtendT,
+          "extendOne",
+          extend_extendOne,
+          [self, x],
+          [self, x, ExtendTExtendT, dropExtendT, dropT],
+        );
+      },
+      undefined,
+      () => {},
+    );
+  } catch (error) {
+    $cleanup(() => {
+      if (!iter.ownFold) {
+        dropI?.(iter);
+      }
+    }, error);
+    throw error;
+  }
+  if (!iter.ownFold) {
+    dropI?.(iter);
+  }
+}
+
 export function andThenOrClear$2(opt, f, dropT, dropU, dropFnOnce) {
   if (opt.value == null) {
     const result = undefined;
@@ -17153,6 +17480,76 @@ export function successorsDebug(TDebug, dropT, dropF) {
       return $writingInto(f, successorsDebug_fmt, value, options, TDebug, dropT, dropF);
     },
   }));
+}
+
+export function tuple2Extend(ExAExtendA, ExBExtendB, dropA, dropB, dropExA, dropExB) {
+  return $traitImpl(
+    $tuple2Extend,
+    [ExAExtendA, ExBExtendB, dropA, dropB, dropExA, dropExB],
+    () => ({
+      extend(arg0, iter, IIntoIterInPlace, dropI, dropIIntoIter) {
+        return tuple2Extend_extend(
+          arg0.value,
+          iter,
+          ExAExtendA,
+          ExBExtendB,
+          dropA,
+          dropB,
+          dropExA,
+          dropExB,
+          dropI,
+          dropIIntoIter,
+        );
+      },
+      extendOne(arg0, item) {
+        return tuple2Extend_extendOne(
+          arg0.value,
+          item,
+          ExAExtendA,
+          ExBExtendB,
+          dropA,
+          dropB,
+          dropExA,
+          dropExB,
+        );
+      },
+      extendReserve(arg0, additional) {
+        return tuple2Extend_extendReserve(
+          arg0.value,
+          additional,
+          ExAExtendA,
+          ExBExtendB,
+          dropA,
+          dropB,
+          dropExA,
+          dropExB,
+        );
+      },
+      extendOneUnchecked(arg0, item) {
+        return tuple2Extend_extendOneUnchecked(
+          arg0.value,
+          item,
+          ExAExtendA,
+          ExBExtendB,
+          dropA,
+          dropB,
+          dropExA,
+          dropExB,
+        );
+      },
+      $drop(value) {
+        try {
+          dropExA?.(value[0]);
+        } catch (error) {
+          $cleanup(() => {
+            dropExB?.(value[1]);
+          }, error);
+          throw error;
+        }
+        dropExB?.(value[1]);
+      },
+    }),
+  );
 }
 
 export function flattenCompatDebug(IDebug, UDebug) {

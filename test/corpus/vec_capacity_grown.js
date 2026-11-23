@@ -24,7 +24,9 @@ import {
   $print,
   $rangeNext,
   $repeating,
+  $reserve,
   $resize,
+  $roomFor,
   $roomForHint,
   $strictlyEqual,
   $unwinds,
@@ -106,6 +108,10 @@ function main() {
         () => dropIter?.(it),
       );
       dropIter?.(it);
+    },
+    extendReserve(collection, additional) {
+      $roomFor(collection.value.length + additional, 4);
+      $reserve(collection.value, additional, 4);
     },
   };
   $print(`[${pushes(1, 10, clone, 1).join(", ")}]\n`);

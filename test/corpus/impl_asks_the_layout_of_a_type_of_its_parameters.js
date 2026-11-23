@@ -83,18 +83,18 @@ function vecArbitrary_shrink(vec, AArbitrary) {
   return $iter([v]);
 }
 
-const $_A__B_Arbitrary = new WeakMap();
+const $tuple2Arbitrary = new WeakMap();
 
-export function _A__B_Arbitrary(AArbitrary, BArbitrary) {
-  return $traitImpl($_A__B_Arbitrary, [AArbitrary, BArbitrary], () => ({
+export function tuple2Arbitrary(AArbitrary, BArbitrary) {
+  return $traitImpl($tuple2Arbitrary, [AArbitrary, BArbitrary], () => ({
     Clone: () => ({
       clone: (value) => [AArbitrary.Clone().clone(value[0]), BArbitrary.Clone().clone(value[1])],
     }),
-    arbitrary: (n) => _A__B_Arbitrary_arbitrary(n, AArbitrary, BArbitrary),
+    arbitrary: (n) => tuple2Arbitrary_arbitrary(n, AArbitrary, BArbitrary),
     shrink: (self) => $iter([]),
   }));
 }
-function _A__B_Arbitrary_arbitrary(n, AArbitrary, BArbitrary) {
+function tuple2Arbitrary_arbitrary(n, AArbitrary, BArbitrary) {
   return [AArbitrary.arbitrary(n), BArbitrary.arbitrary((n + 1) >>> 0)];
 }
 
@@ -147,7 +147,7 @@ function bTreeMapArbitrary_arbitrary(
   KVSize,
   KVStableSort,
 ) {
-  const vec = vecArbitrary_arbitrary(n, _A__B_Arbitrary(KArbitrary, VArbitrary), KVSize);
+  const vec = vecArbitrary_arbitrary(n, tuple2Arbitrary(KArbitrary, VArbitrary), KVSize);
   return $treeFromSorted(new KTreeMap(), $iter(vec), KOrd, KVStableSort, KVSize);
 }
 
@@ -171,7 +171,7 @@ function bTreeMapArbitrary_shrink(
     KOrd.cmp,
   );
   return $lent(
-    iterator_map(vecArbitrary_shrink(vec, _A__B_Arbitrary(KArbitrary, VArbitrary)), (v) =>
+    iterator_map(vecArbitrary_shrink(vec, tuple2Arbitrary(KArbitrary, VArbitrary)), (v) =>
       $treeFromSorted(new KTreeMap(), $iter(v), KOrd, KVStableSort, KVSize),
     ),
     "boxedUnsized",
@@ -248,7 +248,7 @@ function hashMapArbitrary_arbitrary(
   KMap,
   KVSize,
 ) {
-  const vec = vecArbitrary_arbitrary(n, _A__B_Arbitrary(KArbitrary, VArbitrary), KVSize);
+  const vec = vecArbitrary_arbitrary(n, tuple2Arbitrary(KArbitrary, VArbitrary), KVSize);
   return new KMap(vec);
 }
 
@@ -273,7 +273,7 @@ function hashMapArbitrary_shrink(
   );
   return $lent(
     iterator_map(
-      vecArbitrary_shrink(vec, _A__B_Arbitrary(KArbitrary, VArbitrary)),
+      vecArbitrary_shrink(vec, tuple2Arbitrary(KArbitrary, VArbitrary)),
       (v) => new KMap(v),
     ),
     "boxedUnsized",
@@ -286,7 +286,7 @@ export function made(n, AArbitrary) {
 
 function main() {
   const VecArbitrary = vecArbitrary(u32Arbitrary, 4);
-  const _u32__u32_Arbitrary = _A__B_Arbitrary(u32Arbitrary, u32Arbitrary);
+  const Tuple2Arbitrary = tuple2Arbitrary(u32Arbitrary, u32Arbitrary);
   const m = made(
     3,
     bTreeMapArbitrary(u32Arbitrary, $intsOrdered, u32Arbitrary, $BTreeMap, 8, "general8"),
@@ -338,7 +338,7 @@ function main() {
           );
         },
       },
-      _u32__u32_Arbitrary,
+      Tuple2Arbitrary,
       { default: () => undefined },
       { clone: (value) => value },
       Map,
@@ -353,7 +353,7 @@ function main() {
   const nested = made(
     2,
     bTreeMapArbitrary(
-      _u32__u32_Arbitrary,
+      Tuple2Arbitrary,
       tupleOrd,
       VecArbitrary,
       $btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap),
@@ -363,7 +363,7 @@ function main() {
   );
   const arg = bTreeMapArbitrary_shrink(
     nested,
-    _u32__u32_Arbitrary,
+    Tuple2Arbitrary,
     tupleOrd,
     VecArbitrary,
     $btreeMap((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]), $KeyMap),

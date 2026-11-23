@@ -12,7 +12,9 @@ import {
   $lazyRange,
   $live,
   $reserveHint,
+  $roomFor,
   $sortedKeys,
+  $textRoomFor,
   $unwinds,
   $unwindsOn,
 } from "@rust-js/std";
@@ -65,6 +67,9 @@ function main() {
       );
       dropIter?.(it);
     },
+    extendReserve(collection, additional) {
+      $roomFor(collection.value.length + additional, 4);
+    },
   };
   const bTreeSetExtend = {
     extend(collection, items, inPlace, dropItems, dropIter) {
@@ -92,6 +97,9 @@ function main() {
       $extendText($reserveHint(items, 1, undefined, collection.value), (piece) => {
         collection.value += piece;
       });
+    },
+    extendReserve(collection, additional) {
+      $textRoomFor(collection.value, additional);
     },
   });
   s = c.value;

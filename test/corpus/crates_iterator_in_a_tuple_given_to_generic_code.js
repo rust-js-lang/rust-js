@@ -20,7 +20,7 @@ function twoDebug_fmt(two) {
   return `Two(${two[0]})`;
 }
 
-function twoFrom_A__u8__from([a, n]) {
+function twoFromTuple2_from([a, n]) {
   return [(($next($intoIter(a)) ?? 0) + n) & 255];
 }
 
@@ -38,21 +38,21 @@ function converted(u, UIntoT) {
 
 function main() {
   console.log(
-    `direct ${twoDebug_fmt(twoFrom_A__u8__from([$iterator([1], countIterator_next), 10]))}`,
+    `direct ${twoDebug_fmt(twoFromTuple2_from([$iterator([1], countIterator_next), 10]))}`,
   );
-  let two = twoFrom_A__u8__from([$iterator([1], countIterator_next), 10]);
+  let two = twoFromTuple2_from([$iterator([1], countIterator_next), 10]);
   console.log(`into ${twoDebug_fmt(two)}`);
   console.log(`generic fn ${pair([$iterator([1], countIterator_next), 10])}`);
   two = converted([[1], 10], {
     into: (value) =>
-      twoFrom_A__u8__from($inPlace(value, [(value) => $iterator(value, countIterator_next), 0])),
+      twoFromTuple2_from($inPlace(value, [(value) => $iterator(value, countIterator_next), 0])),
   });
   console.log(`converted ${twoDebug_fmt(two)}`);
   const held = [[2], 20];
   console.log(`held ${pair($inPlace(held, [(value) => $iterator(value, countIterator_next), 0]))}`);
   two = converted(["Red", 30], {
     into: (value) =>
-      twoFrom_A__u8__from(
+      twoFromTuple2_from(
         $inPlace($inPlace(value, [1, 0]), [(value) => $iterator(value, lightIterator_next), 0]),
       ),
   });

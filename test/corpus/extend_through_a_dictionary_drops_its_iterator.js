@@ -15,7 +15,9 @@ import {
   $panic,
   $rangeInclusiveNext,
   $reserveHint,
+  $roomFor,
   $sortedKeys,
+  $tableRoomFor,
   $unwinds,
   $unwindsOn,
 } from "@rust-js/std";
@@ -144,16 +146,6 @@ function down(c, n, CExtendU32) {
 }
 
 function main() {
-  const extend = {
-    extend(collection, items, inPlace, dropItems, dropIter) {
-      const it = $intoIter(items);
-      $unwinds(
-        () => $extend(collection.value, it),
-        () => dropIter?.(it),
-      );
-      dropIter?.(it);
-    },
-  };
   const linkedListExtend = {
     extend(collection, items, inPlace, dropItems, dropIter) {
       const it = $intoIter(items);
@@ -165,6 +157,19 @@ function main() {
       dropIt?.(it);
     },
   };
+  const extend = {
+    extend(collection, items, inPlace, dropItems, dropIter) {
+      const it = $intoIter(items);
+      $unwinds(
+        () => $extend(collection.value, it),
+        () => dropIter?.(it),
+      );
+      dropIter?.(it);
+    },
+    extendReserve(collection, additional) {
+      $roomFor(collection.value.length + additional, 4);
+    },
+  };
   const hashSetExtend = {
     extend(collection, items, inPlace, dropItems, dropIter) {
       const it = $intoIter(items);
@@ -174,6 +179,14 @@ function main() {
         () => dropIt?.(it),
       );
       dropIt?.(it);
+    },
+    extendReserve(collection, additional) {
+      $tableRoomFor(
+        collection.value.size +
+          (collection.value.size === 0 ? additional : Math.ceil(additional / 2)),
+        4,
+        4,
+      );
     },
   };
   console.log(`vec ${up([], extend).length}`);

@@ -13,6 +13,7 @@ import {
   $memchr,
   $panic,
   $partialEq,
+  $provided,
   $readByte,
   $readerDefaults,
   $sink,
@@ -93,26 +94,28 @@ const $cursorDefault = new WeakMap();
 
 export function linesIterator_next(lines, BBufRead, dropB) {
   let buf = "";
-  const value = bufRead_readLine(
-    {
-      get value() {
-        return lines.buf;
-      },
-      set value(value) {
-        lines.buf = value;
-      },
+  const arg = {
+    get value() {
+      return lines.buf;
     },
-    {
-      get value() {
-        return buf;
-      },
-      set value(value) {
-        buf = value;
-      },
+    set value(value) {
+      lines.buf = value;
     },
+  };
+  const arg$1 = {
+    get value() {
+      return buf;
+    },
+    set value(value) {
+      buf = value;
+    },
+  };
+  const value = $provided(
     BBufRead,
-    BBufRead.Read(),
-    dropB,
+    "readLine",
+    bufRead_readLine,
+    [arg, arg$1],
+    [arg, arg$1, BBufRead, BBufRead.Read(), dropB],
   );
   if (value.TAG === "Ok") {
     if (value._0 !== 0) {
@@ -135,20 +138,20 @@ export function linesIterator_next(lines, BBufRead, dropB) {
 
 export function splitIterator_next(split, BBufRead, dropB) {
   const buf = [];
-  const value = bufRead_readUntil(
-    {
-      get value() {
-        return split.buf;
-      },
-      set value(value) {
-        split.buf = value;
-      },
+  const arg = {
+    get value() {
+      return split.buf;
     },
-    split.delim,
-    buf,
+    set value(value) {
+      split.buf = value;
+    },
+  };
+  const value = $provided(
     BBufRead,
-    BBufRead.Read(),
-    dropB,
+    "readUntil",
+    bufRead_readUntil,
+    [arg, split.delim, buf],
+    [arg, split.delim, buf, BBufRead, BBufRead.Read(), dropB],
   );
   if (value.TAG === "Ok") {
     if (value._0 !== 0) {
@@ -305,20 +308,20 @@ export function chainBufRead_consume(chain, amt, TBufRead, UBufRead, dropT, drop
 export function chainBufRead_readUntil(chain, byte, buf, TBufRead, UBufRead, dropT, dropU) {
   let read = 0;
   if (!chain.doneFirst) {
-    const result = bufRead_readUntil(
-      {
-        get value() {
-          return chain.first;
-        },
-        set value(value) {
-          chain.first = value;
-        },
+    const arg = {
+      get value() {
+        return chain.first;
       },
-      byte,
-      buf,
+      set value(value) {
+        chain.first = value;
+      },
+    };
+    const result = $provided(
       TBufRead,
-      TBufRead.Read(),
-      dropT,
+      "readUntil",
+      bufRead_readUntil,
+      [arg, byte, buf],
+      [arg, byte, buf, TBufRead, TBufRead.Read(), dropT],
     );
     if (result.TAG === "Err") {
       return result;
@@ -335,20 +338,20 @@ export function chainBufRead_readUntil(chain, byte, buf, TBufRead, UBufRead, dro
     }
     chain.doneFirst = true;
   }
-  const result = bufRead_readUntil(
-    {
-      get value() {
-        return chain.second;
-      },
-      set value(value) {
-        chain.second = value;
-      },
+  const arg = {
+    get value() {
+      return chain.second;
     },
-    byte,
-    buf,
+    set value(value) {
+      chain.second = value;
+    },
+  };
+  const result = $provided(
     UBufRead,
-    UBufRead.Read(),
-    dropU,
+    "readUntil",
+    bufRead_readUntil,
+    [arg, byte, buf],
+    [arg, byte, buf, UBufRead, UBufRead.Read(), dropU],
   );
   if (result.TAG === "Err") {
     return result;
@@ -677,6 +680,9 @@ export function chainBufRead(TBufRead, UBufRead, dropT, dropU) {
     },
     consume(chain, amt) {
       return chainBufRead_consume(chain.value, amt, TBufRead, UBufRead, dropT, dropU);
+    },
+    readUntil(chain, byte, buf) {
+      return chainBufRead_readUntil(chain.value, byte, buf, TBufRead, UBufRead, dropT, dropU);
     },
     $drop(chain) {
       try {

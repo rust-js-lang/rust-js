@@ -765,4 +765,12 @@ export const mutations: Mutation[] = [
     replace: "            \"partition\" if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^partition_fills_each_side_as_std_does.rs$"],
   },
+  {
+    name: "unzip-crate-extend-unnamed",
+    breaks: "`unzip()`'s sides' `Extend::extend` isn't named as what std's compiled body calls of the crate's, so the crate's `extend` is never compiled as it's called (#2395)",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
+    find: "                vec![side(a?, from_a?), side(b?, from_b?)]\n",
+    replace: "                vec![]\n",
+    tests: ["test/corpus.test.ts", "-t", "^unzip_fills_each_side_as_std_extends_it.rs$"],
+  },
 ];

@@ -18,7 +18,7 @@ export function entry() {
   main();
 }
 
-function sumFromIterator_u32__u32__fromIter(items) {
+function sumFromIteratorTuple2_fromIter(items) {
   const it = { value: $held($intoIter(items)) };
   let sum = 0;
   while (true) {
@@ -52,11 +52,11 @@ function fixedFromIteratorU32_fromIter(items, N) {
 function main() {
   const slots = fixedFromIteratorU32_fromIter($lazyRange(5, 9), 3)[0].slice();
   console.log(`[${slots.join(", ")}]`);
-  const [sum] = sumFromIterator_u32__u32__fromIter(
+  const [sum] = sumFromIteratorTuple2_fromIter(
     $lazyZip($lazyRange(1, 4), $iterator({ start: 10 }, $rangeFromStep(0, 4294967295))),
   );
   console.log(`sum ${sum}`);
-  const [none] = sumFromIterator_u32__u32__fromIter($iter([]));
+  const [none] = sumFromIteratorTuple2_fromIter($iter([]));
   console.log(`none ${none}`);
 }
 //# sourceMappingURL=case.js.map

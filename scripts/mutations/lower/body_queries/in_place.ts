@@ -190,7 +190,8 @@ export const mutations: Mutation[] = [
       "test/corpus.test.ts",
       "-t",
       "^cycled_reversed_ranges.rs$"
-    ]
+    ],
+    "snapshots": true
   },
   {
     "name": "cloned-apart-part-held",
@@ -591,6 +592,24 @@ export const mutations: Mutation[] = [
     find: "    \"cycle\",\n",
     replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "helper-filled-consumer-holds-its-source",
+    breaks: "an `unzip()` into sides its helper fills is taken for std's compiled body, so what it steps is held as std's structs, `iterator_map(..)` in a variable, where the helper steps the chain made in place (#2395)",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
+    find: "            && (!crate::recognition::is_compiled_std(tcx, callee)\n                || crate::recognition::filled_by_its_helper(tcx, callee, callee_args));\n",
+    replace: "            && !crate::recognition::is_compiled_std(tcx, callee);\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "helper-filled-consumer-holds-its-variable",
+    breaks: "a chain held in a variable that an `unzip()` into `Vec`s steps is held as std's structs, `iterator_map($iter(pairs), f)`, where the helper steps it made in place (#2395)",
+    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
+    find: "            && (!crate::recognition::is_compiled_std(tcx, callee)\n                || crate::recognition::filled_by_its_helper(tcx, callee, callee_args))\n            && callee != size_hint;\n",
+    replace: "            && !crate::recognition::is_compiled_std(tcx, callee)\n            && callee != size_hint;\n",
+    tests: ["test/corpus.test.ts", "-t", "^unzip_of_a_chain_held_in_a_variable.rs$"],
     snapshots: true,
   },
 ];

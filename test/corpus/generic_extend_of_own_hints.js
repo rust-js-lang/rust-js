@@ -12,7 +12,11 @@ import {
   $lazyRange,
   $print,
   $rangeNext,
+  $reserve,
   $reserveHint,
+  $roomFor,
+  $tableRoomFor,
+  $textRoomFor,
   $unwinds,
   iterator_map,
 } from "@rust-js/std";
@@ -79,6 +83,10 @@ function main() {
       );
       dropIter?.(it);
     },
+    extendReserve(collection, additional) {
+      $roomFor(collection.value.length + additional, 4);
+      $reserve(collection.value, additional, 4);
+    },
   };
   const hashSetExtend = {
     extend(collection, items, inPlace, dropItems, dropIter) {
@@ -89,6 +97,14 @@ function main() {
         () => dropIt?.(it),
       );
       dropIt?.(it);
+    },
+    extendReserve(collection, additional) {
+      $tableRoomFor(
+        collection.value.size +
+          (collection.value.size === 0 ? additional : Math.ceil(additional / 2)),
+        4,
+        4,
+      );
     },
   };
   const v = [];
@@ -121,6 +137,9 @@ function main() {
       $extendText($reserveHint(items, 1, undefined, collection.value), (piece) => {
         collection.value += piece;
       });
+    },
+    extendReserve(collection, additional) {
+      $textRoomFor(collection.value, additional);
     },
   });
   text = c.value;

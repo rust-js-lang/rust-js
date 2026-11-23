@@ -33,14 +33,14 @@ function counted(pair, AIterator) {
   return [a, (n + 1) & 255];
 }
 
-const $_A__B_Step = new WeakMap();
+const $tuple2Step = new WeakMap();
 
-function _A__B_Step(AIterator, BIterator) {
-  return $traitImpl($_A__B_Step, [AIterator, BIterator], () => ({
-    step: (self) => _A__B_Step_step(self, AIterator, BIterator),
+function tuple2Step(AIterator, BIterator) {
+  return $traitImpl($tuple2Step, [AIterator, BIterator], () => ({
+    step: (self) => tuple2Step_step(self, AIterator, BIterator),
   }));
 }
-function _A__B_Step_step(self, AIterator, BIterator) {
+function tuple2Step_step(self, AIterator, BIterator) {
   AIterator.next(self[0]);
   BIterator.next(self[1]);
   return self;
@@ -98,7 +98,7 @@ function main() {
   const [light$1, sevens$1] = stepped(
     ["Red", undefined],
     $intoPlace(
-      _A__B_Step({ next: lightIterator_next }, { next: sevensIterator_next }),
+      tuple2Step({ next: lightIterator_next }, { next: sevensIterator_next }),
       { step: [[1, 1]] },
       { step: [1, 1] },
     ),

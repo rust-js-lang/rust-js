@@ -354,6 +354,7 @@ helpers! {
     FromFn,
     Unzip,
     Partition,
+    Provided,
     Sort,
     Apart,
     SortedKeys,
@@ -1009,6 +1010,9 @@ impl Helper {
             Helper::Unzip => include_str!("runtime/unzip.js"),
             // `partition(p)`: those it holds for, and the rest.
             Helper::Partition => include_str!("runtime/partition.js"),
+            // A provided method through a dictionary: the impl's own, or the
+            // trait's default over `Self` (#2414).
+            Helper::Provided => include_str!("runtime/provided.js"),
             // `c.to_digit(radix)`: the digit, or `None`.
             Helper::ToDigit => include_str!("runtime/to_digit.js"),
             // `s.lines()`: without a last empty line, and each without its `\r`.

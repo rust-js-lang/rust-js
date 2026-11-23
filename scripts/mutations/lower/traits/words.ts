@@ -173,4 +173,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^impl_traits_beside_another_of_a_trait_method.rs$"],
     snapshots: true,
   },
+  {
+    name: "tuple-word-its-text",
+    breaks: "a tuple's word is its text, so std's `Extend` of a pair is `_ExA__ExB_Extend_A__B_`, not `tuple2Extend` (#2395)",
+    file: "crates/rust-js-lower/src/traits/words.rs",
+    find: "        ty::Tuple(items) if !items.is_empty() => format!(\"Tuple{}\", items.len()),\n",
+    replace: "",
+    tests: ["test/std-package.test.ts"],
+  },
 ];

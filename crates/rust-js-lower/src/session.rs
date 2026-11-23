@@ -41,6 +41,8 @@ pub struct Caches {
     /// each, not of every impl for each name asked, zerocopy's many (#1298).
     pub impl_names: OnceMap<DefId, String>,
     pub impl_short_names: OnceMap<DefId, String>,
+    /// `overridden_in_reach`'s, of each provided method asked (#2414).
+    pub overridden: OnceMap<DefId, bool>,
     /// The std types whose bodies are compiled into `@rust-js/std`.
     pub compiled_types: OnceCell<IndexSet<DefId>>,
     /// std's bodies compiled into `@rust-js/std`, each found in std.
@@ -263,6 +265,7 @@ fn start_keyed(gcx: usize, flags: Flags, hooks: &'static dyn MirHooks) -> Sessio
             std_paths: OnceMap::default(),
             impl_names: OnceMap::default(),
             impl_short_names: OnceMap::default(),
+            overridden: OnceMap::default(),
             compiled_types: OnceCell::new(),
             compiled: OnceCell::new(),
             js_held: OnceCell::new(),

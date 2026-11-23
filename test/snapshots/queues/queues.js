@@ -46,8 +46,8 @@ export const Stack = {
   },
 };
 
-export const gridIndex_usize__usize_ = { index: gridIndex_usize__usize__index };
-function gridIndex_usize__usize__index(grid, [r, c], location) {
+export const gridIndexTuple2 = { index: gridIndexTuple2_index };
+function gridIndexTuple2_index(grid, [r, c], location) {
   return $index(grid.cells, ((Math.imul(r, grid.w) >>> 0) + c) >>> 0, location);
 }
 
@@ -236,7 +236,7 @@ export function report() {
     w: 3,
     cells: $range(0, 9),
   };
-  out += `${gridIndex_usize__usize__index(g, [1, 2], "examples/queues.rs:195:33")} ${gridIndex_usize__usize__index(g, [2, 0], "examples/queues.rs:195:44")}\n`;
+  out += `${gridIndexTuple2_index(g, [1, 2], "examples/queues.rs:195:33")} ${gridIndexTuple2_index(g, [2, 0], "examples/queues.rs:195:44")}\n`;
   const l = {
     label: "pi",
     value: 3.25,

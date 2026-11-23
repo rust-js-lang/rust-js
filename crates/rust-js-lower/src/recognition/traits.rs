@@ -1021,6 +1021,10 @@ pub(crate) fn in_std_dictionary(tcx: TyCtxt<'_>, id: DefId) -> bool {
         || is_std_method(tcx, id, StdItem::Hash, "hash_slice")
         // A byte source's `read_exact` and the others it writes (#1156).
         || super::io::in_io_dictionary(tcx, id)
+        // One compiled into `@rust-js/std` that an impl in reach writes
+        // itself, which a call on a type parameter may reach, so it's not
+        // the default over `Self`: std's `Vec`'s `extend_reserve` (#2414).
+        || super::is_compiled_std(tcx, id) && super::overridden_in_reach(tcx, id)
 }
 
 /// Which of std's adapter `adapter`'s type arguments are iterators it

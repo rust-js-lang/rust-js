@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-const _A__A_Collect = {
+const tuple2Collect = {
   BufferDefault: () => ({ default: () => [undefined, undefined] }),
   BufferAsRefOptionSlice: () => ({ asRef: (value) => value }),
   BufferAsMutOptionSlice: () => ({ asMut: (cell) => cell }),
@@ -61,21 +61,21 @@ function bufferIterator_next(buffer, TCollect) {
 }
 
 function main() {
-  const words = Buffer.new(["a"], _A__A_Collect);
-  console.log(`${Buffer.held(words, _A__A_Collect)}`);
-  const next = bufferIterator_next(words, _A__A_Collect);
+  const words = Buffer.new(["a"], tuple2Collect);
+  console.log(`${Buffer.held(words, tuple2Collect)}`);
+  const next = bufferIterator_next(words, tuple2Collect);
   console.log(
-    `${next == null ? "None" : `Some(${$debugStr(next)})`} ${Buffer.held(words, _A__A_Collect)}`,
+    `${next == null ? "None" : `Some(${$debugStr(next)})`} ${Buffer.held(words, tuple2Collect)}`,
   );
-  const value = bufferIterator_next(words, _A__A_Collect);
-  const value$1 = bufferIterator_next(words, _A__A_Collect);
+  const value = bufferIterator_next(words, tuple2Collect);
+  const value$1 = bufferIterator_next(words, tuple2Collect);
   console.log(
     `${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
   );
   const numbers = Array.from(
     $iterator(
-      Buffer.new([4, 5, 6], _A__A_Collect),
-      (iterator) => bufferIterator_next(iterator, _A__A_Collect),
+      Buffer.new([4, 5, 6], tuple2Collect),
+      (iterator) => bufferIterator_next(iterator, tuple2Collect),
       true,
     ),
   );

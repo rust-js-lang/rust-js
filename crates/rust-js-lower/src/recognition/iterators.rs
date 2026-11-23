@@ -1278,7 +1278,8 @@ pub(crate) fn fallible_collect<'tcx>(
 /// `FromIterator::from_iter` given the iterator as it is, or of an
 /// `Option` or a `Result` of one, given std's `GenericShunt` of it, which
 /// the runtime's `$tryProcessResults` plays (#1588); of `sum()` or
-/// `product()` into one, its `Sum::sum` or `Product::product`. The trait's
+/// `product()` into one, its `Sum::sum` or `Product::product`; of
+/// `partition()` and `unzip()`, each side's `Extend::extend`. The trait's
 /// method and its arguments, as a call of it names them, of an impl the
 /// crate has (`Instance::try_resolve`): the one answer of whom such a call
 /// gives what it steps, which the callers' carrier reads (#2376). None of
@@ -1318,6 +1319,22 @@ pub(crate) fn crate_impl_called_by<'tcx>(
                     trait_method(tcx, extend, "extend"),
                     tcx.mk_args(&[output.into(), item.into(), some.into()]),
                 )]
+            }
+            // Each side's `extend_one`, its `extend` of a `Some` of its part
+            // of each pair, `FromA`'s and `FromB`'s, as std's compiled body,
+            // the pair's `default_extend`, calls it (#2395).
+            "unzip" => {
+                let extend = super::registry::by_path(tcx, StdCrate::Core, &["iter", "Extend"])?;
+                let option = tcx.adt_def(tcx.get_diagnostic_item(sym::Option)?);
+                let side = |part: Ty<'tcx>, side: Ty<'tcx>| {
+                    let some = Ty::new_adt(tcx, option, tcx.mk_args(&[part.into()]));
+                    (
+                        trait_method(tcx, extend, "extend"),
+                        tcx.mk_args(&[side.into(), part.into(), some.into()]),
+                    )
+                };
+                let [a, b, from_a, from_b] = [1, 2, 3, 4].map(|at| args.types().nth(at));
+                vec![side(a?, from_a?), side(b?, from_b?)]
             }
             _ => return None,
         })

@@ -57,11 +57,8 @@ function oneConvU64_tag(one) {
   return 2;
 }
 
-const oneConv_u8__u32_ = {
-  tag: oneConv_u8__u32__tag,
-  xs: (one) => (80 + oneConv_u8__u32__tag(one)) >>> 0,
-};
-function oneConv_u8__u32__tag(one) {
+const oneConvTuple2 = { tag: oneConvTuple2_tag, xs: (one) => (80 + oneConvTuple2_tag(one)) >>> 0 };
+function oneConvTuple2_tag(one) {
   return 3;
 }
 
@@ -109,9 +106,9 @@ function main() {
       { value: [1], impl: oneConvU64 },
     ]).join(", ")}]`,
   );
-  const boxed = { value: [2], impl: oneConv_u8__u32_ };
+  const boxed = { value: [2], impl: oneConvTuple2 };
   console.log(
-    `${via([[1, 2]], wrapConvU64)} ${via([3], oneConv_u8__u32_)} ${via([4], oneConvU64)} ${boxed.impl.xs(boxed.value)}`,
+    `${via([[1, 2]], wrapConvU64)} ${via([3], oneConvTuple2)} ${via([4], oneConvU64)} ${boxed.impl.xs(boxed.value)}`,
   );
 }
 //# sourceMappingURL=case.js.map

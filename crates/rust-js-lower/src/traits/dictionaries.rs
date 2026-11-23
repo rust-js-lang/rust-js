@@ -8,6 +8,7 @@ mod collecting;
 mod conversions;
 mod declared;
 mod dyn_objects;
+mod extend_entries;
 mod placed;
 mod ref_into_iter;
 mod references;
@@ -27,7 +28,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// what a known one's call is, of its items as they're given, any
     /// iterable, and of the box generic code's `&mut` is (ADR 0180). None of
     /// another type, the crate's, whose impl's dictionary is its own.
-    fn extend_dictionary(&mut self, ty: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+    fn extend_dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Option<Expr>> {
+        let (ty, item) = (tr.self_ty(), tr.args.type_at(1));
         let made_items = self.unspelled("items");
         // Its parameters and the variables it declares, each its own name, of
         // the word it's spelled: declared once, each read a clone.
@@ -125,13 +127,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     drop_iter_param.into(),
                 ];
                 let extend = Expr::arrow(params, body);
-                return Ok(Some(Expr::object(vec![Prop::Field("extend".into(), extend)])));
+                // Its entries of the trait's provided methods std's impl
+                // writes (#2414).
+                let provided = self.extend_reserve_entry(tr, span)?;
+                let props = [Prop::Field("extend".into(), extend)]
+                    .into_iter()
+                    .chain(provided)
+                    .collect();
+                return Ok(Some(Expr::object(props)));
             }
             _ => return Ok(None),
         };
         body.extend(value.map(|value| StmtKind::Expr(value).at(js::Span::NONE)));
         let extend = Expr::arrow(vec![collection_param.into(), made_items.clone().into()], body);
-        Ok(Some(Expr::object(vec![Prop::Field("extend".into(), extend)])))
+        let provided = self.extend_reserve_entry(tr, span)?;
+        let props = [Prop::Field("extend".into(), extend)]
+            .into_iter()
+            .chain(provided)
+            .collect();
+        Ok(Some(Expr::object(props)))
     }
 
     /// `tr`'s dictionary, written where it's asked. Of a type known whole,
@@ -471,7 +485,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A std collection's `Extend`, `{ extend(collection, items) }` (ADR 0445).
         if crate::recognition::is_extend(self.tcx, tr.def_id)
-            && let Some(dictionary) = self.extend_dictionary(ty, tr.args.type_at(1), span)?
+            && let Some(dictionary) = self.extend_dictionary(tr, span)?
         {
             return Ok(dictionary);
         }

@@ -515,57 +515,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let what = format!("`{}` of a `{}`", self.tcx.item_name(id), tr.self_ty());
                 return Err(self.unsupported(span, &what));
             }
-            let mut values = values;
-            let receiver = values.remove(0);
-            // A `&mut self` method its dictionary takes a box for is given the
-            // pair, whose `value` a box's is: a number's impl writes the place
-            // it reads (ADR 0099). One of a trait whose `Self` is an iterator,
-            // `trait Summed: Iterator`'s, takes the value, as generic code holds
-            // it (ADRs 0061, 0511).
-            let by_mut = self.param_is_box(id, 0);
-            // A pair made here of parts read the same, a struct's last field's
-            // `{ value: x.ptr, impl: x.impl }` (ADR 0409), is its parts.
-            let parts = match &receiver.kind {
-                js::ExprKind::Object(props, ..) if !by_mut => match props.as_slice() {
-                    [Prop::Field(held, value), Prop::Field(dictionary, of)]
-                        if held == js::HELD
-                            && dictionary == js::DICTIONARY
-                            && value.reads_same()
-                            && of.reads_same() =>
-                    {
-                        Some((value.clone(), of.clone()))
-                    }
-                    _ => None,
-                },
-                _ => None,
-            };
-            let (this, impl_of) = match parts {
-                Some(parts) => parts,
-                None => {
-                    // The pair is read twice, so one that doesn't read the same,
-                    // made here or with effects, goes in a `const` first. It's
-                    // still first: `operands` put anything before it that needed
-                    // statements in `const`s of its own.
-                    let pair = if !receiver.reads_same() {
-                        self.spill(Role::Receiver, receiver, out)
-                    } else {
-                        receiver
-                    };
-                    let dictionary = Expr::member(pair.clone(), js::DICTIONARY);
-                    (if by_mut { pair } else { Expr::held(pair) }, dictionary)
-                }
-            };
-            let principal = self.dyn_trait_ref(tr.self_ty(), tr.self_ty()).unwrap();
-            let dictionary = self
-                .super_evidence(principal, tr, impl_of)
-                .ok_or_else(|| self.unsupported(span, "this trait object supertrait"))?;
-            values.insert(0, this);
-            // Where it's called, where its declaration tracks its caller; where
-            // only an impl does, none, which its entry has as its definition's,
-            // as rustc's shim gives it, and nothing comes after: a `dyn`'s
-            // method has no type parameters of its own (ADR 0427).
-            let location = tracks_caller(self.tcx, id).then(|| self.caller_location(span));
-            values.extend(self.own_evidence(id, generic_args, location, None, span)?);
+            let (dictionary, values) = self.dyn_entry((id, generic_args), tr, values, span, out)?;
             let called = Expr::call(Expr::member(dictionary, bindings::fn_name(self.tcx, id)), values);
             return Ok(Some(self.fmt_result_value(id, generic_args, called)));
         }
@@ -573,10 +523,56 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `Iterator::peekable`'s, called on a type parameter: the library's
         // function over `Self`, given its dictionary and drops (ADR 0185,
         // ADR 0561).
-        if compiled_provided && (of_dyn || self.resolve_self_instance(id, generic_args)?.is_none()) {
-            let mut values = values;
-            self.crossing_into((id, generic_args), &mut values, Arguments::Formed, span, out)?;
-            values.extend(self.evidence_args(id, generic_args, span)?);
+        // One an impl in reach writes itself, which a call of it may reach:
+        // the dictionary's own where its impl writes one, else the trait's
+        // default over `Self`, Rust's dispatch, `$provided` (#2414). Each
+        // array is built by its own owner: what an entry takes
+        // (`through_dictionary`'s own evidence) and what the default does
+        // (`evidence_args`), after the values both take crossed alike.
+        let overridden = compiled_provided && crate::recognition::overridden_in_reach(self.tcx, id);
+        if overridden && (of_dyn || self.resolve_self_instance(id, generic_args)?.is_none()) {
+            // Each value read twice, once a list, so one that doesn't read the
+            // same goes in a `const` first: each list is names, dictionaries
+            // and drops, building both runs nothing.
+            let values: Vec<Expr> = values
+                .into_iter()
+                .map(|value| match value.reads_same() {
+                    true => value,
+                    false => self.spill(Role::Arg, value, out),
+                })
+                .collect();
+            let (dictionary, entry) = match of_dyn {
+                // A `&mut dyn`'s receiver, read for the default, which takes
+                // `&mut self` as a box of the pair (ADR 0099): the pair, its
+                // held value, as a `dyn`'s call takes it.
+                true => {
+                    let mut given = values.clone();
+                    if self.param_is_box(id, 0) {
+                        given[0] = Expr::held(given[0].clone());
+                    }
+                    self.dyn_entry((id, generic_args), tr, given, span, out)?
+                }
+                false => {
+                    let dictionary = self.dictionary(tr, span)?;
+                    (
+                        dictionary,
+                        self.through_dictionary(id, generic_args, values.clone(), span, out)?,
+                    )
+                }
+            };
+            let default = self.compiled_default_args((id, generic_args), values, span, out)?;
+            let given = vec![
+                dictionary,
+                Expr::str(bindings::fn_name(self.tcx, id)),
+                self.fn_ref(id),
+                Expr::array(entry),
+                Expr::array(default),
+            ];
+            let called = Expr::call_helper("$provided", given);
+            return Ok(Some(self.fmt_result_value(id, generic_args, called)));
+        }
+        if compiled_provided && !overridden && (of_dyn || self.resolve_self_instance(id, generic_args)?.is_none()) {
+            let values = self.compiled_default_args((id, generic_args), values, span, out)?;
             let called = Expr::call(self.fn_ref(id), values);
             return Ok(Some(self.fmt_result_value(id, generic_args, called)));
         }
@@ -781,6 +777,87 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(self.fmt_result_value(id, generic_args, called)));
         }
         Ok(None)
+    }
+
+    /// What a std trait's provided method compiled into `@rust-js/std` is
+    /// given, its function over `Self`: `values` crossed into it, then its
+    /// evidence, `Self`'s dictionary, its own bounds' and its drops (ADR
+    /// 0185, ADR 0561). The one list of the default's call, alone or in
+    /// `$provided` (#2414).
+    fn compiled_default_args(
+        &mut self,
+        (id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
+        mut values: Vec<Expr>,
+        span: Span,
+        out: &mut Vec<js::Stmt>,
+    ) -> R<Vec<Expr>> {
+        self.crossing_into((id, generic_args), &mut values, Arguments::Formed, span, out)?;
+        values.extend(self.evidence_args(id, generic_args, span)?);
+        Ok(values)
+    }
+
+    /// A `dyn`'s method through its dictionary: that dictionary, the pair's
+    /// `impl` or a supertrait's of it, and what its entry is given, the
+    /// receiver as the entry takes it, then `values`' rest and its own
+    /// evidence. The one form of a `dyn`'s call, which `$provided`'s entry of
+    /// a `dyn` is too (#2414).
+    fn dyn_entry(
+        &mut self,
+        (id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
+        tr: ty::TraitRef<'tcx>,
+        values: Vec<Expr>,
+        span: Span,
+        out: &mut Vec<js::Stmt>,
+    ) -> R<(Expr, Vec<Expr>)> {
+        let mut values = values;
+        let receiver = values.remove(0);
+        // A `&mut self` method its dictionary takes a box for is given the
+        // pair, whose `value` a box's is: a number's impl writes the place
+        // it reads (ADR 0099). One of a trait whose `Self` is an iterator,
+        // `trait Summed: Iterator`'s, takes the value, as generic code holds
+        // it (ADRs 0061, 0511).
+        let by_mut = self.param_is_box(id, 0);
+        // A pair made here of parts read the same, a struct's last field's
+        // `{ value: x.ptr, impl: x.impl }` (ADR 0409), is its parts.
+        let parts = match &receiver.kind {
+            js::ExprKind::Object(props, ..) if !by_mut => match props.as_slice() {
+                [Prop::Field(held, value), Prop::Field(dictionary, of)]
+                    if held == js::HELD && dictionary == js::DICTIONARY && value.reads_same() && of.reads_same() =>
+                {
+                    Some((value.clone(), of.clone()))
+                }
+                _ => None,
+            },
+            _ => None,
+        };
+        let (this, impl_of) = match parts {
+            Some(parts) => parts,
+            None => {
+                // The pair is read twice, so one that doesn't read the same,
+                // made here or with effects, goes in a `const` first. It's
+                // still first: `operands` put anything before it that needed
+                // statements in `const`s of its own.
+                let pair = if !receiver.reads_same() {
+                    self.spill(Role::Receiver, receiver, out)
+                } else {
+                    receiver
+                };
+                let dictionary = Expr::member(pair.clone(), js::DICTIONARY);
+                (if by_mut { pair } else { Expr::held(pair) }, dictionary)
+            }
+        };
+        let principal = self.dyn_trait_ref(tr.self_ty(), tr.self_ty()).unwrap();
+        let dictionary = self
+            .super_evidence(principal, tr, impl_of)
+            .ok_or_else(|| self.unsupported(span, "this trait object supertrait"))?;
+        values.insert(0, this);
+        // Where it's called, where its declaration tracks its caller; where
+        // only an impl does, none, which its entry has as its definition's,
+        // as rustc's shim gives it, and nothing comes after: a `dyn`'s
+        // method has no type parameters of its own (ADR 0427).
+        let location = tracks_caller(self.tcx, id).then(|| self.caller_location(span));
+        values.extend(self.own_evidence(id, generic_args, location, None, span)?);
+        Ok((dictionary, values))
     }
 
     /// `values`, the arguments of trait method `id` called through a

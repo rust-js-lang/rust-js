@@ -26,12 +26,12 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
 
-const $_A__A_Tuple = new WeakMap();
+const $tuple2Tuple = new WeakMap();
 
-function _A__A_Tuple(dropA) {
-  return $traitImpl($_A__A_Tuple, [dropA], () => ({
+function tuple2Tuple(dropA) {
+  return $traitImpl($tuple2Tuple, [dropA], () => ({
     taken(it, dropI) {
-      return _A__A_Tuple_taken(it, dropA, dropI);
+      return tuple2Tuple_taken(it, dropA, dropI);
     },
     $drop(value) {
       try {
@@ -47,7 +47,7 @@ function _A__A_Tuple(dropA) {
     $dropItem: dropA,
   }));
 }
-function _A__A_Tuple_taken(it, dropA, dropI) {
+function tuple2Tuple_taken(it, dropA, dropI) {
   const next = $nextSome(it);
   let result;
   if (next != null) {
@@ -180,7 +180,7 @@ function iExt(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
 }
 
 function main() {
-  const _D__D_Tuple = _A__A_Tuple(dDrop_drop);
+  const Tuple2Tuple = tuple2Tuple(dDrop_drop);
   const IntoIterExt = iExt(
     { next: $next, advanceBy: $advanceSlice },
     { inPlace: 4 },
@@ -191,7 +191,7 @@ function main() {
   const pair = IntoIterExt.collectTuple(
     $iter([[1], [2]]),
     { next: $next, advanceBy: $advanceSlice },
-    _D__D_Tuple,
+    Tuple2Tuple,
     (value) => {
       dDrop_drop(value[0]);
       dDrop_drop(value[1]);
@@ -203,7 +203,7 @@ function main() {
     const none = IntoIterExt.collectTuple(
       $iter([[3], [4], [5]]),
       { next: $next, advanceBy: $advanceSlice },
-      _D__D_Tuple,
+      Tuple2Tuple,
       (value) => {
         dDrop_drop(value[0]);
         dDrop_drop(value[1]);

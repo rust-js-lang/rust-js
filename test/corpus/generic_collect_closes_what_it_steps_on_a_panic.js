@@ -68,8 +68,8 @@ function collected(v, CFromIteratorU32) {
   );
 }
 
-function pairs(v, CFromIterator_u32__u32_) {
-  return CFromIterator_u32__u32_.fromIter(
+function pairs(v, CFromIteratorTuple2) {
+  return CFromIteratorTuple2.fromIter(
     $closing($iter(v), $dropEach(dDrop_drop)).map((d) => [key(d), 0]),
     true,
     [4, 4],

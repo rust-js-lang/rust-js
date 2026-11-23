@@ -13,22 +13,22 @@ export function entry() {
   main();
 }
 
-function hintedFromIterator_u32__u32__fromIter(items) {
+function hintedFromIteratorTuple2_fromIter(items) {
   const it = $intoIter(items);
   const [low, high] = $sizeHint(it);
   return [low, high];
 }
 
 function main() {
-  const [low, high] = hintedFromIterator_u32__u32__fromIter(
+  const [low, high] = hintedFromIteratorTuple2_fromIter(
     $lazyZip($lazyRange(1, 4), $iterator({ start: 10 }, $rangeFromStep(0, 4294967295))),
   );
   console.log(`${low} ${high == null ? "None" : `Some(${high})`}`);
-  const [low$1, high$1] = hintedFromIterator_u32__u32__fromIter(
+  const [low$1, high$1] = hintedFromIteratorTuple2_fromIter(
     $lazyZip($iterator({ start: 10 }, $rangeFromStep(0, 4294967295)), $lazyRange(1, 4)),
   );
   console.log(`${low$1} ${high$1 == null ? "None" : `Some(${high$1})`}`);
-  const [low$2, high$2] = hintedFromIterator_u32__u32__fromIter(
+  const [low$2, high$2] = hintedFromIteratorTuple2_fromIter(
     $lazyZip($lazyRange(1, 4), $lazyRange(10, 20)),
   );
   console.log(`${low$2} ${high$2 == null ? "None" : `Some(${high$2})`}`);

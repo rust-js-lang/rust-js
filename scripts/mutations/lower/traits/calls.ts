@@ -40,8 +40,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`d.bump()` of a `&mut dyn Counter` gives the `&mut self` method the pair's `value`, a number with no box to write",
     file: "crates/rust-js-lower/src/traits/calls.rs",
-    find: "                    (if by_mut { pair } else { Expr::held(pair) }, dictionary)\n",
-    replace: "                    (Expr::held(pair), dictionary)\n",
+    find: "                (if by_mut { pair } else { Expr::held(pair) }, dictionary)\n",
+    replace: "                (Expr::held(pair), dictionary)\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_mut"],
   },
   {
@@ -213,8 +213,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a call through a struct's `dyn` field spills its pair, `receiver.impl.to_val(receiver.value)`",
     file: "crates/rust-js-lower/src/traits/calls.rs",
-    find: "            let parts = match &receiver.kind {\n",
-    replace: "            let parts = match &Expr::js_undefined().kind {\n",
+    find: "        let parts = match &receiver.kind {\n",
+    replace: "        let parts = match &Expr::js_undefined().kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_struct_tails.rs$"],
     snapshots: true,
   },
@@ -250,8 +250,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn`'s call of a method only an impl tracks gives the call's location, where rustc's shim gives the impl's definition's",
     file: "crates/rust-js-lower/src/traits/calls.rs",
-    find: "            let location = tracks_caller(self.tcx, id).then(|| self.caller_location(span));\n",
-    replace: "            let location = Some(self.caller_location(span));\n",
+    find: "        let location = tracks_caller(self.tcx, id).then(|| self.caller_location(span));\n",
+    replace: "        let location = Some(self.caller_location(span));\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
   },
   {
@@ -320,8 +320,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut dyn` of a trait that extends `Iterator` is given its pair, which its dictionary steps as the value",
     file: "crates/rust-js-lower/src/traits/calls.rs",
-    find: "            let by_mut = self.param_is_box(id, 0);\n",
-    replace: "            let by_mut = true;\n",
+    find: "        let by_mut = self.param_is_box(id, 0);\n",
+    replace: "        let by_mut = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^extension_trait_params.rs$"],
   },
   {
@@ -650,5 +650,29 @@ export const mutations: Mutation[] = [
     find: "                && !self.given_self_iterator(instance.def_id())\n",
     replace: "                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^partition_into_own_extend_unwinds.rs$"],
+  },
+  {
+    name: "provided-overridden-shortcut",
+    breaks: "a provided method an impl in reach writes is called as std's default over `Self` on a type parameter, so the crate's own `rewind` never runs (#2414)",
+    file: "crates/rust-js-lower/src/traits/calls.rs",
+    find: "        let overridden = compiled_provided && crate::recognition::overridden_in_reach(self.tcx, id);\n",
+    replace: "        let overridden = false && crate::recognition::overridden_in_reach(self.tcx, id);\n",
+    tests: ["test/corpus.test.ts", "-t", "^rewind_a_type_writes_is_its_own.rs$"],
+  },
+  {
+    name: "provided-key-not-its-entry-name",
+    breaks: "`$provided` looks the method up by its Rust name, `read_line`, where its dictionary's entry is named `readLine` by the naming owner, so the crate's own is never found (#2414)",
+    file: "crates/rust-js-lower/src/traits/calls.rs",
+    find: "                Expr::str(bindings::fn_name(self.tcx, id)),\n",
+    replace: "                Expr::str(self.tcx.item_name(id).to_string()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^provided_methods_a_type_writes_are_its_own.rs$"],
+  },
+  {
+    name: "provided-dyn-receiver-its-box",
+    breaks: "a `dyn`'s `$provided` entry is given the box the default takes, so its dictionary is read off the box, `undefined`, and the call throws (#2414)",
+    file: "crates/rust-js-lower/src/traits/calls.rs",
+    find: "                        given[0] = Expr::held(given[0].clone());\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^provided_methods_a_type_writes_are_its_own.rs$"],
   },
 ];

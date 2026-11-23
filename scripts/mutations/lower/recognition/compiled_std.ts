@@ -367,9 +367,17 @@ export const mutations: Mutation[] = [
     breaks:
       "every `partition` is std's compiled body, a `Vec`'s sides too, `iterator_partition(.., vecDefault, vecExtend)` where its helper's `$partition` fills them as std does (#2387)",
     file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
-    find: "    if id == compiled_provided_method(tcx, \"Iterator\", \"partition\")\n",
-    replace: "    if false && id == compiled_provided_method(tcx, \"Iterator\", \"partition\")\n",
+    find: "        _ if id == compiled_provided_method(tcx, \"Iterator\", \"partition\") => args.types().nth(1).is_some_and(filled),\n",
+    replace: "        _ if false && id == compiled_provided_method(tcx, \"Iterator\", \"partition\") => args.types().nth(1).is_some_and(filled),\n",
     tests: ["test/corpus.test.ts", "-t", "^consumers_step_each.rs$"],
     snapshots: true,
+  },
+  {
+    name: "unzip-helper-of-mixed-sides",
+    breaks: "`unzip()` into a crate's `Extend` beside a `Vec` is the helper's, whose arrays never call the crate's `extend` (#2395)",
+    file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
+    find: "        _ if id == compiled_provided_method(tcx, \"Iterator\", \"unzip\") => args.types().skip(3).all(filled),\n",
+    replace: "        _ if id == compiled_provided_method(tcx, \"Iterator\", \"unzip\") => args.types().skip(3).any(filled),\n",
+    tests: ["test/corpus.test.ts", "-t", "^unzip_fills_each_side_as_std_extends_it.rs$"],
   },
 ];

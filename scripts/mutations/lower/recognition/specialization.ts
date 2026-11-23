@@ -226,4 +226,12 @@ export const mutations: Mutation[] = [
     replace: "            .chain(None::<&Vec<DefId>>.into_iter().flatten())\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "observably-default-row-unread",
+    breaks: "core's `default_extend::SpecExtend`, which `unzip()`'s and a tuple's `extend` reach, isn't taken for its default, so std's bodies don't compile (#2395)",
+    file: "crates/rust-js-lower/src/recognition/specialization.rs",
+    find: "    OBSERVABLY_DEFAULT.iter().find(|row| row.path == path)\n",
+    replace: "    OBSERVABLY_DEFAULT.iter().find(|row| row.path == path && false)\n",
+    tests: ["test/std-package.test.ts"],
+  },
 ];

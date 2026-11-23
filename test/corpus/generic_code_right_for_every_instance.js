@@ -22,6 +22,8 @@ import {
   $mapEnds,
   $next,
   $rangeNext,
+  $reserve,
+  $roomFor,
   $sortedKeys,
   $splitAtMut,
   $stringPanic,
@@ -104,6 +106,10 @@ function main() {
       );
       dropIter?.(it);
     },
+    extendReserve(collection, additional) {
+      $roomFor(collection.value.length + additional, 4);
+      $reserve(collection.value, additional, 4);
+    },
   };
   const v = [1, 2, 3];
   const value = twice($iter(v), { next: $next }, iterClone);
@@ -178,6 +184,10 @@ function main() {
         () => dropIter?.(it),
       );
       dropIter?.(it);
+    },
+    extendReserve(collection, additional) {
+      $roomFor(collection.value.length + additional, 4);
+      $reserve(collection.value, additional, 4);
     },
   });
   console.log(`${q.length} ${$capacity(q, 4) >= 2}`);

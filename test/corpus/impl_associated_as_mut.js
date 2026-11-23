@@ -4,17 +4,17 @@ export function entry() {
   main();
 }
 
-const _u8__u8__u8_Collect = {
+const tuple3Collect = {
   BufferAsMutOptionSlice: () => ({ asMut: (cell) => cell }),
   BufferDefault: () => ({ default: () => [undefined, undefined] }),
   BufferDebug: () => ({
     fmt: (value) =>
       `[${value.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}]`,
   }),
-  fill: (buf) => _u8__u8__u8_Collect_fill(buf.value),
+  fill: (buf) => tuple3Collect_fill(buf.value),
 };
 
-function _u8__u8__u8_Collect_fill(buf) {
+function tuple3Collect_fill(buf) {
   const s = buf;
   if (s.length !== 0) {
     s[0] = 1;
@@ -31,12 +31,12 @@ function run(TCollect) {
 
 function main() {
   console.log(
-    `[${run(_u8__u8__u8_Collect)
+    `[${run(tuple3Collect)
       .map((item) => (item == null ? "None" : `Some(${item})`))
       .join(", ")}]`,
   );
   const direct = [undefined, undefined];
-  _u8__u8__u8_Collect_fill(direct);
+  tuple3Collect_fill(direct);
   console.log(`[${direct.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

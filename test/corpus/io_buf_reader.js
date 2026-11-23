@@ -16,6 +16,7 @@ import {
   $iterator,
   $mutReader,
   $part,
+  $provided,
   $readerDefaults,
   $repeatReader,
   $roomFor,
@@ -69,7 +70,13 @@ function total(r, RRead) {
 function firstLine(r, BBufRead) {
   let line = "";
   const buf = { value: line };
-  const readLine = bufRead_readLine(r, buf, BBufRead, BBufRead.Read());
+  const readLine = $provided(
+    BBufRead,
+    "readLine",
+    bufRead_readLine,
+    [r, buf],
+    [r, buf, BBufRead, BBufRead.Read()],
+  );
   line = buf.value;
   $unwrapOk(readLine, "test/corpus/io_buf_reader.rs:27:28", undefined, $ioErrorDebug);
   return line;

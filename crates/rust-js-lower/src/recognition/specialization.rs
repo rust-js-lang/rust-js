@@ -880,6 +880,47 @@ const OPTIMIZING_BY_TYPE: &[&str] = &[
     "SpecReadByte",
 ];
 
+/// A private specialization of std's whose specializing impls are, by what
+/// they do, its default: each row its trait's path, the one bound the
+/// specializing impls add, where std's source of it is, and why it's so,
+/// read from that source. `optimized_default` takes the selected impl of
+/// a row's trait, blanket impls too, which `OPTIMIZING`'s adapters' aren't.
+/// test/std-specializations.test.ts pins each row's source by its digest,
+/// so a std that changes it fails there until the row's reason is read
+/// again and the digest moved (#2395).
+pub(crate) struct ObservablyDefault {
+    pub(crate) path: &'static str,
+    pub(crate) by: &'static str,
+    /// The source, in rust-src's `library/`, and the item in it.
+    pub(crate) file: &'static str,
+    pub(crate) item: &'static str,
+    /// The SHA-256 of the item's text, its whitespace runs made one space.
+    pub(crate) digest: &'static str,
+    pub(crate) why: &'static str,
+}
+
+pub(crate) const OBSERVABLY_DEFAULT: &[ObservablyDefault] = &[ObservablyDefault {
+    path: "core::iter::traits::collect::default_extend::SpecExtend",
+    by: "TrustedLen",
+    file: "core/src/iter/traits/collect.rs",
+    item: "fn default_extend",
+    digest: "72cd2a396fe2e2bf5e001547ddb36df50f87d80816ee39f0454f00ae8754fe78",
+    why: "`default_extend`, a tuple's `extend`, `unzip()`'s: both impls ask `size_hint()` once, \
+          `extend_reserve` its lower bound where it's above 0, then give each item to the \
+          collection; the `TrustedLen` one gives it by `extend_one_unchecked` where the hint \
+          has an upper bound, whose default is `extend_one` and which no stable crate can \
+          override, and std's own skip the room `extend_reserve` checked (#2395)",
+}];
+
+/// The `OBSERVABLY_DEFAULT` row of `trait_id`, std's trait of its path.
+fn observably_default_row(tcx: TyCtxt<'_>, trait_id: DefId) -> Option<&'static ObservablyDefault> {
+    if !super::is_std_crate(tcx, trait_id) {
+        return None;
+    }
+    let path = tcx.def_path_str(trait_id);
+    OBSERVABLY_DEFAULT.iter().find(|row| row.path == path)
+}
+
 /// `callee`, a trait's method, called with `args` in `typing_env`, where
 /// rustc resolves it to no one impl as a more specific impl may specialize
 /// the one it selects: the selected impl's method, and its arguments, where
@@ -920,6 +961,24 @@ pub(crate) fn optimized_default<'tcx>(
     let specializing: Vec<DefId> = (tcx.all_impls(trait_id))
         .filter(|&other| other != impl_id && tcx.specializes((other, impl_id)))
         .collect();
+    // A row's, of any self type, where each impl that specializes it adds
+    // the row's bound alone.
+    if let Some(row) = observably_default_row(tcx, trait_id) {
+        let adds_its_bound = |other: DefId| {
+            bounds(other)
+                .into_iter()
+                .all(|bound| general.contains(&bound) || tcx.item_name(bound).as_str() == row.by)
+        };
+        // A row that no longer holds of the std it's compiled against is
+        // rust-js's own error: its reason is to be read again (#2395).
+        if specializing.is_empty() || !specializing.iter().all(|&other| adds_its_bound(other)) {
+            panic!(
+                "rust-js internal error: std's `{}` no longer specializes on `{}` alone, as `OBSERVABLY_DEFAULT`'s row says: read `{}` in {} again (its digest {}), whose reason was: {}",
+                row.path, row.by, row.item, row.file, row.digest, row.why
+            );
+        }
+        return Some((method, selected_args()));
+    }
     // Of the same type, apart by a bound alone: not `ConstSizeIntoIterator`'s
     // impl for `[T; N]`, which specializes the one for any `T` by its type,
     // and answers otherwise.

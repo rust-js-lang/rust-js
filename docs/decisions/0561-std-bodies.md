@@ -799,3 +799,46 @@ drop against native Rust), `lowering-collections.test.ts`' refusals of
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
 Rust's.
 
+
+## Amendment: `unzip()`'s own body, a tuple's `Extend`, and a specialization taken for its default (2026-11-24, #2395, #2413)
+
+`unzip()` into a side its helper doesn't fill as std does, a crate's
+`Extend`, a type parameter's, a set of what has a destructor, is std's own
+compiled body, as `partition()`'s is (`compiled_instance`'s gate, both
+sides `side_filled_by_helper` or not). Its type-parameter side had been
+the helper's array, which never called the impl a caller gave (#2395).
+
+std's `unzip` is `(FromA, FromB)::extend(self)`, `default_extend`, so two
+more of std are compiled:
+- **std's impls of a trait for tuples**, `COMPILED_STD_TUPLES` (trait,
+  arity), every method of each: `("Extend", 2)` now. A crate's own `extend`
+  of a pair of collections, refused before, compiles (#2413). A tuple's
+  word is `Tuple{n}`, and a trait argument that's a tuple of the impl's
+  type parameters alone adds none: `tuple2Extend`, `tuple2Extend_extend`.
+- **core's `default_extend::SpecExtend`**, a private trait std specializes
+  on `TrustedLen`, which rustc leaves unresolved in generic code. It's
+  `OBSERVABLY_DEFAULT`'s row (recognition/specialization.rs), so
+  `optimized_default` takes its general impl, a blanket one: both impls ask
+  `size_hint()` once, `extend_reserve` its lower bound, then give each item;
+  the `TrustedLen` one by `extend_one_unchecked`, whose default is
+  `extend_one` and which no stable crate can write. Each row names its
+  source in rust-src, the item and its SHA-256; test/std-specializations.test.ts
+  fails when std's source changes, and a row whose impls no longer add its
+  bound alone is rust-js's internal error naming its source and reason.
+  Corpus `extend_reserve_of_sides_generic_code_fills` runs both paths
+  natively, against JS's default one, capacities included.
+- `Extend`'s `extend_reserve` and `extend_one_unchecked` defaults join
+  `COMPILED_STD_PROVIDED`, which std's impls write and ADR 1191 dispatches.
+
+Corpus `unzip_fills_each_side_as_std_extends_it` (a crate's `Extend`, a
+type parameter's `HashSet` and `String`, a set of what has a destructor,
+and a pair's `extend`, directly and through `C: Extend<(u32, char)>`).
+What steps a `partition()`'s or an `unzip()`'s source in place asks the
+one gate too, `filled_by_its_helper` (`compiled_instance`'s), not whether
+the method is compiled at all: a chain given to one its helper fills,
+or held in a variable it steps, is made in place, as the helper steps a JS
+iterator (corpus `unzip_of_a_chain_held_in_a_variable`; #2398 for these two).
+
+Mutations: `helper-filled-consumer-holds-its-source`, `helper-filled-consumer-holds-its-variable`, `unzip-helper-of-mixed-sides`, `observably-default-row-unread`,
+`unzip-crate-extend-unnamed`, `tuple-word-its-text`; `partition-param-side-refused`
+is gone with the refusal it mutated.

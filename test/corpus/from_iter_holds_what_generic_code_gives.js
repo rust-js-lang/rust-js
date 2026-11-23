@@ -23,11 +23,11 @@ function countIterator_next(count) {
   return count.n < 2 ? value() : undefined;
 }
 
-export const sumFromIterator_u32__u32_ = {
+export const sumFromIteratorTuple2 = {
   fromIter: (items, IIntoIterTrustedLen, IIntoIterInPlace, dropI, dropIIntoIter) =>
-    sumFromIterator_u32__u32__fromIter(items, dropI, dropIIntoIter),
+    sumFromIteratorTuple2_fromIter(items, dropI, dropIIntoIter),
 };
-function sumFromIterator_u32__u32__fromIter(items, dropI, dropIIntoIter) {
+function sumFromIteratorTuple2_fromIter(items, dropI, dropIIntoIter) {
   const it = $held($intoIter(items));
   let sum = 0;
   while (true) {
@@ -87,7 +87,7 @@ function main() {
         console.log(`drop ${count._loud[0]}`);
       },
     ),
-    sumFromIterator_u32__u32_,
+    sumFromIteratorTuple2,
     false,
     undefined,
     (zip) => {
@@ -104,7 +104,7 @@ function main() {
         console.log(`drop ${count._loud[0]}`);
       },
     ),
-    sumFromIterator_u32__u32_,
+    sumFromIteratorTuple2,
     false,
     undefined,
     (map) => {

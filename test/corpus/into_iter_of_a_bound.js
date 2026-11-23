@@ -54,7 +54,7 @@ export function rest(j) {
   }
 }
 
-function pairFrom_A__B__from([a, b], AIntoIterator, BIntoIterator) {
+function pairFrom_from([a, b], AIntoIterator, BIntoIterator) {
   return { t: [AIntoIterator.intoIter(a), BIntoIterator.intoIter(b)] };
 }
 
@@ -82,7 +82,7 @@ function main() {
   console.log(`[${rest([]).join(", ")}]`);
   const pairs = Array.from(
     $iterator(
-      pairFrom_A__B__from([[1, 2, 3], "ab"[Symbol.iterator]()], vecIntoIterator, {
+      pairFrom_from([[1, 2, 3], "ab"[Symbol.iterator]()], vecIntoIterator, {
         intoIter: (items) => items,
         IntoIterIterator: () => ({ next: $next }),
       }),
@@ -97,7 +97,7 @@ function main() {
           [4, 5],
           ["x", "y", "z"],
         ],
-        { from: (value) => pairFrom_A__B__from(value, vecIntoIterator, vecIntoIterator) },
+        { from: (value) => pairFrom_from(value, vecIntoIterator, vecIntoIterator) },
       ),
       (iterator) => pairIterator_next(iterator, { next: $next }, { next: $next }),
     ),

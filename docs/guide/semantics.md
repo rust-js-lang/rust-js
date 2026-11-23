@@ -2097,6 +2097,18 @@ What JS sees of a crate:
 - **A generic function takes its trait dictionaries after its arguments,**
   `show(t, pointDisplay)`; a `dyn Trait` is `{ value, impl }`
   ([0049](../decisions/0049-traits-and-generics.md)).
+- **A provided method an impl writes itself is that impl's, through
+  generic code and a `dyn` too,** as Rust's dispatch picks: where any impl
+  rustc loads writes its own, a std trait's provided method compiled into
+  `@rust-js/std` is `$provided(RBufRead, "readLine", bufRead_readLine,
+  [r, line], [r, line, RBufRead, RBufRead.Read()])`, the dictionary's own
+  where its impl writes one, else std's default over `Self`; where none
+  does, the default itself. A crate's own `read_line` or `rewind` runs as
+  it's written, and a `Vec` side generic code's `unzip()` fills reserves
+  by its own `reserve`, `extendReserve`
+  ([1191](../decisions/1191-a-provided-method-an-impl-writes-is-its-own.md), #2414).
+  An `Iterator`'s provided method a crate's iterator writes, its own
+  `partition`, isn't yet: generic code runs std's (#2414).
 - **A `dyn Debug` stored or passed is `{ value, impl }` too,** shown as
   `d.impl.fmt(d.value)`, or `d.impl.fmt(d.value, { alternate: true })` for
   `{:#?}`, so its `fmt` runs each time it's shown, as Rust's does. One

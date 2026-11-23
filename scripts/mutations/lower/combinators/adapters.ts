@@ -448,12 +448,4 @@ export const mutations: Mutation[] = [
     replace: "                parts\n",
     tests: ["test/corpus.test.ts", "-t", "^partition_into_sets_keeps_one_of_each\\.rs$"],
   },
-  {
-    name: "partition-param-side-refused",
-    breaks: "a `partition` or an `unzip` whose side is a type parameter, `either`'s forwarding `partition::<B, F>`, is refused, and `either` with it, and `itertools`, which depends on it (#2387)",
-    file: "crates/rust-js-lower/src/combinators/adapters.rs",
-    find: "                || crate::generic_facts::is_type_parameter(side)\n",
-    replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "partition's is std's own body"],
-  },
 ];

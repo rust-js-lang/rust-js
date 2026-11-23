@@ -61,7 +61,7 @@ function consume(it, dropIterator) {
   dropIterator?.(it);
 }
 
-function sumFromIterator_u32__u32__fromIter(items, dropI, dropIIntoIter) {
+function sumFromIteratorTuple2_fromIter(items, dropI, dropIIntoIter) {
   const it = $held($intoIter(items));
   let sum = 0;
   while (true) {
@@ -304,7 +304,7 @@ function main() {
     const result = Array.from($roomForHint(iter, 8, false));
     iter.return();
     console.log(`[${result.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-    const [sum] = sumFromIterator_u32__u32__fromIter(
+    const [sum] = sumFromIteratorTuple2_fromIter(
       iterator_zip(
         count("from_iter"),
         { start: 50 },

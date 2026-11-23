@@ -335,7 +335,7 @@ pub(super) fn in_place_adapters<'tcx>(
         let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
             continue;
         };
-        let ty::FnDef(callee, _) = *thir[fun].ty.kind() else {
+        let Some((callee, callee_args)) = crate::fn_def(thir[fun].ty) else {
             continue;
         };
         for (index, &arg) in args.iter().enumerate() {
@@ -360,7 +360,7 @@ pub(super) fn in_place_adapters<'tcx>(
                 && !held_to_clone
                 && (!crate::recognition::folds_apart(tcx, thir[arg].ty) || from_its_back(callee))
             {
-                given.push((arg, e, (callee, thir[e].ty), index, (maker, thir[arg].ty)));
+                given.push((arg, e, (callee, callee_args, thir[e].ty), index, (maker, thir[arg].ty)));
             }
         }
     }
@@ -463,7 +463,7 @@ pub(super) fn in_place_adapters<'tcx>(
         ExprKind::Call { fn_span, .. } => super::each_call_at(thir, fn_span, |call| found.contains(&call)),
         _ => found.contains(&at),
     };
-    let steps_as_js = |(callee, called): (DefId, ty::Ty<'tcx>),
+    let steps_as_js = |(callee, callee_args, called): (DefId, ty::GenericArgsRef<'tcx>, ty::Ty<'tcx>),
                        index: usize,
                        in_place: &IndexSet<ExprId>,
                        at: ExprId,
@@ -500,7 +500,12 @@ pub(super) fn in_place_adapters<'tcx>(
         if callee == into_iter && !for_loop {
             return false;
         }
-        let std = crate::recognition::is_std_crate(tcx, callee) && !crate::recognition::is_compiled_std(tcx, callee);
+        // std's own, but one compiled; and of those, a `partition()` or an
+        // `unzip()` into sides its helper fills, which steps its source as a
+        // JS iterator (`filled_by_its_helper`, #2395).
+        let std = crate::recognition::is_std_crate(tcx, callee)
+            && (!crate::recognition::is_compiled_std(tcx, callee)
+                || crate::recognition::filled_by_its_helper(tcx, callee, callee_args));
         // What it's given for, a type parameter bound by `Iterator` or
         // `IntoIterator`, which steps it, `filter`'s `Self`, `zip`'s `U`,
         // `next_back()`'s and `len()`'s too: not one that holds it,
@@ -540,13 +545,14 @@ pub(super) fn in_place_adapters<'tcx>(
         let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
             continue;
         };
-        let ty::FnDef(callee, _) = *thir[fun].ty.kind() else {
+        let Some((callee, callee_args)) = crate::fn_def(thir[fun].ty) else {
             continue;
         };
         let by_iterator = tcx
             .trait_of_assoc(callee)
             .is_some_and(|tr| iterator_traits.contains(&tr))
-            && !crate::recognition::is_compiled_std(tcx, callee)
+            && (!crate::recognition::is_compiled_std(tcx, callee)
+                || crate::recognition::filled_by_its_helper(tcx, callee, callee_args))
             && callee != size_hint;
         let by_ref = by_iterator && crate::recognition::is_by_ref(tcx, callee);
         for &arg in args.iter() {

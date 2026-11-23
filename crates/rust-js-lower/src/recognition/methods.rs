@@ -462,9 +462,9 @@ pub fn keeps_each(name: &str) -> bool {
 /// helper gives it; a map or a set, the empty one extended by it after, of
 /// items with no destructor, as std drops a duplicate of one as it fills
 /// each. Any other, a type parameter's or the crate's own `Extend`, is
-/// std's own body's to fill, `partition`'s compiled into `@rust-js/std`,
-/// which calls each side's `Default` and `Extend` as std does (#2378);
-/// `unzip`'s isn't yet (#2395).
+/// std's own body's to fill, `partition`'s and `unzip`'s compiled into
+/// `@rust-js/std`, which call each side's `Default` and `Extend` as std
+/// does (#2378, #2395).
 pub(crate) fn side_filled_by_helper<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, side: Ty<'tcx>) -> bool {
     let no_drops = |side: Ty<'tcx>| match side.kind() {
         ty::Adt(_, args) => args.types().all(|item| !item.needs_drop(tcx, typing_env)),

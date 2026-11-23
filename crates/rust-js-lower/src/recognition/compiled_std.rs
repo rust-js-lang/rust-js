@@ -334,10 +334,18 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
     // std does, std's own, given each side's `Default` and `Extend` (#2387,
     // #2378).
     ("Iterator", "partition"),
+    ("Iterator", "unzip"),
     ("Extend", "extend_one"),
+    ("Extend", "extend_reserve"),
+    ("Extend", "extend_one_unchecked"),
     // What std's zip by index asks the length of its sides by (ADR 0975).
     ("TrustedRandomAccessNoCoerce", "size"),
 ];
+
+/// std's impls of a trait for tuples compiled, each by its trait and the
+/// tuple's arity, every method of it: `Extend`'s of a pair, `(ExA, ExB)`'s,
+/// which `unzip()` extends by `default_extend` (#2395, #2413).
+const COMPILED_STD_TUPLES: &[(&str, usize)] = &[("Extend", 2)];
 
 /// `io`'s iterators compiled, as `COMPILED_STD`'s are, each `alloc::io`'s
 /// (#1156): what `BufRead::lines` and `split` make; and its readers made of
@@ -747,6 +755,21 @@ pub(super) fn compiled_for<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
 /// `compiled_std`'s, and, of an impl's method of std's adapter, of a type
 /// compiled for this build (`compiled_for`). The one answer of where a call
 /// goes, its instance's, as `is_compiled_std` is of a body's.
+/// Whether a call of `id`, std's `partition` or `unzip`, of `args`, fills
+/// its sides by its helper, `$partition` or `$unzip`, as std does, where
+/// each is one the helper fills (`side_filled_by_helper`, #2387, #2395):
+/// not std's compiled body, though `id` is compiled. The one answer of which
+/// form such a call is, which `compiled_instance` and what steps its source
+/// in place (`body_queries/in_place.rs`) ask.
+pub(crate) fn filled_by_its_helper<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    let filled = |side: ty::Ty<'tcx>| super::side_filled_by_helper(tcx, ty::TypingEnv::fully_monomorphized(), side);
+    match () {
+        _ if id == compiled_provided_method(tcx, "Iterator", "partition") => args.types().nth(1).is_some_and(filled),
+        _ if id == compiled_provided_method(tcx, "Iterator", "unzip") => args.types().skip(3).all(filled),
+        _ => false,
+    }
+}
+
 pub(crate) fn compiled_instance<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
     // A maker of `HELD_COMPILED`'s adapters, `filter`, of the type it makes.
     let maker = (HELD_COMPILED.iter()).any(|&(_, method, _)| compiled_provided_method(tcx, "Iterator", method) == id);
@@ -759,14 +782,7 @@ pub(crate) fn compiled_instance<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::Ge
             .output();
         return is_compiled_std(tcx, id) && compiled_for(tcx, made);
     }
-    // `partition` of sides its helper fills as std does, the helper's, as
-    // the lowering makes them (`side_filled_by_helper`, #2387).
-    if id == compiled_provided_method(tcx, "Iterator", "partition")
-        && args
-            .types()
-            .nth(1)
-            .is_some_and(|side| super::side_filled_by_helper(tcx, ty::TypingEnv::fully_monomorphized(), side))
-    {
+    if filled_by_its_helper(tcx, id, args) {
         return false;
     }
     is_compiled_std(tcx, id)
@@ -904,6 +920,8 @@ fn walk(tcx: TyCtxt<'_>, called: &dyn Fn(StdPath) -> bool) -> rust_js_program::c
     // `io`'s traits' provided methods (#1156): each a function over `Self`,
     // given its dictionary, as `Iterator`'s are.
     found.extend(&rows.io_provided);
+    // Std's impls of a trait for tuples, each method (#2395).
+    found.extend(&rows.tuples);
     for &(id, makes) in &rows.fns {
         if makes.is_none_or(&called) {
             found.insert(id);

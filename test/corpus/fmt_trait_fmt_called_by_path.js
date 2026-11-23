@@ -61,8 +61,8 @@ function hexfU8LowerHex_fmt(hexf, options) {
   return `0x${hexf[0].toString(16).padStart(2, "0")}`;
 }
 
-export const hexf_u8__u8_LowerHex = { fmt: hexf_u8__u8_LowerHex_fmt };
-function hexf_u8__u8_LowerHex_fmt(hexf, options) {
+export const hexfTuple2LowerHex = { fmt: hexfTuple2LowerHex_fmt };
+function hexfTuple2LowerHex_fmt(hexf, options) {
   let f = "";
   const value = [hexf[0][0]];
   f += "(";
@@ -149,7 +149,7 @@ function main() {
   try {
     text$1 += hexfDebug_fmt([10], undefined, hexfU8LowerHex);
     text$1 += " ";
-    text$1 += hexfDebug_fmt([[1, 255]], undefined, hexf_u8__u8_LowerHex);
+    text$1 += hexfDebug_fmt([[1, 255]], undefined, hexfTuple2LowerHex);
     text$1 += "\n";
   } catch (error) {
     $fmtPrintFailed(error, text$1, false);

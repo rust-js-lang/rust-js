@@ -722,25 +722,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as std does, `side_filled_by_helper`'s, the one rule of the two forms:
     /// the helper's arrays, a map's or a set's rebuilt (`filled_sides`), where
     /// they're std's, and std's own compiled body, given each side's
-    /// `Default` and `Extend`, otherwise, which classification leaves
-    /// `partition` to (#2387, #2378). Of `unzip`, whose std body isn't
-    /// compiled yet (#2395): a type parameter's side the array as it was,
-    /// as refusing it refused `either`'s forwarding `unzip`, and another,
-    /// a crate's own `Extend` or a map or a set of what has a destructor,
-    /// refused.
+    /// `Default` and `Extend`, otherwise, where classification sends any
+    /// other side, a type parameter's or the crate's own `Extend`
+    /// (`compiled_instance`, #2387, #2378, #2395). One that reaches the
+    /// helper otherwise is rust-js's own error.
     fn fillable_sides(&self, op: &str, sides: &[Ty<'tcx>], span: Span) -> R<()> {
-        for &side in sides {
-            if crate::recognition::side_filled_by_helper(self.tcx, self.typing_env, side)
-                || crate::generic_facts::is_type_parameter(side)
-            {
-                continue;
-            }
-            let what = format!(
-                "`{op}` into what isn't a `Vec`, or a map or a set of what has no destructor, a crate's own `Extend` (#2395)"
-            );
-            return Err(self.unsupported(span, &what));
+        match sides
+            .iter()
+            .find(|&&side| !crate::recognition::side_filled_by_helper(self.tcx, self.typing_env, side))
+        {
+            Some(side) => Err(self.unsupported(
+                span,
+                &format!(
+                    "`{op}` into a `{side}` by its helper, whose sides std's compiled body fills (rust-js's own error)"
+                ),
+            )),
+            None => Ok(()),
         }
-        Ok(())
     }
 
     /// `filled`, the arrays `$partition` or `$unzip` gives each side, made

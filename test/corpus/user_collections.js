@@ -22,11 +22,11 @@ function moneySumMoney_sum(items) {
   return moneySum_sum(Iterator.from(items));
 }
 
-function cartFromIterator_std__string__String__Money__fromIter(items, IIntoIterVecCollect) {
+function cartFromIteratorTuple2_fromIter(items, IIntoIterVecCollect) {
   return { lines: $collectVec($intoIter(items), 24, IIntoIterVecCollect) };
 }
 
-function cartExtend_std__string__String__Money__extend(cart, items) {
+function cartExtendTuple2_extend(cart, items) {
   for (const line of items) {
     cart.lines.push(line);
   }
@@ -46,7 +46,7 @@ function main() {
   const borrowed = moneySumMoney_sum($iter(prices));
   console.log(`${moneyDebug_fmt(owned)} ${moneyDebug_fmt(borrowed)}`);
 
-  const cart = cartFromIterator_std__string__String__Money__fromIter(
+  const cart = cartFromIteratorTuple2_fromIter(
     $mapEnds(
       $iter([
         ["tea", 250n],
@@ -56,7 +56,7 @@ function main() {
     ),
     "fold",
   );
-  cartExtend_std__string__String__Money__extend(cart, [["jam", { cents: 300n }]]);
+  cartExtendTuple2_extend(cart, [["jam", { cents: 300n }]]);
   for (const [name, price] of refCartIntoIterator_intoIter(cart)) {
     console.log(`${name}: ${price.cents}`);
   }

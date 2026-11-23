@@ -13,6 +13,7 @@ import {
   $partialEq,
   $partialOrd,
   $partiallyOrdered,
+  $roomFor,
   $sortedKeys,
   $unwinds,
 } from "@rust-js/std";
@@ -45,6 +46,9 @@ function main() {
         () => dropIter?.(it),
       );
       dropIter?.(it);
+    },
+    extendReserve(collection, additional) {
+      $roomFor(collection.value.length + additional, 4);
     },
   });
   console.log(`[${$heapSorted(heap.slice(), $partiallyOrdered).join(", ")}]`);

@@ -14,7 +14,9 @@ import {
   $iter,
   $next,
   $reserveHint,
+  $roomFor,
   $sortedKeys,
+  $tableRoomFor,
   $unwinds,
   iterator_partition,
 } from "@rust-js/std";
@@ -92,6 +94,14 @@ function main() {
         );
         dropIt?.(it);
       },
+      extendReserve(collection, additional) {
+        $tableRoomFor(
+          collection.value.size +
+            (collection.value.size === 0 ? additional : Math.ceil(additional / 2)),
+          4,
+          4,
+        );
+      },
     },
   );
   console.log(`${c.size} ${d.size}`);
@@ -124,6 +134,9 @@ function main() {
           () => dropIter?.(it),
         );
         dropIter?.(it);
+      },
+      extendReserve(collection, additional) {
+        $roomFor(collection.value.length + additional, 4);
       },
     },
   );

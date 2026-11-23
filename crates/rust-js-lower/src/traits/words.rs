@@ -242,8 +242,10 @@ pub(super) fn evidence_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
             let kind = if mutability.is_mut() { "RefMut" } else { "Ref" };
             format!("{}{kind}", evidence_word(tcx, *inner))
         }
-        // A struct's or an enum's own name, `String`, not its path.
+        // A struct's or an enum's own name, `String`, not its path; a
+        // tuple's, by how many it holds, `Tuple2`, as its impl's (#2395).
         ty::Adt(..) => type_word(tcx, ty),
+        ty::Tuple(items) if !items.is_empty() => type_word(tcx, ty),
         ty::Param(p) => param_word(p.name),
         _ => ty.to_string(),
     }
@@ -286,6 +288,9 @@ fn type_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
             let item = js_word(&type_word(tcx, *item));
             format!("{}Slice", rust_js_program::casing::upper_first(&item))
         }
+        // A tuple's, by how many it holds, `Tuple2` of `(ExA, ExB)`, std's
+        // impls of a trait for each arity named alike (#2395).
+        ty::Tuple(items) if !items.is_empty() => format!("Tuple{}", items.len()),
         _ => ty.to_string(),
     }
 }
@@ -306,6 +311,15 @@ pub(super) fn trait_word_with_refs<'tcx>(tcx: TyCtxt<'tcx>, tr: ty::TraitRef<'tc
             .default_value(tcx)
             .map(|d| d.instantiate(tcx, tr.args).skip_normalization())
             == Some(arg.into())
+        {
+            continue;
+        }
+        // A tuple of type parameters alone, `Extend<(A, B)>` of std's
+        // `(ExA, ExB)`'s, says nothing its type's word doesn't, its arity:
+        // `tuple2Extend` (#2395).
+        if let ty::Tuple(items) = arg.kind()
+            && !items.is_empty()
+            && items.iter().all(crate::generic_facts::is_type_parameter)
         {
             continue;
         }

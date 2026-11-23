@@ -23,6 +23,7 @@ import {
   $nthDropping,
   $panic,
   $partialEq,
+  $roomFor,
   $traitImpl,
   $unwinds,
   iterator_filter,
@@ -252,6 +253,9 @@ function main() {
         () => dropIter?.(it),
       );
       dropIter?.(it);
+    },
+    extendReserve(collection, additional) {
+      $roomFor(collection.value.length + additional, 4);
     },
   };
   const v = [1, 2, 3];

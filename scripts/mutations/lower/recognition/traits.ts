@@ -728,4 +728,12 @@ export const mutations: Mutation[] = [
     replace: "    if false && divides(value_operator(tcx, trait_).and_then(Result::ok)) {\n",
     tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
   },
+  {
+    name: "overridden-provided-not-in-dictionary",
+    breaks: "a provided method an impl in reach writes isn't in its trait's dictionaries, so the crate's own `read_line` isn't its reader's dictionary's and generic code runs std's default (#2414)",
+    file: "crates/rust-js-lower/src/recognition/traits.rs",
+    find: "        || super::is_compiled_std(tcx, id) && super::overridden_in_reach(tcx, id)\n",
+    replace: "        || false && super::overridden_in_reach(tcx, id)\n",
+    tests: ["test/corpus.test.ts", "-t", "^provided_methods_a_type_writes_are_its_own.rs$"],
+  },
 ];

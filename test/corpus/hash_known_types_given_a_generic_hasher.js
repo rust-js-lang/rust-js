@@ -9,6 +9,7 @@ import {
   $extendMap,
   $folded,
   $intoIter,
+  $roomFor,
   $sipHasher,
   $sortedKeys,
   $toBytes,
@@ -61,6 +62,9 @@ function grown(v, d, s, m) {
         () => dropIter?.(it),
       );
       dropIter?.(it);
+    },
+    extendReserve(collection, additional) {
+      $roomFor(collection.value.length + additional, 1);
     },
   };
   fill($cellOf(v), extend);

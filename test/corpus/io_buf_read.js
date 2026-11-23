@@ -10,6 +10,7 @@ import {
   $iterator,
   $live,
   $mutReader,
+  $provided,
   $sliceReader,
   $unwindsOn,
   $unwrapErr,
@@ -39,7 +40,13 @@ function firstLine(r) {
   let s = "";
   const arg = $cellOf(r);
   const buf = { value: s };
-  const readLine = bufRead_readLine(arg, buf, $dynReader, $dynReader);
+  const readLine = $provided(
+    arg.value.impl,
+    "readLine",
+    bufRead_readLine,
+    [arg.value, buf],
+    [arg, buf, $dynReader, $dynReader],
+  );
   s = buf.value;
   $unwrapOk(readLine, "test/corpus/io_buf_read.rs:15:25", undefined, $ioErrorDebug);
   return s;
@@ -50,7 +57,13 @@ function fields(r, RBufRead) {
   const field = [];
   while (
     $unwrapOk(
-      bufRead_readUntil(r, 59, field, RBufRead, RBufRead.Read()),
+      $provided(
+        RBufRead,
+        "readUntil",
+        bufRead_readUntil,
+        [r, 59, field],
+        [r, 59, field, RBufRead, RBufRead.Read()],
+      ),
       "test/corpus/io_buf_read.rs:22:42",
       undefined,
       $ioErrorDebug,

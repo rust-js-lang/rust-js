@@ -15,8 +15,8 @@ export function entry() {
   main();
 }
 
-const _u32__u32_Collect = { fromIterNoBuf: _u32__u32_Collect_fromIterNoBuf };
-function _u32__u32_Collect_fromIterNoBuf(iter) {
+const tuple2Collect = { fromIterNoBuf: tuple2Collect_fromIterNoBuf };
+function tuple2Collect_fromIterNoBuf(iter) {
   const it = $intoIter(iter);
   const next = $next(it);
   if (next != null) {
@@ -36,12 +36,12 @@ function iExt(IIterator) {
 }
 
 function pairOf(it) {
-  return _u32__u32_Collect_fromIterNoBuf(it);
+  return tuple2Collect_fromIterNoBuf(it);
 }
 
 function main() {
   const r = { start: 0, end: 5 };
-  const p = iExt({ next: $rangeNext }).nextPair(r, _u32__u32_Collect);
+  const p = iExt({ next: $rangeNext }).nextPair(r, tuple2Collect);
   const arg = $rangeNext(r);
   console.log(
     `${p == null ? "None" : `Some((${p[0]}, ${p[1]}))`} ${arg == null ? "None" : `Some(${arg})`}`,
