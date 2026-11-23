@@ -256,6 +256,9 @@ pub struct AnalyzedCrate<'a, 'tcx> {
     /// each is made knowing its back (#1501).
     pub searches_whole: bool,
     pub changed_vecs: IndexSet<Ty<'tcx>>,
+    /// Each function's types whose clones it copies, as JS may change
+    /// them (#2408).
+    pub js_copies: crate::copies::reached::JsCopies<'tcx>,
     /// The types whose objects say where they're stored (#1113).
     pub stored_places: StoredPlaces<'tcx>,
     /// Each generic function's type parameters it's given a drop function
@@ -1084,6 +1087,7 @@ pub fn analyze_crate<'a, 'tcx>(
         params_only_read: params_only_read(tcx, all_bodies),
     };
     let changed_vecs = vec_uses::changed_vecs(tcx, all_bodies);
+    let js_copies = crate::copies::reached::js_copies(tcx, all_bodies, &foreign);
     let stored_places = stored_places::stored_places(tcx, (all_bodies, calls.names()));
     // What a caller gives generic code whose drop runs something, a value
     // of a destructor, a counted `Rc`'s or a guard's: the one answer the
@@ -1262,6 +1266,7 @@ pub fn analyze_crate<'a, 'tcx>(
         chars_whole,
         searches_whole,
         changed_vecs,
+        js_copies,
         stored_places,
         drop_params,
         drops_any,

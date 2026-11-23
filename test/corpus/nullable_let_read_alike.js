@@ -14,7 +14,7 @@ function previousOf(state, gesture) {
   if (gesture) {
     return;
   }
-  return state.clones;
+  return state.clones == null ? state.clones : state.clones.slice();
 }
 
 function measure(previous) {

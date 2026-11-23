@@ -418,7 +418,11 @@ export function sample() {
         name: "hex",
       },
     ],
-    events: ["Started", { TAG: "Moved", dx: 1, dy: -2 }, { TAG: "Placed", _0: order }],
+    events: [
+      "Started",
+      { TAG: "Moved", dx: 1, dy: -2 },
+      { TAG: "Placed", _0: { ...order, tags: order.tags.slice() } },
+    ],
     msgs: ["Ping", { TAG: "Text", _0: "hi" }, { TAG: "Pair", _0: 1, _1: 2 }],
     loose: [{ TAG: "Num", _0: 1e21 }, { TAG: "Word", _0: "w" }, "Nothing"],
     counts,

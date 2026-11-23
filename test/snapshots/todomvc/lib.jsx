@@ -71,7 +71,7 @@ export function App() {
               {todos
                 .filter((todo) => Filter.shows(filter, todo))
                 .map((todo) => (
-                  <TodoItem key={todo.id} todo={todo} dispatch={dispatch} />
+                  <TodoItem key={todo.id} todo={{ ...todo }} dispatch={dispatch} />
                 ))}
             </ul>
           </section>

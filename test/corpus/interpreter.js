@@ -407,16 +407,34 @@ function valueDisplay_fmt(value) {
   return `<builtin ${value._0}>`;
 }
 
+function cloneEnv(env) {
+  return [env[0]];
+}
+
+function cloneValue(value) {
+  return value.TAG === "Num"
+    ? { ...value }
+    : value.TAG === "Str"
+      ? { ...value }
+      : value.TAG === "Bool"
+        ? { ...value }
+        : value.TAG === "Closure"
+          ? { ...value, _2: cloneEnv(value._2) }
+          : value.TAG === "Builtin"
+            ? { ...value }
+            : value;
+}
+
 const Env = {
   child(env) {
-    return [{ vars: new Map(), parent: env }];
+    return [{ vars: new Map(), parent: cloneEnv(env) }];
   },
 
   get(env, name) {
     const scope = env[0];
     const v = scope.vars.get(name);
     if (v != null) {
-      return v;
+      return cloneValue(v);
     }
     return scope.parent != null ? Env.get(scope.parent, name) : undefined;
   },

@@ -636,4 +636,20 @@ export const mutations: Mutation[] = [
     replace: "                            .is_some_and(|def| self.placed_field(def, t) && false)\n                        {\n                            self.holding_part(self.copy_parts(",
     tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
   },
+  {
+    name: "js-copies-vec-ignored",
+    breaks: "a `Vec` a clone of which reaches JS is left out where no Rust code changes it, so JS gets one array twice (#2408, ADR 1191)",
+    file: "crates/rust-js-lower/src/copies.rs",
+    find: "                .any(|&changed| self.instance_of(ty, changed))\n            || self.js_copies_here(ty);",
+    replace: "                .any(|&changed| self.instance_of(ty, changed));",
+    tests: ["test/js-copies.test.ts", "-t", "two matches"],
+  },
+  {
+    name: "js-copies-type-ignored",
+    breaks: "a struct whose clone reaches JS is left out where no Rust code changes it: a module constant returned is JS's to change (#2408, ADR 1191)",
+    file: "crates/rust-js-lower/src/copies.rs",
+    find: "            || (self.krate.mutated.types.iter()).any(|&mutated| self.instance_of(ty, mutated))\n            || self.js_copies_here(ty);",
+    replace: "            || (self.krate.mutated.types.iter()).any(|&mutated| self.instance_of(ty, mutated));",
+    tests: ["test/corpus.test.ts", "-t", "^type_constant_of_a_module_constant\\.rs$"],
+  },
 ];

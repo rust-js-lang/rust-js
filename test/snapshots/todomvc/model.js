@@ -10,7 +10,7 @@ import { $max } from "@rust-js/std";
 export function reduce(todos, action) {
   if (action.TAG === "Add") {
     const id = (($max(todos.map((todo) => todo.id)) ?? 0) + 1) >>> 0;
-    const next = todos.slice();
+    const next = todos.map((item) => ({ ...item }));
     next.push({
       id,
       title: action._0,
@@ -20,38 +20,47 @@ export function reduce(todos, action) {
   }
   if (action.TAG === "Toggle") {
     const id = action._0;
-    return todos.map((todo) => ({
-      completed: todo.completed !== (todo.id === id),
-      id: todo.id,
-      title: todo.title,
-    }));
+    return todos.map((todo) => {
+      const value = { ...todo };
+      return {
+        completed: todo.completed !== (todo.id === id),
+        id: value.id,
+        title: value.title,
+      };
+    });
   }
   if (action.TAG === "ToggleAll") {
     const completed = action._0;
-    return todos.map((todo) => ({
-      completed,
-      id: todo.id,
-      title: todo.title,
-    }));
+    return todos.map((todo) => {
+      const value = { ...todo };
+      return {
+        completed,
+        id: value.id,
+        title: value.title,
+      };
+    });
   }
   if (action.TAG === "Edit") {
     const id = action._0;
     const title = action._1;
-    return todos.map((todo) =>
-      todo.id === id
-        ? {
-            title,
-            id: todo.id,
-            completed: todo.completed,
-          }
-        : todo,
-    );
+    return todos.map((todo) => {
+      if (todo.id === id) {
+        const value = { ...todo };
+        return {
+          title,
+          id: value.id,
+          completed: value.completed,
+        };
+      } else {
+        return { ...todo };
+      }
+    });
   }
   if (action.TAG === "Destroy") {
     const id = action._0;
-    return todos.filter((todo) => todo.id !== id);
+    return todos.filter((todo) => todo.id !== id).map((item) => ({ ...item }));
   }
-  return todos.filter((todo) => !todo.completed);
+  return todos.filter((todo) => !todo.completed).map((item) => ({ ...item }));
 }
 
 export const Filter = {

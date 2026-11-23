@@ -4,6 +4,7 @@
 
 mod in_place;
 mod kept;
+pub mod reached;
 mod stored;
 pub use in_place::InPlaceWriter;
 
@@ -975,8 +976,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Is `ty` itself changed in place somewhere, not just a part of it?
     pub(super) fn mutated_itself(&self, ty: Ty<'tcx>) -> bool {
-        let mutated =
-            self.crosses_crates(ty) || (self.krate.mutated.types.iter()).any(|&mutated| self.instance_of(ty, mutated));
+        let mutated = self.crosses_crates(ty)
+            || (self.krate.mutated.types.iter()).any(|&mutated| self.instance_of(ty, mutated))
+            || self.js_copies_here(ty);
         if !mutated {
             self.elided(ty);
         }
@@ -1014,11 +1016,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .krate
                 .changed_vecs
                 .iter()
-                .any(|&changed| self.instance_of(ty, changed));
+                .any(|&changed| self.instance_of(ty, changed))
+            || self.js_copies_here(ty);
         if !changed {
             self.elided(ty);
         }
         changed
+    }
+
+    /// Is `ty` one this function copies where it's cloned, as JS may change
+    /// it or its source (#2408, `reached`)?
+    fn js_copies_here(&self, ty: Ty<'tcx>) -> bool {
+        // A reference's clone is the reference and an `Rc`'s shares its value,
+        // and what's never an object JS can't change in place. A type
+        // parameter copied is that parameter, not every type it stands for.
+        reached::copies_on_clone(self.tcx, ty)
+            && self.may_be_object(ty)
+            && !self.is_js_object(ty)
+            // An untagged enum is its payload, so its copy is its payload's,
+            // decided part by part.
+            && !matches!(ty.kind(), ty::Adt(adt, _) if crate::bindings::is_untagged(self.tcx, adt.did()))
+            && self.js_copies_of(&|copied| match copied.kind() {
+                ty::Param(_) => copied == ty,
+                _ => self.instance_of(ty, copied),
+            })
+    }
+
+    /// Whether any type this function copies where it's cloned is one
+    /// `matches` says (#2408).
+    fn js_copies_of(&self, matches: &dyn Fn(Ty<'tcx>) -> bool) -> bool {
+        (self.krate.js_copies.get(&self.tcx.typeck_root_def_id(self.item)))
+            .is_some_and(|copied| copied.iter().any(|&copied| matches(copied)))
     }
 
     /// Might the array of `item`s that a `Vec<item>` and a boxed `[item]`
@@ -1036,6 +1064,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.krate.compiled_once
             || self.krate.foreign.changes_a_vec_of(item)
             || self.krate.changed_vecs.iter().any(|&changed| vec_of(changed))
+            || self.js_copies_of(&vec_of)
             || self.contains_mutated(Ty::new_slice(self.tcx, item))
     }
 

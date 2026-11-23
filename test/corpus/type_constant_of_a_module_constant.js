@@ -21,7 +21,7 @@ export const TimeDelta = {
   MAX,
 
   minValue() {
-    return MIN;
+    return { ...MIN };
   },
 
   inRange(timeDelta) {

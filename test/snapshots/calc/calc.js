@@ -79,7 +79,7 @@ export function toRpn(tokens) {
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i];
     if (t.TAG === "Num") {
-      out.push(t);
+      out.push(t.TAG === "Num" ? { ...t } : t.TAG === "Op" ? { ...t } : t);
     } else if (t.TAG === "Op") {
       while (true) {
         const last = stack.at(-1);
@@ -88,7 +88,7 @@ export function toRpn(tokens) {
         }
         out.push($unwrap(stack.pop(), "examples/calc.rs:59:46"));
       }
-      stack.push(t);
+      stack.push(t.TAG === "Num" ? { ...t } : t.TAG === "Op" ? { ...t } : t);
     } else if (t === "LParen") {
       stack.push("LParen");
     } else {

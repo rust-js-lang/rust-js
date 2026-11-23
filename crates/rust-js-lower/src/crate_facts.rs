@@ -44,6 +44,9 @@ pub struct CrateFacts<'a, 'tcx> {
     /// The functions JS gives again what it gave them (#1723).
     pub given_again: &'a IndexSet<DefId>,
     pub changed_vecs: &'a IndexSet<Ty<'tcx>>,
+    /// Each function's types whose clones it copies, as JS may change
+    /// them (#2408).
+    pub js_copies: &'a crate::copies::reached::JsCopies<'tcx>,
     /// The types whose objects say where they're stored (#1113).
     pub stored_places: &'a analysis::StoredPlaces<'tcx>,
     /// Each generic function's type parameters it's given a drop for (ADR 0098).
@@ -311,6 +314,7 @@ carried! {
     generic_consts => By(&[F::LibraryDictionaryConsts]),
     given_again => CrateOnly,
     changed_vecs => By(&[F::LibraryChanged]),
+    js_copies => CrateOnly,
     stored_places => CrateOnly,
     drop_params => By(&[F::ParamFactDrop]),
     given => By(&[F::ParamFactCopy, F::ParamFactClone, F::ParamFactUnboxed, F::TypeParamStepped, F::TypeParamUnread]),
