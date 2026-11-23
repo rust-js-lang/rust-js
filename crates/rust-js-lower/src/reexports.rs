@@ -371,33 +371,32 @@ pub(super) fn type_reexports<'tcx>(
     found
 }
 
-/// The types alone the glob `glob`, `pub use m::*;`, gives `module`, as
-/// `type_alone` says of one `use`'s: each public struct, enum, union,
-/// alias or trait it re-exports that no value of its name, nor a class,
-/// makes JS (#2399).
+/// The types alone the glob `glob`, `pub use m::*;`, gives `module`, by
+/// the rule `type_alone` asks of one `use`'s, `alone`, of what the glob
+/// gives of each name: each public struct, enum, union, alias or trait it
+/// re-exports that no value of its name, nor a class, makes JS (#2399).
 fn globbed_types(tcx: TyCtxt<'_>, module: LocalModId, glob: DefId) -> Vec<(rustc_span::Ident, DefId)> {
+    use rustc_hir::def::Namespace;
     use rustc_middle::middle::resolve::Reexport as Via;
     let children = tcx.module_children_local(module.to_local_def_id());
     let given = |chain: &[Via]| matches!(chain.first(), Some(Via::Glob(used)) if *used == glob);
-    let valued = |name: rustc_span::Symbol| {
-        (children.iter()).any(|child| {
-            given(&child.reexport_chain)
-                && child.ident.name == name
-                && matches!(
-                    child.res,
-                    Res::Def(DefKind::Fn | DefKind::Const | DefKind::Static { .. }, _)
-                )
-        })
+    // What the glob gives of `name` in `ns`, as one `use`'s path resolves it.
+    let of = |name: rustc_span::Symbol, ns: Namespace| {
+        (children.iter())
+            .find(|child| given(&child.reexport_chain) && child.ident.name == name && child.res.ns() == Some(ns))
+            .map(|child| child.res.expect_non_local())
     };
     (children.iter())
-        .filter(|child| given(&child.reexport_chain))
-        .filter_map(|child| match child.res {
-            Res::Def(DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias | DefKind::Trait, named)
-                if child.vis.is_public() && !valued(child.ident.name) && !super::classes::is_class(tcx, named) =>
-            {
-                Some((child.ident, named))
-            }
-            _ => None,
+        .filter(|child| {
+            given(&child.reexport_chain) && child.vis.is_public() && child.res.ns() == Some(Namespace::TypeNS)
+        })
+        .filter_map(|child| {
+            let named = alone(
+                tcx,
+                Some(child.res.expect_non_local()),
+                of(child.ident.name, Namespace::ValueNS),
+            )?;
+            Some((child.ident, named))
         })
         .collect()
 }
@@ -407,12 +406,20 @@ fn globbed_types(tcx: TyCtxt<'_>, module: LocalModId, glob: DefId) -> Vec<(rustc
 /// constructor, nor what's a value too. A macro of its name, a derive's,
 /// has no JS either.
 fn type_alone(tcx: TyCtxt<'_>, leaf: &super::uses::UseLeaf<'_>) -> Option<DefId> {
+    alone(tcx, leaf.path.res.type_ns, leaf.path.res.value_ns)
+}
+
+/// The rule `type_alone` and `globbed_types` ask, a name's type of no JS:
+/// what it names in the type namespace, `type_ns`, a struct, an enum, a
+/// union, an alias or a trait, not a class, where what it names among
+/// values, `value_ns`, is nothing or that type's own constructor.
+fn alone(tcx: TyCtxt<'_>, type_ns: Option<Res>, value_ns: Option<Res>) -> Option<DefId> {
     let Some(Res::Def(DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias | DefKind::Trait, named)) =
-        leaf.path.res.type_ns
+        type_ns
     else {
         return None;
     };
-    let value = !matches!(leaf.path.res.value_ns, None | Some(Res::Def(DefKind::Ctor(..), _)));
+    let value = !matches!(value_ns, None | Some(Res::Def(DefKind::Ctor(..), _)));
     (!value && !super::classes::is_class(tcx, named)).then_some(named)
 }
 

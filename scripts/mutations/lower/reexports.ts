@@ -528,8 +528,8 @@ export const mutations: Mutation[] = [
     name: "type-reexport-value-of-a-constructor",
     breaks: "a `pub use` of a tuple or a unit struct, whose constructor is no JS it re-exports, is taken for a value's, so its doc comment is the next function's JSDoc (#1869)",
     file: "crates/rust-js-lower/src/reexports.rs",
-    find: "    let value = !matches!(leaf.path.res.value_ns, None | Some(Res::Def(DefKind::Ctor(..), _)));\n",
-    replace: "    let value = !matches!(leaf.path.res.value_ns, None);\n",
+    find: "    let value = !matches!(value_ns, None | Some(Res::Def(DefKind::Ctor(..), _)));\n",
+    replace: "    let value = !matches!(value_ns, None);\n",
     tests: ["test/reexport-docs.test.ts", "-t", "structs with constructors"],
   },
   {
@@ -579,5 +579,13 @@ export const mutations: Mutation[] = [
     find: "        !child.reexport_chain.is_empty()\n",
     replace: "        child.reexport_chain.is_empty()\n",
     tests: ["test/declarations-type-reexports.test.ts", "-t", "has its .d.ts: one"],
+  },
+  {
+    name: "glob-type-of-a-value-name-exported",
+    breaks: "a glob's type that shares its name with a function the glob gives too, which writes JS of that name, is re-exported as a type alone, a second export of one name in the declarations, where one `use` of it isn't (#2399, `alone`)",
+    file: "crates/rust-js-lower/src/reexports.rs",
+    find: "                of(child.ident.name, Namespace::ValueNS),\n",
+    replace: "                of(child.ident.name, Namespace::ValueNS).filter(|_| false),\n",
+    tests: ["test/declarations-type-reexports.test.ts"],
   },
 ];

@@ -89,6 +89,27 @@ pub use shapes::*;
     caller: 'import type { Kind, Size } from "./app/lib.js";\n\nexport const kind: Kind = "Round";\nexport const size: Size = 3;\nexport const wrong: Size = "3";\n',
   },
   {
+    // A glob of a type and a function of its name, which writes JS of that
+    // name: the function's re-export alone, as one `use` of it is, where
+    // the type's beside it would export the name twice (`alone`, #2399).
+    name: "glob-of-a-type-and-its-value",
+    app: `mod length {
+    pub struct Meters {
+        pub value: f64,
+    }
+
+    #[allow(non_snake_case)]
+    pub fn Meters(value: f64) -> Meters {
+        Meters { value }
+    }
+}
+
+pub use length::*;
+`,
+    reexports: ['export { Meters } from "./length.js";'],
+    caller: 'import { Meters } from "./app/lib.js";\n\nexport const length: Meters = Meters(3);\nexport const wrong: Meters = { value: "3" };\n',
+  },
+  {
     name: "library",
     app: "pub use dep::Coin;\n",
     reexports: ['export type { Coin } from "../dep/lib.js";'],
