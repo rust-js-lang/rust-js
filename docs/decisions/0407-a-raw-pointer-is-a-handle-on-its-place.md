@@ -322,3 +322,24 @@ native Rust in both builds: overlapping forward and back, apart, a `Copy`
 struct's arrays, and a pointer stepped by its array. Also held by
 `test/lowering-pointers.test.ts`. Mutations `whole-arrays-copied-in-turn`,
 `whole-arrays-uncopied` and `whole-pointer-stepped-by-items`.
+
+## Amendment: a `*const` of a local may change it too (#2368)
+
+The MIR lowering's local counts (rust-js-mir `locals.rs`) marked a local
+`changed` when a raw pointer to it was made, but only for `&raw mut`. A
+`changed` local is never in `alike`, the set of locals that read the same
+wherever they're read. `&raw const _5` (`addr_of!`) left `_5` alike. A
+copy read through the pointer, `_6 = (*_2)`, was then read in place at
+each use, as `_5`'s place, and the writes through `(*_2)` after it
+changed what `_6` read. Rustlantis seed 12468242 printed a `u128`
+doubled. ADR 0262: the results change, so Rust's behaviour is kept.
+
+A `*const` doesn't freeze what it points to, as a `&T` does: MIR writes
+through it, and Rust writes through its cast to `*mut`. So a raw pointer
+of either kind to a local marks the local `changed`. A slice's
+`FakeForPtrMetadata` pointer, made only to read its length, does not.
+No corpus snapshot moves. Surface Rust that casts a `&raw const` to
+`*mut` and writes through it was already right, because the cast keeps
+its `$ptr`. This is held by `test/rustlantis.test.ts`'s custom-MIR case
+(`addr_of!`, with `addr_of_mut!` beside it) against native wasm32 in
+both builds, and by the mutation `const-pointer-changes-nothing`.

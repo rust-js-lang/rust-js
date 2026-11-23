@@ -53,15 +53,9 @@ afterAll(() => {
   if (tally.size) console.log(`rustlantis, seeds ${start} to ${start + count - 1}, part ${part}/${parts}: ${[...tally].sort().map(([k, n]) => `${k} ${n}`).join(", ")}`);
 });
 
-/** What `seed`'s program came to, or why it fails the net. */
-function judge(seed: number): { held: string } | { failed: string } {
-  const dir = fixture(`rustlantis-${seed}`);
-  const made = Bun.spawnSync([generate, "-d", `${seed}`], { cwd: configDir, stdout: "pipe", stderr: "pipe", timeout: 60_000 });
-  if (made.exitCode !== 0) return { failed: `the generator failed:\n${made.stderr.toString()}` };
-  // `entry`, which the JS's runner calls as the corpus's (test/corpus-run.ts).
-  const source = `${made.stdout.toString()}\npub fn entry() {\n    main()\n}\n`;
-  const file = join(dir, "program.rs");
-  writeFileSync(file, source);
+/** `file`, a program in `dir`, built natively for wasm32 and run to its
+ * end, as each seed's is; else why not. */
+function nativeRun(dir: string, file: string): Run | string {
   const wasm = join(dir, "native.wasm");
   const built = Bun.spawnSync(["rustc", file, "--target=wasm32-wasip1", ...programFlags("2021"), "-Awarnings", "-o", wasm], {
     // Where its program is, in the checkout, whose toolchain rustup finds
@@ -74,10 +68,24 @@ function judge(seed: number): { held: string } | { failed: string } {
     stderr: "pipe",
     timeout: compileTimeout,
   });
-  if (built.exitCode !== 0 || !existsSync(wasm)) return { failed: `native wasm32 didn't build it:\n${built.stderr.toString().slice(0, 4000)}` };
+  if (built.exitCode !== 0 || !existsSync(wasm)) return `native wasm32 didn't build it:\n${built.stderr.toString().slice(0, 4000)}`;
   const outcome = join(dir, "native.json");
   const native = execute([process.execPath, join(root, "test", "wasi-run.ts"), wasm, outcome], outcome);
-  if (typeof native.outcome === "string" || !("value" in native.outcome)) return { failed: `native wasm32 didn't run it to its end: ${show(native.outcome)}\n${native.stderr}` };
+  if (typeof native.outcome === "string" || !("value" in native.outcome)) return `native wasm32 didn't run it to its end: ${show(native.outcome)}\n${native.stderr}`;
+  return native;
+}
+
+/** What `seed`'s program came to, or why it fails the net. */
+function judge(seed: number): { held: string } | { failed: string } {
+  const dir = fixture(`rustlantis-${seed}`);
+  const made = Bun.spawnSync([generate, "-d", `${seed}`], { cwd: configDir, stdout: "pipe", stderr: "pipe", timeout: 60_000 });
+  if (made.exitCode !== 0) return { failed: `the generator failed:\n${made.stderr.toString()}` };
+  // `entry`, which the JS's runner calls as the corpus's (test/corpus-run.ts).
+  const source = `${made.stdout.toString()}\npub fn entry() {\n    main()\n}\n`;
+  const file = join(dir, "program.rs");
+  writeFileSync(file, source);
+  const native = nativeRun(dir, file);
+  if (typeof native === "string") return { failed: native };
   for (const [build, flags] of builds) {
     const js = join(dir, `${build}.js`);
     const compiled = runSync([compiler, file, "-o", js, ...flags, "--", "--edition=2021", "-Awarnings"], root, compileTimeout, bootstrap);
@@ -174,5 +182,62 @@ pub fn entry() -> u16 {
     const refusal = compiled.stderr.split("\n").find((line) => line.startsWith("error: rust-js"));
     expect(refusal).toContain("a use of a local before any write of it whole");
     expect(knownAs(list, ["refused"], refusal ?? "")?.by).toBe("custom-mir");
+  }
+});
+
+// A copy read through a `*const` of a local, `_6 = (*_2)` of `_2 =
+// &raw const _5`, then written through it (#2368, seed 12468242's,
+// reduced): the copy was read in place, as the local nothing changed, so
+// it read what was written after. A raw pointer of either kind may change
+// what it points to; the `*mut` beside it was right already.
+test("a copy read through a *const of a local keeps its value past writes through it", () => {
+  const dir = fixture("rustlantis-write-through-a-const-pointer");
+  const file = join(dir, "program.rs");
+  const doubled = (name: string, kind: string, of: string) => `#[custom_mir(dialect = "runtime", phase = "initial")]
+fn ${name}() -> u128 {
+    mir! {
+        let _2: *${kind} u128;
+        let _5: u128;
+        let _6: u128;
+        {
+            _5 = 3_u128;
+            _2 = core::ptr::${of}!(_5);
+            _6 = (*_2);
+            (*_2) = _6 + _6;
+            (*_2) = _6;
+            RET = _6;
+            Return()
+        }
+    }
+}
+`;
+  writeFileSync(
+    file,
+    `#![feature(custom_mir, core_intrinsics)]
+extern crate core;
+use core::intrinsics::mir::*;
+
+${doubled("through_const", "const", "addr_of")}
+${doubled("through_mut", "mut", "addr_of_mut")}
+pub fn entry() {
+    println!("{} {}", through_const(), through_mut());
+}
+
+fn main() {
+    entry()
+}
+`,
+  );
+  const native = nativeRun(dir, file);
+  if (typeof native === "string") throw new Error(native);
+  expect(native.stdout).toBe("3 3\n");
+  for (const [build, flags] of builds) {
+    const js = join(dir, `${build}.js`);
+    const compiled = runSync([compiler, file, "-o", js, ...flags, "--", "--edition=2021", "-Awarnings"], root, compileTimeout, bootstrap);
+    expect(compiled.code, compiled.stderr).toBe(0);
+    const [name, runtime] = runtimes[0];
+    const ran = runJs(runtime, js, dir, `${name}-${build}`, jsLimit(native));
+    expect(ran.stdout).toBe("3 3\n");
+    expect(agree(ran, native)).toBe(true);
   }
 });

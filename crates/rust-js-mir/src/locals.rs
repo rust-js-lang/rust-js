@@ -273,7 +273,11 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                             Rvalue::Ref(_, BorrowKind::Mut { .. }, borrowed) => {
                                 self.mut_ref_form(borrowed.ty(&body.local_decls, self.tcx).ty).is_cell()
                             }
-                            Rvalue::RawPtr(kind, _) => kind.to_mutbl_lossy().is_mut(),
+                            // A raw pointer of either kind: a `*const` doesn't
+                            // freeze what it points to, as a `&T` does, so MIR
+                            // writes through it, and Rust through its cast to
+                            // `*mut` (#2368). Not a slice's for its length.
+                            Rvalue::RawPtr(kind, _) => !matches!(kind, mir::RawPtrKind::FakeForPtrMetadata),
                             _ => false,
                         };
                         if changes

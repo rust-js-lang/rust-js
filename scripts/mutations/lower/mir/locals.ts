@@ -204,4 +204,13 @@ export const mutations: Mutation[] = [
     replace: "                        if place.projection.is_empty() {\n                            own(place.local, true);\n                        }\n",
     tests: ["test/crates.test.ts", "-t", "run_leftover_overwritten_as_a_drop_panics"],
   },
+  {
+    name: "const-pointer-changes-nothing",
+    breaks:
+      "a `*const` of a local, `&raw const _5`, is taken to change nothing it points to, so a copy read through it, `_6 = (*_2)`, is read in place as the local and reads what's written through it after: 6 where Rust prints 3 (#2368, Rustlantis seed 12468242)",
+    file: "crates/rust-js-mir/src/locals.rs",
+    find: "                            Rvalue::RawPtr(kind, _) => !matches!(kind, mir::RawPtrKind::FakeForPtrMetadata),\n",
+    replace: "                            Rvalue::RawPtr(kind, _) => kind.to_mutbl_lossy().is_mut(),\n",
+    tests: ["test/rustlantis.test.ts", "-t", "a copy read through a \\*const"],
+  },
 ];
