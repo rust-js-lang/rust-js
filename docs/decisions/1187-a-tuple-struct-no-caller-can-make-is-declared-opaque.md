@@ -44,10 +44,10 @@ that isn't `pub`, of no type parameter, is declared an interface branded
 by a `unique symbol` its module declares and doesn't export:**
 
 ```ts
-declare const emailBrand: unique symbol;
+declare const $emailBrand: unique symbol;
 
 export interface Email {
-    readonly [emailBrand]: never;
+    readonly [$emailBrand]: never;
 }
 
 export function welcome(email: Email): string;
@@ -58,8 +58,11 @@ outside the module can name the key, so TypeScript takes an `Email` only of
 what rust-js's JS gave and gives it back. It refuses a string, an array, an
 object, and a cast, `"x" as Email`, of types that don't overlap; only `as
 unknown as Email`, TypeScript's own escape, gets one past it. The brand is
-the type's name, its first letter lower, `Brand` after it, declared in the
-type's module; another module that names the type imports it, as any
+`$`, the type's name, its first letter lower, and `Brand`, `$emailBrand`,
+declared in the type's module: a name no Rust item's JS name can take, as
+none has a `$` (library.rs' `INTERNAL` rests on the same), so no export of
+the module meets it, where `emailBrand` met a `pub fn email_brand`'s,
+TypeScript's "duplicate identifier"; another module that names the type imports it, as any
 declared type (ADR 0210), and the brand stays its module's.
 
 `declarations/structures.rs`' `sealed_tuple` is the one answer of which
@@ -73,7 +76,7 @@ Left as they were:
   its JS is, is another decision.
 - **A generic one**, `Id<T>(u64, PhantomData<T>)`: a brand without `T`
   would make every `Id<T>` one type. Branding it by `T`, `readonly
-  [idBrand]: T`, is another decision.
+  [$idBrand]: T`, is another decision.
 - **A binding's type**, one whose `#[rust_js::types]` names JS's
   (`Color(PhantomData<JsObject>)`): its declaration is JS's, imported; a
   second, branded here, would conflict with it.

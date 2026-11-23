@@ -335,11 +335,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "sealed-tuple-brand-exported",
-    breaks: "a sealed tuple struct's brand is exported, `export declare const emailBrand`, so TypeScript can name its key and make one (#2356, ADR 1187)",
+    breaks: "a sealed tuple struct's brand is exported, `export declare const $emailBrand`, so TypeScript can name its key and make one (#2356, ADR 1187)",
     file: "crates/rust-js-lower/src/declarations/structures.rs",
     find: "let declared = json!({ \"kind\": \"const\", \"name\": brand, \"exported\": false,",
     replace: "let declared = json!({ \"kind\": \"const\", \"name\": brand, \"exported\": true,",
     tests: ["test/declarations-sealed.test.ts", "-t", "a tuple struct of a private field"],
+  },
+  {
+    name: "sealed-tuple-brand-a-rust-name",
+    breaks: "a sealed tuple struct's brand is named as a Rust item's JS name can be, `nameBrand`, which a `pub fn name_brand` declares too, TypeScript's duplicate identifier (#2356, ADR 1187 amended)",
+    file: "crates/rust-js-lower/src/declarations/structures.rs",
+    find: "                let mut brand = format!(\"${name}Brand\");\n                brand[1..2].make_ascii_lowercase();\n",
+    replace: "                let mut brand = format!(\"{name}Brand\");\n                brand[..1].make_ascii_lowercase();\n",
+    tests: ["test/declarations-sealed.test.ts", "-t", "meets no export of its module"],
   },
   {
     name: "sealed-tuple-of-pub-fields",

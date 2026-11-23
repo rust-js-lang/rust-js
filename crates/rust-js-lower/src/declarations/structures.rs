@@ -58,8 +58,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
             // before (ADR 1187).
             if sealed_tuple(self.tcx, def_id) {
                 let name = super::type_name(self.tcx, def_id);
-                let mut brand = format!("{name}Brand");
-                brand[..1].make_ascii_lowercase();
+                // `$emailBrand`: a name no Rust item's JS name can take, as
+                // none has a `$`, so no export of the module meets it.
+                let mut brand = format!("${name}Brand");
+                brand[1..2].make_ascii_lowercase();
                 if !self.unexported.contains_key(&brand) {
                     let declared = json!({ "kind": "const", "name": brand, "exported": false, "declare": true, "type": { "kind": "unique-symbol" } });
                     self.unexported.insert(brand.clone(), Some(declared));

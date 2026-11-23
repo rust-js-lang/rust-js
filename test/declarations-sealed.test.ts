@@ -48,15 +48,15 @@ pub fn parse(text: &str) -> Result<Email, String> {
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(declarations).toContain("declare const nameBrand: unique symbol;");
-  expect(declarations).toContain("/** A name that isn't blank. */\nexport interface Name {\n    readonly [nameBrand]: never;\n}");
+  expect(declarations).toContain("declare const $nameBrand: unique symbol;");
+  expect(declarations).toContain("/** A name that isn't blank. */\nexport interface Name {\n    readonly [$nameBrand]: never;\n}");
   expect(declarations).toContain('import type { Email } from "./mail.js";');
   expect(declarations).toContain("export function welcome(name: Name, email: Email): string;");
   expect(declarations).not.toContain("any");
   const mail = readFileSync(join(dir, "mail.d.ts"), "utf8");
-  expect(mail).toContain("declare const emailBrand: unique symbol;");
-  expect(mail).toContain("export interface Email {\n    readonly [emailBrand]: never;\n}");
-  expect(mail).not.toContain("export declare const emailBrand");
+  expect(mail).toContain("declare const $emailBrand: unique symbol;");
+  expect(mail).toContain("export interface Email {\n    readonly [$emailBrand]: never;\n}");
+  expect(mail).not.toContain("export declare const $emailBrand");
   expect(mail).not.toContain("any");
   writeFileSync(join(dir, "use.ts"), `import { Name, welcome } from "./lib.js";
 import { parse } from "./mail.js";
@@ -75,8 +75,8 @@ welcome(name, "not an email" as Email);
 `);
   expect(typeChecked(dir, "wrong.ts", checking)).toEqual([
     expect.stringContaining("error TS2345: Argument of type 'string' is not assignable to parameter of type 'Email'"),
-    expect.stringContaining("error TS2741: Property '[emailBrand]' is missing in type 'string[]' but required in type 'Email'"),
-    expect.stringContaining("error TS2741: Property '[emailBrand]' is missing in type '{}' but required in type 'Email'"),
+    expect.stringContaining("error TS2741: Property '[$emailBrand]' is missing in type 'string[]' but required in type 'Email'"),
+    expect.stringContaining("error TS2741: Property '[$emailBrand]' is missing in type '{}' but required in type 'Email'"),
     expect.stringContaining("error TS2352: Conversion of type 'string' to type 'Email' may be a mistake"),
   ]);
   const lib = await import(join(dir, "lib.js"));
@@ -113,4 +113,34 @@ pub fn kept(s: &Scores) -> &Scores { s }
   expect(declarations).not.toContain("unique symbol");
   expect(declarations).toContain("export type Meters = number;");
   expect(declarations).toContain("export function kept(s: Map<string, number>): Map<string, number>;");
+});
+
+test("a sealed tuple struct's brand meets no export of its module, a function named as the brand was", () => {
+  // `pub fn name_brand` is `nameBrand` in JS, which the brand was named
+  // before, a duplicate identifier to TypeScript; `$nameBrand` is a name no
+  // Rust item's JS name takes.
+  const dir = fixture("declarations-sealed-brand-named");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Name(String);
+
+impl Name {
+    pub fn new(text: &str) -> Name {
+        Name(text.to_string())
+    }
+}
+
+pub fn name_brand() -> u32 {
+    1
+}
+
+pub fn show(name: &Name) -> String {
+    name.0.clone()
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export function nameBrand(): number;");
+  writeFileSync(join(dir, "use.ts"), `import { Name, nameBrand, show } from "./lib.js";
+export const shown: string = show(Name.new("Ada")) + nameBrand();
+`);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
 });
