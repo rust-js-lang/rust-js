@@ -132,6 +132,23 @@ pub fn const_object(tcx: ty::TyCtxt<'_>, def_id: rustc_span::def_id::LocalDefId,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The tag a value of `variant` of `adt` is made with, its key and its
+    /// value, the one answer each maker of one asks, a literal's, a
+    /// constructor's as a value and serde's reading (#2360): an enum's,
+    /// told by `TAG` or its `#[rust_js::tag]` (`bindings::tag_key`), its
+    /// name, number or `bool` (`bindings::variant_tag`); none of a keyed
+    /// enum's, its keys alone, which `in` tells it by (#504), nor of a
+    /// struct's.
+    pub(crate) fn variant_tag_field(&self, adt: ty::AdtDef<'tcx>, variant: &ty::VariantDef) -> Option<(String, Expr)> {
+        let keyed = self.krate.flattened.keyed.contains(&adt.did());
+        (adt.is_enum() && !keyed).then(|| {
+            (
+                bindings::tag_key(self.tcx, adt.did()),
+                bindings::variant_tag(self.tcx, variant),
+            )
+        })
+    }
+
     /// A struct literal: `{ x: 1, y: 2 }`, or `[1, 2]` for a tuple struct.
     /// `made`, a struct with a flattened field's object, as JS has it: the
     /// flattened field's own fields, of a struct made there, or its spread,
@@ -401,15 +418,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let made = std::mem::replace(value, Expr::taken());
             *value = self.nullable_field_made((form, field), field_ty, made, given);
         }
-        // A keyed enum's variant is its keys, no tag, each kept where it's
+        // A keyed enum's variant keeps each of its keys where it's
         // `undefined`, which `in` tells it by (#504).
         let keyed = adt_def.is_enum() && self.krate.flattened.keyed.contains(&adt_def.did());
-        let tag = (adt_def.is_enum() && !keyed).then(|| {
-            (
-                bindings::tag_key(self.tcx, adt_def.did()),
-                bindings::variant_tag(self.tcx, variant),
-            )
-        });
+        let tag = self.variant_tag_field(adt_def, variant);
         let shape = match adt_def.is_enum() {
             true => Shape::Object(Self::variant_keys(self.variant_fields(variant, args))),
             false => self.shape(ty),
@@ -737,15 +749,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else if self.is_fmt_result(ty) {
             return Err(self.unsupported(span, "this constructor as a value"));
         } else {
-            let tag = (adt_def.is_enum()).then(|| {
-                (
-                    bindings::tag_key(self.tcx, adt_def.did()),
-                    bindings::variant_tag(self.tcx, variant),
-                )
-            });
-            let shape = match tag {
-                Some(_) => Shape::Object(Self::variant_keys(self.variant_fields(variant, adt_args))),
-                None => self.shape(ty),
+            let tag = self.variant_tag_field(adt_def, variant);
+            let shape = match adt_def.is_enum() {
+                true => Shape::Object(Self::variant_keys(self.variant_fields(variant, adt_args))),
+                false => self.shape(ty),
             };
             self.assembled(shape, tag, items)
         };

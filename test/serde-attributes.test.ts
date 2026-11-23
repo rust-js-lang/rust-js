@@ -416,3 +416,76 @@ pub fn report() -> String {
   const expected = JSON.parse(run([native(dir)]));
   expect((await compiled(dir)).report()).toBe(expected);
 });
+
+// A field `#[rust_js::flatten]` flattens is the struct's own keys (ADR
+// 0204), so the struct serde reads is made as every other maker makes it,
+// `{ ...base, name }`, not nested, `{ base, name }`, whose `user.base.id`,
+// read as `user.id`, was `undefined` (#2364). And a keyed enum flattened
+// into one is its variant's keys alone, no tag, as a literal of it is
+// (ADR 1071, #2360).
+test("serde: a struct with a flattened field is read flat, its keyed enum's variant without a tag", async () => {
+  const dir = fixture("serde-rust-js-flatten");
+  writeFileSync(join(dir, "cases.rs"), `#[derive(serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Base {
+    pub id: String,
+    pub created_at: String,
+}
+#[derive(serde::Deserialize, Debug)]
+pub struct User {
+    #[serde(flatten)]
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub base: Base,
+    pub name: String,
+}
+#[derive(serde::Deserialize, Debug)]
+pub enum Kind {
+    Signal { current: Option<u32> },
+    Computed { value: u32, dirty: bool },
+}
+#[derive(serde::Deserialize, Debug)]
+pub struct Node {
+    pub flags: u32,
+    #[serde(flatten)]
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub kind: Kind,
+}
+fn label(base: &Base) -> String {
+    format!("{}, created {}", base.id, base.created_at)
+}
+fn value(node: &Node) -> String {
+    match &node.kind {
+        Kind::Signal { current } => format!("signal {current:?}"),
+        Kind::Computed { value, dirty } => format!("computed {value} {dirty}"),
+    }
+}
+pub fn report() -> String {
+    let mut out = String::new();
+    match serde_json::from_str::<User>(r#"{"id":"u1","createdAt":"2026-11-23","name":"Ada"}"#) {
+        Ok(user) => out.push_str(&format!("{} ({}) {:?}\\n", user.name, label(&user.base), user)),
+        Err(e) => out.push_str(&format!("err {e}\\n")),
+    }
+    for text in [r#"{"flags":1,"Signal":{"current":3}}"#, r#"{"flags":2,"Computed":{"value":4,"dirty":true}}"#] {
+        match serde_json::from_str::<Node>(text) {
+            Ok(node) => out.push_str(&format!("{} {} {:?}\\n", node.flags, value(&node), node)),
+            Err(e) => out.push_str(&format!("err {e}\\n")),
+        }
+    }
+    out
+}
+pub fn user(text: &str) -> Option<User> {
+    serde_json::from_str(text).ok()
+}
+pub fn node(text: &str) -> Option<Node> {
+    serde_json::from_str(text).ok()
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  const cases = await compiled(dir);
+  expect(cases.report()).toBe(expected);
+  // What JS sees of each: its keys, a spread's and `JSON.stringify`'s,
+  // the flattened struct's own and the variant's, no tag beside them.
+  expect(Object.keys(cases.user('{"id":"u1","createdAt":"2026-11-23","name":"Ada"}'))).toEqual(["id", "createdAt", "name"]);
+  expect(Object.keys(cases.node('{"flags":1,"Signal":{"current":3}}'))).toEqual(["flags", "current"]);
+  expect(Object.keys(cases.node('{"flags":2,"Computed":{"value":4,"dirty":true}}'))).toEqual(["flags", "value", "dirty"]);
+});

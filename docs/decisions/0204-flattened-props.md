@@ -379,3 +379,24 @@ whose prototype's `range` getter throws, each own key read through a
 getter that counts, the copy's keys exactly its own; mutations
 `flattened-copy-nested` (`copies.ts`) and `flattened-clone-nested`
 (`std_impls/clones.ts`); `variant-clone-boxes-cells` retargeted.
+
+
+## Amendment: a struct serde reads is made as every other (2026-11-23, #2364)
+
+serde's reader made a struct as an object of its fields, each under its
+own key, `{ base, name }`, a rule of its own beside the one every other
+maker asks: a `#[rust_js::flatten]` field's keys are the struct's own, so
+`user.base` reads the object itself and `user.base.id` read `user.id`,
+`undefined`, and its `Debug` threw. Now `serde/de.rs`' `construct` gives
+the object it makes to `flattened_object`, as the MIR lowering's
+`assign.rs` and a derived `Default` do: `({ ...base, name })`. A field
+`#[serde(flatten)]` alone flattens stays a field, as its `.d.ts` says.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's.
+
+Held by `test/serde-attributes.test.ts`'s "a struct with a flattened
+field is read flat", against native serde_json, and its keys as JS sees
+them, `["id", "createdAt", "name"]`; mutation
+`serde-flattened-field-nested` (`serde/de.ts`).
+

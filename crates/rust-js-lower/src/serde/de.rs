@@ -592,19 +592,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if variant.fields.is_empty() {
                 return self.unit_variant(adt.did(), variant);
             }
+            // Its tag as every other maker of one writes it, `TAG` or its
+            // `#[rust_js::tag]`, none of a keyed enum's, whose keys tell
+            // it (ADR 0284, ADR 1071, #2360).
             let fields = self.field_keys(adt, variant, args).into_iter().zip(items);
-            // Told by the enum's own property, `TAG` or its
-            // `#[rust_js::tag]`'s, of its variant's tag, as every variant
-            // a body makes is (ADR 0284).
-            let tag = Prop::Field(
-                crate::bindings::tag_key(self.tcx, adt.did()),
-                crate::bindings::variant_tag(self.tcx, variant),
-            );
-            return Expr::object(
-                std::iter::once(tag)
-                    .chain(fields.map(|(k, v)| Prop::Field(k, v)))
-                    .collect(),
-            );
+            let tag = (self.variant_tag_field(adt, variant)).map(|(key, value)| Prop::Field(key, value));
+            return Expr::object(tag.into_iter().chain(fields.map(|(k, v)| Prop::Field(k, v))).collect());
         }
         if variant.ctor_kind() == Some(CtorKind::Const) {
             return Expr::js_undefined();
@@ -624,12 +617,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .zip(fields.into_iter().map(|(_, t)| t))
                     .enumerate()
                     .map(held);
-                Expr::object(
+                let made = Expr::object(
                     keys.into_iter()
                         .zip(values)
                         .map(|(key, value)| Prop::Field(key, value))
                         .collect(),
-                )
+                );
+                // A `#[rust_js::flatten]` field's keys the struct's own, as
+                // every struct made is, `{ ...base, name }` (ADR 0204, #2364).
+                self.flattened_object(made, ty)
             }
             Shape::Array(tys) => Expr::array(items.into_iter().zip(tys).enumerate().map(held).collect()),
             Shape::Other => Expr::js_undefined(),

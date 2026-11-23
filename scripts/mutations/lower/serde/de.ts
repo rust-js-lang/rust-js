@@ -139,19 +139,22 @@ export const mutations: Mutation[] = [
     tests: ["test/serde-std.test.ts", "-t", "a path, a Cow and a boxed str or slice"],
   },
   {
-    name: "serde-variant-tagged-tag",
-    breaks: "an enum serde reads by its internal tag that rust-js tags by `#[rust_js::tag = \"type\"]` is read as `{ TAG: .. }`, the reader's own key, so a `match` on it takes another arm: a circle's area `NaN` (#2360)",
+    name: "serde-flattened-field-nested",
+    breaks:
+      "a struct serde reads whose field `#[rust_js::flatten]` flattens is made nested, `{ base, name }`, so `user.base.id`, read as `user.id`, is `undefined` and its `Debug` throws (#2364)",
     file: "crates/rust-js-lower/src/serde/de.rs",
-    find: "                crate::bindings::tag_key(self.tcx, adt.did()),\n",
-    replace: "                js::TAG.to_string(),\n",
-    tests: ["test/serde-attributes.test.ts", "-t", "an enum read by its internal tag"],
+    find: "                self.flattened_object(made, ty)\n",
+    replace: "                made\n",
+    tests: ["test/serde-attributes.test.ts", "-t", "read flat"],
   },
   {
-    name: "serde-variant-tag-as-text",
-    breaks: "a variant serde reads whose rust-js tag is a boolean, `#[rust_js::name = true]`, is read tagged by the text `\"true\"`, so a `match` on it takes another arm (#2360)",
+    name: "serde-keyed-variant-tagged",
+    breaks:
+      "a keyed enum's variant serde reads is made with a tag its literal hasn't, a key `Object.keys`, a spread and `JSON.stringify` show (#2360)",
     file: "crates/rust-js-lower/src/serde/de.rs",
-    find: "                crate::bindings::variant_tag(self.tcx, variant),\n",
-    replace: "                Expr::str(crate::bindings::variant_name(self.tcx, variant)),\n",
-    tests: ["test/serde-attributes.test.ts", "-t", "an enum read by its internal tag"],
+    find: "            let tag = (self.variant_tag_field(adt, variant)).map(|(key, value)| Prop::Field(key, value));\n",
+    replace:
+      "            let tag = Some(Prop::Field(crate::bindings::tag_key(self.tcx, adt.did()), crate::bindings::variant_tag(self.tcx, variant)));\n",
+    tests: ["test/serde-attributes.test.ts", "-t", "read flat"],
   },
 ];

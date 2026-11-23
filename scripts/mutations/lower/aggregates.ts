@@ -480,8 +480,8 @@ export const mutations: Mutation[] = [
     name: "keyed-tag-kept",
     breaks: "a keyed enum's variant is made with a `TAG` too (#504)",
     file: "crates/rust-js-lower/src/aggregates.rs",
-    find: "        let tag = (adt_def.is_enum() && !keyed).then(|| {\n",
-    replace: "        let tag = (adt_def.is_enum()).then(|| {\n",
+    find: "        (adt.is_enum() && !keyed).then(|| {\n",
+    replace: "        (adt.is_enum()).then(|| {\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "intersection"],
   },
   {
@@ -533,5 +533,21 @@ export const mutations: Mutation[] = [
     find: "                    .map(|(i, value)| self.holding_part(value, ty, i, tys[i]))\n",
     replace: "                    .map(|(_, value)| value)\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
+  {
+    name: "variant-tagged-by-tag-constant",
+    breaks: "a variant of an enum rust-js tags by `#[rust_js::tag = \"type\"]` is made `{ TAG: .. }` by each maker that asks `variant_tag_field`, serde's reading among them, so a `match` on it takes another arm: a circle's area `NaN` (#2360)",
+    file: "crates/rust-js-lower/src/aggregates.rs",
+    find: "                bindings::tag_key(self.tcx, adt.did()),\n                bindings::variant_tag(self.tcx, variant),\n",
+    replace: "                js::TAG.to_string(),\n                bindings::variant_tag(self.tcx, variant),\n",
+    tests: ["test/serde-attributes.test.ts", "-t", "an enum read by its internal tag"],
+  },
+  {
+    name: "variant-tag-as-text",
+    breaks: "a variant whose rust-js tag is a boolean, `#[rust_js::name = true]`, is made tagged by the text `\"true\"` by each maker that asks `variant_tag_field`, serde's reading among them, so a `match` on it takes another arm (#2360)",
+    file: "crates/rust-js-lower/src/aggregates.rs",
+    find: "                bindings::tag_key(self.tcx, adt.did()),\n                bindings::variant_tag(self.tcx, variant),\n",
+    replace: "                bindings::tag_key(self.tcx, adt.did()),\n                Expr::str(bindings::variant_name(self.tcx, variant)),\n",
+    tests: ["test/serde-attributes.test.ts", "-t", "an enum read by its internal tag"],
   },
 ];

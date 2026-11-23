@@ -269,3 +269,27 @@ reference to the enum and an enum of a JS object. Mutations
 `untagged-records-written-whole`, `untagged-records-matched-refused`
 (`analysis/validation.ts`) and `untagged-records-declared-extended`
 (`declarations.ts`).
+
+
+## Amendment: one answer for a variant's tag (2026-11-23, #2360, #2364)
+
+A variant's tag, its key and value or none, is `FnCx::variant_tag_field`'s
+(`aggregates.rs`) alone, which every maker of one asks: a literal, a
+constructor as a value, and serde's reading (`serde/de.rs`' `construct`).
+Before, serde's reader and the constructor as a value each wrote the tag
+of every enum, a keyed one's too, where a literal of it writes none. A
+stray tag key is observable in JS, in `Object.keys`, a spread and
+`JSON.stringify`, so it's no difference rust-js may leave: a keyed enum
+serde reads is its variant's keys alone, `{ flags, current }`. A keyed
+enum has no constructor as a value: its tuple variants are refused, so
+that maker's answer changes no output.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's.
+
+Held by `test/serde-attributes.test.ts`'s "a struct with a flattened
+field is read flat", its keyed enum's keys read in JS; mutations
+`serde-keyed-variant-tagged` (`serde/de.ts`), `keyed-tag-kept`
+retargeted, and serde's `variant-tagged-by-tag-constant` and
+`variant-tag-as-text` moved to `aggregates.ts`, where the rule is now.
+
