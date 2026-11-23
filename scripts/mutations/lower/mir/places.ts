@@ -163,8 +163,8 @@ export const mutations: Mutation[] = [  {
     breaks:
       "an `io::Result<()>`'s `Err`'s error isn't the result itself, but read as its `Ok`'s, `undefined`",
     file: "crates/rust-js-mir/src/places.rs",
-    find: "bindings::is_untagged(self.tcx, adt.did()) || self.is_write_result(ty.ty) && variant.as_u32() != 0",
-    replace: "bindings::is_untagged(self.tcx, adt.did())",
+    find: "self.variant_is_payload(*adt, adt.variant(variant)) || self.is_write_result(ty.ty) && variant.as_u32() != 0",
+    replace: "self.variant_is_payload(*adt, adt.variant(variant))",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
   {
@@ -243,5 +243,13 @@ export const mutations: Mutation[] = [  {
     replace: "            if in_its_place && false\n",
     tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
     snapshots: true,
+  },
+  {
+    name: "otherwise-field-read-as-its-key",
+    breaks: "a match binding a discriminated union's `otherwise` payload, `Other(note) => note.text`, reads `._0` of the object itself, `undefined`, and throws a `TypeError`, a value made by the program and one serde read alike (#2396)",
+    file: "crates/rust-js-mir/src/places.rs",
+    find: "        self.variant_is_payload(*adt, adt.variant(variant)) || self.is_write_result(ty.ty) && variant.as_u32() != 0\n",
+    replace: "        bindings::is_untagged(self.tcx, adt.did()) || self.is_write_result(ty.ty) && variant.as_u32() != 0\n",
+    tests: ["test/corpus.test.ts", "-t", "^an_otherwise_variant_bound_by_its_match\\.rs$"],
   },
 ];

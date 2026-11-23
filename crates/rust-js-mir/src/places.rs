@@ -411,15 +411,18 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             let inner = self.option_of(ty.ty).expect("an `Option`");
             return !self.boxed_payload(inner);
         }
-        bindings::is_untagged(self.tcx, adt.did()) || self.is_write_result(ty.ty) && variant.as_u32() != 0
+        // A variant that's the one value it holds, an untagged enum's or a
+        // discriminated union's `otherwise`, `variant_is_payload`'s (#2396).
+        self.variant_is_payload(*adt, adt.variant(variant)) || self.is_write_result(ty.ty) && variant.as_u32() != 0
     }
 
     /// Whether field `a` of variant `va` of `ty`, an enum, and field `b` of
     /// variant `vb` are one JS place of a value of it, as `mir_field` reads
     /// them: a tagged enum's fields of one key, `Circle { r }`'s and
     /// `Square { r }`'s `shape.r`, a flattened state's `chunk.value`, of one
-    /// type and stored alike, no cell's. An `Option`'s, a write's result's
-    /// and an untagged enum's aren't, each variant's payload its own (rd430).
+    /// type and stored alike, no cell's. An `Option`'s, a write's result's,
+    /// an untagged enum's and an `otherwise`'s aren't, each variant's payload
+    /// its own (rd430, #2396).
     pub(super) fn one_variant_place(
         &self,
         ty: Ty<'tcx>,
@@ -432,7 +435,8 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         if !adt.is_enum()
             || self.transparent(ty).is_some()
             || self.tcx.is_lang_item(adt.did(), LangItem::Option)
-            || bindings::is_untagged(self.tcx, adt.did())
+            || self.variant_is_payload(*adt, adt.variant(va))
+            || self.variant_is_payload(*adt, adt.variant(vb))
             || self.is_write_result(ty)
         {
             return false;

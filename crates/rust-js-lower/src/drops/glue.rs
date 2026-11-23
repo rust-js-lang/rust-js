@@ -321,13 +321,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         true => self.some_value(value.clone()),
                         false => value.clone(),
                     },
-                    // An untagged enum's variant is its payload (ADR 0214).
-                    Part::Variant(_, _) if self.untagged(ty).is_some() => value.clone(),
+                    // A variant that's the one value it holds, an untagged
+                    // enum's or a discriminated union's `otherwise` (ADRs
+                    // 0214, 0284, #2396), is its payload.
                     Part::Variant(variant, field) => {
                         let ty::Adt(adt, _) = ty.kind() else {
                             unreachable!("a variant's field")
                         };
-                        Expr::member(value.clone(), variant_field(self.tcx, adt.variant(variant), field))
+                        match self.variant_is_payload(*adt, adt.variant(variant)) {
+                            true => value.clone(),
+                            false => Expr::member(value.clone(), variant_field(self.tcx, adt.variant(variant), field)),
+                        }
                     }
                 };
                 match field_ty.kind() {

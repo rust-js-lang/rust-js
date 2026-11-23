@@ -49,11 +49,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-drop-part",
-    breaks: "dropping an untagged enum reads a `_0` its value hasn't",
+    breaks: "dropping an untagged enum, or an `otherwise` variant, reads a `_0` its value hasn't (#2396)",
     file: "crates/rust-js-lower/src/drops/glue.rs",
-    find: "                    Part::Variant(_, _) if self.untagged(ty).is_some() => value.clone(),\n",
-    replace: "                    Part::Variant(_, _) if false => value.clone(),\n",
-    tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
+    find: "                        match self.variant_is_payload(*adt, adt.variant(variant)) {\n",
+    replace: "                        match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "untagged_enums|an_otherwise_variant_bound_by_its_match"],
   },
   {
     name: "dyn-tail-dropped-as-pair",

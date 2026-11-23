@@ -154,8 +154,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0214), or a discriminated union's `otherwise`, the object it
     /// holds (ADR 0284). The one answer each maker of one asks, a literal's,
     /// a constructor's as a value and serde's reading, beside
-    /// `variant_tag_field`, which it answers for.
-    pub(crate) fn variant_is_payload(&self, adt: ty::AdtDef<'tcx>, variant: &ty::VariantDef) -> bool {
+    /// `variant_tag_field`, which it answers for; and each reader of one, a
+    /// pattern's binding of its field, the value itself (`field_is_its_base`,
+    /// #2396), and its drop glue's.
+    pub fn variant_is_payload(&self, adt: ty::AdtDef<'tcx>, variant: &ty::VariantDef) -> bool {
         (adt.is_enum() && bindings::is_untagged(self.tcx, adt.did()))
             || bindings::is_tagged_otherwise(self.tcx, adt.did(), variant)
     }

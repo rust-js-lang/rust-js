@@ -755,7 +755,8 @@ pub fn parse_row(text: &str) -> Option<Row> {
 // A discriminated union's `otherwise` variant serde reads is the object it
 // holds, as every maker of one makes it (ADR 0284), `variant_is_payload`'s
 // answer: it was made `{ type: "Other", _0: .. }`, and written back by
-// reading that `_0`, so only its JS value was wrong.
+// reading that `_0`, so only its JS value was wrong. A match binding it,
+// `Other(note) => note.text`, reads that object itself (#2396).
 test("serde: a discriminated union's otherwise variant read is the object it holds", async () => {
   const dir = fixture("serde-tagged-otherwise");
   writeFileSync(join(dir, "cases.rs"), String.raw`
@@ -771,9 +772,15 @@ pub enum Message {
     #[cfg_attr(rust_js, rust_js::otherwise)]
     Other(Note),
 }
+fn described(m: &Message) -> String {
+    match m {
+        Message::Ping { at } => format!("ping {at}"),
+        Message::Other(note) => format!("other {}", note.text),
+    }
+}
 pub fn report() -> Vec<String> {
     [r#"{"at":3}"#, r#"{"text":"hi"}"#, "1"].iter().map(|t| match serde_json::from_str::<Message>(t) {
-        Ok(m) => serde_json::to_string(&m).unwrap(),
+        Ok(m) => format!("{} {}", described(&m), serde_json::to_string(&m).unwrap()),
         Err(e) => format!("Err({e})"),
     }).collect()
 }
