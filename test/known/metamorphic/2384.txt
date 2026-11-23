@@ -1,2 +1,0 @@
-#2384 P0: a library impl that asks the size hint of its type parameter (from_iter, sum, its own trait) is unseen by its consumer, which gives JS adapters with hint (0, None)
-plain library hint_asked_by_a_crates_own_collect_and_sum.rs

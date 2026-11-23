@@ -529,3 +529,37 @@ the runtime's `$tryProcessing`, answers std's `GenericShunt::size_hint`:
 `(0, Some(0))` once a residual is kept, else none at least and its items'
 at most.
 
+
+## Amendment: what a library's impl is given to step (2026-11-23, #2384)
+
+A library's impl that asks the hint of what it's given, `from_iter` of
+its `Hinted`, `sum` of its `Room`, is one its consumer never compiles
+itself (`instances::consumer_compiles`: a trait's or an impl's method, a
+dictionary's), so the consumer's analysis can't see it ask. So the
+consumer makes what it gives such a function to step, each iterator a
+type parameter of its own is given, by name, `Hinted::from_iter(it)`, or
+by a std consumer's call, `collect()`'s (`crate_impl_called_by`), knowing
+its hint, as if it asks (`hint_asked::given_a_library_unseen`).
+
+A form that knows its hint is right wherever it's made, so this is
+always correct; its cost is readability, `$mapEnds($iter(xs), f)` where
+`xs.values().map(f)` was. Measured: the React port is byte-identical; the
+crate corpus marks 61 places, smallvec's and arrayvec's `from_iter` and
+`extend`, which reserve by the hint, so those are fixes, and
+`proc_macro`'s `TokenStream`'s, either's and indexmap's, harmless. A
+library's free function or inherent method is compiled by its consumer
+where it's given more (ADR 0914), its questions the consumer's own, so
+it needs none of this; a binding's is JS's. The alternative, a contract
+fact of each library's pub impls' parameters whose hint they ask, is
+precise but a new field and an ABI change, for no case measured.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's.
+
+Held by `test/libraries.test.ts`' "what a library's impl is given to
+step knows its hint", a library and its consumer against native Rust,
+called by name, by `collect()` and by `sum()`, and the metamorphic net's
+`library` rewrite of `hint_asked_by_a_crates_own_collect_and_sum.rs`,
+off its known list; mutations `library-impl-given-unmarked` and
+`library-impl-by-collect-unseen`.
+

@@ -9,7 +9,7 @@ import { cpSync, existsSync, linkSync, mkdirSync, mkdtempSync, readFileSync, rea
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { runSync } from "./child";
-import { node } from "./programs";
+import { compileJs, compileJsLibrary, node, runJs } from "./programs";
 import { buildCompiler, compiler, fixture, root, run, stdDir } from "./support";
 
 beforeAll(buildCompiler, 600_000);
@@ -744,3 +744,53 @@ pub fn run() {
   const ran = runSync([node ?? "node", "--input-type=module", "--eval", `(await import(${JSON.stringify(join(dir, "app", "src", "lib.js"))})).run();`], dir, 30_000);
   expect(ran.stdout).toBe(nativeRun);
 }, 600_000);
+
+// A library's impl its consumer doesn't compile, `from_iter` of the
+// library's `Hinted`, `sum` of its `Room`, that asks the hint of what it's
+// given to step: the consumer makes what it gives knowing its hint, std's,
+// called by name or by `collect()` and `sum()`, as native Rust's (#2384).
+test("what a library's impl is given to step knows its hint, as native Rust's", () => {
+  const dir = fixture("library-impl-hint");
+  // Not `lib.rs`, the consumer's wrapper's name in `dir` (`compileCommand`).
+  const lib = join(dir, "hinted.rs");
+  writeFileSync(lib, `use std::iter::Sum;
+pub struct Hinted(pub usize, pub Option<usize>);
+impl FromIterator<u32> for Hinted {
+    fn from_iter<I: IntoIterator<Item = u32>>(items: I) -> Self {
+        let (low, high) = items.into_iter().size_hint();
+        Hinted(low, high)
+    }
+}
+pub struct Room(pub usize);
+impl Sum<u32> for Room {
+    fn sum<I: Iterator<Item = u32>>(items: I) -> Self {
+        Room(items.size_hint().0)
+    }
+}
+`);
+  const main = join(dir, "main.rs");
+  writeFileSync(main, `use hinted::{Hinted, Room};
+fn by_name() -> String {
+    let Hinted(low, high) = Hinted::from_iter(vec![1, 2, 3].into_iter().take(2));
+    format!("by name {low} {high:?}")
+}
+fn main() {
+    println!("{}", by_name());
+    let Hinted(low, high) = vec![1, 2, 3].into_iter().skip(1).collect();
+    println!("collected {low} {high:?}");
+    let Room(room) = vec![4, 5, 6].into_iter().filter(|&x| x > 4).sum();
+    println!("summed {room}");
+}
+`);
+  const native = join(dir, "native");
+  mkdirSync(native);
+  run(["rustc", "--edition=2024", "--crate-type=rlib", "--crate-name", "hinted", lib, "-o", join(native, "libhinted.rlib")]);
+  run(["rustc", "--edition=2024", main, "-o", join(native, "program"), "--extern", `hinted=${join(native, "libhinted.rlib")}`]);
+  const expected = run([join(native, "program")]);
+  expect(expected).toBe("by name 2 Some(2)\ncollected 2 Some(2)\nsummed 0\n");
+  const built = compileJsLibrary(lib, dir, "2024", "hinted");
+  if (!("rmeta" in built)) throw new Error(built.error);
+  const js = compileJs(main, dir, "2024", false, {}, ["--dependency", built.manifest], ["--extern", `hinted=${built.rmeta}`, "-L", dir]);
+  if (!("js" in js)) throw new Error(js.error);
+  expect(runJs([node ?? "node"], js.js, dir, "main").bytes.stdout.toString()).toBe(expected);
+});

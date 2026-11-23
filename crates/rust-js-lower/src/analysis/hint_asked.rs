@@ -106,6 +106,14 @@ pub(super) fn of_crate<'tcx>(
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
+            // What a library's function its consumer doesn't compile, an
+            // impl's `from_iter` or `extend`, is given to step, by name or by
+            // a std consumer's call: made knowing its hint, as its body,
+            // which the crate can't see, may ask it (#2384).
+            let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
+            for given in given_a_library_unseen(tcx, typing_env, (callee, args)) {
+                _ = mark_given(tcx, recognition, given, keeps_capacity, &mut asked);
+            }
             // A `dyn Iterator`'s hint asked, and one given back by what the
             // crate can't see make it (#1476).
             if callee == size_hint && args.types().next().is_some_and(|of| recognition.is_dyn_iter(of)) {
@@ -676,4 +684,38 @@ fn mark_made_in<'tcx>(tcx: TyCtxt<'tcx>, maker: DefId, made: Ty<'tcx>, hinted: &
 /// `take(n)`'s or a `step_by(n)`'s, marked apart (`counted_in`).
 fn made_knowing_by_its_maker<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     crate::iterators::in_place_forms::hint_knowing_std(tcx, ty).is_some()
+}
+
+/// What a call of `callee` given `args` gives to step, each iterator it
+/// gives as a type parameter of its own, to a library's function its
+/// consumer never compiles itself (`instances::consumer_compiles`), an
+/// impl's method, which the crate can't see ask its hint: by name,
+/// `Hinted::from_iter(it)`, or by a std consumer's call of it, `collect()`'s
+/// (`crate_impl_called_by`). A free function or an inherent method of a
+/// library's is compiled here where it's given more, so its own questions
+/// are the crate's; a binding's is JS's (#2384).
+fn given_a_library_unseen<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Vec<Ty<'tcx>> {
+    let reached = crate::recognition::crate_impl_called_by(tcx, typing_env, callee, args).unwrap_or((callee, args));
+    let Ok(Some(instance)) = crate::traits::resolve(tcx, typing_env, reached.0, reached.1) else {
+        return Vec::new();
+    };
+    let called = instance.def_id();
+    if called.is_local()
+        || crate::recognition::is_std_crate(tcx, called)
+        || crate::bindings::is_binding(tcx, called)
+        || crate::instances::consumer_compiles(tcx, called)
+    {
+        return Vec::new();
+    }
+    let into_iterator = crate::recognition::std_item(tcx, crate::recognition::StdItem::IntoIterator);
+    let parents = tcx.generics_of(called).parent_count;
+    (instance.args.iter().skip(parents))
+        .filter_map(|arg| arg.as_type())
+        .filter(|&own| crate::recognition::trait_holds_in(tcx, typing_env, own, into_iterator) == Some(true))
+        .map(|own| crate::recognition::iterator_type_of(tcx, typing_env, tcx.erase_and_anonymize_regions(own)))
+        .collect()
 }
