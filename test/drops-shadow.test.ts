@@ -130,9 +130,12 @@ test("a closure called once, an async body and a box's rest are compared with ru
 // Two drops of one place written alike, an early return's and the end's,
 // of a place with parts: each part compared as a multiset, the drop that
 // drops a part never left out as rustc's elaboration leaves a dead one out
-// (#2177). A variant's part that differs, which rustc's ladder drops under
-// a test of its discriminant where rust-js knows another variant is on, is
-// left unmatched, never refused.
+// (#2177). What's left of a variant, its fields with no path of their own,
+// is compared as the writer drops it, by the enum's own state under a test
+// of its discriminant, as rustc's ladder drops it (`rest_path`), not by the
+// variant's, which says it's never there where another variant is: or-
+// patterns' moves of a part of each of two variants, and a popped
+// `Option` of one, regex-syntax's `pop_group_end`'s, each agree.
 test("drops of one place written alike are compared part by part", () => {
   for (const [name, at] of [
     ["struct_update_drops.rs", ":44:1:"],
@@ -150,9 +153,18 @@ test("drops of one place written alike are compared part by part", () => {
   const flagged = shadowOf("array_parts_moved_in_a_copied_default.rs").filter(([, , owner]) => owner === "Picks::second");
   expect(flagged.filter(([verdict]) => verdict === "disagree")).toEqual([]);
   expect(flagged.some(([verdict, , , , detail]) => verdict === "flag-ours" && detail.includes("alike drops drop it"))).toBe(true);
-  const variants = shadowOf("or_pattern_part_moves.rs").filter(([, path, owner]) => path === "normal" && owner === "middle");
-  expect(variants.some(([verdict]) => verdict === "disagree")).toBe(false);
-  expect(variants.filter(([verdict, , , , detail]) => verdict === "unmatched" && detail.startsWith("ambiguous")).length).toBe(2);
+  const variants = shadowOf("or_pattern_part_moves.rs").filter(([, path]) => path === "normal");
+  expect(variants.filter(([verdict]) => verdict !== "agree").map((line) => line.slice(2).join(" "))).toEqual([]);
+  const ends = variants.filter(([, , owner, at]) => owner === "middle" && at.includes(":62:1:"));
+  // A cleanup's drop only rust-js asks a flag of, which only running it
+  // says alike or not: flag-ours, never a disagreement.
+  const cleanup = shadowOf("or_pattern_part_moves.rs").filter(([, path, owner, at]) => path === "cleanup" && owner === "middle" && at.includes(":59:5:"));
+  expect(cleanup.map(([verdict, , , , detail]) => `${verdict} ${detail}`)).toEqual(["flag-ours `m`: rust-js drops it as its drop flag says, rustc always"]);
+  expect(ends.map(([verdict, , , , detail]) => `${verdict} ${detail}`)).toEqual(["agree 4 compared"]);
+  const popped = shadowOf("popped_variant_rest_dropped_at_the_match_end.rs").filter(([, path]) => path === "normal");
+  expect(popped.filter(([verdict]) => verdict !== "agree").map((line) => line.slice(2).join(" "))).toEqual([]);
+  const end = popped.filter(([, , owner, at]) => owner === "Parser::pop_group_end" && at.includes(":41:10:"));
+  expect(end.some(([, , , , detail]) => detail.startsWith("alike drops part by part as a multiset"))).toBe(true);
 });
 
 // The normal path's verdicts over these cases, each pinned: none disagrees,
@@ -165,10 +177,10 @@ test("each normal-path verdict of the partial moves, behind a pointer and alike,
     }
   }
   expect(Object.fromEntries(["agree", "disagree", "flag-ours", "unmatched"].map((v) => [v, tally.get(v) ?? 0]))).toEqual({
-    agree: 197,
+    agree: 203,
     disagree: 0,
-    "flag-ours": 4,
-    unmatched: 4,
+    "flag-ours": 0,
+    unmatched: 0,
   });
 });
 

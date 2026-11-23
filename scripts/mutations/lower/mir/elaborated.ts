@@ -103,11 +103,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "shadow-flag-only-refused",
-    breaks: "a difference only of rust-js asking a flag where rustc knows is a disagreement, which only running it says, so `drop_partial.rs`' and `or_pattern_part_moves.rs`' flagged drops are refused (#2112's change D (c))",
+    breaks: "a difference only of rust-js asking a flag where rustc knows is a disagreement, which only running it says, so `or_pattern_part_moves.rs`' cleanup drop of `m`, flagged on rust-js's side alone, disagrees, and such a drop on the normal path would be refused (#2112's change D (c))",
     file: "crates/rust-js-mir/src/elaborated.rs",
     find: "                        (true, false) => (Verdict::FlagOurs, block, said(&differ)),\n",
     replace: "                        (true, false) => (Verdict::Disagree, block, said(&differ)),\n",
-    tests: ["test/drops-shadow.test.ts", "-t", "each normal-path verdict of the partial moves, behind a pointer and alike, is pinned"],
+    tests: ["test/drops-shadow.test.ts", "-t", "drops of one place written alike are compared part by part"],
   },
   {
     name: "shadow-box-deref-unresolved",
@@ -123,14 +123,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/elaborated.rs",
     find: "                        Some(Ok(parts)) => (\n                            Verdict::Agree,\n",
     replace: "                        Some(Ok(parts)) => (\n                            Verdict::Unmatched,\n",
-    tests: ["test/drops-shadow.test.ts", "-t", "drops of one place written alike are compared part by part"],
-  },
-  {
-    name: "shadow-alike-variant-compared",
-    breaks: "a variant's part counted as a multiset, rustc's ladder's drop under a test of its discriminant against rust-js's knowing another variant is on, so `or_pattern_part_moves.rs`' `middle` disagrees and is refused (#2177)",
-    file: "crates/rust-js-mir/src/elaborated.rs",
-    find: "            if part.variant {\n                return None;\n",
-    replace: "            if part.variant && false {\n                return None;\n",
     tests: ["test/drops-shadow.test.ts", "-t", "drops of one place written alike are compared part by part"],
   },
   {
@@ -180,5 +172,13 @@ export const mutations: Mutation[] = [
     find: "        .filter(|info| rust_js_lower::recognition::is_awaitee(info))\n",
     replace: "        .filter(|info| false && rust_js_lower::recognition::is_awaitee(info))\n",
     tests: ["test/lowering-async.test.ts", "-t", "an async block or closure drops what it took"],
+  },
+  {
+    name: "variant-rest-by-the-variants-state",
+    breaks: "what's left of a variant, its fields with no path of their own, is compared by the variant's own state, which says it's never there where another variant is, not by the enum's, which the writer and rustc's ladder drop it by under a test of the discriminant, so `or_pattern_part_moves`' `middle` and a popped `Option`'s rest, regex-syntax's `pop_group_end`'s, are unmatched (#2177)",
+    file: "crates/rust-js-mir/src/elaborated.rs",
+    find: "                ours: ours_of(elaboration.rest_path(node)),\n",
+    replace: "                ours: ours_of(node),\n",
+    tests: ["test/drops-shadow.test.ts", "-t", "drops of one place written alike are compared part by part"],
   },
 ];

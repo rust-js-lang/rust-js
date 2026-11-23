@@ -2170,3 +2170,49 @@ drop_held_across_an_await's `named_as_rustc_names_it` holds it; mutation
 `awaitee-by-name-alone`, caught.
 
 Case of [0262](0262-when-rust-and-js-disagree.md): none, no output changes.
+
+## Amendment: a variant's rest compared as the writer drops it (2026-11-24, #2177)
+
+What's left of a variant some of whose fields moved, its fields with no
+move path of their own, is dropped by the enum's state and flag under a
+test of its discriminant: rustc's `drop_subpath` drops such a field by
+its own `self.path`, the enum it opens, and rust-js's `drop_ladder` did
+the same, given that path by each caller. The comparison read the
+variant's own path instead. A variant's path is killed on each edge of a
+switch that says another variant is on, so on those paths it said
+"never" (or "as its flag says" where paths of both kinds met) where
+rustc's ladder drops the rest "always" under its test. Those were the
+last unmatched drops on the normal path: corpus case
+or_pattern_part_moves' `middle` and `name`, and regex-syntax's
+`ParserI::pop_group_end` in three of the crate corpus's graphs. All were
+alike as they run.
+
+One owner now says which path's state, and flag, governs a rest:
+`Elaboration::rest_path`, the downcast's enum or the struct's own path.
+`drop_ladder` asks it, and the comparison compares a rest by it. A
+leaf, a field with a path of its own, is still compared by its own
+state, so a moved part still differs. A second dataflow blind to
+inactive variants, considered first, wouldn't do: rustc's
+`MaybeInitializedPlaces` kills inactive variants on every edge of a
+switch, `exclude_inactive_in_otherwise` or not, and a dataflow blind to
+them would call a moved-away variant's field "always" where rustc's
+dataflow, which its ladder follows, says it's never there.
+
+What's compared alike now leaves nothing of a variant to be told apart
+by counting, so the guard that left a differing variant's part of drops
+written alike unmatched (`alike_parts`' `part.variant`) goes, with its
+mutation `shadow-alike-variant-compared`: none was left over the
+corpus, the crate corpus, the port or rustc's drop/ tests, and a
+variant's part that differs now is judged as any other part is.
+`shadow-flag-only-refused` is held by a cleanup's drop only rust-js
+asks a flag of, or_pattern_part_moves' `m`, as no normal path's drop
+over the corpus asks one alone now.
+
+Normal-path unmatched drops: corpus 4 to 0 (flag-ours 7 to 0), crate
+corpus 3 of 78,473 to 0, the React port's 890 and rustc's drop/ tests'
+910 none before or after. Corpus case
+popped_variant_rest_dropped_at_the_match_end holds regex-syntax's shape
+against native Rust. Mutations `variant-rest-by-the-variants-state` and
+`rest-path-of-a-variant-its-own`.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, no output changes.

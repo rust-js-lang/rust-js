@@ -95,6 +95,21 @@ impl<'tcx> Elaboration<'tcx> {
         }
     }
 
+    /// The path whose state, and flag, says whether what of `parts` has no
+    /// path of its own is there, as an open drop drops it: `parts` itself,
+    /// a struct's or a tuple's; of a variant's, the enum's it's a variant
+    /// of, as rustc's `drop_subpath` drops a field with no path by its own
+    /// `self.path`, the enum it opens, under the test of its discriminant.
+    /// A variant's own path is never there where it isn't the variant, so
+    /// its state says what's inactive, not what's moved (#2177).
+    pub(super) fn rest_path(&self, parts: MovePathIndex) -> MovePathIndex {
+        let path = &self.move_data.move_paths[parts];
+        match (path.place.projection.last(), path.parent) {
+            (Some(ProjectionElem::Downcast(..)), Some(parent)) => parent,
+            _ => parts,
+        }
+    }
+
     /// The paths each `Drop` reads, of a local: one that's there, or may be.
     pub(super) fn read(&self, body: &mir::Body<'tcx>) -> Vec<mir::Local> {
         let mut read = Vec::new();
@@ -608,7 +623,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 return Err(self.unsupported(span, &what));
             }
         };
-        self.drop_ladder(state, block, (place, path, path), fields, cleanup, span, out)?;
+        self.drop_ladder(state, block, (place, path), fields, cleanup, span, out)?;
         if !cleanup && let Some(flag) = &state.naming.flags()[path] {
             out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js::Span::NONE));
         }
@@ -684,20 +699,21 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
 
     /// rustc's `drop_ladder`: each of `fields` of `place`, a struct's or a
     /// variant's whose path is `parts`, that's there, in order. One with no
-    /// path of its own is there as `path`'s flag says. Each after one whose
-    /// drop panics still dropped as it unwinds, as the ladder's unwind
-    /// edges drop them (`each_ladder_step`, #2146).
+    /// path of its own is there as `rest_path`'s flag says. Each after one
+    /// whose drop panics still dropped as it unwinds, as the ladder's
+    /// unwind edges drop them (`each_ladder_step`, #2146).
     #[allow(clippy::too_many_arguments)]
     fn drop_ladder(
         &mut self,
         state: &mut State<'_, 'tcx>,
         block: BasicBlock,
-        (place, path, parts): (Place<'tcx>, MovePathIndex, MovePathIndex),
+        (place, parts): (Place<'tcx>, MovePathIndex),
         fields: Vec<Ty<'tcx>>,
         cleanup: bool,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
+        let path = state.facts.drops().expect("elaborated").rest_path(parts);
         let mut steps = Vec::new();
         for (i, field_ty) in fields.into_iter().enumerate() {
             if self.drops(field_ty) == Drops::Nothing {
@@ -768,7 +784,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 Some(parts) => {
                     let base = self.tcx.mk_place_downcast(place, adt, variant);
                     let mut dropped = Vec::new();
-                    self.drop_ladder(state, block, (base, path, parts), fields, cleanup, span, &mut dropped)?;
+                    self.drop_ladder(state, block, (base, parts), fields, cleanup, span, &mut dropped)?;
                     arms.push((variant, dropped));
                 }
                 None => {

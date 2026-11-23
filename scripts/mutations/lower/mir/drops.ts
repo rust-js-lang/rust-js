@@ -442,4 +442,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^option_none_forms_through_captures.rs$"],
     snapshots: true,
   },
+  {
+    name: "rest-path-of-a-variant-its-own",
+    breaks: "what's left of a variant some of whose fields moved, its fields with no path of their own, is dropped by the variant's own state, which says it's never there where another variant is, not by the enum's as rustc's `drop_subpath` drops it: alike as it runs, under the test of the discriminant, but its JS asks a flag of the variant's own where rustc's ladder asks the enum's or none (#2177)",
+    file: "crates/rust-js-mir/src/drops.rs",
+    find: "            (Some(ProjectionElem::Downcast(..)), Some(parent)) => parent,\n",
+    replace: "            (Some(ProjectionElem::Downcast(..)), Some(_)) => parts,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(popped_variant_rest_dropped_at_the_match_end|or_pattern_part_moves).rs$"],
+    snapshots: true,
+  },
 ];

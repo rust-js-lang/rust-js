@@ -354,13 +354,9 @@ type Differ = (String, When, When, bool);
 /// elaboration drops it, and when each of rustc's `Drop`s there that covers
 /// it does, one each; `split` where none covers it but some drop its parts,
 /// all alike, its one entry standing for them.
-// Flags, not a state: three facts of one part, each true or not apart.
+// Flags, not a state: two facts of one part, each true or not apart.
 struct Part {
     what: String,
-    /// Whether it's of an enum's variant, a downcast within it, which
-    /// rustc's ladder drops under a test of the discriminant and rust-js's
-    /// dataflow knows is inactive where its variant isn't the one there.
-    variant: bool,
     rest: bool,
     ours: When,
     theirs: Vec<When>,
@@ -827,12 +823,6 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             if ours == rustc {
                 continue;
             }
-            // Of a variant, a `Drop` under a test of its discriminant against
-            // a path rust-js knows another variant is on: alike as it runs,
-            // which counting can't say, so not compared (#2177).
-            if part.variant {
-                return None;
-            }
             let said = format!(
                 "`{}`: rust-js's alike drops drop it [{}], rustc's [{}]",
                 part.what,
@@ -922,7 +912,6 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             };
             parts.push(Part {
                 what: spelled(body, &key),
-                variant: key.1.iter().any(|step| step.starts_with('@')),
                 rest: false,
                 ours: ours_of(leaf),
                 theirs: whens,
@@ -958,9 +947,11 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 .collect();
             parts.push(Part {
                 what: format!("{} (the rest)", spelled(body, &key)),
-                variant: key.1.iter().any(|step| step.starts_with('@')),
                 rest: true,
-                ours: ours_of(node),
+                // As the writer drops it: of a variant, by the enum's own
+                // state, under its test of the discriminant, as rustc's
+                // ladder drops it (`Elaboration::rest_path`).
+                ours: ours_of(elaboration.rest_path(node)),
                 theirs: rest,
                 split: false,
             });
