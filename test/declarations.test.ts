@@ -400,7 +400,7 @@ pub fn fail(message: &str) -> ! {
     "export function first(values: unknown[]): unknown;",
     "export function parsed(text: string): Json | null | undefined;",
     "export function names(numbers: {\n    [key: string]: number;\n}): string[];",
-    "type Json = string | number | boolean | (Json | null | undefined)[] | {\n    [key: string]: Json | null | undefined;\n};",
+    "type Json = string | number | boolean | readonly (Json | null | undefined)[] | {\n    [key: string]: Json | null | undefined;\n};",
     "export type Size = string | number;",
     'export type Fallback = boolean | "blocking";',
     "export type Field = string | undefined | null;",
@@ -1379,7 +1379,7 @@ test("declarations type an impl Fn parameter as its function", () => {
   writeFileSync(join(dir, "lib.rs"), "pub fn listed<Item>(array: &[Item], render: impl Fn(&Item, usize) -> u32, done: impl Fn()) -> Vec<u32> {\n    done();\n    array.iter().enumerate().map(|(i, x)| render(x, i)).collect()\n}\n");
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(declarations).toContain("export function listed<Item>(array: Item[], render: (item: Item, value: number) => number, done: () => void): number[];");
+  expect(declarations).toContain("export function listed<Item>(array: readonly Item[], render: (item: Item, value: number) => number, done: () => void): number[];");
 });
 
 // ADR 0584: a `#[repr(transparent)]` struct is its field, so its type is

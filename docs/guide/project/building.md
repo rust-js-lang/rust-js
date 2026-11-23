@@ -152,7 +152,7 @@ export function totalArea(radii) {
 // src/lib.d.ts
 export { area } from "./shapes.js";
 
-export function totalArea(radii: number[]): number;
+export function totalArea(radii: readonly number[]): number;
 ```
 
 - **One JS file per module.** A module with JSX is `.jsx`, the rest

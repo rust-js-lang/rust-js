@@ -62,11 +62,11 @@ test("an IsA bound is TypeScript's constraint where its parameter's identity sho
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("export function selected<T extends Element>(value: T): T;");
-  expect(declarations).toContain("export function first<T extends Element>(items: T[]): T | null | undefined;");
+  expect(declarations).toContain("export function first<T extends Element>(items: readonly T[]): T | null | undefined;");
   expect(declarations).toContain("export function same<T extends Element>(a: T, b: T): boolean;");
-  expect(declarations).toContain("export function each<T extends Element>(items: T[], f: (t: T) => void): void;");
-  expect(declarations).toContain("export function count(items: Element[]): number;");
-  expect(declarations).toContain("export function held(items: Element[]): boolean;");
+  expect(declarations).toContain("export function each<T extends Element>(items: readonly T[], f: (t: T) => void): void;");
+  expect(declarations).toContain("export function count(items: readonly Element[]): number;");
+  expect(declarations).toContain("export function held(items: readonly Element[]): boolean;");
   // Codex's consumer: what Rust's bound refuses, TypeScript's does.
   writeFileSync(join(dir, "consumer.ts"), `import { count, each, first, held, same, selected } from "./lib.js";
 const button = document.createElement("button");

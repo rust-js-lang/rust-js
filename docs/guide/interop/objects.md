@@ -408,7 +408,7 @@ export const rectShape: Shape<Rect>;
 ```ts
 import type { Shape } from "./shape.js";
 
-export function totalArea<S>(shapes: S[], SShape: Shape<S>): number;
+export function totalArea<S>(shapes: readonly S[], SShape: Shape<S>): number;
 
 export function circles(): number;
 ```
@@ -582,7 +582,7 @@ export function mixed() {
 ```ts
 import type { Shape } from "./shape.js";
 
-export function largest(shapes: {
+export function largest(shapes: readonly {
     value: unknown;
     impl: Shape<unknown>;
 }[]): string;

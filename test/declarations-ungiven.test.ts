@@ -126,7 +126,7 @@ test("a function whose JS takes a fact of a type or a dictionary is a note, not 
   // whose clone of a value JS leaves out, is declared.
   expect(declarations).not.toContain("sizeOf<");
   expect(declarations).toContain(note("Counter.sizeOf", "`T`'s size_of"));
-  expect(declarations).toContain("export function first<T>(items: T[]): T | null | undefined;");
+  expect(declarations).toContain("export function first<T>(items: readonly T[]): T | null | undefined;");
   expect(declarations).toContain("export function total(): number;");
   // A collect into a `Vec` takes how std collects it, `IVecCollect`, which
   // a JS caller leaves out, its iterable no Rust iterator (#1239): declared.
@@ -209,7 +209,7 @@ test("a trait is the type of its dictionaries, which a function's declaration ta
 }`);
   expect(declarations).toContain("export const tagNamed: Named<Tag>;");
   expect(declarations).toContain("export const tagShape: Shape<Tag>;");
-  expect(declarations).toContain("export function totalArea<S>(shapes: S[], SShape: Shape<S>): number;");
+  expect(declarations).toContain("export function totalArea<S>(shapes: readonly S[], SShape: Shape<S>): number;");
   // A trailing `Option` before a dictionary is given, `null` for `None`.
   expect(declarations).toContain(
     "export function described<S>(shape: S, prefix: string | null | undefined, SShape: Shape<S>): string;",

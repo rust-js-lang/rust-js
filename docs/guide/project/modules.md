@@ -394,7 +394,7 @@ export { px as pixels, BASE } from "./format/units.js";
 
 export { hello } from "./greet.js";
 
-declare function greetAll(names: string[]): string[];
+declare function greetAll(names: readonly string[]): string[];
 
 export { greetAll as unstable_greet };
 ```

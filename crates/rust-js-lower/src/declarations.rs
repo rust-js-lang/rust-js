@@ -1003,7 +1003,15 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 let value = self.ts(*inner);
                 self.mut_ref_form(*inner).ts_type(value)
             }
-            ty::Ref(_, inner, _) => self.ts(*inner),
+            // A shared borrow is what it refers to, lent to be read: of an
+            // array, a slice or a `Vec`, `readonly T[]`, shallow (ADR 1189).
+            ty::Ref(_, inner, _) => {
+                let mut referred = self.ts(*inner);
+                if referred["kind"] == "array" {
+                    referred["readonly"] = json!(true);
+                }
+                referred
+            }
             // What a function that never returns returns (ADR 0386).
             ty::Never => keyword("never"),
             ty::Tuple(items) if items.is_empty() => keyword("undefined"),

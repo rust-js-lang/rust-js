@@ -391,3 +391,9 @@ Held by js-errors (the declaration; a binding's default parameter given a
 declarations-results (`_0: unknown`, a strict consumer narrowing it), and
 lowering-unwinds unchanged. React's port: the 8 `.d.ts` files, its pin
 moved with #1905.
+
+## Amendment: a shared borrow of an array is `readonly` (#2392)
+
+A shared borrow of an array, a slice or a `Vec` is declared `readonly T[]`,
+wherever a type is declared; a `&mut` one is `T[]`. See
+[1189](1189-a-shared-borrow-of-an-array-is-readonly.md).

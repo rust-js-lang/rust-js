@@ -554,11 +554,11 @@ export function order(prices) {
 ```
 
 ```ts
-export default function formatProdErrorMessage(code: number, ...args: unknown[]): string;
+export default function formatProdErrorMessage(code: number, ...args: readonly unknown[]): string;
 
-export function total(...prices: number[]): number;
+export function total(...prices: readonly number[]): number;
 
-export function order(prices: number[]): number;
+export function order(prices: readonly number[]): number;
 ```
 
 - **A JS caller gives its items**, `formatProdErrorMessage(418)`,
@@ -663,7 +663,7 @@ export function logged(fn: Function): (...args: unknown[]) => unknown;
 
 export function joined(): (...args: string[]) => string;
 
-export function named(names: string[]): [
+export function named(names: readonly string[]): [
     string,
     string
 ];
@@ -2541,7 +2541,7 @@ export { delete$ as delete };
 | `&str`, `String`, `char` | `string` |
 | `Option<T>` | `T \| null \| undefined`; a trailing parameter `x?:`, a function type's too, `(link: Link, sub?: Node \| null \| undefined) => void`, but a JS class's constructor's; a field `x?: T \| undefined` ([ADR 1075](../../decisions/1075-a-function-types-parameters-are-named-as-the-rust-names-them.md)) |
 | a `#[rust_js::rest]` slice `&[T]` | a rest parameter, `...args: T[]` |
-| `Vec<T>`, a slice, a tuple | `T[]`, `[A, B]` |
+| `Vec<T>`, a slice, a tuple | `T[]`, `[A, B]`; a shared borrow of an array, a slice or a `Vec`, `&[T]`, `&Vec<T>`, `readonly T[]`, lent to be read, as a parameter, a result or a field, where a `&mut` one is `T[]` ([ADR 1189](../../decisions/1189-a-shared-borrow-of-an-array-is-readonly.md)) |
 | `HashMap<K, V>`, `BTreeMap<K, V>`; `HashSet<T>`, `BTreeSet<T>` | `Map<K, V>`; `Set<T>` ([ADR 0876](../../decisions/0876-a-maps-declaration-is-map.md)) |
 | a struct with named fields | an `interface` of its fields, and of each `pub` method of `self` its impl binds of the JS object, `#[rust_js::link_name = "isPersistent"] pub fn is_persistent(&self) -> bool`'s `isPersistent(): boolean` ([ADR 0196](../../decisions/0196-typescript-declarations.md), amended) |
 | a `pub` struct another crate can't make, one with a field that isn't `pub` or `#[non_exhaustive]`, `pub struct Email(String)` | an `interface` branded by a `unique symbol` its module declares and doesn't export, `interface Email { readonly [$emailBrand]: never }`, which TypeScript only takes of what rust-js gave, a string, an array or `"x" as Email` refused; with its `pub` fields, `name: string`, a tuple struct's by index, `"0": number`, its `pub` methods, and its type parameters, `readonly [$idBrand]: T`; a `#[repr(transparent)]` one of a `pub` field is that field's type branded, `string & { readonly [$taggedBrand]: T }`. A private struct, which no other crate names, is an interface of its fields that TypeScript makes, as ADR 0385 says ([ADR 1187](../../decisions/1187-a-tuple-struct-no-caller-can-make-is-declared-opaque.md), amended) |
