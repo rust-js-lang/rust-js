@@ -12,6 +12,7 @@ import {
   $intoIter,
   $iter,
   $lazyRange,
+  $mapEnds,
   $parseBig,
   $parseInt,
   $sortedEntries,
@@ -67,7 +68,7 @@ function bagFromIteratorI32_fromIter(it, IIntoIterVecCollect) {
 
 function bag(words) {
   return $tryProcessResults(
-    words.values().map((w) => {
+    $mapEnds($iter(words), (w) => {
       const result = $parseInt(w, -2147483648, 2147483647);
       return result.TAG === "Err" ? { TAG: "Err", _0: `${w}: ${result._0}` } : result;
     }),

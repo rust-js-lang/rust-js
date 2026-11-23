@@ -120,6 +120,10 @@ pub(crate) fn crate_graph<'a, 'tcx>(
     all_bodies: &[&'a Body<'tcx>],
     names: Names<'tcx>,
 ) -> Crate<'a, 'tcx> {
+    // That each crate impl std's own code reaches with an iterator is one
+    // the callers' carrier is told of, in the build every test runs (#2376).
+    #[cfg(debug_assertions)]
+    crate::instances::check_std_reach(tcx, &names, all_bodies);
     let mut callers: IndexMap<DefId, &'a mir::Body<'tcx>> = (all_bodies.iter())
         .filter(|body| body.def_id.is_local())
         .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))

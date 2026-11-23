@@ -1173,18 +1173,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         target: Ty<'tcx>,
         iter_ty: Ty<'tcx>,
     ) -> R<Option<(Ty<'tcx>, Ty<'tcx>, Ty<'tcx>)>> {
-        let ty::Adt(_, target_args) = target.kind() else {
+        let Some(item) = self.iterator_item(iter_ty) else {
             return Ok(None);
         };
-        if self.option_of(target).is_none() && !self.recognition().is_result(target) {
-            return Ok(None);
-        }
-        let payload = self.iterator_item(iter_ty).and_then(|item| match item.kind() {
-            ty::Adt(_, args) => args.types().next(),
-            _ => None,
-        });
-        let collection = target_args.type_at(0);
-        let (Some(value), Some(shunt)) = (payload, self.recognition().generic_shunt(iter_ty, target)) else {
+        let Some((collection, value, shunt)) = crate::recognition::fallible_collect(self.tcx, (iter_ty, item), target)
+        else {
             return Ok(None);
         };
         Ok(self
@@ -1201,7 +1194,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.bound_from_iter(output, item).is_some() {
             return Ok(true);
         }
-        let Some((from_iter, args)) = self.recognition().values_from_iter(output, item, Some(given)) else {
+        let Some((from_iter, args)) = crate::recognition::values_from_iter(self.tcx, output, item, Some(given)) else {
             return Ok(false);
         };
         Ok(self
@@ -1235,7 +1228,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         given: Option<Ty<'tcx>>,
         span: Span,
     ) -> R<Option<Expr>> {
-        let Some((from_iter, args)) = item.and_then(|item| self.recognition().values_from_iter(output, item, given))
+        let Some((from_iter, args)) =
+            item.and_then(|item| crate::recognition::values_from_iter(self.tcx, output, item, given))
         else {
             return Ok(None);
         };

@@ -210,8 +210,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a fallible `collect` into the crate's own collection asks its `FromIterator` of the wrong item, and finds none",
     file: "crates/rust-js-lower/src/recognition/iterators.rs",
-    find: "            self.tcx.mk_args(&[collection.into(), item.into(), given.into()]),\n",
-    replace: "            self.tcx.mk_args(&[collection.into(), given.into(), given.into()]),\n",
+    find: "    Some((from_iter, tcx.mk_args(&[collection.into(), item.into(), given.into()])))\n",
+    replace: "    Some((from_iter, tcx.mk_args(&[collection.into(), given.into(), given.into()])))\n",
     tests: ["test/corpus.test.ts", "-t", "collect_fallible_into"],
   },
   {
@@ -661,8 +661,8 @@ export const mutations: Mutation[] = [
     name: "infallible-an-enum",
     breaks: "`Infallible`, `!` since 1.100, is taken for the enum it was: rustc panics asking its ADT (ADR 0109, amended)",
     file: "crates/rust-js-lower/src/recognition/iterators.rs",
-    find: "        let infallible = tcx.types.never;\n",
-    replace: "        let infallible = Ty::new_adt(tcx, tcx.adt_def(super::registry::by_path(tcx, StdCrate::Core, &[\"convert\", \"Infallible\"])?), ty::List::empty());\n",
+    find: "    let infallible = tcx.types.never;\n",
+    replace: "    let infallible = Ty::new_adt(tcx, tcx.adt_def(super::registry::by_path(tcx, StdCrate::Core, &[\"convert\", \"Infallible\"])?), ty::List::empty());\n",
     tests: ["test/corpus.test.ts", "-t", "^calculator.rs$"],
   },
   {
@@ -737,5 +737,23 @@ export const mutations: Mutation[] = [
     find: "            ty::Param(_) | ty::Alias(..) | ty::Dynamic(..) => true,\n",
     replace: "            ty::Alias(..) | ty::Dynamic(..) => true,\n",
     tests: ["test/binaries.test.ts", "-t", "a `Repeat`'s `count` and `last` name where they're called"],
+  },
+  {
+    name: "own-sum-unanswered",
+    breaks:
+      "`sum()` into the crate's own `Sum` isn't answered as calling it, so what it sums isn't seen given there (#2376)",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
+    find: "        name @ (\"sum\" | \"product\") => {\n",
+    replace: "        name @ \"product\" => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_a_crates_own_collect_and_sum.rs$"],
+  },
+  {
+    name: "fallible-collect-not-shunted",
+    breaks:
+      "a `collect()` into a `Result` of the crate's collection is answered as std's `Result`'s `from_iter`, not its own given std's `GenericShunt`, so what it collects isn't seen given there (#2376)",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
+    find: "            Some((collection, value, shunt)) => values_from_iter(tcx, collection, value, Some(shunt))?,\n",
+    replace: "            Some(_) => values_from_iter(tcx, output, item, Some(iter))?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_a_crates_own_collect_and_sum.rs$"],
   },
 ];

@@ -285,9 +285,12 @@ pub(super) fn of_crate<'tcx>(
 
 /// Whether a value of type `ty` made in `body` may leave it for another
 /// function: `ty` held in what it returns, what it's given or captures
-/// (`holds`), in an argument of a call of what isn't std's, in what a
-/// closure it makes captures, or unsized into a `dyn` (#1333). Of one
-/// whose signature can't be read, an opaque type unrevealed, it may.
+/// (`holds`), in an argument of a call that runs what isn't std's own code,
+/// a std trait's method the crate's impl answers, `Hinted::from_iter(..)`,
+/// or a std consumer that gives it the crate's impl (`crate_impl_called_by`),
+/// in what a closure it makes captures, or unsized into a `dyn` (#1333,
+/// #2376). Of one whose signature can't be read, an opaque type
+/// unrevealed, it may.
 fn may_leave<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, ty: Ty<'tcx>) -> bool {
     use rustc_middle::ty::adjustment::PointerCoercion;
     let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
@@ -314,8 +317,16 @@ fn may_leave<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, ty: Ty<'tcx>) -> bool {
     }
     let thir = &body.thir;
     thir.exprs.iter().any(|expr| match &expr.kind {
+        // Of std's own code alone: not a std trait's method the crate's impl
+        // answers, nor a std consumer that gives what it steps on to one,
+        // `collect()`'s `from_iter` (#2376).
         ExprKind::Call { fun, args, .. } => {
-            let std = fn_def(thir[*fun].ty).is_some_and(|(callee, _)| crate::recognition::is_std_crate(tcx, callee));
+            let std = fn_def(thir[*fun].ty).is_some_and(|(callee, given)| {
+                let runs = (crate::traits::resolve(tcx, typing_env, callee, given).ok().flatten())
+                    .map_or(callee, |instance| instance.def_id());
+                crate::recognition::is_std_crate(tcx, runs)
+                    && crate::recognition::crate_impl_called_by(tcx, typing_env, callee, given).is_none()
+            });
             !std && args.iter().any(|&arg| holds(thir[arg].ty))
         }
         ExprKind::Closure(closure) => closure.upvars.iter().any(|&upvar| holds(thir[upvar].ty)),

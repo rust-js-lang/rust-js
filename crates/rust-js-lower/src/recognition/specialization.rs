@@ -350,7 +350,11 @@ fn const_size_into_iter(ty: Ty<'_>) -> bool {
 }
 
 /// What an iterator of `iterator` gives, its `Item`, normalized.
-fn iterator_item_of<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, iterator: Ty<'tcx>) -> Option<Ty<'tcx>> {
+pub(super) fn iterator_item_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    iterator: Ty<'tcx>,
+) -> Option<Ty<'tcx>> {
     let item = trait_method(tcx, std_item(tcx, StdItem::Iterator), "Item");
     let projection = Ty::new_projection(tcx, ty::IsRigid::No, item, [iterator]);
     tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(projection))

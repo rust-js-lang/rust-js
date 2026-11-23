@@ -466,6 +466,10 @@ impl RustJs {
                 pipeline::Lowered::MadeWhereUsed(keys) => made_where_used.extend(keys),
             }
         };
+        // What std's code reaches of the crate's impls, each answered, of a
+        // compile no refusal ended (#2376).
+        #[cfg(debug_assertions)]
+        rust_js_lower::instances::std_reach_answered(tcx);
         // Which std functions a recogniser took, of the crate's analysis and
         // every body's lowering, where it's asked (ADR 1128).
         if let Some(path) = &self.recognizers_found

@@ -517,3 +517,15 @@ holds each adapter's hint fresh, part-consumed and exhausted, its
 `enumerate()`, over an infinite source, over a range and of a type
 parameter's items, against native in both builds, the iterator forms
 and every metamorphic rewrite.
+
+
+## Amendment: a crate's own `FromIterator` or `Sum` asks it too (2026-11-23, #2376)
+
+`collect()` into a collection of the crate's, or `sum()` into its own
+`Sum`, gives what it steps to the crate's impl inside std's body, and an
+impl that asks `size_hint()` there gets std's hint: what the callers'
+carrier is told of it (ADR 1115, amended). A fallible `collect()`'s shunt,
+the runtime's `$tryProcessing`, answers std's `GenericShunt::size_hint`:
+`(0, Some(0))` once a residual is kept, else none at least and its items'
+at most.
+

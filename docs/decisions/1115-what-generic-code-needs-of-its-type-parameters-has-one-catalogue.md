@@ -330,3 +330,76 @@ now reads too, its answers for the other facts as they were:
   parameter a naming gives, the call that gives it can give it as one
   whose call drops it (ADR 0470, #2033); held in what's given, or given
   back, none can, and it's refused (#2050).
+
+
+## Amended (2026-11-23, #2376): what std's own code gives the crate's impl
+
+A crate's impl that std's own body calls, `FromIterator::from_iter` of a
+collection of the crate's, is named by no body the crate has: `collect()`
+calls it inside std. So its type parameter had no instance the carrier
+saw, and generic code's questions of it went unasked. A crate's
+`from_iter` that asks `size_hint()` of what it's given got JS's own
+`values().take(n)`, `(0, None)`, where std's `Take` is exact.
+
+**The rule.** `given_calls_of` adds, beside each naming of a std consumer,
+what that call's lowering calls of the crate's impl, as a naming of the
+trait's method with the arguments it's given there:
+`recognition::crate_impl_called_by`, the one answer the lowering and the
+carrier both read.
+
+- `collect()` into a collection of the crate's calls its `from_iter`
+  given the iterator as it is.
+- Into an `Option` or a `Result` of one, it calls the `from_iter` given
+  std's `GenericShunt` of it (`fallible_collect`, which the lowering's
+  `try_processed_into` reads too), whose part the runtime's shunt plays.
+- `sum()` and `product()` call the crate's `Sum::sum` and
+  `Product::product`.
+
+What std's body reaches but no lowering calls, `partition`'s and `unzip`'s
+crate `Extend`s, which the runtime's `$partition` replaces (#2377), is no
+naming: the carrier holds only what the JS calls.
+
+**Whole, by a check.** In the debug build every test runs,
+`instances::check_std_reach` follows std's MIR from each call the crate
+makes of std's generic code given something of its own (an instance once;
+only while what it's given holds something of the crate's; where std's
+MIR is there). Each crate impl it reaches whose own type parameter is an
+`Iterator` or an `IntoIterator` must be what `crate_impl_called_by`
+answers of that call. One it isn't is kept, its decision `std-reach`'s
+`unanswered`, and said where the compile ends without an error, naming
+the std method and the impl and saying what to do: add the std method to
+the answer, as its lowering calls the impl, or refuse the call. A compile
+a refusal ends says the refusal alone, a tuple's `collect()` into the
+crate's `Extend`s, `partition`'s (#2377), any later one's: a compile that
+succeeds has every reach answered, with no catalogue of refusals. So a
+std path no answer covers fails a test, not a program. rustc's own mono collection was
+measured first, 4.5 ms a compile, and refused: it needs every
+dependency's optimized MIR, which the port's binding crates, built
+metadata-only, don't have (77 errors).
+
+**Sound for each reader.** An added naming gives an instance the JS
+really gives.
+
+- `hint_asked` (`Fact::Marked`) only marks what's made knowing its hint,
+  and a form that knows its hint is right wherever it's made. Its
+  `may_leave` reads the same answer: a value a std consumer gives the
+  crate's impl leaves the function that makes it.
+- `clones`, `stored_places` and `cell_borrows` (`Fact::Shared`) each
+  answer of the set of what callers give, a property any instance has. A
+  real instance can only add one the JS meets, never take one away.
+- `rc_counts` (`Fact::Counted`) counts what's given, and a real instance
+  is one it should count.
+- `callers_decide` and `closures::called` read each naming as a direct
+  call of the trait's method, which this is.
+- `Fact::CopiedApart`'s readers (copies, `traits`, `mutation`,
+  dictionaries) never follow an impl's method, so they're unchanged.
+
+**Held by** the corpus's `hint_asked_by_a_crates_own_collect_and_sum.rs`,
+against native Rust: a `take(n)`, `skip(n)`, `filter`, `Result` collect
+and `Sum`. Also held by `lowering-generic-iterators.test.ts`' check of an
+unanswered path found, a tuple's `collect()` into two `Extend`s of the
+crate's, which its refusal says, the check's rule's unit test,
+and by a mutation of each rule. Two snapshots move: a `from_iter` that
+collects generically, which std's `Vec` collect asks the hint of, is given
+`$mapEnds`, not JS's `map`.
+

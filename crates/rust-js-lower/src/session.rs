@@ -90,6 +90,13 @@ pub struct Caches {
     /// Each check THIR's facts leave out that MIR doesn't prove, where the
     /// session records them, `--intervals-shadow`'s (#1672).
     pub intervals_shadow: Option<RefCell<super::analysis::Shadow>>,
+    /// What std's own code reaches of the crate's impls that take an
+    /// iterator that `crate_impl_called_by` doesn't answer, found as the
+    /// crate is analyzed (`instances::check_std_reach`), each said where the
+    /// compile ends without an error, as one a lowering refuses is no
+    /// program (#2376).
+    #[cfg(debug_assertions)]
+    pub(crate) std_reach_unanswered: RefCell<Vec<String>>,
     /// Of each `Drop` of the crate's bodies, its comparison with rustc's
     /// elaboration, a line each, where the session records them,
     /// `--drops-shadow`'s (#2112's change D).
@@ -273,6 +280,8 @@ fn start_keyed(gcx: usize, flags: Flags, hooks: &'static dyn MirHooks) -> Sessio
             without_moves: flags.without_moves,
             intervals_by_effects: flags.intervals_by_effects,
             intervals_shadow: flags.records_intervals_shadow.then(RefCell::default),
+            #[cfg(debug_assertions)]
+            std_reach_unanswered: RefCell::default(),
             drops_shadow: flags.records_drops_shadow.then(RefCell::default),
             intervals: RefCell::default(),
             recognized: flags.records_recognized.then(RefCell::default),

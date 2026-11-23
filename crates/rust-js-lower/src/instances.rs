@@ -17,7 +17,13 @@ use super::Body;
 
 mod failing;
 mod needed;
+#[cfg(debug_assertions)]
+mod std_reach;
 pub use needed::{Analyzed, copy_reaches, is_state, needed, reads};
+#[cfg(debug_assertions)]
+pub(crate) use std_reach::check_std_reach;
+#[cfg(debug_assertions)]
+pub use std_reach::std_reach_answered;
 
 /// The library functions the crate compiles itself, each placed in the
 /// module of the crate's that first calls it (ADR 0914). Decided by the
@@ -227,9 +233,16 @@ pub(super) fn given_calls_of<'tcx>(
         Some(_) => read_by_js_alone(tcx, Some(&body.thir), None),
         None => read_by_js_alone(tcx, None, body.mir.as_ref().map(|mir| &mir.body)),
     };
+    let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
     (names.names_of(body.def_id).iter().copied())
         .filter(|&(callee, _, at, _)| !alone.iter().any(|&(f, given)| f == callee && given.contains(at)))
-        .map(|(callee, args, at, _)| (callee, args, at))
+        .flat_map(|(callee, args, at, _)| {
+            // And what a std consumer's call calls of the crate's own impl,
+            // `collect()`'s `from_iter` of what it steps, which std's body
+            // names where the crate's can't be seen to (#2376).
+            let implied = crate::recognition::crate_impl_called_by(tcx, typing_env, callee, args);
+            std::iter::once((callee, args, at)).chain(implied.map(|(called, args)| (called, args, at)))
+        })
         .collect()
 }
 

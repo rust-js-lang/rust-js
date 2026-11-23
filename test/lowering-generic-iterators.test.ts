@@ -8,6 +8,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { runSync } from "./child";
 import { buildCompiler, compiler, fixture, run } from "./support";
 
 beforeAll(buildCompiler, 600_000);
@@ -352,4 +353,35 @@ pub fn both() -> usize {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function gathered(it, BFromIteratorIItem, ITrustedLen, IInPlace, dropI) {");
   expect(js).toContain("export function listed(it, dropI, dropIItem) {");
+});
+
+// What std's own code calls of the crate's impl that takes an iterator,
+// `from_iter`, `extend`, `sum`, is what `recognition::crate_impl_called_by`
+// answers, so the callers' carrier sees what each is given (#2376): one no
+// answer covers is found as the crate is analyzed, its decision
+// `std-reach`'s `unanswered`, and said where the compile ends without an
+// error, as a refusal says itself. A tuple's `collect()` reaches each
+// part's own `extend` through std's `FromIterator for (A, B)`, which the
+// lowering refuses: the refusal, not the check, is what's said.
+test("std's code reaching the crate's iterator-taking impl unanswered is found, a refusal said as itself", () => {
+  const dir = fixture("std-reach-unanswered");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Default)]
+pub struct Bag(Vec<u32>);
+impl Extend<u32> for Bag {
+    fn extend<I: IntoIterator<Item = u32>>(&mut self, items: I) {
+        self.0.extend(items)
+    }
+}
+pub fn split() -> usize {
+    let (a, b): (Bag, Bag) = vec![(1u32, 2u32)].into_iter().collect();
+    a.0.len() + b.0.len()
+}
+`);
+  const counts = join(dir, "decisions.tsv");
+  const ran = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], dir, 300_000, { RUST_JS_DECISIONS: counts });
+  expect(ran.code).not.toBe(0);
+  expect(ran.stderr).toContain("does not support `collect` into a `(Bag, Bag)`");
+  expect(ran.stderr).not.toContain("crate_impl_called_by");
+  const reach = readFileSync(counts, "utf8").split("\n").filter((line) => line.startsWith("std-reach\t"));
+  expect(reach.some((line) => line.startsWith("std-reach\tunanswered\t") && Number(line.split("\t")[4]) > 0)).toBe(true);
 });

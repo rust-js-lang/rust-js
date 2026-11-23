@@ -24850,6 +24850,10 @@ export function $tryProcessing(items, isResidual, valueOf, collect, dropResidual
     () => it.return?.(),
   );
   shunt.iter = it;
+  // Std's `GenericShunt::size_hint`: none once a residual is kept, else
+  // none at least and its items' at most, which a crate's own `from_iter`
+  // may ask (#2376).
+  shunt.sizeHint = () => (ended ? [0, 0] : [0, $sizeHint(it)[1]]);
   const made = $unwinds(
     () => collect(shunt),
     dropResidual && (() => ended && dropResidual(residual)),

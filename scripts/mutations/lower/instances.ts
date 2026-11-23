@@ -253,4 +253,13 @@ export const mutations: Mutation[] = [
     replace: "            if !flow(owner, ty, (by_ref, As::Called), &pending, &mut todo, on) {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_fn_moved_into_a_struct_called_once_refused.rs$"],
   },
+  {
+    name: "std-consumer-impl-unnamed",
+    breaks:
+      "a `collect()` or `sum()` into a collection of the crate's names its own `from_iter` or `sum` with nothing, so the callers' carrier never sees what it's given and a `filter`'s hint is JS's, `(0, None)`, not std's (#2376)",
+    file: "crates/rust-js-lower/src/instances.rs",
+    find: "            let implied = crate::recognition::crate_impl_called_by(tcx, typing_env, callee, args);\n",
+    replace: "            let implied: Option<(DefId, ty::GenericArgsRef<'tcx>)> = None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_a_crates_own_collect_and_sum.rs$"],
+  },
 ];

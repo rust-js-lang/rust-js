@@ -35,4 +35,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fallible_collect_into_own_from_iter.rs$"],
   },
+  {
+    name: "try-process-shunt-unhinted",
+    breaks:
+      "the shunt a fallible `collect()` gives the crate's `from_iter` knows no hint, `(0, None)`, where std's `GenericShunt` gives its items' at most (#2376)",
+    file: "crates/rust-js-program/src/runtime/try_process.js",
+    find: "  shunt.sizeHint = () => (ended ? [0, 0] : [0, $sizeHint(it)[1]]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_a_crates_own_collect_and_sum.rs$"],
+  },
 ];

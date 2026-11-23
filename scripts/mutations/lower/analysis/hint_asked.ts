@@ -252,4 +252,22 @@ export const mutations: Mutation[] = [
     replace: "            if callee == size_hint\n                && let Some(of) = args.types().next()\n                && !rustc_middle::ty::TypeVisitableExt::has_param(&of)\n                && !recognition.is_dyn_iter(of)\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters_made_in_place_over_a_type_parameters_items.rs$"],
   },
+  {
+    name: "collected-by-own-stays",
+    breaks:
+      "a `take(n)` or a `skip(n)` collected into a collection of the crate's is taken to stay where it's made, so it's JS's own `values().take(n)`, whose hint is `(0, None)` where the crate's `from_iter` asks std's (#2376)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "                    && crate::recognition::crate_impl_called_by(tcx, typing_env, callee, given).is_none()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_a_crates_own_collect_and_sum.rs$"],
+  },
+  {
+    name: "own-impl-call-taken-for-std",
+    breaks:
+      "a call of std's trait method the crate's impl answers, `Hinted::from_iter(v.into_iter().take(2))`, is taken for std's code, so the `take(2)` stays where it's made, JS's own, whose hint is `(0, None)` (#2376)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "                    .map_or(callee, |instance| instance.def_id());\n",
+    replace: "                    .map_or(callee, |_| callee);\n",
+    tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_a_crates_own_collect_and_sum.rs$"],
+  },
 ];

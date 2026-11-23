@@ -54,10 +54,26 @@
 
 use super::copies::InPlaceWriter;
 use super::{FnCx, R};
+use crate::recognition::StdItem;
 use rust_js_program::js::Expr;
 use rustc_middle::ty::{self, Mutability, Ty, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::{CRATE_DEF_ID, DefId};
+
+/// Whether `def` takes a type parameter of its own that its bounds make an
+/// `Iterator` or an `IntoIterator`, `from_iter`'s `I`: what a caller gives
+/// it to step, not `Hash::hash`'s `H` nor `fold`'s `B` (#2376).
+pub(crate) fn takes_an_iterator(tcx: ty::TyCtxt<'_>, def: DefId) -> bool {
+    let parents = tcx.generics_of(def).parent_count as u32;
+    let iterators = [StdItem::Iterator, StdItem::IntoIterator].map(|item| crate::recognition::std_item(tcx, item));
+    (tcx.clauses_of(def).clauses.iter())
+        .filter_map(|(clause, _)| clause.as_trait_clause())
+        .any(|bound| {
+            let bound = bound.skip_binder();
+            iterators.contains(&bound.def_id())
+                && matches!(*bound.self_ty().kind(), ty::Param(param) if param.index >= parents)
+        })
+}
 
 /// Which `Fn` trait the argument `at` of a call of `callee` is called
 /// through: the most its parameter's bounds name of `Fn`, `FnMut` and

@@ -420,4 +420,13 @@ export const mutations: Mutation[] = [
     replace: "            ty::Param(p) if given_as_it_is(p) => RefHeld::InBox,\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^zip_into_mut_slice with"],
   },
+  {
+    name: "iterator-taken-of-a-parent",
+    breaks:
+      "a function is said to take an iterator by its impl's or its trait's parameters, not its own, so the debug build's check of what std's code reaches of the crate's `extend` passes it (#2376)",
+    file: "crates/rust-js-lower/src/generic_facts.rs",
+    find: "if param.index >= parents)",
+    replace: "if param.index < parents)",
+    tests: ["test/lowering-generic-iterators.test.ts", "-t", "unanswered"],
+  },
 ];

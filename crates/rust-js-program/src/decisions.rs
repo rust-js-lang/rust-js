@@ -154,6 +154,12 @@ pub(crate) const CATALOGUE: &[Decision] = &[
         typed: true,
     },
     Decision {
+        name: "std-reach",
+        owner: "crates/rust-js-lower/src/instances/std_reach.rs check_std_reach",
+        answers: &["answered", "unanswered"],
+        typed: false,
+    },
+    Decision {
         name: "hint-made",
         owner: "crates/rust-js-lower/src/iterators/back_facts.rs made_knowing_its_hint",
         answers: &["counted-in", "knowing-in", "typed", "no"],

@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2877
-lines	396424
+files	2881
+lines	397399
 temporaries	0	0
 labeled blocks	0	0
 while (true)	242	6.1
-$iter	3458	87.2
+$iter	3477	87.5
 Iterator.from	312	7.9
 return;	452	11.4
-renamed x$1	17530	442.2
-role fallbacks	9740	245.7
+renamed x$1	17633	443.7
+role fallbacks	9808	246.8
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	51	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	60
@@ -22,6 +22,7 @@ test/corpus/adapter_size_hints.js	129	0	0	0	0	0	0	19	12
 test/corpus/adapter_source_drops.js	161	0	0	0	0	0	0	8	4
 test/corpus/adapter_stepped_from_its_back_past_an_arguments_statement.js	103	0	0	0	7	0	0	7	6
 test/corpus/adapters_given_to_generic_backs.js	57	0	0	0	2	0	0	4	3
+test/corpus/adapters_marked_knowing_their_backs_by_their_makers.js	855	0	0	0	11	0	0	101	68
 test/corpus/adapters_over_own_next_that_panics.js	1137	0	0	2	1	2	0	2	25
 test/corpus/adapters_own_nth_fold.js	289	0	0	0	0	0	0	6	4
 test/corpus/adapters_own_work_that_panics.js	712	0	0	0	8	0	0	12	15
@@ -420,7 +421,7 @@ test/corpus/collect_closes_what_its_hint_panics.js	165	0	0	0	0	0	0	0	1
 test/corpus/collect_drops.js	128	0	0	0	5	0	0	0	1
 test/corpus/collect_endless_once_stepped.js	201	0	0	0	15	0	0	29	1
 test/corpus/collect_fallible.js	70	0	0	0	3	0	0	2	2
-test/corpus/collect_fallible_into.js	152	0	0	0	2	0	0	16	11
+test/corpus/collect_fallible_into.js	153	0	0	0	3	0	0	16	11
 test/corpus/collect_in_place_drops_what_it_collected_first_as_a_closure_panics.js	85	0	0	0	1	0	0	0	1
 test/corpus/collect_in_place_in_a_macro.js	49	0	0	0	0	0	0	2	3
 test/corpus/collect_into_a_type_parameter_is_stds.js	97	0	0	0	1	1	0	0	0
@@ -644,6 +645,7 @@ test/corpus/discarded_drop_leaks_the_accumulator.js	319	0	0	0	10	0	0	6	12
 test/corpus/discriminants_past_32_bits.js	80	0	0	0	0	0	0	0	1
 test/corpus/display_impl_of_a_reference_box_or_pin.js	145	0	0	0	0	0	0	6	0
 test/corpus/display_options_handed_on.js	50	0	0	0	0	0	0	0	0
+test/corpus/division_assigned_to_a_place_raises_at_the_division.js	34	0	0	0	0	0	0	0	0
 test/corpus/division_check_order.js	52	0	0	0	0	0	0	14	6
 test/corpus/do_while_advances.js	269	0	0	8	0	0	0	0	0
 test/corpus/do_while_tested_last.js	110	0	0	2	0	0	0	2	3
@@ -1247,6 +1249,7 @@ test/corpus/held_step_by_of_a_reversed_range_grows_as_std.js	46	0	0	0	0	0	0	0	0
 test/corpus/held_zips.js	68	0	0	0	4	0	0	7	5
 test/corpus/higher_ranked_bound.js	37	0	0	0	0	0	0	0	0
 test/corpus/higher_ranked_dyn.js	23	0	0	0	0	0	0	0	0
+test/corpus/hint_asked_by_a_crates_own_collect_and_sum.js	59	0	0	0	6	0	0	2	0
 test/corpus/hint_kept_through_rev_take_and_cycle.js	84	0	0	0	0	0	0	2	2
 test/corpus/hint_through_a_given_value.js	91	0	0	0	8	0	0	11	8
 test/corpus/holding_adapter_counted_or_last_drops_its_function.js	623	0	0	1	4	0	2	58	24
@@ -2160,6 +2163,7 @@ test/corpus/reference_returned_as_its_parameter_given_as_its_pointer.js	65	0	0	0
 test/corpus/references_given_to_generics.js	174	0	0	0	0	0	0	2	2
 test/corpus/references_read_before_their_field_is_written.js	61	0	0	0	0	0	0	0	0
 test/corpus/refused_drops_and_displays.js	416	0	0	1	1	0	0	2	4
+test/corpus/remainder_assigned_in_a_closure_raises_at_the_remainder.js	25	0	0	0	0	0	0	0	0
 test/corpus/remainder_operands.js	58	0	0	0	0	0	0	0	3
 test/corpus/remainder_sign.js	23	0	0	0	0	0	0	0	0
 test/corpus/repeat_count_panics.js	155	0	0	0	1	0	0	0	5
@@ -2681,7 +2685,7 @@ test/corpus/unwrapped_cell_in_a_chain.js	37	0	0	0	0	0	0	0	0
 test/corpus/unzip_into_maps.js	57	0	0	0	0	0	0	6	0
 test/corpus/use_renames_own_item.js	13	0	0	0	0	0	0	0	0
 test/corpus/user_as_mut.js	48	0	0	0	0	0	0	0	1
-test/corpus/user_collections.js	69	0	0	0	4	2	0	0	0
+test/corpus/user_collections.js	70	0	0	0	5	2	0	0	0
 test/corpus/user_deref.js	77	0	0	0	0	0	0	0	1
 test/corpus/user_fmt_traits.js	155	0	0	0	0	0	0	0	1
 test/corpus/user_fmt_write.js	90	0	0	0	0	0	0	0	0
