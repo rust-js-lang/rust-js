@@ -77,8 +77,10 @@ test("a rebased branch's own lines are written for the moves, and main's are lef
     write(at, {
       "src/lower/iterators.rs": "pub(in crate::lower) fn step() {}\n\n/// Steps as `crate::lower::run` does.\npub(in crate::lower) fn probe() {\n    super::run();\n    crate::lower::mir::plain();\n}\n",
       "src/lower/mir.rs": "pub fn plain() {\n    crate::lower::iterators::step();\n}\n",
-      "test/a.test.ts": `const a = "src/lower/iterators.rs";\nconst b = join(root, "src/lower/mir.rs");\n`,
+      "test/a.test.ts": `const a = "src/lower/iterators.rs";\nconst b = join(root, "src/lower/mir.rs");\nconst c = (file: string) => file.startsWith("src/lower/iterators");\n`,
+      "scripts/mutations/lower/mir.ts": `export const mutations = [\n  {\n    name: "plain-steps-not",\n    file: "src/lower/mir.rs",\n    find: "    crate::lower::iterators::step();\\n",\n    replace: "",\n  },\n];\n`,
     });
+    git(at, "add", "-A");
     git(at, "commit", "-qam", "the branch");
     git(at, "rebase", "-q", main);
 
@@ -89,7 +91,14 @@ test("a rebased branch's own lines are written for the moves, and main's are lef
     );
     expect(read("crates/app-mir/src/lib.rs")).toBe("pub fn plain() {\n    app_lower::iterators::step();\n}\n");
     // Its own line, not main's, whose path main left as it was.
-    expect(read("test/a.test.ts")).toBe(`const a = "src/lower/iterators.rs";\nconst b = join(root, "crates/app-mir/src/lib.rs");\n`);
+    expect(read("test/a.test.ts")).toBe(
+      `const a = "src/lower/iterators.rs";\nconst b = join(root, "crates/app-mir/src/lib.rs");\nconst c = (file: string) => file.startsWith("crates/app-lower/src/iterators");\n`,
+    );
+    // A mutation list the branch added: its `file:` where the file went, and
+    // its `find` written as that file's lines are (#2339).
+    expect(read("scripts/mutations/lower/mir.ts")).toBe(
+      `export const mutations = [\n  {\n    name: "plain-steps-not",\n    file: "crates/app-mir/src/lib.rs",\n    find: "    app_lower::iterators::step();\\n",\n    replace: "",\n  },\n];\n`,
+    );
     // Main's lines: the root's import, and its prose; and iterators.rs's
     // first, which main moved as it was, stale as that is.
     expect(read("crates/app-lower/src/lib.rs")).toBe(settled);
