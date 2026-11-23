@@ -870,7 +870,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         (ty, span): (Ty<'tcx>, Span),
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let Some(shim) = self.shim_location(state, def_id, span) else {
+        let Some(shim) = self.shim_location(state, def_id, span)? else {
             return self.fn_value_in_generic_forms_at(state, (def_id, args), (ty, span), out);
         };
         // Its call given the shim's location: an argument of the crate's, and
@@ -885,13 +885,52 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
 
     /// Where a function made a value at `span` that tracks its caller is
     /// called from: the shim it's called through's location (#2335), where
-    /// the body says how it's called.
-    fn shim_location(&self, state: &State<'_, 'tcx>, def_id: rustc_span::def_id::DefId, span: Span) -> Option<Expr> {
-        if !rust_js_lower::recognition::tracks_caller(self.tcx, def_id) {
-            return None;
+    /// the body says how it's called. Where it doesn't, the crate's own
+    /// code is refused where a panic's location is written, a binary's
+    /// (Tu's decision); a library's, and a library's code compiled here,
+    /// keep its caller's line.
+    fn shim_location(&self, state: &State<'_, 'tcx>, def_id: rustc_span::def_id::DefId, span: Span) -> R<Option<Expr>> {
+        let tcx = self.tcx;
+        if !rust_js_lower::recognition::tracks_caller(tcx, def_id) {
+            return Ok(None);
         }
-        let shim = crate::shims::through(self.tcx, state.body, def_id, span)?.shim(self.tcx, def_id)?;
-        Some(self.location_as_shipped(self.tcx.def_span(shim)))
+        let shim = match crate::shims::through(tcx, (state.body, state.facts.promoted().as_slice()), def_id, span) {
+            crate::shims::Called::Through(way) => way.shim(tcx, def_id),
+            crate::shims::Called::Never => None,
+            crate::shims::Called::Untold
+                if state.body.source.def_id().is_local() && rust_js_lower::recognition::prints_panic_locations(tcx) =>
+            {
+                // As written, `Option::unwrap`, and a closure of its arity.
+                let name =
+                    (tcx.sess.source_map().span_to_snippet(span).ok()).unwrap_or_else(|| tcx.def_path_str(def_id));
+                let sig = tcx.fn_sig(def_id).instantiate_identity().skip_normalization();
+                let arity = tcx.instantiate_bound_regions_with_erased(sig).inputs().len();
+                let params = match arity {
+                    1 => "x".to_string(),
+                    n => (0..n)
+                        .map(|i| ((b'a' + i as u8) as char).to_string())
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                };
+                return Err(refuse(
+                    tcx,
+                    span,
+                    Refused::Instead(
+                        &format!(
+                            "a value of `{name}`, a `#[track_caller]` function, called where this function \
+                             doesn't say how (#2335)"
+                        ),
+                        &format!(
+                            "where it's called says the location its panic names: give it straight to the \
+                             function that calls it, or write a closure, `|{params}| {name}({params})`, whose \
+                             line is the location, as in Rust"
+                        ),
+                    ),
+                ));
+            }
+            crate::shims::Called::Untold => None,
+        };
+        Ok(shim.map(|shim| self.location_as_shipped(tcx.def_span(shim))))
     }
 
     fn fn_value_in_generic_forms_at(
@@ -928,7 +967,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         (ty, span): (Ty<'tcx>, Span),
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let Some(shim) = self.shim_location(state, def_id, span) else {
+        let Some(shim) = self.shim_location(state, def_id, span)? else {
             return self.fn_value_in_callers_forms_at(state, (def_id, args), (ty, span), out);
         };
         let before = self.set_value_location(Some(shim.clone()));

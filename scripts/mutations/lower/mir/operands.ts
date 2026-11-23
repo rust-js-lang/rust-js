@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untold-value-refused-in-libraries",
+    breaks: "a `#[track_caller]` function made a value whose calls the body doesn't say is refused in a library too, where Tu's decision keeps a library compiling (#2335)",
+    file: "crates/rust-js-mir/src/operands.rs",
+    find: "                if state.body.source.def_id().is_local() && rust_js_lower::recognition::prints_panic_locations(tcx) =>\n",
+    replace: "                if state.body.source.def_id().is_local() =>\n",
+    tests: ["test/binaries.test.ts", "-t", "made a value whose calls the body doesn't say"],
+  },
+  {
     name: "value-raised-where-its-call-is",
     breaks: "a `#[track_caller]` std function made a value raises its panic where the call it's given to is, not at the shim it's called through, `.map(Option::unwrap)` at `.map`'s line (#2335)",
     file: "crates/rust-js-mir/src/operands.rs",

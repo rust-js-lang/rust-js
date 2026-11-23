@@ -16,7 +16,6 @@ use rust_js_program::js::{self, Expr, Stmt, StmtKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
-use rustc_structures::CrateType;
 
 /// What's asked of the process.
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -97,7 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub fn entry_of(&mut self, def_id: DefId, span: Span) -> R<Option<Vec<Stmt>>> {
         let tcx = self.tcx;
         let is_main = tcx.entry_fn(()).is_some_and(|(main, _)| main == def_id);
-        if !is_main || !tcx.crate_types().contains(&CrateType::Executable) || tcx.sess.opts.test {
+        if !is_main || !crate::recognition::prints_panic_locations(tcx) {
             return Ok(None);
         }
         let js_span = self.js_span(span);

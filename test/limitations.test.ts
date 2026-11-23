@@ -1,6 +1,7 @@
 // docs/guide/limitations.md is kept true: each item it says is refused at compile
-// time ends with an example, compiled here as a program's `main`. One that
-// compiles, a limitation lifted, fails this, and says to take its line out.
+// time ends with an example, compiled here as a program's `main`, in a
+// binary where it says it's a binary's. One that compiles, a limitation
+// lifted, fails this, and says to take its line out.
 
 import { expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
@@ -19,7 +20,9 @@ for (const { item, example, title } of limitations()) {
     writeFileSync(join(dir, "main.rs"), `#![allow(unused)]\nfn main() {\n${example}\n}\n`);
     // One that says it's of the build of std's iterator structs, compiled in it.
     const build = item.startsWith("With std's iterator structs (`--std-iterators`)") ? ["--std-iterators"] : [];
-    const result = Bun.spawnSync([compiler, join(dir, "main.rs"), "-o", join(dir, "main.js"), ...build], { cwd: dir });
+    // One that says it's of a binary, compiled as one, `--crate-type bin`.
+    const crate = item.startsWith("In a binary") ? ["--", "--crate-type", "bin"] : [];
+    const result = Bun.spawnSync([compiler, join(dir, "main.rs"), "-o", join(dir, "main.js"), ...build, ...crate], { cwd: dir });
     const stderr = result.stderr.toString();
     // Refused by rust-js, not rustc's error of an example written wrong: a
     // feature it lacks, `rust-js does not support`, or a rule of its own,

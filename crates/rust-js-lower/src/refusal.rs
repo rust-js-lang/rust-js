@@ -21,6 +21,9 @@ pub enum Refused<'a, 'tcx> {
     /// A feature, and why it's refused: "a component's `Clone`", "React
     /// gives a component no dictionary".
     Because(&'a str, &'a str),
+    /// A feature, and what to write instead, its help: "a `#[track_caller]`
+    /// function as a value ..", "call it in a closure, ..".
+    Instead(&'a str, &'a str),
     /// A feature of addressable memory, as its words say: "a raw pointer to a value".
     Memory(&'a str),
 }
@@ -50,6 +53,9 @@ pub fn refuse<'tcx>(tcx: TyCtxt<'tcx>, span: Span, refused: Refused<'_, 'tcx>) -
     let mut error = tcx.dcx().struct_span_err(span, words(tcx, refused));
     if of_memory(tcx, refused) {
         error = error.with_note(MEMORY);
+    }
+    if let Refused::Instead(_, write) = refused {
+        error = error.with_help(write.to_string());
     }
     // Of a call into, or an impl of a trait of, a crate rust-js couldn't
     // compile, why (#1420).
@@ -82,7 +88,9 @@ const MEMORY: &str = "JavaScript has no memory to address: a raw pointer, `trans
 /// addressable memory, "rust-js does not support addressable memory yet: ..".
 pub(crate) fn words<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> String {
     let what = match refused {
-        Refused::Feature(what) | Refused::Because(what, _) | Refused::Memory(what) => what.to_string(),
+        Refused::Feature(what) | Refused::Because(what, _) | Refused::Instead(what, _) | Refused::Memory(what) => {
+            what.to_string()
+        }
         Refused::Call(id) => calling(tcx, id),
         Refused::Implementing(id) => implementing(tcx, id),
         Refused::Type(what, ty) => format!(
@@ -105,7 +113,7 @@ fn of_memory<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> bool {
         Refused::Call(id) => addresses_memory(tcx, id),
         Refused::Type(_, ty) => is_memory_type(tcx, ty),
         Refused::Memory(_) => true,
-        Refused::Feature(_) | Refused::Because(..) | Refused::Implementing(_) => false,
+        Refused::Feature(_) | Refused::Because(..) | Refused::Instead(..) | Refused::Implementing(_) => false,
     }
 }
 

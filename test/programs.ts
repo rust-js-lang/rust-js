@@ -398,6 +398,16 @@ export function compileCommand(file: string, dir: string, edition: string, libra
   return { cmd: [compiler, wrapper, "-o", js, ...mode, ...flags, "--", `--edition=${edition}`, "-Awarnings", remapRoot, ...rustc], js };
 }
 
+/** `file` compiled as a binary, `--crate-type bin`, a program's crate, as
+ * `compileJs` compiles it as a library: what a binary refuses that a
+ * library keeps compiling, a `#[track_caller]` function made a value whose
+ * calls the body doesn't say (#2335), is refused here. */
+export function compileJsBinary(file: string, dir: string, edition: string, flags: string[] = []): { js: string } | CompileError {
+  const js = join(dir, "binary.js");
+  const cmd = [compiler, file, "-o", js, ...flags, "--", `--edition=${edition}`, "--crate-type", "bin", "-Awarnings", remapRoot];
+  return compiled(runSync(cmd, root, compileTimeout), js);
+}
+
 /** A compile's JS, or how it failed. */
 function compiled(p: Exit, js: string): { js: string } | CompileError {
   if (p.code === 0 && !stopped(p, compileTimeout)) return { js };

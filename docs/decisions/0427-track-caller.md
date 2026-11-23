@@ -162,7 +162,7 @@ documented exception):**
 - a `&dyn Fn` of a borrow MIR makes a promoted constant, whose cast is in the body that holds it.
 
 Each such corpus case carries `located-otherwise: #2335`.
-`std_function_value_as_a_dyn_panic.rs` is one.
+`std_function_value_as_a_dyn_panic.rs` is one. (Decided since, below.)
 
 **Found on the way: a wrong answer, fixed.** A function value's call was
 given the facts of the MIR call it's an argument of. In
@@ -260,3 +260,65 @@ elsewhere is an arrow of its own, as a function item a trait calls has no
 pointer whose identity anything sees. The pair
 library_singles_across_crates holds both, and that two `fn` pointers to
 it are the same function.
+
+## Amendment: what the uses don't say is refused in a binary (2026-11-23, #2335 follow-up, #2355)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept; where it can't be told, a compile error (Tu's decision:
+"try harder, then refuse", no documented exception).
+
+**More is decided (`mir/shims.rs`), each measured natively:**
+- **A shared reference to the value**, `&f`, reborrowed `&*r`, or a
+  promoted `&Option::unwrap`, whose constant `Found` now matches through
+  the promoted body's `referred_constant`. Every `Fn*` impl of `&F` calls
+  `F::call`, so it's called through `Fn::call` where it's made a `&dyn _`
+  or given to a parameter that's a type parameter bound by a `Fn` trait,
+  whatever that bound: `79:5`. A reference given to a `&F` parameter
+  stays untold, as generic code may copy `*r` out and call it through
+  `FnMut`. **A wrong answer, found and fixed:** a reference was asked by
+  the bound of what it was given to, so `apply(&f)` of an `F: FnMut`
+  named `call_mut`'s line, `166:5`, where native names `79:5` (#2355).
+- **A box of it**, `Box::new(f)`: the box's uses. Made a
+  `Box<dyn FnOnce>`, whose one impl calls `call_once`: `250:5`. Read
+  through, `*b`: the value, by its uses. Its drop calls nothing.
+- **The unsizes that name one way whatever follows** are the only ones
+  decided: `&dyn _` and `Box<dyn FnOnce>`. A `Box<dyn Fn>` is called as its
+  own calls say, natively `79:5` called itself, `166:5` given to an
+  `F: FnMut`, `250:5` to an `F: FnOnce`; a `Box<dyn FnMut>` and a
+  `&mut dyn` too. These stay untold.
+- **A local called itself**, `f(x)`, is a call of the function at its own
+  line, through no shim, as native's: it says nothing of the value, so
+  `let f = Option::unwrap; v.map(f); f(None)` is decided by `map`.
+- **Returned**, the value's local `_0`, or made where no use is seen, is
+  untold, where it was taken as never called.
+
+**`through` gives `Called`: `Through(way)`, `Never` (no use reads it), or
+`Untold`.** An untold value of the crate's own body is refused where a
+panic's location is written: `recognition::prints_panic_locations`, a
+binary's compile, `--crate-type bin`, not a test build, whose `$main` alone
+writes std's hook's text (ADR 1184; `process.rs`'s `entry_of` asks it too).
+The error goes through `refusal.rs`'s one way, `Refused::Instead`, with
+what to write: ``rust-js does not support a value of `Option::unwrap`, a
+`#[track_caller]` function, called where this function doesn't say how
+(#2335) yet``, help ``where it's called says the location its panic
+names: give it straight to the function that calls it, or write a
+closure, `|x| Option::unwrap(x)`, whose line is the location, as in
+Rust`` (the closure's parameters by the function's arity). A library, and
+a test build, keep compiling it at its caller's line.
+
+The corpus and the metamorphic net compile a case as a library, so the net
+asks a variant that panicked as native did but elsewhere, all it wrote
+alike, whether it compiled as a binary is refused (`refusedWhereLocated`):
+then it's a refusal, as any variant rust-js refuses. Its five container
+rewrites listed under #2335 are refused so, and the `boxed` one is decided;
+test/known/metamorphic/2335.txt is gone.
+
+Held by corpus cases against native's location,
+`std_function_value_as_a_dyn_panic.rs` (its `located-otherwise` off),
+`_boxed_once_panic.rs`, `_in_a_box_panic.rs`, `_borrowed_panic.rs` and
+`_called_itself_panic.rs`, which test/binaries.test.ts also runs as
+binaries; and its refusals, a local used two ways, a `Box<dyn Fn>`, a
+value returned, captured or in a struct given whole, and the crate's own,
+each refused in a binary and compiled in a library. The guide's
+limitations page lists it, its example compiled as a binary.
+

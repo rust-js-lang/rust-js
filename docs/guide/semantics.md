@@ -1934,7 +1934,11 @@ Differences:
   what it drops, `thread 'main' (pid) panicked at src/main.rs:4:5:` and
   its message, the backtrace note once; a `resume_unwind` none. Where is
   Rust's own: the program's line, or a `#[track_caller]` std function's
-  caller's, made as it compiles, `$index(v, i, "src/main.rs:4:5")`; or a
+  caller's, made as it compiles, `$index(v, i, "src/main.rs:4:5")`, and
+  of one made a value, `.map(Option::unwrap)`, the line of the shim it's
+  called through, `FnMut::call_mut`'s, or a `fn` pointer's own, as the body
+  says how it's called; a binary refuses one whose calls it doesn't say
+  (#2335, [limitations](limitations.md)); or a
   line of std's own, `VecDeque::swap`'s assertion's, a constant of the
   toolchain the runtime keeps, `$stdSites`. A library's panic writes
   nothing, its host's to catch: a JS stack trace and exit code 1 where it

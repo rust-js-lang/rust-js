@@ -15,7 +15,7 @@ import { join } from "node:path";
 import { cases, corpus, directives } from "./corpus-cases";
 import { knownHeading, knownText, root, target } from "./support";
 import { runSync } from "./child";
-import { compileJs, runJs, runNative, runtimes, type Run } from "./programs";
+import { compileJs, compileJsBinary, runJs, runNative, runtimes, type Run } from "./programs";
 import { same } from "./oracle";
 
 /** Each rewrite, `metamorph`'s: `main`'s body outlined; each `let` of a
@@ -199,6 +199,20 @@ export function overlapping(rewrite: Rewrite, outcome: unknown): boolean {
   if (rewrite !== "rc-refcell" || typeof outcome !== "object" || outcome === null || !("panic" in outcome)) return false;
   const message = String((outcome as { panic: unknown }).panic);
   return message === "RefCell already borrowed" || message === "RefCell already mutably borrowed";
+}
+
+/** Whether `ran`, a variant's JS, panicked as `native` did but elsewhere,
+ * all it wrote alike: and so where a binary refuses what a library, as the
+ * net compiles a variant, keeps at its caller's line, a `#[track_caller]`
+ * function made a value whose calls the body doesn't say (#2335, Tu's
+ * decision), whether `variant` compiled as a binary is refused, as a
+ * variant rust-js refuses is no problem. */
+export function refusedWhereLocated(ran: Run, native: Run, variant: string, dir: string, edition: string, flags: string[]): boolean {
+  const [a, b] = [ran.outcome, native.outcome];
+  if (typeof a === "string" || typeof b === "string" || !("panic" in a) || !("panic" in b) || a.panic !== b.panic || a.at === b.at) return false;
+  if (!ran.bytes.stdout.equals(native.bytes.stdout) || !ran.bytes.stderr.equals(native.bytes.stderr)) return false;
+  const binary = compileJsBinary(variant, dir, edition, flags);
+  return !("js" in binary) && binary.kind === "rejected";
 }
 
 /** Why a case is no case of the net, or `undefined`: what its directives

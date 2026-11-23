@@ -5,7 +5,7 @@
 // Node and Bun. A panic's location is the compile's, `file:line:col` of the
 // file as rustc was given it, as `Location` is.
 import { expect, test } from "bun:test";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { compiler, fixture, installStd, nativeBinary, programFlags, root, run, shippedStd } from "./support";
@@ -169,6 +169,49 @@ test("a panic std's impl raises at its caller, through a dictionary, names gener
   ];
   generic.forEach((source, i) => {
     expect(same(`generic${i}`, source).status).toBe(101);
+  });
+}, 300_000);
+
+test("a `#[track_caller]` function made a value whose uses say how it's called names its shim's line in a binary, as native", () => {
+  // Each a corpus case's shape, compiled as a binary, which refuses what's
+  // untold (#2335): a promoted `&dyn Fn`, a `Box<dyn FnOnce>`, a value read
+  // out of its box, a reference given as an `F: FnMut` (#2355), and a local
+  // also called itself, which names its own line.
+  const told = ["std_function_value_as_a_dyn_panic", "std_function_value_boxed_once_panic", "std_function_value_in_a_box_panic", "std_function_value_borrowed_panic", "std_function_value_called_itself_panic"];
+  told.forEach((name) => {
+    const source = readFileSync(join(root, "test/corpus", `${name}.rs`), "utf8");
+    expect(same(`told-${name}`, source).status).toBe(101);
+  });
+}, 300_000);
+
+test("a `#[track_caller]` function made a value whose calls the body doesn't say is refused in a binary, saying what to write; a library compiles it", () => {
+  // Its shim's line is the location its panic names (#2335): where the
+  // body doesn't say which shim, a binary, which writes the location,
+  // refuses it, Tu's decision; a library keeps compiling.
+  const untold = [
+    // A local called two ways, `call_mut`'s and `call_once`'s.
+    "fn main() {\n    let f = Option::unwrap;\n    let a: Vec<i32> = vec![Some(1)].into_iter().map(f).collect();\n    println!(\"{:?} {:?}\", a, Some(Some(2)).map(f));\n}\n",
+    // A `Box<dyn Fn>`, called as its own calls say.
+    "fn main() {\n    let b: Box<dyn Fn(Option<i32>) -> i32> = Box::new(Option::unwrap);\n    println!(\"{}\", b(Some(1)));\n}\n",
+    // Returned, and captured.
+    "fn get() -> impl Fn(Option<i32>) -> i32 {\n    Option::unwrap\n}\n\nfn main() {\n    println!(\"{}\", get()(Some(1)));\n}\n",
+    "fn main() {\n    let f = Option::unwrap;\n    let c = move |x: Option<i32>| f(x);\n    println!(\"{}\", c(Some(1)));\n}\n",
+    // Stored in a struct given whole; the crate's own, two parameters.
+    "struct Held<F>(F);\n\nfn run<F: Fn(Option<i32>) -> i32>(h: Held<F>) -> i32 {\n    (h.0)(Some(1))\n}\n\nfn main() {\n    println!(\"{}\", run(Held(Option::unwrap)));\n}\n",
+    "#[track_caller]\nfn pick(v: &[i32], i: usize) -> i32 {\n    v[i]\n}\n\nfn by_fn<F: Fn(&[i32], usize) -> i32>(f: F) -> i32 {\n    f(&[1], 0)\n}\n\nfn by_once<F: FnOnce(&[i32], usize) -> i32>(f: F) -> i32 {\n    f(&[1], 0)\n}\n\nfn main() {\n    let f = pick;\n    println!(\"{} {}\", by_fn(f), by_once(f));\n}\n",
+  ];
+  untold.forEach((source, i) => {
+    const dir = fixture(`untold${i}`);
+    mkdirSync(dir, { recursive: true });
+    const file = join(dir, "main.rs");
+    writeFileSync(file, source);
+    const bin = runSync([compiler, file, "-o", join(dir, "main.js"), "--", ...flags, "--crate-type", "bin", "-Awarnings"], dir, 120_000);
+    expect(bin.code).not.toBe(0);
+    expect(bin.stderr).toContain("a `#[track_caller]` function, called where this function doesn't say how (#2335) yet");
+    expect(bin.stderr).toContain(i === untold.length - 1 ? "or write a closure, `|a, b| pick(a, b)`" : "or write a closure, `|x| Option::unwrap(x)`");
+    const lib = runSync([compiler, file, "-o", join(dir, "lib.js"), "--", ...flags, "-Awarnings"], dir, 120_000);
+    expect(lib.stderr).toBe("");
+    expect(lib.code).toBe(0);
   });
 }, 300_000);
 

@@ -17,7 +17,7 @@ import { join } from "node:path";
 import { corpus, nondeterministic } from "./corpus-cases";
 import { runSync } from "./child";
 import { mayBeUndefined, miriInstalled, undefinedBehaviour } from "./miri";
-import { agreesUpToHashOrder, buildRewriter, libraryCrate, middleEvent, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
+import { agreesUpToHashOrder, buildRewriter, libraryCrate, middleEvent, overlapping, readKnown, refusedWhereLocated, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
 import { deadlineOf, reducedRepros, toReduce, type Reduction } from "./reduced";
 import { agree, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, caseShard, firstPart, fixture, knownFileOf, root } from "./support";
@@ -163,6 +163,8 @@ async function wrong(rewrite: Rewrite, name: string, edition: string, target: "h
     // `nativeTries` times, till one agrees with it (the loud triage's class
     // (b), ADR 1104, amended).
     if (againAgrees(again, native, ran)) continue;
+    // Raised elsewhere, of what a binary refuses, a library keeps compiling.
+    if (made.library === undefined && refusedWhereLocated(ran, native, variant, own, edition, flags)) continue;
     // A variant Miri finds undefined behaviour in, a loud rewrite's `Drop`
     // of a value `raw_pointers` reads twice through a pointer, has no answer
     // to compare: skipped, its reason tallied (#1453).

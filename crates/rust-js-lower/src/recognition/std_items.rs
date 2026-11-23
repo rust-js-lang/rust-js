@@ -334,6 +334,14 @@ pub fn tracks_caller(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
             .contains(rustc_middle::middle::codegen_fn_attrs::CodegenFnAttrFlags::TRACK_CALLER)
 }
 
+/// Whether this compile writes where a panic was raised: a binary's,
+/// `--crate-type bin` and not a test build, whose `main` runs as std's
+/// runtime does, `$main(main)`, which alone writes std's hook's text, a
+/// panic's location (ADR 1184).
+pub fn prints_panic_locations(tcx: TyCtxt<'_>) -> bool {
+    tcx.crate_types().contains(&rustc_structures::CrateType::Executable) && !tcx.sess.opts.test
+}
+
 /// Whether `def_id` is a C-variadic function, `extern "C" fn f(mut args:
 /// ...)`, whose last parameter gathers what it's given past the rest
 /// (ADR 0428).

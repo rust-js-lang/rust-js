@@ -315,15 +315,16 @@ firstPart("an ignored case that passes is reported, so the list only shrinks", a
 }, underLoad(120_000));
 
 // Where a panic was raised, compared as native Rust's hook names it
-// (#2292): one raised elsewhere is reported, a `&dyn Fn` of std's
-// `Option::unwrap` (#2335); one a directive says waits, once it's
-// native's, so the list only shrinks.
+// (#2292): one raised elsewhere is reported, std's `Option::unwrap` in a
+// local called two ways, which a library, as a case is compiled, keeps at
+// its `let`'s line, and a binary refuses (#2335); one a directive says
+// waits, once it's native's, so the list only shrinks.
 firstPart("a panic raised elsewhere than native Rust's is reported, and a located-otherwise case raised where it is", async () => {
-  const valued = readFileSync(join(corpus, "std_function_value_as_a_dyn_panic.rs"), "utf8").replace(/^\/\/@ located-otherwise: .*\n/m, "");
+  const valued = '//@ run-fail: called `Option::unwrap()` on a `None` value\nfn main() {\n    let unwrap = Option::unwrap;\n    let seen: Vec<i32> = vec![Some(1)].into_iter().map(unwrap).collect();\n    println!("{seen:?} {:?}", Some(None::<i32>).map(unwrap));\n}\n';
   // A control has no snapshot of its JS, which isn't what's asked.
   const unsnapshotted = (problems: string[]) => problems.filter((problem) => !problem.includes("no snapshot of its JS"));
   const elsewhere = unsnapshotted(await control("located-elsewhere", valued));
-  expect(elsewhere).toContainEqual(expect.stringMatching(/^node ended \{"panic":.*"at":"[^"]*located-elsewhere\.rs:9:28"\}, native Rust \{"panic":.*"at":"\/rustc\//));
+  expect(elsewhere).toContainEqual(expect.stringMatching(/^node ended \{"panic":.*"at":"[^"]*located-elsewhere\.rs:3:18"\}, native Rust \{"panic":.*"at":"\/rustc\//));
   const now = unsnapshotted(await control("located-now", '//@ run-fail: no\n//@ located-otherwise: #1 a reason\nfn main() {\n    panic!("no")\n}\n'));
   expect(now).toEqual(["its panic is raised where native Rust's is now: remove `located-otherwise: #1 a reason`"]);
 }, underLoad(120_000));
