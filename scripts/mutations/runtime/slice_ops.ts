@@ -202,7 +202,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/slice_ops.js",
     find: "  if (v.length === 0) return [v, undefined];\n",
     replace: "",
-    tests: ["test/corpus.test.ts","-t","slice_split_off"],
+    tests: ["test/corpus.test.ts", "-t", "^split_off_first_of_an_empty_slice\\.rs$"],
   },
   {
     name: "write-clone-message",

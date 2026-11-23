@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/lazy_zip.js",
     find: "const high = aHigh === undefined ? bHigh :",
     replace: "const high = aHigh === undefined ? undefined :",
-    tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_an_endless_side_hinted_to_a_collector\\.rs$"],
   },
   {
     name: "zip-hint-most-low",
