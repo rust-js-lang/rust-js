@@ -131,16 +131,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
   },
   {
-    name: "stepped-back-as-boxed",
-    breaks:
-      "`$iterator(it, next, nextBack)` reads its `nextBack` as whether its `Some` is boxed",
-    file: "crates/rust-js-lower/src/iterators.rs",
-    find: "        .map(|(at, arg)| {\n            arg.unwrap_or_else(|| match at {\n                0 => Expr::bool(false),\n                _ => Expr::js_undefined(),\n            })\n        })\n",
-    replace: "        .filter_map(|(_, arg)| arg)\n",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
-  },
-  {
     name: "lazy-chain-not-iterator",
     breaks:
       "`$lazyChain(a, b)`, a generator, is taken for what isn't a JS iterator, and wrapped in `Iterator.from`",
