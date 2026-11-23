@@ -8,7 +8,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
-import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, mutationShardPlan, heldJobs, freeJobs, normalizedShardTimes, shardSummary, CONCURRENT_JOBS, SHARD_BUDGET_SECONDS, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, testShardList, testShards, testShardSeconds, timingsRuns } from "../scripts/ci";
+import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, mutationShardPlan, heldJobs, freeJobs, normalizedShardTimes, shardSummary, CONCURRENT_JOBS, SHARD_BUDGET_SECONDS, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, shardList, testShards, testShardSeconds, timingsRuns } from "../scripts/ci";
 import { controlRuns, mutations, testsAsItIsRuns, testsAsItIsSeconds } from "../scripts/mutations";
 import { jobs } from "../scripts/checkFast";
 import { runs } from "../scripts/iteratorSlice";
@@ -209,7 +209,7 @@ test("a check's suite takes the machines its selection's expected time needs", (
   // Handed on as the times `plan` encodes, and the matrix its list.
   expect([...decodedTestTimings(encodedTestTimings(new Map([["test/a.test.ts", 1.5]])))]).toEqual([["test/a.test.ts", 1.5]]);
   expect(decodedTestTimings("").size).toBe(0);
-  expect(testShardList("4")).toBe("[1,2,3,4]");
+  expect(shardList("4")).toBe("[1,2,3,4]");
   const jobs = (Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { outputs?: Record<string, string>; strategy?: { matrix?: { shard?: string } }; steps: { run?: string }[] }> }).jobs;
   expect(jobs.plan.outputs?.test_shards).toBe("${{ steps.plan.outputs.test_shards }}");
   expect(jobs.plan.outputs?.test_shard_list).toBe("${{ steps.plan.outputs.test_shard_list }}");

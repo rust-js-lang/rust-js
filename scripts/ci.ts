@@ -18,7 +18,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSyn
 import { join } from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 
-import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
+import { changedCases, changePicks, ROWS_PARTS, rowsShards, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
 import { changedSince, controlRuns, corpusCaseNames, type Mutation, mutationFile, mutations, TESTS_AS_IT_IS, testSet, wasmSplit } from "./mutations";
 import { outcome, type Selection, selectChange, suiteFiles } from "./select";
 import { downloaded } from "./artifacts";
@@ -287,9 +287,9 @@ export function mutationShards(
 export const CONCURRENT_JOBS = 20;
 
 /** A check's jobs that run beside its mutation shards besides its test
- * shards: `build`, `lint`, `iterator-forms`, the nets, `wasm` and the
- * rustc tests' map, about as many as a check of a change to the compiler
- * runs (check.yml). */
+ * shards and its `iterator-rows` machines: `build`, `lint`,
+ * `iterator-forms`, the nets, `wasm` and the rustc tests' map, about as
+ * many as a check of a change to the compiler runs (check.yml). */
 export const OWN_JOBS_BESIDE_SHARDS = 6;
 
 /** Of in-flight runs, each with its jobs, the jobs of runs other than
@@ -489,10 +489,18 @@ async function plan(given?: string, testShardsGiven?: string) {
   // as its selection's expected time needs; check.yml's matrix is the list.
   const testShardCount = testShards(selection, testTimes, testShardsGiven);
   console.log(`test_shards=${testShardCount}`);
+  // The iterator rows each push names since the commit it moved `main`
+  // from (`RUST_JS_ROWS_BASE`, #2340), on machines of their own,
+  // `iterator-rows`, as many as the pick needs: none, and no job, of a
+  // push that names none (#2374).
+  const rowsMachines = rowsShards(changePicks(ROWS_PARTS));
+  console.log(`rows=${rowsMachines > 0}`);
+  console.log(`rows_shards=${rowsMachines}`);
+  console.log(`rows_shard_list=${shardList(String(Math.max(1, rowsMachines)))}`);
   // The mutations' machines, at most the jobs free beside other checks' and
   // this one's own, which wait past the account's 20 (#2257).
   const held = heldByOthers();
-  const own = Number(testShardCount) + OWN_JOBS_BESIDE_SHARDS;
+  const own = Number(testShardCount) + rowsMachines + OWN_JOBS_BESIDE_SHARDS;
   const shardPlan = mutationShardPlan(
     chosen,
     seconds,
@@ -504,7 +512,7 @@ async function plan(given?: string, testShardsGiven?: string) {
   );
   console.log(`shards=${shardPlan.count}`);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, shardSummary(shardPlan, held, own));
-  console.log(`test_shard_list=${testShardList(testShardCount)}`);
+  console.log(`test_shard_list=${shardList(testShardCount)}`);
   // The batch a failure is attributed in: since the newest check of
   // `main` that completed, red or green (scripts/attribute.ts).
   let batchBase = "";
@@ -557,7 +565,7 @@ export function completedBase(all: Run[], head: string): string | undefined {
 }
 
 /** The machines the suite may be split across: check.yml's test matrix
- * is `plan`'s list of them (`testShardList`). */
+ * is `plan`'s list of them (`shardList`). */
 export const TEST_SHARDS = [1, 2, 3, 4, 5, 6];
 
 /** What a test shard takes beside its run of the suite: its checkout,
@@ -616,8 +624,9 @@ export function testShards(
   return String(fewestShards(TEST_SHARDS, expected, SHARD_BUDGET_SECONDS));
 }
 
-/** check.yml's test matrix of `count` shards, `[1, .., count]`. */
-export function testShardList(count: string): string {
+/** check.yml's matrix of `count` shards, `[1, .., count]`: the test
+ * shards', and `iterator-rows`'. */
+export function shardList(count: string): string {
   return JSON.stringify(Array.from({ length: Number(count) }, (_, i) => i + 1));
 }
 

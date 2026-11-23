@@ -14,6 +14,7 @@
 //   bun scripts/iteratorSlice.ts run paths [parts]         the paths table, all of it (test/iterator-paths.ts, #2112)
 //   bun scripts/iteratorSlice.ts run forms [parts]         the corpus with std's iterator structs
 //   bun scripts/iteratorSlice.ts run rows [parts]          the rows of both tables the change names (scripts/iteratorRows.ts, #818)
+//   bun scripts/iteratorSlice.ts run rows 4 --shard=2/3    a machine's share of them, CI's `iterator-rows` (#2374)
 //   bun scripts/iteratorSlice.ts run format [parts]        the formatting grid's slice (#941), of a change to the formatting code
 //   bun scripts/iteratorSlice.ts run numbers [parts]       the numbers grid's slice (#940), of a change to the numbers' code
 //   bun scripts/iteratorSlice.ts run declarations 1        the declarations' TypeScript callers (#822), of a change to what a `None` is at the JS boundary
@@ -47,7 +48,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { compilerSourceGlobs } from "./compiler-crates";
-import { noteRate, pick, type Picked } from "./iteratorRows";
+import { budgetOf, noteRate, pick, type Picked } from "./iteratorRows";
 import { lines } from "./parts";
 import { caseParts } from "./shard";
 import { twinHelpers } from "../test/iterator-matrix";
@@ -556,8 +557,10 @@ export function sliceReport(ran: SliceReport, part: number, parts: number, into 
 /** `of`, in `parts` processes at once, each its share of the cases
  * (`RUST_JS_CASES`), or of those `list` names, a line each, as plain
  * `check:fast` picks the corpus's by the test map (#876), their logs
- * printed as each ends: whether every part passed, and how long it took. */
-export async function run(of: keyof typeof runs | "rows", parts: number, list?: string): Promise<boolean> {
+ * printed as each ends: whether every part passed, and how long it took.
+ * Of `shard`, a machine's of several, its parts are its share of all the
+ * machines' (`rowsShards`, #2374). */
+export async function run(of: keyof typeof runs | "rows", parts: number, list?: string, shard: Shard = { index: 1, count: 1 }): Promise<boolean> {
   // The metamorphic net's, of the corpus cases the change adds or edits
   // since `list`, a revision, CI's `since`, or since it left `main`, the
   // working tree's too, a line each in a list of its own: none, no run.
@@ -586,10 +589,11 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
   for (const { name, file, env, rate } of each) {
     const start = Date.now();
     const parted = Array.from({ length: parts }, async (_, i) => {
-      const report = sliceReport({ of, name, file, env }, i + 1, parts);
+      const [part, all] = [(shard.index - 1) * parts + i + 1, shard.count * parts];
+      const report = sliceReport({ of, name, file, env }, part, all);
       const p = Bun.spawn(["bun", "test", "--timeout=600000", "--reporter=junit", `--reporter-outfile=${report}`, file], {
         cwd: root,
-        env: { ...process.env, ...env, RUST_JS_CASES: `${i + 1}/${parts}${list === undefined ? "" : `:${list}`}` },
+        env: { ...process.env, ...env, RUST_JS_CASES: `${part}/${all}${list === undefined ? "" : `:${list}`}` },
         stdout: "pipe",
         stderr: "pipe",
       });
@@ -606,7 +610,7 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
     console.log(`${name} ${ok ? "passed" : "failed"} in ${seconds.toFixed(0)} s`);
     // How fast this machine ran it, which sizes the next change's rows to
     // its time (scripts/iteratorRows.ts's `budgetOf`).
-    if (rate !== undefined && rate.rows > 0) noteRate({ ...rate, seconds, parts });
+    if (rate !== undefined && rate.rows > 0) noteRate({ ...rate, rows: Math.round(rate.rows / shard.count), seconds, parts });
     passed &&= ok;
   }
   // Each helper both builds import is one `shared` says why of; and of the
@@ -617,6 +621,31 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
     passed &&= problems.length === 0;
   }
   return passed;
+}
+
+/** A machine's share of a run, the `index`th of `count` (`--shard=i/n`). */
+export type Shard = { index: number; count: number };
+
+/** CI's `iterator-rows` job's parts on each of its machines, the runner's
+ * 4 cores: the rows the push names, which `plan` picks with them too, so
+ * both pick the same (#2374). */
+export const ROWS_PARTS = 4;
+
+/** The most machines CI's `iterator-rows` job takes: of the account's 20
+ * jobs at once, the rest are a check's own and its shards' (#2257). */
+export const ROWS_MOST_SHARDS = 4;
+
+/** How many machines CI's `iterator-rows` job runs `picks` on, each in
+ * `ROWS_PARTS` parts: none of a pick of none, and no job; one where each
+ * table's rows fit one machine's budget (`budgetOf`), as the picker keeps
+ * what it names; more of a removal's, each of whose rows runs whatever its
+ * count (#823), as many as the table furthest past it needs, at most
+ * `ROWS_MOST_SHARDS` (#2374). */
+export function rowsShards(picks: Picked[], budget: (table: "matrix" | "conformance", parts: number) => number = budgetOf): number {
+  if (picks.length === 0) return 0;
+  const tables = ["matrix", "conformance"] as const;
+  const needs = tables.map((table) => Math.ceil(picks.filter((p) => p.table === table).reduce((sum, p) => sum + p.rows, 0) / budget(table, ROWS_PARTS)));
+  return Math.min(ROWS_MOST_SHARDS, Math.max(1, ...needs));
 }
 
 /** The runs of the rows the change names, the working tree's since it left
@@ -635,7 +664,7 @@ export function changedSince(since?: string): string[] {
 }
 
 /** What of each table the change names, the working tree's since it left
- * `main`, or since `RUST_JS_ROWS_BASE`, a push's: CI's nets-iterators
+ * `main`, or since `RUST_JS_ROWS_BASE`, a push's: CI's `iterator-rows`
  * runs the rows each push to `main` names since the commit it moved `main`
  * from, so a push whose narrower pick left a row out runs it before the
  * nightly does (#2340, Tu's decision). In `parts` (scripts/iteratorRows.ts):
@@ -669,8 +698,11 @@ function changeRows(parts: number): Run[] {
 }
 
 if (import.meta.main) {
-  const [command, of, count, list] = process.argv.slice(2);
-  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|paths|forms|format|numbers|declarations|async|consumers|memory|intervals|twins|twinsAll|rows [parts [cases]] | metamorphic [parts [since]]");
+  const args = process.argv.slice(2);
+  const [command, of, count, list] = args.filter((arg) => !arg.startsWith("--shard="));
+  const [index, shards] = (args.find((arg) => arg.startsWith("--shard="))?.slice("--shard=".length) ?? "1/1").split("/").map(Number);
+  if (command !== "run" || !(of in runs || of === "rows") || !(index >= 1 && index <= shards))
+    throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|paths|forms|format|numbers|declarations|async|consumers|memory|intervals|twins|twinsAll|rows [parts [cases]] [--shard=i/n] | metamorphic [parts [since]]");
   const parts = count === undefined ? caseParts(machine().cores * 2) : Number(count);
-  process.exit((await run(of as keyof typeof runs | "rows", parts, list)) ? 0 : 1);
+  process.exit((await run(of as keyof typeof runs | "rows", parts, list, { index, count: shards })) ? 0 : 1);
 }

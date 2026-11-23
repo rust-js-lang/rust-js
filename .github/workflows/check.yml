@@ -110,6 +110,9 @@ jobs:
       batch_base: ${{ steps.plan.outputs.batch_base }}
       test_shards: ${{ steps.plan.outputs.test_shards }}
       test_shard_list: ${{ steps.plan.outputs.test_shard_list }}
+      rows: ${{ steps.plan.outputs.rows }}
+      rows_shards: ${{ steps.plan.outputs.rows_shards }}
+      rows_shard_list: ${{ steps.plan.outputs.rows_shard_list }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -129,6 +132,7 @@ jobs:
       - id: plan
         env:
           GH_TOKEN: ${{ github.token }}
+          RUST_JS_ROWS_BASE: ${{ github.event.before }}
         run: bun scripts/ci.ts plan ${{ inputs.since && format('--since={0}', inputs.since) || '' }} ${{ inputs.test_shards && format('--test-shards={0}', inputs.test_shards) || '' }} >> "$GITHUB_OUTPUT"
       # What the suite's shards run of it.
       - if: ${{ inputs.part != 'mutations' }}
@@ -241,20 +245,6 @@ jobs:
         if: needs.plan.outputs.iterators == 'true'
         background: true
         run: bun scripts/iteratorSlice.ts run paths 2
-      # And the rows the push names (scripts/iteratorRows.ts), each push to
-      # `main`'s since the commit it moved `main` from, within the picker's
-      # budget: what `bun run push`'s check:fast ran of them, run again on
-      # what landed, so a narrower local pick (#2340, Tu's decision) never
-      # leaves a row unchecked until the nightly. Of no push, `before` is
-      # empty and the base the merge base with `main`, which on `main`
-      # names nothing.
-      - name: iterator rows the push names
-        id: rows
-        if: needs.plan.outputs.iterators == 'true'
-        background: true
-        env:
-          RUST_JS_ROWS_BASE: ${{ github.event.before }}
-        run: bun scripts/iteratorSlice.ts run rows 2
       # And the copy matrix's slice (test/copy-matrix.ts, ADR 1090,
       # amended): each compiled form copied each way and stepped by each
       # ability beside its original. The nightly's `copies` runs all of it.
@@ -286,6 +276,64 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+
+  # The rows the push names (scripts/iteratorRows.ts), each push to
+  # `main`'s since the commit it moved `main` from, within the picker's
+  # budget: what `bun run push`'s check:fast ran of them, run again on
+  # what landed, so a narrower local pick (#2340, Tu's decision) never
+  # leaves a row unchecked until the nightly. Of no push, `before` is
+  # empty and the base the merge base with `main`, which on `main` names
+  # nothing. On machines of their own, `plan`'s pick of them: a step of
+  # `nets-iterators`, beside its four slices on its 4 cores, it was the
+  # check's longest leg, 967 s of its 1,018 (#2374); none of a push that
+  # names none, more than one of a removal's rows past one's budget
+  # (`rowsShards`).
+  iterator-rows:
+    name: iterator rows the push names (${{ matrix.shard }}/${{ needs.plan.outputs.rows_shards }})
+    needs: [plan, build]
+    if: ${{ !inputs.nightly && needs.plan.outputs.rows == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.rows_shard_list) }}
+    env:
+      RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+    steps:
+      # The picker reads the push's history since `before`.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      # In `ROWS_PARTS` parts, the runner's cores, as `plan` picked them.
+      - name: iterator rows the push names
+        env:
+          RUST_JS_ROWS_BASE: ${{ github.event.before }}
+        run: bun scripts/iteratorSlice.ts run rows 4 --shard=${{ matrix.shard }}/${{ needs.plan.outputs.rows_shards }}
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: iterator-rows-${{ matrix.shard }}
+          path: target/iterator-matrix
+          if-no-files-found: ignore
+          retention-days: 14
+      # Its parts' JUnit reports, as `iterator-forms`' (#2003).
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: junit-iterator-rows-${{ matrix.shard }}
+          path: target/junit
+          if-no-files-found: ignore
+          retention-days: 14
 
   # The program nets, the consumer net's and the twin net's slices, of a
   # change to the iterators' or the drops' code, on a machine of their own
@@ -653,10 +701,11 @@ jobs:
   # first it fails at is said, in the run's summary, an `attribution`
   # artifact and `bun run ci:status`: "<test> broke at <sha> (<subject>)".
   attribute-plan:
-    needs: [plan, test, iterator-forms, nets-iterators, nets-programs, nets]
+    needs: [plan, test, iterator-forms, iterator-rows, nets-iterators, nets-programs, nets]
     if: >-
       ${{ !cancelled() && !inputs.nightly && (needs.test.result == 'failure' || needs.iterator-forms.result == 'failure' ||
-      needs.nets-iterators.result == 'failure' || needs.nets-programs.result == 'failure' || needs.nets.result == 'failure') }}
+      needs.iterator-rows.result == 'failure' || needs.nets-iterators.result == 'failure' || needs.nets-programs.result == 'failure' ||
+      needs.nets.result == 'failure') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
