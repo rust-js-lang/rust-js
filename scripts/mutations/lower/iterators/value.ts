@@ -181,15 +181,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "labeled_blocks"],
   },
   {
-    name: "enumerated-knowing-unmarked",
-    breaks: "`$enumerate(it)` isn't marked made knowing its back and its length, so a reversed enumeration's `len()` and its `next_back` read it again as what it isn't, and are refused (#764)",
-    file: "crates/rust-js-lower/src/iterators/value.rs",
-    find: "    e.facts = e.facts.with(Known::IterEnumerate);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^lazy_chains\\.rs$"],
-    snapshots: true,
-  },
-  {
     name: "held-loses-its-length-mark",
     breaks: "`$held(..)` of a map made knowing its length doesn't keep its mark, so a variable that holds it, `mapped.rev().map(f)`'s, is refused its `len()` (#851)",
     file: "crates/rust-js-lower/src/iterators/value.rs",

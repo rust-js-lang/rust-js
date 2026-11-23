@@ -804,14 +804,11 @@ pub fn knows_its_back_by_form(e: &Expr) -> bool {
             | "$enumerate" | "$lent" | "$closing" | "$held" | "$taking" | "$skipping" | "$stepByEnds",
         ) => args.first().is_some_and(knows_its_back_by_form),
         Some("$lazyChain") => matches!(&args[..], [a, b, ..] if knows_its_back_by_form(a) && knows_its_back_by_form(b)),
-        // Its back given, `$iterator`'s `nextBack`, `$given`'s `back`.
+        // Its back given, `$iterator`'s `nextBack`; a `$given`'s, its
+        // maker's mark, above (`given_js_iterator`, #2369).
         Some("$iterator") => e
             .helper_call_of("$iterator")
             .and_then(|made| made.arg("nextBack"))
-            .is_some_and(|back| *back != Expr::js_undefined()),
-        Some("$given") => e
-            .helper_call_of("$given")
-            .and_then(|given| given.arg("back"))
             .is_some_and(|back| *back != Expr::js_undefined()),
         _ => false,
     }

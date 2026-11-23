@@ -284,7 +284,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => mapped,
                 }
             }
-            Over::Enumerate => crate::iterators::enumerated_knowing(it),
+            // Said to know its back and its length only where its source was
+            // made knowing them, `back`; else knowing of them what its source
+            // knows, which what steps it from its back makes so or refuses,
+            // never takes for known (#2369).
+            Over::Enumerate => match back {
+                true => crate::iterators::enumerated_knowing(it),
+                false => crate::iterators::enumerated_passing(it),
+            },
             Over::Hinted { skip } => {
                 let given = dropping(self, vec![it, values.next().expect("how many")])?;
                 Expr::call_helper(if skip { "$skipping" } else { "$taking" }, given)

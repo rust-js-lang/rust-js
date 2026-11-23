@@ -13,6 +13,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// them. `None` of another, or of one not given what's asked.
     pub(crate) fn given_js_iterator(&self, value: Expr, ty: Ty<'tcx>, back: bool, len: bool) -> Option<Expr> {
         let dictionary = self.iterator_evidence(ty, std_item(self.tcx, StdItem::Iterator))?;
+        // Of one made so already, given less, `$given(src, IIterator)`:
+        // remade of what it steps, `src`, never a `$given` of it, which its
+        // dictionaries would step as though it were `src` (#1981, #2369).
+        let value = match value.helper_call_of("$given").and_then(|given| given.arg("value")) {
+            Some(src) => src.clone(),
+            None => value,
+        };
         let entry = |asked: bool, trait_id: Option<DefId>| -> Option<Option<Expr>> {
             let trait_id = match asked {
                 true => trait_id?,
@@ -30,6 +37,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let back = entry(back, self.recognition().double_ended_iterator())?;
         let len = entry(len, self.recognition().exact_size_iterator())?;
+        let knows_back = back.is_some();
         let boxed = self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
         // Each given, and each before it, `undefined` where it isn't.
         let given = [boxed.then(|| Expr::bool(true)), back, len];
@@ -42,14 +50,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })
             })
             .collect();
-        Some(
-            IterValue::of(Form::Given {
-                value,
-                dictionary,
-                given,
-            })
-            .emit(),
-        )
+        let it = IterValue::of(Form::Given {
+            value,
+            dictionary,
+            given,
+        })
+        .emit();
+        // Given its back, marked so by its maker: what's asked of it past
+        // here reads the mark, never its JS's arguments (#2369).
+        Some(match knows_back {
+            true => made_knowing_its_back(it),
+            false => it,
+        })
     }
 
     /// The dictionary of an iterator's extension trait, `trait_id`, of the
@@ -96,6 +108,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// own its impl's, a JS iterator's that knows it its own `len()`; of
     /// std's compiled struct, its compiled one.
     pub(crate) fn iterator_extension_dictionary(&mut self, trait_id: DefId, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+        // A `Box` of one given as it is, `Box<I>`'s, which is its value, or a
+        // `&mut` of one: of the dictionary this function was given, what
+        // std's `Box<I>` and `&mut` pass on (`iterator_evidence`, #1611), as
+        // its `Iterator`'s is (`iterator_dictionary_of`), so a held
+        // `Enumerate<Box<I>>`'s compiled back asks `I`'s (#2369).
+        if ty.peel_refs().boxed_ty().is_some()
+            && let Some(given) = self.iterator_evidence(ty, trait_id)
+        {
+            return Ok(given);
+        }
         // A `&mut` to one is it, whose impls pass on to its own: its
         // `next_back` and `nth_back`, not its `rfold`, which std's `&mut I`
         // folds by `I`'s `try_rfold` (ADR 0928).
@@ -523,8 +545,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (self.tcx.associated_items(trait_id).in_definition_order())
                 .any(|item| item.is_fn() && item.name().as_str() == name)
         };
+        // Never `is_empty`, unstable, which no dictionary of
+        // `ExactSizeIterator` carries: its default asks `len` (#2369).
         let passed: Vec<String> = (crate::recognition::Wrapper::BoxSized.own_methods())
-            .filter(|&name| declares(name))
+            .filter(|&name| declares(name) && name != "is_empty")
             .map(|name| match entry {
                 Some(entry) if declares(entry) && name == entry => entry.to_string(),
                 _ => crate::bindings::trait_method_name(self.tcx, trait_id, name),

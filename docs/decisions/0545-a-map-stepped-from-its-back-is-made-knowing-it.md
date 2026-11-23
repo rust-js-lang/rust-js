@@ -2070,3 +2070,64 @@ of such a map compiles and steps the held source,
 and by the mutations `as-is-source-made-again`,
 `made-again-calls-run-nothing` and `made-again-items-unread`. Every other
 corpus snapshot is unchanged.
+
+## Amendment: a `Box<I>` generic code reads back, stepped from its back (#2369)
+
+Generic code that reads a `Box<I>` back through a trait,
+`let src: Box<I> = Is::is(src)`, and steps `src.enumerate()` from its
+back threw `enumerated.iter.back is not a function`, where Rust calls
+`I`'s `next_back`. The Nightly's metamorphic net found it in the
+`impl-owned` rewrite of `generic_box_enumerated_asks_its_own_nth.rs`.
+ADR 0262: the results change (a throw), so Rust's behaviour is kept.
+
+There were three faults, and each is fixed where its owner is:
+
+- The analysis asked the caller nothing of `I`. std's compiled
+  `Enumerate<Box<I>>::next_back` steps its `Box<I>`, which passes each
+  step on to `I`. `library_steps` read only a parameter itself, or one
+  behind a reference. It now reads through `iterator_held`, the one
+  answer of which iterator a type's steps reach, so the caller gives
+  `I`'s `DoubleEndedIterator` and `ExactSizeIterator`.
+- `back_kept` marked every enumeration it kept as knowing its back and
+  length (`enumerated_knowing`), even one whose source it hadn't made
+  knowing them. `as_double_ended` took that enumeration as it was. Now
+  only an enumeration whose source was made knowing them is marked so.
+  Any other is `enumerated_passing`, which knows only what its source
+  knows; what steps it from its back makes the source knowing it, or
+  refuses. Two forward loops, in `lazy_chains.rs` and
+  `cell_of_an_iterator_std_runs.rs`, now print the corpus's usual
+  `.map((x, i) => [i, x])` instead of `$enumerate(..)`.
+- A `$given(src, IIterator)` that something later made knowing more was
+  wrapped in a second `$given`. Its dictionary then stepped the inner
+  JS iterator as though it were `src`. `given_js_iterator`, the one
+  maker of `$given`, now makes such a value again from `src`. It also
+  marks the `$given` it gives a back (`made_knowing_its_back`).
+  `knows_its_back_by_form` reads that mark, not the call's `back`
+  argument. The doubled `$given` in `from_iter_of_a_bound_reference.js`
+  is now one.
+
+A held `Enumerate<Box<I>>`, std's struct, whose `len()` and
+`next_back()` are asked, was refused: "the `ExactSizeIterator` of a
+`std::boxed::Box<I>`". `iterator_extension_dictionary` now gives a
+`Box<I>`, or a `&mut` of one, the dictionary of what the function was
+given (`iterator_evidence`), the same one its `Iterator` gets. A box's
+dictionary never passes on `is_empty`. No `ExactSizeIterator`
+dictionary carries it; its default asks `len`.
+
+This is held by `test/corpus/generic_box_enumerated_from_its_back.rs`
+against native Rust, in both builds. The mutations are
+`library-steps-of-a-box-unasked`, `given-marked-knowing-its-back-ungiven`,
+`given-remade-as-given`, `boxed-extension-dictionary-refused`,
+`boxed-is-empty-passed` and `enumeration-said-to-know-its-back-unmade`.
+
+Two parts of the approved design are left out because no test can tell
+them apart. Reading an adapter that isn't compiled through
+`iterator_held` changed nothing in the whole corpus or in the probes.
+Neither did `form_lacks_a_back` saying that a `$given` without the
+mark has no back. Each of their mutations survived all 2,923 corpus
+cases, since everything that steps such a value from its back makes it
+again.
+`enumerated-knowing-unmarked` (#764) is retired as equivalent. An
+enumeration without its mark is made again from its source, and its
+source already knows what's asked, so the JS is the same. The mutation
+survives all 2,923 corpus cases.

@@ -869,4 +869,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(adapters_marked_knowing_their_backs_by_their_makers|generic_chains_cloned_by_their_instances|generic_map_beside_a_cloned_map|generic_map_of_pub_code_beside_a_cloned_map|held_beneath_adapters_from_its_back|cloned_of_a_chain_stepped_from_its_back|chain_stepped_from_its_back_elsewhere|chain_under_a_held_map_from_its_back|chain_of_adapters_stepped_from_its_back|chain_sides_own_steps|rev_chain|array_cloned_stepped_from_its_back|cloned_items_from_both_ends|copied_given_to_generic_backs|copied_skip_take_and_filter_stepped_from_back|adapters_given_to_generic_backs|map_ends_size_hint|back_folds_of_sources_made_knowing_their_back|consumer_drops_what_is_left|adapters_own_work_that_panics).rs$"],
     snapshots: true,
   },
+  {
+    name: "enumeration-said-to-know-its-back-unmade",
+    breaks:
+      "an enumeration kept of a source not made knowing its back is said to know it, `enumerated_knowing`'s, so what steps it from its back takes it as it is: of a `Box<I>` generic code reads back, `enumerated.iter.back is not a function` (#2369)",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
+    find: "            Over::Enumerate => match back {\n                true => crate::iterators::enumerated_knowing(it),\n                false => crate::iterators::enumerated_passing(it),\n            },\n",
+    replace: "            Over::Enumerate => crate::iterators::enumerated_knowing(it),\n",
+    tests: ["test/corpus.test.ts", "-t", "^lazy_chains.rs$"],
+    snapshots: true,
+  },
 ];

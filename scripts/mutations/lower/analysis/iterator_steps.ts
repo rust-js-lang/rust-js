@@ -451,4 +451,13 @@ export const mutations: Mutation[] = [
     replace: "            Ok(Some(_)) => Vec::new(),\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_held_by_generic_code_asking_trusted_len.rs$"],
   },
+  {
+    name: "library-steps-of-a-box-unasked",
+    breaks:
+      "generic code's `enumerate().rev()` of a `Box<I>` it reads back, std's compiled `Enumerate`'s `next_back`, asks its callers nothing of `I`'s back or length, so the JS iterator of the box is made without them: `enumerated.iter.back is not a function` (#2369)",
+    file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
+    find: "        let ty::Param(param) = crate::recognition::iterator_held(ty).kind() else {\n",
+    replace: "        let ty::Param(param) = ty.peel_refs().kind() else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_box_enumerated_from_its_back.rs$"],
+  },
 ];

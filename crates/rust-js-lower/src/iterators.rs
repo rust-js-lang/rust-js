@@ -25,7 +25,6 @@ pub(crate) use self::hint_asks::{Room, Shunted, refuse_unknown_capacity_extends}
 pub(crate) use self::in_place::*;
 pub(crate) use self::stepping::{cloned_apart, stepped_by_parts};
 pub(crate) use self::transparent::{Transparency, chains, count_chains};
-pub(crate) use self::value::made_knowing_its_back;
 pub use self::value::{
     EnumeratedForm, Form, IterValue, back_source, bounds_of, bounds_read, chain_parts, chars_made_of, closed,
     closed_around, closed_given_source, closed_parts, count_bound, enumerated_in, enumerated_knowing, enumerated_of,
@@ -37,6 +36,7 @@ pub use self::value::{
     stepped_every_parts, stepped_from, stepped_range, stepped_value, steps, unlent, was_made_knowing_its_back,
     was_made_knowing_its_length, with_source, zip_parts,
 };
+pub(crate) use self::value::{enumerated_passing, made_knowing_its_back};
 
 use super::calls::Call;
 use super::combinators::IterSource;

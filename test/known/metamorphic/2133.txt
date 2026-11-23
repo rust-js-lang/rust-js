@@ -1,0 +1,3 @@
+#2133 P2 (neighbours): Cloned<I> asked as ExactSizeIterator in one generic fn is refused in another whose type parameter is spelled I too
+plain boxed generic_box_enumerated_from_its_back.rs
+plain for-each generic_box_enumerated_from_its_back.rs

@@ -3,7 +3,6 @@
 import {
   $at,
   $borrowMut,
-  $enumerate,
   $held,
   $intoIter,
   $iter,
@@ -42,7 +41,9 @@ function sumFromIterator_u32__u32__fromIter(items) {
 
 function fixedFromIteratorU32_fromIter(items, N) {
   let slots = new Array(N).fill(0);
-  for (const [at, item] of $enumerate($intoIter(items).take(N))) {
+  for (const [at, item] of Iterator.from(items)
+    .take(N)
+    .map((x, i) => [i, x])) {
     slots[$at(slots, at, "test/corpus/cell_of_an_iterator_std_runs.rs:31:13")] = item;
   }
   return [slots.slice()];

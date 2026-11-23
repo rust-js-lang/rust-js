@@ -25,10 +25,9 @@ function refWordIntoIterator_intoIter(word) {
 }
 
 function letters(r, IRefIntoIterator) {
-  const IntoIterIterator = IRefIntoIterator.IntoIterIterator();
   return $collectDropping(
     $roomForHint(
-      $given($given(IRefIntoIterator.intoIter(r), IntoIterIterator), IntoIterIterator),
+      $given(IRefIntoIterator.intoIter(r), IRefIntoIterator.IntoIterIterator()),
       4,
       false,
     ),
@@ -42,10 +41,7 @@ function sizes(r, IRefIntoIterator) {
       $roomForHint($given(IRefIntoIterator.intoIter(r), IntoIterIterator), 4, false),
     ),
     $foldToArray(
-      $reserveHint(
-        $folded($given($given(IRefIntoIterator.intoIter(r), IntoIterIterator), IntoIterIterator)),
-        1,
-      ),
+      $reserveHint($folded($given(IRefIntoIterator.intoIter(r), IntoIterIterator)), 1),
     ).join(""),
   ];
 }

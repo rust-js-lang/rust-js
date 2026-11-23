@@ -448,4 +448,42 @@ export const mutations: Mutation[] = [
     replace: "            Some(given) if ty.boxed_ty().is_none() => Ok(given),\n            Some(_) => self.iterator_dictionary(ty, span),\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_source_given_as_it_is_by_another_bound.rs$"],
   },
+  {
+    name: "given-marked-knowing-its-back-ungiven",
+    breaks:
+      "a type parameter's value made a JS iterator its maker gave no back, `$given(it, IIterator)`, is marked as knowing it, so an enumeration of a `Box<I>` generic code reads back, stepped from its back, is taken as it is: `enumerated.iter.back is not a function` (#2369)",
+    file: "crates/rust-js-lower/src/iterators/dictionaries.rs",
+    find: "        let knows_back = back.is_some();\n",
+    replace: "        let knows_back = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_box_enumerated_from_its_back.rs$"],
+  },
+  {
+    name: "given-remade-as-given",
+    breaks:
+      "a `$given(src, IIterator)` made again knowing more is a `$given` of the JS iterator, whose dictionary steps the `$given` as though it were `src` (#1981, #2369)",
+    file: "crates/rust-js-lower/src/iterators/dictionaries.rs",
+    find: "            Some(src) => src.clone(),\n",
+    replace: "            Some(_) => value,\n",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_of_a_bound_reference.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "boxed-extension-dictionary-refused",
+    breaks:
+      "a held `Enumerate<Box<I>>` of generic code's, std's compiled struct, asks the box's `ExactSizeIterator` and `DoubleEndedIterator`, which its caller's dictionaries of `I` give: refused, \"the `ExactSizeIterator` of a `std::boxed::Box<I>`\" (#2369)",
+    file: "crates/rust-js-lower/src/iterators/dictionaries.rs",
+    find: "        if ty.peel_refs().boxed_ty().is_some()\n            && let Some(given) = self.iterator_evidence(ty, trait_id)\n",
+    replace: "        if false\n            && let Some(given) = self.iterator_evidence(ty, trait_id)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_box_enumerated_from_its_back.rs$"],
+  },
+  {
+    name: "boxed-is-empty-passed",
+    breaks:
+      "a `Box<I>`'s `ExactSizeIterator` dictionary passes on `I`'s `isEmpty`, which no dictionary carries: `{ len, isEmpty: IExactSizeIterator.isEmpty }`, `undefined` (#2369)",
+    file: "crates/rust-js-lower/src/iterators/dictionaries.rs",
+    find: "            .filter(|&name| declares(name) && name != \"is_empty\")\n",
+    replace: "            .filter(|&name| declares(name))\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_box_enumerated_from_its_back.rs$"],
+    snapshots: true,
+  },
 ];

@@ -29,3 +29,12 @@
 // it (#404, the user's decision); the least JS calls it apart (#1070).
 #1070 dyn_fn_of_a_params_function.rs
 #1070 refcell_listeners_momentary.rs
+
+// Decided, no bug (#2369, the lead, 2026-11-23): a loop over an enumeration
+// of a library's `Box<dyn Iterator>`, `for (i, x) in boxed(3).enumerate()`,
+// is JS's own `.map((x, i) => [i, x])` as built (#2238). The least JS's
+// `$enumerate` reads the dyn's `ownNth`, `ownNthBack`, `ownCount` and
+// `back` to learn what it has. Neither calls them, so the output is the
+// same, and the built JS reads fewer of its own methods: nothing a
+// crate's iterator does is skipped or run twice.
+#2369 generic_box_read_back_enumerated_asks_its_own_nth.rs

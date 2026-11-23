@@ -807,7 +807,10 @@ fn library_steps<'tcx>(
     let mut steps = Vec::new();
     for (index, arg) in args.iter().enumerate() {
         let Some(ty) = arg.as_type() else { continue };
-        let ty::Param(param) = ty.peel_refs().kind() else {
+        // Of what it holds through a reference or a `Box`, an
+        // `Enumerate<Box<I>>`'s `I`, which `Box<I>`'s impls step as they're
+        // stepped, by the same trait (`iterator_held`, #2369).
+        let ty::Param(param) = crate::recognition::iterator_held(ty).kind() else {
             continue;
         };
         let generics = tcx.generics_of(callee);
