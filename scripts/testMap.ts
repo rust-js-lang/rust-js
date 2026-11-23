@@ -1072,6 +1072,53 @@ export function ciMapOf(
     .sort((a, b) => a.behind - b.behind)[0];
 }
 
+/** Where test-map.yml packs the store's map for `test-map-of-<sha>`
+ * (`packMaps`), the one form `fetchMap` takes. */
+export const packedMaps = join(mapDir, "packed");
+
+/** A packed map's file name ends so: its JSON, zstd's. */
+export const packedSuffix = ".json.zst";
+
+/** zstd's level a map is packed at: 168 MB of JSON 5.4 MB in 0.6 s, where
+ * the artifact's own zip made 64 MB of it, which GitHub's storage served a
+ * push at some 85 KB/s, 12 min (#2385); level 19 made 3.8 MB in 19 s. */
+export const packLevel = 9;
+
+/** How long `fetchMap`'s download may take: about twice a packed map's
+ * fetch at that rate, 5.4 MB at 85 KB/s some 65 s; past it, the push
+ * selects by the nearest map the machine keeps, or everything where it
+ * keeps none (`select.ts`), each said on its line (#2385). */
+export const fetchSeconds = 120;
+
+/** Each map of `store` packed into `into`, `<name>.json.zst` (`packLevel`):
+ * test-map.yml's, before it uploads `test-map-of-<sha>` (#2385). */
+export function packMaps(store = mapStore, into = packedMaps): string[] {
+  rmSync(into, { recursive: true, force: true });
+  mkdirSync(into, { recursive: true });
+  const packed: string[] = [];
+  for (const name of readdirSync(store).filter((name) => name.endsWith(".json"))) {
+    const json = readFileSync(join(store, name));
+    const zst = Bun.zstdCompressSync(json, { level: packLevel });
+    writeFileSync(join(into, `${name.slice(0, -".json".length)}${packedSuffix}`), zst);
+    packed.push(`${name}: ${json.length} bytes, packed ${zst.length}`);
+  }
+  return packed;
+}
+
+/** Each packed map of `from` unpacked into `store`, its JSON: how many.
+ * Nothing else is a map: an artifact of before #2385, its JSON zipped
+ * whole, is none, and the push selects by what it keeps. */
+export function unpackMaps(from: string, store = mapStore): number {
+  mkdirSync(store, { recursive: true });
+  let unpacked = 0;
+  for (const name of readdirSync(from).filter((name) => name.endsWith(packedSuffix))) {
+    const json = Bun.zstdDecompressSync(readFileSync(join(from, name)));
+    writeFileSync(join(store, `${name.slice(0, -packedSuffix.length)}.json`), json);
+    unpacked++;
+  }
+  return unpacked;
+}
+
 /** How many of test-map.yml's last runs of `main` `fetchMap` looks in,
  * the newest first, each a map of the commit whose check it followed. */
 export const fetchedRuns = 12;
@@ -1116,17 +1163,13 @@ export function fetchMap(): string {
   const kept = nearestMap(mapStore, root, toolchainOf());
   if (kept !== undefined && behind(kept.commit)! <= found.behind) return `the map kept of ${kept.commit.slice(0, 9)} is as near as CI's`;
   const into = join(mapDir, "fetched");
-  if (!downloaded(found.run, [`--name=${found.name}`], into)) return `no map fetched: run ${found.run}'s ${found.name} didn't download`;
-  mkdirSync(mapStore, { recursive: true });
-  let moved = 0;
-  for (const name of readdirSync(into)) {
-    if (!name.endsWith(".json")) continue;
-    renameSync(join(into, name), join(mapStore, name));
-    moved++;
+  if (!downloaded(found.run, [`--name=${found.name}`], into, undefined, undefined, fetchSeconds)) {
+    return `no map fetched: run ${found.run}'s ${found.name} didn't download, given ${fetchSeconds} s at most`;
   }
+  const moved = unpackMaps(into);
   rmSync(into, { recursive: true, force: true });
   pruneMaps(mapStore, keptMaps, () => freeBytes(mapStore), toolchainOf());
-  if (moved === 0) return `no map fetched: run ${found.run}'s ${found.name} held no map`;
+  if (moved === 0) return `no map fetched: run ${found.run}'s ${found.name} held no packed map`;
   // Read as any other: of this layout and toolchain, or not at all.
   const read = nearestMap(mapStore, root, toolchainOf());
   if (read?.commit !== found.commit) return `no map fetched: CI's map of ${found.commit.slice(0, 9)} isn't of this layout or toolchain`;
@@ -1913,8 +1956,10 @@ if (import.meta.main) {
     if (drift.length > 0) process.exit(1);
   } else if (command === "fetch") {
     console.log(fetchMap());
+  } else if (command === "pack") {
+    for (const line of packMaps()) console.log(line);
   } else {
-    console.error("usage: bun run test-map [record | kept [--head] | build --shards=N | units --shard=i/N | merge | fetch] (what a change selects: bun scripts/select.ts)");
+    console.error("usage: bun run test-map [record | kept [--head] | build --shards=N | units --shard=i/N | merge | fetch | pack] (what a change selects: bun scripts/select.ts)");
     process.exit(2);
   }
 }

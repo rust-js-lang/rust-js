@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { casesReaching, changesDiff, ciMapOf, ciMapPrefix, hunksOf, mapLines, placedSimilarity, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, carriedUnits, carryOf, remapBits, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
+import { casesReaching, changesDiff, ciMapOf, ciMapPrefix, fetchSeconds, packedMaps, packedSuffix, packMaps, unpackMaps, hunksOf, mapLines, placedSimilarity, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, carriedUnits, carryOf, remapBits, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
 
 import { shard } from "../scripts/shard";
 import { caseShard, fixture, root } from "./support";
@@ -756,4 +756,41 @@ test("a test listing the compiler's files reads each crate's sources", () => {
   const reads = readsOf("test/architecture-maps.test.ts");
   expect(reads.has("src") && reads.has("crates/rust-js-program/src")).toBe(true);
   expect(readsSources("test/architecture-maps.test.ts")).toBe(true);
+});
+
+// CI's map is packed for `bun run push`, zstd's, 5.4 MB of 168 MB of
+// JSON, where the artifact's zip of it was 64 MB, which a push waited 12
+// min for at some 85 KB/s; the fetch has its time, and a map it didn't
+// fetch, or of an artifact of before, packed none, is no map: the push
+// selects by the nearest it keeps, its own commit's diff, or everything
+// where it keeps none (test/select.test.ts's "no test map"), said (#2385).
+test("CI's map is fetched packed, in its time, and an artifact of before holds no map", () => {
+  const dir = join(root, "target", "test-map-pack-test");
+  rmSync(dir, { recursive: true, force: true });
+  const store = join(dir, "store"), packed = join(dir, "packed"), back = join(dir, "back");
+  mkdirSync(store, { recursive: true });
+  const map = JSON.stringify({ version: mapVersion, commit: "0123", functions: Array.from({ length: 2000 }, (_, i) => `f${i % 7}`) });
+  writeFileSync(join(store, "0123-tool-v4.json"), map);
+  writeFileSync(join(store, "notes.txt"), "not a map");
+  expect(packMaps(store, packed)).toHaveLength(1);
+  expect(readdirSync(packed)).toEqual([`0123-tool-v4${packedSuffix}`]);
+  expect(readFileSync(join(packed, `0123-tool-v4${packedSuffix}`)).length).toBeLessThan(map.length / 10);
+  expect(unpackMaps(packed, back)).toBe(1);
+  expect(readFileSync(join(back, "0123-tool-v4.json"), "utf8")).toBe(map);
+  // An artifact of before, its JSON as it is: none unpacked.
+  expect(unpackMaps(store, join(dir, "none"))).toBe(0);
+  rmSync(dir, { recursive: true, force: true });
+  // Each upload of `test-map-of-<sha>` is of what `pack` packed, stored as
+  // it is, which a zip of zstd's wouldn't shrink.
+  type Step = { if?: string; run?: string; uses?: string; with?: Record<string, string | number> };
+  const jobs = (Bun.YAML.parse(readFileSync(join(root, ".github/workflows/test-map.yml"), "utf8")) as { jobs: Record<string, { steps?: Step[] }> }).jobs;
+  const uploads = Object.values(jobs).flatMap((job) =>
+    (job.steps ?? []).flatMap((step, at, steps) => (String(step.with?.name ?? "").startsWith(ciMapPrefix) ? [{ step, before: steps[at - 1] }] : [])),
+  );
+  expect(uploads).toHaveLength(2);
+  for (const { step, before } of uploads) {
+    expect([step.with?.path, step.with?.["compression-level"], before?.run, before?.if]).toEqual([relative(root, packedMaps), 0, "bun scripts/testMap.ts pack", step.if]);
+  }
+  expect(fetchSeconds).toBeGreaterThan(0);
+  expect(readFileSync(join(root, "scripts/testMap.ts"), "utf8")).toContain("downloaded(found.run, [`--name=${found.name}`], into, undefined, undefined, fetchSeconds)");
 });

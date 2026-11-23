@@ -318,6 +318,8 @@ async function main() {
     // The round push before it passed, where it ran again from the rebased
     // tree, carried on from once it's this branch's own (#2286).
     let given = givenRound(process.env);
+    // The round's map fetch, beside it (#2385).
+    let fetching: Beside | undefined;
     for (;;) {
       const remade = rebase();
       phase("rebase");
@@ -342,6 +344,13 @@ async function main() {
         const again = spawnSync(process.execPath, [process.argv[1]!, ...process.argv.slice(2)], { stdio: "inherit", env: againEnv(process.env, round, took) });
         process.exit(again.status ?? 1);
       }
+      // CI's map of the nearest commit of `main` it recorded, where it's
+      // nearer than the machine's (scripts/testMap.ts's `fetchMap`), fetched
+      // beside the round's fast tests, build, std and mutants, and waited
+      // for at its selection: a push waited 12 min on it there (#2385).
+      // One a round before still at it is ended first: both write its store.
+      fetching?.stop();
+      fetching = beside(["bun", "scripts/testMap.ts", "fetch"], mapFetchLog);
       const base = git("rev-parse", "origin/main").out.trim();
       // What git's hook refuses as it pushes, and the catalog's own tests,
       // before minutes of building and checking.
@@ -385,9 +394,9 @@ async function main() {
           regen = beside(cmd, reactLog, env);
         }
         const code = changed.some((file) => /\.(rs|ts|tsx|js|jsx|mjs|cjs)$/.test(file));
-        // CI's map of the nearest commit of `main` it recorded, where it's
-        // nearer than the machine's (scripts/testMap.ts's `fetchMap`).
-        const fetched = sh(["bun", "scripts/testMap.ts", "fetch"], true).out.trim().split("\n").at(-1) ?? "";
+        // The map fetched beside the round, above.
+        await fetching!.done;
+        const fetched = readFileSync(mapFetchLog, "utf8").trim().split("\n").at(-1) ?? "";
         console.log(`push: ${fetched}`);
         // Past a rebase, the interaction's: the selector's and check:fast's.
         const asked = name === "sanity" ? [`--sanity=${checked}`] : [];
@@ -487,6 +496,9 @@ export function portRegen(root: string): { cmd: string[]; env: Record<string, st
  * past a failed push. A signal that ends the push
  * ends the group first, as the group no longer shares the terminal's. */
 export type Beside = { done: Promise<number>; stop: () => void; group: number };
+/** Where the round's map fetch, beside it, writes what it did (#2385). */
+const mapFetchLog = "target/push-map-fetch.log";
+
 export function beside(cmd: string[], log: string, env: Record<string, string> = {}): Beside {
   mkdirSync("target", { recursive: true });
   const out = openSync(log, "w");

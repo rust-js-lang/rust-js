@@ -362,4 +362,20 @@ export const mutations: Mutation[] = [
     replace: "  return picked.kind === \"all\" ? { kind: \"all\", why: `${of} can't say: ${picked.why}` } : { ...picked, why: `${of}: ${picked.why}` };\n",
     tests: ["test/test-map.test.ts", "-t", "a site the test map is behind says so"],
   },
+  {
+    name: "map-unpacked-of-any-file",
+    breaks: "a fetched artifact of before #2385, its map's JSON as it is, is read as a packed map, and zstd's decompression of JSON throws, the push's fetch with it",
+    file: "scripts/testMap.ts",
+    find: "  for (const name of readdirSync(from).filter((name) => name.endsWith(packedSuffix))) {\n",
+    replace: "  for (const name of readdirSync(from)) {\n",
+    tests: ["test/test-map.test.ts", "-t", "fetched packed"],
+  },
+  {
+    name: "map-fetch-untimed",
+    breaks: "the push's map fetch waits as long as GitHub's storage takes, 12 min of the #2367 push at some 85 KB/s (#2385)",
+    file: "scripts/testMap.ts",
+    find: "  if (!downloaded(found.run, [`--name=${found.name}`], into, undefined, undefined, fetchSeconds)) {\n",
+    replace: "  if (!downloaded(found.run, [`--name=${found.name}`], into)) {\n",
+    tests: ["test/test-map.test.ts", "-t", "fetched packed"],
+  },
 ];

@@ -123,13 +123,17 @@ jobs:
       # Of a push, not a call: a call's shards restore the store from the
       # cache by `key`, 7.9 MB each a download of an artifact where GitHub's
       # storage turns some away ("Egress is over the account limit").
+      # Packed, zstd's, 5.4 MB of 168 MB, where the zip of its JSON was
+      # 64 MB, which a push waited 12 min for (`packMaps`, #2385).
+      - if: steps.map.outputs.record == 'false' && !inputs.of
+        run: bun scripts/testMap.ts pack
       - if: steps.map.outputs.record == 'false' && !inputs.of
         uses: actions/upload-artifact@v7
         with:
           # Of main's check, by its commit, which `bun run push` fetches (`fetchMap`).
           name: test-map-of-${{ env.SHA }}
-          path: .cache/test-maps
-          include-hidden-files: true
+          path: target/test-map/packed
+          compression-level: 0
           retention-days: 3
       - if: steps.map.outputs.record == 'true'
         uses: actions/upload-artifact@v7
@@ -234,11 +238,14 @@ jobs:
         with:
           path: .cache/test-maps
           key: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ env.SHA }}
+      # Packed, as above (#2385).
+      - if: ${{ !inputs.of }}
+        run: bun scripts/testMap.ts pack
       - if: ${{ !inputs.of }}
         uses: actions/upload-artifact@v7
         with:
           # Of main's check, by its commit, which `bun run push` fetches (`fetchMap`).
           name: test-map-of-${{ env.SHA }}
-          path: .cache/test-maps
-          include-hidden-files: true
+          path: target/test-map/packed
+          compression-level: 0
           retention-days: 3

@@ -14,8 +14,16 @@ export const mutations: Mutation[] = [
     name: "artifact-unmatched-asked-again",
     breaks: "a download that matches no artifact is asked again, twice, 30 s of waiting for what no run kept",
     file: "scripts/artifacts.ts",
-    find: "    if (none) return false;\n",
+    find: "    if (once) return false;\n",
     replace: "",
+    tests: ["test/ci.test.ts", "-t", "asked again into an empty directory"],
+  },
+  {
+    name: "artifact-timed-out-asked-again",
+    breaks: "a download past its time is asked again, twice, as slow, where the push's map took 12 min at some 85 KB/s (#2385)",
+    file: "scripts/artifacts.ts",
+    find: "    const once = none || got.timedOut === true;\n",
+    replace: "    const once = none;\n",
     tests: ["test/ci.test.ts", "-t", "asked again into an empty directory"],
   },
 ];

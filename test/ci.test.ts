@@ -68,6 +68,11 @@ test("each push's lint job checks std/ is what its sources make, after the compi
   expect(runs.indexOf("cargo build --locked")).toBeGreaterThanOrEqual(0);
   // The one check, which `bun run push`'s std phase runs too.
   expect(readFileSync(join(root, "scripts/push.ts"), "utf8")).toContain('run("std", ["bun", "scripts/std-fresh.ts"]);');
+  // And CI's map is fetched beside the round, waited for at its selection
+  // (#2385).
+  const push = readFileSync(join(root, "scripts/push.ts"), "utf8");
+  const fetch = push.indexOf('beside(["bun", "scripts/testMap.ts", "fetch"], mapFetchLog)');
+  expect([fetch > 0, fetch < push.indexOf('run("build",'), push.indexOf("await fetching!.done") > push.indexOf('run("build",')]).toEqual([true, true, true]);
 });
 
 // `check:fast --all`, the check before a push, runs what a push's check
@@ -1020,7 +1025,8 @@ test("each job that restores the test map by its run's key needs the job that gi
   // A push's map, by its commit, which `bun run push` fetches; a call's
   // none, its store in the cache.
   expect(made.match(/name: test-map-of-\$\{\{ env\.SHA \}\}/g)?.length).toBe(2);
-  expect(made.match(/if: [^\n]*!inputs\.of/g)?.length).toBe(2);
+  // Each upload, and the pack before it (#2385).
+  expect(made.match(/if: [^\n]*!inputs\.of/g)?.length).toBe(4);
   expect(made).toContain("value: ${{ jobs.test-map.outputs.key }}");
 });
 
@@ -1122,6 +1128,12 @@ test("an artifact's download is asked again into an empty directory", () => {
   let asked = 0;
   expect(downloaded(1, ["--name=x"], dir, () => (asked++, { ok: false, said: "no valid artifacts found to download" }), () => {})).toBe(false);
   expect(asked).toBe(1);
+  // Given its time, one that took it is asked once, as again would be as
+  // slow (#2385).
+  let timed = 0;
+  const slow = (_: string[], seconds?: number) => (timed++, { ok: false, said: `no answer in ${seconds} s`, timedOut: true });
+  expect(downloaded(1, ["--name=x"], dir, slow, () => {}, 5)).toBe(false);
+  expect(timed).toBe(1);
   // Every script fetches a run's artifacts so.
   const scripts = readdirSync(join(root, "scripts")).filter((name) => name.endsWith(".ts") && name !== "artifacts.ts");
   expect(scripts.filter((name) => /"run", "download"/.test(readFileSync(join(root, "scripts", name), "utf8")))).toEqual([]);
