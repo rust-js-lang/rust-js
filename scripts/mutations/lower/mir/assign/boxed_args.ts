@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut` whose borrow a call's result holds is given the number, not a handle on its place",
     file: "crates/rust-js-mir/src/assign/boxed_args.rs",
-    find: "                exprs.push(through(self, Expr::handle(place))?);\n                continue;\n",
+    find: "                exprs.push(through(self, self.handle_on(place))?);\n                continue;\n",
     replace: "                exprs.push(through(self, place)?);\n                continue;\n",
     tests: ["test/corpus.test.ts", "-t", "mut_number_handles"],
   },

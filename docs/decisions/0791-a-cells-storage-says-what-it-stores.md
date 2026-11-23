@@ -159,3 +159,46 @@ and the mutations `swap-into-a-nullable-place-as-given` and
 `held-handle-given-on-as-a-handle-on-it`; the net's four rows of #1018
 run as native.
 
+
+## Amendment: one maker of a handle on a place (2026-11-24, #2427, #2426)
+
+A wrong answer (P0, #2427). A `&mut` to a `#[rust_js::nullable]` field
+lent on as a handle stored `undefined` for `None`, while a read of a
+field only the crate writes tests `=== null`. `dynamic(&mut |o| *o = None,
+&mut s.v)` printed `false None` where Rust prints `true None`. Six ways
+of lending one on did this: a `&mut dyn FnMut`'s argument, a function
+that gives the `&mut` back, a vector that keeps it, an item's field given
+back, a `RefCell` borrow's field and a `Box`'s field. Each made its own
+handle on the stored handle's `value`, `Expr::handle(place.value)`, and
+tidy read that variable's place, so the handle assigned the field what
+was written as it was given. `get_or_insert`, `insert` and
+`get_or_insert_with` of a nullable field crashed the compiler the same
+way (#2426): their `&mut` to the payload was such a handle, and tidy
+removed the variable it named.
+
+**A handle on a `&mut`'s place, and a `dyn`'s pair on one, have one
+maker**: `mut_refs/handles.rs`'s `handle_on`, `pair_on` and `pair_made`.
+A handle a variable holds of a `&mut` to a place that stores its own way
+is recorded with its place and its storage (`Made::handles`,
+`through_handle`), and `noted.rs`' `held_handle` finds it. The maker gives that handle itself wherever its
+`value` is lent on, and a pair on it is on its place and stored as it
+stores. Every handle and pair the MIR's lowering makes of a place comes
+from the maker: `value_expr`'s, `boxed_args`', a shared borrow's of a
+kept `&mut`, an `Option`'s payload's (`option_place_through`) and a
+`dyn`'s pair (`unsize_trait`). The architecture test "a handle on a place
+is handles.rs's alone in the MIR's lowering" holds that.
+
+Tidy's repair of a pair on a stored handle's `value` (#977) no longer
+covers a nullable place; the maker does. It stays for a flattened state's
+handle, which only tidy sees as a variable's.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's. Held by the corpus case `nullable_field_lent_as_a_handle` against
+native Rust: the six ways, the three right before, a `dyn` trait object,
+and `get_or_insert`, `insert` and `get_or_insert_with`. Mutations
+`held-handle-unread` (`noted.ts`), `handle-on-a-held-handle-made-apart`,
+`pair-on-a-held-handle-stored-as-given`,
+`pair-made-after-its-handle-renamed` and `reborrowed-pair-place-unfixed`
+(`mut_refs/handles.ts`). `held-handle-given-on-as-a-handle-on-it` is
+retired: its guard is now the maker's. A flattened state's repair in
+tidy, the second place that stores into a handle, is #2429.

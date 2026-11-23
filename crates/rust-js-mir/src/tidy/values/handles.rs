@@ -143,17 +143,19 @@ pub(in crate::tidy) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: 
             }
         }
     });
-    // A `dyn`'s pair on a handle's `value`, `&mut fiber.owner as &mut dyn
-    // Trait`'s: a pair on the handle's place that stores as it does, a
-    // nullable field's `null` or a flattened state's keys, not one whose
-    // setter assigns the place as it's given (#977).
+    // A `dyn`'s pair on a flattened state's handle's `value`, `&mut
+    // *task.state.get_mut() as &mut dyn Trait`'s: a pair on the handle's
+    // place that sets its keys, not one whose setter assigns the place as
+    // it's given (#977). A nullable place's is made so where it's made
+    // (`pair_made`, #2427); a flattened state's handle is a
+    // variable's only here.
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Pair(place, dictionary, js::Storage::AsGiven) = &e.kind
             && let ExprKind::Member(of, key) = &place.kind
             && key == js::HELD
             && let ExprKind::Var(v) = &of.kind
             && let Some((_, on, _, storage)) = handles.iter().find(|(name, ..)| v == name)
-            && *storage != js::Storage::AsGiven
+            && matches!(storage, js::Storage::InPlace(..))
         {
             *e = Expr {
                 span: e.span,

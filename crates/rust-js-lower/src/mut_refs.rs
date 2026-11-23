@@ -24,6 +24,7 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 mod given;
+mod handles;
 
 /// Whether a value of `ty` may hold a `part`: `part` is in it, not only in
 /// a projection, `<I as Iterator>::Item`, which names `I` but holds an

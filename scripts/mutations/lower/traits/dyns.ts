@@ -530,14 +530,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-dyn-pairs.test.ts"],
   },
   {
-    name: "reborrowed-pair-place-unfixed",
-    breaks: "a `&mut dyn` pair of a reborrow, `&mut *x`, reads `x.value` whenever it's read, so `x = &mut q` before it's used writes `q` (#968)",
-    file: "crates/rust-js-lower/src/traits/dyns.rs",
-    find: "                    Expr::pair(self.place_where_made(Expr::held(cell), out), dictionary)\n",
-    replace: "                    Expr::pair(Expr::held(cell), dictionary)\n",
-    tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
-  },
-  {
     name: "allocation-function-unwrapped",
     breaks:
       "a `Box<dyn Fn>` of a `fn` pointer is the pointer itself where the crate reads a `dyn Fn`'s address, so two boxes of one are `===` (#1053)",

@@ -11,14 +11,6 @@ export const mutations: Mutation[] = [  {
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_of_unit_kept.rs$"],
   },
   {
-    name: "held-handle-given-on-as-a-handle-on-it",
-    breaks: "a `&mut` to a nullable field kept in a struct, `Held(&mut fiber.0.owner)`, is a handle on its handle's `value`, which stores `undefined` for `None` (#1018)",
-    file: "crates/rust-js-mir/src/temporaries.rs",
-    find: "            Value::Ref(ref place) if self.unhandled(place).is_some() => match &place.kind {\n",
-    replace: "            Value::Ref(ref place) if false && self.unhandled(place).is_some() => match &place.kind {\n",
-    tests: ["test/corpus.test.ts", "-t", "^nullable_written_beside_a_wrapper.rs$"],
-  },
-  {
     name: "cell-box-captured-as-value",
     breaks:
       "a cell's box held apart from a later field, `Cell::new(Some(point))`, is named after the box's key, `const value`, not after what it holds, `point` (rd413)",

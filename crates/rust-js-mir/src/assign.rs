@@ -796,7 +796,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                     && same_place(state, target)
                     && fixed_place(target) =>
             {
-                Some(Expr::handle(target.clone()))
+                Some(self.handle_on(target.clone()))
             }
             _ => None,
         };

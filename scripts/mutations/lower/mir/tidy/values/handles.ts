@@ -173,9 +173,9 @@ export const mutations: Mutation[] = [
   },
   {
     name: "pair-of-a-handle-stores-as-given",
-    breaks: "a `&mut dyn`'s pair on a nullable field's or a flattened state's handle assigns the place as it's given, `fiber.owner = value`, `task = value`, so a `None` is `undefined` and the class's object is replaced (#977)",
+    breaks: "a `&mut dyn`'s pair on a flattened state's handle assigns the place as it's given, `task = value`, so the class's object is replaced (#977)",
     file: "crates/rust-js-mir/src/tidy/values/handles.rs",
-    find: "            && *storage != js::Storage::AsGiven\n",
+    find: "            && matches!(storage, js::Storage::InPlace(..))\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^stored_place_made_a_mut_dyn.rs$"],
   },

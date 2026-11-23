@@ -753,7 +753,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `&mut dyn Sub` as a `&mut dyn Super`: a pair on the first's
             // `value`, which its `&mut self` methods write (ADR 0099).
             if matches!(target.kind(), ty::Ref(_, _, Mutability::Mut)) {
-                return Ok(Expr::pair(self.place_where_made(Expr::held(pair), out), dictionary));
+                return Ok(self.pair_made(Expr::held(pair), dictionary, out));
             }
             return Ok(Expr::object(vec![
                 Prop::Field(js::HELD.into(), Expr::held(pair)),
@@ -780,7 +780,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     } else {
                         self.spill(Role::Cell, value, out)
                     };
-                    Expr::pair(self.place_where_made(Expr::held(cell), out), dictionary)
+                    self.pair_made(Expr::held(cell), dictionary, out)
                 }
             });
         }

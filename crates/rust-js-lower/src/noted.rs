@@ -9,9 +9,23 @@ use super::*;
 use rustc_middle::thir;
 
 mod made;
-pub use made::Made;
+pub use made::{Handled, Made};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What the handle `place` is the `value` of holds, of one a variable
+    /// holds of a `&mut` to a place that stores its own way, `place.value`
+    /// of `const place = { get value() .. }` on `fiber.owner` (#541, #1018);
+    /// `None` of any other place.
+    pub fn held_handle(&self, place: &Expr) -> Option<&Handled> {
+        match &place.kind {
+            js::ExprKind::Member(of, key) if key == js::HELD => match &of.kind {
+                js::ExprKind::Var(name) => self.locals.mir.made.handles.get(name),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
     /// Whether `name`, a local of the body lowered from its MIR, reads the
     /// same wherever it's read: assigned once and never borrowed.
     pub fn alike_local(&self, name: &js::Name) -> bool {

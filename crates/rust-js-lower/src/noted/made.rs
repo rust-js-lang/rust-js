@@ -12,6 +12,15 @@ pub struct Made {
     /// Of what it held to read in place where that's once (`held_in_place`), a place it fixed,
     /// `const item = $unwrap(resource.state);`, or an `Option` its items read twice.
     pub fixed: IndexSet<rust_js_program::js::Name>,
-    /// Of what holds a `&mut`'s handle on a nullable place, the place (#541).
-    pub handles: IndexMap<rust_js_program::js::Name, Expr>,
+    /// Of what holds a `&mut`'s handle on a nullable place, the place and
+    /// how it stores (#541, `FnCx::held_handle`).
+    pub handles: IndexMap<rust_js_program::js::Name, Handled>,
+}
+
+/// A handle a variable holds of a `&mut` to a place that stores its own
+/// way: its place, and how what's written to it is stored.
+#[derive(Clone)]
+pub struct Handled {
+    pub on: Expr,
+    pub storage: rust_js_program::js::Storage,
 }

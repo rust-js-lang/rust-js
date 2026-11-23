@@ -1267,7 +1267,8 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         let handles = &self.locals.mir.made.handles;
         // A place holds no closure, so `substitute` renames it; never left
         // reading the variable, not its handle's place (#1525).
-        (place.substitute_names(&|v| handles.get(v).cloned())).expect("a place holds no closure")
+        (place.substitute_names(&|v| handles.get(v).map(|handled| handled.on.clone())))
+            .expect("a place holds no closure")
     }
 }
 

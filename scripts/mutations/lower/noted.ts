@@ -28,4 +28,12 @@ export const mutations: Mutation[] = [
     replace: "        self.locals.mir.in_place_sources = names;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
   },
+  {
+    name: "held-handle-unread",
+    breaks: "a handle a variable holds of a nullable field's `&mut` isn't found where its `value` is lent on, so a handle made apart assigns what's written as it's given, `undefined`, which the field's `=== null` read takes for a `Some` (#2427)",
+    file: "crates/rust-js-lower/src/noted.rs",
+    find: "                js::ExprKind::Var(name) => self.locals.mir.made.handles.get(name),\n",
+    replace: "                js::ExprKind::Var(_) => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_lent_as_a_handle.rs$"],
+  },
 ];

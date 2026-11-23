@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut` to a struct's `dyn` last field, a number, is a pair of its value, whose method's write is lost",
     file: "crates/rust-js-mir/src/rvalues.rs",
-    find: "                        BorrowKind::Mut { .. } => Expr::pair(value, dictionary),\n",
+    find: "                        BorrowKind::Mut { .. } => self.pair_on(value, dictionary),\n",
     replace:
       "                        BorrowKind::Mut { .. } if false => Expr::pair(value, dictionary),\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_struct_tails.rs$"],

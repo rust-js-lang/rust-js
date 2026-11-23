@@ -151,3 +151,24 @@ test("the marks are asked only where MIR isn't at hand", () => {
   expect(read("crates/rust-js-lower/src/std_types/cell/variables.rs")).toContain("store_again(js::Undefined::ByForm)");
 });
 
+
+// A handle on a `&mut`'s place, and a `dyn`'s pair on one, are made by
+// `mut_refs/handles.rs` alone in the MIR's lowering, `handle_on`,
+// `pair_on` and `pair_made`, which make one on a handle a variable holds of
+// a nullable place that handle, stored as it stores. A handle made apart,
+// `Expr::handle(place.value)`, assigned what's written as it's given, and
+// tidy's read of the variable's place left `undefined` in a field a read
+// tests `=== null`: six ways of lending a nullable field's `&mut` on gave
+// wrong answers, and `get_or_insert` of one crashed (#2427, #2426).
+// Tidy's own handles are its own.
+test("a handle on a place is handles.rs's alone in the MIR's lowering", () => {
+  const owner = "crates/rust-js-lower/src/mut_refs/handles.rs";
+  const lowering = files("crates/rust-js-mir/src").filter((file) => file.endsWith(".rs") && !file.startsWith("crates/rust-js-mir/src/tidy"));
+  const code = (file: string) => read(file).split("#[cfg(test)]")[0].split("\n").filter((line) => !/^\s*\/\//.test(line));
+  const making = [...lowering, "crates/rust-js-lower/src/traits/dyns.rs", "crates/rust-js-lower/src/std_types/option.rs"].flatMap((file) =>
+    code(file)
+      .filter((line) => /\bExpr::(?:handle|pair)\(/.test(line))
+      .map((line) => `${file}: ${line.trim()}`));
+  expect(making).toEqual([]);
+  expect(read(owner)).toContain("pub fn handle_on(");
+});

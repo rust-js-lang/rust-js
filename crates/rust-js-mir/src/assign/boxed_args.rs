@@ -398,7 +398,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 if !fixed_place(&place) {
                     return Err(self.unsupported(span, "a `&mut` of a number given back, from its MIR"));
                 }
-                exprs.push(through(self, Expr::handle(place))?);
+                exprs.push(through(self, self.handle_on(place))?);
                 continue;
             }
             // A `dyn`'s, or a slice's, the callee can't replace whole: its box

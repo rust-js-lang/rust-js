@@ -34,7 +34,10 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// which stores what it's written.
     pub(super) fn through_handle(&mut self, handle: Expr, out: &mut Vec<Stmt>) -> Expr {
         let on = match &handle.kind {
-            js::ExprKind::Handle(on, _) => Some((**on).clone()),
+            js::ExprKind::Handle(on, storage) => Some(rust_js_lower::noted::Handled {
+                on: (**on).clone(),
+                storage: *storage,
+            }),
             _ => None,
         };
         let handle = self.spill(Role::Place, handle, out);
@@ -47,13 +50,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// The place `place` is, of a handle `through_handle` holds, `fiber.owner`
     /// of `place.value`; `None` of any other.
     pub(super) fn unhandled(&self, place: &Expr) -> Option<Expr> {
-        match &place.kind {
-            js::ExprKind::Member(of, key) if key == js::HELD => match &of.kind {
-                js::ExprKind::Var(name) => self.locals.mir.made.handles.get(name).cloned(),
-                _ => None,
-            },
-            _ => None,
-        }
+        self.held_handle(place).map(|handled| handled.on.clone())
     }
 
     pub(super) fn mir_rvalue(
@@ -151,7 +148,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                     let value = self.project(parent.clone(), base_ty, field.as_usize());
                     let dictionary = Expr::member(parent, js::DICTIONARY);
                     return Ok(Value::Expr(match kind {
-                        BorrowKind::Mut { .. } => Expr::pair(value, dictionary),
+                        BorrowKind::Mut { .. } => self.pair_on(value, dictionary),
                         _ => Expr::object(vec![
                             Prop::Field(js::HELD.into(), value),
                             Prop::Field(js::DICTIONARY.into(), dictionary),
@@ -169,7 +166,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                     && self.held_as_its_place(state, place)
                 {
                     let target = self.mir_place(state, *place, span, out)?;
-                    return Ok(Value::Place(Expr::handle(target)));
+                    return Ok(Value::Place(self.handle_on(target)));
                 }
                 // `&(*(_5.0))`, the reference `_5.0` is, a list's item.
                 if matches!(kind, BorrowKind::Shared)

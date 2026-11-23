@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [  {
     file: "crates/rust-js-lower/src/std_types/option.rs",
     find: "            (true, false) => self.some_value(place),",
     replace:
-      '            (true, false) => Expr::call_helper("$someMut", vec![Expr::handle(place)]),',
+      '            (true, false) => Expr::call_helper("$someMut", vec![self.handle_on(place)]),',
     tests: ["test/corpus.test.ts", "-t", "option_slot_iterators"],
   },
   {
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [  {
     breaks:
       "`*slot.get_or_insert_with(T::default) += by` of a generic `T` writes a copy, not the `Option`'s place",
     file: "crates/rust-js-lower/src/std_types/option.rs",
-    find: '            (true, true) => Expr::call_helper("$someMut", vec![Expr::handle(place)]),',
+    find: '            (true, true) => Expr::call_helper("$someMut", vec![self.handle_on(place)]),',
     replace: "            (true, true) => self.some_value(place),",
     tests: ["test/corpus.test.ts", "-t", "option_slot_iterators"],
   },
@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [  {
     name: "option-place-no-handle",
     breaks: "`*o.get_or_insert(0) += 1` writes a number's field",
     file: "crates/rust-js-lower/src/std_types/option.rs",
-    find: "            (false, true) => Expr::handle(place),",
+    find: "            (false, true) => self.handle_on(place),",
     replace: "            (false, true) => place,",
     tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
   },
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [  {
     breaks:
       "`*o.get_or_insert(..) = None` of an `Option<Option<T>>` writes the outer `Option` `None`",
     file: "crates/rust-js-lower/src/std_types/option.rs",
-    find: '            (true, true) => Expr::call_helper("$someMut", vec![Expr::handle(place)]),',
+    find: '            (true, true) => Expr::call_helper("$someMut", vec![self.handle_on(place)]),',
     replace: "            (true, true) => Expr::handle(place),",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
   },

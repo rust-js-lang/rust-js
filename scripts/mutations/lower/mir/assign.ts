@@ -553,7 +553,7 @@ export const mutations: Mutation[] = [  {
     breaks:
       "a shared borrow of a kept `&mut` is a handle in a variable, not its place",
     file: "crates/rust-js-mir/src/assign.rs",
-    find: "                Some(Expr::handle(target.clone()))\n",
+    find: "                Some(self.handle_on(target.clone()))\n",
     replace: "                None\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
     snapshots: true,

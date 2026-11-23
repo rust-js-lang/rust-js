@@ -1091,9 +1091,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// pattern binds it (ADR 0921).
     fn option_place_through(&mut self, place: Expr, item: Ty<'tcx>) -> Expr {
         match (self.boxed_payload(item), self.mut_ref_form(item).is_cell()) {
-            (true, true) => Expr::call_helper("$someMut", vec![Expr::handle(place)]),
+            (true, true) => Expr::call_helper("$someMut", vec![self.handle_on(place)]),
             (true, false) => self.some_value(place),
-            (false, true) => Expr::handle(place),
+            (false, true) => self.handle_on(place),
             (false, false) => place,
         }
     }
