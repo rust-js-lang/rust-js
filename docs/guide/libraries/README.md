@@ -888,6 +888,11 @@ Without `#[rust_js::tag]` and the names, the JSON is the same and the
 declaration is rust-js's, `{ TAG: "Circle"; radius: number } | { TAG:
 "Square"; side: number }`.
 
+An untagged union is the same pair: `#[serde(untagged)]` reads `42` or
+`"a7"`, trying each variant in turn, and `#[rust_js::untagged]` makes the
+value its payload, `number | string`, not `{ TAG: "Number"; _0: number }`
+([ADR 0214](../../decisions/0214-untagged-enums.md), amended, #2388).
+
 serde_json's error says where in the text a read failed, `at line 1
 column 29`. To say where in the value, `items[1].qty`, read through
 serde_path_to_error, a crate rust-js knows: its `deserialize` of

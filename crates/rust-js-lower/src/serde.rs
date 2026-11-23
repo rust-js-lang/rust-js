@@ -739,15 +739,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .at(js::Span::NONE),
                 );
             } else {
+                // An untagged enum's variant's one field is its payload, the
+                // value itself (ADR 0214, #2388).
+                let untagged = self.untagged(Ty::new_adt(self.tcx, adt, args)).is_some();
                 let fields: Vec<(Expr, Ty<'tcx>)> = variant
                     .fields
                     .iter()
                     .enumerate()
                     .map(|(i, f)| {
-                        (
-                            Expr::member(value.clone(), variant_field(self.tcx, variant, i)),
-                            self.field_ty(f, args),
-                        )
+                        let read = match untagged {
+                            true => value.clone(),
+                            false => Expr::member(value.clone(), variant_field(self.tcx, variant, i)),
+                        };
+                        (read, self.field_ty(f, args))
                     })
                     .collect();
                 let fields_rule = attrs.rename_all.or(container.rename_all_fields);

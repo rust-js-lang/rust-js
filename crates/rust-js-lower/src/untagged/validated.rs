@@ -152,17 +152,6 @@ pub(crate) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &crate::library::Foreig
                     .to_string(),
             );
         }
-        // serde's codecs read and write a tagged enum (ADR 0079): one without
-        // a tag is serde's own `#[serde(untagged)]`, which is to come.
-        if serde_impl(tcx, def_id.to_def_id()).is_some()
-            && let Some((adt, _)) = untagged_adt(tcx, tcx.type_of(def_id).instantiate_identity().skip_normalization())
-        {
-            let what = format!("serde of the untagged enum `{}`", tcx.item_name(adt.did()));
-            let refused = crate::refusal::Refused::Because(&what, "see ADR 0214");
-            tcx.dcx()
-                .span_err(tcx.def_span(def_id), crate::refusal::words(tcx, refused));
-            valid.set(false);
-        }
     }
     valid.get()
 }

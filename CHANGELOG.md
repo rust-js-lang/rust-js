@@ -1054,6 +1054,11 @@ imports, and `rust-js build` the one way to build an app.
 
 ### Fixed
 
+- **serde reads and writes a `#[rust_js::untagged]` enum**, by any of its
+  representations, the value still its payload: `#[serde(untagged)]` beside
+  it is TypeScript's `number | string` of JSON's, where it was refused
+  (ADR 0214, amended, #2388).
+
 - **A missing field of `deserialize_with` or `with` is `missing field`**,
   as serde's derive says, where it was read by its function from nothing,
   so an `Option` of it was `None`; and `deserialize_with =

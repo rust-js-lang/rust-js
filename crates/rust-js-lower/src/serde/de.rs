@@ -607,6 +607,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         items: Vec<Expr>,
     ) -> Expr {
         if adt.is_enum() {
+            // An untagged enum's variant is its payload, and a fieldless one
+            // its own value, as every maker of one makes it, `adt_value` (ADR
+            // 0214, #2388).
+            if self.untagged(Ty::new_adt(self.tcx, adt, args)).is_some() {
+                if let Some(value) = crate::untagged::unit_value(self.tcx, variant) {
+                    return value;
+                }
+                if let Ok([payload]) = <[Expr; 1]>::try_from(items.clone()) {
+                    return payload;
+                }
+            }
             if variant.fields.is_empty() {
                 return self.unit_variant(adt.did(), variant);
             }

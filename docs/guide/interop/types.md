@@ -795,7 +795,10 @@ export function size(input) {
   whose TypeScript is its JSON's shape writes both
   ([serde](../libraries/README.md#serde)).
 - **`#[rust_js::untagged]` makes each value its payload**, as TypeScript's
-  `string | number` is. `match` tests each payload's kind, `typeof`,
+  `string | number` is. serde reads and writes one by any representation
+  of its own, the value still its payload: `#[serde(untagged)]` beside it
+  is a union of JSON's, `42` or `"a7"`, TypeScript's too
+  ([serde](../libraries/README.md#serde), ADR 0214 amended, #2388). `match` tests each payload's kind, `typeof`,
   `Array.isArray` or a member, so each variant holds one value, and no
   two of one kind. An array whose type fixes its length, a tuple's, a
   tuple struct's or a `[T; N]`'s, is told from another of another length
