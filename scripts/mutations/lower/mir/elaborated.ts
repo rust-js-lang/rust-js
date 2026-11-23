@@ -205,4 +205,12 @@ export const mutations: Mutation[] = [
     replace: "            _ if let Some((_, held)) = rust_js_lower::recognition::held_types(at.ty) && at.ty.is_closure() => {\n",
     tests: ["test/lowering-async.test.ts", "-t", "an async block or closure drops what it took"],
   },
+  {
+    name: "packed-part-read-as-its-temporary",
+    breaks: "rustc's drop of a packed struct's part it moved into a temporary of its own, `AddMovesForPackedDrops`' `_t = move ((_5.1).1.0); drop(_t)`, is read as a drop of the temporary, so the rest of the part rust-js drops in place is unmatched and refused: rustc's packed/misaligned-reference-drop-field-99838.rs (#2112's change D2)",
+    file: "crates/rust-js-mir/src/elaborated.rs",
+    find: "    match to == local && !variable && packed {\n        true => *from,\n",
+    replace: "    match to == local && !variable && packed {\n        true => place,\n",
+    tests: ["test/drops-shadow.test.ts", "-t", "a packed struct's part rustc moves out to drop is compared as the part"],
+  },
 ];

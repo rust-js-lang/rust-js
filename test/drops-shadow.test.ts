@@ -235,3 +235,15 @@ test("a cleanup's drop that disagrees with rustc's elaboration compiles", () => 
   const cleanups = shadowOf("drop_functions.rs").filter(([verdict, path]) => verdict === "disagree" && path === "cleanup");
   expect(cleanups.length).toBeGreaterThan(0);
 });
+
+// A part of a packed struct that may be misaligned rustc drops by moving
+// it into a temporary of its own first, `_t = move ((_5.1).1.0); drop(_t)`
+// (`AddMovesForPackedDrops`): read as the part, which rust-js drops in
+// place, so what's left of `held.1.1` beside a moved field is compared, not
+// refused as unmatched (rustc's packed/misaligned-reference-drop-field-99838.rs, #2112).
+test("a packed struct's part rustc moves out to drop is compared as the part", () => {
+  const lines = shadowOf("packed_part_dropped_beside_a_moved_one.rs");
+  expect(lines.filter(([verdict]) => verdict !== "agree").map((line) => line.join(" "))).toEqual([]);
+  const end = lines.filter(([, path, , at]) => path === "normal" && at.includes(":43:1:"));
+  expect(end.map(([verdict, , , , detail]) => `${verdict} ${detail}`).sort()).toContain("agree 2 compared");
+});

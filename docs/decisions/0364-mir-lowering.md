@@ -2266,3 +2266,27 @@ uncompared"; mutations `shadow-unmatched-unrefused` and
 
 Case of [0262](0262-when-rust-and-js-disagree.md): none. No output
 changes; a program the comparison can't stand behind is refused.
+
+## Amendment: a packed struct's part, dropped through rustc's temporary (2026-11-24, #2112's change D2)
+
+D2 refused rustc's packed/misaligned-reference-drop-field-99838.rs, red
+on `main`: "no rustc drop where it's written; `m.1.1 (the rest)`". A
+part of a `#[repr(packed)]` struct that may be misaligned isn't dropped
+in place by rustc: `AddMovesForPackedDrops`, one of the passes of the
+body the comparison reads, moves it into a temporary of its own and
+drops that, `_t = move ((_5.1: Misalign).1.0); drop(_t)`. The
+comparison read the drop as the temporary's, a place rust-js's body
+never has. `theirs` reads it as the part it moved (`packed_moved`): a
+`Drop` of a local no variable is, whose block's last statement moves a
+place through a packed struct into it. rust-js drops the part in place,
+as a JS field's address is never misaligned.
+
+Corpus case packed_part_dropped_beside_a_moved_one holds the shape
+against native Rust; test drops-shadow "a packed struct's part rustc
+moves out to drop is compared as the part"; mutation
+`packed-part-read-as-its-temporary`. rustc's whole run-pass suite, every
+directory, not only drop/: 2,149 of 2,224 in scope pass, its known
+failures as listed, none of them a drop the comparison refuses.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none. No output
+changes; a program refused is compiled again.

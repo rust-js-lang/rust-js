@@ -301,12 +301,48 @@ fn theirs<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, js_drops: &dyn Fn(Ty<
         let info = data.terminator().source_info;
         found.push(Theirs {
             site: (info.span, info.scope, data.is_cleanup),
-            place: path_key_through(*place, &derefs),
+            place: path_key_through(packed_moved(tcx, body, data, *place), &derefs),
             when: if flagged { When::Flagged } else { When::Always },
             except,
         });
     }
     found
+}
+
+/// The place a `Drop` of `data`, of `place`, drops: of a part of a packed
+/// struct that may be misaligned, what rustc's `AddMovesForPackedDrops`
+/// moved into a temporary of its own to drop it there, `_t = move ((_5.1:
+/// Misalign).1.0); drop(_t)`, the part, as rust-js's body drops it in place
+/// (a field's address is never misaligned in JS); else `place`.
+fn packed_moved<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &mir::Body<'tcx>,
+    data: &mir::BasicBlockData<'tcx>,
+    place: Place<'tcx>,
+) -> Place<'tcx> {
+    let Some(local) = place.as_local() else {
+        return place;
+    };
+    let Some(StatementKind::Assign(assign)) = data.statements.last().map(|statement| &statement.kind) else {
+        return place;
+    };
+    let (Some(to), Rvalue::Use(Operand::Move(from), _)) = (assign.0.as_local(), &assign.1) else {
+        return place;
+    };
+    // The pass's temporary, which no variable is; of a place in a packed
+    // struct, which alone it moves.
+    let variable = (body.var_debug_info.iter())
+        .any(|info| matches!(info.value, mir::VarDebugInfoContents::Place(at) if at.local == local));
+    let packed = (from.iter_projections()).any(|(base, _)| {
+        base.ty(&body.local_decls, tcx)
+            .ty
+            .ty_adt_def()
+            .is_some_and(|adt| adt.repr().packed())
+    });
+    match to == local && !variable && packed {
+        true => *from,
+        false => place,
+    }
 }
 
 /// What the comparison says of a `Drop`: rust-js's elaboration drops each
