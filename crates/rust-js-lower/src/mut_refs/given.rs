@@ -33,13 +33,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `param`, a type parameter of `def_id`'s, is bound by a
     /// function trait and is in only one of its parameters' types, and not
     /// in what it returns: what it's given is only called there (#1909).
+    /// Not of what isn't a function, a struct an aggregate makes holding the
+    /// `&mut`, which gives it back (`fn_like_sig`, #2061).
     fn only_called(&self, def_id: DefId, param: Ty<'tcx>) -> bool {
+        let Some(sig) = crate::traits::fn_like_sig(self.tcx, def_id) else {
+            return false;
+        };
         let param_env = self.tcx.param_env(def_id);
         let called = (self.declared_bounds(param, param_env).into_iter())
             .any(|id| self.tcx.fn_trait_kind_from_def_id(id).is_some());
-        let sig = self
-            .tcx
-            .instantiate_bound_regions_with_erased(self.tcx.fn_sig(def_id).instantiate_identity().skip_normalization());
         let mentions = |ty: Ty<'tcx>| ty.walk().any(|part| part.as_type() == Some(param));
         called && !mentions(sig.output()) && sig.inputs().iter().filter(|&&input| mentions(input)).count() == 1
     }

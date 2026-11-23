@@ -431,4 +431,12 @@ export const mutations: Mutation[] = [
     replace: "        if super::iterators::assoc_iterator_as_it_is(tcx, item.def_id) && !declared_iterator && false {\n",
     tests: ["test/associated-iterator-matrix.test.ts"],
   },
+  {
+    name: "fn-like-sig-of-anything",
+    breaks: "a signature is asked of what isn't a function, a struct an aggregate makes holding a `&mut` to a closure, `Held(&mut f)`, and rustc's `fn_sig` crashes (#2061)",
+    file: "crates/rust-js-lower/src/traits.rs",
+    find: "        DefKind::Fn | DefKind::AssocFn | DefKind::Ctor(_, rustc_hir::def::CtorKind::Fn)\n",
+    replace: "        DefKind::Fn | DefKind::AssocFn | DefKind::Ctor(_, rustc_hir::def::CtorKind::Fn) | _\n",
+    tests: ["test/corpus.test.ts", "-t", "^aggregate_holding_a_mut_to_a_closure.rs$"],
+  },
 ];

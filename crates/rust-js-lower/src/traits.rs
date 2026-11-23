@@ -254,6 +254,20 @@ pub(crate) fn erased_sig<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> ty::FnSig<'t
     tcx.instantiate_bound_regions_with_erased(tcx.fn_sig(def_id).instantiate_identity().skip_normalization())
 }
 
+/// `erased_sig` of `def_id` where it's an item rustc gives a signature
+/// of, a function, a method or a tuple struct's or variant's constructor;
+/// `None` of any other, a struct or an enum an aggregate makes, a closure
+/// (whose signature its type holds), whose `fn_sig` is rustc's internal
+/// error (#2061). The one way to ask a signature of what may not be a
+/// function.
+pub(crate) fn fn_like_sig<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<ty::FnSig<'tcx>> {
+    matches!(
+        tcx.def_kind(def_id),
+        DefKind::Fn | DefKind::AssocFn | DefKind::Ctor(_, rustc_hir::def::CtorKind::Fn)
+    )
+    .then(|| erased_sig(tcx, def_id))
+}
+
 /// The impl whose dictionary is the evidence of `tr`, and its arguments: a
 /// user's, the crate's or another's, as `codegen_select_candidate` selects
 /// it, where `tr` isn't a built-in one, a `dyn`'s.
