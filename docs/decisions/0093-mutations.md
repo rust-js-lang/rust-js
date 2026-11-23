@@ -1520,3 +1520,59 @@ now says. Tests mutations "a waiting mutation run says where it is, and
 each answer as it's given" and leases' lock test; mutations
 `answers-said-at-the-end-alone`, `heartbeat-silent` and
 `lock-wait-said-once`.
+
+## Amendment: a base's run reads the run's test map, and a mutation's error is its own (2026-11-24, #2341)
+
+In six of the eight mutation shards of check 45043213276, #2299's cut,
+the base run called every survivor the push's, and the check turned red
+with nothing new in it. The cause showed in the shards' own logs. CI's
+shards read the test map of 2cd281abf, a commit inside the push's batch,
+after its base 66a035ec4. A map is read only of HEAD or an ancestor, so
+the base's run, checked out at 66a035ec4, found none. A readability
+owner's mutation that survived its tests there went to the snapshot
+judge. Without a map in CI, that judge threw. The throw ended the base's
+whole run, with no `results.json`, so each survivor of the shard was the
+push's. The fit is shard for shard:
+- each of the six that misfired had a surviving `tidy` mutation in its
+  rerun;
+- shard 6 had none, and marked 9 latent;
+- shard 5's one `tidy` survivor was caught by its tests at the base, and
+  the shard marked 4 latent.
+Locally it worked because the machine keeps, or records, a map of the
+base or an ancestor of it.
+
+Two changes:
+- **One map judges push and base.** A run's survivors run again at the
+  base named the commit of the map the run read, `RUST_JS_TEST_MAP_OF`
+  (`namedMapEnv`, set by `resultsAt`). The base's `headMap` reads that
+  map (`mapOf`) of any commit the checkout has, whole and of this layout
+  and toolchain. `mapLines` places it at the base by the diff from its
+  commit, as it places an ancestor's at HEAD, and says so where a site's
+  own lines changed. A run that names no map reads HEAD's or its
+  nearest ancestor's, as before. It's an environment variable, not a
+  flag, because the base's runner is the base's own code: an older one
+  ignores it where it would refuse a flag it doesn't know.
+- **A mutation's error is its own verdict.** Where no map places a
+  site, the snapshot judge says so as an inconclusive verdict
+  (`unplaced`), never a throw and never a survivor, which a base's run
+  would call latent. Any other error thrown while judging one mutation
+  is that mutation's inconclusive verdict (`judgedApart`), so the run's
+  other verdicts stand. An inconclusive mutation fails every run, as it
+  did (`failingOf`), and the run's last line and step summary now count
+  them ("N inconclusive", `inconclusiveSaid`). A runner fault that
+  leaves many inconclusive results shows as one, not as survivors.
+
+Tests:
+- test/survivors.test.ts' "a survivor's run at the base is judged by the
+  test map the run read" (a runner at the base that writes the map it
+  was named);
+- test/test-map.test.ts' "a worktree reads the map …": a named map of a
+  commit after the checkout's; none of a commit the checkout lacks or of
+  another version;
+- test/mutations.test.ts' "a mutation's judging that throws is its own
+  inconclusive verdict …".
+
+Mutations: `base-run-unnamed-its-map`, `named-map-unread`,
+`named-map-of-a-commit-unhad`, `named-map-of-another-version`,
+`unmapped-taken-for-a-survivor`, `unmapped-judged-a-survivor`,
+`judging-throw-ends-the-run` and `inconclusive-uncounted`.

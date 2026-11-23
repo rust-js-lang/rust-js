@@ -26,7 +26,7 @@ import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
 import { caseParts, casePartCores, compilerBuilds, compilerBuildsAsked, drivesBrowser, machine, memoryBudget, peakGB, shardArg, shareOfShard, slots, timedShard, wholeCorpusParts } from "./shard";
-import { casesReaching, ensureMap, noMap } from "./testMap";
+import { casesReaching, ensureMap, headMapCommit, noMap } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
 import { mutantsLock } from "./disk";
@@ -983,6 +983,41 @@ export function narrowedTo(tests: string[], failed: string[]): string[] {
  * a survivor's finding to the next recorded run, where confirming every
  * catch cost half again a change's run (ADR 0093, amended). `--retire`'s
  * verdicts confirm their own (`failingWith`). */
+/** What the snapshot judge says of a readability owner's mutation that
+ * survived its tests, whose site the test map can't place, `why`: never
+ * judged by every case. One no map places is inconclusive, never taken
+ * for a survivor, which a run at its base calls latent (#2341); one the
+ * map can't place is the mutation's to name the case that catches it,
+ * `snapshots: true`. */
+export function unplaced(why: string): { caught: false; inconclusive?: true; said: string } {
+  if (why.startsWith(noMap)) return { caught: false, inconclusive: true, said: `${why}, so its snapshots aren't compared; CI's \`test-map\` job keeps one` };
+  return { caught: false, said: `${why}: name the corpus case that catches it in its tests, \`snapshots: true\`` };
+}
+
+/** A survivor of its tests' verdict, by the snapshot judge's `judged`. */
+export function bySnapshots(judged: { caught: boolean; inconclusive?: true }): "caught" | "survived" | "inconclusive" {
+  return judged.inconclusive ? "inconclusive" : judged.caught ? "caught" : "survived";
+}
+
+/** A mutation's verdict by `judging`, or, where its judging throws, its
+ * own inconclusive one, the error said: one mutation's verdict, never the
+ * run's end, which lost every other verdict of a CI shard (#2341). */
+export async function judgedApart<T extends { result: string }>(judging: () => Promise<T>): Promise<T | { result: string; tests: number; by?: undefined }> {
+  try {
+    return await judging();
+  } catch (error) {
+    return { result: `INCONCLUSIVE: its judging threw: ${error instanceof Error ? error.message : String(error)}`, tests: 0 };
+  }
+}
+
+/** The line a run's summary says of its inconclusive mutations, each of
+ * which fails it, or none: a pile of them is a runner's fault to read,
+ * never quiet (#2341). */
+export function inconclusiveSaid(results: string[]): string {
+  const count = results.filter((result) => result.startsWith("INCONCLUSIVE")).length;
+  return count === 0 ? "" : `, ${count} inconclusive`;
+}
+
 /** Of a run's `missed` mutations, each its name and result, those that fail
  * it. A survivor fails a run of some mutations, a push's or the ones named,
  * which a latent one's base already spares (`latentSurvivors`); a run of
@@ -2478,15 +2513,9 @@ async function main() {
     await recording;
     return casesReaching(mutation.file, lines[0], lines[1], caseNames);
   };
-  const snapshotsJudge = async (mutation: Mutation, mutant: string, own: <T>(work: () => Promise<T>) => Promise<T>): Promise<{ caught: boolean; said: string; output: string }> => {
+  const snapshotsJudge = async (mutation: Mutation, mutant: string, own: <T>(work: () => Promise<T>) => Promise<T>): Promise<{ caught: boolean; inconclusive?: true; said: string; output: string }> => {
     const reached = await reaching(mutation);
-    // Never every case: without a map CI's run fails (`noMap`, its
-    // `test-map` job keeps one), and a site the map can't place is the
-    // mutation's to name the case that catches it, `snapshots: true`.
-    if (reached.kind === "all") {
-      if (reached.why.startsWith(noMap)) throw new Error(`${mutation.name}: its tests passed, and ${reached.why}; CI's \`test-map\` job keeps one`);
-      return { caught: false, said: `${reached.why}: name the corpus case that catches it in its tests, \`snapshots: true\``, output: "" };
-    }
+    if (reached.kind === "all") return { ...unplaced(reached.why), output: "" };
     const chosen = reached.cases;
     if (chosen.length === 0) return { caught: false, said: `${reached.why}: no case reaches it`, output: "" };
     const named = (names: string[]) => `^(${names.map((name) => name.replaceAll(".", "\\.")).join("|")})$`;
@@ -2570,13 +2599,15 @@ async function main() {
     let output = byTests.output + twice.again;
     let verdict = twice.verdict;
     let by = exit.overgrown ? "its compiler growing past what a run of tests is given" : catchingTest(byTests.output);
+    let unjudged: string | undefined;
     if (verdict === "survived" && ofReadabilityOwner(mutation.file)) {
-      const bySnapshots = await snapshotsJudge(mutation, mutant, own);
-      output += `\n--- the snapshots of the cases that reach it (#864): ${bySnapshots.said}\n${bySnapshots.output}`;
-      if (bySnapshots.caught) {
-        verdict = "caught";
-        by = bySnapshots.said;
-        console.log(`${log}: its tests passed; ${bySnapshots.said}`);
+      const judged = await snapshotsJudge(mutation, mutant, own);
+      output += `\n--- the snapshots of the cases that reach it (#864): ${judged.said}\n${judged.output}`;
+      verdict = bySnapshots(judged);
+      if (verdict === "inconclusive") unjudged = judged.said;
+      if (verdict === "caught") {
+        by = judged.said;
+        console.log(`${log}: its tests passed; ${judged.said}`);
       }
     }
     const tests = held.seconds;
@@ -2590,9 +2621,12 @@ async function main() {
     if (verdict === "inconclusive") console.log(inconclusiveEnd(log, exit, output));
     const result = verdict === "caught" ? "caught" : verdict === "survived"
       ? `SURVIVED: its ${ran} tests passed with it${mutation.snapshots ? "" : ", snapshots not compared"}`
-      : twice.flake ? `INCONCLUSIVE: ${twice.flake}; see ${logged}` : `INCONCLUSIVE: no test failed, or the runner didn't end; see ${logged}`;
+      : `INCONCLUSIVE: ${unjudged ?? twice.flake ?? "no test failed, or the runner didn't end"}; see ${logged}`;
     return { result, tests, by: verdict === "caught" ? by : undefined };
   };
+  // One mutation's judging that throws is that one's verdict, inconclusive,
+  // never the run's end: one sank every verdict of six CI shards (#2341).
+  const judgeApart = (mutation: Mutation, compiler: string, log: string, bin?: string) => judgedApart(() => judgeMutant(mutation, compiler, log, bin));
   const one = async (batch: Sited[], slot: number) => {
     if (sources.has(batch[0].mutation)) {
       const mutation = batch[0].mutation;
@@ -2662,12 +2696,12 @@ async function main() {
       else freshDiffers.push(`${names}: built fresh, ${again.problem}`);
     }
     const tested = batch.map(async ({ mutation }) => {
-      const judged = await judgeMutant(mutation, kept, mutation.name);
+      const judged = await judgeApart(mutation, kept, mutation.name);
       took.set(mutation, shareOfShard({ build: building / batch.length, tests: judged.tests }, jobs, testsAtOnce));
       results.set(mutation, judged.result);
       caughtBy.set(mutation, judged.by);
       if (freshKept === undefined) return;
-      const fresh = await judgeMutant(mutation, freshKept, `${mutation.name}.fresh`, join(work, "bin", "fresh"));
+      const fresh = await judgeApart(mutation, freshKept, `${mutation.name}.fresh`, join(work, "bin", "fresh"));
       const said = `${mutation.name}: built incrementally, ${judged.result}; fresh, ${fresh.result}`;
       console.log(`fresh\t${said}`);
       if (verdictKind(fresh.result) !== verdictKind(judged.result)) freshDiffers.push(said);
@@ -2719,7 +2753,8 @@ async function main() {
   const summary = process.env.GITHUB_STEP_SUMMARY;
   if (summary) {
     const cell = (s: string) => s.replaceAll("|", "\\|");
-    const lines = ["## Mutations", "", "| Mutation | Breaks | Result | Its build's share | Its tests' share |", "|---|---|---|---|---|"];
+    const inconclusive = inconclusiveSaid(rows.map(([, result]) => result));
+    const lines = ["## Mutations", "", ...(inconclusive ? [`**${inconclusive.slice(2)}**, each failing the run`, ""] : []), "| Mutation | Breaks | Result | Its build's share | Its tests' share |", "|---|---|---|---|---|"];
     for (const [mutation, result] of rows) {
       const time = took.get(mutation);
       lines.push(`| ${mutation.name} | ${cell(mutation.breaks)} | ${cell(result)} | ${time ? shown(time.build) : ""} | ${time ? shown(time.tests) : ""} |`);
@@ -2750,7 +2785,9 @@ async function main() {
   // Its runner there runs in this checkout and takes its mutants' lock,
   // this run's mutants all judged (`resultsAt`).
   if (base) released();
-  const latent = base ? await latentSurvivors(root, work, base, Object.fromEntries(rows.map(([m, r]) => [m.name, r])), (name) => mutations.find((m) => m.name === name)?.breaks ?? "") : [];
+  // Judged there by the map this run reads, as here (#2341).
+  const map = base && rows.some(([, result]) => result.startsWith("SURVIVED")) ? headMapCommit() : undefined;
+  const latent = base ? await latentSurvivors(root, work, base, Object.fromEntries(rows.map(([m, r]) => [m.name, r])), (name) => mutations.find((m) => m.name === name)?.breaks ?? "", map) : [];
   // A phase of its own where it ran, a survivor's run at the base, which
   // phases.json didn't show, five of a CI shard's minutes (#2220).
   if (rows.some(([, result]) => result.startsWith("SURVIVED")) && base) phaseEnded("the survivors, at the base");
@@ -2759,7 +2796,7 @@ async function main() {
   const missed = rows.filter(([mutation, result]) => result !== "caught" && !latent.includes(mutation.name));
   // Said last, where a `tail` of the run sees it: the rows above may be
   // more than it shows (#923).
-  console.log(`${rows.filter(([, r]) => r === "caught").length} of ${rows.length} mutations caught${latent.length > 0 ? `, ${latent.length} latent` : ""}${missed.length > 0 ? `; not: ${missed.map(([m]) => m.name).join(", ")}` : ""}`);
+  console.log(`${rows.filter(([, r]) => r === "caught").length} of ${rows.length} mutations caught${latent.length > 0 ? `, ${latent.length} latent` : ""}${inconclusiveSaid(rows.map(([, r]) => r))}${missed.length > 0 ? `; not: ${missed.map(([m]) => m.name).join(", ")}` : ""}`);
   // Here, each one's time, its build and its tests, as many as run; CI's
   // are its own.
   if (!process.env.GITHUB_ACTIONS && rows.length > 0) {

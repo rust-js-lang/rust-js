@@ -1047,6 +1047,34 @@ export function nearestMap(store: string, checkout: string, toolchain: string, a
   return undefined;
 }
 
+/** What names the one map a run reads, its commit: a mutation run's
+ * survivors run again at its base (`resultsAt`) read the map the run read,
+ * a commit of the push's that's no ancestor of the base, so push and base
+ * are judged by one map, placed at the base by the diff from its commit
+ * (#2341). Without it, the base's run in CI found no map of the base or an
+ * ancestor, and its snapshot judge's failure took every verdict of a shard
+ * with it. */
+export const namedMapEnv = "RUST_JS_TEST_MAP_OF";
+
+/** The map `headMap` reads in `checkout`: of the commit `named`, where a
+ * run names one, of any commit the checkout has, whole and of this
+ * layout and `toolchain`; else of HEAD or its nearest ancestor. */
+export function mapOf(store: string, checkout: string, toolchain: string, named = process.env[namedMapEnv]): TestMap | undefined {
+  if (named === undefined) return nearestMap(store, checkout, toolchain);
+  const path = mapFile(store, named, toolchain);
+  if (!/^[0-9a-f]{40}$/.test(named) || !existsSync(path) || git(["cat-file", "-e", `${named}^{commit}`], checkout).code !== 0) return undefined;
+  let map: TestMap;
+  try {
+    map = JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    return undefined;
+  }
+  if (map.version !== mapVersion || map.toolchain !== toolchain) return undefined;
+  const now = Date.now() / 1000;
+  utimesSync(path, now, now);
+  return map;
+}
+
 /** What each test map CI recorded of a commit of `main` is named: the
  * artifact `test-map-of-<sha>` of test-map.yml's run after that commit's
  * check. */
@@ -1210,9 +1238,17 @@ function headMap(): { map: TestMap; changes: Change[] } | string {
  * survivor, and test/mutations.test.ts of every mutation. */
 let headMapRead: ReturnType<typeof readHeadMap> | undefined;
 
+/** The commit of the map `headMap` reads, where there's one: what a
+ * mutation run names to its run at the base (`namedMapEnv`). */
+export function headMapCommit(): string | undefined {
+  const found = headMap();
+  return typeof found === "string" ? undefined : found.map.commit;
+}
+
 function readHeadMap(): { map: TestMap; changes: Change[] } | string {
-  const map = nearestMap(mapStore, root, toolchainOf());
-  if (map === undefined) return `${noMap}: \`bun run test-map\` records one`;
+  const named = process.env[namedMapEnv];
+  const map = mapOf(mapStore, root, toolchainOf(), named);
+  if (map === undefined) return named === undefined ? `${noMap}: \`bun run test-map\` records one` : `${noMap}: the map of ${named.slice(0, 9)} the run names, \`${namedMapEnv}\`, isn't kept`;
   const diff = git([...changesDiff, map.commit]).out;
   const untracked = git(["ls-files", "--others", "--exclude-standard"]).out.split("\n").filter(Boolean);
   return { map, changes: [...hunksOf(diff), ...untracked.map((file): Change => ({ file, hunks: "new" }))] };

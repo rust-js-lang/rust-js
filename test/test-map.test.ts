@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { casesReaching, changesDiff, ciMapOf, ciMapPrefix, fetchSeconds, packedMaps, packedSuffix, packMaps, unpackMaps, hunksOf, mapLines, placedSimilarity, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, carriedUnits, carryOf, remapBits, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
+import { casesReaching, changesDiff, ciMapOf, ciMapPrefix, fetchSeconds, packedMaps, packedSuffix, packMaps, unpackMaps, hunksOf, mapLines, placedSimilarity, joinedSpans, mapFile, mapVersion, mergeRecordings, mapOf, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, carriedUnits, carryOf, remapBits, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
 
 import { shard } from "../scripts/shard";
 import { caseShard, fixture, root } from "./support";
@@ -407,6 +407,21 @@ test("a worktree reads the map another recorded of its commit or its nearest anc
   // One half written isn't read.
   writeFileSync(own, "{");
   expect(nearestMap(store, other, "abc")?.commit).toBe(first);
+  // A run named a map reads that one, though it's of a commit after the
+  // checkout's, no ancestor of it: a mutation run's survivors run again at
+  // its base read the map the run read (#2341). Unnamed, the nearest
+  // ancestor's; named, never another, where it isn't kept whole.
+  expect(mapOf(store, repo, "abc", first)?.commit).toBe(first);
+  expect(mapOf(store, other, "abc", second)?.commit).toBe(second);
+  expect(mapOf(store, other, "abc", undefined)?.commit).toBe(first);
+  expect(mapOf(store, other, "abc", side)).toBeUndefined();
+  expect(mapOf(store, other, "abd", second)).toBeUndefined();
+  expect(mapOf(store, other, "abc", "f".repeat(40))).toBeUndefined();
+  // Kept, but of a commit the checkout doesn't have, or of another version.
+  write("e".repeat(40));
+  expect(mapOf(store, other, "abc", "e".repeat(40))).toBeUndefined();
+  writeFileSync(mapFile(store, second, "abc"), JSON.stringify({ ...map, version: mapVersion + 1, commit: second, toolchain: "abc" }));
+  expect(mapOf(store, other, "abc", second)).toBeUndefined();
 });
 
 // A test that reads a file of the checkout's as text, ci.test.ts the crate

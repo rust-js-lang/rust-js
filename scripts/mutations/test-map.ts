@@ -378,4 +378,28 @@ export const mutations: Mutation[] = [
     replace: "  if (!downloaded(found.run, [`--name=${found.name}`], into)) {\n",
     tests: ["test/test-map.test.ts", "-t", "fetched packed"],
   },
+  {
+    name: "named-map-unread",
+    breaks: "a run named a test map reads its nearest ancestor's instead, so a survivor's run at its base in CI, whose one map is the push's, no ancestor of the base, finds none (#2341)",
+    file: "scripts/testMap.ts",
+    find: "  if (named === undefined) return nearestMap(store, checkout, toolchain);\n",
+    replace: "  return nearestMap(store, checkout, toolchain);\n",
+    tests: ["test/test-map.test.ts", "-t", "a worktree reads the map"],
+  },
+  {
+    name: "named-map-of-a-commit-unhad",
+    breaks: "a run named a test map of a commit its checkout doesn't have reads it, and its diff from that commit, which git can't make, places nothing (#2341)",
+    file: "scripts/testMap.ts",
+    find: ' || git(["cat-file", "-e", `${named}^{commit}`], checkout).code !== 0) return undefined;\n',
+    replace: ") return undefined;\n",
+    tests: ["test/test-map.test.ts", "-t", "a worktree reads the map"],
+  },
+  {
+    name: "named-map-of-another-version",
+    breaks: "a run named a test map reads one of another layout, whose functions and bits aren't this version's (#2341)",
+    file: "scripts/testMap.ts",
+    find: "  if (map.version !== mapVersion || map.toolchain !== toolchain) return undefined;\n  const now = Date.now() / 1000;\n  utimesSync(path, now, now);\n  return map;\n}\n\n/** What each test map CI",
+    replace: "  if (map.toolchain !== toolchain) return undefined;\n  const now = Date.now() / 1000;\n  utimesSync(path, now, now);\n  return map;\n}\n\n/** What each test map CI",
+    tests: ["test/test-map.test.ts", "-t", "a worktree reads the map"],
+  },
 ];

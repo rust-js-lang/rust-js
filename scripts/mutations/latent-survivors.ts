@@ -27,4 +27,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/survivors.test.ts", "-t", "leaves the run's checkout as it found it"],
   },
+  {
+    name: "base-run-unnamed-its-map",
+    breaks: "a survivor's run at the base isn't named the test map the run read, so in CI, which keeps a map of the push's alone, no ancestor of the base, its snapshot judge finds none, and each readability owner's survivor isn't judged there as it was here (#2341)",
+    file: "scripts/latent-survivors.ts",
+    find: "root, baseLimit, map === undefined ? {} : { [namedMapEnv]: map });\n",
+    replace: "root, baseLimit);\n",
+    tests: ["test/survivors.test.ts", "-t", "judged by the test map the run read"],
+  },
 ];

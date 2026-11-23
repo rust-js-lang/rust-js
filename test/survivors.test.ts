@@ -6,6 +6,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { latentOf, resultsAt } from "../scripts/latent-survivors";
+import { namedMapEnv } from "../scripts/testMap";
 import { runSync } from "./child";
 import { escaped, files, issueBody, listed } from "../scripts/survivors-issue";
 import { fixture, root } from "./support";
@@ -50,6 +51,48 @@ test("a survivor's run at the base leaves the run's checkout as it found it, and
   expect(await resultsAt(dir, work, base, ["a"])).toEqual({ results: {}, why: "the checkout has changes of its own, which checking out the base would lose:\nM a.txt" });
   expect(readFileSync(join(dir, "a.txt"), "utf8")).toBe("changed\n");
   expect(git("rev-parse", "HEAD").stdout.trim()).toBe(head);
+});
+
+// The base's run reads the test map the run read, named to it, of a commit
+// of the push's, no ancestor of the base (#2341): CI kept that map alone, so
+// the base's run found none of the base or an ancestor, its snapshot judge
+// threw at a readability owner's survivor, and six of a check's eight shards
+// called every survivor the push's. A runner at the base that says what it
+// was named shows it's given.
+test("a survivor's run at the base is judged by the test map the run read", async () => {
+  const dir = fixture("latent-named-map");
+  const git = (...args: string[]) => runSync(["git", ...args], dir, 30_000);
+  git("init", "--quiet");
+  git("config", "user.email", "t@example.invalid");
+  git("config", "user.name", "t");
+  writeFileSync(join(dir, ".gitignore"), ["target", "node_modules"].map((folder) => `/${folder}/\n`).join(""));
+  writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "latent-named-map", private: true }));
+  mkdirSync(join(dir, "scripts"), { recursive: true });
+  writeFileSync(
+    join(dir, "scripts", "mutations.ts"),
+    [
+      `import { mkdirSync, writeFileSync } from "node:fs";`,
+      `import { join } from "node:path";`,
+      `if (process.argv.includes("--list")) console.log("a\\tbreaks a");`,
+      `else {`,
+      `  mkdirSync(join("target", "mutants"), { recursive: true });`,
+      `  const map = process.env.${namedMapEnv} ?? "none";`,
+      `  writeFileSync(join("target", "mutants", "results.json"), JSON.stringify({ commit: "base", results: { a: \`SURVIVED: by the map of \${map}\` } }));`,
+      `}`,
+    ].join("\n"),
+  );
+  git("add", ".");
+  git("commit", "--quiet", "-m", "base");
+  const base = git("rev-parse", "HEAD").stdout.trim();
+  writeFileSync(join(dir, "a.txt"), "head\n");
+  git("add", "a.txt");
+  git("commit", "--quiet", "-m", "head");
+  const work = join(dir, "target", "mutants");
+  mkdirSync(work, { recursive: true });
+  const named = "c".repeat(40);
+  expect((await resultsAt(dir, work, base, ["a"], named)).results).toEqual({ a: `SURVIVED: by the map of ${named}` });
+  // Where the run read none, none is named: the base's runner finds its own.
+  expect((await resultsAt(dir, work, base, ["a"])).results).toEqual({ a: "SURVIVED: by the map of none" });
 });
 
 test("the survivors' issue says who wrote it first, escapes what a mutation says, and marks one tracked elsewhere", () => {

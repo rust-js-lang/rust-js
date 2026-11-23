@@ -10,6 +10,7 @@
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { run } from "../test/child";
+import { namedMapEnv } from "./testMap";
 
 /** What `results.json` holds of a run, of the commit it ran at. */
 /** A run's verdicts, by mutation, and of each caught, the first test that
@@ -41,8 +42,11 @@ const runsOwn = ["results.json", "timings.json"];
  * changes of its own, which checking out the base would lose, where it
  * can't be set up, or where its run doesn't end within `baseLimit`; and
  * then `why`, which a CI log shows: six of a check's eight shards found
- * none and said nothing of it, each survivor the push's (#2341). */
-export async function resultsAt(root: string, work: string, base: string, names: string[]): Promise<{ results: Record<string, string>; why?: string }> {
+ * none and said nothing of it, each survivor the push's (#2341). Judged
+ * by `map`, the commit of the test map the run read, where it read one: no
+ * ancestor of the base, a commit of the push's, kept no map of the base in
+ * CI, and the snapshot judge's error there took each verdict with it. */
+export async function resultsAt(root: string, work: string, base: string, names: string[], map?: string): Promise<{ results: Record<string, string>; why?: string }> {
   const git = (args: string[]) => run(["git", ...args], root, 120_000);
   const tail = (exit: { stdout: string; stderr: string }) => `${exit.stdout}\n${exit.stderr}`.trim().split("\n").slice(-30).join("\n");
   const head = (await git(["rev-parse", "HEAD"])).stdout.trim();
@@ -62,7 +66,8 @@ export async function resultsAt(root: string, work: string, base: string, names:
     const there = new Set(listed.stdout.split("\n").map((line) => line.split("\t")[0]));
     const known = names.filter((name) => there.has(name));
     if (known.length === 0) return { results: {}, why: `its runner knows none of them (\`--list\` exited ${listed.code}): ${tail(listed)}` };
-    const ran = await run(["bun", "scripts/mutations.ts", ...known], root, baseLimit);
+    // By the map the run read, where it read one (`namedMapEnv`).
+    const ran = await run(["bun", "scripts/mutations.ts", ...known], root, baseLimit, map === undefined ? {} : { [namedMapEnv]: map });
     const at = join(work, "results.json");
     if (ran.timedOut || ran.signal) return { results: {}, why: `its run didn't end within ${baseLimit / 60_000} min: ${tail(ran)}` };
     if (!existsSync(at)) return { results: {}, why: `its run wrote no results.json (exited ${ran.code}): ${tail(ran)}` };
@@ -88,10 +93,12 @@ export async function latentSurvivors(
   base: string,
   results: Record<string, string>,
   breaks: (name: string) => string,
+  map?: string,
 ): Promise<string[]> {
   const survived = Object.keys(results).filter((name) => results[name].startsWith("SURVIVED"));
   if (survived.length === 0) return [];
-  const at = await resultsAt(root, work, base, survived);
+  if (map !== undefined) console.log(`the survivors at ${base.slice(0, 9)}, judged by the test map of ${map.slice(0, 9)}, this run's`);
+  const at = await resultsAt(root, work, base, survived, map);
   const { latent, ours } = latentOf(results, at.results);
   // Each of the push's, as the base judged it, and why the base's run said
   // what it did: a misfire's cause in the log, never silence (#2341).

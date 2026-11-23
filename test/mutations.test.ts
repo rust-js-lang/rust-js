@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, Answers, heartbeat, failingOf, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, unitsAsItIs, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
+import { againstWholeCorpus, Answers, heartbeat, failingOf, bySnapshots, inconclusiveSaid, judgedApart, unplaced, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, unitsAsItIs, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
 import type { ControlPart } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
@@ -140,6 +140,31 @@ test("a mutant's build is its mutation's, compiled again", () => {
   expect(freshShare(["--shard=1/2"])).toBe(0);
   expect(freshShare(["--fresh=0.05"])).toBe(0.05);
   expect(() => freshShare(["--fresh=5"])).toThrow("a share of the builds, 0 to 1");
+});
+
+// A mutation whose judging can't end is its own verdict, inconclusive,
+// never the run's end (#2341): a readability owner's survivor with no test
+// map threw in a base's run in CI and took every other verdict of six
+// shards with it. Each inconclusive one fails the run, and its summary
+// counts them, so a runner's fault never piles up quietly.
+test("a mutation's judging that throws is its own inconclusive verdict, counted in the run's summary", async () => {
+  expect(await judgedApart(async () => ({ result: "caught", tests: 2 }))).toEqual({ result: "caught", tests: 2 });
+  expect(await judgedApart(async (): Promise<{ result: string; tests: number }> => {
+    throw new Error("no map");
+  })).toEqual({ result: "INCONCLUSIVE: its judging threw: no map", tests: 0 });
+  // No map: inconclusive, never a survivor, which a base's run calls latent.
+  const unmapped = unplaced(`${noMap}: \`bun run test-map\` records one`);
+  expect(unmapped.inconclusive).toBe(true);
+  expect(unmapped.said).toStartWith(noMap);
+  expect(bySnapshots(unmapped)).toBe("inconclusive");
+  // A map that can't place its site: the mutation's to name its case.
+  const named = unplaced("the test map of abc can't say: src/a.rs is new since the map's commit");
+  expect(bySnapshots(named)).toBe("survived");
+  expect(named.said).toContain("name the corpus case that catches it");
+  expect(bySnapshots({ caught: true })).toBe("caught");
+  expect(inconclusiveSaid(["caught", "SURVIVED: x"])).toBe("");
+  expect(inconclusiveSaid(["caught", "INCONCLUSIVE: a", "INCONCLUSIVE: b"])).toBe(", 2 inconclusive");
+  expect(failingOf([["a", "INCONCLUSIVE: a"]], true)).toEqual(["a"]);
 });
 
 // Each lexes, built alone and in a build of many, so a build of many fails
@@ -835,7 +860,7 @@ test("a mutant whose tests outgrew their memory is caught", () => {
 // outside a function's counted code or of a file changed since the map's
 // commit, would be judged by none, so it names the case that catches it,
 // `snapshots: true` (ADR 0093, amended). Where this machine has no map the
-// runner's judge fails the run instead.
+// runner's judge calls it inconclusive, which fails the run (#2341).
 test("a readability owner's mutation the test map can't place names its case", () => {
   const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
   const probe = casesReaching("src/main.rs", 1, 1, []);
