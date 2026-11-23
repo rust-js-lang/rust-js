@@ -714,7 +714,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/back_steps.js",
     find: "    stepped.hold();\n    const folded = $consumed(stepped, () => stepped.tryFold(",
     replace: "    const folded = $consumed(stepped, () => stepped.tryFold(",
-    tests: ["test/corpus.test.ts", "-t", "^step_by_source_dropped_at_its_folds_end.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^step_by_of_a_source_whose_drop_panics_leaks_its_fold\\.rs$"],
   },
   {
     name: "step-by-rfold-unheld",
@@ -722,7 +722,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/back_steps.js",
     find: "    stepped.hold();\n    const folded = $consumed(stepped, () => tryRfold(",
     replace: "    const folded = $consumed(stepped, () => tryRfold(",
-    tests: ["test/corpus.test.ts", "-t", "^step_by_source_dropped_at_its_folds_end.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^step_by_of_a_source_whose_drop_panics_leaks_its_fold\\.rs$"],
   },
   {
     name: "filter-ends-steps-by-next",

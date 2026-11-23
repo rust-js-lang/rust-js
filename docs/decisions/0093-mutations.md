@@ -1496,3 +1496,9 @@ ran, so an evidence run called reached sites unreached. Each marked runtime
 passes `node --check` and runs a case that reaches each site before the
 evidence counts.
 
+What's made in place is decided of each function body: a trigger in
+`main` makes no chain in a `catch_unwind` closure or another function in
+place. A probe that doesn't reach a site is no evidence that no program
+does: `step-by-fold-unheld` looked unreachable from probes whose folds sat
+in other bodies, and was reached, and caught, with the trigger beside the
+fold. A site is called unreached only by the marked whole evidence.
