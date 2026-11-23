@@ -1054,6 +1054,11 @@ imports, and `rust-js build` the one way to build an app.
 
 ### Fixed
 
+- **A discriminated union's `otherwise` variant serde reads is the object it
+  holds**, as every other maker of one makes it, where it was `{ type:
+  "Other", _0: .. }` (ADR 0284): a variant that's its one value is one
+  question now, `variant_is_payload`, which the tag's answer asks too.
+
 - **serde reads and writes a `#[rust_js::untagged]` enum**, by any of its
   representations, the value still its payload: `#[serde(untagged)]` beside
   it is TypeScript's `number | string` of JSON's, where it was refused

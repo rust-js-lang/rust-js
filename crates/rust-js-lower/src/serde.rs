@@ -739,15 +739,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .at(js::Span::NONE),
                 );
             } else {
-                // An untagged enum's variant's one field is its payload, the
-                // value itself (ADR 0214, #2388).
-                let untagged = self.untagged(Ty::new_adt(self.tcx, adt, args)).is_some();
+                // A variant that's the one value it holds, an untagged enum's or
+                // a discriminated union's `otherwise`, is read as that value
+                // itself, `variant_is_payload`'s answer (ADRs 0214, 0284, #2388).
+                let payload = self.variant_is_payload(adt, variant);
                 let fields: Vec<(Expr, Ty<'tcx>)> = variant
                     .fields
                     .iter()
                     .enumerate()
                     .map(|(i, f)| {
-                        let read = match untagged {
+                        let read = match payload {
                             true => value.clone(),
                             false => Expr::member(value.clone(), variant_field(self.tcx, variant, i)),
                         };

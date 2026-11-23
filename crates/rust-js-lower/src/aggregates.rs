@@ -141,12 +141,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// struct's.
     pub(crate) fn variant_tag_field(&self, adt: ty::AdtDef<'tcx>, variant: &ty::VariantDef) -> Option<(String, Expr)> {
         let keyed = self.krate.flattened.keyed.contains(&adt.did());
-        (adt.is_enum() && !keyed).then(|| {
+        (adt.is_enum() && !keyed && !self.variant_is_payload(adt, variant)).then(|| {
             (
                 bindings::tag_key(self.tcx, adt.did()),
                 bindings::variant_tag(self.tcx, variant),
             )
         })
+    }
+
+    /// Whether a value of `variant` of `adt` is the one value it holds, no
+    /// object around it, so no tag: an untagged enum's variant, its payload
+    /// (ADR 0214), or a discriminated union's `otherwise`, the object it
+    /// holds (ADR 0284). The one answer each maker of one asks, a literal's,
+    /// a constructor's as a value and serde's reading, beside
+    /// `variant_tag_field`, which it answers for.
+    pub(crate) fn variant_is_payload(&self, adt: ty::AdtDef<'tcx>, variant: &ty::VariantDef) -> bool {
+        (adt.is_enum() && bindings::is_untagged(self.tcx, adt.did()))
+            || bindings::is_tagged_otherwise(self.tcx, adt.did(), variant)
     }
 
     /// A struct literal: `{ x: 1, y: 2 }`, or `[1, 2]` for a tuple struct.
@@ -374,7 +385,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(value);
         }
-        if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {
+        if self.variant_is_payload(adt_def, variant) {
             let Ok([field]) = <[Expr; 1]>::try_from(fields) else {
                 return Err(self.unsupported(span, "this untagged enum's variant"));
             };
@@ -732,7 +743,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && at < items.len()
         {
             items[at].clone()
-        } else if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {
+        } else if self.variant_is_payload(adt_def, variant) {
             // An untagged enum's variant is its payload (ADR 0214), and a
             // discriminated union's `otherwise` the object it holds (ADR 0284).
             let [item] = <[Expr; 1]>::try_from(items).map_err(|_| self.unsupported(span, "this constructor"))?;

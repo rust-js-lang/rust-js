@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       'a numbered enum read from JSON is its name, `"Entries"`, so `==` of it to `Kind::Entries`, `3`, is false',
     file: "crates/rust-js-lower/src/serde/de.rs",
-    find: "                return self.unit_variant(adt.did(), variant);\n",
-    replace: "                return Expr::str(crate::bindings::variant_name(self.tcx, variant));\n",
+    find: "                return Ok(self.unit_variant(adt.did(), variant));\n",
+    replace: "                return Ok(Expr::str(crate::bindings::variant_name(self.tcx, variant)));\n",
     tests: ["test/serde-values.test.ts", "-t", "a repr enum serializes"],
   },
   {
@@ -167,18 +167,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "serde-untagged-read-tagged",
-    breaks: "a `#[rust_js::untagged]` enum serde reads is made `{ TAG: \"Number\", _0: 42 }`, where its value is its payload, `42` (#2388)",
+    breaks: "a `#[rust_js::untagged]` enum serde reads is made `{ TAG: \"Number\", _0: 42 }`, not by `adt_value`, its payload `42` (#2388)",
     file: "crates/rust-js-lower/src/serde/de.rs",
-    find: "                if let Ok([payload]) = <[Expr; 1]>::try_from(items.clone()) {\n                    return payload;\n                }\n",
-    replace: "",
-    tests: ["test/serde-attributes.test.ts", "-t", "untagged enum of rust-js's is its payload"],
-  },
-  {
-    name: "serde-untagged-unit-read-by-name",
-    breaks: "a `#[rust_js::untagged]` enum's fieldless variant serde reads is its name, `\"Empty\"`, where its `#[rust_js::null]` is `null` (#2388)",
-    file: "crates/rust-js-lower/src/serde/de.rs",
-    find: "                if let Some(value) = crate::untagged::unit_value(self.tcx, variant) {\n                    return value;\n                }\n",
-    replace: "",
+    find: "                return self.adt_value(Ty::new_adt(self.tcx, adt, args), index, items, &[], None, span);\n",
+    replace: "                let _ = index;\n",
     tests: ["test/serde-attributes.test.ts", "-t", "untagged enum of rust-js's is its payload"],
   },
 ];

@@ -376,7 +376,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // By its own reader, where it names one (#1536).
                 let read = self.field_reader(field.did, &attrs, self.field_ty(field, args), span)?;
                 let value = Expr::call(read, vec![Expr::var(json)]);
-                Ok(self.construct(adt, variant, args, vec![value]))
+                self.construct(adt, variant, args, vec![value], span)
             }
             Some(CtorKind::Fn) => {
                 let table = self.field_table(adt, variant, args, None, &container, span)?;
@@ -429,7 +429,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => self.default_value(field_ty, span)?,
             });
         }
-        Ok(self.construct(adt, variant, args, items))
+        self.construct(adt, variant, args, items, span)
     }
 
     /// `#[serde(default = "path")]` on `def_id`: a call of the function.
@@ -524,12 +524,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         params.extend(flat_params);
         // Built as it's read: a tuple struct's values are the array of them.
         let as_read = !named && adt.is_struct() && items.len() == params.len() && defaults.is_none();
-        let build = (!as_read).then(|| {
-            let value = self.construct(adt, variant, args, items);
-            let mut patterns = vec![Pattern::names_array(params.into_iter().map(Some))];
-            patterns.extend(defaults.iter().map(|d| Pattern::Name(d.clone())));
-            Expr::arrow(patterns, vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
-        });
+        let build = match as_read {
+            true => None,
+            false => {
+                let value = self.construct(adt, variant, args, items, span)?;
+                let mut patterns = vec![Pattern::names_array(params.into_iter().map(Some))];
+                patterns.extend(defaults.iter().map(|d| Pattern::Name(d.clone())));
+                Some(Expr::arrow(
+                    patterns,
+                    vec![StmtKind::Return(Some(value)).at(js::Span::NONE)],
+                ))
+            }
+        };
         let mut options = Vec::new();
         if container.deny_unknown_fields && named {
             options.push(Prop::Field("deny".into(), Expr::bool(true)));
@@ -600,36 +606,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A value of `variant`, of these fields, as rust-js makes one (ADRs
     /// 0013, 0020 and 0033).
     fn construct(
-        &self,
+        &mut self,
         adt: ty::AdtDef<'tcx>,
         variant: &ty::VariantDef,
         args: ty::GenericArgsRef<'tcx>,
         items: Vec<Expr>,
-    ) -> Expr {
+        span: Span,
+    ) -> R<Expr> {
         if adt.is_enum() {
-            // An untagged enum's variant is its payload, and a fieldless one
-            // its own value, as every maker of one makes it, `adt_value` (ADR
-            // 0214, #2388).
-            if self.untagged(Ty::new_adt(self.tcx, adt, args)).is_some() {
-                if let Some(value) = crate::untagged::unit_value(self.tcx, variant) {
-                    return value;
-                }
-                if let Ok([payload]) = <[Expr; 1]>::try_from(items.clone()) {
-                    return payload;
-                }
+            // An untagged enum's variant, its payload or a fieldless one's own
+            // value, and a discriminated union's `otherwise`, the object it
+            // holds, are made by the maker of each (ADRs 0214, 0284, #2388).
+            if self.variant_is_payload(adt, variant) {
+                let index = adt.variant_index_with_id(variant.def_id);
+                return self.adt_value(Ty::new_adt(self.tcx, adt, args), index, items, &[], None, span);
             }
             if variant.fields.is_empty() {
-                return self.unit_variant(adt.did(), variant);
+                return Ok(self.unit_variant(adt.did(), variant));
             }
             // Its tag as every other maker of one writes it, `TAG` or its
             // `#[rust_js::tag]`, none of a keyed enum's, whose keys tell
             // it (ADR 0284, ADR 1071, #2360).
             let fields = self.field_keys(adt, variant, args).into_iter().zip(items);
             let tag = (self.variant_tag_field(adt, variant)).map(|(key, value)| Prop::Field(key, value));
-            return Expr::object(tag.into_iter().chain(fields.map(|(k, v)| Prop::Field(k, v))).collect());
+            return Ok(Expr::object(
+                tag.into_iter().chain(fields.map(|(k, v)| Prop::Field(k, v))).collect(),
+            ));
         }
         if variant.ctor_kind() == Some(CtorKind::Const) {
-            return Expr::js_undefined();
+            return Ok(Expr::js_undefined());
         }
         // Each field what it holds of its value read, as any struct made is:
         // of a cell that's the property it holds, a `Cell`'s, what the cell
@@ -638,7 +643,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let held = |(i, (value, field_ty)): (usize, (Expr, Ty<'tcx>))| {
             self.holding(value, self.struct_field_def(ty, i), field_ty)
         };
-        match self.shape(ty) {
+        Ok(match self.shape(ty) {
             Shape::Object(fields) => {
                 let keys: Vec<String> = fields.iter().map(|(key, _)| key.text().to_owned()).collect();
                 let values = items
@@ -658,7 +663,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Shape::Array(tys) => Expr::array(items.into_iter().zip(tys).enumerate().map(held).collect()),
             Shape::Other => Expr::js_undefined(),
-        }
+        })
     }
 
     /// An enum, read as its tagging reads it (serde's "enum
@@ -865,7 +870,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             StmtKind::Expr(check).at(js::Span::NONE)
         };
         Ok(match variant.ctor_kind() {
-            Some(CtorKind::Const) => vec![unit, ret(self.construct(adt, variant, args, Vec::new()))],
+            Some(CtorKind::Const) => vec![unit, ret(self.construct(adt, variant, args, Vec::new(), span)?)],
             Some(CtorKind::Fn) if variant.fields.len() == 1 => {
                 let field = variant.fields.iter().next().expect("a field");
                 let attrs = self.serde_attrs(field.did)?;
@@ -877,7 +882,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Some(SerdeDefault::Path) => self.default_path(field.did, span)?,
                         _ => self.default_value(field_ty, span)?,
                     };
-                    vec![unit, ret(self.construct(adt, variant, args, vec![value]))]
+                    vec![unit, ret(self.construct(adt, variant, args, vec![value], span)?)]
                 } else {
                     let read = match codec {
                         Some(codec) => codec,
@@ -887,7 +892,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Form::External => method("newtype", vec![read]),
                         _ => Expr::call(read, vec![Expr::var(content)]),
                     };
-                    vec![ret(self.construct(adt, variant, args, vec![value]))]
+                    vec![ret(self.construct(adt, variant, args, vec![value], span)?)]
                 }
             }
             Some(CtorKind::Fn) => {
