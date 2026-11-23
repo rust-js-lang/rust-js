@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-23 (#2382, #2383): test/serde-attributes.test.ts gains a test, a field of its own reader that isn't there against native serde: `deserialize_with` of a function of the crate's and of `Option::deserialize` and `Vec::deserialize`, beside `#[serde(default)]`, `with = "module"`, `serialize_with` beside `skip_serializing_if` and of `Option::serialize`, and an adjacently tagged newtype variant's reader given its missing content.
+
 Changed on 2026-11-23 (#2379, ADR 1188): test/serde-path.test.ts, new, four tests: serde_path_to_error's read against native serde_path_to_error, every rule of where in the value it places a mistake; its `Error` shown padded, as `{:x?}`, into a writer and as a `dyn Error`, and a type's own `deserialize` of serde_json's reader of text; what's refused of either; and its `Error` and `Path` declared `@rust-js/std`'s opaque `JsonPathError` and `JsonPath`.
 
 Changed on 2026-11-23 (#2325, ADR 0083 amended): test/binaries.test.ts gains a test, a registry crate's panic names its own line against native Rust, serde_json's three `IndexMut` panics, hashbrown's own map's and indexmap's `get_disjoint_mut`; test/shipped-crates.test.ts gains one, serde_json's sites noted by Cargo's check through rust-js and given; test/std-sites.test.ts gains one, std's build's libraries linked once; rust-js-program's unit tests gain `library::registry_sites`' finder.

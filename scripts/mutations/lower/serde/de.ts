@@ -157,4 +157,12 @@ export const mutations: Mutation[] = [
       "            let tag = Some(Prop::Field(crate::bindings::tag_key(self.tcx, adt.did()), crate::bindings::variant_tag(self.tcx, variant)));\n",
     tests: ["test/serde-attributes.test.ts", "-t", "read flat"],
   },
+  {
+    name: "serde-own-reader-of-missing-field",
+    breaks: "a missing field of `deserialize_with` is read by its function from nothing, so an `Option` of it is `None` where serde's derive says `missing field` (#2382)",
+    file: "crates/rust-js-lower/src/serde/de.rs",
+    find: "                Some(_) => Expr::call(Expr::helper(\"$jsonPresent\"), vec![read]),\n",
+    replace: "                Some(_) => read,\n",
+    tests: ["test/serde-attributes.test.ts", "-t", "its own reader that isn't there"],
+  },
 ];

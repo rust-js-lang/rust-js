@@ -489,3 +489,120 @@ pub fn node(text: &str) -> Option<Node> {
   expect(Object.keys(cases.node('{"flags":1,"Signal":{"current":3}}'))).toEqual(["flags", "current"]);
   expect(Object.keys(cases.node('{"flags":2,"Computed":{"value":4,"dirty":true}}'))).toEqual(["flags", "value", "dirty"]);
 });
+
+// A field's own reader is never called for a field that isn't there:
+// serde's derive says `missing field` itself, so a field read by
+// `Option::deserialize`, serde's usual "there, but maybe null", is required
+// (#2382); its default comes first. Its own reader or writer that is serde's
+// impl of its type, `Option::deserialize` or `Option::serialize`, reads or
+// writes it as its type (#2383). An adjacently tagged newtype variant's
+// reader, unlike a field's, is given its missing content, as serde gives it.
+test("serde: a field of its own reader that isn't there is missing, as serde's derive says", async () => {
+  const dir = fixture("serde-field-codec-missing");
+  writeFileSync(join(dir, "cases.rs"), String.raw`
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+fn nullable<'de, D: Deserializer<'de>>(d: D) -> Result<Option<String>, D::Error> {
+    Option::deserialize(d)
+}
+
+fn doubled<'de, D: Deserializer<'de>>(d: D) -> Result<u32, D::Error> {
+    Ok(u32::deserialize(d)? * 2)
+}
+
+fn shout<S: Serializer>(value: &Option<String>, s: S) -> Result<S::Ok, S::Error> {
+    s.serialize_str(&value.as_deref().unwrap_or("").to_uppercase())
+}
+
+mod cents {
+    use serde::{Deserialize, Deserializer, Serializer};
+    pub fn serialize<S: Serializer>(value: &u64, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&format!("{}.{:02}", value / 100, value % 100))
+    }
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<u64, D::Error> {
+        let text = String::deserialize(d)?;
+        let (whole, part) = text.split_once('.').ok_or_else(|| serde::de::Error::custom("no point"))?;
+        Ok(whole.parse::<u64>().map_err(serde::de::Error::custom)? * 100 + part.parse::<u64>().map_err(serde::de::Error::custom)?)
+    }
+}
+
+/// A field that must be there, but may be null: its own function's.
+#[derive(Deserialize, Debug)]
+pub struct Own {
+    #[serde(deserialize_with = "nullable")]
+    pub bio: Option<String>,
+}
+
+/// The same by serde's own Option::deserialize, its usual idiom.
+#[derive(Deserialize, Debug)]
+pub struct Idiom {
+    #[serde(deserialize_with = "Option::deserialize")]
+    pub bio: Option<String>,
+    #[serde(deserialize_with = "Vec::deserialize")]
+    pub tags: Vec<u32>,
+}
+
+/// A default beside its own reader: missing is the default.
+#[derive(Deserialize, Debug)]
+pub struct Defaulted {
+    #[serde(default, deserialize_with = "doubled")]
+    pub n: u32,
+    #[serde(default, deserialize_with = "Option::deserialize")]
+    pub bio: Option<String>,
+}
+
+/// A module's pair, with.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Price {
+    #[serde(with = "cents")]
+    pub amount: u64,
+}
+
+/// A writer of its own, skipped where there's nothing, and serde's own
+/// Option::serialize.
+#[derive(Serialize, Debug)]
+pub struct Shown {
+    #[serde(serialize_with = "shout", skip_serializing_if = "Option::is_none")]
+    pub nick: Option<String>,
+    #[serde(serialize_with = "Option::serialize")]
+    pub bio: Option<String>,
+}
+
+/// An adjacently tagged newtype variant of its own reader, its content left out.
+#[derive(Deserialize, Debug)]
+#[serde(tag = "t", content = "c")]
+pub enum Tagged {
+    A(#[serde(deserialize_with = "nullable")] Option<String>),
+}
+
+fn read<T: for<'de> Deserialize<'de> + std::fmt::Debug>(text: &str) -> String {
+    format!("{:?}", serde_json::from_str::<T>(text).map_err(|e| e.to_string()))
+}
+
+pub fn report() -> Vec<String> {
+    let mut lines = Vec::new();
+    for text in ["{}", r#"{"bio":null}"#, r#"{"bio":"x"}"#] {
+        lines.push(read::<Own>(text));
+    }
+    for text in ["{}", r#"{"tags":[1]}"#, r#"{"bio":null}"#, r#"{"bio":null,"tags":[1]}"#, r#"{"bio":"x","tags":[]}"#, r#"{"bio":1,"tags":[]}"#] {
+        lines.push(read::<Idiom>(text));
+    }
+    for text in ["{}", r#"{"n":2}"#, r#"{"bio":null}"#, r#"{"bio":"x"}"#] {
+        lines.push(read::<Defaulted>(text));
+    }
+    for text in ["{}", r#"{"amount":"1.50"}"#, r#"{"amount":"x"}"#] {
+        lines.push(read::<Price>(text));
+    }
+    lines.push(serde_json::to_string(&Price { amount: 150 }).unwrap());
+    lines.push(serde_json::to_string(&Shown { nick: None, bio: None }).unwrap());
+    lines.push(serde_json::to_string(&Shown { nick: Some("ada".into()), bio: Some("hi".into()) }).unwrap());
+    for text in [r#"{"t":"A"}"#, r#"{"t":"A","c":null}"#, r#"{"t":"A","c":"x"}"#] {
+        lines.push(read::<Tagged>(text));
+    }
+    lines
+}
+`);
+  const expected = run([native(dir)]);
+  const { report } = await compiled(dir);
+  expect(JSON.stringify(report())).toBe(expected.trim());
+}, 300_000);

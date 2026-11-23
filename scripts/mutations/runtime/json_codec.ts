@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "    return result._0;\n",
     tests: ["test/serde.test.ts", "-t", "hand-written"],
   },
+  {
+    name: "json-present-reads-missing",
+    breaks: "a field's own reader is called for a field that isn't there, so `deserialize_with = \"Option::deserialize\"` reads `{}` as `None` (#2382)",
+    file: "crates/rust-js-program/src/runtime/json_codec.js",
+    find: "    if (json instanceof $JsonMissing) throw $jsonError(`missing field \\`${json.name}\\``);\n",
+    replace: "",
+    tests: ["test/serde-attributes.test.ts", "-t", "its own reader that isn't there"],
+  },
 ];

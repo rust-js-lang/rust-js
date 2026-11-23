@@ -783,7 +783,11 @@ serde's common attributes work, `rename`, `rename_all`, `tag`, `content`,
 `untagged`, `flatten`, `default`, `skip` and the rest, as do
 `serde_json::Value` and `json!`
 ([the semantics](../semantics.md#the-javascript-boundary)); what's refused
-is in [the limitations](../limitations.md#serde). A `Value` is written
+is in [the limitations](../limitations.md#serde). A field of its own
+reader, `deserialize_with` or `with`, must be there unless it has
+`#[serde(default)]`, as serde's derive has it, an `Option` too: so
+`#[serde(deserialize_with = "Option::deserialize")]` is serde's way to say
+a field is there but may be `null` (#2382, #2383). A `Value` is written
 through `v["a"] = ..` and `v[0] = ..` as serde_json writes it, a missing
 key inserted and a `null` made an object, its panics serde_json's; its
 `take()`, `as_null()`, `pointer()` and `pointer_mut()`, and its `Map`'s

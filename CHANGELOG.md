@@ -1054,6 +1054,12 @@ imports, and `rust-js build` the one way to build an app.
 
 ### Fixed
 
+- **A missing field of `deserialize_with` or `with` is `missing field`**,
+  as serde's derive says, where it was read by its function from nothing,
+  so an `Option` of it was `None`; and `deserialize_with =
+  "Option::deserialize"`, serde's idiom for a field that's there but may be
+  `null`, compiles, where it panicked the compiler (#2382, #2383).
+
 - **An object's `Option` tested by its truth is `p?.x` again** (ADR 0298,
   amended): `match prev { Some(prev) => prev.types, None => None }` was
   `prev ? prev.types : undefined` once its test was `prev`'s truth; that

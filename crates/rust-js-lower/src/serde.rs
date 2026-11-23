@@ -1013,7 +1013,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A field's own writer, or reader, where `#[serde(serialize_with =
     /// "f")]`, `deserialize_with` or `with = "module"` names one: the function
-    /// rustc resolved, a hand-written codec, `$jsonCodec(f)` (ADR 0459).
+    /// rustc resolved, a hand-written codec, `$jsonCodec(f)` (ADR 0459). None
+    /// where it names serde's own `serialize` or `deserialize`, of the field's
+    /// type, as rustc checked: `deserialize_with = "Option::deserialize"`
+    /// reads the field as its type does (#2383).
     fn field_codec(&mut self, field: DefId, attrs: &Attrs, serialize: bool, span: Span) -> R<Option<Expr>> {
         let named = if serialize {
             attrs.serialize_with
@@ -1026,6 +1029,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(f) = self.resolved_path(field, name, serialize) else {
             return Err(self.unsupported(span, &format!("`#[serde({name} = ..)]` of this field")));
         };
+        if (self.tcx.trait_of_assoc(f)).is_some_and(|t| crate::serde::serde_trait(self.tcx, t).is_some()) {
+            return Ok(None);
+        }
         Ok(Some(Expr::call(Expr::helper("$jsonCodec"), vec![self.fn_ref(f)])))
     }
 
