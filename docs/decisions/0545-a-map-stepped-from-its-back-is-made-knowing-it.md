@@ -2131,3 +2131,48 @@ again.
 enumeration without its mark is made again from its source, and its
 source already knows what's asked, so the JS is the same. The mutation
 survives all 2,923 corpus cases.
+
+## Amendment: a type's question is its function's where it names type parameters (#2133)
+
+back_stepped's `typed` holds the types whose question is a type's: every
+value of the type is made knowing its back. It was keyed by the `Ty`
+alone, and so was hint_asked's `Hinted::typed`. A type parameter is
+only its index and its name, so `Enumerate<Box<I>>` in two functions
+that each name their parameter `I` is one `Ty`. One function kept its
+`Enumerate<Box<I>>` held, as std's struct. The other's
+`src.enumerate().rfold(..)` was then taken as that struct too. Its
+source was made without its back, and the run threw
+`enumerated.iter.back is not a function` (#2369's case, under the
+metamorphic net's `boxed` and `for-each` rewrites). One function asking
+`Cloned<I>`'s length also refused another's `Cloned<I>`, whose `I` has
+none. ADR 0262: the results change (a throw), so Rust's behaviour is
+kept.
+
+`analysis/iterator_facts/typed_key.rs` is now the one rule of where a
+type's question holds. `typed_key(tcx, owner, ty)` keys a type with no
+parameters crate-wide (`None`). It keys any other type to the function
+whose body it's of, its typeck root. Both sets' writers and readers use
+it: back_stepped's `typed` and `typed_sources`, read by
+`BackStepped::is_typed`, and hint_asked's `Hinted::typed`, read by
+`Hinted::is_typed`. `mark_given` is given the body it marks for. The
+same collision was latent in hint_asked's `types` and `knowing_types`,
+whose makers were found by scanning every body for a type spelled the
+same. They are keyed too, and only a body whose own key matches is
+scanned. Keying by the impl or trait for a type of their parameters
+alone, so an impl's methods would share a fact, is left out. No shape
+that compiles shows it (`typed-key-of-the-impl-unclimbed` survived the
+whole corpus); #2401, an impl's `Filter<I, _>` field given to generic
+code that steps it from its back, is refused, and its fix brings that
+keying back with its test.
+
+Four snapshots move, each to its own function's answer. In
+`boxed_source_dropped_after_its_fold.js` and
+`enumerate_of_known_length.js`, held adapters had kept their hand-written
+form only through a neighbouring function's fact, and they now read as
+std's struct (#2402, the held flip's policy). In
+`size_hint_of_adapters_made_in_place_over_a_type_parameters_items.js`, a
+`$mapEnds` becomes a `.map`. In `copied_given_len.js`, a copy is given
+its function's own `$given` dictionaries. This is held by
+`test/corpus/type_parameters_spelled_alike_keep_their_own_facts.rs`
+against native Rust, and by the mutations `typed-key-of-every-item` and
+`hint-types-made-in-every-function`.

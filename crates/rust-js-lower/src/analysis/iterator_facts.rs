@@ -4,6 +4,8 @@
 //! what generic code asks the hint of (`hint_asked.rs`, #1236). One value
 //! the lowering is given, as its `iterators`.
 
+pub(crate) mod typed_key;
+
 use super::back_stepped::{self, BackStepped};
 use super::hint_asked::{self, Hinted};
 use crate::Body;

@@ -12,6 +12,7 @@
 //! type parameters, each of its callers' (#388). No type's set besides: the
 //! lowering asks the value (`stepped_from_its_back`).
 
+use super::iterator_facts::typed_key::{TypedKey, typed_key};
 use crate::analysis::mir_reads::user_variable::user_variable;
 use crate::generic_facts::{GivenADrop, given_a_drop_of};
 use crate::recognition::{
@@ -57,8 +58,8 @@ pub(super) fn back_stepped<'tcx>(
     recognition: Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     (library, drops): (bool, impl Fn(Ty<'tcx>) -> bool),
-) -> IndexSet<Ty<'tcx>> {
-    let mut typed: IndexSet<Ty<'tcx>> = IndexSet::default();
+) -> IndexSet<TypedKey<'tcx>> {
+    let mut typed: IndexSet<TypedKey<'tcx>> = IndexSet::default();
     // Each body's own, by its function: what a caller's call of it makes too.
     let mut of_body: IndexMap<rustc_span::def_id::DefId, IndexSet<Ty<'tcx>>> = IndexMap::default();
     for body in all_bodies {
@@ -74,7 +75,8 @@ pub(super) fn back_stepped<'tcx>(
             // what it's given is made knowing its back where it's made
             // (#1024).
             if recognition.foreign.is_library(callee.krate) {
-                typed.extend(library_backs(tcx, recognition, callee, args, &drops));
+                let backs = library_backs(tcx, recognition, callee, args, &drops);
+                typed.extend(backs.into_iter().map(|ty| typed_key(tcx, body.def_id, ty)));
             }
             // `DoubleEndedIterator`'s own method, `next_back()`, which asks
             // it of what it's called on: below, of each adapter.
@@ -110,7 +112,7 @@ pub(super) fn back_stepped<'tcx>(
                         let made = back_stepped_adapter(tcx, recognition, held, given, &drops)
                             .filter(|&made| !holds_compiled(tcx, made, &compiled));
                         if given {
-                            typed.extend(made);
+                            typed.extend(made.map(|ty| typed_key(tcx, body.def_id, ty)));
                         }
                         stepped.extend(made);
                     }
@@ -122,7 +124,10 @@ pub(super) fn back_stepped<'tcx>(
             if own_method && let Some(hidden) = args.types().next().map(|ty| ty.peel_refs()) {
                 let adapter = recognition.reveal(hidden);
                 match hidden != adapter {
-                    true => typed.extend(given_behind_an_impl(tcx, recognition, hidden, &drops)),
+                    true => typed.extend(
+                        (given_behind_an_impl(tcx, recognition, hidden, &drops).into_iter())
+                            .map(|ty| typed_key(tcx, body.def_id, ty)),
+                    ),
                     false => stepped.extend(back_stepped_adapter(tcx, recognition, adapter, false, &drops)),
                 }
             }
@@ -144,7 +149,8 @@ pub(super) fn back_stepped<'tcx>(
             // source, which it may step from its back: each made knowing it,
             // by their makers as by its body (`library_backs`).
             let identity = ty::GenericArgs::identity_for_item(tcx, body.def_id);
-            typed.extend(library_backs(tcx, recognition, body.def_id, identity, &drops));
+            let backs = library_backs(tcx, recognition, body.def_id, identity, &drops);
+            typed.extend(backs.into_iter().map(|ty| typed_key(tcx, body.def_id, ty)));
             // Its regions erased, those it binds too.
             let output = tcx
                 .instantiate_bound_regions_with_erased(
@@ -168,7 +174,8 @@ pub(super) fn back_stepped<'tcx>(
                         .is_some_and(|bound| is_double_ended(tcx, bound.def_id()))
                 });
                 if asked {
-                    typed.extend(given_behind_an_impl(tcx, recognition, hidden, &drops));
+                    let given = given_behind_an_impl(tcx, recognition, hidden, &drops);
+                    typed.extend(given.into_iter().map(|ty| typed_key(tcx, body.def_id, ty)));
                 }
             }
         }
@@ -206,7 +213,7 @@ pub(super) fn back_stepped<'tcx>(
             break;
         }
         for (owner, made) in more {
-            typed.insert(made);
+            typed.insert(typed_key(tcx, owner, made));
             of_body.entry(owner).or_default().insert(made);
         }
     }
@@ -217,10 +224,12 @@ pub(super) fn back_stepped<'tcx>(
 /// its source does, `back_stepped_source`'s, a `Filter`'s of a `Copied`
 /// given to generic code that steps it from its back: a type's question
 /// too, made knowing its back where it's made (#388, #851).
-fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, typed: IndexSet<Ty<'tcx>>) -> IndexSet<Ty<'tcx>> {
+fn with_stepped_sources<'tcx>(tcx: TyCtxt<'tcx>, typed: IndexSet<TypedKey<'tcx>>) -> IndexSet<TypedKey<'tcx>> {
     let mut all = typed.clone();
-    for ty in typed {
-        all.extend((back_stepped_source(tcx, ty)).map(|held| tcx.erase_and_anonymize_regions(held.peel_refs())));
+    for (owner, ty) in typed {
+        let sources = back_stepped_source(tcx, ty).map(|held| tcx.erase_and_anonymize_regions(held.peel_refs()));
+        // Its source's, keyed where the source's parameters are declared.
+        all.extend(sources.map(|held| owner.map_or((None, held), |owner| typed_key(tcx, owner, held))));
     }
     all
 }
@@ -405,7 +414,7 @@ pub struct BackStepped<'tcx> {
     /// asked of every value of one, never of a value alone. The other types
     /// `back_stepped` gives seed `stepped_locals` alone, what a value made
     /// of what's stepped is made of (#851).
-    pub(crate) typed: IndexSet<Ty<'tcx>>,
+    pub(crate) typed: IndexSet<TypedKey<'tcx>>,
     /// Each `&mut` of a whole local, the local it lends (`borrows`).
     pub(crate) borrows: IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), rustc_middle::mir::Local>,
     pub(crate) locals: IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal>,
@@ -440,6 +449,12 @@ pub struct Asked {
 }
 
 impl<'tcx> BackStepped<'tcx> {
+    /// Whether `ty`, regions erased, of `owner`'s body, is a type whose
+    /// question is a type's (`typed`), where its parameters are declared.
+    pub(crate) fn is_typed(&self, tcx: TyCtxt<'tcx>, owner: rustc_span::def_id::DefId, ty: Ty<'tcx>) -> bool {
+        self.typed.contains(&typed_key(tcx, owner, ty))
+    }
+
     /// What's asked of `local`'s value, of `owner`'s body: the one answer of
     /// its back and its length, which its maker reads.
     pub(crate) fn asked_of(&self, owner: rustc_span::def_id::DefId, local: rustc_middle::mir::Local) -> Asked {
@@ -475,13 +490,13 @@ impl<'tcx> BackStepped<'tcx> {
         recognition: Recognition<'_, 'tcx>,
         (owner, mir): (rustc_span::def_id::DefId, &rustc_middle::mir::Body<'tcx>),
         ty: Ty<'tcx>,
-        hinted: &IndexSet<Ty<'tcx>>,
+        hinted: &super::hint_asked::Hinted<'tcx>,
     ) -> bool {
         let tcx = recognition.tcx;
         let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(recognition.reveal(ty.peel_refs()));
         let ty = erased(ty);
-        self.typed.contains(&ty)
-            || hinted.contains(&ty)
+        self.is_typed(tcx, owner, ty)
+            || hinted.is_typed(tcx, owner, ty)
             || (self.locals.keys())
                 .chain(
                     self.lengths
@@ -513,7 +528,7 @@ pub(crate) fn made_by<'tcx>(
 /// maker never marks (#2112's survey, `places.rs`' mark retired).
 type SteppedValues<'tcx> = (
     IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal>,
-    IndexSet<Ty<'tcx>>,
+    IndexSet<TypedKey<'tcx>>,
     IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), LengthAsked>,
 );
 
@@ -593,7 +608,7 @@ pub(super) fn stepped_locals<'tcx>(
             of == field && crate::recognition::trait_holds_in(tcx, typing_env, erased(value), asked) != Some(false)
         })
     };
-    let mut typed_sources: IndexSet<Ty<'tcx>> = IndexSet::default();
+    let mut typed_sources: IndexSet<TypedKey<'tcx>> = IndexSet::default();
     let mut counted: IndexMap<(rustc_span::def_id::DefId, mir::Local), LengthAsked> = IndexMap::default();
     let mark = |stepped: &mut IndexMap<_, _>, at, how| {
         // `Given` wins: its maker makes it, wherever it's lent besides.
@@ -751,7 +766,7 @@ pub(super) fn stepped_locals<'tcx>(
                     && let Some(local) = place.as_local()
                 {
                     mark(&mut stepped, (owner, origin(local)), SteppedLocal::Given);
-                    typed_sources.insert(erased(mir.local_decls[origin(local)].ty));
+                    typed_sources.insert(typed_key(tcx, owner, erased(mir.local_decls[origin(local)].ty)));
                 }
                 // A zip that reads its sides by index (ADR 0973), which asks
                 // the length of `b`, a map whose closure has a destructor:
@@ -851,7 +866,7 @@ pub(super) fn stepped_locals<'tcx>(
                             });
                         if comes_back {
                             mark(&mut stepped, (owner, local), SteppedLocal::Given);
-                            typed_sources.insert(ty);
+                            typed_sources.insert(typed_key(tcx, owner, ty));
                         }
                     }
                 }
@@ -1110,7 +1125,7 @@ pub(super) fn stepped_locals<'tcx>(
                     while let Some(adapter) = at
                         && let Some(beneath) = back_stepped_source(tcx, adapter)
                     {
-                        typed_sources.insert(erased(adapter));
+                        typed_sources.insert(typed_key(tcx, owner, erased(adapter)));
                         at = Some(beneath.peel_refs());
                     }
                 }
@@ -1163,7 +1178,7 @@ pub(super) fn stepped_locals<'tcx>(
                                 counted.insert((owner, local), LengthAsked::Counted);
                             }
                             if held_by_struct {
-                                typed_sources.insert(ty);
+                                typed_sources.insert(typed_key(tcx, owner, ty));
                             }
                         } else if ty == source && made_asked && !user {
                             // What an asked adapter made in place is made of,

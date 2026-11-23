@@ -30,7 +30,7 @@ pub(super) use cell_borrows::{
 pub(super) use cell_flow::CellClass;
 mod clones;
 pub(crate) use clones::Cloned;
-pub(crate) use hint_asked::asked_of_own;
+pub(crate) use hint_asked::{Hinted, asked_of_own};
 pub(crate) use iterator_facts::IteratorFacts;
 mod closures;
 mod collected;
@@ -843,7 +843,7 @@ pub fn analyze_crate<'a, 'tcx>(
         crate::body_queries::decide_held(
             &recognition,
             bodies,
-            (&iterators.back_stepped, &iterators.hinted.typed, keeps_capacity),
+            (&iterators.back_stepped, &iterators.hinted, keeps_capacity),
         );
     }
     let asks_whole = |kind| chars_asked::asks_whole(tcx, recognition, all_bodies, (library, keeps_capacity), kind);

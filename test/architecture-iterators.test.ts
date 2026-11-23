@@ -497,7 +497,7 @@ test("what's stepped from its back is its value's, no type's set", () => {
   expect([owned("a type's set of what's stepped from its back"), fields, returns, crossChecks]).toEqual([
     owned("a type's set of what's stepped from its back"),
     ["typed", "borrows", "locals", "lengths"],
-    "IndexSet<Ty<'tcx>>",
+    "IndexSet<TypedKey<'tcx>>",
     [],
   ]);
 });

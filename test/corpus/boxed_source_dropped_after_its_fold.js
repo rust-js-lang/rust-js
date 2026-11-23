@@ -3,14 +3,12 @@
 import {
   $catchUnwind,
   $cleanup,
-  $closing,
   $exactLen,
   $foldDropping,
   $held,
   $iterator,
   $last,
   $lastDropping,
-  $lent,
   $live,
   $next,
   $nextBack,
@@ -94,19 +92,18 @@ function everyDoubleEndedIterator_nextBack(every) {
 }
 
 function folded(src, dropI) {
-  function inspect(x) {
-    console.log(`saw ${x[0]}`);
-  }
-  const iter = Iterator.from(
-    $lent(
-      $closing(src, (box) => {
-        dropI?.(box);
-      }),
-      "boxed",
-    ).map((item) => {
-      inspect(item);
-      return item;
-    }),
+  $held(src);
+  const iter = iterator_inspect(
+    src,
+    (x) => {
+      console.log(`saw ${x[0]}`);
+    },
+    { next: $next, nth: $nth, last: $last, lent: ["boxed"] },
+    (box) => {
+      dropI?.(box);
+    },
+    undefined,
+    dDrop_drop,
   );
   let result;
   try {
@@ -134,19 +131,18 @@ function folded(src, dropI) {
 }
 
 function last(src, dropI) {
-  function inspect(x) {
-    console.log(`saw ${x[0]}`);
-  }
-  const iter = Iterator.from(
-    $lent(
-      $closing(src, (box) => {
-        dropI?.(box);
-      }),
-      "boxed",
-    ).map((item) => {
-      inspect(item);
-      return item;
-    }),
+  $held(src);
+  const iter = iterator_inspect(
+    src,
+    (x) => {
+      console.log(`saw ${x[0]}`);
+    },
+    { next: $next, nth: $nth, last: $last, lent: ["boxed"] },
+    (box) => {
+      dropI?.(box);
+    },
+    undefined,
+    dDrop_drop,
   );
   let result;
   try {
@@ -180,20 +176,19 @@ function last(src, dropI) {
 }
 
 function summed(src, dropI) {
-  function inspect(x) {
-    console.log(`saw ${x[0]}`);
-  }
+  $held(src);
   const t = totalSumD_sum(
-    Iterator.from(
-      $lent(
-        $closing(src, (box) => {
-          dropI?.(box);
-        }),
-        "boxed",
-      ).map((item) => {
-        inspect(item);
-        return item;
-      }),
+    iterator_inspect(
+      src,
+      (x) => {
+        console.log(`saw ${x[0]}`);
+      },
+      { next: $next, nth: $nth, last: $last, lent: ["boxed"] },
+      (box) => {
+        dropI?.(box);
+      },
+      undefined,
+      dDrop_drop,
     ),
     (inspect) => {
       inspect.return();

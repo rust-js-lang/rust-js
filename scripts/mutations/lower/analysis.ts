@@ -521,7 +521,7 @@ export const mutations: Mutation[] = [
     name: "held-stage-never-decided",
     breaks: "the second stage of which adapters each body makes in place is never decided, so the first reader of both, `type_fact_params`, reads a set half decided: rust-js panics, as `contains` refuses it (#1681's step iii)",
     file: "crates/rust-js-lower/src/analysis.rs",
-    find: "        crate::body_queries::decide_held(\n            &recognition,\n            bodies,\n            (&iterators.back_stepped, &iterators.hinted.typed, keeps_capacity),\n        );\n",
+    find: "        crate::body_queries::decide_held(\n            &recognition,\n            bodies,\n            (&iterators.back_stepped, &iterators.hinted, keeps_capacity),\n        );\n",
     replace: "        let _ = bodies;\n",
     tests: ["test/corpus.test.ts", "-t", "^map_held_then_enumerated_from_its_back.rs$"],
   },

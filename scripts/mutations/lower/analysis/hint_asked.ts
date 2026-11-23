@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "hint-asked-unmarked",
     breaks: "a `filter` a caller makes and gives generic code that asks its hint is JS's own `values().filter(p)`, whose hint is `(0, None)`, where std's is `(0, Some(4))` (#1236)",
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "                of_items |= mark_given(tcx, recognition, instance, keeps_capacity, &mut asked);\n",
+    find: "                of_items |= mark_given(tcx, recognition, (owner, instance), keeps_capacity, &mut asked);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_adapter_given_to_generic_code_that_asks_its_hint\\.rs$"],
   },
@@ -204,7 +204,7 @@ export const mutations: Mutation[] = [
     name: "in-place-map-unmarked",
     breaks: "a `cycle()`'s `map` of an array's items isn't made knowing, `$mapEnds`, so a `Vec` grown by a `take(n)` of it is refused (#1572)",
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "            asked.hinted.knowing_in.insert((maker, part));\n            asked.hinted.knowing_types.insert(part);\n",
+    find: "            asked.hinted.knowing_in.insert((maker, part));\n            asked.hinted.knowing_types.insert(typed_key(tcx, maker, part));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_grown_by_a_take_of_a_cycle_of_a_map.rs$"],
   },
@@ -275,7 +275,7 @@ export const mutations: Mutation[] = [
     breaks:
       "what a consumer gives a library's impl to step, `Hinted::from_iter(v.into_iter().take(2))`, stays JS's own adapter, whose hint is `(0, None)`, where the impl, which the consumer can't see, asks std's (#2384)",
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "                _ = mark_given(tcx, recognition, given, keeps_capacity, &mut asked);\n",
+    find: "                _ = mark_given(tcx, recognition, (body.def_id, given), keeps_capacity, &mut asked);\n",
     replace: "                _ = given;\n",
     tests: ["test/libraries.test.ts", "-t", "knows its hint"],
   },
@@ -287,5 +287,15 @@ export const mutations: Mutation[] = [
     find: "    let mut reached = crate::recognition::crate_impl_called_by(tcx, typing_env, callee, args);\n",
     replace: "    let mut reached = Vec::new();\n",
     tests: ["test/libraries.test.ts", "-t", "knows its hint"],
+  },
+  {
+    name: "hint-types-made-in-every-function",
+    breaks:
+      "a type of type parameters marked knowing its hint, `boxed`'s `Skip<IntoIter<T>>`, is made knowing it in every function that makes one spelled alike, `counted`'s `$skipping` where JS's own `.drop(1)` was its form (#2133)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "        let own = |body: &&&Body<'tcx>| declares.is_none() || typed_key(tcx, body.def_id, ty).0 == declares;\n",
+    replace: "        let own = |_: &&&Body<'tcx>| declares.is_none() || declares.is_some();\n",
+    tests: ["test/corpus.test.ts", "-t", "^type_parameters_spelled_alike_keep_their_own_facts.rs$"],
+    snapshots: true,
   },
 ];

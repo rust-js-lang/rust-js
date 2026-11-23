@@ -20,7 +20,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// asks no back of what it holds: `made_knowing_its_hint`'s (#2209).
     pub fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
-        let answer = if self.krate.iterators.back_stepped.typed.contains(&ty) {
+        let answer = if (self.krate.iterators.back_stepped).is_typed(self.tcx, self.frame.owner, ty) {
             "typed"
         } else if !self.asking_made.get()
             && (self.made_into.iter().chain(&self.made_from)).any(|&(local, made)| {
@@ -136,7 +136,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             "counted-in"
         } else if hinted.knowing_in.contains(&(owner, ty)) {
             "knowing-in"
-        } else if hinted.typed.contains(&ty) {
+        } else if hinted.is_typed(self.tcx, owner, ty) {
             "typed"
         } else {
             "no"

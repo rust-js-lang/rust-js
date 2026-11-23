@@ -144,7 +144,7 @@ pub fn decide_held<'tcx>(
     bodies: &[crate::Body<'tcx>],
     (back_stepped, hinted, keeps_capacity): (
         &crate::analysis::BackStepped<'tcx>,
-        &rust_js_program::collections::IndexSet<rustc_middle::ty::Ty<'tcx>>,
+        &crate::analysis::Hinted<'tcx>,
         bool,
     ),
 ) {
@@ -189,7 +189,7 @@ fn held_links<'tcx>(
     (mir, flipped): (&rustc_middle::mir::Body<'tcx>, &[DefId]),
     (back_stepped, hinted, keeps_capacity): (
         &crate::analysis::BackStepped<'tcx>,
-        &rust_js_program::collections::IndexSet<rustc_middle::ty::Ty<'tcx>>,
+        &crate::analysis::Hinted<'tcx>,
         bool,
     ),
 ) -> IndexSet<ExprId> {

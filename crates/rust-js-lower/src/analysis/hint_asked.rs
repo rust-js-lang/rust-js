@@ -17,12 +17,14 @@ use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
+use super::iterator_facts::typed_key::{TypedKey, typed_key};
+
 /// What `of_crate` finds as it reads the crate: the adapters, and the
 /// sources, made knowing their hint wherever they're made, `knowing`, which
 /// becomes `Hinted::typed`; and what's made knowing it by the function that
 /// makes it (`hinted`).
 struct HintAsked<'tcx> {
-    knowing: IndexSet<Ty<'tcx>>,
+    knowing: IndexSet<TypedKey<'tcx>>,
     hinted: Hinted<'tcx>,
 }
 
@@ -47,14 +49,15 @@ pub struct Hinted<'tcx> {
     /// library may be given where its hint is asked, of an array's items,
     /// whose JS iterator, `values()`, and JS's own adapters know none
     /// (#1236).
-    pub(crate) typed: IndexSet<Ty<'tcx>>,
-    /// The types of no type parameter marked, as they're found, each
-    /// keyed by its makers into `counted_in` once the crate is read: empty
-    /// after `of_crate` (#1333).
-    pub(crate) types: IndexSet<Ty<'tcx>>,
+    pub(crate) typed: IndexSet<TypedKey<'tcx>>,
+    /// The types marked, as they're found, each
+    /// keyed by its makers into `counted_in` once the crate is read, of
+    /// type parameters only where they're declared (`typed_key`): empty
+    /// after `of_crate` (#1333, #2133).
+    pub(crate) types: IndexSet<TypedKey<'tcx>>,
     /// And those made knowing their hint otherwise, `$mapEnds`, keyed
     /// into `knowing_in` the same way: empty after `of_crate` (#1427).
-    pub(crate) knowing_types: IndexSet<Ty<'tcx>>,
+    pub(crate) knowing_types: IndexSet<TypedKey<'tcx>>,
     /// Each of those made in place over an array's items with its source,
     /// made `$iter` with it: keyed by the makers of its adapter, never by
     /// its own, which another function holds in its own adapter, JS's
@@ -85,6 +88,14 @@ pub struct Hinted<'tcx> {
     pub dyn_unseen: bool,
 }
 
+impl<'tcx> Hinted<'tcx> {
+    /// Whether `ty`, regions erased, of `owner`'s body, is made knowing its
+    /// hint wherever it's made (`typed`), where its parameters are declared.
+    pub(crate) fn is_typed(&self, tcx: TyCtxt<'tcx>, owner: DefId, ty: Ty<'tcx>) -> bool {
+        self.typed.contains(&typed_key(tcx, owner, ty))
+    }
+}
+
 /// What `all_bodies` ask the hint of, through generic code and libraries.
 pub(super) fn of_crate<'tcx>(
     tcx: TyCtxt<'tcx>,
@@ -112,7 +123,7 @@ pub(super) fn of_crate<'tcx>(
             // which the crate can't see, may ask it (#2384).
             let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
             for given in given_a_library_unseen(tcx, typing_env, (callee, args)) {
-                _ = mark_given(tcx, recognition, given, keeps_capacity, &mut asked);
+                _ = mark_given(tcx, recognition, (body.def_id, given), keeps_capacity, &mut asked);
             }
             // A `dyn Iterator`'s hint asked, and one given back by what the
             // crate can't see make it (#1476).
@@ -206,7 +217,7 @@ pub(super) fn of_crate<'tcx>(
                     _ = mark_given(
                         tcx,
                         recognition,
-                        tcx.erase_and_anonymize_regions(from),
+                        (body.def_id, tcx.erase_and_anonymize_regions(from)),
                         keeps_capacity,
                         &mut asked,
                     );
@@ -249,7 +260,7 @@ pub(super) fn of_crate<'tcx>(
             // it makes of them is marked by none (#2277).
             let mut of_items = false;
             for instance in instances {
-                of_items |= mark_given(tcx, recognition, instance, keeps_capacity, &mut asked);
+                of_items |= mark_given(tcx, recognition, (owner, instance), keeps_capacity, &mut asked);
             }
             if of_items {
                 for (maker, made) in made {
@@ -268,8 +279,11 @@ pub(super) fn of_crate<'tcx>(
         .into_iter()
         .map(|ty| (ty, false));
     let sources = std::mem::take(&mut asked.hinted.sources);
-    for (ty, counts) in counted.chain(knowing).collect::<Vec<_>>() {
-        for body in all_bodies {
+    for ((declares, ty), counts) in counted.chain(knowing).collect::<Vec<_>>() {
+        // Of type parameters, only where they're declared: another
+        // function's of the same spelling is another type (#2133).
+        let own = |body: &&&Body<'tcx>| declares.is_none() || typed_key(tcx, body.def_id, ty).0 == declares;
+        for body in all_bodies.iter().filter(own) {
             let makes = body
                 .thir
                 .exprs
@@ -451,16 +465,32 @@ impl AsksHint {
 fn mark_given<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
-    instance: Ty<'tcx>,
+    (owner, instance): (DefId, Ty<'tcx>),
     keeps_capacity: bool,
     asked: &mut HintAsked<'tcx>,
 ) -> bool {
-    if mark_hint_knowing(
-        tcx,
-        recognition,
-        instance,
-        (&mut asked.knowing, &mut asked.hinted.types),
-    ) {
+    // What it marks, of `owner`'s body, keyed where its type parameters
+    // are declared (`typed_key`, #2133).
+    let (mut knowing, mut types) = (IndexSet::default(), IndexSet::default());
+    let marked = mark_given_of(tcx, recognition, instance, keeps_capacity, (&mut knowing, &mut types));
+    asked
+        .knowing
+        .extend(knowing.into_iter().map(|ty| typed_key(tcx, owner, ty)));
+    asked
+        .hinted
+        .types
+        .extend(types.into_iter().map(|ty| typed_key(tcx, owner, ty)));
+    marked
+}
+
+fn mark_given_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    recognition: Recognition<'_, 'tcx>,
+    instance: Ty<'tcx>,
+    keeps_capacity: bool,
+    (knowing, types): (&mut IndexSet<Ty<'tcx>>, &mut IndexSet<Ty<'tcx>>),
+) -> bool {
+    if mark_hint_knowing(tcx, recognition, instance, (&mut *knowing, &mut *types)) {
         return true;
     }
     // Of an array JS counts, or of std's compiled struct, which answers
@@ -475,11 +505,11 @@ fn mark_given<'tcx>(
     }
     match recognition.lower_bound_kept_by_parts(instance) {
         true => {
-            let (counted, knowing) = counted_parts(tcx, instance);
-            asked.hinted.types.extend(counted);
-            asked.knowing.extend(knowing);
+            let (counted, below) = counted_parts(tcx, instance);
+            types.extend(counted);
+            knowing.extend(below);
         }
-        false => mark_each(tcx, instance, (&mut asked.knowing, &mut asked.hinted.types)),
+        false => mark_each(tcx, instance, (knowing, types)),
     }
     true
 }
@@ -566,10 +596,10 @@ fn mark_in_place<'tcx>(
         }
         if counted_source(tcx, part).is_some() || stepped_by_source(tcx, part).is_some() {
             asked.hinted.counted_in.insert((maker, part));
-            asked.hinted.types.insert(part);
+            asked.hinted.types.insert(typed_key(tcx, maker, part));
         } else if made_knowing_by_its_maker(tcx, part) {
             asked.hinted.knowing_in.insert((maker, part));
-            asked.hinted.knowing_types.insert(part);
+            asked.hinted.knowing_types.insert(typed_key(tcx, maker, part));
         } else {
             continue;
         }
