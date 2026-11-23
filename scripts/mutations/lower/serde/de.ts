@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
       'a numbered enum read from JSON is its name, `"Entries"`, so `==` of it to `Kind::Entries`, `3`, is false',
     file: "crates/rust-js-lower/src/serde/de.rs",
     find: "                return self.unit_variant(adt.did(), variant);\n",
-    replace: "                return Expr::str(name);\n",
+    replace: "                return Expr::str(crate::bindings::variant_name(self.tcx, variant));\n",
     tests: ["test/serde-values.test.ts", "-t", "a repr enum serializes"],
   },
   {
