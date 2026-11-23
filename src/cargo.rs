@@ -101,9 +101,9 @@ impl Qualified {
 /// The crates of crates.io's rust-js reads as rustc builds them: serde's
 /// (ADR 0077), and hashbrown, with what it alone uses, and indexmap, whose
 /// maps are std's (ADRs 0423, 0424); and memchr, whose searches rust-js
-/// writes (ADR 0529), and getrandom, whose bytes it writes (#2326). The one
-/// catalog.
-const READ_AS_RUSTC_BUILDS_THEM: [ReadAsRustc; 9] = [
+/// writes (ADR 0529), getrandom, whose bytes it writes (#2326), and
+/// serde_path_to_error, whose read it writes (ADR 1188). The one catalog.
+const READ_AS_RUSTC_BUILDS_THEM: [ReadAsRustc; 10] = [
     ReadAsRustc {
         name: "serde",
         qualified: None,
@@ -136,6 +136,16 @@ const READ_AS_RUSTC_BUILDS_THEM: [ReadAsRustc; 9] = [
         name: "memchr",
         qualified: Some(&[Qualified {
             version: "2.8.3",
+            cfgs: &[],
+            unless: &[],
+        }]),
+    },
+    // Its read, the path it keeps and its `Error` are the runtime's, of
+    // this version's rules (ADR 1188).
+    ReadAsRustc {
+        name: "serde_path_to_error",
+        qualified: Some(&[Qualified {
+            version: "0.1.20",
             cfgs: &[],
             unless: &[],
         }]),

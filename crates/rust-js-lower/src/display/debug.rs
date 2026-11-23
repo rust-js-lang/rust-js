@@ -2,6 +2,7 @@
 //! and the items of a collection.
 
 use super::*;
+use crate::recognition::JsonPathType;
 use crate::recognition::{c_str_error, is_c_str, is_c_string};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -327,6 +328,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.is_json_error(ty) {
             return Ok(Expr::call(Expr::helper("$debugJsonError"), vec![value]));
+        }
+        // serde_path_to_error's `Error` and `Path`, their derived `Debug`s,
+        // given the `Formatter`'s options, which an index reads (ADR 1188).
+        if let Some(of) = self.recognition().json_path_type(ty) {
+            let helper = match of {
+                JsonPathType::Error => "$debugJsonPathError",
+                JsonPathType::Path => "$debugJsonPath",
+            };
+            let mut args = vec![value];
+            if !matches!(pretty, Pretty::Plain) {
+                args.push(pretty.options());
+            }
+            return Ok(Expr::call_helper(helper, args));
         }
         // A qualified getrandom's error, as its version shows it, given the
         // `Formatter`'s options, which its numbers read (#2326).

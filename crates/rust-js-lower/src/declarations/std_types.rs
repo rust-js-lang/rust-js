@@ -9,7 +9,9 @@
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::TyCtxt;
 
-use super::super::recognition::{StdCrate, StdItem, is_json_error_def, is_std_def, of_std_crate};
+use super::super::recognition::{
+    JsonPathType, StdCrate, StdItem, is_json_error_def, is_std_def, json_path_def, of_std_crate,
+};
 
 /// One of std's types `@rust-js/std` declares opaque.
 pub(crate) struct Opaque {
@@ -22,11 +24,13 @@ pub(crate) struct Opaque {
 }
 
 /// What an opaque type is of: a std cell, its one type parameter what it
-/// holds, of whether it's its lock, `std`'s, of `core`'s cell; or
-/// `serde_json::Error`, whose keys a caller reads (`JSON_ERROR_KEYS`).
+/// holds, of whether it's its lock, `std`'s, of `core`'s cell;
+/// `serde_json::Error`, whose keys a caller reads (`JSON_ERROR_KEYS`); or
+/// serde_path_to_error's `Error` or `Path`, of a qualified one (ADR 1188).
 enum Of {
     Cell { item: StdItem, lock: bool },
     JsonError,
+    JsonPath(JsonPathType),
 }
 
 impl Opaque {
@@ -71,6 +75,16 @@ pub(crate) const OPAQUE: &[Opaque] = &[
         of: Of::JsonError,
         doc: "A `serde_json::Error`: `line` and `column` its `line()` and `column()`, `message` its text, its `Display` `message`, then ` at line ${line} column ${column}` where `line` isn't 0; `classify()` and the `is_*` tests have no key (#2373).",
     },
+    Opaque {
+        name: "JsonPathError",
+        of: Of::JsonPath(JsonPathType::Error),
+        doc: "A `serde_path_to_error::Error<serde_json::Error>`: serde_json's error, and where in the value it was made, which Rust's `path()`, `inner()` and `Display` read (ADR 1188).",
+    },
+    Opaque {
+        name: "JsonPath",
+        of: Of::JsonPath(JsonPathType::Path),
+        doc: "A `serde_path_to_error::Path`: where in a value a read failed, its `Display` `items[1].qty` (ADR 1188).",
+    },
 ];
 
 /// The iterators `@rust-js/std` declares structural, by the trait each
@@ -90,6 +104,7 @@ pub(crate) fn opaque(tcx: TyCtxt<'_>, did: DefId) -> Option<&'static Opaque> {
     (OPAQUE.iter()).find(|opaque| match opaque.of {
         Of::Cell { item, lock: its } => is_std_def(tcx, did, item) && its == lock,
         Of::JsonError => is_json_error_def(tcx, did),
+        Of::JsonPath(of) => json_path_def(tcx, did) == Some(of),
     })
 }
 
@@ -111,7 +126,7 @@ pub fn module() -> String {
             Of::JsonError => (JSON_ERROR_KEYS.iter())
                 .map(|(key, ty)| format!("  readonly {key}: {ty};\n"))
                 .collect(),
-            Of::Cell { .. } => String::new(),
+            Of::Cell { .. } | Of::JsonPath(_) => String::new(),
         };
         out.push_str(&format!(
             "\ndeclare const {brand}: unique symbol;\n/** {} */\nexport interface {}{params} {{\n  readonly [{brand}]: {held};\n{keys}}}\n",

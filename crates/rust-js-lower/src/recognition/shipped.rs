@@ -1,8 +1,9 @@
 //! Which items of a crate rustc builds that rust-js writes the JS of an item
-//! is, of the version its catalog qualified (ADR 0529): getrandom's (#2326).
+//! is, of the version its catalog qualified (ADR 0529): getrandom's (#2326),
+//! and serde_path_to_error's (ADR 1188).
 
 use super::Recognition;
-use crate::shipped::{GetrandomOp, GetrandomVersion};
+use crate::shipped::{GetrandomOp, GetrandomVersion, JsonPathOp};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::{CrateNum, DefId};
@@ -113,5 +114,115 @@ impl<'tcx> Recognition<'_, 'tcx> {
     /// and of which version.
     pub(crate) fn getrandom_error(&self, ty: Ty<'tcx>) -> Option<GetrandomVersion> {
         getrandom_error_type(self.tcx, ty)
+    }
+}
+
+/// Whether the crate `krate` is serde_path_to_error, of the version the
+/// catalog qualified (ADR 1188).
+fn is_json_path_crate(tcx: TyCtxt<'_>, krate: CrateNum) -> bool {
+    tcx.crate_name(krate).as_str() == "serde_path_to_error" && qualified_version(tcx, krate).is_some()
+}
+
+/// Whether `ty` is serde_json's `Error`, which a serde_path_to_error
+/// `Error` of rust-js's holds.
+fn is_json_error_ty(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if super::is_json_error_def(tcx, adt.did()))
+}
+
+/// serde_path_to_error's types rust-js writes, of a qualified one (ADR
+/// 1188): its `Error` of serde_json's error, `{ path, original }`, and its
+/// `Path`, the segments.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum JsonPathType {
+    Error,
+    Path,
+}
+
+/// Which of serde_path_to_error's types `did` is, if one rust-js writes, of
+/// whatever it holds: its `Error`, or its `Path`.
+pub(crate) fn json_path_def(tcx: TyCtxt<'_>, did: DefId) -> Option<JsonPathType> {
+    if !is_json_path_crate(tcx, did.krate) {
+        return None;
+    }
+    match tcx.item_name(did).as_str() {
+        "Error" => Some(JsonPathType::Error),
+        "Path" => Some(JsonPathType::Path),
+        _ => None,
+    }
+}
+
+/// Which of serde_path_to_error's types `ty` is, if one rust-js writes: its
+/// `Error` only of serde_json's error.
+pub(crate) fn json_path_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<JsonPathType> {
+    let ty::Adt(adt, args) = ty.kind() else {
+        return None;
+    };
+    match json_path_def(tcx, adt.did())? {
+        JsonPathType::Error if !args.types().next().is_some_and(|e| is_json_error_ty(tcx, e)) => None,
+        of => Some(of),
+    }
+}
+
+/// Whether `ty` is serde_json's reader of text, `Deserializer<StrRead>`,
+/// which `Deserializer::from_str` makes and serde_path_to_error reads: the
+/// runtime's `$JsonReader` (ADR 1188).
+pub(crate) fn is_json_text_reader<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    let ty::Adt(adt, args) = ty.kind() else {
+        return false;
+    };
+    tcx.crate_name(adt.did().krate).as_str() == "serde_json"
+        && tcx.item_name(adt.did()).as_str() == "Deserializer"
+        && matches!(args.type_at(0).kind(), ty::Adt(read, _) if tcx.item_name(read.did()).as_str() == "StrRead")
+}
+
+impl<'tcx> Recognition<'_, 'tcx> {
+    /// Which of serde_path_to_error's functions `id` of `args` is (ADR
+    /// 1188): its `deserialize` of serde_json's text reader, which
+    /// serde_json's `Deserializer::from_str` makes, and its `Error`'s path
+    /// and serde_json's error. Everything else of it is refused where it's
+    /// called, and serde_json's reader's other methods (#1626).
+    pub(super) fn json_path_op(&self, id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<JsonPathOp> {
+        let tcx = self.tcx;
+        let name = tcx.item_name(id);
+        let of_impl = || {
+            let imp = tcx.inherent_impl_of_assoc(id)?;
+            Some(tcx.type_of(imp).instantiate_identity().skip_normalization())
+        };
+        if tcx.crate_name(id.krate).as_str() == "serde_json" {
+            let reader = of_impl().is_some_and(|of| is_json_text_reader(tcx, of));
+            return (reader && name.as_str() == "from_str").then_some(JsonPathOp::Reader);
+        }
+        if !is_json_path_crate(tcx, id.krate) {
+            return None;
+        }
+        // Its `Error`'s own methods, of serde_json's error, its impl's `E`.
+        if let Some(of) = of_impl() {
+            let ty::Adt(adt, _) = of.kind() else {
+                return None;
+            };
+            let of_json = args.types().next().is_some_and(|e| is_json_error_ty(tcx, e));
+            if tcx.item_name(adt.did()).as_str() != "Error" || !of_json {
+                return None;
+            }
+            return match name.as_str() {
+                "path" => Some(JsonPathOp::Path),
+                "inner" | "into_inner" => Some(JsonPathOp::Inner),
+                _ => None,
+            };
+        }
+        // `deserialize::<D, T>`, of `&mut` serde_json's text reader.
+        let reads_text = (args.types().next())
+            .is_some_and(|d| matches!(d.kind(), ty::Ref(_, d, ty::Mutability::Mut) if is_json_text_reader(tcx, *d)));
+        (tcx.def_kind(id) == DefKind::Fn && name.as_str() == "deserialize" && reads_text).then_some(JsonPathOp::Read)
+    }
+
+    /// Which of serde_path_to_error's types `ty` is, if one rust-js writes.
+    pub(crate) fn json_path_type(&self, ty: Ty<'tcx>) -> Option<JsonPathType> {
+        json_path_type(self.tcx, ty)
+    }
+
+    /// Whether `ty` is serde_json's reader of text (ADR 1188).
+    pub(crate) fn is_json_text_reader(&self, ty: Ty<'tcx>) -> bool {
+        is_json_text_reader(self.tcx, ty)
     }
 }

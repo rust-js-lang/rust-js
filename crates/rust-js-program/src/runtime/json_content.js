@@ -134,6 +134,7 @@ class $JsonSeq {
   constructor(reader) {
     this.reader = reader;
     this.first = true;
+    this.index = 0;
   }
 
   // `has_next_element`.
@@ -154,8 +155,17 @@ class $JsonSeq {
     return true;
   }
 
+  // Of a read serde_path_to_error tracks, the item is at its index:
+  // `items[1]`, its comma's and its `]`'s mistakes the sequence's own.
   value(read) {
-    return read(this.reader);
+    const chain = this.reader.chain;
+    if (!chain) return read(this.reader);
+    chain.push(this.index++);
+    try {
+      return read(this.reader);
+    } finally {
+      chain.pop();
+    }
   }
 
   // The `i`th of `expected`'s items.
@@ -203,8 +213,20 @@ class $JsonMap {
     this.first = true;
   }
 
-  // `has_next_key`.
+  // Of a read serde_path_to_error tracks, the next key is `?` until its
+  // text is read, `a.?`, which a mistake finding it is at; its `}` the
+  // object's own.
   next() {
+    const chain = this.reader.chain;
+    if (!chain) return this.hasNextKey();
+    chain.push(null);
+    const more = this.hasNextKey();
+    if (!more) chain.pop();
+    return more;
+  }
+
+  // `has_next_key`.
+  hasNextKey() {
     const reader = this.reader;
     const peek = reader.parseWhitespace();
     if (peek === -1) throw reader.peekError("EOF while parsing an object");
@@ -224,12 +246,21 @@ class $JsonMap {
   }
 
   key() {
-    return new $JsonKey(this.reader);
+    return new $JsonKey(this.reader, this);
   }
 
+  // Of a read serde_path_to_error tracks, the value is at its key, `a.b`,
+  // or `a.?` of one that wasn't text; its `:` the object's own.
   value(read) {
     this.reader.parseObjectColon();
-    return read(this.reader);
+    const chain = this.reader.chain;
+    if (!chain) return read(this.reader);
+    chain.push(this.keyRead);
+    try {
+      return read(this.reader);
+    } finally {
+      chain.pop();
+    }
   }
 }
 
@@ -263,28 +294,52 @@ class $JsonContentMap {
 }
 
 // `MapKey`: an object's key, from its opening quote. A number or a `bool`
-// is read from inside the quotes.
+// is read from inside the quotes. Of a read serde_path_to_error tracks, the
+// key, once read, is where the rest of its reading is, its `CaptureKey`'s:
+// its text, a number's digits, or a `bool`'s word; each method ends its
+// reading, `read`, and the map keeps it for its value's place.
 class $JsonKey {
-  constructor(reader) {
+  constructor(reader, map) {
     this.reader = reader;
+    this.map = map;
+  }
+
+  text() {
+    this.reader.index++;
+    const key = this.reader.parseStr();
+    this.reader.captureKey(key);
+    return key;
+  }
+
+  read(value) {
+    const chain = this.reader.chain;
+    if (chain) this.map.keyRead = chain.pop();
+    return value;
   }
 
   string() {
-    this.reader.index++;
-    return this.reader.parseStr();
+    return this.read(this.text());
   }
 
   char() {
-    return $jsonChar(this.string());
+    return this.read($jsonChar(this.text()));
   }
 
   ignore() {
-    this.string();
+    this.read(this.text());
   }
 
   content() {
-    const value = this.string();
-    return { type: "str", value, borrowed: !this.reader.escaped };
+    const value = this.text();
+    return this.read({ type: "str", value, borrowed: !this.reader.escaped });
+  }
+
+  // A struct's field it names, as serde's derived identifier reads it:
+  // an unknown one's mistake, `deny_unknown_fields`', at the key.
+  field(fields, deny) {
+    const key = this.text();
+    const i = $jsonField(key, fields, deny);
+    return this.read([{ type: "str", value: key, borrowed: !this.reader.escaped }, i]);
   }
 
   number(read) {
@@ -292,10 +347,13 @@ class $JsonKey {
     reader.index++;
     const c = reader.peek();
     if (!(c === 45 || (c >= 48 && c <= 57))) throw reader.error("invalid value: expected key to be a number in quotes");
+    reader.keying = reader.chain !== undefined;
     const value = read(reader);
+    // Flags, not a state: a key's number read, apart from `first` and `escaped`, which change as they do whatever's read.
+    reader.keying = false;
     if (reader.peek() !== 34) throw reader.peekError('expected `"`');
     reader.index++;
-    return value;
+    return this.read(value);
   }
 
   bool() {
@@ -306,12 +364,15 @@ class $JsonKey {
       if (c === -1) throw reader.peekError("EOF while parsing a value");
       if (c === 116) {
         reader.parseIdent('rue"');
-        return true;
+        reader.captureKey("true");
+        return this.read(true);
       }
       if (c === 102) {
         reader.parseIdent('alse"');
-        return false;
+        reader.captureKey("false");
+        return this.read(false);
       }
+      // Not visited: serde_json's own mistake, which isn't the key's.
       throw $jsonError(`invalid type: string ${$debugStr(reader.parseStr())}, expected a boolean`);
     } catch (e) {
       throw reader.fixPosition(e);
@@ -324,6 +385,11 @@ class $JsonKey {
 class $JsonContentKey {
   constructor(key, owned) {
     this.key = new $JsonContent(key, owned);
+  }
+
+  field(fields, deny) {
+    const key = this.content();
+    return [key, $jsonField(key.value, fields, deny)];
   }
 
   string() {

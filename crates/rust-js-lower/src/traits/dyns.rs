@@ -200,6 +200,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let helper = match () {
             _ if self.is_parse_error(ty) => "$parseErrorDyn",
             _ if self.is_json_error(ty) => "$jsonErrorDyn",
+            // serde_path_to_error's, as it shows it (ADR 1188).
+            _ if self.recognition().json_path_type(ty) == Some(crate::recognition::JsonPathType::Error) => {
+                "$jsonPathErrorDyn"
+            }
             _ if self.recognition().is_io_error(ty) => "$ioErrorDyn",
             _ => return None,
         };

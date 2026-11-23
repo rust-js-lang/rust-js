@@ -123,6 +123,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if self.is_json_error(ty) || self.is_json_number(ty) => return None,
             // A qualified getrandom's error, its code (#2326).
             ty::Adt(..) if self.recognition().getrandom_error(ty).is_some() => return None,
+            // serde_path_to_error's `Error`, `{ path, original }`, and `Path`,
+            // and serde_json's reader of text, a `$JsonReader` (ADR 1188).
+            ty::Adt(..)
+                if self.recognition().json_path_type(ty).is_some() || self.recognition().is_json_text_reader(ty) =>
+            {
+                return None;
+            }
             // `{ file, line, column }` (ADR 0427).
             ty::Adt(..) if self.recognition().is_location(ty) => return None,
             // `undefined`, or JS's stack (ADR 0568).

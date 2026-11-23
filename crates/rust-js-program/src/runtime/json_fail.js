@@ -1,9 +1,16 @@
 
 class $JsonError extends Error {
+  // Of a read serde_path_to_error tracks, where in the value it is: the
+  // reader's place's segments (`$jsonPathRead`, ADR 1188).
+  static chain = undefined;
+
   constructor(message, line = 0, column = 0) {
     super(message);
     this.line = line;
     this.column = column;
+    // Where the reader was as it was made, serde_path_to_error's `Track`,
+    // whose path is the first place a mistake reached.
+    if ($JsonError.chain) this.path = $JsonError.chain.slice();
   }
 }
 function $jsonError(message) {

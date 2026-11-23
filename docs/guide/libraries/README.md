@@ -884,6 +884,63 @@ Without `#[rust_js::tag]` and the names, the JSON is the same and the
 declaration is rust-js's, `{ TAG: "Circle"; radius: number } | { TAG:
 "Square"; side: number }`.
 
+serde_json's error says where in the text a read failed, `at line 1
+column 29`. To say where in the value, `items[1].qty`, read through
+serde_path_to_error, a crate rust-js knows: its `deserialize` of
+`serde_json::Deserializer::from_str(text)` is the runtime's reader,
+keeping where it is as it reads, by the crate's own rules, and its
+`Error` shows the place, then serde_json's error. A missing field is at
+its struct, `customer`, not at the field, as the crate says it. A
+plain `serde_json::from_str` keeps no place and pays nothing for it
+([ADR 1188](../../decisions/1188-serde-path-to-error-is-a-shipped-crate.md)):
+
+```rust
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+pub struct Item {
+    pub qty: u32,
+}
+
+#[derive(Deserialize)]
+pub struct Order {
+    pub items: Vec<Item>,
+}
+
+/// An `Order`, or where in it the text went wrong: of
+/// `{"items":[{"qty":1},{"qty":-1}]}`, `items[1].qty: invalid value: ..`.
+pub fn parse(text: &str) -> Result<Order, String> {
+    let reader = &mut serde_json::Deserializer::from_str(text);
+    serde_path_to_error::deserialize(reader).map_err(|error| error.to_string())
+}
+```
+
+```js
+import { $JsonReader, $displayJsonPathError, $json, $jsonPathRead } from "@rust-js/std";
+
+function itemDeserialize_deserialize(json) {
+  return json.struct("struct Item", [["qty", $json.u32]], ([qty]) => ({ qty }));
+}
+
+function orderDeserialize_deserialize(json) {
+  return json.struct(
+    "struct Order",
+    [["items", $json.vec(itemDeserialize_deserialize)]],
+    ([items]) => ({ items }),
+  );
+}
+
+/**
+ * An `Order`, or where in it the text went wrong: of
+ * `{"items":[{"qty":1},{"qty":-1}]}`, `items[1].qty: invalid value: ..`.
+ */
+export function parse(text) {
+  const reader = new $JsonReader(text);
+  const result = $jsonPathRead(reader, orderDeserialize_deserialize);
+  return result.TAG === "Err" ? { TAG: "Err", _0: $displayJsonPathError(result._0) } : result;
+}
+```
+
 A hand-written `Serialize` or `Deserialize` is its body over serde_json's
 writer and reader, `s.serialize_str(x)` the writer's `s.string(x)`. A
 protocol call's `Result` the impl only gives on by `?`, or returns, is its

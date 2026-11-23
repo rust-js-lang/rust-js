@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "  return { message: e.message, line: e.line };\n",
     tests: ["test/declarations-json-error.test.ts"],
   },
+  {
+    name: "json-path-error-shares-chain",
+    breaks: "an error keeps the reader's place itself, not a copy, so the path it shows is where the reader went after, the root's",
+    file: "crates/rust-js-program/src/runtime/json_fail.js",
+    find: "    if ($JsonError.chain) this.path = $JsonError.chain.slice();\n",
+    replace: "    if ($JsonError.chain) this.path = $JsonError.chain;\n",
+    tests: ["test/serde-path.test.ts", "-t", "says where"],
+  },
 ];

@@ -36,4 +36,12 @@ export const mutations: Mutation[] = [
     replace: "    (sites[\"jsonIndexKey\"].as_str().map(str::to_string))",
     tests: ["test/binaries.test.ts", "-t", "a registry crate's panic names its own line"],
   },
+  {
+    name: "json-path-reads-any-deserializer",
+    breaks: "serde_path_to_error's `deserialize` of a `Value` is taken as of serde_json's reader of text, where rust-js writes no read of one",
+    file: "crates/rust-js-lower/src/recognition/shipped.rs",
+    find: "        (tcx.def_kind(id) == DefKind::Fn && name.as_str() == \"deserialize\" && reads_text).then_some(JsonPathOp::Read)\n",
+    replace: "        (tcx.def_kind(id) == DefKind::Fn && name.as_str() == \"deserialize\" && (reads_text || true)).then_some(JsonPathOp::Read)\n",
+    tests: ["test/serde-path.test.ts", "-t", "are refused"],
+  },
 ];

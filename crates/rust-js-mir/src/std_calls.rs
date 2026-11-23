@@ -1034,6 +1034,14 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                     this.json_value(text, ty, span)?
                 }))
             }),
+            // serde_path_to_error's, and serde_json's reader of text it reads
+            // (ADR 1188).
+            Std::JsonPath(op) => lower(move |this, _, values, _| {
+                Ok(Value::Expr({
+                    let given = this.value_expr(values.next().expect("its argument"), span)?;
+                    this.json_path_call(op, given, generic_args, span)?
+                }))
+            }),
             Std::NonZeroNew => lower(move |this, _, values, out| {
                 Ok(Value::Expr({
                     let n = this.value_expr(values.next().expect("the number"), span)?;

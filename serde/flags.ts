@@ -14,7 +14,7 @@ import { dirname, resolve, sep } from "node:path";
 const [profile, extension] = process.argv.slice(2);
 if (!profile || !extension) throw new Error("usage: bun serde/flags.ts <profile dir> <extension>");
 const within = resolve(profile) + sep;
-const asked = ["serde", "serde_json", "hashbrown", "indexmap", "memchr"];
+const asked = ["serde", "serde_json", "hashbrown", "indexmap", "memchr", "serde_path_to_error"];
 const files = new Map<string, string>();
 const dirs = new Set<string>();
 for (const line of (await Bun.stdin.text()).split("\n").filter(Boolean)) {

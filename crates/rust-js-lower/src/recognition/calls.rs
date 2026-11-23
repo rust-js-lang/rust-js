@@ -477,6 +477,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => {}
             }
         }
+        // serde_path_to_error's, of a qualified one rustc builds, and
+        // serde_json's reader of text it reads, a method, not the function
+        // of its name above (ADR 1188).
+        if let Some(op) = self.json_path_op(def_id, args) {
+            return Some(Some(Std::JsonPath(op)));
+        }
         if is_vec_from_elem(tcx, def_id) {
             return Some(Some(Std::FromElem));
         }

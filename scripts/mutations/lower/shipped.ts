@@ -36,4 +36,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/shipped-crates.test.ts", "-t", "getrandom's API runs"],
   },
+  {
+    name: "json-path-inner-is-path",
+    breaks: "an `Error`'s `inner()` gives its path's segments, not serde_json's error",
+    file: "crates/rust-js-lower/src/shipped.rs",
+    find: "            JsonPathOp::Inner => Expr::member(given, \"original\"),\n",
+    replace: "            JsonPathOp::Inner => Expr::member(given, \"path\"),\n",
+    tests: ["test/serde-path.test.ts", "-t", "says where"],
+  },
 ];

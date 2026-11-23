@@ -16,6 +16,7 @@ serde_json = "1"
 hashbrown = "=0.17.1"
 indexmap = "=2.14.2"
 memchr = "=2.8.3"
+serde_path_to_error = "=0.1.20"
 
 # Its library uses none of them: it's here to build them, which Cargo
 # 1.100's lint of an unused dependency would warn of each time.

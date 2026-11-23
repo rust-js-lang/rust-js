@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "json-unknown-field-never-denied",
     breaks: "a field `deny_unknown_fields` refuses is read past",
     file: "crates/rust-js-program/src/runtime/json_decoder.js",
-    find: "      const i = $jsonField(key, fields, deny && !flatten);\n",
-    replace: "      const i = $jsonField(key, fields, false);\n",
+    find: "      const [keyContent, i] = map.key().field(fields, deny && !flatten);\n",
+    replace: "      const [keyContent, i] = map.key().field(fields, false);\n",
     tests: ["test/serde.test.ts", "-t", "well formed or not"],
   },
   {

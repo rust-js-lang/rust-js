@@ -9,6 +9,27 @@ class $JsonReader extends $JsonDecoder {
     this.bytes = new TextEncoder().encode(text);
     this.index = 0;
     this.remainingDepth = 128;
+    // Of a read serde_path_to_error tracks, where in the value it is, each
+    // place's segment (`$jsonPathRead`, ADR 1188); and whether it reads a
+    // key's number, whose digits are the key.
+    this.chain = undefined;
+    // Flags, not a state: a key's number read, apart from `escaped`, which each string read sets whatever's read.
+    this.keying = false;
+    this.variantText = undefined;
+  }
+
+  // A key read, as serde_path_to_error's `CaptureKey` keeps it: where the
+  // rest of the key's reading is, and its value's place.
+  captureKey(key) {
+    const chain = this.chain;
+    if (chain) chain[chain.length - 1] = key;
+  }
+
+  // A number read as a key: its digits, an integer's, are the key; a
+  // float's aren't, as serde_path_to_error keeps none of one.
+  captureNumber(n) {
+    if (this.keying && n.kind !== "f") this.captureKey(String(n.value));
+    return n;
   }
 
   // The next byte, or -1 at the end.
@@ -38,8 +59,12 @@ class $JsonReader extends $JsonDecoder {
 
   // `fix_position`: a visitor's message has no place, until it gets where
   // the reader is.
+  // The same error placed, at the place in the value it was made.
   fixPosition(e) {
-    return e instanceof $JsonError && e.line === 0 ? this.error(e.message) : e;
+    if (!(e instanceof $JsonError) || e.line !== 0) return e;
+    const fixed = this.error(e.message);
+    fixed.path = e.path;
+    return fixed;
   }
 
   end() {
@@ -104,9 +129,9 @@ class $JsonReader extends $JsonDecoder {
     try {
       if (peek === 45) {
         this.index++;
-        return visit(this.parseInteger(false));
+        return visit(this.captureNumber(this.parseInteger(false)));
       }
-      if (peek >= 48 && peek <= 57) return visit(this.parseInteger(true));
+      if (peek >= 48 && peek <= 57) return visit(this.captureNumber(this.parseInteger(true)));
       throw this.peekInvalidType(expected);
     } catch (e) {
       throw this.fixPosition(e);
@@ -136,6 +161,7 @@ class $JsonReader extends $JsonDecoder {
     const digits = BigInt(new TextDecoder().decode(this.bytes.subarray(start, this.index)));
     const value = negative ? -digits : digits;
     if (value < min || value > max) throw this.error("number out of range");
+    this.captureNumber({ kind: "i", value });
     if (nonZero && value === 0n) throw this.error(`invalid value: integer \`0\`, expected a nonzero ${type}`);
     return value;
   }
@@ -752,9 +778,15 @@ class $JsonReader extends $JsonDecoder {
   // `deserialize_enum`: `"Name"`, or `{"Name": ..}`. `visit` gets the
   // variant's name and a `$JsonVariant` to read what it holds. `enumName` is
   // the enum's, for a flattened one.
+  // Of a read serde_path_to_error tracks, what a variant holds is at its
+  // name's text, `shape.circle`; its name's own mistakes the enum's.
   enum(enumName, variants, visit, other) {
     const peek = this.parseWhitespace();
-    if (peek === 34) return visit(this.identifier(variants, other), new $JsonVariant(this, true));
+    if (peek === 34) {
+      const name = this.identifier(variants, other);
+      const variant = new $JsonVariant(this, true);
+      return this.chain ? this.within(() => visit(name, variant)) : visit(name, variant);
+    }
     if (peek !== 123) throw this.peekError(peek === -1 ? "EOF while parsing a value" : "expected value");
     if (--this.remainingDepth === 0) throw this.peekError("recursion limit exceeded");
     this.index++;
@@ -768,7 +800,8 @@ class $JsonReader extends $JsonDecoder {
       }
       const name = this.identifier(variants, other);
       this.parseObjectColon();
-      value = visit(name, new $JsonVariant(this, false));
+      const variant = new $JsonVariant(this, false);
+      value = this.chain ? this.within(() => visit(name, variant)) : visit(name, variant);
     } finally {
       this.remainingDepth++;
     }
@@ -780,8 +813,19 @@ class $JsonReader extends $JsonDecoder {
     throw this.error(c === -1 ? "EOF while parsing an object" : "expected value");
   }
 
-  // A variant's name, from a string.
+  // `read()` at the variant just named, of a read serde_path_to_error
+  // tracks.
+  within(read) {
+    this.chain.push({ variant: this.variantText });
+    try {
+      return read();
+    } finally {
+      this.chain.pop();
+    }
+  }
+
+  // A variant's name, from a string, whose text a tracked read's place is.
   identifier(variants, other) {
-    return this.deserializeStr("variant identifier", (name) => $jsonVariantNamed(name, variants, other));
+    return this.deserializeStr("variant identifier", (name) => $jsonVariantNamed((this.variantText = name), variants, other));
   }
 }

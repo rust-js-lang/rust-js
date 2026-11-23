@@ -455,7 +455,7 @@ for (const [name, source, message, crate] of [
   // A method of serde_json's named as one of its free functions is no
   // `serde_json::from_str` (#1541), and `#[serde(remote = ..)]`'s inherent
   // functions no codec reads: each refused, where the compiler panicked.
-  ["serde_json's Deserializer::from_str", 'use serde::Deserialize;\npub fn f() -> bool { let mut de = serde_json::Deserializer::from_str("[1,2]"); Vec::<i32>::deserialize(&mut de).is_ok() }', "calling `serde_json::Deserializer::<serde_json::de::StrRead<'a>>::from_str`", "serde"],
+  ["serde_json's reader's end", 'pub fn f() -> bool { serde_json::Deserializer::from_str("[1,2]").end().is_ok() }', "calling `serde_json::Deserializer::<R>::end` (#1626)", "serde"],
   ["a remote type's stand-in", '#[derive(serde::Serialize)] #[serde(remote = "Remote")] pub struct Def { a: i32 }\npub struct Remote { pub a: i32 }\n#[derive(serde::Serialize)] pub struct Holder { #[serde(with = "Def")] pub r: Remote }\npub fn f(h: &Holder) -> String { serde_json::to_string(h).unwrap() }', "`#[serde(remote = ..)]` (#1615)", "serde"],
   ["reading a BinaryHeap", 'pub fn f(s: &str) -> bool { serde_json::from_str::<std::collections::BinaryHeap<u32>>(s).is_ok() }', "deserializing", "serde"],
   ["unsupported Value method", 'pub fn f(v: &mut serde_json::Value) { v.sort_all_objects() }', "`Value::sort_all_objects`", "serde"],
