@@ -82,10 +82,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // so (#2130).
         let back = self.knows_its_back(output) || self.may_step_from_its_back(output, iter_ty);
         let hint = !back && self.made_knowing_its_hint(output);
-        let copied = self.cloned_apart_adapter(
+        self.cloned_apart_adapter(
             (name, vec![it], &[Role::It]),
             (vec![iter_ty], output),
-            lent,
+            (lent, back),
             span,
             made,
             |cx, parts| {
@@ -94,14 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let source = cx.closing(source, iter_ty, span)?;
                 cx.copied_items_knowing(source, item, output, (back, hint), span)
             },
-        )?;
-        // Made knowing its back where it's to know it, as `copied_items`
-        // makes what it holds: said so of its maker's call, which
-        // `as_double_ended` reads, as no form shows it (#2130).
-        Ok(match back {
-            true => crate::iterators::made_knowing_its_back(copied),
-            false => copied,
-        })
+        )
     }
 
     /// Whether a copy of type `ty` of a `source`, the crate's own iterator
@@ -136,20 +129,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`given_stepped`): a `copied()`'s and a `cloned()`'s alike, so a
     /// clone of either stepped from its back steps what it's made of
     /// (#2130, #2137).
-    fn given_knowing_its_back(&mut self, it: Expr, source: Ty<'tcx>, back: bool, span: Span) -> R<Expr> {
+    /// Whether it was made so, too.
+    fn given_knowing_its_back(&mut self, it: Expr, source: Ty<'tcx>, back: bool, span: Span) -> R<(Expr, bool)> {
         let double_ended = ty::TraitRef::new(
             self.tcx,
             self.recognition().double_ended_iterator().expect("std's"),
             [source.peel_refs()],
         );
         match back && self.evidence_for(double_ended).is_some() {
-            true => self.as_double_ended(it, source.peel_refs(), span),
-            false => Ok(it),
+            true => Ok((self.as_double_ended(it, source.peel_refs(), span)?, true)),
+            false => Ok((it, false)),
         }
     }
 
     /// `copied_items`, made knowing its back where `back` says, or its hint
-    /// alone where `hint` does.
+    /// alone where `hint` does: marked so where it's made knowing its back,
+    /// its maker's one mark of it, which what's asked of it past here reads,
+    /// a variable's that holds it (#851, #2069).
     fn copied_items_knowing(
         &mut self,
         it: Expr,
@@ -158,6 +154,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (back, hint): (bool, bool),
         span: Span,
     ) -> R<Expr> {
+        let (copied, knows) = self.copied_items_made(it, item, output, (back, hint), span)?;
+        Ok(match knows {
+            true => crate::iterators::made_knowing_its_back(copied),
+            false => copied,
+        })
+    }
+
+    /// `copied_items_knowing`'s copy, and whether it was made knowing its
+    /// back.
+    fn copied_items_made(
+        &mut self,
+        it: Expr,
+        item: Ty<'tcx>,
+        output: Ty<'tcx>,
+        (back, hint): (bool, bool),
+        span: Span,
+    ) -> R<(Expr, bool)> {
         // Of one that knows its length and not its back, the map that
         // copies its items would lose it; none reaches here: a copy that
         // knows its length is of what knows its back too (#1979).
@@ -175,18 +188,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.needs_clone(item.peel_refs())
             && !self.asks_as_its_source(output, source)
         {
-            let it = self.given_knowing_its_back(it, source, back, span)?;
-            return Ok(Expr::call_helper("$cloned", vec![it]));
+            let (it, knows) = self.given_knowing_its_back(it, source, back, span)?;
+            return Ok((Expr::call_helper("$cloned", vec![it]), knows));
         }
         // A `copied()`'s, `$copiedGiven` (`copied_given`, #2130), of its
         // source made knowing its back where it's to know it.
         if let Some(source) = source.filter(|_| self.copied_given(output)) {
-            let it = self.given_knowing_its_back(it, source, back, span)?;
-            return Ok(Expr::call_helper("$copiedGiven", vec![it]));
+            let (it, knows) = self.given_knowing_its_back(it, source, back, span)?;
+            return Ok((Expr::call_helper("$copiedGiven", vec![it]), knows));
         }
-        let it = match source {
-            Some(source) if back => self.as_double_ended(it, source.peel_refs(), span)?,
-            _ => it,
+        let (it, knows) = match source {
+            Some(source) if back => (self.as_double_ended(it, source.peel_refs(), span)?, true),
+            _ => (it, false),
         };
         let x = self.fresh(Role::Item);
         let mut body = Vec::new();
@@ -209,7 +222,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let as_its_source = source.is_none_or(|source| self.asks_as_its_source(output, source));
         let recognition = self.recognition();
         if body.is_empty() && matches!(&copy.kind, js::ExprKind::Var(v) if *v == x) && as_its_source {
-            return Ok(it);
+            return Ok((it, knows));
         }
         // A `copied()` that reaches the crate's own `nth`, `last` or `count`,
         // which std's `Copied` asks of its source, `$copied`, which does
@@ -220,10 +233,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let copied = crate::recognition::copied_source(self.tcx, output).is_some() && passes_on;
         body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
         let copy = Expr::arrow(vec![x.into()], body);
-        Ok(match (copied, ends) {
+        let made = match (copied, ends) {
             (true, _) => Expr::call_helper("$copied", vec![it, copy]),
             (false, true) => Expr::call_helper("$mapEnds", vec![it, copy]),
             (false, false) => Expr::builtin(it, "map", vec![copy]),
-        })
+        };
+        Ok((made, knows))
     }
 }

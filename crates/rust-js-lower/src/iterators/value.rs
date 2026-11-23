@@ -694,7 +694,7 @@ pub fn knows_its_given_length(e: &Expr) -> bool {
 /// `e`, a `rev()` its maker made knowing its back (`reversed_knowing`),
 /// marked so: what's asked of it past its maker reads the mark, not the
 /// type's set (back_stepped, ADR 0545).
-pub fn made_knowing_its_back(mut e: Expr) -> Expr {
+pub(crate) fn made_knowing_its_back(mut e: Expr) -> Expr {
     e.facts = e.facts.with(Known::IterKnowsBack);
     e
 }
@@ -718,6 +718,26 @@ pub fn held_by_its_owner(e: Expr) -> Expr {
     match in_place {
         true => held.in_place(),
         false => held,
+    }
+}
+
+/// `$holding(adapter, drop[, moved])`, an adapter closed to drop the
+/// function it holds (`closing_function`, ADR 0991): the same iterator, so
+/// what its maker marked it knowing, its back (`made_knowing_its_back`) and
+/// its length (`made_knowing_its_length`), is kept on it (#851, #2069).
+pub fn holding(adapter: Expr, drop: Expr, moved: Option<Expr>) -> Expr {
+    let (knows_back, knows_length) = (
+        was_made_knowing_its_back(&adapter),
+        was_made_knowing_its_length(&adapter),
+    );
+    let holding = Expr::call_helper("$holding", [adapter, drop].into_iter().chain(moved).collect());
+    let holding = match knows_back {
+        true => made_knowing_its_back(holding),
+        false => holding,
+    };
+    match knows_length {
+        true => made_knowing_its_length(holding),
+        false => holding,
     }
 }
 

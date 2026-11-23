@@ -382,7 +382,12 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         let adapter = self.cloned_apart_adapter(
             (name.as_str(), parts, names),
             (vec![receiver_ty, other_ty], output),
-            lent,
+            // Made knowing its back where it's stepped from it, each part
+            // made so below.
+            (
+                lent,
+                back && matches!(parted, Parted::Map | Parted::Filter | Parted::Chain),
+            ),
             span,
             made,
             |cx, parts| {
@@ -499,18 +504,15 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     ) -> R<Expr> {
         let mut body = Vec::new();
         self.drop_value(f, function, span, &mut body)?;
-        let knows_length = rust_js_lower::iterators::was_made_knowing_its_length(&adapter);
-        let mut args = vec![adapter, Expr::arrow(Vec::new(), body)];
         let moved =
             (self.recognition().held_function_folded(ty)).and_then(rust_js_lower::recognition::HeldFolded::moved);
-        args.extend(moved.map(Expr::str));
-        let holding = Expr::call_helper("$holding", args);
-        // Made knowing its length, as its adapter is, which a variable that
-        // holds it keeps (#851).
-        Ok(match knows_length {
-            true => rust_js_lower::iterators::made_knowing_its_length(holding),
-            false => holding,
-        })
+        // Made knowing what its adapter is, which a variable that holds it
+        // keeps (#851).
+        Ok(rust_js_lower::iterators::holding(
+            adapter,
+            Expr::arrow(Vec::new(), body),
+            moved.map(Expr::str),
+        ))
     }
 
     /// A std call of `def_id`, `known`, that takes an iterator by value and

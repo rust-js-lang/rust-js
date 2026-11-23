@@ -48,29 +48,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         counted
     }
 
-    /// Whether `ty` is an adapter whose maker makes it knowing its back
-    /// where it's stepped so (#851): a map's, a filter's, a `filter_map`'s,
-    /// an `inspect`'s, a chain's, a copy's, an enumeration's, a flatten's or a
-    /// `rev()`'s, so a variable or a field that holds one is marked by it
-    /// (`structure.rs`, `places.rs`). Not a zip's, a `skip(n)`'s, a
-    /// `take(n)`'s nor a `step_by(n)`'s, whose maker makes none so: what
-    /// steps it from its back makes it so where it's made, `$zipEnds`,
-    /// `$taking`, `$skipping`, `$stepByEnds` (ADR 0542), or it's std's struct
-    /// where MIR holds it (#718); nor the crate's own iterator.
-    pub fn made_knowing_its_back_by_its_maker(&self, ty: ty::Ty<'tcx>) -> bool {
-        use crate::recognition as r;
-        r::mapped_source(self.tcx, ty).is_some()
-            || r::filtered_source(self.tcx, ty).is_some()
-            || r::filter_mapped_source(self.tcx, ty).is_some()
-            || r::inspected_source(self.tcx, ty).is_some()
-            || r::chained_sources(self.tcx, ty).is_some()
-            || r::copied_source(self.tcx, ty).is_some()
-            || r::cloned_source(self.tcx, ty).is_some()
-            || r::enumerated_source(self.tcx, ty).is_some()
-            || r::flattened_source(self.tcx, ty).is_some()
-            || r::reversed_source(self.tcx, ty).is_some()
-    }
-
     /// What the crate's later uses ask of `local`'s value, of the body
     /// being lowered, by its maker's MIR identity (`BackStepped::asked_of`):
     /// its back and its length, the one answer of each, which its maker

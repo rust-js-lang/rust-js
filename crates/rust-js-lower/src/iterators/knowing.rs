@@ -746,6 +746,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (lent && steps.iter().all(|&step| wrapper.passes(step) == Passed::Own)).then_some(held)
     }
 
+    /// `value`, an adapter of type `ty` its maker makes where the crate
+    /// steps it from its back, made knowing its back (`as_double_ended`) and
+    /// marked so (`made_knowing_its_back`), so what's asked of it past its
+    /// maker, a variable's that holds it, reads the mark (#851): the maker
+    /// marks what it makes, never what's told its type (#2069).
+    pub fn made_double_ended(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+        self.as_double_ended(value, ty, span).map(made_knowing_its_back)
+    }
+
     pub fn as_double_ended(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
         // A `rev()` made in place, knowing its back where it's made, as its
         // maker marked it (`made_knowing_its_back`): itself, wherever MIR

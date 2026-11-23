@@ -1955,3 +1955,77 @@ Held by `test/corpus/enumerate_count_of_an_iterator_stepped_from_its_back.rs`,
 against native Rust: its snapshot holds a held `map` of `Count` moved into
 `Own`, beside another of its type, std's compiled struct. Mutation
 `stepped-field-of-any-instance`.
+
+## Amendment: the maker marks what it makes, nothing marks by type (#2069)
+
+Two places answered one question, whether an adapter written to a variable
+the crate steps from its back was made knowing its back.
+`made_knowing_its_back_by_its_maker` answered from a list of adapter types
+(a map, a filter, a `filter_map`, an `inspect`, a chain, a copy, a clone,
+an enumeration, a flatten, a `rev()`). For a std adapter method's value
+written to such a variable, `structure.rs` marked the value
+`Known::IterKnowsBack` because its type was on that list. `as_double_ended`
+then trusted the mark and returned the value unchanged. Each maker decided
+the same question again under its own conditions, and the arms of
+`back_kept` decide by the receiver's value (`has_a_back`, what
+`given_stepped` gives, `is_its_source`), not by its type. Where an arm made
+no back for a source the list covered, the mark promised a back that wasn't
+there: #2068's copy of a library's iterator, a `TypeError`. A type predicate
+asked by both sides would still let the mark promise what an arm's fallback
+for some value doesn't make, so the mark now comes only from the code that
+made the form:
+
+- `back_kept`'s arms say whether what they make knows its back
+  (`BackKept::Held`'s flag): a copy always; a map, a filter and an
+  enumeration where their source was made knowing it, or already had it
+  (`has_a_back`); a counted `skip(n)` or `take(n)` always; a hinted one
+  never. `back_kept` marks once, at its end.
+- `copied_items` marks a copy it made knowing its back: of its source made
+  so (`as_double_ended`), or of what generic code was given, where its
+  `DoubleEndedIterator` evidence gave it (`given_knowing_its_back`).
+- The IterComb route (a flatten, a `flat_map`, an `inspect`, a
+  `filter_map`, a chain, a zip, made where the crate steps it from its
+  back) asks `made_double_ended`: `as_double_ended`, which makes it knowing
+  its back or refuses, and the mark.
+- An adapter cloned apart (`cloned_apart_adapter`) is marked where its
+  maker says its `build` made it knowing its back: a map, a filter or a
+  chain stepped from its back, and a copy's `back`. `makeMap(..)` shows no
+  form.
+- `$holding`, which closes an adapter to drop its function, keeps its
+  adapter's marks (`iterators::holding`, the one constructor of the form
+  `held_by_holding` reads), as `$held` does.
+- A `rev()` marked its own result already (`reversed_knowing`).
+
+`made_knowing_its_back` is `pub(crate)` in rust-js-lower, so rust-js-mir
+can read the mark (`was_made_knowing_its_back`) and never write it. The
+list and `structure.rs`'s block are gone. What's left unmarked at a former
+mark is a value whose back its type gives, which what reads it answers by
+type: an array's `$iter` copied as its source, or a copy of a type
+parameter given as a JS iterator that knows its back (`knows_its_back`).
+Byte-identical: every corpus snapshot is as it was. With the mark
+instrumented, the corpus reached it 1,071 times, and in 163 of them the
+value's form couldn't show its back, so a mark read off the form is no
+substitute. No live wrong answer was found in 20 probes of the crate's own
+iterator under each listed adapter.
+
+Held by `test/corpus/adapters_marked_knowing_their_backs_by_their_makers.rs`,
+against native Rust: each listed adapter of the crate's own iterator, and
+of a type parameter's given the crate's iterator and an array's, held in a
+variable and stepped from its back; of an array's items, a map, a filter
+and an `inspect` holding a function with a destructor, and a map, a filter
+and a chain cloned apart. Mutations `back-kept-unmarked`,
+`copied-items-unmarked` and `made-double-ended-unmarked` are caught.
+`counted-made-knowing-unmarked`, `given-enumeration-unclosed`,
+`map-of-mut-closed`, `copied-source-unknowing`, `copied-given-as-it-is`,
+`given-cloned-backless`, `held-function-unclosed`, `holding-unmoved` and
+`holding-loses-its-length-mark` are retargeted to the new lines. Two marks'
+mutations survive the whole corpus and aren't kept: the mark a clone-apart
+`makeMap(..)` or `makeChain(..)` is given, and the one `$holding` keeps of
+its adapter. Each is truthful, the same mark its maker writes everywhere
+else, but every variable that holds such a value is read today by what its
+type says (`has_a_back`'s), as the list's mark of it was before. They stay
+so that no maker's value lacks what it was made knowing. The mutations of
+the list and of `structure.rs`' mark (`filter-stepped-by-its-type`,
+`chain-stepped-by-its-type`, `lent-adapter-unmarked`,
+`chain-made-unmarked`) are retired with their code. Their cases now catch
+the makers' marks instead.

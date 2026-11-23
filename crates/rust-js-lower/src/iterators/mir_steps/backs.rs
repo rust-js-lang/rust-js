@@ -176,12 +176,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// writes the adapter of, and which its clone, `$cloning`'s, calls again
     /// with a clone of each, as a closure cloned apart is (ADR 0522). Its
     /// sources' positions are all its state, a JS iterator helper's, so a
-    /// clone of it is where it is.
+    /// clone of it is where it is. Where `back` says what `build` makes
+    /// knows its back, marked so, as no form of `makeMap(..)` shows it (#2130,
+    /// #2069).
     pub fn cloned_apart_adapter(
         &mut self,
         (name, parts, names): (&str, Vec<Expr>, &[Role]),
         (part_tys, output): (Vec<Ty<'tcx>>, Ty<'tcx>),
-        lent: bool,
+        (lent, back): (bool, bool),
         span: Span,
         made: &mut Vec<Stmt>,
         build: impl FnOnce(&mut Self, Vec<Expr>) -> R<Expr>,
@@ -225,7 +227,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             vec![StmtKind::Return(Some(carried)).at(js::Span::NONE)],
         );
         made.push(StmtKind::Let(make.clone(), Some(maker)).at(self.js_span(span)));
-        Ok(Expr::call(Expr::var(&make), parts))
+        let adapter = Expr::call(Expr::var(&make), parts);
+        Ok(match back {
+            true => crate::iterators::made_knowing_its_back(adapter),
+            false => adapter,
+        })
     }
 
     /// Whether `next_back()` of an iterator of type `iter_ty` is `$nextBack`'s:
@@ -254,10 +260,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(kept) = self.back_kept_source(method, receiver, (iter_ty, output, held), span)? else {
             return Ok(None);
         };
-        let (it, over) = match kept {
+        let (it, over, back) = match kept {
             // The one exception: `by_ref()`'s, lent, which its owner drops.
             BackKept::Lent(it) => return Ok(Some(it)),
-            BackKept::Held(it, over) => (self.closing(it, held, span)?, over),
+            BackKept::Held(it, over, back) => (self.closing(it, held, span)?, over, back),
         };
         let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));
         // Its items' drop, which a `skip(n)`, a `take(n)` or a filter drops
@@ -268,7 +274,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Ok(given)
         };
-        Ok(Some(match over {
+        let made = match over {
             Over::Copy => it,
             Over::Map { len } => {
                 let f = self.unary_callback(values.next().expect("the function"), own);
@@ -290,14 +296,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // it asks there, a crate's that reads a `Vec`'s capacity
                 // (#1317), `knows_its_length_of` answers of a `take` or a
                 // `skip` kept over an array's items made knowing its back.
-                let made = Expr::call_helper(if skip { "$skipping" } else { "$taking" }, given);
-                crate::iterators::made_knowing_its_back(made)
+                Expr::call_helper(if skip { "$skipping" } else { "$taking" }, given)
             }
             Over::Filter => {
                 let p = self.unary_callback(values.next().expect("the test"), own);
                 let given = dropping(self, vec![it, p])?;
                 Expr::call_helper("$filterEnds", given)
             }
+        };
+        // Made knowing its back here, so marked: what's asked of it past its
+        // maker, a variable's that holds it, reads the mark (#851, #2069).
+        Ok(Some(match back {
+            true => crate::iterators::made_knowing_its_back(made),
+            false => made,
         }))
     }
 
@@ -339,7 +350,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // (`knowing_held`), not the `next` alone its dictionary
                 // has (#778). Of the crate's own iterator, or a library's,
                 // its own `next_back` (#2068).
-                BackKept::Held(self.as_double_ended(receiver.clone(), iter_ty, span)?, Over::Copy)
+                BackKept::Held(self.as_double_ended(receiver.clone(), iter_ty, span)?, Over::Copy, true)
             }
             // A map of one that knows its length, too (ADR 0456).
             // Of a type parameter given as it is, of the JS iterator made of
@@ -369,7 +380,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     None => receiver.clone(),
                 };
-                BackKept::Held(it, Over::Map { len })
+                BackKept::Held(it, Over::Map { len }, back)
             }
             // An enumeration of one, its index from the back where it is
             // (ADR 0528), made of a source as capable as its type is, a
@@ -412,11 +423,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // which `Enumerate::next_back` counts by: a map of a
                     // range made for its back alone (#2052).
                     None if self.stepped_from_its_back(output) => {
-                        self.as_exact_size(receiver.clone(), iter_ty, true, span)?
+                        let it = self.as_exact_size(receiver.clone(), iter_ty, true, span)?;
+                        return Ok(Some(BackKept::Held(it, Over::Enumerate, true)));
                     }
-                    None => receiver.clone(),
+                    None => {
+                        let back = back && self.has_a_back(iter_ty, receiver);
+                        return Ok(Some(BackKept::Held(receiver.clone(), Over::Enumerate, back)));
+                    }
                 };
-                BackKept::Held(it, Over::Enumerate)
+                BackKept::Held(it, Over::Enumerate, back)
             }
             // A `skip(n)` or a `take(n)` the crate steps from its back, held
             // where it's given or a chain's side, which MIR holds in a
@@ -435,7 +450,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `$given(it, IIterator)`, not the range it may be (#1240).
                 let it = self.as_js_iterator(receiver.clone(), iter_ty, span)?;
                 let skip = method == Some(IterMethod::Skip);
-                BackKept::Held(it, Over::Hinted { skip })
+                BackKept::Held(it, Over::Hinted { skip }, false)
             }
             // And one whose length is asked, counted, of a map's values say,
             // where a crate that reads a `Vec`'s capacity grows one by it
@@ -445,7 +460,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let skip = method == Some(IterMethod::Skip);
                 let it = self.as_exact_size(receiver.clone(), iter_ty, true, span)?;
-                BackKept::Held(it, Over::Counted { skip })
+                BackKept::Held(it, Over::Counted { skip }, true)
             }
             // A filter of one (ADR 0526), given its items' drop, of items with
             // a destructor, which drops each it doesn't keep as it passes it
@@ -467,7 +482,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     None => receiver.clone(),
                 };
-                BackKept::Held(it, Over::Filter)
+                BackKept::Held(it, Over::Filter, back)
             }
             _ => return Ok(None),
         }))
@@ -893,7 +908,11 @@ fn given_by_a_call(e: &Expr) -> bool {
 /// close, then make `back_kept`'s adapter of.
 enum BackKept {
     Lent(Expr),
-    Held(Expr, Over),
+    /// The source to close, what's made of it, and whether that knows its
+    /// back: the source was made knowing it here, or had it already
+    /// (`has_a_back`), so `back_kept` marks what it makes so, the one mark of
+    /// it (#2069).
+    Held(Expr, Over, bool),
 }
 
 /// What `back_kept` makes of a source it's closed: a copy's, itself; a

@@ -220,8 +220,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `map(f)` of a function with a destructor isn't made closing, so its function is never dropped",
     file: "crates/rust-js-mir/src/iter.rs",
-    find: '        let holding = Expr::call_helper("$holding", args);\n',
-    replace: "        let holding = args.swap_remove(0);\n",
+    find: "        Ok(rust_js_lower::iterators::holding(\n            adapter,\n            Expr::arrow(Vec::new(), body),\n            moved.map(Expr::str),\n        ))\n",
+    replace: "        let _ = (body, moved);\n        Ok(adapter)\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -497,8 +497,8 @@ export const mutations: Mutation[] = [
     name: "holding-unmoved",
     breaks: "an adapter holding a function is made with no `moved`, so a fold drops its function after what it steps (#710)",
     file: "crates/rust-js-mir/src/iter.rs",
-    find: "        args.extend(moved.map(Expr::str));\n",
-    replace: "        let _ = moved;\n",
+    find: "            moved.map(Expr::str),\n        ))\n",
+    replace: "            moved.map(Expr::str).filter(|_| false),\n        ))\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
   {
@@ -646,14 +646,6 @@ export const mutations: Mutation[] = [
     find: "                (made, into)\n",
     replace: "                (if false { made } else { other }, into)\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_cloned_apart_of_a_collection.rs$"],
-  },
-  {
-    name: "holding-loses-its-length-mark",
-    breaks: "`$holding(adapter, drop)` of a map made knowing its length doesn't keep its mark, so a range's map whose closure drops, held, read by index by a zip, is refused as an `ExactSizeIterator` (#851)",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "        Ok(match knows_length {\n",
-    replace: "        Ok(match false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^zip_by_index_of_holding_maps.rs$"],
   },
   {
     name: "cloned-chain-sides-backless",

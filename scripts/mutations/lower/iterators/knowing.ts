@@ -952,4 +952,14 @@ export const mutations: Mutation[] = [
     replace: "            ty::Alias(..) => true,\n",
     tests: ["test/associated-iterator-matrix.test.ts"],
   },
+  {
+    name: "made-double-ended-unmarked",
+    breaks:
+      "a flatten, an `inspect`, a `filter_map` or a chain made knowing its back where it's made (`made_double_ended`) isn't marked so, so a variable that holds it, which shows no form, is made knowing its back again where it's stepped, or refused (#2069)",
+    file: "crates/rust-js-lower/src/iterators/knowing.rs",
+    find: "        self.as_double_ended(value, ty, span).map(made_knowing_its_back)\n",
+    replace: "        self.as_double_ended(value, ty, span)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(adapters_marked_knowing_their_backs_by_their_makers|generic_chains_cloned_by_their_instances|generic_map_beside_a_cloned_map|generic_map_of_pub_code_beside_a_cloned_map|held_beneath_adapters_from_its_back|cloned_of_a_chain_stepped_from_its_back|chain_stepped_from_its_back_elsewhere|chain_under_a_held_map_from_its_back|chain_of_adapters_stepped_from_its_back|chain_sides_own_steps|rev_chain|array_cloned_stepped_from_its_back|cloned_items_from_both_ends|copied_given_to_generic_backs|copied_skip_take_and_filter_stepped_from_back|adapters_given_to_generic_backs|map_ends_size_hint|back_folds_of_sources_made_knowing_their_back|consumer_drops_what_is_left|adapters_own_work_that_panics).rs$"],
+    snapshots: true,
+  },
 ];

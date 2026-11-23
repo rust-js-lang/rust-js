@@ -247,4 +247,12 @@ export const mutations: Mutation[] = [
     replace: '        (js::ExprKind::Member(source, method), [f]) if method == "mapped" => Some((source, f)),\n',
     tests: ["test/corpus.test.ts", "-t", "^len_made_in_place.rs$"],
   },
+  {
+    name: "holding-loses-its-length-mark",
+    breaks: "`$holding(adapter, drop)` of a map made knowing its length doesn't keep its mark, so a range's map whose closure drops, held, read by index by a zip, is refused as an `ExactSizeIterator` (#851)",
+    file: "crates/rust-js-lower/src/iterators/value.rs",
+    find: "        true => made_knowing_its_length(holding),\n",
+    replace: "        true => holding,\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_by_index_of_holding_maps.rs$"],
+  },
 ];

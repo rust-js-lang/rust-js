@@ -659,34 +659,6 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                     (Value::Expr(e), Some((def_id, _))) => Value::Expr(self.made_by(def_id, *fn_span, e)),
                     (value, _) => value,
                 };
-                // An adapter given to what steps it from its back, made knowing
-                // it by its maker, which asked the same fact: marked so, the
-                // mark carried by its local, which what's asked of it reads
-                // where its type says nothing of its back (#851).
-                // Of std's own adapter methods alone, whose makers ask it, not
-                // what a function gives, nor std's compiled struct, which no
-                // maker makes knowing it.
-                // What a function or a closure of the crate's makes it into,
-                // made knowing its back in its return place, is made so by its
-                // maker, `back_stepped`'s `asked_of`, already (#851, #1979).
-                let callee = fn_def(func.ty(&state.body.local_decls, self.tcx)).map(|(def_id, _)| def_id);
-                let value = match (value, into) {
-                    (Value::Expr(e), Some((local, made)))
-                        if self.local_stepped_from_its_back(local).is_some()
-                            && self.made_knowing_its_back_by_its_maker(made)
-                            && callee.is_some_and(|callee| {
-                                let iterator = rust_js_lower::recognition::std_item(
-                                    self.tcx,
-                                    rust_js_lower::recognition::StdItem::Iterator,
-                                );
-                                self.tcx.trait_of_assoc(callee) == Some(iterator)
-                            })
-                            && !self.compiled_struct(made, &e) =>
-                    {
-                        Value::Expr(rust_js_lower::iterators::made_knowing_its_back(e))
-                    }
-                    (value, _) => value,
-                };
                 // A throwing function's result, a throwing call's, is the
                 // call's value: its throw goes on, to the throwing
                 // function's caller's `try` (ADR 0644).

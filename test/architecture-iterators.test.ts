@@ -143,7 +143,8 @@ test("whether an iterator's steps may panic is steps_may_panic's alone", () => {
 });
 
 // An adapter that holds a function with a destructor is `$holding(adapter,
-// drop, moved)` alone, which `closing_function` makes, so its function drops
+// drop, moved)` alone, which `closing_function` makes by `iterators::holding`,
+// the form's one writer, which keeps its adapter's marks (#2069), so its function drops
 // where std's fold drops it (#710): `$closing(adapter, (it) => { it.return();
 // drop f })`, the form it replaced, dropped it after what a `take` left
 // wherever a fold by value moved it. No lowering writes that arrow, and no
@@ -151,8 +152,9 @@ test("whether an iterator's steps may panic is steps_may_panic's alone", () => {
 test("an adapter that holds a function is $holding alone", () => {
   const lowering = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"));
   const making = lowering.filter((file) => read(file).includes('"$holding"'));
-  expect(making).toEqual(["crates/rust-js-lower/src/iterators.rs", "crates/rust-js-mir/src/iter.rs"]);
-  expect(read("crates/rust-js-mir/src/iter.rs")).toContain('let holding = Expr::call_helper("$holding", args);');
+  expect(making).toEqual(["crates/rust-js-lower/src/iterators/value.rs", "crates/rust-js-lower/src/iterators.rs"]);
+  expect(read("crates/rust-js-lower/src/iterators/value.rs")).toContain('let holding = Expr::call_helper("$holding", [adapter, drop].into_iter().chain(moved).collect());');
+  expect(read("crates/rust-js-mir/src/iter.rs")).toContain("rust_js_lower::iterators::holding(");
   expect(lowering.filter((file) => read(file).includes('Expr::arrow(vec!["it".into()]'))).toEqual([]);
   const old = /\(it\) => \{\s*it\.return\(\);/;
   expect(old.test("$closing(take.map(f), (it) => {\n    it.return();\n    drop(g);\n  })")).toBe(true);
@@ -908,7 +910,6 @@ test("whether a copy is its source is asked of is_its_source alone", () => {
     "crates/rust-js-lower/src/analysis/hint_asked.rs": [1, "whether its hint is asked, as a map's"],
     "crates/rust-js-lower/src/iterators/in_place_forms.rs": [1, "the std type, `Copied`, whose form made knowing its hint alone is `$copied`, a question of its type"],
     "crates/rust-js-lower/src/recognition/lengths.rs": [2, "its hint's lower bound, its source's, as a map's"],
-    "crates/rust-js-lower/src/iterators/back_facts.rs": [1, "made knowing its back by its maker, as a map is"],
   };
   const found: Record<string, [number, string]> = {};
   for (const file of [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"))) {

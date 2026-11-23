@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`back_kept`'s source, made knowing its back, is left unclosed: an `enumerate()` of a type parameter given as it is never drops it, `drop 0` and `drop 1` lost (#971), nor a map's, a filter's, an enumeration's or a hinted `skip(n)`'s source what it never gave, the crate's iterator with a destructor or a compiled `fuse()` (#223, #225, #1244), nor a `copied()` of the crate's iterator with a `Drop` taken as stepped from its back (#2152)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
-    find: "            BackKept::Held(it, over) => (self.closing(it, held, span)?, over),\n",
-    replace: "            BackKept::Held(it, over) => (it, over),\n",
+    find: "            BackKept::Held(it, over, back) => (self.closing(it, held, span)?, over, back),\n",
+    replace: "            BackKept::Held(it, over, back) => (it, over, back),\n",
     tests: ["test/corpus.test.ts", "-t", "^(iterator_named_by_another_bound|rev_lazy_drops|own_iterator_dropped_from_back|owned_items_through_fuse|own_iterator_dropped_through_adapters|skip_hinted_closes_its_source|copied_of_a_dropped_iterator_known_from_its_back).rs$"],
   },
   {
@@ -581,8 +581,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `map()` of a `by_ref()` of a type parameter's iterator that knows its back is closed to drop it, so a collect of a `take(2)` of it drops what its owner still holds, and its owner drops it again (#749)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
-    find: "            BackKept::Held(it, over) => (self.closing(it, held, span)?, over),\n",
-    replace: "            BackKept::Held(it, over) => (self.closing(it, iter_ty, span)?, over),\n",
+    find: "            BackKept::Held(it, over, back) => (self.closing(it, held, span)?, over, back),\n",
+    replace: "            BackKept::Held(it, over, back) => (self.closing(it, iter_ty, span)?, over, back),\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
   },
   {
@@ -660,8 +660,8 @@ export const mutations: Mutation[] = [
     name: "counted-made-knowing-unmarked",
     breaks: "a `skip(n)` or a `take(n)` made knowing its back by its maker isn't marked so, and a variable holding it, given to a `rev()` whose `len()` is asked, is refused (#814)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
-    find: "                crate::iterators::made_knowing_its_back(made)\n",
-    replace: "                made\n",
+    find: "                BackKept::Held(it, Over::Counted { skip }, true)\n",
+    replace: "                BackKept::Held(it, Over::Counted { skip }, false)\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_take_of_droppers_from_back.rs$"],
   },
   {
@@ -858,5 +858,15 @@ export const mutations: Mutation[] = [
     find: "        let it = self.lent_as_its_box(it, iter_ty);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_found_from_its_back_steps_the_box.rs$"],
+  },
+  {
+    name: "back-kept-unmarked",
+    breaks:
+      "what `back_kept` makes knowing its back, a map's `$mapEnds`, a filter's `$filterEnds`, an enumeration's, a copy's, isn't marked so, and with no other mark of it (the type list's is gone) a variable that holds it is made knowing its back again where it's stepped, or refused (#2069)",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
+    find: "        Ok(Some(match back {\n",
+    replace: "        Ok(Some(match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(adapters_marked_knowing_their_backs_by_their_makers|generic_chains_cloned_by_their_instances|generic_map_beside_a_cloned_map|generic_map_of_pub_code_beside_a_cloned_map|held_beneath_adapters_from_its_back|cloned_of_a_chain_stepped_from_its_back|chain_stepped_from_its_back_elsewhere|chain_under_a_held_map_from_its_back|chain_of_adapters_stepped_from_its_back|chain_sides_own_steps|rev_chain|array_cloned_stepped_from_its_back|cloned_items_from_both_ends|copied_given_to_generic_backs|copied_skip_take_and_filter_stepped_from_back|adapters_given_to_generic_backs|map_ends_size_hint|back_folds_of_sources_made_knowing_their_back|consumer_drops_what_is_left|adapters_own_work_that_panics).rs$"],
+    snapshots: true,
   },
 ];

@@ -21,16 +21,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^written_through_a_guard_or_a_reference_to_an_object.rs$"],
   },
   {
-    name: "lent-adapter-unmarked",
-    breaks:
-      "a filter made into a temporary lent to `next_back` isn't marked made knowing its back, so its step refuses it (#851)",
-    file: "crates/rust-js-mir/src/structure.rs",
-    find: "                        if self.local_stepped_from_its_back(local).is_some()\n",
-    replace: "                        if self.local_stepped_from_its_back(local) == Some(rust_js_lower::analysis::SteppedLocal::Given)\n",
-    tests: ["test/corpus.test.ts", "-t", "^(generic_chains_cloned_by_their_instances|generic_map_beside_a_cloned_map|generic_map_of_pub_code_beside_a_cloned_map).rs$"],
-    snapshots: true,
-  },
-  {
     name: "alike-arms-tested",
     breaks:
       "an untagged enum's arms that each do the same JS still test the variant, `source instanceof Document ? source.firstChild : source.firstChild`, which throws a ReferenceError in a host without the `Document` global where Rust runs on (a wrong answer, rd687)",
@@ -632,15 +622,6 @@ export const mutations: Mutation[] = [
     find: "                let mut panic = rust_js_lower::drops::cleanup(unwound, None, js_span);\n",
     replace: "                let mut panic = unwound;\n",
     tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_assert.rs$"],
-  },
-  {
-    name: "chain-made-unmarked",
-    breaks: "a value made by std's `Iterator` method the list of iterator methods lacks, a `chain`, of a local stepped from its back, isn't marked made knowing its back, so it's made so again where it's stepped (#851)",
-    file: "crates/rust-js-mir/src/structure.rs",
-    find: "                                self.tcx.trait_of_assoc(callee) == Some(iterator)\n",
-    replace: "                                self.tcx.trait_of_assoc(callee) == Some(iterator) && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^(held_beneath_adapters_from_its_back|cloned_of_a_chain_stepped_from_its_back|chain_stepped_from_its_back_elsewhere|chain_under_a_held_map_from_its_back|chain_of_adapters_stepped_from_its_back|chain_sides_own_steps|rev_chain|array_cloned_stepped_from_its_back|cloned_items_from_both_ends|copied_given_to_generic_backs|copied_skip_take_and_filter_stepped_from_back|adapters_given_to_generic_backs|map_ends_size_hint|back_folds_of_sources_made_knowing_their_back|consumer_drops_what_is_left|adapters_own_work_that_panics).rs$"],
-    snapshots: true,
   },
   {
     name: "pending-before-a-loop-dropped",
