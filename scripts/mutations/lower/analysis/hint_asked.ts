@@ -23,8 +23,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub` generic function's `extend` of a `Vec`, whose callers the crate can't see, is lost: its `capacity()` throws where std's is 32 (#1180's (3))",
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "                None => _ = asked.hinted.by_value.insert((owner, iter_ty)),\n",
-    replace: "                None => _ = asked.hinted.lost.insert((owner, iter_ty)),\n",
+    find: "                Seen::Many | Seen::Unseen => _ = asked.hinted.by_value.insert((owner, iter_ty)),\n",
+    replace: "                Seen::Many | Seen::Unseen => _ = asked.hinted.lost.insert((owner, iter_ty)),\n",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },
   {
@@ -41,8 +41,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub` generic function's `extend` of a `Vec`, whose callers the crate can't see, isn't asked of each value it's given: of `chars().skip(5)`, a capacity of 64 where std's is 44, silently (#1251)",
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "                None => _ = asked.hinted.by_value.insert((owner, iter_ty)),\n",
-    replace: "                None => {}\n",
+    find: "                Seen::Many | Seen::Unseen => _ = asked.hinted.by_value.insert((owner, iter_ty)),\n",
+    replace: "                Seen::Many | Seen::Unseen => {}\n",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },
   {
@@ -297,5 +297,14 @@ export const mutations: Mutation[] = [
     replace: "        let own = |_: &&&Body<'tcx>| declares.is_none() || declares.is_some();\n",
     tests: ["test/corpus.test.ts", "-t", "^type_parameters_spelled_alike_keep_their_own_facts.rs$"],
     snapshots: true,
+  },
+  {
+    name: "many-instances-marked-as-none",
+    breaks:
+      "generic code asking the hint of more instances than the crate lists marks none of them, so JS's own `.map` of each caller's array gives `(0, None)` where Rust's `Map` gives `(5, Some(5))` (#2406)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "                (Seen::Many, _) => match crate::instances::seen_parts_of(tcx, &callers, of, owner) {\n",
+    replace: "                (Seen::Many, made) => match (Seen::Unseen, made) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^hint_asked_of_more_instances_than_listed.rs$"],
   },
 ];

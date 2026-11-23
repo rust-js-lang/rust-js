@@ -79,12 +79,15 @@ impl<'tcx> Cloned<'tcx> {
         if !ty.has_non_region_param() {
             return None;
         }
+        // Past what it can list, or of a caller it can't see, any type
+        // (#2406).
         crate::instances::instances_of(
             tcx,
             (&self.callers, crate::instances::Fact::Shared),
             ty,
             tcx.typeck_root_def_id(owner),
         )
+        .listed_or_any()
     }
 
     /// Whether `is` holds of `ty`, made in `owner`, as one of its

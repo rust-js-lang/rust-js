@@ -617,6 +617,39 @@ pub(super) fn callers_of<'tcx>(
 /// type a generic caller makes of its own parameters, with that caller.
 type TheWay<'a, 'tcx> = (&'a mut IndexSet<(DefId, u32)>, &'a mut Made<'tcx>);
 
+/// What a type of a function's type parameters may be, of what its callers
+/// give it (`instances_of`): these types; more than `MOST_INSTANCES` of
+/// them, each a choice for each parameter, too many to list, never none
+/// (#2406); or any type, where a caller can't be seen. Each reader says
+/// what it does of each: none may take `Many` for no instance.
+#[derive(Debug)]
+pub(crate) enum Seen<'tcx> {
+    These(IndexSet<Ty<'tcx>>),
+    Many,
+    Unseen,
+}
+
+impl<'tcx> Seen<'tcx> {
+    /// These, or `None` where it may be any type, of `Many` or `Unseen`:
+    /// the answer of a reader that, past what it can list, assumes any.
+    pub(crate) fn listed_or_any(self) -> Option<IndexSet<Ty<'tcx>>> {
+        match self {
+            Seen::These(these) => Some(these),
+            Seen::Many | Seen::Unseen => None,
+        }
+    }
+}
+
+/// How `instances_in` puts what each parameter is given together: each
+/// choice for each parameter put in its place (`Product`), or each type a
+/// parameter is given, the parts of every instance, without their product
+/// (`Parts`, #2406).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Combine {
+    Product,
+    Parts,
+}
+
 /// Each type a generic caller makes of its own parameters and gives on,
 /// with that caller (#1240).
 pub(super) type Made<'tcx> = IndexSet<(DefId, Ty<'tcx>)>;
@@ -624,44 +657,51 @@ pub(super) type Made<'tcx> = IndexSet<(DefId, Ty<'tcx>)>;
 /// type kept in `made`, with the caller that makes it (#1240).
 fn given_types<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (callers, fact): (&Callers<'tcx>, Fact<'_, '_, 'tcx>),
+    (callers, fact, combine): (&Callers<'tcx>, Fact<'_, '_, 'tcx>, Combine),
     (owner, index): (DefId, u32),
     (seen, made): TheWay<'_, 'tcx>,
-) -> Option<IndexSet<Ty<'tcx>>> {
+) -> Seen<'tcx> {
     // Met again on the way to it, a caller's own: what reaches it is what
     // its other callers give, which they answer for. `seen` is the way, not
     // every parameter met: two of a type's parameters may each be given a
     // caller's one.
     if !seen.insert((owner, index)) {
-        return Some(IndexSet::default());
+        return Seen::These(IndexSet::default());
     }
-    let given = given_on_the_way(tcx, (callers, fact), (owner, index), (seen, made));
+    let given = given_on_the_way(tcx, (callers, fact, combine), (owner, index), (seen, made));
     seen.shift_remove(&(owner, index));
     given
 }
 
 fn given_on_the_way<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (callers, fact): (&Callers<'tcx>, Fact<'_, '_, 'tcx>),
+    (callers, fact, combine): (&Callers<'tcx>, Fact<'_, '_, 'tcx>, Combine),
     (owner, index): (DefId, u32),
     (seen, made): TheWay<'_, 'tcx>,
-) -> Option<IndexSet<Ty<'tcx>>> {
+) -> Seen<'tcx> {
     let mut given = IndexSet::default();
-    for giving in givings(tcx, (callers, fact), (owner, index))? {
+    let Some(givings) = givings(tcx, (callers, fact), (owner, index)) else {
+        return Seen::Unseen;
+    };
+    for giving in givings {
         let Giving::Given { caller, arg, .. } = giving else {
             // An impl's own parameter, `Fact::Called`'s alone (`on_the_way`).
-            return None;
+            return Seen::Unseen;
         };
-        match *arg.kind() {
-            ty::Param(param) => given.extend(given_types(tcx, (callers, fact), (caller, param.index), (seen, made))?),
+        let of = match *arg.kind() {
+            ty::Param(param) => given_types(tcx, (callers, fact, combine), (caller, param.index), (seen, made)),
             _ if arg.has_non_region_param() => {
                 made.insert((caller, arg));
-                given.extend(instances_in(tcx, (callers, fact), (arg, caller), (seen, made))?);
+                instances_in(tcx, (callers, fact, combine), (arg, caller), (seen, made))
             }
-            _ => _ = given.insert(arg),
+            _ => Seen::These(IndexSet::from_iter([arg])),
+        };
+        match of {
+            Seen::These(these) => given.extend(these),
+            other => return other,
         }
     }
-    Some(given)
+    Seen::These(given)
 }
 
 /// What gives a type parameter of a function a type: a naming of it, its
@@ -1020,17 +1060,17 @@ const MOST_INSTANCES: usize = 64;
 
 /// What `pointee`, which holds `owner`'s type parameters, `Slot<T>`, may be:
 /// each type its callers give each parameter put in its place, `Slot<u32>`;
-/// `None` where one's callers can't be seen (`given_types`), or past
-/// `MOST_INSTANCES` (#1009).
+/// `Unseen` where one's callers can't be seen (`given_types`), `Many` past
+/// `MOST_INSTANCES` (#1009, #2406).
 pub(super) fn instances_of<'tcx>(
     tcx: TyCtxt<'tcx>,
     (callers, fact): (&Callers<'tcx>, Fact<'_, '_, 'tcx>),
     pointee: Ty<'tcx>,
     owner: DefId,
-) -> Option<IndexSet<Ty<'tcx>>> {
+) -> Seen<'tcx> {
     instances_in(
         tcx,
-        (callers, fact),
+        (callers, fact, Combine::Product),
         (pointee, owner),
         (&mut IndexSet::default(), &mut IndexSet::default()),
     )
@@ -1046,25 +1086,47 @@ pub(super) fn seen_instances_of<'tcx>(
     callers: &Callers<'tcx>,
     pointee: Ty<'tcx>,
     owner: DefId,
-) -> (IndexSet<Ty<'tcx>>, Made<'tcx>) {
+) -> (Seen<'tcx>, Made<'tcx>) {
     let mut made = IndexSet::default();
     let instances = instances_in(
         tcx,
-        (callers, Fact::Marked),
+        (callers, Fact::Marked, Combine::Product),
         (pointee, owner),
         (&mut IndexSet::default(), &mut made),
     );
-    (instances.unwrap_or_default(), made)
+    (instances, made)
+}
+
+/// `seen_instances_of`'s parts: each type a caller the crate sees gives
+/// each of `pointee`'s parameters, and what each generic caller makes on
+/// the way, without their product, which may be `Many`: a part of every
+/// instance, so what's marked of each part is what each instance's parts
+/// are marked (#2406).
+pub(super) fn seen_parts_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    callers: &Callers<'tcx>,
+    pointee: Ty<'tcx>,
+    owner: DefId,
+) -> (Seen<'tcx>, Made<'tcx>) {
+    let mut made = IndexSet::default();
+    let parts = instances_in(
+        tcx,
+        (callers, Fact::Marked, Combine::Parts),
+        (pointee, owner),
+        (&mut IndexSet::default(), &mut made),
+    );
+    (parts, made)
 }
 
 /// Each instance of `pointee`, a type of `owner`'s type parameters, its
-/// callers give, each choice of a type for each parameter.
+/// callers give, each choice of a type for each parameter; or, of
+/// `Combine::Parts`, each type each parameter is given.
 fn instances_in<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (callers, fact): (&Callers<'tcx>, Fact<'_, '_, 'tcx>),
+    (callers, fact, combine): (&Callers<'tcx>, Fact<'_, '_, 'tcx>, Combine),
     (pointee, owner): (Ty<'tcx>, DefId),
     (seen, made): TheWay<'_, 'tcx>,
-) -> Option<IndexSet<Ty<'tcx>>> {
+) -> Seen<'tcx> {
     let mut params: Vec<u32> = (pointee.walk())
         .filter_map(|part| match *part.as_type()?.kind() {
             ty::Param(param) => Some(param.index),
@@ -1075,8 +1137,16 @@ fn instances_in<'tcx>(
     params.dedup();
     // Each choice of a type for each parameter, by its index.
     let mut choices: Vec<IndexMap<u32, Ty<'tcx>>> = vec![IndexMap::default()];
+    let mut parts = IndexSet::default();
     for index in params {
-        let given = given_types(tcx, (callers, fact), (owner, index), (seen, made))?;
+        let given = match given_types(tcx, (callers, fact, combine), (owner, index), (seen, made)) {
+            Seen::These(given) => given,
+            other => return other,
+        };
+        if combine == Combine::Parts {
+            parts.extend(given);
+            continue;
+        }
         choices = (choices.into_iter())
             .flat_map(|chosen| {
                 given.iter().map(move |&ty| {
@@ -1087,10 +1157,13 @@ fn instances_in<'tcx>(
             })
             .collect();
         if choices.len() > MOST_INSTANCES {
-            return None;
+            return Seen::Many;
         }
     }
-    Some(
+    if combine == Combine::Parts {
+        return Seen::These(parts);
+    }
+    Seen::These(
         (choices.iter())
             .map(|chosen| {
                 tcx.erase_and_anonymize_regions(pointee.fold_with(&mut ty::BottomUpFolder {

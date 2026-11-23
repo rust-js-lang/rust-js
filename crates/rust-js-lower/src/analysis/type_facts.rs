@@ -1108,7 +1108,8 @@ fn lend_offsets_asked<'tcx>(
     };
     // Of callers this crate doesn't see, a library's consumers': asked of
     // them, which they give through the manifest.
-    let instances = stored.instances(tcx, receiver, caller);
+    // Past what it can list, or unseen, each lend asked (#2406).
+    let instances = stored.instances(tcx, receiver, caller).listed_or_any();
     (lends.iter().copied())
         .filter(|&lend| {
             let Some(instances) = &instances else { return true };

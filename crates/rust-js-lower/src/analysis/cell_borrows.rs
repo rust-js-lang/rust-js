@@ -654,12 +654,14 @@ impl<'tcx> CellBorrows<'tcx> {
         let tcx = recognition.tcx;
         let instances = (crate::generic_facts::may_be_any_type(read))
             .then(|| {
+                // Past what it can list, any type, as unseen (#2406).
                 crate::instances::instances_of(
                     tcx,
                     (&self.callers, crate::instances::Fact::Shared),
                     read,
                     tcx.typeck_root_def_id(owner),
                 )
+                .listed_or_any()
             })
             .flatten();
         let may_run = match instances {

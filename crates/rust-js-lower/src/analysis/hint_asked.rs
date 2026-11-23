@@ -235,13 +235,16 @@ pub(super) fn of_crate<'tcx>(
     // crate's own hint would throw.
     if let Some(callers) = &callers {
         for (owner, iter_ty) in grown {
+            use crate::instances::Seen;
             match crate::instances::instances_of(tcx, (callers, crate::instances::Fact::Shared), iter_ty, owner) {
-                Some(instances) => {
+                Seen::These(instances) => {
                     if (instances.into_iter()).any(|instance| !recognition.given_growth_kept(instance)) {
                         asked.hinted.lost.insert((owner, iter_ty));
                     }
                 }
-                None => _ = asked.hinted.by_value.insert((owner, iter_ty)),
+                // Past what it can list too, each value asked as it grows,
+                // as of callers it can't see (#2406).
+                Seen::Many | Seen::Unseen => _ = asked.hinted.by_value.insert((owner, iter_ty)),
             }
         }
     }
@@ -253,11 +256,22 @@ pub(super) fn of_crate<'tcx>(
     // can't see may give one (#1240).
     if let Some(callers) = callers.filter(|_| !of_params.is_empty()) {
         for (owner, of) in of_params {
-            let (instances, made) = crate::instances::seen_instances_of(tcx, &callers, of, owner);
+            use crate::instances::Seen;
             // Of every caller where the crate sees them all; one it can't
             // see, a library's `pub` function's, asks each value it's
             // given as it grows, `$hintAsked` (`by_value`, #1251), so what
-            // it makes of them is marked by none (#2277).
+            // it makes of them is marked by none (#2277). Past what it can
+            // list, each type each parameter is given, the parts of every
+            // instance, marked as each instance's parts are: never none,
+            // where JS's own adapter of each would know no hint (#2406).
+            let (instances, made) = match crate::instances::seen_instances_of(tcx, &callers, of, owner) {
+                (Seen::These(instances), made) => (instances, made),
+                (Seen::Many, _) => match crate::instances::seen_parts_of(tcx, &callers, of, owner) {
+                    (Seen::These(parts), made) => (parts, made),
+                    (Seen::Many | Seen::Unseen, made) => (IndexSet::default(), made),
+                },
+                (Seen::Unseen, made) => (IndexSet::default(), made),
+            };
             let mut of_items = false;
             for instance in instances {
                 of_items |= mark_given(tcx, recognition, (owner, instance), keeps_capacity, &mut asked);

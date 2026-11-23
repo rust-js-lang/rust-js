@@ -403,3 +403,42 @@ and by a mutation of each rule. Two snapshots move: a `from_iter` that
 collects generically, which std's `Vec` collect asks the hint of, is given
 `$mapEnds`, not JS's `map`.
 
+
+## Amendment: too many instances to list is not no instance (#2406)
+
+`instances_in` stops listing a type's instances past `MOST_INSTANCES`
+(64, #1009), each choice for each parameter put in its place. It said so
+with `None`, the same answer as "a caller can't be seen".
+`seen_instances_of` turned that `None` into an empty set. So when
+generic code asked the hint of what it's given,
+`fn hint_of<I: Iterator>(it: I) { it.size_hint() }`, and had 65
+callers, none of their iterators was made knowing its hint. JS's own
+`.map` of an array's items then gave `(0, None)` where Rust's `Map` gives
+`(5, Some(5))`. Fewer than 65 callers was right. ADR 0262: the results
+change, so Rust's behaviour is kept.
+
+`instances::Seen` is now the answer: `These(types)`, `Many` (past what
+it lists, never none) or `Unseen` (any type). Each reader says what it
+does with each case:
+
+- hint_asked's `of_params`: on `Many`, `seen_parts_of`. That's each type
+  each parameter is given, and what each generic caller makes on the
+  way, without their product (`Combine::Parts`, which can't overflow).
+  Every instance's parts are among them, so marking each part marks
+  what each instance's walk would. `Unseen` marks nothing, as before
+  (the runtime's `$hintAsked`, #2277).
+- hint_asked's `grown`, clones' `as_any_instance` and its cloned types,
+  rc_counts' pointees, cell_borrows' `read_asks`, and lent.rs's
+  `addressable`, `lent_offset` and boxed payload, plus type_facts' lends:
+  `Many` as `Unseen`, any type, through `Seen::listed_or_any`. Each of
+  these was already conservative for "any type".
+- lent.rs's `known_within`: `Unseen` is offset 0 (a `pub` function's
+  consumers, as before). `Many` is refused: generic code has one JS for
+  every instance, and with too many to check that each holds its object
+  at the same offset, it is never assumed to be 0.
+
+This is held by `test/corpus/hint_asked_of_more_instances_than_listed.rs`
+(65 callers, both builds) against native Rust, and by the mutations
+`many-instances-marked-as-none` and `parts-put-together`. The
+conformance table's `| hint given |` rows, picked and batched together,
+had failed this way. They pass now.

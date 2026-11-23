@@ -711,12 +711,10 @@ pub(super) fn counted_rcs<'tcx>(
             let made = || {
                 let mut all = IndexSet::default();
                 for &owner in of {
-                    all.extend(instances_of(
-                        tcx,
-                        (callers, Fact::Counted { library }),
-                        pointee,
-                        owner?,
-                    )?);
+                    // Past what it can list, any type, as unseen (#2406).
+                    all.extend(
+                        instances_of(tcx, (callers, Fact::Counted { library }), pointee, owner?).listed_or_any()?,
+                    );
                 }
                 Some(all)
             };

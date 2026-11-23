@@ -101,8 +101,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Within::Unknown => {}
         }
         let owner = self.tcx.typeck_root_def_id(self.item);
-        let Some(instances) = self.krate.stored_places.instances(self.tcx, ty, owner) else {
-            return Ok(Some(0));
+        let instances = match self.krate.stored_places.instances(self.tcx, ty, owner) {
+            crate::instances::Seen::These(instances) => instances,
+            crate::instances::Seen::Unseen => return Ok(Some(0)),
+            // Too many to see they agree: refused, never taken for 0 (#2406).
+            crate::instances::Seen::Many => {
+                return refused(format!(
+                    "generic code has one JS for each of `{ty}`'s instances, and it has too many to check each \
+                     holds its object where the others do (#2406); make it where the type is known"
+                ));
+            }
         };
         let mut found: Option<(Ty<'tcx>, Within)> = None;
         for instance in instances {
@@ -243,8 +251,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let asked = |lent: Ty<'tcx>| stored.addressable(tcx, lent) && !(shared && self.holds_no_object(lent));
             match lent.has_non_region_param() {
                 false => asked(lent),
+                // Past what it can list, or unseen, any may be (#2406).
                 true => stored
                     .instances(tcx, lent, owner)
+                    .listed_or_any()
                     .is_none_or(|instances| instances.into_iter().any(asked)),
             }
         };
@@ -780,7 +790,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return boxed(receiver);
         }
         let owner = self.tcx.typeck_root_def_id(self.item);
+        // Past what it can list, as of instances it can't see (#2406).
         (self.krate.stored_places.instances(self.tcx, receiver, owner))
+            .listed_or_any()
             .is_none_or(|instances| instances.into_iter().any(boxed))
     }
 
@@ -816,7 +828,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.recognition().lend_offset(receiver, lent);
         }
         let owner = self.tcx.typeck_root_def_id(self.item);
-        let instances = self.krate.stored_places.instances(self.tcx, receiver, owner)?;
+        // Past what it can list, or unseen, no layout known (#2406).
+        let instances = self
+            .krate
+            .stored_places
+            .instances(self.tcx, receiver, owner)
+            .listed_or_any()?;
         let mut offsets = instances
             .into_iter()
             .map(|instance| self.recognition().lend_offset(instance, lent));

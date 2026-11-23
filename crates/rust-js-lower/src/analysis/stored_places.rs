@@ -56,9 +56,9 @@ impl<'tcx> StoredPlaces<'tcx> {
     }
 
     /// What `ty`, which holds `owner`'s type parameters, is in each of the
-    /// crate's instances of it, `instances_of`'s: `None` where they can't
-    /// all be seen.
-    pub(crate) fn instances(&self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, owner: DefId) -> Option<IndexSet<Ty<'tcx>>> {
+    /// crate's instances of it, `instances_of`'s: `Unseen` where they can't
+    /// all be seen, `Many` past what it lists, each reader's to say (#2406).
+    pub(crate) fn instances(&self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, owner: DefId) -> crate::instances::Seen<'tcx> {
         instances_of(tcx, (&self.callers, crate::instances::Fact::Shared), ty, owner)
     }
 

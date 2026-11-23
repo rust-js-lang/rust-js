@@ -140,8 +140,8 @@ export const mutations: Mutation[] = [
     name: "made-of-own-parameters-unresolved",
     breaks: "what a generic caller makes of its own type parameters and gives on, `Map<Take<I>, F>`, is given no instances, so nothing it's made of is made knowing its hint (#1240)",
     file: "crates/rust-js-lower/src/instances.rs",
-    find: "                made.insert((caller, arg));\n                given.extend(instances_in(tcx, (callers, fact), (arg, caller), (seen, made))?);\n",
-    replace: "                return None;\n",
+    find: "                made.insert((caller, arg));\n                instances_in(tcx, (callers, fact, combine), (arg, caller), (seen, made))\n",
+    replace: "                return Seen::Unseen;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
   },
   {
@@ -261,5 +261,14 @@ export const mutations: Mutation[] = [
     find: "            let implied = crate::recognition::crate_impl_called_by(tcx, typing_env, callee, args);\n",
     replace: "            let implied: Option<(DefId, ty::GenericArgsRef<'tcx>)> = None;\n",
     tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_a_crates_own_collect_and_sum.rs$"],
+  },
+  {
+    name: "parts-put-together",
+    breaks:
+      "the parts of more instances than the crate lists are put together as their product, which is too many again, so none is marked: `(0, None)` where Rust gives `(5, Some(5))` (#2406)",
+    file: "crates/rust-js-lower/src/instances.rs",
+    find: "            parts.extend(given);\n            continue;\n",
+    replace: "            parts.extend(given.iter().copied());\n",
+    tests: ["test/corpus.test.ts", "-t", "^hint_asked_of_more_instances_than_listed.rs$"],
   },
 ];
