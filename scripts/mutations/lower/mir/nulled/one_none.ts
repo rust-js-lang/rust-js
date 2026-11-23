@@ -95,6 +95,14 @@ export const mutations: Mutation[] = [
     tests: ["test/docs.test.ts"],
   },
   {
+    name: "shown-nullable-field-as-it-is",
+    breaks: "a nullable field's `None`, the crate's `null`, read and written to a `pub` struct's plain `Option` field is taken for what JS saw there, so `Holder { v: n.v }` leaves for JS as `{ v: null }` where Rust's `None` is `undefined` (#2424)",
+    file: "crates/rust-js-mir/src/nulled/one_none.rs",
+    find: "            return (!adt.did().is_local() || self.tcx.visibility(adt.did()).is_public())\n                && none_form(self.tcx, NonePlace::Field(field, Some(ty))) == NoneForm::Undefined;\n",
+    replace: "            return (!adt.did().is_local() || self.tcx.visibility(adt.did()).is_public())\n                && (none_form(self.tcx, NonePlace::Field(field, Some(ty))) == NoneForm::Undefined || true);\n",
+    tests: ["test/none-given.test.ts", "-t", "a nullable field's None written to a plain field JS reads is undefined"],
+  },
+  {
     name: "pointer-of-bindings-taking-null-normalized",
     breaks: "a pointer the crate makes only of a binding that takes its argument nullable is given `?? undefined` first, so a function that only passes it on is no re-export (#1840)",
     file: "crates/rust-js-mir/src/nulled/one_none.rs",

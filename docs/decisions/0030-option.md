@@ -289,3 +289,26 @@ answers. `mir_nones` now asks `payload_may_be_null`, the one answer
 `made_some` asks: such a local's test is `!= null`, and every reader takes
 it for the `None` `.err()` gives. A field of one, and a binding given one,
 were tested `!= null` already. js-errors holds each reader's answer.
+
+## Amendment: a nullable field's `None` read is no `None` JS saw (2026-11-24, #2424)
+
+A write of a `pub` struct's plain `Option` field is an exit (#1840), but
+a read of another such field, written there, was taken for what JS saw
+already (`read_of_a_shown_field`, ADR 0262's case "none": an untagged
+enum's variant made again of its own fields). A nullable field's read
+is the crate's `None` as `null` (ADR 0275), so `Holder { v: n.v }` of a
+`Nullable`'s `None` left for JS as `{ v: null }`, where Rust's `None` is
+`undefined` (P0). Inside Rust all agreed: `is_none`, `== None`, `{:?}`.
+
+Now a read is as JS saw it only of a field that holds `None` as
+`undefined` (`none_form`'s `Undefined`); any other goes to
+`one_none_given`, whose taint counts a nullable field as a source:
+`{ v: n.v ?? undefined }`. That covers the struct made in the function,
+one JS gave, a field of its field, and a read through a local, a
+reference, a clone, a field's write and a spread.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's. A variant's `Option` field isn't an exit (its declaration
+`T | null | undefined`); filed as #2425. Held by none-given's "a nullable
+field's None written to a plain field JS reads is undefined"; mutation
+shown-nullable-field-as-it-is (`one_none.rs`).

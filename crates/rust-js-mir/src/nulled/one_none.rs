@@ -250,13 +250,22 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// to it too. Given another such field, it's as JS saw it, an untagged
     /// enum's variant made again in place of its own fields, `node[0]` kept
     /// (ADR 0262's case "none").
+    /// Not a field that holds `None` other than as `undefined`, a nullable
+    /// one's `null`, which is the crate's own `None` there, Rust's
+    /// `undefined` in the field it's written to (#2424).
     fn read_of_a_shown_field(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>, depth: usize) -> bool {
+        use rust_js_lower::representation::{NonePlace, none_form};
         let Some(place) = operand.place() else { return false };
-        if let Some((base, PlaceElem::Field(..))) = place.as_ref().last_projection() {
-            let ty::Adt(adt, _) = base.ty(state.body, self.tcx).ty.kind() else {
+        if let Some((base, PlaceElem::Field(field, ty))) = place.as_ref().last_projection() {
+            let base = base.ty(state.body, self.tcx);
+            let ty::Adt(adt, _) = base.ty.kind() else {
                 return false;
             };
-            return !adt.did().is_local() || self.tcx.visibility(adt.did()).is_public();
+            let field = &adt
+                .variant(base.variant_index.unwrap_or(rustc_abi::FIRST_VARIANT))
+                .fields[field];
+            return (!adt.did().is_local() || self.tcx.visibility(adt.did()).is_public())
+                && none_form(self.tcx, NonePlace::Field(field, Some(ty))) == NoneForm::Undefined;
         }
         let param = (1..=state.body.arg_count).contains(&place.local.as_usize());
         if depth > 4 || param || !matches!(place.projection.as_slice(), [] | [PlaceElem::Deref]) {

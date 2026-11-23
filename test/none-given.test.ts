@@ -629,6 +629,94 @@ test("each source of JS's null leaves a function JS calls as undefined", async (
   expect(Object.entries(each).filter(([, value]) => value !== undefined)).toEqual([]);
 }, underLoad(120_000));
 
+// A nullable field holds `None` as `null` (ADR 0275), the crate's own, so
+// read and written to a plain `Option` field JS reads of the object, it's
+// given Rust's `None` there, `undefined` (#2424): of a struct made in the
+// function, one JS gave, a field of its field, through a local, a
+// reference, a clone, a field's write and a spread's. A plain field's read
+// written so is as JS saw it (ADR 0262's case "none").
+const movedNones = `pub struct Holder {
+    pub v: Option<f64>,
+}
+
+pub struct Nullable {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub v: Option<f64>,
+}
+
+pub struct Outer {
+    pub inner: Nullable,
+}
+
+pub fn made() -> Holder {
+    let n = Nullable { v: None };
+    Holder { v: n.v }
+}
+
+pub fn given(n: Nullable) -> Holder {
+    Holder { v: n.v }
+}
+
+pub fn nested(o: &Outer) -> Holder {
+    Holder { v: o.inner.v }
+}
+
+pub fn through_a_local(n: Nullable) -> Holder {
+    let v = n.v;
+    Holder { v }
+}
+
+pub fn through_a_reference(n: &Nullable) -> Holder {
+    let r = &n.v;
+    Holder { v: *r }
+}
+
+pub fn cloned(n: &Nullable) -> Holder {
+    Holder { v: n.v.clone() }
+}
+
+pub fn written(n: &Nullable) -> Holder {
+    let mut h = Holder { v: Some(1.0) };
+    h.v = n.v;
+    h
+}
+
+pub struct Pair {
+    pub v: Option<f64>,
+    pub w: f64,
+}
+
+pub fn spread(n: &Nullable, base: Pair) -> Pair {
+    Pair { v: n.v, ..base }
+}
+
+pub fn inside() -> bool {
+    let n = Nullable { v: None };
+    let h = Holder { v: n.v };
+    h.v.is_none() && h.v == None && format!("{:?}", h.v) == "None"
+}
+`;
+
+test("a nullable field's None written to a plain field JS reads is undefined", async () => {
+  const dir = fixture("none-moved-from-a-nullable-field");
+  writeFileSync(join(dir, "lib.rs"), movedNones);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--edition=2024", ...js]);
+  const m = await import(join(dir, "lib.js"));
+  const each = {
+    made: m.made(),
+    given: m.given({ v: null }),
+    nested: m.nested({ inner: { v: null } }),
+    throughALocal: m.throughALocal({ v: null }),
+    throughAReference: m.throughAReference({ v: null }),
+    cloned: m.cloned({ v: null }),
+    written: m.written({ v: null }),
+    spread: m.spread({ v: null }, { v: 2, w: 3 }),
+  };
+  expect(Object.entries(each).filter(([, { v }]) => v !== undefined)).toEqual([]);
+  expect(m.spread({ v: 4 }, { v: 2, w: 3 })).toEqual({ v: 4, w: 3 });
+  expect(m.inside()).toBe(true);
+}, underLoad(120_000));
+
 // A function value JS may have made, a `dyn Fn` or a pointer JS gave,
 // called of a trailing `None` known only where it runs, is called of each
 // count, as a binding is, for a JS function may count what it's given
