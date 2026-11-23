@@ -957,27 +957,7 @@ pub fn lower_crate<'tcx>(
         fill_holes(statements, holes);
     }
 
-    for &(_, id) in pass.references.iter() {
-        if defaulted.contains(&id) {
-            continue;
-        }
-        let info = &fns[&id];
-        if let Some(owner) = &info.owner {
-            if let Some(ns) = pass
-                .namespaces
-                .get_mut(&info.module)
-                .and_then(|ns| ns.iter_mut().find(|ns| ns.name.is(owner)))
-            {
-                ns.export = true;
-            }
-        } else if let Some(f) = pass
-            .functions
-            .get_mut(&info.module)
-            .and_then(|fs| fs.iter_mut().find(|f| f.name.is(&info.name)))
-        {
-            f.export = true;
-        }
-    }
+    pass.export_referenced(&fns, &defaulted);
     // A copy of a function another module calls, exported by its name (ADR
     // 0051, amended).
     copies::export(&js_given, &fns, &pass.copy_references, &mut pass.functions);

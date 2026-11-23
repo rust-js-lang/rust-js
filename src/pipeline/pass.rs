@@ -1,6 +1,7 @@
 //! What one lowering pass of the crate gathers of each function it keeps,
 //! grouped for output.
 
+use rust_js_lower::FnInfo;
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rust_js_program::js;
 use rustc_span::def_id::{DefId, LocalModId};
@@ -59,6 +60,28 @@ impl Pass {
         }
         for class in (self.namespaces.entry(module).or_default().iter_mut()).filter(|n| n.name.is(name)) {
             class.export = false;
+        }
+    }
+
+    /// Each function another module references, its own or its class's,
+    /// exported, but a module's default, which is exported as that alone.
+    pub(super) fn export_referenced(&mut self, fns: &IndexMap<DefId, FnInfo>, defaulted: &IndexSet<DefId>) {
+        for &(_, id) in self.references.iter() {
+            if defaulted.contains(&id) {
+                continue;
+            }
+            let info = &fns[&id];
+            if let Some(owner) = &info.owner {
+                if let Some(ns) =
+                    (self.namespaces.get_mut(&info.module)).and_then(|ns| ns.iter_mut().find(|ns| ns.name.is(owner)))
+                {
+                    ns.export = true;
+                }
+            } else if let Some(f) =
+                (self.functions.get_mut(&info.module)).and_then(|fs| fs.iter_mut().find(|f| f.name.is(&info.name)))
+            {
+                f.export = true;
+            }
         }
     }
 }
