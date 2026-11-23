@@ -362,4 +362,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iterator_sources.rs$"],
     snapshots: true,
   },
+  {
+    name: "partition-of-vec-sides-compiled",
+    breaks:
+      "every `partition` is std's compiled body, a `Vec`'s sides too, `iterator_partition(.., vecDefault, vecExtend)` where its helper's `$partition` fills them as std does (#2387)",
+    file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
+    find: "    if id == compiled_provided_method(tcx, \"Iterator\", \"partition\")\n",
+    replace: "    if false && id == compiled_provided_method(tcx, \"Iterator\", \"partition\")\n",
+    tests: ["test/corpus.test.ts", "-t", "^consumers_step_each.rs$"],
+    snapshots: true,
+  },
 ];

@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `take(n)` or a `skip(n)` collected into a collection of the crate's is taken to stay where it's made, so it's JS's own `values().take(n)`, whose hint is `(0, None)` where the crate's `from_iter` asks std's (#2376)",
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "                    && crate::recognition::crate_impl_called_by(tcx, typing_env, callee, given).is_none()\n",
+    find: "                    && crate::recognition::crate_impl_called_by(tcx, typing_env, callee, given).is_empty()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_a_crates_own_collect_and_sum.rs$"],
   },
@@ -284,8 +284,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `collect()` or `sum()` into a library's collection gives its impl what it steps unseen, only a call by name is, so a `skip(1)` collected is JS's own `drop(1)`, `(0, None)` (#2384)",
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "    let reached = crate::recognition::crate_impl_called_by(tcx, typing_env, callee, args).unwrap_or((callee, args));\n",
-    replace: "    let reached = (callee, args);\n",
+    find: "    let mut reached = crate::recognition::crate_impl_called_by(tcx, typing_env, callee, args);\n",
+    replace: "    let mut reached = Vec::new();\n",
     tests: ["test/libraries.test.ts", "-t", "knows its hint"],
   },
 ];

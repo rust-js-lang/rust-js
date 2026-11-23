@@ -2,7 +2,7 @@
 
 use super::{Comb, IterComb, Num, NumOp, SignMode, Std, TextOp};
 use rustc_middle::mir::BinOp;
-use rustc_middle::ty::Ty;
+use rustc_middle::ty::{self, Ty, TyCtxt};
 
 /// Which `TextOp` a method of a `char` or a `str` is.
 pub(super) fn text(name: &str, char: bool, str: bool) -> Option<TextOp> {
@@ -452,4 +452,24 @@ pub fn keeps_each(name: &str) -> bool {
             | "skip_while"
             | "is_sorted_by_key"
     )
+}
+
+/// Whether `partition`'s or `unzip`'s side `side` is one its helper,
+/// `$partition` or `$unzip`, fills as std fills it: the one rule of which
+/// form it's made in, asked where the call goes (`compiled_instance`) and
+/// where its sides are made (`fillable_sides`), so the two can't disagree
+/// (#2377, #2387). A `Vec`, a `VecDeque` or a `BinaryHeap`, the array the
+/// helper gives it; a map or a set, the empty one extended by it after, of
+/// items with no destructor, as std drops a duplicate of one as it fills
+/// each. Any other, a type parameter's or the crate's own `Extend`, is
+/// std's own body's to fill, `partition`'s compiled into `@rust-js/std`,
+/// which calls each side's `Default` and `Extend` as std does (#2378);
+/// `unzip`'s isn't yet (#2395).
+pub(crate) fn side_filled_by_helper<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, side: Ty<'tcx>) -> bool {
+    let no_drops = |side: Ty<'tcx>| match side.kind() {
+        ty::Adt(_, args) => args.types().all(|item| !item.needs_drop(tcx, typing_env)),
+        _ => true,
+    };
+    let vec_like = matches!(side.kind(), ty::Adt(adt, _) if super::types::is_vec_like_def(tcx, adt.did()));
+    vec_like || (super::types::is_map_type(tcx, side) && no_drops(side))
 }

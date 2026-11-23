@@ -101,6 +101,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         own
     }
 
+    /// Whether `id` is given a dictionary of its `Self`'s `Iterator`, as a
+    /// compiled std adapter is, `take`'s `SelfIterator`, which it steps its
+    /// `Self` by. One that isn't, a compiled consumer, `partition`'s, steps
+    /// it as a JS iterator, as generic code holds one, so it's given one
+    /// (`trait_call`, ADR 0061, #2387).
+    pub(crate) fn given_self_iterator(&self, id: DefId) -> bool {
+        let iterator = crate::recognition::std_item(self.tcx, crate::recognition::StdItem::Iterator);
+        (self.evidence_slots(id, Scope::Whole).iter()).any(|slot| {
+            matches!(slot, Slot::Bound(bound) if bound.def_id == iterator && bound.self_ty() == self.tcx.types.self_param)
+        })
+    }
+
     /// What `id` takes after its own parameters, of `scope`, in order: its
     /// caller's location, its const parameters, its bounds' dictionaries,
     /// the facts it asks, then its drops. The one order.

@@ -449,9 +449,15 @@ function main() {
   });
   case$("partition", (g) => {
     let g$live = true;
-    let take;
+    let tmp;
     try {
-      take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
+      tmp = iterator_take(
+        $iter(ds()),
+        2,
+        { next: $next, advanceBy: $advanceSlice },
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      );
       g$live = false;
     } catch (error) {
       $cleanup(() => {
@@ -461,17 +467,22 @@ function main() {
       }, error);
       throw error;
     }
-    function f(d) {
-      const result = (d[0] + zero(g)) >>> 0;
-      dDrop_drop(d);
-      return result;
-    }
-    const iter = $holding(
-      take.map(f),
-      () => {
+    const iter = iterator_map(
+      tmp,
+      (d) => {
+        const result = (d[0] + zero(g)) >>> 0;
+        dDrop_drop(d);
+        return result;
+      },
+      { next: $next, fold: $foldOf },
+      (take) => {
+        take.return();
+      },
+      undefined,
+      (value) => {
         dDrop_drop(g);
       },
-      "after",
+      dDrop_drop,
     );
     let result;
     try {
@@ -929,9 +940,9 @@ function main() {
   });
   case$("peekable", (g) => {
     let g$live = true;
-    let tmp;
+    let take;
     try {
-      tmp = iterator_take(
+      take = iterator_take(
         $iter(ds()),
         2,
         { next: $next, advanceBy: $advanceSlice },
@@ -949,7 +960,7 @@ function main() {
     }
     const iter = iterator_peekable(
       iterator_map(
-        tmp,
+        take,
         (d) => {
           const result = (d[0] + zero(g)) >>> 0;
           dDrop_drop(d);

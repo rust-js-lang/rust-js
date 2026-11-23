@@ -14836,6 +14836,29 @@
         ]
       },
       {
+        "key": "core::iter::traits::collect::Extend::extend_one",
+        "rust_path": "rust_js_std::core::iter::Extend::extend_one",
+        "module": [
+          "iter"
+        ],
+        "export": "extend_extendOne",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::inspect::{impl#2}::do_inspect",
         "rust_path": "rust_js_std::core::iter::Inspect::<I, F>::do_inspect",
         "module": [
@@ -15325,6 +15348,41 @@
             ],
             "stepped": [
               "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::traits::iterator::Iterator::partition",
+        "rust_path": "rust_js_std::core::iter::Iterator::partition",
+        "module": [
+          "iter"
+        ],
+        "export": "iterator_partition",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
             ]
           },
           {
@@ -17279,6 +17337,8 @@
         "iterator_chain",
         "iterator_zip",
         "iterator_cycle",
+        "iterator_partition",
+        "extend_extendOne",
         "trustedRandomAccessNoCoerce_size",
         "repeatN",
         "repeat",
@@ -17404,8 +17464,8 @@
       ],
       "links": [
         {
-          "start": 836,
-          "end": 848,
+          "start": 850,
+          "end": 862,
           "file": "runtime.js"
         }
       ],
@@ -17574,7 +17634,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "7874c819e25318a4"
+      "hash": "ef562147e26df9a3"
     },
     {
       "file": "iter.js.map",

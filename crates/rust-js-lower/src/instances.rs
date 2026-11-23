@@ -241,7 +241,7 @@ pub(super) fn given_calls_of<'tcx>(
             // `collect()`'s `from_iter` of what it steps, which std's body
             // names where the crate's can't be seen to (#2376).
             let implied = crate::recognition::crate_impl_called_by(tcx, typing_env, callee, args);
-            std::iter::once((callee, args, at)).chain(implied.map(|(called, args)| (called, args, at)))
+            std::iter::once((callee, args, at)).chain(implied.into_iter().map(move |(called, args)| (called, args, at)))
         })
         .collect()
 }

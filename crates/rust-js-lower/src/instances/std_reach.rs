@@ -43,10 +43,12 @@ pub(crate) fn check_std_reach<'tcx>(
                 continue;
             };
             let reached = reach(tcx, typing_env, instance, &mut reaching);
-            let answered = crate::recognition::crate_impl_called_by(tcx, typing_env, callee, args)
-                .and_then(|(called, called_args)| crate::traits::resolve(tcx, typing_env, called, called_args).ok()?)
-                .map(|instance| (instance.def_id(), instance.args));
-            let unanswered = reached.iter().find(|&&each| Some(each) != answered);
+            let answered: Vec<_> = (crate::recognition::crate_impl_called_by(tcx, typing_env, callee, args)
+                .into_iter())
+            .filter_map(|(called, called_args)| crate::traits::resolve(tcx, typing_env, called, called_args).ok()?)
+            .map(|instance| (instance.def_id(), instance.args))
+            .collect();
+            let unanswered = reached.iter().find(|each| !answered.contains(each));
             if !reached.is_empty() {
                 let answer = if unanswered.is_some() { "unanswered" } else { "answered" };
                 rust_js_program::decisions::record("std-reach", answer);

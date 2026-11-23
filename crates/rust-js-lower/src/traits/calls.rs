@@ -647,6 +647,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 span,
                 out,
             )?;
+            // A compiled std consumer of `Iterator`'s, which takes no
+            // dictionary of its `Self` and steps it as a JS iterator,
+            // `partition`'s: given the crate's iterator as one, as generic
+            // code is, a compiled adapter its `Self` with its dictionary
+            // (`given_self_iterator`, ADR 0061, #2387).
+            if crate::recognition::is_compiled_std(self.tcx, instance.def_id())
+                && self.tcx.trait_of_assoc(id) == Some(crate::recognition::std_item(self.tcx, StdItem::Iterator))
+                && !self.given_self_iterator(instance.def_id())
+                && let Some(self_ty) = instance.args.types().next()
+                && let Some(receiver) = values.first_mut()
+            {
+                *receiver = self.as_js_iterator(receiver.clone(), self_ty, span)?;
+            }
             // Its arguments in the impl's terms, a copied default's, asked of
             // the impl's drops (ADR 0495).
             values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);

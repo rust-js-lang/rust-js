@@ -308,11 +308,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     pub(crate) fn is_map(&self, ty: Ty<'tcx>) -> bool {
-        let ty = ty.peel_refs();
-        [StdItem::HashMap, StdItem::HashSet, StdItem::BTreeMap, StdItem::BTreeSet]
-            .into_iter()
-            .any(|item| self.is_std_type(ty, item))
-            || self.is_json_map(ty)
+        is_map_type(self.tcx, ty)
     }
 
     /// A pattern that's a predicate of a `char`: a closure, a function, or a
@@ -1208,4 +1204,15 @@ pub(super) fn is_backtrace_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
 /// `Recognition::is_cow`, of `tcx` alone: a declaration's type (#1748).
 pub(crate) fn is_cow_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(tcx, adt.did(), StdPath::BorrowCow))
+}
+
+/// `is_map`'s, of `tcx` alone: a `HashMap`, `HashSet`, `BTreeMap` or
+/// `BTreeSet`, or serde_json's `Map`, a JS `Map` or `Set`.
+pub(crate) fn is_map_type(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    let ty = ty.peel_refs();
+    let std = |item| matches!(ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), item));
+    [StdItem::HashMap, StdItem::HashSet, StdItem::BTreeMap, StdItem::BTreeSet]
+        .into_iter()
+        .any(std)
+        || super::json::json_type_of(tcx, ty) == Some(super::Json::Map)
 }

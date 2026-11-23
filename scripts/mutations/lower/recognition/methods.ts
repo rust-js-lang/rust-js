@@ -204,4 +204,21 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^bool_toggle_writes_its_place\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "unzip-into-a-map-refused",
+    breaks: "`unzip` into a map or a set is refused, its helper's arrays rebuilt into it no side it fills as std does (#2377)",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
+    find: "    vec_like || (super::types::is_map_type(tcx, side) && no_drops(side))\n",
+    replace: "    vec_like\n",
+    tests: ["test/corpus.test.ts", "-t", "^unzip_into_maps.rs$"],
+  },
+  {
+    name: "filled-sides-of-destructors-by-helper",
+    breaks:
+      "a `partition` into a set of what has a destructor is its helper's, filled after every item, so a duplicate is dropped after, not as std drops it filling each (#2378)",
+    file: "crates/rust-js-lower/src/recognition/methods.rs",
+    find: "        ty::Adt(_, args) => args.types().all(|item| !item.needs_drop(tcx, typing_env)),\n",
+    replace: "        ty::Adt(_, _) => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^partition_fills_each_side_as_std_does.rs$"],
+  },
 ];

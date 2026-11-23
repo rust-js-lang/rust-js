@@ -333,7 +333,7 @@ fn may_leave<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, ty: Ty<'tcx>) -> bool {
                 let runs = (crate::traits::resolve(tcx, typing_env, callee, given).ok().flatten())
                     .map_or(callee, |instance| instance.def_id());
                 crate::recognition::is_std_crate(tcx, runs)
-                    && crate::recognition::crate_impl_called_by(tcx, typing_env, callee, given).is_none()
+                    && crate::recognition::crate_impl_called_by(tcx, typing_env, callee, given).is_empty()
             });
             !std && args.iter().any(|&arg| holds(thir[arg].ty))
         }
@@ -699,22 +699,26 @@ fn given_a_library_unseen<'tcx>(
     typing_env: ty::TypingEnv<'tcx>,
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
 ) -> Vec<Ty<'tcx>> {
-    let reached = crate::recognition::crate_impl_called_by(tcx, typing_env, callee, args).unwrap_or((callee, args));
-    let Ok(Some(instance)) = crate::traits::resolve(tcx, typing_env, reached.0, reached.1) else {
-        return Vec::new();
-    };
-    let called = instance.def_id();
-    if called.is_local()
-        || crate::recognition::is_std_crate(tcx, called)
-        || crate::bindings::is_binding(tcx, called)
-        || crate::instances::consumer_compiles(tcx, called)
-    {
-        return Vec::new();
+    let mut reached = crate::recognition::crate_impl_called_by(tcx, typing_env, callee, args);
+    if reached.is_empty() {
+        reached.push((callee, args));
     }
     let into_iterator = crate::recognition::std_item(tcx, crate::recognition::StdItem::IntoIterator);
-    let parents = tcx.generics_of(called).parent_count;
-    (instance.args.iter().skip(parents))
-        .filter_map(|arg| arg.as_type())
+    (reached.into_iter())
+        .filter_map(|(id, args)| crate::traits::resolve(tcx, typing_env, id, args).ok().flatten())
+        .filter(|instance| {
+            let called = instance.def_id();
+            !(called.is_local()
+                || crate::recognition::is_std_crate(tcx, called)
+                || crate::bindings::is_binding(tcx, called)
+                || crate::instances::consumer_compiles(tcx, called))
+        })
+        .flat_map(|instance| {
+            let parents = tcx.generics_of(instance.def_id()).parent_count;
+            (instance.args.iter().skip(parents))
+                .filter_map(|arg| arg.as_type())
+                .collect::<Vec<_>>()
+        })
         .filter(|&own| crate::recognition::trait_holds_in(tcx, typing_env, own, into_iterator) == Some(true))
         .map(|own| crate::recognition::iterator_type_of(tcx, typing_env, tcx.erase_and_anonymize_regions(own)))
         .collect()

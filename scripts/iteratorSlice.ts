@@ -105,6 +105,9 @@ export const iteratorPaths = [
   "crates/rust-js-lower/src/recognition/chars.rs",
   "crates/rust-js-lower/src/recognition/sorts.rs",
   "crates/rust-js-lower/src/noted.rs",
+  // Whether a compiled std body is given its `Self`'s `Iterator` dictionary
+  // or its `Self` as a JS iterator (#2387).
+  "crates/rust-js-lower/src/traits/evidence.rs",
   "crates/rust-js-lower/src/analysis/iterator_steps.rs",
   "crates/rust-js-lower/src/analysis/type_facts/knowing.rs",
   "crates/rust-js-lower/src/analysis/back_stepped.rs",

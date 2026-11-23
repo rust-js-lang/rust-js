@@ -1281,33 +1281,53 @@ pub(crate) fn fallible_collect<'tcx>(
 /// `product()` into one, its `Sum::sum` or `Product::product`. The trait's
 /// method and its arguments, as a call of it names them, of an impl the
 /// crate has (`Instance::try_resolve`): the one answer of whom such a call
-/// gives what it steps, which the callers' carrier reads (#2376). `None` of
+/// gives what it steps, which the callers' carrier reads (#2376). None of
 /// another call, or where it's std's own impl or none.
 pub(crate) fn crate_impl_called_by<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     callee: DefId,
     args: ty::GenericArgsRef<'tcx>,
-) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
-    if !is_std_def(tcx, tcx.trait_of_assoc(callee)?, StdItem::Iterator) {
-        return None;
-    }
-    let (iter, output) = (args.types().next()?, args.types().nth(1)?);
-    let item = specialization::iterator_item_of(tcx, typing_env, iter)?;
-    let called = match tcx.item_name(callee).as_str() {
-        // Into an `Option` or a `Result` of what the crate collects: its
-        // `from_iter` of what each `Some` or `Ok` holds.
-        "collect" => match fallible_collect(tcx, (iter, item), output) {
-            Some((collection, value, shunt)) => values_from_iter(tcx, collection, value, Some(shunt))?,
-            None => values_from_iter(tcx, output, item, Some(iter))?,
-        },
-        name @ ("sum" | "product") => {
-            let accumulation = accumulation_of(tcx, callee)?;
-            let method = trait_method(tcx, accumulation, name);
-            (method, tcx.mk_args(&[output.into(), item.into(), iter.into()]))
+) -> Vec<(DefId, ty::GenericArgsRef<'tcx>)> {
+    let called = || -> Option<Vec<(DefId, ty::GenericArgsRef<'tcx>)>> {
+        if !is_std_def(tcx, tcx.trait_of_assoc(callee)?, StdItem::Iterator) {
+            return None;
         }
-        _ => return None,
+        let (iter, output) = (args.types().next()?, args.types().nth(1)?);
+        let item = specialization::iterator_item_of(tcx, typing_env, iter)?;
+        Some(match tcx.item_name(callee).as_str() {
+            // Into an `Option` or a `Result` of what the crate collects: its
+            // `from_iter` of what each `Some` or `Ok` holds.
+            "collect" => vec![match fallible_collect(tcx, (iter, item), output) {
+                Some((collection, value, shunt)) => values_from_iter(tcx, collection, value, Some(shunt))?,
+                None => values_from_iter(tcx, output, item, Some(iter))?,
+            }],
+            name @ ("sum" | "product") => {
+                let accumulation = accumulation_of(tcx, callee)?;
+                let method = trait_method(tcx, accumulation, name);
+                vec![(method, tcx.mk_args(&[output.into(), item.into(), iter.into()]))]
+            }
+            // Each side's `extend_one` of each item, std's default of it its
+            // `extend` of a `Some` of it, `B`'s, as std's compiled body calls
+            // it (#2387, #2378).
+            "partition" => {
+                let extend = super::registry::by_path(tcx, StdCrate::Core, &["iter", "Extend"])?;
+                let option = tcx.adt_def(tcx.get_diagnostic_item(sym::Option)?);
+                let some = Ty::new_adt(tcx, option, tcx.mk_args(&[item.into()]));
+                vec![(
+                    trait_method(tcx, extend, "extend"),
+                    tcx.mk_args(&[output.into(), item.into(), some.into()]),
+                )]
+            }
+            _ => return None,
+        })
     };
-    let resolved = crate::traits::resolve(tcx, typing_env, called.0, called.1).ok()??;
-    (!is_std_crate(tcx, resolved.def_id())).then_some(called)
+    (called().unwrap_or_default().into_iter())
+        .filter(|&(id, args)| {
+            crate::traits::resolve(tcx, typing_env, id, args)
+                .ok()
+                .flatten()
+                .is_some_and(|resolved| !is_std_crate(tcx, resolved.def_id()))
+        })
+        .collect()
 }

@@ -739,3 +739,63 @@ and every compile reads it.**
   body's reachable blocks are found once.
 - **Mutations:** `catalogue-crates-unchecked`, `catalogue-groups-unread`,
   `catalogue-groups-unkept`.
+
+
+## Amendment: a compiled consumer, `partition`, where its helper can't fill a side (2026-11-23, #2387, #2378)
+
+`partition` into a side its helper, `$partition`, doesn't fill as std
+does, the crate's own `Extend + Default`, a type parameter's, a set of
+what has a destructor, is std's own body, compiled into `@rust-js/std`
+(`COMPILED_STD_PROVIDED`'s `Iterator::partition`), with `Extend::extend_one`,
+std's default `extend(Some(item))`, which it calls through the side's
+dictionary, compiled beside it. So std's order is the program's by
+construction: the left side's `Default`, then the right's, each item's
+`extend_one` as it's kept, and as a panic in the predicate or a side's
+`extend` unwinds, the item, what's left of what it steps, then the right
+side and the left.
+
+- **One rule, two forms.** `recognition::side_filled_by_helper` says which
+  form each side is made in, and both places that decide ask it: where
+  the call goes (`compiled_instance`, which otherwise answers every
+  catalogued provided method's call std's body, whatever its `Self`), and
+  where its sides are made (`fillable_sides`). A `Vec`'s sides stay the
+  helper's arrays, its corpus's snapshots unmoved; the helper is the
+  readable special case of std's body where the two can't be told apart.
+- **A compiled consumer's `Self`.** A compiled adapter, `take`'s, is given
+  its `Self` with a dictionary of its `Iterator`, `SelfIterator`, which it
+  steps it by; a compiled consumer, `partition`'s, declares none and steps
+  its `Self` as a JS iterator, as generic code holds one (ADR 0061). So a
+  call of one is given the crate's iterator made one, the recognizer's
+  `as_js_iterator`, `$iterator(up(), upIterator_next)`
+  (`traits::evidence::given_self_iterator`); given it as it was, it threw.
+- **The carrier agrees.** `recognition::crate_impl_called_by`, a list now,
+  answers `partition`'s side's `Extend::extend::<Option<Item>>`, which the
+  compiled body reaches, so the callers' carrier and the debug build's
+  check (ADR 1115, #2376) see what the crate's `extend` is given.
+- **One move, two authorities.** The corpus's
+  `fold_drops_moved_function_first`'s `partition` row, into two `Vec`s,
+  still `$partition`, is fed a chain of std's compiled `iterator_take` and
+  `iterator_map` where it was the recognizers' `take` and `$holding`'s
+  `map`, its output native Rust's still: `iterators::given_as_it_is`
+  decides how what's given to a function is held by whether the function
+  is in the catalogue, `is_compiled_std`, where the call goes by
+  `compiled_instance`, which the side's rule gates. Two answers of where
+  a call goes, a duplicated authority, #2398, which threads the call's
+  arguments so every analysis asks `compiled_instance`.
+- **Not `unzip`.** Its std body extends a tuple through core's private
+  specialization trait `default_extend::SpecExtend`, which a generic
+  compile can't resolve: its sides as #2377 made them, a crate's
+  `Extend` refused, until #2395.
+
+Held by the corpus's `partition_fills_each_side_as_std_does` (the crate's
+`Bag`, through generic code too, a `HashSet`, a `BTreeSet`, a `Vec`, and a
+`BTreeSet` of what prints its drop, its duplicate dropped as std drops it)
+and `partition_into_own_extend_unwinds` (the crate's own iterator into
+the crate's `Extend`, and a panic in the predicate and in `extend`, each
+drop against native Rust), `lowering-collections.test.ts`' refusals of
+`unzip`'s, and mutations `partition-of-vec-sides-compiled`,
+`compiled-consumer-given-raw-self`, `partition-extend-unanswered`,
+`filled-sides-of-destructors-by-helper` and `unzip-into-a-map-refused`.
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's.
+

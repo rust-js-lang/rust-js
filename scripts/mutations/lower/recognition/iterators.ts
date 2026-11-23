@@ -756,4 +756,13 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => values_from_iter(tcx, output, item, Some(iter))?,\n",
     tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_a_crates_own_collect_and_sum.rs$"],
   },
+  {
+    name: "partition-extend-unanswered",
+    breaks:
+      "a `partition`'s side's `extend`, which std's compiled body calls of the crate's impl, isn't answered, so the callers' carrier misses what it's given and the debug build's check stops a compile that succeeds (#2387)",
+    file: "crates/rust-js-lower/src/recognition/iterators.rs",
+    find: "            \"partition\" => {\n",
+    replace: "            \"partition\" if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^partition_fills_each_side_as_std_does.rs$"],
+  },
 ];

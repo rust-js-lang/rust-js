@@ -665,9 +665,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(copy) => method(items, "map", vec![copy]),
                     None => items,
                 };
-                // Each side as std fills it, `Default` then `Extend` (#2377).
+                // Each side as std fills it, `Default` then `Extend` (#2377): one its
+                // helper fills so, as classification leaves only those here
+                // (`side_filled_by_helper`), std's own body the rest (#2387).
                 let side = generic_args.types().nth(1).expect("rustc checked `partition`'s `B`");
-                self.fillable_sides("partition", &[side, side], span)?;
                 let mut args = vec![items, next()];
                 args.extend(self.item_drop_of(receiver_ty, span)?);
                 let parts = Expr::call(Expr::helper("$partition"), args);
@@ -703,37 +704,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// Whether rust-js makes each of `partition`'s or `unzip`'s sides as
-    /// std fills it, `Default::default()` then `Extend` of each item: the one
-    /// answer of which it does (#2377). A `Vec`, a `VecDeque` or a `String`
-    /// is the array its helper gives that side; a map or a set the empty one
-    /// extended by it after (`filled_sides`), which std fills item by item,
-    /// so one whose items have a destructor, a duplicate dropped as it's
-    /// filled, beside the predicate's or the map's calls, is refused; and
-    /// anything else, a crate's own `Extend + Default`, as std would call its
-    /// impls (#2378).
+    /// That each of `partition`'s or `unzip`'s sides is one its helper fills
+    /// as std does, `side_filled_by_helper`'s, the one rule of the two forms:
+    /// the helper's arrays, a map's or a set's rebuilt (`filled_sides`), where
+    /// they're std's, and std's own compiled body, given each side's
+    /// `Default` and `Extend`, otherwise, which classification leaves
+    /// `partition` to (#2387, #2378). Of `unzip`, whose std body isn't
+    /// compiled yet (#2395): a type parameter's side the array as it was,
+    /// as refusing it refused `either`'s forwarding `unzip`, and another,
+    /// a crate's own `Extend` or a map or a set of what has a destructor,
+    /// refused.
     fn fillable_sides(&self, op: &str, sides: &[Ty<'tcx>], span: Span) -> R<()> {
         for &side in sides {
-            // A type parameter's, which its callers give, the array as it
-            // was: refusing it refused `either`'s forwarding `partition`, and
-            // `itertools` with it; filling it by its dictionaries is #2387's.
-            if self.is_vec_like(side) || crate::generic_facts::is_type_parameter(side) {
+            if crate::recognition::side_filled_by_helper(self.tcx, self.typing_env, side)
+                || crate::generic_facts::is_type_parameter(side)
+            {
                 continue;
             }
-            if !self.is_map(side) {
-                let what = format!("`{op}` into what isn't a `Vec`, a map or a set, a crate's own `Extend` (#2378)");
-                return Err(self.unsupported(span, &what));
-            }
-            let ty::Adt(_, args) = side.kind() else { continue };
-            if args
-                .types()
-                .any(|item| self.drops(item) != crate::drops::Drops::Nothing)
-            {
-                let what = format!(
-                    "`{op}` into a map or a set of what has a destructor, which std drops a duplicate of as it fills each item (#2378)"
-                );
-                return Err(self.unsupported(span, &what));
-            }
+            let what = format!(
+                "`{op}` into what isn't a `Vec`, or a map or a set of what has no destructor, a crate's own `Extend` (#2395)"
+            );
+            return Err(self.unsupported(span, &what));
         }
         Ok(())
     }

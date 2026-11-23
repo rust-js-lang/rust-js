@@ -237,7 +237,7 @@ impl Drop for Loud {
 // calls, and a map or a set of what has a destructor, a duplicate dropped
 // as each item fills it, are refused, where they were arrays that never
 // called the impls, a `TypeError`, or a set of every item (#2377, #2378).
-test("partition or unzip into a crate's Extend, or a set of what has a destructor, is refused", () => {
+test("unzip into a crate's Extend, or a set of what has a destructor, is refused; partition's is std's own body", () => {
   const dir = fixture("partition-sides");
   const bag = `use std::collections::BTreeSet;
 #[derive(Default)]
@@ -259,18 +259,31 @@ impl Drop for Loud {
     expect(p.exitCode).not.toBe(0);
     expect(p.stderr.toString()).toContain(message);
   };
-  refused("pub fn split(v: Vec<u32>) -> (Bag, Bag) { v.into_iter().partition(|&n| n > 1) }\n", "`partition` into what isn't a `Vec`, a map or a set, a crate's own `Extend` (#2378)");
-  refused("pub fn split(v: Vec<(u32, u32)>) -> (Bag, Vec<u32>) { v.into_iter().unzip() }\n", "`unzip` into what isn't a `Vec`, a map or a set, a crate's own `Extend` (#2378)");
+  const unfilled = "into what isn't a `Vec`, or a map or a set of what has no destructor, a crate's own `Extend` (#2395)";
+  refused("pub fn split(v: Vec<(u32, u32)>) -> (Bag, Vec<u32>) { v.into_iter().unzip() }\n", `\`unzip\` ${unfilled}`);
   refused(
-    "pub fn split(v: Vec<Loud>) -> (BTreeSet<Loud>, BTreeSet<Loud>) { v.into_iter().partition(|l| l.0 > 1) }\n",
-    "`partition` into a map or a set of what has a destructor",
+    "pub fn split(v: Vec<(Loud, u32)>) -> (BTreeSet<Loud>, Vec<u32>) { v.into_iter().unzip() }\n",
+    `\`unzip\` ${unfilled}`,
   );
   writeFileSync(join(dir, "lib.rs"), bag + "pub fn split(v: Vec<u32>) -> (BTreeSet<u32>, Vec<u32>) { v.into_iter().map(|n| (n, n)).unzip() }\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  // A type parameter's side, its callers', compiles as it did, as `either`'s
-  // forwarding `partition` does (#2387).
-  writeFileSync(join(dir, "lib.rs"), bag + "pub fn split<B: Default + Extend<u32>>(v: Vec<u32>) -> (B, B) { v.into_iter().partition(|&n| n > 1) }\n");
+  // A type parameter's `unzip` side, its callers', compiles as it did, as
+  // `either`'s forwarding `unzip` does, its arrays till #2395.
+  writeFileSync(join(dir, "lib.rs"), bag + "pub fn split<A: Default + Extend<u32>>(v: Vec<(u32, u32)>) -> (A, Vec<u32>) { v.into_iter().unzip() }\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  // A `partition` whose side its helper doesn't fill as std does, the
+  // crate's `Extend`, a type parameter's, a set of what has a destructor, is
+  // std's own compiled body (#2387, #2378); the corpus's
+  // `partition_fills_each_side_as_std_does` runs it against native Rust.
+  for (const body of [
+    "pub fn split(v: Vec<u32>) -> (Bag, Bag) { v.into_iter().partition(|&n| n > 1) }\n",
+    "pub fn split(v: Vec<Loud>) -> (BTreeSet<Loud>, BTreeSet<Loud>) { v.into_iter().partition(|l| l.0 > 1) }\n",
+    "pub fn split<B: Default + Extend<u32>>(v: Vec<u32>) -> (B, B) { v.into_iter().partition(|&n| n > 1) }\n",
+  ]) {
+    writeFileSync(join(dir, "lib.rs"), bag + body);
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+    expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("iterator_partition(");
+  }
 });
 
 // `VecDeque::remove` is `$removeOpt`; of items that may look like `None`,

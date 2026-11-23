@@ -11,6 +11,7 @@ import {
   $debugStruct,
   $dispose,
   $div,
+  $dropItems,
   $dropping,
   $findBack,
   $findDropping,
@@ -12412,6 +12413,132 @@ export function iterator_cycle(
       dropSelf?.(iterator.iter);
     },
   });
+}
+
+export function iterator_partition(
+  self,
+  f,
+  BDefault,
+  BExtendSelfItem,
+  dropSelf,
+  dropB,
+  dropF,
+  dropSelfItem,
+) {
+  let left;
+  try {
+    left = BDefault.default();
+  } catch (error) {
+    $cleanup(() => {
+      dropF?.(f);
+      dropSelf?.(self);
+    }, error);
+    throw error;
+  }
+  let right;
+  try {
+    right = BDefault.default();
+  } catch (error) {
+    $cleanup(() => {
+      dropB?.(left);
+      dropF?.(f);
+      dropSelf?.(self);
+    }, error);
+    throw error;
+  }
+  const value = $dropping(
+    (_, x) => {
+      let tmp;
+      try {
+        tmp = f(x);
+      } catch (error) {
+        $cleanup(() => {
+          dropSelfItem?.(x);
+        }, error);
+        throw error;
+      }
+      if (tmp) {
+        extend_extendOne(
+          {
+            get value() {
+              return left;
+            },
+            set value(value) {
+              left = value;
+            },
+          },
+          x,
+          BExtendSelfItem,
+          dropB,
+          dropSelfItem,
+        );
+      } else {
+        extend_extendOne(
+          {
+            get value() {
+              return right;
+            },
+            set value(value) {
+              right = value;
+            },
+          },
+          x,
+          BExtendSelfItem,
+          dropB,
+          dropSelfItem,
+        );
+      }
+    },
+    () => {
+      dropF?.(f);
+    },
+  );
+  const iter = self;
+  let value$1;
+  try {
+    try {
+      $consume(Iterator.from(iter), "fold", undefined, value, undefined, () => {
+        $dispose(value);
+      });
+    } catch (error) {
+      $cleanup(() => {
+        if (!iter.ownFold) {
+          dropSelf?.(iter);
+        }
+      }, error);
+      throw error;
+    }
+    if (!iter.ownFold) {
+      dropSelf?.(iter);
+    }
+    value$1 = undefined;
+  } catch (error) {
+    $cleanup(() => {
+      dropB?.(right);
+      dropB?.(left);
+    }, error);
+    throw error;
+  }
+  return [left, right];
+}
+
+export function extend_extendOne(self, item, SelfExtendT, dropSelf, dropT) {
+  const option = $some(item);
+  SelfExtendT.extend(
+    self,
+    option == null ? [] : [$someValue(option)],
+    undefined,
+    (option) => {
+      if (option != null) {
+        dropT?.($someValue(option));
+      }
+    },
+    (intoIter) => {
+      $dropItems(intoIter, (item) => {
+        dropT?.(item);
+      });
+    },
+  );
 }
 
 export function trustedRandomAccessNoCoerce_size(

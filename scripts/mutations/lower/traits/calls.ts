@@ -642,4 +642,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
   },
+  {
+    name: "compiled-consumer-given-raw-self",
+    breaks:
+      "a compiled std consumer, `partition`'s, is given the crate's iterator as the value it is, not a JS iterator, which it steps by `Iterator.from`, a `TypeError` (#2387)",
+    file: "crates/rust-js-lower/src/traits/calls.rs",
+    find: "                && !self.given_self_iterator(instance.def_id())\n",
+    replace: "                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^partition_into_own_extend_unwinds.rs$"],
+  },
 ];

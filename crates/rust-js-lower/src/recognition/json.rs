@@ -15,19 +15,7 @@ pub enum Json {
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(crate) fn json_type(&self, ty: Ty<'tcx>) -> Option<Json> {
-        let ty::Adt(adt, _) = ty.peel_refs().kind() else {
-            return None;
-        };
-        if self.tcx.crate_name(adt.did().krate).as_str() != "serde_json" {
-            return None;
-        }
-        Some(match self.tcx.item_name(adt.did()).as_str() {
-            "Value" => Json::Value,
-            "Number" => Json::Number,
-            "Map" => Json::Map,
-            "Entry" => Json::Entry,
-            _ => return None,
-        })
+        json_type_of(self.tcx, ty)
     }
 
     pub(super) fn is_json_map(&self, ty: Ty<'tcx>) -> bool {
@@ -301,4 +289,22 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 /// is, and `@rust-js/std`'s `JsonError` declares (#2373).
 pub(crate) fn is_json_error_def(tcx: TyCtxt<'_>, did: rustc_hir::def_id::DefId) -> bool {
     tcx.crate_name(did.krate).as_str() == "serde_json" && tcx.item_name(did).as_str() == "Error"
+}
+
+/// `json_type`'s, of `tcx` alone: serde_json's `Value`, `Number`, `Map` or
+/// `Entry`.
+pub(crate) fn json_type_of(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<Json> {
+    let ty::Adt(adt, _) = ty.peel_refs().kind() else {
+        return None;
+    };
+    if tcx.crate_name(adt.did().krate).as_str() != "serde_json" {
+        return None;
+    }
+    Some(match tcx.item_name(adt.did()).as_str() {
+        "Value" => Json::Value,
+        "Number" => Json::Number,
+        "Map" => Json::Map,
+        "Entry" => Json::Entry,
+        _ => return None,
+    })
 }

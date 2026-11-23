@@ -330,6 +330,11 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
     ("Iterator", "chain"),
     ("Iterator", "zip"),
     ("Iterator", "cycle"),
+    // A `partition` or an `unzip` whose sides its helper doesn't fill as
+    // std does, std's own, given each side's `Default` and `Extend` (#2387,
+    // #2378).
+    ("Iterator", "partition"),
+    ("Extend", "extend_one"),
     // What std's zip by index asks the length of its sides by (ADR 0975).
     ("TrustedRandomAccessNoCoerce", "size"),
 ];
@@ -753,6 +758,16 @@ pub(crate) fn compiled_instance<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::Ge
             .skip_binder()
             .output();
         return is_compiled_std(tcx, id) && compiled_for(tcx, made);
+    }
+    // `partition` of sides its helper fills as std does, the helper's, as
+    // the lowering makes them (`side_filled_by_helper`, #2387).
+    if id == compiled_provided_method(tcx, "Iterator", "partition")
+        && args
+            .types()
+            .nth(1)
+            .is_some_and(|side| super::side_filled_by_helper(tcx, ty::TypingEnv::fully_monomorphized(), side))
+    {
+        return false;
     }
     is_compiled_std(tcx, id)
         && tcx.impl_of_assoc(id).is_none_or(|imp| {
