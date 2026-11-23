@@ -12,6 +12,7 @@ import { ratchet, runTest, type Shard } from "../scripts/rustc-suite";
 import { buildCompiler, bunTest, compiler, compilerBuild, fixture, root, target, unlessUnchanged } from "./support";
 import { underLoad } from "../scripts/timing";
 import { compilerRustFiles } from "../scripts/compiler-crates";
+import { editedOf } from "./edited-compiler";
 
 beforeAll(buildCompiler);
 
@@ -22,6 +23,24 @@ function fake(name: string, script: string): string {
   chmodSync(path, 0o755);
   return path;
 }
+
+/** The real compiler, each build's output that compiled edited by `edit`,
+ * a shell script given it as `$1`, a one-shot compile's or a worker's
+ * (test/edited-compiler.ts, #2431); and the file of the outputs it
+ * edited, which a test asks is not empty, so its edit can't be missed. */
+function edited(name: string, edit: string): { compiler: string; edits: string } {
+  const dir = fixture(`harness-${name}`);
+  const script = join(dir, "edit.sh");
+  writeFileSync(script, `${edit}\n`);
+  rmSync(editedOf(script), { force: true });
+  const path = join(dir, "rust-js");
+  writeFileSync(path, `#!/bin/sh\nexec "${process.execPath}" "${join(root, "test/edited-compiler.ts")}" "${compiler}" "${script}" "$@"\n`);
+  chmodSync(path, 0o755);
+  return { compiler: path, edits: editedOf(script) };
+}
+
+/** Whether `edits`' compiler edited any output. */
+const madeEdits = (edits: string) => existsSync(edits) && readFileSync(edits, "utf8").trim() !== "";
 
 /** `bun test` of `files`, as another process, with `env`. */
 function tested(args: string[], env: Record<string, string>) {
@@ -49,11 +68,12 @@ test("a compiler that never ends is stopped, and fails the case", () => {
 
 // The real compiler's JS, with a line only the JS as compiled runs, not
 // the bundle Vite ships of it.
-const onlyUnbundled = () =>
-  fake("unbundled-only", `"${compiler}" "$@" || exit $?\necho 'if (import.meta.url.endsWith("/case.js")) console.log("only unbundled");' >> "$3"`);
+const onlyUnbundled = () => edited("unbundled-only", `echo 'if (import.meta.url.endsWith("/case.js")) console.log("only unbundled");' >> "$1"`);
 
 test("JS that's wrong in one way it's run only fails the case", () => {
-  const run = tested(["test/corpus.test.ts", "-t", "index_out_of_bounds"], { RUST_JS_COMPILER: onlyUnbundled() });
+  const { compiler: wrong, edits } = onlyUnbundled();
+  const run = tested(["test/corpus.test.ts", "-t", "index_out_of_bounds"], { RUST_JS_COMPILER: wrong });
+  expect(madeEdits(edits)).toBe(true);
   expect(run.code).not.toBe(0);
   expect(run.output).toMatch(/node stdout:\n\+ only unbundled/);
   expect(run.output).not.toContain("node, minified stdout:");
@@ -61,7 +81,7 @@ test("JS that's wrong in one way it's run only fails the case", () => {
 
 test("a failing generated program is kept before it's reduced, and a reduction cut short says so", () => {
   const out = join(target, "fuzz");
-  const run = tested(["test/fuzz.test.ts"], { RUST_JS_COMPILER: onlyUnbundled(), FUZZ_START: "3", FUZZ_SEEDS: "1", FUZZ_REDUCE_BUDGET: "1" });
+  const run = tested(["test/fuzz.test.ts"], { RUST_JS_COMPILER: onlyUnbundled().compiler, FUZZ_START: "3", FUZZ_SEEDS: "1", FUZZ_REDUCE_BUDGET: "1" });
   expect(run.code).not.toBe(0);
   expect(run.output).toContain("differs, reduced for 0.001s, not to the end,");
   const evidence = JSON.parse(readFileSync(join(out, "seed-3.json"), "utf8"));
@@ -159,17 +179,19 @@ test("a test that prints what changes, listed so, is run until it does", async (
 
 /** The real compiler, with JS that prints the bytes FF 0A in its place,
  * which read as UTF-8 are "\u{FFFD}\n", as it prints to stderr. */
-function notUtf8(): string {
+function notUtf8(): { compiler: string; edits: string } {
   const js = join(fixture("harness-not-utf8-js"), "case.js");
   writeFileSync(js, `export function entry() {\n  process.stdout.write(new Uint8Array([0xff, 10]));\n  process.stderr.write("\\uFFFD\\n");\n}\n`);
-  return fake("not-utf8", `"${compiler}" "$@" || exit $?\ncp "${js}" "$3"`);
+  return edited("not-utf8", `cp "${js}" "$1"`);
 }
 
 // What a case printed is compared as bytes, not as the text they read as.
 // Found in review: `agree` compared bytes, but the corpus's own checks,
 // rustc's tests', and whether native Rust prints what changes, text.
 test("JS that prints other bytes than native Rust, reading the same, fails the case", () => {
-  const run = tested(["test/corpus.test.ts", "-t", "replacement_character"], { RUST_JS_COMPILER: notUtf8(), RUST_JS_SNAPSHOTS: "ignore" });
+  const { compiler: other, edits } = notUtf8();
+  const run = tested(["test/corpus.test.ts", "-t", "replacement_character"], { RUST_JS_COMPILER: other, RUST_JS_SNAPSHOTS: "ignore" });
+  expect(madeEdits(edits)).toBe(true);
   expect(run.code).not.toBe(0);
   expect(run.output).toContain("node stdout:");
   expect(run.output).not.toContain("stderr:");
@@ -180,7 +202,7 @@ test("JS that prints other bytes than native Rust, reading the same, fails the c
 // a case whose JS isn't its snapshot fails, and the compiler as it is
 // passes, with no run of it natively or as JS.
 test("a case's JS alone fails where it isn't its snapshot, and isn't run", () => {
-  const other = tested(["test/corpus.test.ts", "-t", "^replacement_character.rs$"], { RUST_JS_COMPILER: notUtf8(), RUST_JS_SNAPSHOTS: "only" });
+  const other = tested(["test/corpus.test.ts", "-t", "^replacement_character.rs$"], { RUST_JS_COMPILER: notUtf8().compiler, RUST_JS_SNAPSHOTS: "only" });
   expect(other.code).not.toBe(0);
   expect(other.output).toContain("its JS isn't its snapshot, replacement_character.js");
   expect(other.output).not.toContain("node stdout:");
@@ -194,7 +216,7 @@ test("a rustc test whose JS prints other bytes, reading the same, fails, and one
   const file = join(ui, "replacement.rs");
   writeFileSync(file, `//@ run-pass\nfn main() {\n    println!("\\u{FFFD}");\n    eprintln!("\\u{FFFD}");\n}\n`);
   mkdirSync(join(target, "rustc-suite"), { recursive: true });
-  expect(await runTest(ui, file, new Set(), notUtf8())).toMatchObject({ test: "replacement.rs", status: "fail", reason: "node: different stdout" });
+  expect(await runTest(ui, file, new Set(), notUtf8().compiler)).toMatchObject({ test: "replacement.rs", status: "fail", reason: "node: different stdout" });
   const either = join(ui, "either.rs");
   writeFileSync(
     either,
