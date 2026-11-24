@@ -22,7 +22,7 @@ rustc_private = true
 resolver = "3"
 members = ["crates/rust-js-program", "crates/rust-js-emit", "crates/rust-js-lower", "crates/rust-js-mir", "crates/rust-js-jsx"]
 default-members = [".", "crates/rust-js-program", "crates/rust-js-emit", "crates/rust-js-lower", "crates/rust-js-mir", "crates/rust-js-jsx"]
-exclude = ["builtins", "examples", "next", "node", "react", "react-native", "scripts", "test", "target", "tooling", "vendor", "wasm", "webapi"]
+exclude = [".claude", "builtins", "examples", "next", "node", "react", "react-native", "scripts", "test", "target", "tooling", "vendor", "wasm", "webapi"]
 
 # What more than one of the crates depends on, at one version.
 [workspace.dependencies]
