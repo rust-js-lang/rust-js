@@ -74,9 +74,9 @@ export function undone(cwd: string, remote: string, local: string, { now = Date.
   const found: Undone[] = [];
   // Each recent commit of the remote's of a file it changes whose whole
   // change applies to what's pushed again, and didn't to the remote.
+  const since = `--since=@${Math.floor(now - day)}`;
   const scratch = mkdtempSync(join(tmpdir(), "push-guard-"));
   try {
-    const since = `--since=@${Math.floor(now - day)}`;
     // None where it changes none but fixed rows: `git log --` of no file is of every one.
     const recentCommits = changed.length === 0 ? [] : (git(cwd, ["log", `-n${recent}`, since, "--format=%H %s", remote, "--", ...changed]) ?? "").split("\n").filter(Boolean);
     for (const line of recentCommits) {
@@ -98,9 +98,14 @@ export function undone(cwd: string, remote: string, local: string, { now = Date.
   } finally {
     rmSync(scratch, { recursive: true, force: true });
   }
-  for (const file of changed) {
+  // The files the remote's commits of the last day changed, read once: only
+  // they have a history the walk below reads, which stops at a day. A `git
+  // log` of each file walked its whole history to find its last commits,
+  // 0.4 s a file: 21 min of a push of every corpus snapshot (#2447's).
+  const ofTheDay = new Set((git(cwd, ["log", since, "--format=", "--name-only", "--no-renames", remote]) ?? "").split("\n").filter(Boolean));
+  for (const file of changed.filter((file) => ofTheDay.has(file))) {
     const pushed = blob(cwd, local, moved.get(file) ?? file);
-    const history = (git(cwd, ["log", `-n${recent}`, "--format=%H %ct %s", remote, "--", file]) ?? "").split("\n").filter(Boolean);
+    const history = (git(cwd, ["log", `-n${recent}`, since, "--format=%H %ct %s", remote, "--", file]) ?? "").split("\n").filter(Boolean);
     // What a later commit of the remote's made the file, newest first: a
     // file as it was before a commit that a later one put back already,
     // as 11084981b took off the section 24e269c11 added, undoes nothing

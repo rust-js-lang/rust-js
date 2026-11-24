@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [  {
     replace: "(lines[at]!.startsWith(\"#\") ? undefined : [...fixes][0])",
     tests: ["test/push-guard.test.ts", "-t", "an issue's known file taken off"],
   },
+  {
+    name: "push-guard-day-files-unread",
+    breaks: "the files the remote's last day changed are read as none, so a push that puts back a file as it was before one of them is let through (#2447's push)",
+    file: "scripts/push-guard.ts",
+    find: "  for (const file of changed.filter((file) => ofTheDay.has(file))) {\n",
+    replace: "  for (const file of changed.filter(() => false)) {\n",
+    tests: ["test/push-guard.test.ts"],
+  },
 ];
