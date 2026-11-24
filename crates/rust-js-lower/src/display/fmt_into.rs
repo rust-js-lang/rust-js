@@ -26,6 +26,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// The entry a dictionary of `tr` may carry beside `entry`, one of its
+    /// methods' entries, that takes the same value after its sink:
+    /// `fmtInto(f, value, options)` beside a formatting trait's `fmt(value)`,
+    /// which a crossing that adapts the value adapts there too
+    /// (`placed_dictionary`, #2545). Where `impl_fmt_into` or
+    /// `std_fmt_into` may give one: a type written so, a library's that its
+    /// contract lists, or one whose writer may print; never fewer, as an
+    /// entry the dictionary lacks is skipped where it's adapted.
+    pub(crate) fn fmt_into_beside(&self, tr: ty::TraitRef<'tcx>, entry: &str) -> Option<&'static str> {
+        if entry != "fmt" || !self.is_fmt_trait(tr.def_id) {
+            return None;
+        }
+        let ty = tr.self_ty();
+        let adt = ty.peel_refs().ty_adt_def().map(|adt| adt.did());
+        let may = self.krate.written.of_type(self.tcx, ty)
+            || self.krate.prints.holds_printing(ty)
+            || adt.is_some_and(|adt| {
+                self.krate.foreign.lists_fmt_into(adt)
+                    || self.krate.written.of_adt(adt, tr.def_id)
+                    || self.krate.prints.types.contains(&adt)
+            });
+        may.then_some(FMT_INTO)
+    }
+
     /// Is `trait_id` a formatting trait, whose dictionaries may carry
     /// `fmtInto`?
     fn is_fmt_trait(&self, trait_id: DefId) -> bool {

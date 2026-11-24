@@ -578,3 +578,73 @@ an `Option<I>`, get a new shape.
 Corpus case `placed_iterator_also_another_iterators_item`
 (`compile-fail`) and the guide's limitations. Mutations
 `placed-item-unrefused` and `placed-item-refused-unplaced`.
+
+## Amendment: an iterator's items stepped through their own bound (2026-11-25, #2541)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept where it can be, and refused where it can't yet.
+
+Generic code may step an iterator's items through a bound of its items
+that no type parameter names, `S::Item: Iterator`:
+
+```rust
+fn heads<S>(s: S) -> Vec<Option<<S::Item as Iterator>::Item>>
+where
+    S: Iterator,
+    S::Item: Iterator,
+{
+    s.map(|mut i| i.next()).collect()
+}
+```
+
+It stepped them as JS iterators, `$nextSome(i)`, where they come as their
+caller holds them: the crate's iterator's object, a range's, a fieldless
+enum's string. `heads([Counter { n: 0 }].into_iter())` threw `it.next is
+not a function`.
+
+**`Iterator`'s and `IntoIterator`'s `Item` are held as they are**
+(`projection_as_it_is`), as what an `I::Item: IntoIterator` makes is
+(#278): stepped by the bound's dictionary, which `bounds` gives, `(i) =>
+SItemIterator.next(i)`. The crate's iterator, std's and a range now run as
+native.
+
+**One JS holds as no object is refused**, a fieldless enum's or a unit
+struct's: its `next` takes a `&mut` that's a cell and writes the place's
+`value`, where the item comes bare. `refuse_placed_item` asks each
+iterator bound of an `Item` projection too. As #2534's refusal, it's a
+stopgap until each item is made a place where it crosses (#2535).
+
+Corpus cases `items_stepped_through_their_bound` and
+`placed_items_stepped_through_their_bound` (`compile-fail`); the crate
+pair `library_clones_an_iterator_held_in_place` steps the crate's
+iterators through a library's bound. Mutations
+`items-of-an-iterator-stepped-as-js`, `item-iterator-bound-ungiven` and
+`placed-items-through-their-bound-unrefused`.
+
+## Amendment: a dictionary's entries beside its trait's methods are placed too (2026-11-25, #2545, #2540)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept.
+
+`placed_dictionary` places a dictionary's entries by its trait's methods.
+Two entries take the value but are no trait method:
+
+- **A formatting dictionary's `fmtInto(f, value, options)`**, beside
+  `fmt(value)` (`display/fmt_into.rs`), which a consumer's dictionary
+  carries where a library's code writes the value into its sink.
+  `shown(Light::Red.take(3))` through a library printed `Take { iter:
+  Green, n: 3 }`: std's `Take` gave its `fmtInto` the place, `{ value:
+  "Red" }`, which it compared to the string.
+- **`Copy`'s copy function** (ADR 0289), which a fieldless enum's
+  dictionary gave as none, its value its own copy. Generic code's copy of
+  the place was the place, two copies stepping one.
+
+Each is placed alike: `fmt_into_beside`, `display/fmt_into.rs`'s one
+answer of which entry takes the value after its sink, `{ fmt: [1],
+fmtInto: [0, 1] }`; and `Copy`'s `copy`, given and made in the place's
+shape, a new place.
+
+Crate pairs `library_iterator_shown_inside_take` and
+`library_clones_an_iterator_held_in_place`, corpus case
+`into_iterator_another_bound_reads`. Mutations `placed-fmt-into-unshaped`
+and `placed-copy-entry-unshaped`.

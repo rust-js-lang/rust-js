@@ -85,8 +85,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 continue;
             }
+            // And what a formatting dictionary carries beside `fmt`,
+            // `fmtInto(f, value, options)`, which takes the same value
+            // after its sink, as a consumer's dictionary given a library's
+            // generic code carries it (#2545).
+            if let Some(beside) = self.fmt_into_beside(bound, &name) {
+                let after_sink =
+                    |(takes, _): &Shapes| (std::iter::once(None).chain(takes.iter().cloned()).collect(), None);
+                shaped_entry(beside, after_sink(&holder), (&mut given, &mut made));
+                shaped_entry(beside, after_sink(&entry), (&mut into, &mut back));
+            }
             shaped_entry(&name, holder, (&mut given, &mut made));
             shaped_entry(&name, entry, (&mut into, &mut back));
+        }
+        // `Copy`'s copy function, an entry of no method of its trait (ADR
+        // 0289): of a value generic code holds in a place, a new place,
+        // never the place itself (#2540).
+        if tcx.is_lang_item(bound.def_id, LangItem::Copy)
+            && let Some(shape) = self.placed_shape((def_id, declared.self_ty(), bound.self_ty()))
+        {
+            shaped_entry(
+                "copy",
+                (vec![Some(shape.clone())], Some(shape)),
+                (&mut given, &mut made),
+            );
         }
         // Its supertraits', and its associated types' bounds', each placed
         // where it crosses so.

@@ -531,4 +531,31 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
   },
+  {
+    name: "into-iterator-another-bound-unread",
+    breaks:
+      "a `T: IntoIterator + Clone` is given the JS iterator its caller makes of its value, which its `Clone` dictionary reads as the value: a range's clone reads `.start` of a `$Steps`, a fieldless enum's place `.value` of one, the crate's iterator's clone shares its steps (#2540)",
+    file: "crates/rust-js-lower/src/iterators.rs",
+    find: "(is_its_iter(p.self_ty()) || (an_into_iterator && p.self_ty() == into && p.def_id() != into_iterator))",
+    replace: "is_its_iter(p.self_ty())",
+    tests: ["test/corpus.test.ts", "-t", "^into_iterator_another_bound_reads\\.rs$"],
+  },
+  {
+    name: "copy-reads-no-value",
+    breaks:
+      "a `T: Iterator + Copy` is given the JS iterator its caller makes of its value, whose copy function a fieldless enum's place has none of: `TCopy.copy is not a function` (#2540)",
+    file: "crates/rust-js-lower/src/iterators.rs",
+    find: "tcx.is_lang_item(tr, rustc_hir::attrs::lang_items::LangItem::Copy)\n        ||",
+    replace: "false\n        ||",
+    tests: ["test/corpus.test.ts", "-t", "^into_iterator_another_bound_reads\\.rs$"],
+  },
+  {
+    name: "items-of-an-iterator-stepped-as-js",
+    breaks:
+      "an iterator's items stepped through their own bound, `S::Item: Iterator`, are stepped as JS iterators, where they come as their caller holds them: the crate's iterator's object, a range's: `it.next is not a function` (#2541)",
+    file: "crates/rust-js-lower/src/iterators.rs",
+    find: "            .any(|p| p.def_id() == iterator && p.skip_binder().self_ty() == ty)\n    {\n        return true;",
+    replace: "            .any(|p| p.def_id() == iterator && p.skip_binder().self_ty() == ty && false)\n    {\n        return true;",
+    tests: ["test/corpus.test.ts", "-t", "^items_stepped_through_their_bound\\.rs$"],
+  },
 ];

@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Copy` fieldless enum's iterator given generic code bound by `Clone` takes no clone dictionary, so `it.clone()` is the place itself and stepping one steps the other (#2255)",
     file: "crates/rust-js-lower/src/analysis/mutation.rs",
-    find: "    let itself = |ty| clones_itself(tcx, counted, ty) && !placed_by_generic_code(tcx, ty);\n",
-    replace: "    let itself = |ty| clones_itself(tcx, counted, ty);\n",
+    find: "    clones_itself(tcx, counted, ty) && !placed_by_generic_code(tcx, ty)\n}\n",
+    replace: "    clones_itself(tcx, counted, ty)\n}\n",
     tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
   },
   {

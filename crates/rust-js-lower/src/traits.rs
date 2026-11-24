@@ -403,6 +403,16 @@ fn bound_of<'tcx>(
         let steps = given.stepped.contains(&(id, param.index, tr.def_id)) || foreign.steps(id, param.index, tr.def_id);
         return steps.then_some(tr);
     }
+    // An `Iterator` of what an iterator gives, `S::Item: Iterator`, held as
+    // its caller holds it (`projection_as_it_is`): its dictionary, which
+    // steps it (#2541).
+    if is_std_def(tcx, tr.def_id, StdItem::Iterator)
+        && matches!(tr.self_ty().kind(), ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. })
+            if *def_id == super::recognition::trait_method(tcx, tr.def_id, "Item"))
+        && super::iterators::projection_as_it_is(tcx, id, tr.self_ty())
+    {
+        return Some(tr);
+    }
     // An extension's of an associated type a parameter's bound names,
     // `U::IntoIter: DoubleEndedIterator` of std's `FlatMap`'s back, which
     // no `IntoIterator` dictionary carries: its own (ADR 0936).

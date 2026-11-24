@@ -1150,8 +1150,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => Some(self.dictionary(ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]), span)?),
                 false => None,
             };
-            // A value that's its own copy is given none (ADR 0289, amended).
-            if js::same_path(&copy, &value) && clone.is_none() {
+            // A value that's its own copy is given none (ADR 0289, amended),
+            // but an iterator JS holds as no object, which generic code
+            // holds in a place of its own, `{ value }`, whose copy is
+            // another place (`placed_dictionary`, #2540).
+            if js::same_path(&copy, &value) && clone.is_none() && !self.placed_iterator(ty) {
                 return Ok(Expr::js_undefined());
             }
             let mut props = vec![Prop::Field(

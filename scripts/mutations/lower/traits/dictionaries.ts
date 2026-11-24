@@ -476,7 +476,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value that's its own copy is given `{ copy: (value) => value }`, `createContext(7, ..)`, where JS gives none",
     file: "crates/rust-js-lower/src/traits/dictionaries.rs",
-    find: "            if js::same_path(&copy, &value) && clone.is_none() {\n",
+    find: "            if js::same_path(&copy, &value) && clone.is_none() && !self.placed_iterator(ty) {\n",
     replace: "            if false {\n",
     tests: [
       "test/crates-compiled-here.test.ts",
@@ -791,8 +791,8 @@ export const mutations: Mutation[] = [
     name: "copy-dictionary-dropped-with-its-clone",
     breaks: "a `Copy` dictionary whose copy is the value is given as `undefined` though it holds a `Clone()` its generic code calls (#1451)",
     file: "crates/rust-js-lower/src/traits/dictionaries.rs",
-    find: "            if js::same_path(&copy, &value) && clone.is_none() {\n",
-    replace: "            if js::same_path(&copy, &value) {\n",
+    find: "            if js::same_path(&copy, &value) && clone.is_none() && !self.placed_iterator(ty) {\n",
+    replace: "            if js::same_path(&copy, &value) && !self.placed_iterator(ty) {\n",
     tests: ["test/crates-pairs-3.test.ts", "-t", "library_clones_through_a_copy_bound"],
   },
   {
@@ -950,5 +950,14 @@ export const mutations: Mutation[] = [
     replace: "    made.helper_call_of_any(&[\"$bufReader\", \"$readerDefaults\"]).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
     snapshots: true,
+  },
+  {
+    name: "placed-copy-given-none",
+    breaks:
+      "the `Copy` dictionary of an iterator JS holds as no object is none, as its value is its own copy, where generic code holds it in a place of its own: `TCopy.copy is not a function` (#2540)",
+    file: "crates/rust-js-lower/src/traits/dictionaries.rs",
+    find: "&& clone.is_none() && !self.placed_iterator(ty) {",
+    replace: "&& clone.is_none() {",
+    tests: ["test/corpus.test.ts", "-t", "^into_iterator_another_bound_reads\\.rs$"],
   },
 ];

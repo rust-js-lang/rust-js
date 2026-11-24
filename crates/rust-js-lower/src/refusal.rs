@@ -41,7 +41,8 @@ pub enum Crossing {
     /// A value JS holds as no object, inside a generic struct or type the
     /// body holds in a place, given as it is (#2255).
     PlacedArgument,
-    /// One also given as another iterator's items (#2534).
+    /// One also given as another iterator's items (#2534), or stepped as
+    /// them through their own bound, `S::Item: Iterator` (#2541).
     PlacedItem,
     /// A `RefCell` guard's `&mut` given where generic code may write it whole.
     GuardArgument,

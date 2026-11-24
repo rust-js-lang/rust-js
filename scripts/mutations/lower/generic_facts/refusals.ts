@@ -37,4 +37,13 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/libraries.test.ts", "-t", "RefCell guard's `&mut` given to a library"],
   },
+  {
+    name: "placed-items-through-their-bound-unrefused",
+    breaks:
+      "a fieldless enum's iterator given as items generic code steps through `S::Item: Iterator` compiles, its bare string stepped by a `next` that writes a place's `value`: `Cannot create property 'value'` (#2541)",
+    file: "crates/rust-js-lower/src/generic_facts/refusals.rs",
+    find: "            if self.placed_iterator(instantiated) {\n",
+    replace: "            if false && self.placed_iterator(instantiated) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^placed_items_stepped_through_their_bound\\.rs$"],
+  },
 ];

@@ -534,8 +534,29 @@ pub(crate) fn copied_params<'tcx>(
         (fns.keys(), &|id| fns.contains_key(&id)),
         foreign,
         &bounded,
-        &|ty| copies_itself(tcx, ty) && !placed_by_generic_code(tcx, ty),
+        &|ty| generic_copy_is_itself(tcx, ty),
     )
+}
+
+/// Whether generic code's copy of a value of `ty` its caller gives is the
+/// value itself (`copies_itself`), as one it holds in a place of its own
+/// isn't (`placed_by_generic_code`): the one answer of whether a `Copy`
+/// bound takes a copy function, of the crate's callers (`copied_params`) and
+/// of a library's consumer that compiles its own instance where its export
+/// takes none (`instances::needed`, #2540).
+pub(crate) fn generic_copy_is_itself<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    copies_itself(tcx, ty) && !placed_by_generic_code(tcx, ty)
+}
+
+/// Whether generic code's clone of a value of `ty` its caller gives is the
+/// value itself (`clones_itself`), as one it holds in a place of its own
+/// isn't (`placed_by_generic_code`): the one answer of whether a `Clone`
+/// bound takes its dictionary, of the crate's callers (`cloned_params`) and
+/// of a library's consumer (`instances::needed`), whose export that took
+/// none cloned a fieldless enum's place as the place, two iterators
+/// stepping one (#2540).
+pub(crate) fn generic_clone_is_itself<'tcx>(tcx: TyCtxt<'tcx>, counted: &super::Counted<'tcx>, ty: Ty<'tcx>) -> bool {
+    clones_itself(tcx, counted, ty) && !placed_by_generic_code(tcx, ty)
 }
 
 /// Whether generic code may hold a value of `ty`, one JS holds as itself
@@ -563,7 +584,7 @@ pub(crate) fn cloned_params<'tcx>(
     counted: &super::Counted<'tcx>,
 ) -> IndexSet<(DefId, u32)> {
     let bounded = |id| clone_bounded(tcx, id);
-    let itself = |ty| clones_itself(tcx, counted, ty) && !placed_by_generic_code(tcx, ty);
+    let itself = |ty| generic_clone_is_itself(tcx, counted, ty);
     given_params(
         tcx,
         (all_bodies, names),

@@ -87,7 +87,7 @@ pub fn needed<'tcx>(
         foreign,
     };
     let runs = |t: Ty<'tcx>| crate::drops::drop_runs(recognition, (library, closure_facts), counted, t);
-    let clones_itself = |t: Ty<'tcx>| crate::analysis::clones_itself(tcx, counted, t);
+    let clones_itself = |t: Ty<'tcx>| crate::analysis::generic_clone_is_itself(tcx, counted, t);
     let calls = Calls {
         tcx,
         recognition,
@@ -334,7 +334,7 @@ fn gives_more<'tcx>(
         };
         let copies = match given.kind() {
             ty::Param(param) => calls.copied.contains(&(caller, param.index)),
-            _ => !crate::analysis::copies_itself(tcx, given),
+            _ => !crate::analysis::generic_copy_is_itself(tcx, given),
         };
         // A clone of it that isn't the value, which an export that takes no
         // `Clone` dictionary can't make (ADR 0914, amended).

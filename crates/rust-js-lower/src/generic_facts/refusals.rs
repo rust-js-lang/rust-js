@@ -106,6 +106,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
+        // And items no type parameter names, stepped through their own
+        // bound, `S::Item: Iterator`: they come as their caller holds them,
+        // a fieldless enum's string, where the bound's `next`, of a `&mut`
+        // that's a cell, writes the place's `value` (#2541, #2535).
+        for (clause, _) in tcx.clauses_of(id).instantiate_identity(tcx) {
+            let Some(bound) = clause.skip_normalization().as_trait_clause() else {
+                continue;
+            };
+            let bound = bound.skip_binder();
+            let item = bound.self_ty();
+            if !crate::recognition::is_iterator_trait(tcx, bound.def_id())
+                || !matches!(*item.kind(), ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. }) if items.contains(&def_id))
+            {
+                continue;
+            }
+            let instantiated = self.instantiated(item, args);
+            if self.placed_iterator(instantiated) {
+                return Err(self.unconverted(
+                    span,
+                    crate::refusal::Crossing::PlacedItem,
+                    &format!(
+                        "a `{instantiated}`, which JS holds as no object, given as `{item}`, stepped through its `{}` as generic code holds it, in a place of its own, `{{ value }}`, where its items come as their caller holds them (#2541, #2535)",
+                        tcx.def_path_str(bound.def_id())
+                    ),
+                ));
+            }
+        }
         Ok(())
     }
 }

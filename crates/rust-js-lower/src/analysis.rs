@@ -118,7 +118,7 @@ pub(super) use debug::{WriterFacts, Writes};
 use drops::drop_params;
 use generic_consts::generic_consts;
 pub(crate) use mutation::Mutated;
-pub(super) use mutation::{clone_bounded, clones_itself, copies_itself, copy_bounded};
+pub(super) use mutation::{clone_bounded, copy_bounded, generic_clone_is_itself, generic_copy_is_itself};
 use mutation::{cloned_params, compared_params, copied_params, mutated_types, params_only_read, unboxed_params};
 pub(super) use mutation::{clones_by_itself, compares_by_operator_param};
 use naming::{

@@ -62,14 +62,19 @@ use rustc_span::def_id::DefId;
 /// its JS iterator answers (ADRs 0164, 0456). The one rule of what's
 /// given as it is, of an iterator and of what an `IntoIterator` makes.
 fn reads_its_value(tcx: ty::TyCtxt<'_>, tr: DefId) -> bool {
-    tr != std_item(tcx, StdItem::Iterator)
-        && !super::recognition::is_iterator_extension(tcx, tr)
-        && (tcx.associated_items(tr).in_definition_order()).any(|item| item.is_fn())
+    // `Copy`'s too, which has no method but whose copy function reads it
+    // (ADR 0289): a copy of the JS iterator made of a fieldless enum's place
+    // read no `copy` (#2540).
+    tcx.is_lang_item(tr, rustc_hir::attrs::lang_items::LangItem::Copy)
+        || (tr != std_item(tcx, StdItem::Iterator)
+            && !super::recognition::is_iterator_extension(tcx, tr)
+            && (tcx.associated_items(tr).in_definition_order()).any(|item| item.is_fn()))
 }
 
 /// Whether `id` holds what `into` makes as an `IntoIterator`, its
-/// `IntoIter`, as it is: bounds it by a trait that reads its value,
-/// `<T as IntoIterator>::IntoIter: Clone`, or its signature holds it where
+/// `IntoIter`, as it is: bounds it, or `into` itself, by a trait that reads
+/// its value, `<T as IntoIterator>::IntoIter: Clone`, `T: Clone` (#2540),
+/// or its signature holds it where
 /// its caller reads it as the type it is, `-> T::IntoIter`, `it:
 /// T::IntoIter`, `Option<T::IntoIter>`, `Pair<I::IntoIter>` given back
 /// (`holds_readably`, ADRs 0411, 0561, #2331); not in std's adapter,
@@ -128,7 +133,15 @@ pub(crate) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, in
         .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
         .map(|p| p.skip_binder())
         .collect();
-    let read = (clauses.iter()).any(|p| is_its_iter(p.self_ty()) && reads_its_value(tcx, p.def_id()));
+    // Or bounds `into` itself so, `T: IntoIterator + Clone`'s `t.clone()`,
+    // `Debug`'s `{t:?}`: what they read is its caller's own value, as an
+    // iterator's is (ADR 0474), never the JS iterator a caller made of it,
+    // whose clone read `.value` of a `$Steps` (#2540).
+    let an_into_iterator = (clauses.iter()).any(|p| p.self_ty() == into && p.def_id() == into_iterator);
+    let read = (clauses.iter()).any(|p| {
+        (is_its_iter(p.self_ty()) || (an_into_iterator && p.self_ty() == into && p.def_id() != into_iterator))
+            && reads_its_value(tcx, p.def_id())
+    });
     // Or another bound names it, `R: IteratorIndex<I::IntoIter>` of
     // itertools' `get`: what that one's impl makes of it, `Take<Skip<I>>`,
     // holds the value as it is, which a caller steps as the type it names
@@ -210,6 +223,23 @@ pub(crate) fn projection_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, ty: Ty
     let into_iterator = std_item(tcx, StdItem::IntoIterator);
     if def_id == super::recognition::trait_method(tcx, into_iterator, "IntoIter") {
         return into_iter_held_as_it_is(tcx, id, args.type_at(0));
+    }
+    // An iterator's items `id` bounds by `Iterator` itself, `<S as
+    // Iterator>::Item: Iterator`, or an `IntoIterator`'s: values no call
+    // makes a JS iterator, which come as their caller holds them, the
+    // crate's own its struct, a range its own, stepped by that bound's
+    // dictionary, as what an `I::Item: IntoIterator` makes is (#278,
+    // #2541). Not items another bound takes, `I::Item: IntoIterator` of
+    // std's `Flatten`, whose `into_iter` makes what it steps.
+    let iterator = std_item(tcx, StdItem::Iterator);
+    if [iterator, into_iterator]
+        .map(|tr| super::recognition::trait_method(tcx, tr, "Item"))
+        .contains(&def_id)
+        && (tcx.clauses_of(id).instantiate_identity(tcx).into_iter())
+            .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+            .any(|p| p.def_id() == iterator && p.skip_binder().self_ty() == ty)
+    {
+        return true;
     }
     assoc_iterator_as_it_is(tcx, def_id)
 }

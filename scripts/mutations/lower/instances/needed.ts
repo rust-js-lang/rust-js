@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a consumer's generic function given a copy of its `T` gives a library's function its `T` with none, as if its own copy (ADR 0914)",
     file: "crates/rust-js-lower/src/instances/needed.rs",
-    find: "            _ => !crate::analysis::copies_itself(tcx, given),\n",
+    find: "            _ => !crate::analysis::generic_copy_is_itself(tcx, given),\n",
     replace: "            _ => false,\n",
     tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: copy_given"],
   },
@@ -336,5 +336,23 @@ export const mutations: Mutation[] = [
     find: "                where_unsaid(&calls, caller, (callee, args)).or_else(|| chooses_unsaid(&calls, caller, (callee, args)))\n",
     replace: "                where_unsaid(&calls, caller, (callee, args))\n",
     tests: ["test/crates-pairs-3.test.ts", "-t", "^two crates: library_code_gives_its_consumers_impl_by_each_route$"],
+  },
+  {
+    name: "consumer-clone-of-a-place-itself",
+    breaks:
+      "a library's export that takes no `Clone` dictionary is called with a fieldless enum's iterator, which generic code holds in a place of its own, whose clone is the place itself: two iterators step one, `[Some(0), Some(1), Some(0)]` (#2540)",
+    file: "crates/rust-js-lower/src/instances/needed.rs",
+    find: "crate::analysis::generic_clone_is_itself(tcx, counted, t)",
+    replace: "(crate::analysis::generic_clone_is_itself(tcx, counted, t) || t.is_enum())",
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_iterator_shown_inside_take"],
+  },
+  {
+    name: "consumer-copy-of-a-place-itself",
+    breaks:
+      "a library's export that takes no copy function is called with a fieldless enum's iterator, which generic code holds in a place of its own, whose copy is the place itself: two iterators step one (#2540)",
+    file: "crates/rust-js-lower/src/instances/needed.rs",
+    find: "!crate::analysis::generic_copy_is_itself(tcx, given)",
+    replace: "!(crate::analysis::generic_copy_is_itself(tcx, given) || given.is_enum())",
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_iterator_shown_inside_take"],
   },
 ];

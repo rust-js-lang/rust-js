@@ -439,4 +439,13 @@ export const mutations: Mutation[] = [
     replace: "        DefKind::Fn | DefKind::AssocFn | DefKind::Ctor(_, rustc_hir::def::CtorKind::Fn) | _\n",
     tests: ["test/corpus.test.ts", "-t", "^aggregate_holding_a_mut_to_a_closure.rs$"],
   },
+  {
+    name: "item-iterator-bound-ungiven",
+    breaks:
+      "an `S::Item: Iterator` its body steps as it is is given no dictionary, so its body steps the items as JS iterators: `it.next is not a function` (#2541)",
+    file: "crates/rust-js-lower/src/traits.rs",
+    find: "        && super::iterators::projection_as_it_is(tcx, id, tr.self_ty())\n",
+    replace: "        && super::iterators::projection_as_it_is(tcx, id, tr.self_ty())\n        && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^items_stepped_through_their_bound\\.rs$"],
+  },
 ];

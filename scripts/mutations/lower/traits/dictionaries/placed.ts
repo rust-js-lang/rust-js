@@ -92,4 +92,22 @@ export const mutations: Mutation[] = [
     replace: "                .filter(|item| item.is_type())\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_associated_types\\.rs$"],
   },
+  {
+    name: "placed-copy-entry-unshaped",
+    breaks:
+      "a `Copy` dictionary given generic code that holds a fieldless enum's iterator in a place of its own copies the place as the place, `copy: (value) => value` given `{ value }`: two copies step one, `[Some(1), Some(0), Some(1)]` (#2540)",
+    file: "crates/rust-js-lower/src/traits/dictionaries/placed.rs",
+    find: "        if tcx.is_lang_item(bound.def_id, LangItem::Copy)\n",
+    replace: "        if tcx.is_lang_item(bound.def_id, LangItem::Copy) && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iterator_another_bound_reads\\.rs$"],
+  },
+  {
+    name: "placed-fmt-into-unshaped",
+    breaks:
+      "a consumer's `Debug` dictionary of a fieldless enum's iterator, given a library's generic code that holds it in a place inside std's `Take`, gives its `fmtInto` the place where it compares the string: `Take { iter: Green, n: 3 }` for `Red` (#2545)",
+    file: "crates/rust-js-lower/src/traits/dictionaries/placed.rs",
+    find: "            if let Some(beside) = self.fmt_into_beside(bound, &name) {\n",
+    replace: "            if let Some(beside) = self.fmt_into_beside(bound, &name).filter(|_| false) {\n",
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_iterator_shown_inside_take"],
+  },
 ];
