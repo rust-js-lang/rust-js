@@ -185,7 +185,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        if resumed_as_given(e) || e.thrown_error_of().is_some_and(of_payload) {\n",
     replace: "        if resumed_as_given(e) {\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "resumed-of-another-variable",
@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        && js::mentions_of(rest, &thrown) == 0\n    {\n",
     replace: "        && false\n    {\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "catch-unnamed",

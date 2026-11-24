@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
     find: "                                guard.is_none() || falls[i] || self.fails_to_nothing(&arm.pattern, &arms[i + 1..])\n",
     replace: "                                true\n",
     tests: [
-      "test/lowering-matches.test.ts",
+      "test/lowering-match-arms.test.ts",
       "-t",
       "a match of constants is a switch",
     ],
@@ -283,7 +283,7 @@ export const mutations: Mutation[] = [
     find: "                    || self.read_in_place(hir_id)\n",
     replace: "",
     tests: [
-      "test/lowering-matches.test.ts",
+      "test/lowering-match-arms.test.ts",
       "-t",
       "a match of constants is a switch",
     ],
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
     find: "                let cases: usize = arms.iter().map(SwitchArm::cases).sum();\n",
     replace: "                let cases: usize = arms.len();\n",
     tests: [
-      "test/lowering-matches.test.ts",
+      "test/lowering-match-arms.test.ts",
       "-t",
       "a match of constants is a switch",
     ],

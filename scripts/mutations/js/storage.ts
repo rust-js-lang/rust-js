@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/js/storage.rs",
     find: "            (Storage::NullForNone, ExprKind::Undefined | ExprKind::GivenUndefined) => Expr::null().or_at(made.span),\n",
     replace: "",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart"],
+    tests: ["test/lowering-nullable-thread-locals.test.ts", "-t", "a nullable thread-local nothing reads apart"],
   },
   {
     name: "alike-test-branch-undefined",
@@ -76,7 +76,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/js/storage.rs",
     find: "                    Box::new(self.written_alike(*no)),\n",
     replace: "                    no,\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart"],
+    tests: ["test/lowering-nullable-thread-locals.test.ts", "-t", "a nullable thread-local nothing reads apart"],
   },
   {
     name: "in-place-fields-set-before-computed",

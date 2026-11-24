@@ -162,7 +162,7 @@ export const mutations: Mutation[] = [
     find: "                    && !of_type_parameter(tcx, ty)\n",
     replace: "",
     tests: [
-      "test/lowering-nullable.test.ts",
+      "test/lowering-nullable-stores.test.ts",
       "-t",
       "a generic struct's nullable field",
     ],

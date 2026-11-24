@@ -59,7 +59,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/representation/nones.rs",
     find: "        NonePlace::Param(def_id, i) => NoneForm::null_if(null_params(tcx, def_id).contains(&i)),\n",
     replace: "        NonePlace::Param(def_id, i) => NoneForm::null_if(false && null_params(tcx, def_id).contains(&i)),\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
+    tests: ["test/lowering-nullable-stores.test.ts", "-t", "own nullable parameter"],
   },
   {
     name: "any-value-set-nulled",

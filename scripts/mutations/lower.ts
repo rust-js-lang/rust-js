@@ -359,7 +359,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/lib.rs",
     find: "    if !located(tcx, module) {\n        return name();\n",
     replace: "    if true {\n        return name();\n",
-    tests: ["test/modules.test.ts", "-t", "a function called through its module is read through its namespace"],
+    tests: ["test/modules-imports.test.ts", "-t", "a function called through its module is read through its namespace"],
   },
   {
     name: "unbound-path-read-as-a-name",

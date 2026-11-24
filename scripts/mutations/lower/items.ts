@@ -393,7 +393,7 @@ export const mutations: Mutation[] = [
     replace:
       "super::reexports::exported_in(self.tcx, self.krate.fns, module, self.tcx.item_name(def_id), def_id)",
     tests: [
-      "test/modules.test.ts",
+      "test/modules-imports.test.ts",
       "-t",
       "a function called through its module is read through its namespace",
     ],
@@ -412,7 +412,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/items.rs",
     find: "        if super::bindings::reads_only_its_parameters(self.tcx, def_id) {\n",
     replace: "        if false {\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "reads only its parameters is its function"],
+    tests: ["test/lowering-passed-on-values.test.ts", "-t", "reads only its parameters is its function"],
   },
   {
     name: "required-use-imported",

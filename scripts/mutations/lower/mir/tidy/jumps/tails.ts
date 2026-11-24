@@ -531,7 +531,7 @@ export const mutations: Mutation[] = [
     replace:
       "                } else {\n                    at.max(stmt.span.hi)\n                };\n",
     tests: [
-      "test/lowering-switches.test.ts",
+      "test/lowering-switch-arm-returns.test.ts",
       "-t",
       "written return at a function's end is its case's return",
     ],

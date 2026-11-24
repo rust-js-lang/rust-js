@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/uses.rs",
     find: "                walk(item, nested, *def_id, &path.segments, found);\n",
     replace: "",
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
   },
   {
     name: "list-self-named-self",

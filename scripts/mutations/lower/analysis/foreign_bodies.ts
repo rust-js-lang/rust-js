@@ -36,6 +36,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/foreign_bodies.rs",
     find: "                self.super_rvalue(rvalue, at);\n",
     replace: "                let _ = at;\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a library's closure capturing nothing, made into a struct's field"],
+    tests: ["test/cross-crate-data.test.ts", "-t", "a library's closure capturing nothing, made into a struct's field"],
   },
 ];

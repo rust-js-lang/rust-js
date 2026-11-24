@@ -32,6 +32,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/js/make/unwinding.rs",
     find: "            ExprKind::Member(pair, field) if field == THROWN_VALUE => Some(pair),\n",
     replace: "            ExprKind::Member(pair, field) if false && field == THROWN_VALUE => Some(pair),\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
 ];

@@ -507,7 +507,7 @@ export const mutations: Mutation[] = [
     find: "                    && let Some(&discriminant) = state.facts.options().thrown.get(&place.local) =>\n",
     replace:
       "                    && let Some(&discriminant) = state.facts.options().thrown.get(&place.local).filter(|_| false) =>\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "cell-handle-place-reread",

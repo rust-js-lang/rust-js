@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "                        _ => out.push(e.tested()),\n",
     replace: "                        _ => out.push(e.clone()),\n",
-    tests: ["test/lowering-options.test.ts", "-t", "a filter by truth then a fallback is JS"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "a filter by truth then a fallback is JS"],
   },
   {
     name: "reads-same-index-variable",

@@ -219,7 +219,7 @@ export const mutations: Mutation[] = [
     replace:
       "            let mut keys: Vec<String> = built.iter().take(0).map(|&id| key(tcx, id)).collect();\n",
     tests: [
-      "test/cross-crate-items.test.ts",
+      "test/cross-crate-data.test.ts",
       "-t",
       "a struct a library builds is the program's own data",
     ],
@@ -264,7 +264,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/exports.rs",
     find: "                        .filter(|&&(of, _)| of == id)\n",
     replace: "                        .filter(|_| false)\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
+    tests: ["test/cross-crate-data.test.ts", "-t", "nullable parameter its calls give null"],
   },
   {
     name: "associated-facts-unexported",

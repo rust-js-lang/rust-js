@@ -552,7 +552,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/std_calls.rs",
     find: "            unread: self.result_unread(state),\n",
     replace: "            unread: false,\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a replace of a JS-made struct's cell field whose old value nothing reads"],
+    tests: ["test/cross-crate-data.test.ts", "-t", "a replace of a JS-made struct's cell field whose old value nothing reads"],
   },
   {
     name: "nullable-lend-stores-as-given",

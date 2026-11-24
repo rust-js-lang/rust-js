@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::FallbacksHeld, body, |body| fallen_held(body));\n",
     replace: "",
-    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "filter by truth then a fallback"],
   },
   {
     name: "fallen-held-read-twice",
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare.rs",
     find: "        if js::mentions_of(&after[1..], name) != 0 || js::mentions_of(&after[..1], name) != 1 {\n",
     replace: "        if js::mentions_of(&after[..1], name) != 1 {\n",
-    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "filter by truth then a fallback"],
   },
   {
     name: "truth-kept-unfallen",
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare.rs",
     find: "        last if last.is_nullish() => parts(y, &mut chained),\n",
     replace: "        last if last.is_nullish() => return None,\n",
-    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "filter by truth then a fallback"],
   },
   {
     name: "fallen-chain-any-last",
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare.rs",
     find: "        _ => return None,\n    }\n    chained.into_iter().reduce(",
     replace: "        last => chained.push(last),\n    }\n    chained.into_iter().reduce(",
-    tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "filter by truth then a fallback"],
   },
   {
     name: "declared-at-top-off",
@@ -412,7 +412,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare.rs",
     find: "            if let Some(truth) = kept_by_truth(a)\n",
     replace: "            if let Some(truth) = kept_by_truth(a).filter(|_| false)\n",
-    tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "React's typeName"],
   },
   {
     name: "kept-by-truth-effects-skipped",
@@ -420,7 +420,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare.rs",
     find: "        && parts[1..].iter().all(|p| !p.has_effects())\n",
     replace: "",
-    tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "React's typeName"],
   },
   {
     name: "fallen-declared-kept",
@@ -428,7 +428,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::FallbacksDeclared, body, fallen_declared);\n",
     replace: "",
-    tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "a let then its fallback"],
   },
   {
     name: "fallen-declared-reads-itself",
@@ -436,7 +436,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare.rs",
     find: "            && !fallback.mentions_name(name)\n",
     replace: "",
-    tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "a let then its fallback"],
   },
   {
     name: "fallen-declared-set-after-const",
@@ -444,7 +444,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare.rs",
     find: "            body[i].kind = match js::Writes::of(&body[i + 2..]).may_replace(&name) {\n",
     replace: "            body[i].kind = match false && js::Writes::of(&body[i + 2..]).may_replace(&name) {\n",
-    tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "a let then its fallback"],
   },
   {
     name: "fallen-declared-any-test",
@@ -452,7 +452,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare.rs",
     find: "        StmtKind::If(test, then, None) if falsy(test) => match then.as_slice() {\n",
     replace: "        StmtKind::If(_, then, None) => match then.as_slice() {\n",
-    tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "a let then its fallback"],
   },
   {
     name: "fallen-declared-coalesce-or",
@@ -460,7 +460,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare.rs",
     find: "            ExprKind::Binary(Op::Coalesce, x, fallback) if is(x) => Some((Op::Coalesce, (**fallback).clone())),\n",
     replace: "            ExprKind::Binary(Op::Coalesce, x, fallback) if is(x) => Some((Op::Or, (**fallback).clone())),\n",
-    tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "a let then its fallback"],
   },
   {
     name: "else-if-unelsed",
@@ -699,7 +699,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare.rs",
     find: "        _ => test.clone().negated_test().text_truth().is_some_and(is),\n",
     replace: "        _ => false,\n",
-    tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback where it's falsy is one"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "a let then its fallback where it's falsy is one"],
   },
   {
     name: "null-or-empty-text-unfolded",

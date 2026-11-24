@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "            && given_first(value)\n",
     replace: "",
-    tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
+    tests: ["test/lowering-match-arms.test.ts", "-t", "no arm sets it"],
   },
   {
     name: "default-value-read-before",
@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "            && js::mentions_of(rest, x) == given\n",
     replace: "",
-    tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
+    tests: ["test/lowering-match-arms.test.ts", "-t", "no arm sets it"],
   },
   {
     name: "default-value-set-not-left",
@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "                    if !breaks || value.mentions_name(self.x) {\n",
     replace: "                    if false && !breaks || value.mentions_name(self.x) {\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
+    tests: ["test/lowering-match-arms.test.ts", "-t", "no arm sets it"],
   },
   {
     name: "default-value-past-a-bare-break",
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy/decisions/defaults.rs",
     find: "                local: declared_unread(&stmts[..i], x),\n",
     replace: "                local: false,\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
+    tests: ["test/lowering-match-arms.test.ts", "-t", "no arm sets it"],
   },
   {
     name: "empty-array-not-given-first",

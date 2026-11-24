@@ -219,7 +219,7 @@ export const mutations: Mutation[] = [
     find: '                if traits.auto_traits().any(|id| self.tcx.is_diagnostic_item(Symbol::intern("Send"), id)))\n',
     replace:
       '                if traits.auto_traits().all(|id| self.tcx.is_diagnostic_item(Symbol::intern("Send"), id)))\n',
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "path-components-not-items",

@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
     find: "                } if destination.projection.is_empty() && locals.writes[destination.local] == 1 => {\n                    let (def_id, generic_args) = fn_def(func.ty(&body.local_decls, tcx))?;\n",
     replace:
       "                } if destination.projection.is_empty() => {\n                    let (def_id, generic_args) = fn_def(func.ty(&body.local_decls, tcx))?;\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "thrown-tried-breaks",
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/patterns.rs",
     find: "        thrown.extend(tried);\n",
     replace: "",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "held-binding-a-variable",

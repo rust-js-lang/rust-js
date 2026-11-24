@@ -352,7 +352,7 @@ export const mutations: Mutation[] = [
     replace:
       "            first_reads.extend(read_once_first(stmt).map(|read| (i, read)).filter(|_| false));\n",
     tests: [
-      "test/lowering-bindings.test.ts",
+      "test/lowering-binding-let-chains.test.ts",
       "test/jsx-types.test.ts",
       "-t",
       "a property a let chain tests and binds is read once|let chain as a person",

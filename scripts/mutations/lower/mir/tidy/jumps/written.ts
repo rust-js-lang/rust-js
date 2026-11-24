@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy/jumps/written.rs",
     find: " || made.is_some_and(|c| within(c, at(s))))\n",
     replace: " || made.is_some_and(|_| false))\n",
-    tests: ["test/lowering-branches.test.ts", "-t", "binding kept in its arm"],
+    tests: ["test/lowering-branch-chains.test.ts", "-t", "binding kept in its arm"],
   },
   {
     name: "lone-jumps-given-an-else",

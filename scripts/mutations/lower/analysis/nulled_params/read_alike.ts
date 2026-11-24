@@ -2,7 +2,7 @@
 // amended, #665): which nullable thread-locals nothing reads apart.
 import type { Mutation } from "../../../../mutations";
 
-const tested = ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart"];
+const tested = ["test/lowering-nullable-thread-locals.test.ts", "-t", "a nullable thread-local nothing reads apart"];
 const corpus = ["test/corpus.test.ts", "-t", "^nullable_local_read_alike.rs$"];
 
 export const mutations: Mutation[] = [

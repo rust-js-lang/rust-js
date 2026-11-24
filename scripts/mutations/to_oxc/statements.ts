@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            stmts.push(Statement::new_break_statement(at, None, &self.b));\n",
     replace: "",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+    tests: ["test/lowering-match-arms.test.ts", "-t", "a match of constants is a switch"],
   },
   {
     name: "switch-case-declares-unblocked",
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            true => ArenaVec::from_iter_in([Statement::new_block_statement(SPAN, stmts, &self.b)], &self.b),\n",
     replace: "            true => stmts,\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+    tests: ["test/lowering-match-arms.test.ts", "-t", "a match of constants is a switch"],
   },
   {
     name: "switch-or-pattern-unstacked",
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                    for (value, next) in stacked.iter().zip(&case.values[1..]) {\n",
     replace: "                    for (value, next) in stacked.iter().zip(&case.values[1..]).take(0) {\n",
-    tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
+    tests: ["test/lowering-match-arms.test.ts", "-t", "a match of constants is a switch"],
   },
   {
     name: "last-case-unbroken",
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                    ] if only.span.is_none() || !self.commented.contains(&only.span.lo) || at_its_first(only) => {\n",
     replace: "                    ] => {\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments"],
+    tests: ["test/lowering-comments-assignments.test.ts", "-t", "ReactFiberLane's comments"],
   },
   {
     name: "else-if-at-its-first-commented",
@@ -264,7 +264,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "    (then.iter().find(|s| !s.span.is_none())).is_some_and(|first| first.span.lo == stmt.span.lo)\n",
     replace: "    (then.iter().find(|s| !s.span.is_none())).is_some_and(|first| first.span.lo >= stmt.span.lo)\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments"],
+    tests: ["test/lowering-comments-assignments.test.ts", "-t", "ReactFiberLane's comments"],
   },
   {
     name: "fallen-case-broken",

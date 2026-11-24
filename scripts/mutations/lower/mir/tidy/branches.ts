@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy/branches.rs",
     find: "                    || shared != rest.len()\n                    || super::switches::switched(test, stmts[i].span, switches)\n",
     replace: "                    || shared != rest.len()\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "goes on to its value"],
+    tests: ["test/lowering-switch-arm-returns.test.ts", "-t", "goes on to its value"],
   },
   {
     name: "flag-given-first",
@@ -369,7 +369,7 @@ export const mutations: Mutation[] = [
     find: "        ExprKind::Call(..) if e.called_path().is_some_and(|path| booleans.contains(&path)) => true,\n",
     replace: "",
     tests: [
-      "test/lowering-branches.test.ts",
+      "test/lowering-branch-chains.test.ts",
       "-t",
       "call giving a bool is one in a test",
     ],
@@ -535,7 +535,7 @@ export const mutations: Mutation[] = [
     find: "        && !switched(test, span, switches);\n",
     replace: "        ;\n",
     tests: [
-      "test/lowering-matches.test.ts",
+      "test/lowering-match-arms.test.ts",
       "-t",
       "a match of constants is a switch",
     ],
@@ -649,7 +649,7 @@ export const mutations: Mutation[] = [
     find: "                    || apart\n                    || super::switches::switched(test, stmts[i].span, switches)\n",
     replace:
       "                    || apart\n                    || false && super::switches::switched(test, stmts[i].span, switches)\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "end alike"],
+    tests: ["test/lowering-switch-arm-returns.test.ts", "-t", "end alike"],
   },
   {
     name: "chain-through-temporary-unseen",

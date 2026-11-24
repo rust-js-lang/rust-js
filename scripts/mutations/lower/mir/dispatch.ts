@@ -459,7 +459,7 @@ export const mutations: Mutation[] = [
     find: "        if !subject.projection.is_empty() || !state.facts.options().thrown.contains_key(&subject.local) {\n",
     replace: "        if true {\n",
     tests: [
-      "test/lowering-unwinds.test.ts",
+      "test/lowering-unwind-downcasts.test.ts",
       "-t",
       "what's given the thrown downcast is given it as it is",
     ],
@@ -472,7 +472,7 @@ export const mutations: Mutation[] = [
     find: "        let boxed = known == Std::OptionMap && self.option_of(output)",
     replace: "        let boxed = false && self.option_of(output)",
     tests: [
-      "test/lowering-unwinds.test.ts",
+      "test/lowering-unwind-downcasts.test.ts",
       "-t",
       "what's given the thrown downcast is given it as it is",
     ],
@@ -759,7 +759,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                if form == NoneForm::Null && nulled.get(i) != Some(&true) {\n",
     replace: "                if false {\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
+    tests: ["test/cross-crate-data.test.ts", "-t", "nullable parameter its calls give null"],
   },
   {
     name: "nulled-param-foreign-nulled-coalesced",
@@ -768,7 +768,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                if form == NoneForm::Null && nulled.get(i) != Some(&true) {\n",
     replace: "                if form == NoneForm::Null {\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
+    tests: ["test/cross-crate-data.test.ts", "-t", "nullable parameter its calls give null"],
   },
   {
     name: "held-is-some-undefined",

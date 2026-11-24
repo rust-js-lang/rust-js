@@ -284,7 +284,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/local_facts.rs",
     find: "                            quiet.alike.insert(block);\n",
     replace: "",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart"],
+    tests: ["test/lowering-nullable-thread-locals.test.ts", "-t", "a nullable thread-local nothing reads apart"],
   },
   {
     name: "swapped-flattened-unseen",

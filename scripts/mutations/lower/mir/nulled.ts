@@ -498,7 +498,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/nulled.rs",
     find: "            None => self.own_param_none_form(state, place),\n",
     replace: "            None => NoneForm::Undefined,\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
+    tests: ["test/lowering-nullable-stores.test.ts", "-t", "own nullable parameter"],
   },
   {
     name: "got-mut-written-undefined",

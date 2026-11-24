@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
     find: "            let arm = written_at(state.body, target).and_then(|at| self.arm_span(span, at));\n",
     replace: "            let arm: Option<Span> = None;\n",
     tests: [
-      "test/lowering-matches.test.ts",
+      "test/lowering-match-arms.test.ts",
       "-t",
       "a match's arms of more than one pattern are an if chain",
     ],
@@ -344,7 +344,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/structure.rs",
     find: "                self.unread_defined_operands(state, func, args);\n",
     replace: "",
-    tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "React's typeName"],
   },
   {
     name: "or-pattern-tests-each",
@@ -608,7 +608,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/structure.rs",
     find: "        if alike.is_none()\n            && let Value::Discriminant(_, enum_ty, ..) = &subject\n",
     replace: "        if let Value::Discriminant(_, enum_ty, ..) = &subject\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "arms are alike in JS"],
+    tests: ["test/lowering-switch-arm-returns.test.ts", "-t", "arms are alike in JS"],
   },
   {
     name: "untold-of-untested-arms",

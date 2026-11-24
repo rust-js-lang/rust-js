@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     find: "        Expr { facts, ..fixed }\n",
     replace: "        Expr { facts: js::Facts::NONE, ..fixed }\n",
     tests: [
-      "test/lowering-nullable.test.ts",
+      "test/lowering-nullable-stores.test.ts",
       "-t",
       "a nullable field's value a variable holds",
     ],

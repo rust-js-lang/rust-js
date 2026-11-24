@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/lines.rs",
     find: "        (to, MapCol(column.0 - MapCol::of_byte(text, from).0 + wider))\n",
     replace: "        (to, MapCol(column.0 - MapCol::of_byte(text, from).0))\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment between an = and its value"],
+    tests: ["test/lowering-comments-assignments.test.ts", "-t", "a comment between an = and its value"],
   },
   {
     name: "split-at-line-end-blank",

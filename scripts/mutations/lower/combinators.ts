@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
     find: "            Comb::Or if !values[0].has_effects() => Some(values.remove(0)),\n",
     replace: "            Comb::Or if false => Some(values.remove(0)),\n",
     tests: [
-      "test/lowering-options.test.ts",
+      "test/lowering-option-fallbacks.test.ts",
       "-t",
       "filter by truth then a fallback",
     ],
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     replace:
       '            Comb::Or => Some(self.spill(Role::Fallback, values.remove(0), out)),\n',
     tests: [
-      "test/lowering-options.test.ts",
+      "test/lowering-option-fallbacks.test.ts",
       "-t",
       "filter by truth then a fallback",
     ],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     replace:
       "            && false\n        {\n            return Ok(Some(Expr::bin(Op::Or,",
     tests: [
-      "test/lowering-options.test.ts",
+      "test/lowering-option-fallbacks.test.ts",
       "-t",
       "filter by truth then a fallback",
     ],
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
     find: "    matches!(&tested.kind, js::ExprKind::Var(v) if *v == given)\n",
     replace: "    applied.mentions_name(&given)\n",
     tests: [
-      "test/lowering-options.test.ts",
+      "test/lowering-option-fallbacks.test.ts",
       "-t",
       "filter by truth then a fallback",
     ],
@@ -121,7 +121,7 @@ export const mutations: Mutation[] = [
     replace:
       "    matches!(&tested.kind, js::ExprKind::Var(v) if *v == given) || matches!(&tested.kind, js::ExprKind::Member(..))\n",
     tests: [
-      "test/lowering-options.test.ts",
+      "test/lowering-option-fallbacks.test.ts",
       "-t",
       "filter by truth then a fallback",
     ],
@@ -659,7 +659,7 @@ export const mutations: Mutation[] = [
     find: "            && let Some((kept, value)) = super::std_types::option::filtered(subject)\n",
     replace:
       "            && let Some((kept, value)) = super::std_types::option::filtered(subject).filter(|_| false)\n",
-    tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "React's typeName"],
   },
   {
     name: "search-key-type-of-owner",

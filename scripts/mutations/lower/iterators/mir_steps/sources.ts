@@ -416,7 +416,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/mir_steps/sources.rs",
     find: "                bindings::reads_only_its_parameters(self.tcx, def_id)\n",
     replace: "                false\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "reads only its parameters is its function"],
+    tests: ["test/lowering-passed-on-values.test.ts", "-t", "reads only its parameters is its function"],
   },
   {
     name: "len-in-place-held-rev-read",

@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
     find: "            if matches!(jump, StmtKind::Return(_)) {\n                drop_tail(body, &StmtKind::Break(Some(label.clone())));\n            }\n",
     replace: "",
     tests: [
-      "test/lowering-branches.test.ts",
+      "test/lowering-branch-chains.test.ts",
       "-t",
       "an if-let chain ending in a panic keeps its arms in written order",
     ],
@@ -291,7 +291,7 @@ export const mutations: Mutation[] = [
     find: "                    if matches!(then.as_slice(), [only] if breaks(only)) && tests_continue(of.guards, span) =>\n",
     replace: "                    if matches!(then.as_slice(), [only] if breaks(only)) =>\n",
     tests: [
-      "test/lowering-matches.test.ts",
+      "test/lowering-match-arms.test.ts",
       "-t",
       "a match of constants is a switch",
     ],

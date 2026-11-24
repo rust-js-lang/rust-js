@@ -651,7 +651,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "        && !tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option)\n",
     replace: "",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a struct a library builds is the program's own data"],
+    tests: ["test/cross-crate-data.test.ts", "-t", "a struct a library builds is the program's own data"],
   },
   {
     name: "fn-pointer-holder-held-by-rustc-reach",

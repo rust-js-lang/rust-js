@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/namespaces.rs",
     find: "        && !module.ident.is_path_segment_keyword()\n",
     replace: "",
-    tests: ["test/modules.test.ts", "-t", "read through its namespace"],
+    tests: ["test/modules-imports.test.ts", "-t", "read through its namespace"],
   },
   {
     name: "namespace-through-reexport",
@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/namespaces.rs",
     find: "        && (tcx.parent(function) == named || reexports(named))\n",
     replace: "",
-    tests: ["test/modules.test.ts", "-t", "read through its namespace"],
+    tests: ["test/modules-imports.test.ts", "-t", "read through its namespace"],
   },
   {
     name: "namespace-of-a-value-path",
@@ -76,7 +76,7 @@ export const mutations: Mutation[] = [
     find: "        && (tcx.parent(function) == named || reexports(named))\n",
     replace: "        && tcx.parent(function) == named\n",
     tests: [
-      "test/modules.test.ts",
+      "test/modules-imports.test.ts",
       "-t",
       "a function called through its module is read through its namespace",
     ],

@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                let found = (text[..at].rfind(\" = \")).or_else(|| text[at..].find(\" = \").map(|i| at + i))?;\n",
     replace: "                let found = text[..at].rfind(\" = \")?;\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment between an = and its value"],
+    tests: ["test/lowering-comments-assignments.test.ts", "-t", "a comment between an = and its value"],
   },
   {
     name: "wrapped-value-comment-goes-at-line-end",

@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "                        true => written_extent(r).map_or(js::Span::NONE, |(lo, hi)| js::Span { lo, hi }),\n",
     replace: "                        true => js::Span::NONE,\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments"],
+    tests: ["test/lowering-comments-assignments.test.ts", "-t", "ReactFiberLane's comments"],
   },
   {
     name: "written-extent-of-a-binding",

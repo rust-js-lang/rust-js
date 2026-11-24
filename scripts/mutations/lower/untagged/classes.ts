@@ -47,6 +47,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/untagged/classes.rs",
     find: "        if !self.telling_arms.get()\n",
     replace: "        if true\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "arms are alike in JS"],
+    tests: ["test/lowering-switch-arm-returns.test.ts", "-t", "arms are alike in JS"],
   },
 ];

@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [  {
     find: "        return Some((truth, (**value).clone()));\n",
     replace: "        return None;\n",
     tests: [
-      "test/lowering-options.test.ts",
+      "test/lowering-option-fallbacks.test.ts",
       "-t",
       "filter by truth then a fallback",
     ],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [  {
     replace:
       "                    Some((kept, value)) => (value.clone(), js::Expr::presence(value, true, None)),\n",
     tests: [
-      "test/lowering-options.test.ts",
+      "test/lowering-option-fallbacks.test.ts",
       "-t",
       "filter by truth then a fallback",
     ],
@@ -385,7 +385,7 @@ export const mutations: Mutation[] = [  {
     file: "crates/rust-js-lower/src/std_types/option.rs",
     find: "            && let Some(x) = made(then)\n",
     replace: "            && let Some(x) = made(then).filter(|_| false)\n",
-    tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "React's typeName"],
   },
   {
     name: "map-some-undefined",

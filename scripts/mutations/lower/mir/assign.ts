@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [  {
     find: "            let bool = state.body.local_decls[local].ty.is_bool();\n            *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;\n        }\n        // Of a binding",
     replace: "        }\n        // Of a binding",
     tests: [
-      "test/lowering-branches.test.ts",
+      "test/lowering-branch-chains.test.ts",
       "-t",
       "call giving a bool is one in a test",
     ],
@@ -266,7 +266,7 @@ export const mutations: Mutation[] = [  {
     find: ".or_else(|| e.called_path())",
     replace: "",
     tests: [
-      "test/lowering-branches.test.ts",
+      "test/lowering-branch-chains.test.ts",
       "-t",
       "call giving a bool is one in a test",
     ],
@@ -671,7 +671,7 @@ export const mutations: Mutation[] = [  {
     file: "crates/rust-js-mir/src/assign.rs",
     find: "            true => rust_js_lower::representation::none_form(\n                self.tcx,\n                rust_js_lower::representation::NonePlace::Param(def_id, arg - 1),\n            ),\n",
     replace: "            true => NoneForm::Null,\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
+    tests: ["test/lowering-nullable-stores.test.ts", "-t", "own nullable parameter"],
   },
   {
     name: "tail-none-comments-dropped",

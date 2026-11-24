@@ -364,7 +364,7 @@ export const mutations: Mutation[] = [
     file: "src/pipeline.rs",
     find: "    if export_library\n        && ref_cells.get().is_none()\n",
     replace: "    if false\n        && ref_cells.get().is_none()\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a library none of whose bodies borrows a RefCell says its quiet fields"],
+    tests: ["test/cross-crate-data.test.ts", "-t", "a library none of whose bodies borrows a RefCell says its quiet fields"],
   },
   {
     name: "program-guesses-as-a-library",

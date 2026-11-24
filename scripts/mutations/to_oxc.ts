@@ -252,7 +252,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    before_value,\n                    text: rust_js_program::comments::in_js(written),\n",
     replace: "                    before_value: false,\n                    text: rust_js_program::comments::in_js(written),\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment between an = and its value"],
+    tests: ["test/lowering-comments-assignments.test.ts", "-t", "a comment between an = and its value"],
   },
   {
     name: "value-comment-after-comparison",
@@ -260,7 +260,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    .is_some_and(|before| !before.ends_with(|c: char| \"=!<>+-*/%&|^\".contains(c)));\n",
     replace: "                    .is_some();\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment between an = and its value"],
+    tests: ["test/lowering-comments-assignments.test.ts", "-t", "a comment between an = and its value"],
   },
   {
     name: "noinline-beside-its-docs",
@@ -292,7 +292,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                        parts.get(&at).is_some_and(|&(whole, _)| whole > c.lo && whole != at)\n",
     replace: "                        false\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments in an else"],
+    tests: ["test/lowering-comments-assignments.test.ts", "-t", "ReactFiberLane's comments in an else"],
   },
   {
     name: "comments-end-not-orphaned",
@@ -416,7 +416,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    next += 1;\n                }\n                let at = *starts.get(next).filter(|&&at| in_file(at))?;\n",
     replace: "                    next += 1;\n                    break;\n                }\n                let at = *starts.get(next).filter(|&&at| in_file(at))?;\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments"],
+    tests: ["test/lowering-comments-assignments.test.ts", "-t", "ReactFiberLane's comments"],
   },
   {
     name: "else-if-comment-in-block",
@@ -432,7 +432,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            if let Some((line, column)) = own_line_before_value(&sources.text, &file.comments, c) {\n",
     replace: "            if let Some((line, column)) = own_line_before_value(&sources.text, &file.comments, c).filter(|_| false) {\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment on its own line between an = and its value"],
+    tests: ["test/lowering-comments-assignments.test.ts", "-t", "a comment on its own line between an = and its value"],
   },
   {
     name: "own-line-value-comment-also-before-statement",
@@ -440,7 +440,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !ends.iter().any(|e| e.lo == c.lo))\n",
     replace: "            .filter(|c| c.lo >= past && !after_code(c) && !ends.iter().any(|e| e.lo == c.lo))\n",
-    tests: ["test/lowering-comments.test.ts", "-t", "a comment on its own line between an = and its value"],
+    tests: ["test/lowering-comments-assignments.test.ts", "-t", "a comment on its own line between an = and its value"],
   },
   {
     name: "blank-before-chain-at-its-call",

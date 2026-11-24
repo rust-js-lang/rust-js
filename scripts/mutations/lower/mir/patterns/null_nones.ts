@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/patterns/null_nones.rs",
     find: "                if !self.krate.nulled_params.reads_alike(key) {\n                    stored.insert(read.local);\n                }\n",
     replace: "                stored.insert(read.local);\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "nothing reads apart"],
+    tests: ["test/lowering-nullable-thread-locals.test.ts", "-t", "nothing reads apart"],
   },
   {
     name: "null-nones-parameter-taken",
@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/patterns/null_nones.rs",
     find: "            if !(called && !stored.contains(&local)) {\n",
     replace: "            if true {\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "own nullable parameter"],
+    tests: ["test/lowering-nullable-stores.test.ts", "-t", "own nullable parameter"],
   },
   {
     name: "nullable-items-made-undefined",
@@ -295,7 +295,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/patterns/null_nones.rs",
     find: "                && none_form(self.tcx, NonePlace::Local(key)).stores_null()\n            {\n                *given.entry(read.local).or_default() += 1;\n",
     replace: "                && none_form(self.tcx, NonePlace::Local(key)).stores_null()\n            {\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "stores a test tidy makes of its value"],
+    tests: ["test/lowering-nullable-thread-locals.test.ts", "-t", "stores a test tidy makes of its value"],
   },
   {
     name: "null-nones-any-local-set",
@@ -304,7 +304,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/patterns/null_nones.rs",
     find: "                && none_form(self.tcx, NonePlace::Local(key)).stores_null()\n            {\n                *given.entry(read.local).or_default() += 1;\n",
     replace: "                && true\n            {\n                *given.entry(read.local).or_default() += 1;\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "stores a test tidy makes of its value"],
+    tests: ["test/lowering-nullable-thread-locals.test.ts", "-t", "stores a test tidy makes of its value"],
   },
   {
     name: "nullable-init-of-any-thread-local",

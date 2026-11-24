@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "impl: e[$stringPayload] === true ? $panicString : $panicMessage, error: e };\n",
     replace: "impl: e[$stringPayload] === true ? $panicString : $panicMessage };\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "resumed-panic-made-again",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "    (payload.impl === $panicMessage || payload.impl === $panicString) &&\n",
     replace: "    false &&\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "resumed-panic-message-unchanged",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  return e instanceof $Unwinding || (e instanceof Error && e.constructor === Error);\n",
     replace: "  return e instanceof $Unwinding || e instanceof Error;\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "js-throw-a-message",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  return { value: e, impl: $jsThrown, error: e };\n",
     replace: "  return { value: String(e), impl: $panicMessage };\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "resumed-js-throw-wrapped",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  if (id === \"&js::JsError\") {\n    return payload.value;\n",
     replace: "  if (id === \"&js::JsError\") {\n    return new Error(String(payload.value));\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "resumed-text-not-a-panic",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  return { value: e, impl: $jsThrown, error: e };\n",
     replace: "  return { value: e, impl: $jsThrown };\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "unwinding-error-unset",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "    payload.error = this;\n",
     replace: "",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "resumed-unwinding-made-again",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/unwind.js",
     find: "  if (payload.error instanceof $Unwinding) {\n",
     replace: "  if (false) {\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "abort-cleanup-throws-on",

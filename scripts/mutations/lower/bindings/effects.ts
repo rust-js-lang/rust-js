@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/bindings/effects.rs",
     find: "        let binding = function && super::is_binding(tcx, def);\n",
     replace: "        let binding = function;\n",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "reads only its parameters is refused"],
+    tests: ["test/lowering-passed-on-values.test.ts", "-t", "reads only its parameters is refused"],
   },
   {
     name: "parameters-mark-of-a-method",
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/bindings/effects.rs",
     find: "            true if super::is_method(tcx, def) || !called() => Some(",
     replace: "            true if !called() => Some(",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "reads only its parameters is refused"],
+    tests: ["test/lowering-passed-on-values.test.ts", "-t", "reads only its parameters is refused"],
   },
   {
     name: "parameters-mark-of-rest",
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/bindings/effects.rs",
     find: "            true if super::is_variadic(tcx, def) => {",
     replace: "            true if false => {",
-    tests: ["test/lowering-passed-on.test.ts", "-t", "reads only its parameters is refused"],
+    tests: ["test/lowering-passed-on-values.test.ts", "-t", "reads only its parameters is refused"],
   },
   {
     name: "calls-back-beside-runs-nothing",

@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
     replace:
       "        (self.dependencies.libraries.values()).any(|library| library.built.contains(&key) && false)\n",
     tests: [
-      "test/cross-crate-items.test.ts",
+      "test/cross-crate-data.test.ts",
       "-t",
       "a struct a library builds is the program's own data",
     ],
@@ -231,7 +231,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "            .is_some_and(|item| item.calling.nulled_params.contains(&(index as u32)))\n",
     replace: "            .is_some_and(|_| false)\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
+    tests: ["test/cross-crate-data.test.ts", "-t", "nullable parameter its calls give null"],
   },
   {
     name: "through-path-unread",

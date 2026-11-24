@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "    named.sort_by(|(a_relative, a), (b_relative, b)| {\n        (written(a.placed), a_relative, a.from).cmp(&(written(b.placed), b_relative, b.from))\n    });\n",
     replace: "    let _ = written;\n",
-    tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
+    tests: ["test/modules-imports.test.ts", "-t", "imports are where their bindings are declared"],
   },
   {
     name: "imports-relative-mixed",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        (written(a.placed), a_relative, a.from).cmp(&(written(b.placed), b_relative, b.from))\n",
     replace: "        (written(a.placed), a.from, a_relative).cmp(&(written(b.placed), b.from, b_relative))\n",
-    tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
+    tests: ["test/modules-imports.test.ts", "-t", "imports are where their bindings are declared"],
   },
   {
     name: "imports-effects-first",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        .chain(effects)\n        .chain(runtime)\n",
     replace: "        .chain(runtime)\n        .chain(effects)\n",
-    tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
+    tests: ["test/modules-imports.test.ts", "-t", "imports are where their bindings are declared"],
   },
   {
     name: "default-import-braced",
@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "    (placed.into_iter())\n        .chain(unplaced)\n",
     replace: "    (unplaced.into_iter())\n        .chain(placed)\n",
-    tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
+    tests: ["test/modules-imports.test.ts", "-t", "imports are where their bindings are declared"],
   },
   {
     name: "reexport-lines-unprinted",
@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "            ([(namespace, alias)], _) if namespace == \"*\" => Says::ReexportAll(Some(alias)),\n",
     replace: "            ([(namespace, alias)], _) if namespace == \"\" => Says::ReexportAll(Some(alias)),\n",
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
   },
   {
     name: "imports-all-first",
@@ -219,7 +219,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        .filter(|entry| entry.declared && entry.commented == entry.placed)\n",
     replace: "        .filter(|entry| entry.declared && entry.commented == entry.placed && false)\n",
-    tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
+    tests: ["test/modules-imports.test.ts", "-t", "imports are where their bindings are declared"],
   },
   {
     name: "binding-import-end-before-an-import",
@@ -227,7 +227,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: " && body.get(i + 1).is_some_and(|next| !imported(next)))\n",
     replace: ")\n",
-    tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
+    tests: ["test/modules-imports.test.ts", "-t", "imports are where their bindings are declared"],
   },
   {
     name: "imported-reexport-from",
@@ -251,6 +251,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "            (!at.is_none() && !reexport.at.is_none() && at.lo <= reexport.at.lo).then_some(local)\n",
     replace: "            (!at.is_none()).then_some(local)\n",
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
   },
 ];

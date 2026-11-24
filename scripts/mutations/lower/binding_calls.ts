@@ -509,7 +509,7 @@ export const mutations: Mutation[] = [
     find: "keyed(this, args.remove(0)).answered_by_a_getter(),",
     replace: "keyed(this, args.remove(0)),",
     tests: [
-      "test/lowering-bindings.test.ts",
+      "test/lowering-binding-let-chains.test.ts",
       "-t",
       "a property a let chain tests and binds is read once",
     ],

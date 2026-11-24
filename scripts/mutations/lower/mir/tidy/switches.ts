@@ -3,7 +3,7 @@ import type { Mutation } from "../../../../mutations";
 
 const ORS = ["test/corpus.test.ts", "-t", "^switch_guarded_or_pattern.rs$"];
 const switches = [
-  "test/lowering-matches.test.ts",
+  "test/lowering-match-arms.test.ts",
   "-t",
   "a match of constants is a switch",
 ];

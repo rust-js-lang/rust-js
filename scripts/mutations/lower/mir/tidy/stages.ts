@@ -371,7 +371,7 @@ export const mutations: Mutation[] = [
     find: '            pass("returned consts", |b, h| {\n                js::statement_lists(b, &mut |s| returned_consts(s, h.result))\n            }),\n',
     replace: "",
     tests: [
-      "test/lowering-branches.test.ts",
+      "test/lowering-branch-chains.test.ts",
       "-t",
       "or chain of a getter's bool",
     ],
@@ -540,7 +540,7 @@ export const mutations: Mutation[] = [
     find: "            pass(\"decisions\", |b, h| decided_trees(b, h, false)),\n",
     replace: "",
     tests: [
-      "test/lowering-matches.test.ts",
+      "test/lowering-match-arms.test.ts",
       "-t",
       "arms of more than one pattern",
     ],
@@ -552,7 +552,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy/stages.rs",
     find: '            pass("default values", |b, _| {\n                js::statement_lists(b, &mut |s| decisions::default_values(s))\n            }),\n',
     replace: "",
-    tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
+    tests: ["test/lowering-match-arms.test.ts", "-t", "no arm sets it"],
   },
   {
     name: "loop-exits-taken-once",

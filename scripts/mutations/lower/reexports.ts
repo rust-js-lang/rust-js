@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     find: "                let Some((from, export)) = crate_class().or_else(library_class) else {\n",
     replace:
       "                let Some((from, export)) = crate_class().or_else(library_class).filter(|_| false) else {\n",
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
   },
   {
     name: "module-reexport-named",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/reexports.rs",
     find: '                    found.push((written, from, ("*".to_string(), alias)));\n',
     replace: '                    found.push((written, from, ("default".to_string(), alias)));\n',
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
   },
   {
     name: "reexport-from-where-declared",
@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/reexports.rs",
     find: "                    .filter(|&through| through != info.module)\n",
     replace: "                    .filter(|_| false)\n",
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
   },
   {
     name: "reexport-through-renamed",
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/reexports.rs",
     find: "        let through_alias = |export: &str| match Some(ident.name) == last_name(path) {\n",
     replace: "        let through_alias = |export: &str| match false && Some(ident.name) == last_name(path) {\n",
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
   },
   {
     name: "reexport-grouped-by-module",
@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/reexports.rs",
     find: "            was.lo() == at.lo() && reexport.from == from && named.0 != \"*\" && !namespace(reexport)\n",
     replace: "            reexport.from == from && named.0 != \"*\" && !namespace(reexport)\n",
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
   },
   {
     name: "reexport-merged-across-comments",
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/reexports.rs",
     find: "                    .is_some_and(|between| only_attributes(between, false)) =>\n",
     replace: "                    .is_some() =>\n",
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
   },
   {
     name: "reexport-run-unmerged",
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
     find: '        let Some(attribute) = trimmed.strip_prefix("#[") else {\n',
     replace:
       '        let Some(attribute) = trimmed.strip_prefix("#[").filter(|_| false) else {\n',
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
   },
   {
     name: "reexport-tree-leaves-apart",
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/reexports.rs",
     find: "        false => leaf.item.vis_span.to(leaf.span),\n",
     replace: "        false => leaf.span,\n",
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
   },
   {
     name: "unexpressed-reexport-unrefused",
@@ -317,7 +317,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/reexports.rs",
     find: "        if span.is_none() || statements.iter().any(|at| at.lo < span.hi && span.lo < at.hi) {\n",
     replace: "        if span.is_none() {\n",
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
   },
   {
     name: "imports-through-none",

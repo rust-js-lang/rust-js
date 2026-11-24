@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/nulled_params.rs",
     find: "            .filter(|&(&id, _)| !id.is_local() && recognition.foreign.has_nulled_params(id))\n",
     replace: "            .filter(|_| false)\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
+    tests: ["test/cross-crate-data.test.ts", "-t", "nullable parameter its calls give null"],
   },
   {
     name: "nulled-params-never-again",

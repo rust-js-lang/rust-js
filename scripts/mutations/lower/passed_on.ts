@@ -23,7 +23,7 @@ const callback = [
 ];
 const ownCallbacks = ["test/corpus.test.ts", "-t", "^own_callback_params.rs$"];
 const ownListener = [
-  "test/lowering-passed-on.test.ts",
+  "test/lowering-passed-on-values.test.ts",
   "-t",
   "each call fills with the crate's function",
 ];

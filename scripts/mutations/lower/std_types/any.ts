@@ -19,7 +19,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "        if thrown && op != AnyOp::DowncastMut {\n",
     replace: "        if false && thrown && op != AnyOp::DowncastMut {\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "js-error-is-of-panic-unseen",
@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                AnyOp::Is => Expr::bin(Op::Or, is, panicked),\n",
     replace: "                AnyOp::Is => is,\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "js-error-box-downcast-of-panic-unseen",
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                    Expr::cond(panicked, result::ok(error), result::err(pair)),\n",
     replace: "                    result::err(pair),\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "downcast-ref-unboxed",
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
     find: "        if op != AnyOp::DowncastMut && self.finds_thrown(self.pointee_of(any), of) {\n",
     replace:
       "        if false && op != AnyOp::DowncastMut && self.finds_thrown(self.pointee_of(any), of) {\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "thrown-is-false",
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                AnyOp::Is => Expr::bool(true),\n",
     replace: "                AnyOp::Is => Expr::bool(false),\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "thrown-box-downcast-err",
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "                _ => result::ok(error),\n",
     replace: "                _ => result::err(error),\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "thrown-of-any-dyn",
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/std_types/any.rs",
     find: "            && self.recognition().is_dyn_any_send(any)\n",
     replace: "            && self.recognition().is_dyn_any(any)\n",
-    tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
+    tests: ["test/lowering-unwind-downcasts.test.ts", "-t", "every unwind"],
   },
   {
     name: "dyn-error-downcast-to-generic-allowed",

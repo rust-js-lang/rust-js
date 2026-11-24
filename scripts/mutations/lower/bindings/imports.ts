@@ -11,7 +11,7 @@ export const mutations: Mutation[] = [
     replace:
       '    if let Some(named) = path.strip_prefix("* as ").filter(|_| false) {\n',
     tests: [
-      "test/modules.test.ts",
+      "test/modules-imports.test.ts",
       "-t",
       "a namespace import is named as its link_name",
     ],

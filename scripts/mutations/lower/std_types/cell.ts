@@ -489,7 +489,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/std_types/cell.rs",
     find: "            _ if null_for_none => none_form\n                .storage()\n                .written(value, js::Undefined::never_if(given_nulled)),\n",
     replace: "",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart stores what it's given as it is"],
+    tests: ["test/lowering-nullable-thread-locals.test.ts", "-t", "a nullable thread-local nothing reads apart stores what it's given as it is"],
   },
   {
     name: "quiet-replace-through-a-reference",
@@ -561,7 +561,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/std_types/cell.rs",
     find: "                if call.unread {\n",
     replace: "                if false {\n",
-    tests: ["test/cross-crate-items.test.ts", "-t", "a replace of a JS-made struct's cell field whose old value nothing reads"],
+    tests: ["test/cross-crate-data.test.ts", "-t", "a replace of a JS-made struct's cell field whose old value nothing reads"],
   },
   {
     name: "nullable-lent-as-given",
@@ -606,7 +606,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/std_types/cell.rs",
     find: "            _ if null_for_none && call.read_alike => none_form.storage().written_alike(value),\n",
     replace: "",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart"],
+    tests: ["test/lowering-nullable-thread-locals.test.ts", "-t", "a nullable thread-local nothing reads apart"],
   },
   {
     name: "flattened-cell-replaced-as-any-cells",

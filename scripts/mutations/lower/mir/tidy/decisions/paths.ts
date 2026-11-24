@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy/decisions/paths.rs",
     find: "        if now.is_empty() {\n            return None;\n        }\n",
     replace: "",
-    tests: ["test/lowering-matches.test.ts", "-t", "arms of more than one pattern"],
+    tests: ["test/lowering-match-arms.test.ts", "-t", "arms of more than one pattern"],
   },
   {
     name: "decisions-stronger-test-not-first",

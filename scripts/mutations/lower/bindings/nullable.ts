@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
     find: "            matches!(args.type_at(0).kind(), ty::Param(_))\n",
     replace: "            false\n",
     tests: [
-      "test/lowering-nullable.test.ts",
+      "test/lowering-nullable-stores.test.ts",
       "-t",
       "a generic struct's nullable field",
     ],

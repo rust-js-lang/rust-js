@@ -341,7 +341,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/naming.rs",
     find: "                    let given = bindings::given_name(tcx, leaf.def_id.to_def_id());\n",
     replace: "                    let given: Option<String> = None;\n",
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
   },
   {
     name: "namespace-of-any-holding-module",
@@ -497,7 +497,7 @@ export const mutations: Mutation[] = [
     find: "            [Some(name)] => {\n",
     replace: "            [.., Some(name)] => {\n",
     tests: [
-      "test/modules.test.ts",
+      "test/modules-imports.test.ts",
       "-t",
       "a namespace import is named as its link_name",
     ],
@@ -550,7 +550,7 @@ export const mutations: Mutation[] = [
     find: "                        .or_else(|| given_in(tcx, uses, export, module))\n",
     replace: "",
     tests: [
-      "test/modules.test.ts",
+      "test/modules-imports.test.ts",
       "-t",
       "a binding's rust_js::name names its import",
     ],
@@ -564,7 +564,7 @@ export const mutations: Mutation[] = [
     replace:
       "                    if let Some(name) = bindings::given_name(tcx, def_id).filter(|_| false)\n",
     tests: [
-      "test/modules.test.ts",
+      "test/modules-imports.test.ts",
       "-t",
       "a binding's rust_js::name names its import",
     ],
@@ -577,7 +577,7 @@ export const mutations: Mutation[] = [
     find: '            if export.1 == "*" || !binds_itself(tcx, id) {\n',
     replace: "            if false {\n",
     tests: [
-      "test/modules.test.ts",
+      "test/modules-imports.test.ts",
       "-t",
       "a binding's rust_js::name names its import",
     ],
@@ -591,7 +591,7 @@ export const mutations: Mutation[] = [
     replace:
       "        if let Some((name, id)) = names.iter().find(|(name, _)| *name != names[0].0 && false) {\n",
     tests: [
-      "test/modules.test.ts",
+      "test/modules-imports.test.ts",
       "-t",
       "a binding's rust_js::name names its import",
     ],
@@ -617,7 +617,7 @@ export const mutations: Mutation[] = [
     find: "        .filter(|&&id| declared_in(tcx, id) == Some(module))\n",
     replace: "",
     tests: [
-      "test/modules.test.ts",
+      "test/modules-imports.test.ts",
       "-t",
       "a binding's rust_js::name names its import",
     ],
@@ -680,7 +680,7 @@ export const mutations: Mutation[] = [
     replace:
       "            [Some(name)] if false && *name == namespace_default(tcx, &uses, &export) => {\n",
     tests: [
-      "test/modules.test.ts",
+      "test/modules-imports.test.ts",
       "-t",
       "a namespace import is named as its link_name",
     ],
@@ -815,7 +815,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/naming.rs",
     find: "        first(false).or_else(|| first(true))\n",
     replace: "        first(true).or_else(|| first(false))\n",
-    tests: ["test/modules.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
   },
   {
     name: "pub-use-import-unplaced",

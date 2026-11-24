@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/js/make.rs",
     find: "            && let ExprKind::Index(object, key) = &then.kind\n",
     replace: "            && let ExprKind::Index(object, key) = &then.kind\n            && false\n",
-    tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "React's typeName"],
   },
   {
     name: "stored-again-unasked",
@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/js/make.rs",
     find: "            ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null\n        )\n    }\n\n    /// Literals",
     replace: "            ExprKind::GivenUndefined | ExprKind::Null\n        )\n    }\n\n    /// Literals",
-    tests: ["test/lowering-options.test.ts", "-t", "a filter by truth then a fallback is JS's"],
+    tests: ["test/lowering-option-fallbacks.test.ts", "-t", "a filter by truth then a fallback is JS's"],
   },
   {
     name: "asked-location-never-given",

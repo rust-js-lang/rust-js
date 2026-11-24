@@ -2,7 +2,7 @@
 import type { Mutation } from "../../../../mutations";
 
 const chain = [
-  "test/lowering-matches.test.ts",
+  "test/lowering-match-arms.test.ts",
   "-t",
   "arms of more than one pattern",
 ];
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
     find: "        || !(once.is_empty() || matches!(once.as_slice(), [only] if kept && copied_once(only)))\n",
     replace: "        || !(true || matches!(once.as_slice(), [only] if kept && copied_once(only)))\n",
     tests: [
-      "test/lowering-matches.test.ts",
+      "test/lowering-match-arms.test.ts",
       "-t",
       "an or-pattern's arm that changes what it binds",
     ],
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     find: "            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))\n            && !test.has_effects()\n",
     replace:
       "            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))\n            && !test.has_effects()\n            && false\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "arms are alike"],
+    tests: ["test/lowering-switch-arm-returns.test.ts", "-t", "arms are alike"],
   },
   {
     name: "alike-whole-test-dropped",
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
     find: "            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))\n            && !test.has_effects()\n",
     replace:
       "            && then.iter().zip(otherwise).all(|(a, b)| same_stmt(a, b))\n",
-    tests: ["test/lowering-switches.test.ts", "-t", "arms are alike"],
+    tests: ["test/lowering-switch-arm-returns.test.ts", "-t", "arms are alike"],
   },
   {
     name: "alike-whole-first-statement",
@@ -235,7 +235,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy/decisions.rs",
     find: "            && then.len() == otherwise.len()\n            && then.iter().zip(otherwise)",
     replace: "            && then.iter().zip(otherwise)",
-    tests: ["test/lowering-switches.test.ts", "-t", "arms are alike"],
+    tests: ["test/lowering-switch-arm-returns.test.ts", "-t", "arms are alike"],
   },
   {
     name: "factored-no-suffix",
