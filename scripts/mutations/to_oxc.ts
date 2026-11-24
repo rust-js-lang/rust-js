@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            let attached_to = (classes.get(&at).copied())\n",
     replace: "            let attached_to = (None::<u32>)\n",
-    tests: ["test/classes.test.ts", "-t", "doc is its constructor function's"],
+    tests: ["test/classes.test.ts", "-t", "a class whose prototype the program replaces is a constructor function"],
   },
   {
     name: "class-doc-blank-between",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    pieces.drain(..blanks);\n",
     replace: "",
-    tests: ["test/classes.test.ts", "-t", "doc is its constructor function's"],
+    tests: ["test/classes.test.ts", "-t", "a class whose prototype the program replaces is a constructor function"],
   },
   {
     name: "blank-before-attributes-lost",

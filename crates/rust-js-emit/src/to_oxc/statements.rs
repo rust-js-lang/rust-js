@@ -261,10 +261,14 @@ impl<'a> Cx<'a> {
     /// render() { .. } }`, or one its struct says is, `class Plugin {
     /// constructor(options) { .. } apply(compiler) { .. } }` (rd682): its
     /// constructor, where it writes one, its methods, getters and statics,
-    /// each in the order its impls have it; then its constants, its
-    /// prototype's, as a constructor function's are,
-    /// `Surface.prototype.limit = 3;`. Its module's default, `default`, is
-    /// declared as it, `export default class Plugin { .. }`.
+    /// each in the order its impls have it; then its constants, each a
+    /// getter of its value, `get limit() { return 3; }`, its prototype's as a
+    /// constructor function's `Surface.prototype.limit = 3;` is, read alike,
+    /// but in its body, no statement of its module's a bundler keeps (#2495).
+    /// A JS write to one throws where it shadowed it: of a Rust `const`,
+    /// none of the program's (ADR 0262's "no observable difference"). Its
+    /// module's default, `default`, is declared as it, `export default
+    /// class Plugin { .. }`.
     fn es_class(&self, n: &js::Namespace, class: &js::Class, default: bool) -> Vec<Statement<'a>> {
         let b = &self.b;
         // Its fields declared first, `chunkName;`, where they're declared (#568).
@@ -332,6 +336,41 @@ impl<'a> Cx<'a> {
                 b,
             )
         });
+        // Each constant a getter of its value, read where it's read, as a
+        // Rust `const` is a value made at each use.
+        let getters = n.constants.iter().map(|c| {
+            let body = self.function_body(&[js::StmtKind::Return(Some(c.value.clone())).at(c.span)]);
+            let params = self.params_at(FormalParameterKind::UniqueFormalParameters, &[], &[]);
+            let value = Function::boxed(
+                span(c.span),
+                FunctionType::FunctionExpression,
+                None,
+                false, // generator
+                false, // async
+                false, // declare
+                None,  // type parameters
+                None,  // this param
+                ArenaBox::new_in(params, b),
+                None, // return type
+                Some(ArenaBox::new_in(body, b)),
+                b,
+            );
+            let key = PropertyKey::new_static_identifier(span(c.span), self.name(c.name.word()), b);
+            ClassElement::new_method_definition(
+                span(c.span),
+                MethodDefinitionType::MethodDefinition,
+                ArenaVec::new_in(b),
+                key,
+                value,
+                MethodDefinitionKind::Get,
+                false, // computed
+                false, // static
+                false, // override
+                false, // optional
+                None,  // accessibility
+                b,
+            )
+        });
         let heritage = (class.extends.as_deref())
             .map(|extends| ClassHeritage::new(Expression::new_identifier(SPAN, self.name(extends), b), None, b));
         let decl = Declaration::new_class_declaration(
@@ -342,12 +381,16 @@ impl<'a> Cx<'a> {
             None, // type parameters
             heritage,
             ArenaVec::new_in(b),
-            ClassBody::boxed(SPAN, ArenaVec::from_iter_in(fields.chain(elements), b), b),
+            ClassBody::boxed(
+                SPAN,
+                ArenaVec::from_iter_in(fields.chain(elements).chain(getters), b),
+                b,
+            ),
             false, // abstract
             false, // declare
             b,
         );
-        let mut out = vec![match (default, decl) {
+        let out = vec![match (default, decl) {
             (true, Declaration::ClassDeclaration(declared)) => Statement::new_export_default_declaration(
                 span(class.declared),
                 oxc_ast::ast::ExportDefaultDeclarationKind::ClassDeclaration(declared),
@@ -356,11 +399,6 @@ impl<'a> Cx<'a> {
             (_, decl) if n.export => Statement::new_export_declaration(span(class.declared), decl, b),
             (_, decl) => decl.into(),
         }];
-        let prototype = || js::Expr::member(js::Expr::var(&n.name), "prototype");
-        let assigned: Vec<js::Stmt> = (n.constants.iter())
-            .map(|c| js::StmtKind::Assign(js::Expr::member(prototype(), c.name.word()), c.value.clone()).at(c.span))
-            .collect();
-        out.extend(self.stmts(&assigned));
         out
     }
 

@@ -7,13 +7,15 @@
 
 import { $borrow, $borrowMut, $fieldCell, $main, $unborrow } from "@rust-js/std";
 
-function Holder() {
-  this.slot = 1;
-}
+class Holder {
+  constructor() {
+    this.slot = 1;
+  }
 
-Holder.prototype.read = function () {
-  return $borrow($fieldCell(this, "slot"), "test/corpus/class_trait_field_lent.rs:25:20").value;
-};
+  read() {
+    return $borrow($fieldCell(this, "slot"), "test/corpus/class_trait_field_lent.rs:25:20").value;
+  }
+}
 
 function fill(cell, holder) {
   const held = $borrowMut(cell, "test/corpus/class_trait_field_lent.rs:36:25", true);

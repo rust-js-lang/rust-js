@@ -378,6 +378,6 @@ The JS rust-js writes plays with the tools a frontend builds with (Tu's promise,
 | React Compiler | `test/react-compiler.test.ts`: every component and hook of the guide, `examples/` and `test/react-compiler/` compiles with no bailout but the known (ADR 1142); `scripts/react-compiler-sweep.ts`, the lowering tests' programs | Per push; the sweep nightly |
 | Fast Refresh (HMR) | `test/vite.test.ts`: real Vite, React's plugin, React Compiler and Tailwind, a page in Chromium edited while mounted keeps its state | Per push |
 | Minify | The corpus: each case's production build, bundled by Vite and minified by Oxc, runs as native Rust | Per push |
-| Tree shaking, dead code | `test/tooling-tree-shaking.test.ts`: an app importing one export of a rust-js library bundles none of the others, and one importing it and using none of it bundles nothing of it, by Vite (Rolldown, minified) and Bun; an unused class is kept, #2495 | Nightly |
+| Tree shaking, dead code | `test/tooling-tree-shaking.test.ts`: an app importing one export of a rust-js library bundles none of the others, and one importing it and using none of it bundles nothing of it, by Vite (Rolldown, minified) and Bun, an unused class too (#2495) | Nightly |
 
 A new tool, or a new kind of item rust-js writes at a module's top, joins its row: nightly unless it's nearly free (Tu, 2026-11-24).

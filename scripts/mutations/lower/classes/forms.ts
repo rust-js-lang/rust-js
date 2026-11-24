@@ -4,11 +4,11 @@ import type { Mutation } from "../../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "es-class-a-constructor-function",
-    breaks: "a class marked `#[rust_js::class(es)]` is a constructor function, `function Plugin(..) { .. }`, where upstream writes `class Plugin` (rd682)",
+    breaks: "a class marked `#[rust_js::class(es)]` is a constructor function where its prototype is replaced, so the program writes an ES class's prototype unrefused (rd682, #2495)",
     file: "crates/rust-js-lower/src/classes/forms.rs",
-    find: "    is_class(tcx, adt) && (class_form(tcx, adt).iter().any(|word| word == ES) || superclass(tcx, adt).is_some())\n",
-    replace: "    is_class(tcx, adt) && superclass(tcx, adt).is_some()\n",
-    tests: ["test/es-classes.test.ts", "-t", "whose struct says es is an ES class"],
+    find: "        && (class_form(tcx, adt).iter().any(|word| word == ES)\n",
+    replace: "        && (false\n",
+    tests: ["test/es-classes.test.ts", "-t", "what an ES class is refused says what to write"],
   },
   {
     name: "es-class-of-a-subclass-allowed",
@@ -57,5 +57,21 @@ export const mutations: Mutation[] = [
     find: "        words if words.iter().any(|word| word == FIELDS) => Some(\n",
     replace: "        words if words.is_empty() => Some(\n",
     tests: ["test/es-classes.test.ts", "-t", "fields that would change what it does are refused"],
+  },
+  {
+    name: "class-a-constructor-function-by-default",
+    breaks: "a class marked nothing is a constructor function, its prototype's assignments its module's statements a bundler keeps, so an unused class is bundled (#2495)",
+    file: "crates/rust-js-lower/src/classes/forms.rs",
+    find: "            || !prototype_replaced(tcx, adt))\n",
+    replace: "            || false && !prototype_replaced(tcx, adt))\n",
+    tests: ["test/tooling-tree-shaking.test.ts", "-t", "an unused class is dropped"],
+  },
+  {
+    name: "replaced-prototype-unseen",
+    breaks: "a class whose prototype the program replaces is an ES class, whose `prototype` JS doesn't let be written: React's PureComponent refused (#2495)",
+    file: "crates/rust-js-lower/src/classes/forms.rs",
+    find: "                self.found.insert(adt.did());\n",
+    replace: "",
+    tests: ["test/classes.test.ts", "-t", "React's Component is an ES class"],
   },
 ];

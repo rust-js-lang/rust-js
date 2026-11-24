@@ -56,9 +56,11 @@ export function weight(n) {
   return w;
 }
 
-function ReactPromise(status, value) {
-  this.status = status;
-  this.value = value;
+class ReactPromise {
+  constructor(status, value) {
+    this.status = status;
+    this.value = value;
+  }
 }
 
 export function listen(chunk, id) {

@@ -1,7 +1,8 @@
 // A trait of classes (rd283): the crate's trait each impl of which is a
 // `#[rust_js::class]`'s. Each of its methods, an impl's or the trait's
 // default, is each class's prototype's, a default compiled for each class
-// with `Self` known, one function assigned to each class whose copy prints
+// with `Self` known: an ES class's its own copy in its body (#2495), a
+// constructor function's one function assigned to each whose copy prints
 // alike, as React DOM's ReactDOMRoot writes `ReactDOMHydrationRoot.prototype
 // .render = ReactDOMRoot.prototype.render = function (children) { .. }`.
 // Each test is a program of its own, compiled and run in Node.
@@ -33,6 +34,13 @@ function refused(name: string, rust: string): string {
   expect(ran.code).not.toBe(0);
   return ran.stderr;
 }
+
+const replaced = (name: string) => `
+unsafe impl js::Defined for ${name} {}
+impl js::Classed for ${name} {
+    type Constructor = js::AnyConstructor;
+}
+`;
 
 const roots = `use std::cell::RefCell;
 
@@ -99,6 +107,30 @@ impl RootType for ReactDOMHydrationRoot {
 }
 `;
 
+// Constructor functions, their prototypes replaced (#2495): one function
+// each default prints alike, assigned to both, as upstream's; the one an
+// impl writes its own, each class's.
+test("a trait of classes' default that prints alike is one function of constructor functions' prototypes", async () => {
+  const { js, lib } = await compiled(
+    "class-traits-shared",
+    `${roots}${replaced("ReactDOMRoot")}${replaced("ReactDOMHydrationRoot")}
+js::on_load! {
+    js::class::<ReactDOMRoot>().set_prototype(js::class::<ReactDOMRoot>().prototype());
+    js::class::<ReactDOMHydrationRoot>().set_prototype(js::class::<ReactDOMHydrationRoot>().prototype());
+}
+
+pub fn render_both(a: &ReactDOMRoot, b: &ReactDOMHydrationRoot) -> f64 {
+    a.render(1.0, &[]) + b.render(2.0, &[3.0])
+}
+`,
+  );
+  expect(js.match(/const root = this\._internalRoot;/g)?.length).toBe(1);
+  expect(js).toContain("export function ReactDOMRoot(");
+  expect(js).toContain("_internalRoot = null;");
+  expect(js).toContain("_internalRoot = 0;");
+  expect((lib.renderBoth as (a: unknown, b: unknown) => number)(new (lib.ReactDOMRoot as any)(10), new (lib.ReactDOMHydrationRoot as any)(20))).toBe(34);
+});
+
 test("a trait of classes' methods are each class's prototype's", async () => {
   const { js, ts, lib } = await compiled(
     "class-traits",
@@ -108,16 +140,18 @@ pub fn render_both(a: &ReactDOMRoot, b: &ReactDOMHydrationRoot) -> f64 {
 }
 `,
   );
-  // One function each default prints alike, assigned to both; the one an
-  // impl writes its own, each class's.
-  expect(js).toContain("ReactDOMHydrationRoot.prototype.render = ReactDOMRoot.prototype.render = function (\n  children,\n  ...args\n) {");
-  expect(js).toContain("ReactDOMRoot.prototype.unmount = function () {\n  this._internalRoot = null;\n};");
-  expect(js).toContain("ReactDOMHydrationRoot.prototype.unmount = function () {\n  this._internalRoot = 0;\n};");
+  // Each ES class its own copy of the default, as Rust makes a provided
+  // method each impl's: two functions no Rust can tell apart (#2495, ADR
+  // 0262); the one an impl writes its own, each class's.
+  expect(js.match(/^  render\(children, \.\.\.args\) \{$/gm)?.length).toBe(2);
+  expect(js).toContain("export class ReactDOMRoot {");
+  expect(js).toContain("  unmount() {\n    this._internalRoot = null;\n  }");
+  expect(js).toContain("  unmount() {\n    this._internalRoot = 0;\n  }");
   expect(js).not.toContain("RootType");
   // The method that gives a field is that field, read in place, no
   // method of its own, its borrows never checked where none can meet
   // another, as an inherent method's (rd304).
-  expect(js).toContain("{\n  const root = this._internalRoot;\n  if (root == null) {");
+  expect(js).toContain("{\n    const root = this._internalRoot;\n    if (root == null) {");
   expect(js).not.toMatch(/\binternalRoot\b/);
   expect(js).not.toContain("$fieldCell");
   expect(ts).not.toMatch(/\binternalRoot\b/);

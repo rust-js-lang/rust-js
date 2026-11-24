@@ -12,8 +12,10 @@ function count(rc) {
   return rc.strong;
 }
 
-function Request(kind) {
-  this.kind = kind;
+class Request {
+  constructor(kind) {
+    this.kind = kind;
+  }
 }
 
 $main(main);

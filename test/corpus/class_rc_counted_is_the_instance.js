@@ -22,33 +22,37 @@ import {
   $weakDrop,
 } from "@rust-js/std";
 
-function Chunk(n) {
-  this.n = n;
-  this.seen = 0;
-  this.held = [n];
-  $countedInstance(this);
+class Chunk {
+  constructor(n) {
+    this.n = n;
+    this.seen = 0;
+    this.held = [n];
+    $countedInstance(this);
+  }
+
+  watch() {
+    this.seen = (this.seen + 1) >>> 0;
+    return (this.n + $countedBox(this).strong) >>> 0;
+  }
+
+  weak() {
+    return $downgrade(this);
+  }
+
+  total() {
+    return (this.seen + this.held[0]) >>> 0;
+  }
 }
 
-Chunk.prototype.watch = function () {
-  this.seen = (this.seen + 1) >>> 0;
-  return (this.n + $countedBox(this).strong) >>> 0;
-};
+class Plain {
+  constructor(n) {
+    this.held = [n];
+  }
 
-Chunk.prototype.weak = function () {
-  return $downgrade(this);
-};
-
-Chunk.prototype.total = function () {
-  return (this.seen + this.held[0]) >>> 0;
-};
-
-function Plain(n) {
-  this.held = [n];
+  n() {
+    return this.held[0];
+  }
 }
-
-Plain.prototype.n = function () {
-  return this.held[0];
-};
 
 function owners(rc) {
   return [$countedBox(rc).strong, $countedBox(rc).weak];

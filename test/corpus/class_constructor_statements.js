@@ -12,33 +12,35 @@ function bump(count) {
   count.value = (count.value + 1) >>> 0;
 }
 
-export function Fiber(tag, profiled) {
-  const fiber = this;
-  this.tag = tag;
-  this.actualDuration = undefined;
-  this.reads = 0;
-  if (tag === 0) {
-    return;
+export class Fiber {
+  constructor(tag, profiled) {
+    const fiber = this;
+    this.tag = tag;
+    this.actualDuration = undefined;
+    this.reads = 0;
+    if (tag === 0) {
+      return;
+    }
+    if (profiled) {
+      this.actualDuration = -0;
+    }
+    for (let i = 0; i < tag; i++) {
+      bump({
+        get value() {
+          return fiber.reads;
+        },
+        set value(value) {
+          fiber.reads = value;
+        },
+      });
+    }
   }
-  if (profiled) {
-    this.actualDuration = -0;
-  }
-  for (let i = 0; i < tag; i++) {
-    bump({
-      get value() {
-        return fiber.reads;
-      },
-      set value(value) {
-        fiber.reads = value;
-      },
-    });
+
+  shown() {
+    const actualDuration = this.actualDuration;
+    return `${this.tag} ${actualDuration == null ? "None" : `Some(${$debugF64(actualDuration)})`} ${this.reads}`;
   }
 }
-
-Fiber.prototype.shown = function () {
-  const actualDuration = this.actualDuration;
-  return `${this.tag} ${actualDuration == null ? "None" : `Some(${$debugF64(actualDuration)})`} ${this.reads}`;
-};
 
 $main(main);
 

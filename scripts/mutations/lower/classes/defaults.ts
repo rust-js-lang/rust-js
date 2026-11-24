@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/classes/defaults.rs",
     find: "                .any(|f| f.name == function.name && js::scopes::alpha_eq_functions(f, &function))\n",
     replace: "                .any(|_| false)\n",
-    tests: ["test/classes-traits.test.ts"],
+    tests: ["test/classes-traits.test.ts", "-t", "one function of constructor functions"],
   },
   {
     name: "class-defaults-shared-unlike",
@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/classes/defaults.rs",
     find: "                .any(|f| f.name == function.name && js::scopes::alpha_eq_functions(f, &function))\n",
     replace: "                .any(|f| f.name == function.name)\n",
-    tests: ["test/corpus.test.ts", "-t", "^class_trait_methods.rs$"],
+    tests: ["test/classes-traits.test.ts", "-t", "one function of constructor functions"],
     snapshots: true,
   },
   {
@@ -38,5 +38,13 @@ export const mutations: Mutation[] = [
     find: "        if own.contains(&name) {\n            continue;\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_method_before_its_field.rs$"],
+  },
+  {
+    name: "es-class-default-shared",
+    breaks: "an ES class's provided method is another class's function, assigned to it outside its body, which an ES class has none of: ReactDOMHydrationRoot has no `render` (#2495)",
+    file: "crates/rust-js-lower/src/classes/defaults.rs",
+    find: "        !owner_es\n            && !es(n)\n",
+    replace: "        (owner_es || !owner_es)\n            && (es(n) || !es(n))\n",
+    tests: ["test/classes-traits.test.ts", "-t", "a trait of classes' methods are each class's prototype's"],
   },
 ];

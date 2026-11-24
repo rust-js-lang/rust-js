@@ -204,13 +204,15 @@ impl FnInfo {
 }
 
 /// The module `def_id`'s JS is written into: the crate's own item's, the
-/// module it's in; a std body's (ADR 0561), the crate's
+/// module it's in, a class's member's its class's; a std body's (ADR 0561), the crate's
 /// module named as std's is, `iter` of `core::iter::Peekable`'s. The one
 /// answer to where a body goes.
 pub(crate) fn body_module(tcx: TyCtxt<'_>, instances: &Instances, def_id: DefId) -> LocalModId {
     if let Some(local) = def_id.as_local() {
-        if let Some(module) =
-            classes::class_of(tcx, def_id).and_then(|class| classes::implicit_constructor_home(tcx, class))
+        // A class's member, wherever its impl is: the class's own module,
+        // where it's declared, one class of all its members (#2497).
+        if let Some(module) = classes::class_of(tcx, def_id)
+            .and_then(|class| classes::implicit_constructor_home(tcx, class).or_else(|| classes::home(tcx, class)))
         {
             return module;
         }

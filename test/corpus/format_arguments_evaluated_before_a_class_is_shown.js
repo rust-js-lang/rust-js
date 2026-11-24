@@ -8,16 +8,17 @@
 
 import { $main, $out, $printing, $sink } from "@rust-js/std";
 
-export function Position(row) {
-  this.row = row;
+export class Position {
+  constructor(row) {
+    this.row = row;
+  }
+  toString() {
+    const f = $sink();
+    $out(`fmt ${this.row}\n`);
+    f.write(String(this.row));
+    return f.done();
+  }
 }
-
-Position.prototype.toString = function () {
-  const f = $sink();
-  $out(`fmt ${this.row}\n`);
-  f.write(String(this.row));
-  return f.done();
-};
 
 function loud(n) {
   console.log(`arg ${n}`);

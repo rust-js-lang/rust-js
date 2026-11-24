@@ -6,37 +6,42 @@
 
 import { $debugStr, $main } from "@rust-js/std";
 
-function Clicks() {
-  this.count = 0;
-  this.log = [];
+class Clicks {
+  constructor() {
+    this.count = 0;
+    this.log = [];
+  }
+
+  label() {
+    return "clicks";
+  }
+
+  step(by) {
+    this.log.push(`+${by}`);
+    this.count = (this.count + ((by * 2) >>> 0)) >>> 0;
+    return this.count;
+  }
+  describe() {
+    return `${this.label()} at ${this.count}`;
+  }
 }
 
-Clicks.prototype.label = function () {
-  return "clicks";
-};
+class Keys {
+  constructor(start) {
+    this.count = start;
+  }
 
-Clicks.prototype.step = function (by) {
-  this.log.push(`+${by}`);
-  this.count = (this.count + ((by * 2) >>> 0)) >>> 0;
-  return this.count;
-};
-
-Keys.prototype.describe = Clicks.prototype.describe = function () {
-  return `${this.label()} at ${this.count}`;
-};
-
-function Keys(start) {
-  this.count = start;
+  label() {
+    return "keys from 1";
+  }
+  step(by) {
+    this.count = (this.count + by) >>> 0;
+    return this.count;
+  }
+  describe() {
+    return `${this.label()} at ${this.count}`;
+  }
 }
-
-Keys.prototype.label = function () {
-  return "keys from 1";
-};
-
-Keys.prototype.step = function (by) {
-  this.count = (this.count + by) >>> 0;
-  return this.count;
-};
 
 $main(main);
 

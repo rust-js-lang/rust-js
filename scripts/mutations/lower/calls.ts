@@ -268,7 +268,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/calls.rs",
     find: "            Some(Member::Constructor | Member::Method | Member::Getter | Member::Own | Member::Namespace)\n",
     replace: "            Some(Member::Constructor | Member::Getter | Member::Own | Member::Namespace)\n",
-    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
+    tests: ["test/classes.test.ts", "-t", "React's Component is an ES class"],
   },
   {
     name: "object-method-value-itself",
@@ -321,7 +321,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/classes.test.ts",
       "-t",
-      "React's Component is a constructor function",
+      "React's Component is an ES class",
     ],
   },
   {
@@ -335,7 +335,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/classes.test.ts",
       "-t",
-      "React's Component is a constructor function",
+      "React's Component is an ES class",
     ],
   },
   {

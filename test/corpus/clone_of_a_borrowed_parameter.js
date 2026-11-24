@@ -10,29 +10,31 @@
 
 import { $main } from "@rust-js/std";
 
-export function Chunk(info) {
-  this.info = info;
-  this.seen = 0;
-}
+export class Chunk {
+  constructor(info) {
+    this.info = info;
+    this.seen = 0;
+  }
 
-// The executor borrows `self`; each callback it makes holds a clone.
-Chunk.prototype.watch = function (run) {
-  const made = [];
-  let calls = 0;
-  run((prefix) => {
-    made.push((value) => {
-      this.seen = (this.seen + 1) >>> 0;
-      return `${prefix} ${value} ${this.info}`;
+  // The executor borrows `self`; each callback it makes holds a clone.
+  watch(run) {
+    const made = [];
+    let calls = 0;
+    run((prefix) => {
+      made.push((value) => {
+        this.seen = (this.seen + 1) >>> 0;
+        return `${prefix} ${value} ${this.info}`;
+      });
+      // A tuple of clones, as React's `then` makes its two.
+      made.push((value) => {
+        calls = (calls + 1) >>> 0;
+        this.info += value;
+        return `${this.info} ${calls}`;
+      });
     });
-    // A tuple of clones, as React's `then` makes its two.
-    made.push((value) => {
-      calls = (calls + 1) >>> 0;
-      this.info += value;
-      return `${this.info} ${calls}`;
-    });
-  });
-  return made;
-};
+    return made;
+  }
+}
 
 // A plain function's parameter, borrowed by the closure that clones it.
 function settle(payload, run) {

@@ -898,14 +898,19 @@ How traits, derives and destructors look is
 ## JS classes
 
 A struct and its impl marked `#[cfg_attr(rust_js, rust_js::class)]` are a
-JS class, written as JS wrote one before `class`: a constructor function
-and its prototype ([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md)).
+JS class, an ES `class`, `class Counter { constructor(..) { .. } bump()
+{ .. } }`: a declaration, which a bundler drops where nothing uses it. A
+class whose prototype the program replaces, `js::class::<T>()
+.set_prototype(..)`, isn't, as JS doesn't let an ES class's be written: it's
+written as JS wrote one before `class`, a constructor function and its
+prototype, as React's `PureComponent` is
+([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md), amended, #2495).
 JS's `class X extends Component` runs it, `super(props)` its constructor,
 and `this.setState(..)` its prototype's method. Its constructor is
 exported where its struct is `pub` and its `new` or a static is; a private
-one is its module's own, `function ReactTestInstance(..)`, though its
+one is its module's own, `class ReactTestInstance`, though its
 methods are `pub`. A `pub` class whose `new` isn't `pub` is its type
-alone: its module's `function ReactTestInstance(..)`, and in its `.d.ts`
+alone: its module's `class ReactTestInstance`, and in its `.d.ts`
 `declare class ReactTestInstance { .. }` and `export type {
 ReactTestInstance };`
 ([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md),
@@ -918,7 +923,7 @@ VGPUError extends Error`, its `message` and `cause` fields given `super`:
 see [a class that extends `Error`](exceptions.md#a-class-that-extends-error-jserrorclass)
 ([ADR 1158](../../decisions/1158-a-class-that-extends-error.md)).
 One whose struct is marked `#[cfg_attr(rust_js, rust_js::class(es))]` is
-an ES class too, where upstream writes one: `class Plugin {
+an ES class always, where upstream writes one: `class Plugin {
 constructor(options) { .. } apply(compiler) { .. } get count() { .. }
 static shout(text) { .. } }`. Marked `#[cfg_attr(rust_js,
 rust_js::class(es, fields))]`, it declares its fields too, where upstream
@@ -936,8 +941,8 @@ one and `this.constructor` hides its prototype's (rd750), and one whose
 JS name is `__proto__`, as any struct's is, as its constructor's
 `this.__proto__ = ..` would set its prototype ([ADR
 1084](../../decisions/1084-a-field-named-proto-is-refused.md)). Its constants
-are its prototype's after it,
-`Plugin.prototype.limit = 3;`, and its module's default declared as it,
+are getters of its body, `get limit() { return 3; }`, read as a
+prototype's property is, and its module's default declared as it,
 `export default class Plugin { .. }`. JS sees an ES class: its methods
 aren't enumerable, and a call without `new` throws a `TypeError`. Its
 impl is marked `#[rust_js::class]` alone, as its struct says its form;
@@ -1095,17 +1100,20 @@ pub fn mounted(props: Option<&'static Unknown>) -> Component {
 export const NOOP = { enqueueForceUpdate() {} };
 
 /** Base class helpers for the updating state of a component. */
-export function Component(props, updater) {
-  this.props = props;
-  this.updater = updater ?? NOOP;
+export class Component {
+  constructor(props, updater) {
+    this.props = props;
+    this.updater = updater ?? NOOP;
+  }
+
+  /** Forces an update. */
+  forceUpdate() {
+    this.updater.enqueueForceUpdate(this, "forceUpdate");
+  }
+  get isReactComponent() {
+    return true;
+  }
 }
-
-Component.prototype.isReactComponent = true;
-
-/** Forces an update. */
-Component.prototype.forceUpdate = function () {
-  this.updater.enqueueForceUpdate(this, "forceUpdate");
-};
 
 function ComponentDummy() {}
 
@@ -1157,11 +1165,11 @@ export function mounted(props?: unknown): Component;
 - **Its fields are `this`'s**, and its `fn new(..) -> Self` is the
   constructor function: the struct literal it returns is `this.props =
   props;`, each field in the order it's written, a `None`'s left out, as
-  an object leaves it out. The struct's `///` doc is the constructor
-  function's JSDoc, before `new`'s own.
-- **A method that only passes its parameters on to a function of its
-  module is that function**, as React's ReactDOMRoot gives its
-  hydration root's prototype `scheduleHydration`: `pub fn
+  an object leaves it out. The struct's `///` doc is the class's JSDoc,
+  before `new`'s own.
+- **A constructor function's method that only passes its parameters on
+  to a function of its module is that function**, as React's ReactDOMRoot
+  gives its hydration root's prototype `scheduleHydration`: `pub fn
   unstable_schedule_hydration(&self, target: Option<&'static Node>) {
   schedule_hydration(target); }` is
   `ReactDOMHydrationRoot.prototype.unstable_scheduleHydration =
@@ -1169,7 +1177,8 @@ export function mounted(props?: unknown): Component;
   the function's, passed on in order, as they are; else, or where the
   function reads `js::arguments()` or is another module's, which a cycle
   may not have loaded where this module loads, it's a function of its
-  own. Not an ES class's
+  own. Not an ES class's, a method of its body that calls it, as
+  ReactDOMHydrationRoot's is now
   ([ADR 0605, amended](../../decisions/0605-an-arrow-that-passes-on-has-one-owner.md#amendment-a-prototypes-method-that-only-passes-its-parameters-on-rd715)).
 - **A constructor of statements makes its instance in a variable**, as
   React's `FiberNode` sets fields on its flags and calls
@@ -1228,15 +1237,17 @@ pub fn create_fiber(tag: u8, dev: bool) -> Fiber {
 ```js
 const enableProfilerTimer = true;
 
-export function FiberNode(tag, dev) {
-  this.tag = tag;
-  this.memoizedState = null;
-  if (enableProfilerTimer) {
-    this.actualDuration = -0;
-  }
-  if (dev) {
-    this._debugOwner = null;
-    Object.preventExtensions(this);
+export class FiberNode {
+  constructor(tag, dev) {
+    this.tag = tag;
+    this.memoizedState = null;
+    if (enableProfilerTimer) {
+      this.actualDuration = -0;
+    }
+    if (dev) {
+      this._debugOwner = null;
+      Object.preventExtensions(this);
+    }
   }
 }
 
@@ -1305,13 +1316,15 @@ pub fn create_request(tasks: u32) -> Rc<Request> {
 ```
 
 ```js
-function RequestInstance(
-  tasks, // DEV-only
-) {
-  this.pingedTasks = [];
-  for (let i = 0; i < tasks; i++) {
-    const task = { request: this };
-    this.pingedTasks.push(task);
+class RequestInstance {
+  constructor(
+    tasks, // DEV-only
+  ) {
+    this.pingedTasks = [];
+    for (let i = 0; i < tasks; i++) {
+      const task = { request: this };
+      this.pingedTasks.push(task);
+    }
   }
 }
 
@@ -1322,23 +1335,22 @@ export function createRequest(tasks) {
 
 - **The struct's `#[rust_js::name]` names the class**, `FiberNode` of
   React's `Fiber`, as a binding's class is named, in its JS and its
-  declaration. The class is where its impl is, its constructor function
-  and its declaration both, though its struct is another module's, as
+  declaration. The class is where its impl is, its JS and its
+  declaration both, though its struct is another module's, as
   React's `Fiber` is ReactInternalTypes' and its `FiberNode` ReactFiber's.
-- **A method of `&self` or `&mut self` is the prototype's**, a `function`
+- **A method of `&self` or `&mut self` is the prototype's**, a method
   reading `this`, not an arrow, so `this` is the instance it's called on,
   a JS subclass's too. A Rust call of it is a call of it on the value,
   `component.forceUpdate()`, and `Component::new(..)` is `new
   Component(..)`. As a value, it's the arrow of its call, `(a) =>
   a.forceUpdate()`.
 - **An associated `const` is the prototype's property**, camelCase as a
-  method is: `IS_REACT_COMPONENT` is `isReactComponent`. A function of no
-  `self` is the constructor's own, `Component.from = function (..) { ..
-  }`.
+  method is: `IS_REACT_COMPONENT` is `isReactComponent`, a getter of the
+  class's body, `get isReactComponent() { return {}; }`, made at each
+  read as a Rust `const` is. A function of no `self` is the class's
+  static, `static from(..) { .. }`.
 - **A method marked `#[cfg_attr(rust_js, rust_js::getter)]` is the
-  prototype's getter**, as JS's `get leftDiagonal() { .. }`:
-  `Object.defineProperty(QueenPosition.prototype, "leftDiagonal", { get()
-  { .. } })`, declared `get leftDiagonal(): number`. Its Rust call reads
+  prototype's getter**, JS's `get leftDiagonal() { .. }`, declared `get leftDiagonal(): number`. Its Rust call reads
   it, `position.leftDiagonal`, and as a value it's the arrow of that read.
   It's a method of `&self` alone that gives a value: one of `&mut self`,
   of arguments, of no `self`, `async`, or of a struct that's no class is
@@ -1437,17 +1449,24 @@ impl Counter for Keys {
 ```
 
 ```js
-export function Clicks() {
-  this.count = 0;
+export class Clicks {
+  constructor() {
+    this.count = 0;
+  }
+  step(by) {
+    this.count = (this.count + by) >>> 0;
+    return this.count;
+  }
 }
 
-Keys.prototype.step = Clicks.prototype.step = function (by) {
-  this.count = (this.count + by) >>> 0;
-  return this.count;
-};
-
-export function Keys() {
-  this.count = 0;
+export class Keys {
+  constructor() {
+    this.count = 0;
+  }
+  step(by) {
+    this.count = (this.count + by) >>> 0;
+    return this.count;
+  }
 }
 ```
 
@@ -1672,9 +1691,11 @@ pub fn reset(chunk: &ReactPromise) -> ChunkState {
 ```
 
 ```js
-export function ReactPromise(status, value) {
-  this.status = status;
-  this.value = value;
+export class ReactPromise {
+  constructor(status, value) {
+    this.status = status;
+    this.value = value;
+  }
 }
 
 export function createPendingChunk() {

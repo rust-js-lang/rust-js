@@ -12,7 +12,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/classes.test.ts",
       "-t",
-      "a class is its module's default export",
+      "a class whose prototype the program replaces is a constructor function",
     ],
   },
   {

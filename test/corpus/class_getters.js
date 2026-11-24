@@ -8,46 +8,42 @@
 
 import { $main } from "@rust-js/std";
 
-export function Queen(row, column) {
-  this.row = row;
-  this.column = column;
-  this.reads = 0;
-}
+export class Queen {
+  constructor(row, column) {
+    this.row = row;
+    this.column = column;
+    this.reads = 0;
+  }
 
-/** The same on each position of its left (\) diagonal. */
-Object.defineProperty(Queen.prototype, "leftDiagonal", {
-  get() {
+  /** The same on each position of its left (\) diagonal. */
+  get leftDiagonal() {
     this.reads = (this.reads + 1) >>> 0;
     return (this.row - this.column) | 0;
-  },
-});
+  }
 
-/** The same on each position of its right (/) diagonal. */
-Object.defineProperty(Queen.prototype, "rightDiagonal", {
-  get() {
+  /** The same on each position of its right (/) diagonal. */
+  get rightDiagonal() {
     this.reads = (this.reads + 1) >>> 0;
     return (this.row + this.column) | 0;
-  },
-});
+  }
 
-Object.defineProperty(Queen.prototype, "label", {
-  get() {
+  get label() {
     return `${this.row},${this.column}`;
-  },
-});
+  }
 
-Queen.prototype.threatens = function (other) {
-  return (
-    this.row === other.row ||
-    this.column === other.column ||
-    this.leftDiagonal === other.leftDiagonal ||
-    this.rightDiagonal === other.rightDiagonal
-  );
-};
+  threatens(other) {
+    return (
+      this.row === other.row ||
+      this.column === other.column ||
+      this.leftDiagonal === other.leftDiagonal ||
+      this.rightDiagonal === other.rightDiagonal
+    );
+  }
 
-Queen.prototype.readCount = function () {
-  return this.reads;
-};
+  readCount() {
+    return this.reads;
+  }
+}
 
 function noted(n) {
   console.log(`noted ${n}`);
@@ -55,20 +51,20 @@ function noted(n) {
 }
 
 /** A square of the board, of fields nothing changes once it's made. */
-export function Square(row) {
-  this.row = row;
-}
+export class Square {
+  constructor(row) {
+    this.row = row;
+  }
 
-/**
- * Its row, said as it's read: a getter's body runs where Rust calls
- * it, before what's called after it (rd679).
- */
-Object.defineProperty(Square.prototype, "announcedRow", {
-  get() {
+  /**
+   * Its row, said as it's read: a getter's body runs where Rust calls
+   * it, before what's called after it (rd679).
+   */
+  get announcedRow() {
     console.log(`read ${this.row}`);
     return this.row;
-  },
-});
+  }
+}
 
 /**
  * A square's row, read before what's noted after it: the getter of a `&`

@@ -136,7 +136,7 @@ impl Counter {
   expect(js).toContain("  function log(n) {\n");
   expect(js).toContain("  async function step(m) {\n");
   expect(js).toContain("  const shifted = (n) => {\n    const shifted = (n + 1) >>> 0;\n");
-  expect(js).toContain("  const read = (k) => {\n    const x = (this.n + k) >>> 0;\n");
+  expect(js).toContain("    const read = (k) => {\n      const x = (this.n + k) >>> 0;\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.make(true)(1), lib.make(false)(1), await lib.later(2), new lib.Counter(4).twice(1)]).toEqual([2, 1, 6, 20]);
 });

@@ -157,7 +157,7 @@ test("a namespace's, an object's and a class's member whose JS takes a fact is a
   writeFileSync(join(dir, "lib.rs"), readFileSync(join(import.meta.dir, "fixtures/ungiven_members.rs"), "utf8"));
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("Widget.prototype.isU32 = function (TId) {");
+  expect(js).toContain("  isU32(TId) {\n");
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   const note = (name: string, what: string) =>
     `// \`${name}\` isn't declared: its JS takes ${what} after its arguments, which a JS caller can't give (ADR 1077).`;

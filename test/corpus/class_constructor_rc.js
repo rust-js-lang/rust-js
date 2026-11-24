@@ -18,31 +18,35 @@ function createTask(request) {
   };
 }
 
-function RequestInstance(
-  kind,
-  tasks, // the tasks it starts with
-) {
-  this.kind = kind;
-  this.nextId = 0;
-  this.pingedTasks = [];
-  if (kind === 0) {
-    return;
+class RequestInstance {
+  constructor(
+    kind,
+    tasks, // the tasks it starts with
+  ) {
+    this.kind = kind;
+    this.nextId = 0;
+    this.pingedTasks = [];
+    if (kind === 0) {
+      return;
+    }
+    for (let i = 0; i < tasks; i++) {
+      const task = createTask(this);
+      this.pingedTasks.push(task);
+    }
   }
-  for (let i = 0; i < tasks; i++) {
-    const task = createTask(this);
-    this.pingedTasks.push(task);
+
+  shown() {
+    const tasks = this.pingedTasks;
+    const ids = tasks.map((task) => task.id);
+    const held = tasks.every((task) => task.request === this);
+    return `${this.kind} [${ids.join(", ")}] ${this.nextId} ${held}`;
   }
 }
 
-RequestInstance.prototype.shown = function () {
-  const tasks = this.pingedTasks;
-  const ids = tasks.map((task) => task.id);
-  const held = tasks.every((task) => task.request === this);
-  return `${this.kind} [${ids.join(", ")}] ${this.nextId} ${held}`;
-};
-
-function Hints() {
-  this.count = 0;
+class Hints {
+  constructor() {
+    this.count = 0;
+  }
 }
 
 $main(main);

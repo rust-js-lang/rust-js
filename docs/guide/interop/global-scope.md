@@ -716,8 +716,10 @@ pub fn controller() -> &'static AbortController {
 ```
 
 ```js
-function AbortControllerShim() {
-  this.aborted = false;
+class AbortControllerShim {
+  constructor() {
+    this.aborted = false;
+  }
 }
 
 // In environments without AbortController (e.g. tests)

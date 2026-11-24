@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/classes.test.ts",
       "-t",
-      "React's Component is a constructor function",
+      "React's Component is an ES class",
     ],
   },
   {

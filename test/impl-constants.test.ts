@@ -152,7 +152,8 @@ test("a class's constant is its prototype's, no object's", () => {
     "impl-constants-class",
     "#[cfg_attr(rust_js, rust_js::class)]\npub struct Component {\n    pub props: f64,\n}\n\nunsafe impl js::Defined for Component {}\nimpl js::Classed for Component {\n    type Constructor = js::AnyConstructor;\n}\n\n#[cfg_attr(rust_js, rust_js::class)]\nimpl Component {\n    pub const LIMIT: f64 = 1.0;\n\n    fn new(props: f64) -> Self {\n        Component { props }\n    }\n\n    pub fn doubled(&self) -> f64 {\n        self.props * 2.0\n    }\n}\n\npub fn made(props: f64) -> f64 {\n    Component::new(props).props + Component::LIMIT\n}\n",
   );
-  expect(js).toContain("Component.prototype.limit = 1;");
+  // A getter of its class's body (#2495).
+  expect(js).toContain("  get limit() {\n    return 1;\n  }\n}\n");
   // Read as its prototype's where it's used, not as a plain type's value.
   expect(js).toContain("return new Component(props).props + Component.prototype.limit;");
   expect(dts).not.toContain("export const Component");

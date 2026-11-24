@@ -20,7 +20,7 @@ beforeAll(buildCompiler, 600_000);
 // functions, one that calls another, a struct and its derived traits, a
 // trait and its impls' dictionaries, a namespace's methods, an enum with
 // fields and its `Display`, a type no other crate can make, a `const`, a
-// `static` and a thread-local. A class is apart, below (#2495).
+// `static` and a thread-local. A class is apart, below.
 const library = `use std::cell::Cell;
 use std::fmt;
 
@@ -194,10 +194,9 @@ for (const [name, bundle] of Object.entries(bundlers)) {
     expect(await bundle(dir, "entry.js")).toBe(await bundle(dir, "bare.js"));
   }, underLoad(120_000));
 
-  // A class's methods are assigned to its prototype at its module's top, a
-  // side effect a bundler keeps whatever uses it (#2495): marked failing
-  // until it's fixed, when this fails and the mark comes off.
-  test.failing(`${name}: an unused class is dropped (#2495)`, async () => {
+  // A class is an ES class, its members in its body: a declaration a
+  // bundler drops where nothing uses it (#2495).
+  test(`${name}: an unused class is dropped`, async () => {
     const dir = outsideFixture(`tree-shaking-class-${name}`);
     compiledAs(dir, "classes", `${"#[cfg_attr(rust_js, rust_js::class)]\npub struct Counter {\n    pub count: u32,\n}\n\n#[cfg_attr(rust_js, rust_js::class)]\nimpl Counter {\n    pub fn new() -> Self {\n        Counter { count: 0 }\n    }\n\n    pub fn bump(&mut self) -> u32 {\n        self.count += 1;\n        self.count\n    }\n}\n\n"}pub fn double(n: u32) -> u32 {\n    n * 2\n}\n`);
     // The module used, for `double`: a package's `sideEffects: false` drops

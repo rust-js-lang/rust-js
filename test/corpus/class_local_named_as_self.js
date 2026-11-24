@@ -8,19 +8,21 @@
 
 import { $displayF64, $main } from "@rust-js/std";
 
-export function Point(x) {
-  this.x = x;
+export class Point {
+  constructor(x) {
+    this.x = x;
+  }
+
+  moved(by) {
+    const point = new Point(this.x + by);
+    return point.x;
+  }
+
+  either(other) {
+    const point = other ?? new Point(this.x * 2);
+    return point.x + this.x;
+  }
 }
-
-Point.prototype.moved = function (by) {
-  const point = new Point(this.x + by);
-  return point.x;
-};
-
-Point.prototype.either = function (other) {
-  const point = other ?? new Point(this.x * 2);
-  return point.x + this.x;
-};
 
 export const Plain = {
   moved(plain, by) {

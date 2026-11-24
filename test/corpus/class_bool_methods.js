@@ -7,30 +7,32 @@
 
 import { $main } from "@rust-js/std";
 
-export function Bound(limit) {
-  this.limit = limit;
-  this.open = false;
+export class Bound {
+  constructor(limit) {
+    this.limit = limit;
+    this.open = false;
+  }
+
+  below(x) {
+    return x < this.limit;
+  }
+
+  same(x) {
+    return x === this.limit;
+  }
+
+  atMost(x) {
+    return this.below(x) || this.same(x);
+  }
+
+  openOrBelow(x) {
+    return this.open || this.below(x);
+  }
+
+  shut() {
+    return !this.open && this.limit > 0;
+  }
 }
-
-Bound.prototype.below = function (x) {
-  return x < this.limit;
-};
-
-Bound.prototype.same = function (x) {
-  return x === this.limit;
-};
-
-Bound.prototype.atMost = function (x) {
-  return this.below(x) || this.same(x);
-};
-
-Bound.prototype.openOrBelow = function (x) {
-  return this.open || this.below(x);
-};
-
-Bound.prototype.shut = function () {
-  return !this.open && this.limit > 0;
-};
 
 $main(main);
 

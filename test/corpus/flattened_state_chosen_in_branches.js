@@ -15,10 +15,12 @@ function statusDebug_fmt(status) {
   return "Halted";
 }
 
-export function Task(status, tries, name) {
-  this.status = status;
-  this.tries = tries;
-  this.name = name;
+export class Task {
+  constructor(status, tries, name) {
+    this.status = status;
+    this.tries = tries;
+    this.name = name;
+  }
 }
 
 function halt(cell) {

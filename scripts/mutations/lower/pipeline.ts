@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
     find: "                                .map_or(js::Span::NONE, |adt| sources.item_span(tcx, adt)),\n",
     replace:
       "                                .map_or(js::Span::NONE, |_| js::Span::NONE),\n",
-    tests: ["test/classes.test.ts", "-t", "doc is its constructor function's"],
+    tests: ["test/classes.test.ts", "-t", "doc is its class's"],
   },
   {
     name: "default-constant-read-undeclared",

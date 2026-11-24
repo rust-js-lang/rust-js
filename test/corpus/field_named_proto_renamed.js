@@ -19,17 +19,19 @@ function shapeDebug_fmt(shape) {
   return `Tuple(${shape._0}, ${shape._1 == null ? "None" : `Some(${shape._1})`})`;
 }
 
-export function Chained(proto) {
-  this.link = proto ?? undefined;
+export class Chained {
+  constructor(proto) {
+    this.link = proto ?? undefined;
+  }
+
+  proto() {
+    return this.link ?? undefined;
+  }
+
+  set(proto) {
+    this.link = proto ?? undefined;
+  }
 }
-
-Chained.prototype.proto = function () {
-  return this.link ?? undefined;
-};
-
-Chained.prototype.set = function (proto) {
-  this.link = proto ?? undefined;
-};
 
 function made(proto) {
   return {

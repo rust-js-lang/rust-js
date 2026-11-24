@@ -7,10 +7,12 @@
 
 import { $main, $print } from "@rust-js/std";
 
-function ReactPromise(status, value, reason) {
-  this.status = status;
-  this.value = value;
-  this.reason = reason;
+class ReactPromise {
+  constructor(status, value, reason) {
+    this.status = status;
+    this.value = value;
+    this.reason = reason;
+  }
 }
 
 function nextValue(n) {

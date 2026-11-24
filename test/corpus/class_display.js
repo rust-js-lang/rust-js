@@ -8,17 +8,18 @@
 
 import { $byteLen, $formatted, $main } from "@rust-js/std";
 
-export function Position(row, column) {
-  this.row = row;
-  this.column = column;
-}
-
-Position.prototype.toString = function (options) {
-  if (this.row < 0) {
-    return "off the board";
+export class Position {
+  constructor(row, column) {
+    this.row = row;
+    this.column = column;
   }
-  return `${this.row},${this.column}`;
-};
+  toString(options) {
+    if (this.row < 0) {
+      return "off the board";
+    }
+    return `${this.row},${this.column}`;
+  }
+}
 
 export const moveDisplay = { fmt: moveDisplay_fmt };
 function moveDisplay_fmt(move, options) {

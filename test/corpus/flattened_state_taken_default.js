@@ -23,16 +23,20 @@ function statusDebug_fmt(status) {
   return `Done { value: ${$debugStr(status.value)} }`;
 }
 
-export function Slot(kind, n) {
-  this.kind = kind;
-  this.n = n;
+export class Slot {
+  constructor(kind, n) {
+    this.kind = kind;
+    this.n = n;
+  }
 }
 
-export function Task(status, tries, value, name) {
-  this.status = status;
-  this.tries = tries;
-  this.value = value;
-  this.name = name;
+export class Task {
+  constructor(status, tries, value, name) {
+    this.status = status;
+    this.tries = tries;
+    this.value = value;
+    this.name = name;
+  }
 }
 
 let current;

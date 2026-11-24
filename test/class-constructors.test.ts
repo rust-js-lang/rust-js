@@ -116,18 +116,19 @@ pub mod fiber {
   const js = readFileSync(join(dir, "fiber.js"), "utf8");
   const ts = readFileSync(join(dir, "fiber.d.ts"), "utf8");
   expect(js).toContain(`/** A fiber. */
-export function FiberNode(tag, dev) {
-  const fiberNode = this;
-  this.tag = tag;
-  this.memoizedState = null;
-  this.reads = 0;
-  if (enableProfilerTimer) {
-    this.actualDuration = -0;
-  }
-  if (dev) {
-    this._debugOwner = null;
+export class FiberNode {
+  constructor(tag, dev) {
+    const fiberNode = this;
+    this.tag = tag;
+    this.memoizedState = null;
+    this.reads = 0;
+    if (enableProfilerTimer) {
+      this.actualDuration = -0;
+    }
+    if (dev) {
+      this._debugOwner = null;
 `);
-  expect(js).toContain("    Object.preventExtensions(this);\n  }\n}\n");
+  expect(js).toContain("      Object.preventExtensions(this);\n    }\n  }\n");
   expect(js).toContain("  return new FiberNode(tag, dev);\n");
   expect(ts).toContain("export declare class FiberNode {\n    constructor(tag: number, dev: boolean);\n");
   expect(ts).toContain("export function createFiber(tag: number, dev: boolean): FiberNode;\n");
@@ -228,21 +229,22 @@ pub fn hinted() -> u32 {
     hints.count.get()
 }
 `);
-  expect(js).toContain(`function RequestInstance(
-  kind,
-  tasks, // the tasks it starts with
-) {
-  this.kind = kind;
-  this.nextId = 0;
-  this.pingedTasks = [];
-  if (kind === 0) {
-    return;
-  }
+  expect(js).toContain(`class RequestInstance {
+  constructor(
+    kind,
+    tasks, // the tasks it starts with
+  ) {
+    this.kind = kind;
+    this.nextId = 0;
+    this.pingedTasks = [];
+    if (kind === 0) {
+      return;
+    }
 `);
   expect(js).toContain("const task = createTask(this);\n");
   expect(js).toContain("this.pingedTasks.push(task);\n");
   expect(js).toContain("  // The request starts its tasks.\n  return new RequestInstance(kind, tasks);\n");
-  expect(js).toContain("export function Hints() {\n  this.count = 0;\n}\n");
+  expect(js).toContain("export class Hints {\n  constructor() {\n    this.count = 0;\n  }\n}\n");
   expect(js).toContain("const hints = new Hints();\n");
   expect(ts).toContain("export function createRequest(kind: number, tasks: number): RequestInstance;\n");
   const { createRequest, heldByItsTasks, hinted, Hints } = await import(join(dir, "lib.js"));
@@ -294,7 +296,7 @@ pub fn shared() -> Rc<Counter> {
     counter
 }
 `);
-  expect(js).toContain("export function Counter() {\n  this.count = 0;\n  $countedInstance(this);\n}\n");
+  expect(js).toContain("export class Counter {\n  constructor() {\n    this.count = 0;\n    $countedInstance(this);\n  }\n");
   expect(js).toContain("  return $countedBox(this).strong;\n");
   expect(ts).toContain("export function shared(): Counter;\n");
   const { Counter, owners, shared } = await import(join(dir, "lib.js"));

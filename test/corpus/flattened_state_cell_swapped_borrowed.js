@@ -22,9 +22,11 @@ function statusDebug_fmt(status) {
   return "Halted";
 }
 
-export function Task(status, tries) {
-  this.status = status;
-  this.tries = tries;
+export class Task {
+  constructor(status, tries) {
+    this.status = status;
+    this.tries = tries;
+  }
 }
 
 $main(main);

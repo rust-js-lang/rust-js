@@ -16,11 +16,13 @@ function statusDebug_fmt(status) {
   return `Done { value: ${$debugStr(status.value)} }`;
 }
 
-export function Task(status, tries, value, name) {
-  this.status = status;
-  this.tries = tries;
-  this.value = value;
-  this.name = name;
+export class Task {
+  constructor(status, tries, value, name) {
+    this.status = status;
+    this.tries = tries;
+    this.value = value;
+    this.name = name;
+  }
 }
 
 const $tSetT = new WeakMap();

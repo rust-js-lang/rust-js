@@ -8,18 +8,19 @@
 
 import { $byteLen, $main } from "@rust-js/std";
 
-export function QueenPosition(rowIndex, columnIndex) {
-  this.rowIndex = rowIndex;
-  this.columnIndex = columnIndex;
+export class QueenPosition {
+  constructor(rowIndex, columnIndex) {
+    this.rowIndex = rowIndex;
+    this.columnIndex = columnIndex;
+  }
+
+  leftDiagonal() {
+    return (this.rowIndex - this.columnIndex) | 0;
+  }
+  toString() {
+    return `${this.rowIndex},${this.columnIndex}`;
+  }
 }
-
-QueenPosition.prototype.leftDiagonal = function () {
-  return (this.rowIndex - this.columnIndex) | 0;
-};
-
-QueenPosition.prototype.toString = function () {
-  return `${this.rowIndex},${this.columnIndex}`;
-};
 
 function listed(items, TDisplay) {
   return items.map((x) => TDisplay.fmt(x)).join(" ");

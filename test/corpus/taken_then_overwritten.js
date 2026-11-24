@@ -19,9 +19,11 @@ function chunkStateDebug_fmt(chunkState) {
   return `Initialized { value: ${$debugStr(chunkState.value)} }`;
 }
 
-function ReactPromise(status, value) {
-  this.status = status;
-  this.value = value;
+class ReactPromise {
+  constructor(status, value) {
+    this.status = status;
+    this.value = value;
+  }
 }
 
 function listen(chunk, id) {

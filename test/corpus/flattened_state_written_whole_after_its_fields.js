@@ -27,11 +27,13 @@ const ChunkState = {
   },
 };
 
-function ReactPromise(status, value, reason, message) {
-  this.status = status;
-  this.value = value;
-  this.reason = reason;
-  this.message = message;
+class ReactPromise {
+  constructor(status, value, reason, message) {
+    this.status = status;
+    this.value = value;
+    this.reason = reason;
+    this.message = message;
+  }
 }
 
 function thrown(error) {

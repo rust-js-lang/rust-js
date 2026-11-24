@@ -23,88 +23,90 @@ function countOf(cell) {
   return cell.length;
 }
 
-function Books() {
-  this.items = [1];
-  this.entries = [];
-  this.slot = undefined;
+class Books {
+  constructor() {
+    this.items = [1];
+    this.entries = [];
+    this.slot = undefined;
+  }
+
+  first() {
+    return $index(this.items, 0, "test/corpus/class_trait_field_borrows.rs:70:28");
+  }
+
+  slotted() {
+    return $borrow($fieldCell(this, "slot"), "test/corpus/class_trait_field_borrows.rs:74:20")
+      .value;
+  }
+  push(n) {
+    this.items.push(n);
+  }
+  total() {
+    return this.items.reduce((a, b) => (a + b) >>> 0, 0);
+  }
+  fill(value) {
+    const held = $borrow(
+      $fieldCell(this, "slot"),
+      "test/corpus/class_trait_field_borrows.rs:39:32",
+      true,
+    );
+    // Held: a borrow of the field's own meets it.
+    let free;
+    try {
+      const tryBorrowMut = $tryBorrow($fieldCell(this, "slot"), true);
+      free = tryBorrowMut.TAG === "Ok";
+      if (tryBorrowMut.TAG === "Ok") {
+        $unborrow(tryBorrowMut._0);
+      }
+    } finally {
+      $unborrow(held);
+    }
+    $borrowMut($fieldCell(this, "slot"), "test/corpus/class_trait_field_borrows.rs:43:22").value =
+      value;
+    return free;
+  }
+  record(entry) {
+    const entries = $borrowMut(
+      this.entries,
+      "test/corpus/class_trait_field_borrows.rs:24:42",
+      true,
+    );
+    let result;
+    try {
+      entries.push(entry);
+      // Held: a second borrow meets it.
+      const tryBorrow = $tryBorrow(this.entries);
+      result = tryBorrow.TAG === "Ok";
+      if (tryBorrow.TAG === "Ok") {
+        $unborrow(tryBorrow._0);
+      }
+    } finally {
+      $unborrow(entries);
+    }
+    return result;
+  }
+  count() {
+    return countOf(this.entries);
+  }
 }
-
-Books.prototype.first = function () {
-  return $index(this.items, 0, "test/corpus/class_trait_field_borrows.rs:70:28");
-};
-
-Books.prototype.slotted = function () {
-  return $borrow($fieldCell(this, "slot"), "test/corpus/class_trait_field_borrows.rs:74:20").value;
-};
-
-Books.prototype.push = function (n) {
-  this.items.push(n);
-};
-
-Books.prototype.total = function () {
-  return this.items.reduce((a, b) => (a + b) >>> 0, 0);
-};
-
-Books.prototype.fill = function (value) {
-  const held = $borrow(
-    $fieldCell(this, "slot"),
-    "test/corpus/class_trait_field_borrows.rs:39:32",
-    true,
-  );
-  // Held: a borrow of the field's own meets it.
-  let free;
-  try {
-    const tryBorrowMut = $tryBorrow($fieldCell(this, "slot"), true);
-    free = tryBorrowMut.TAG === "Ok";
-    if (tryBorrowMut.TAG === "Ok") {
-      $unborrow(tryBorrowMut._0);
-    }
-  } finally {
-    $unborrow(held);
-  }
-  $borrowMut($fieldCell(this, "slot"), "test/corpus/class_trait_field_borrows.rs:43:22").value =
-    value;
-  return free;
-};
-
-Books.prototype.record = function (entry) {
-  const entries = $borrowMut(this.entries, "test/corpus/class_trait_field_borrows.rs:24:42", true);
-  let result;
-  try {
-    entries.push(entry);
-    // Held: a second borrow meets it.
-    const tryBorrow = $tryBorrow(this.entries);
-    result = tryBorrow.TAG === "Ok";
-    if (tryBorrow.TAG === "Ok") {
-      $unborrow(tryBorrow._0);
-    }
-  } finally {
-    $unborrow(entries);
-  }
-  return result;
-};
-
-Books.prototype.count = function () {
-  return countOf(this.entries);
-};
 
 // Its `items` gives a field of what an `Rc` holds, not of its own: a
 // method of its prototype.
-function Tally() {
-  this.shared = { items: [] };
+class Tally {
+  constructor() {
+    this.shared = { items: [] };
+  }
+  items() {
+    return this.shared.items;
+  }
+
+  total() {
+    return (this.items().length * 100) >>> 0;
+  }
+  push(n) {
+    this.items().push(n);
+  }
 }
-
-Tally.prototype.items = function () {
-  return this.shared.items;
-};
-
-Tally.prototype.total = function () {
-  return (this.items().length * 100) >>> 0;
-};
-
-Tally.prototype.push = function (n) {
-  this.items().push(n);
-};
 
 $main(main);
 

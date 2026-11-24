@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                true => prototype(),\n",
     replace: "                true => js::Expr::var(&n.name),\n",
-    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
+    tests: ["test/classes-traits.test.ts", "-t", "one function of constructor functions"],
   },
   {
     name: "class-constructor-unexported",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            constructor.export = n.export;\n",
     replace: "            constructor.export = false;\n",
-    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
+    tests: ["test/classes.test.ts", "-t", "React's Component is an ES class"],
   },
   {
     name: "step-of-any-number-incremented",
@@ -288,7 +288,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            if class.getters.iter().any(|g| f.name.is(g)) {\n",
     replace: "            if false {\n",
-    tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
+    tests: ["test/classes.test.ts", "-t", "a class whose prototype the program replaces is a constructor function"],
   },
   {
     name: "labeled-switch-printed-as-block",
@@ -455,8 +455,8 @@ export const mutations: Mutation[] = [
     name: "es-class-fields-unprinted",
     breaks: "an ES class's declared fields are printed nowhere, `chunkName;` gone (#568)",
     file: "crates/rust-js-emit/src/to_oxc/statements.rs",
-    find: "            ClassBody::boxed(SPAN, ArenaVec::from_iter_in(fields.chain(elements), b), b),\n",
-    replace: "            ClassBody::boxed(SPAN, ArenaVec::from_iter_in(fields.take(0).chain(elements), b), b),\n",
+    find: "ArenaVec::from_iter_in(fields.chain(elements).chain(getters), b),",
+    replace: "ArenaVec::from_iter_in(fields.take(0).chain(elements).chain(getters), b),",
     tests: ["test/es-classes.test.ts", "-t", "whose struct says es is an ES class"],
   },
   {
@@ -466,5 +466,13 @@ export const mutations: Mutation[] = [
     find: "                pattern => (self.pattern_at(pattern, at), None),\n",
     replace: "                pattern => (self.pattern(pattern), None),\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "after a destructured parameter"],
+  },
+  {
+    name: "es-class-constants-dropped",
+    breaks: "an ES class's constants are no getters of its body, so `Plugin.prototype.limit` is `undefined` (#2495)",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
+    find: "fields.chain(elements).chain(getters)",
+    replace: "fields.chain(elements).chain(getters.take(0))",
+    tests: ["test/es-classes.test.ts", "-t", "a class whose struct says es is an ES class"],
   },
 ];

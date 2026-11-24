@@ -8,27 +8,28 @@
 
 import { $main } from "@rust-js/std";
 
-function Gate() {
-  this.seen = false;
-  this.n = 1;
+class Gate {
+  constructor() {
+    this.seen = false;
+    this.n = 1;
+  }
+  mark() {
+    this.seen = true;
+    return this.seen;
+  }
+
+  counter() {
+    const gate = this;
+    return {
+      get value() {
+        return gate.n;
+      },
+      set value(value) {
+        gate.n = value;
+      },
+    };
+  }
 }
-
-Gate.prototype.mark = function () {
-  this.seen = true;
-  return this.seen;
-};
-
-Gate.prototype.counter = function () {
-  const gate = this;
-  return {
-    get value() {
-      return gate.n;
-    },
-    set value(value) {
-      gate.n = value;
-    },
-  };
-};
 
 $main(main);
 

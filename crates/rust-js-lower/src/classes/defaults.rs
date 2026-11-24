@@ -61,9 +61,9 @@ pub fn prototype_defaults(
 }
 
 /// `function`, a default the class `owner` of a module of `namespaces`
-/// takes, its prototype's method beside its own; or, where a class of the
-/// module took one alike before, that class's function, assigned to each
-/// (rd283, ADR 1035). `Err` of one named as a method the class has.
+/// takes, its prototype's method beside its own; or, where a constructor
+/// function of the module took one alike before, that one's function,
+/// assigned to each (rd283, ADR 1035); an ES class's its own (#2495). `Err` of one named as a method the class has.
 pub fn take_default(namespaces: &mut [js::Namespace], owner: &str, function: js::Function) -> Result<(), String> {
     let Some(at) = namespaces.iter().position(|n| n.name.is(owner)) else {
         return Ok(());
@@ -74,8 +74,15 @@ pub fn take_default(namespaces: &mut [js::Namespace], owner: &str, function: js:
             function.name.word()
         ));
     }
+    // An ES class takes its own, each class's body its copy, as Rust makes a
+    // provided method each impl's (#2495): two functions no Rust code can
+    // tell apart (ADR 0262). Constructor functions share one, upstream's.
+    let es = |n: &js::Namespace| n.class.as_ref().is_some_and(|class| class.es);
+    let owner_es = namespaces[at].class.as_ref().is_some_and(|class| class.es);
     let alike = namespaces.iter_mut().find(|n| {
-        !n.name.is(owner)
+        !owner_es
+            && !es(n)
+            && !n.name.is(owner)
             && n.class
                 .as_ref()
                 .is_some_and(|class| class.prototype.iter().any(|p| function.name.is(p)))

@@ -25,15 +25,17 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 
-function Chunk(n) {
-  this.n = n;
-  this.held = [n];
-}
+class Chunk {
+  constructor(n) {
+    this.n = n;
+    this.held = [n];
+  }
 
-Chunk.prototype.bump = function () {
-  this.n = (this.n + 1) >>> 0;
-  return (this.n + $countedBox(this).strong) >>> 0;
-};
+  bump() {
+    this.n = (this.n + 1) >>> 0;
+    return (this.n + $countedBox(this).strong) >>> 0;
+  }
+}
 
 function share(value, TInstance, dropT) {
   const shared = $countedNew(value, TInstance);

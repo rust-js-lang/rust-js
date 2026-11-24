@@ -8,12 +8,14 @@
 
 import { $debugStr, $main } from "@rust-js/std";
 
-function ReactPromise(status, value, reason, name) {
-  this.status = status;
-  this.value = value;
-  this.reason = reason;
-  this.reads = 0;
-  this.name = name;
+class ReactPromise {
+  constructor(status, value, reason, name) {
+    this.status = status;
+    this.value = value;
+    this.reason = reason;
+    this.reads = 0;
+    this.name = name;
+  }
 }
 
 function block(chunk) {

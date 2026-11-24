@@ -445,8 +445,8 @@ export const mutations: Mutation[] = [
     name: "static-es-class-in-impl-module",
     breaks: "a fieldless ES class is emitted beside its impl, while its declaration and re-export point to the struct's module",
     file: "crates/rust-js-lower/src/lib.rs",
-    find: "classes::class_of(tcx, def_id).and_then(|class| classes::implicit_constructor_home(tcx, class))",
-    replace: "classes::class_of(tcx, def_id).and_then(|_| None)",
+    find: "classes::implicit_constructor_home(tcx, class).or_else(|| classes::home(tcx, class)))",
+    replace: "classes::home(tcx, class).filter(|_| false))",
     tests: ["test/es-classes.test.ts", "-t", "implicit constructor lives with its struct"],
   },
   {
@@ -457,5 +457,13 @@ export const mutations: Mutation[] = [
     replace: "                .map(|(i, name)| name.filter(|_| false).unwrap_or_else(|| format!(\"arg{i}\")))\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_fn_pointer_at_an_instance.rs$"],
     snapshots: true,
+  },
+  {
+    name: "class-member-beside-its-impl",
+    breaks: "a class's inherent impl in another module is written there, no member of its class: `run()` throws `twice is not a function` (#2497)",
+    file: "crates/rust-js-lower/src/lib.rs",
+    find: "classes::implicit_constructor_home(tcx, class).or_else(|| classes::home(tcx, class)))",
+    replace: "classes::implicit_constructor_home(tcx, class))",
+    tests: ["test/classes.test.ts", "-t", "a class's inherent impl in another module is a member of its class"],
   },
 ];

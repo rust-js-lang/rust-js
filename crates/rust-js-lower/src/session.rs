@@ -53,6 +53,9 @@ pub struct Caches {
     /// The crate's types JS may hold a value of and give back
     /// (`declarations::js_holds`, #2024), found once.
     pub js_held: OnceCell<Rc<IndexSet<DefId>>>,
+    /// The crate's classes whose prototype the program replaces, each a
+    /// constructor function (`classes::forms`, #2495), found once.
+    pub prototype_replaced: OnceCell<Rc<IndexSet<DefId>>>,
     /// The functions only calls reach, by their calls, found of the crate
     /// graph's names (ADRs 0577, 1148): the own callbacks' to ask.
     pub only_called:
@@ -273,6 +276,7 @@ fn start_keyed(gcx: usize, flags: Flags, hooks: &'static dyn MirHooks) -> Sessio
             compiled_types: OnceCell::new(),
             compiled: OnceCell::new(),
             js_held: OnceCell::new(),
+            prototype_replaced: OnceCell::new(),
             only_called: OnceCell::new(),
             std_path_ids: OnceCell::new(),
             std_module_ids: OnceCell::new(),

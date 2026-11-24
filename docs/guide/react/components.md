@@ -758,11 +758,10 @@ export function Clocks() {
 - **Its element's `ref` is its instance**, React's, `<Clock ref={move
   |clock: Option<&'static Clock>| ..} />`, a callback or a `RefObject` of
   `&'static Clock`; one of another type is rustc's error.
-- A class that implements no binding's class is a constructor function
-  and its prototype, as [JS classes](../interop/export-to-javascript.md#js-classes)
-  are: its prototype's methods enumerable and its call without `new`
-  allowed, where an ES class's aren't ([differences](../semantics.md), 37);
-  or, its struct marked `#[cfg_attr(rust_js, rust_js::class(es))]`, an ES
-  class, as react-art's `class LinearGradient` is upstream.
+- A class that implements no binding's class is an ES class, as
+  [JS classes](../interop/export-to-javascript.md#js-classes) are, react-art's
+  `class LinearGradient` as upstream: its methods aren't enumerable, and
+  its call without `new` throws. One whose prototype the program replaces
+  is a constructor function and its prototype, as React's `PureComponent`.
 
 Not yet: `this.state` and `setState`; `PureComponent`.

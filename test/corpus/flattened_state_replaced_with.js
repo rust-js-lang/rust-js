@@ -20,11 +20,13 @@ function statusDebug_fmt(status) {
   return "Halted";
 }
 
-export function Task(status, tries, value, name) {
-  this.status = status;
-  this.tries = tries;
-  this.value = value;
-  this.name = name;
+export class Task {
+  constructor(status, tries, value, name) {
+    this.status = status;
+    this.tries = tries;
+    this.value = value;
+    this.name = name;
+  }
 }
 
 function shown(task) {

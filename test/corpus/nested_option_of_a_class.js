@@ -8,11 +8,13 @@
 
 import { $main } from "@rust-js/std";
 
-export function Marker() {}
+export class Marker {
+  constructor() {}
 
-Marker.prototype.name = function () {
-  return "marker";
-};
+  name() {
+    return "marker";
+  }
+}
 
 function show(h) {
   if (h.link === undefined) {

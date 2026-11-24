@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/starts.rs",
     find: "                    starts.0.push((declared.lo, declared.hi));\n",
     replace: "",
-    tests: ["test/classes.test.ts", "-t", "doc is its constructor function's"],
+    tests: ["test/classes.test.ts", "-t", "doc is its class's"],
   },
   {
     name: "noinline-nested-unwritten",

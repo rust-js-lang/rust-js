@@ -28,32 +28,34 @@ import {
   $weakNone,
 } from "@rust-js/std";
 
-function Node(n, me) {
-  this.n = n;
-  this.me = me;
-}
+class Node {
+  constructor(n, me) {
+    this.n = n;
+    this.me = me;
+  }
 
-Node.prototype.get = function () {
-  return this.n;
-};
+  get() {
+    return this.n;
+  }
 
-Node.prototype.knowsItself = function () {
-  const upgrade = $upgrade(this.me);
-  const holds = (me) => {
-    try {
-      return me.get() === this.get();
-    } catch (error) {
-      throw $unwindsOn(error);
-    } finally {
-      if ($live()) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
+  knowsItself() {
+    const upgrade = $upgrade(this.me);
+    const holds = (me) => {
+      try {
+        return me.get() === this.get();
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          $rcDrop(me, (value) => {
+            $weakDrop(value.me);
+          });
+        }
       }
-    }
-  };
-  return upgrade != null && holds(upgrade);
-};
+    };
+    return upgrade != null && holds(upgrade);
+  }
+}
 
 function read(rc, f) {
   return f($countedValue(rc));

@@ -33,10 +33,10 @@ test("a consumer calls a library's trait of classes' methods on the prototype, a
   expect(app).not.toContain("rootRender");
   expect(app).toContain("  console.log(`${root.label()}`);\n  console.log(`${root.render(3)}`);\n");
   expect(app).toContain("function twice(item) {\n  return `${item.label()} ${item.render(1)}`;\n}");
-  // The trait's default, its library's, the consumer's class's prototype's
-  // method as the library's class has it.
+  // The trait's default, its library's, the consumer's class's method, in
+  // its body as the library's class has it (#2495).
   expect(app).toContain(
-    "Leaf.prototype.render = function (times) {\n  let out = \"\";\n  for (let i = 0; i < times; i++) {\n    out += this.label();\n  }\n  return out;\n};",
+    "  render(times) {\n    let out = \"\";\n    for (let i = 0; i < times; i++) {\n      out += this.label();\n    }\n    return out;\n  }",
   );
   expect(app).not.toContain("leafRender");
 }, 300_000);

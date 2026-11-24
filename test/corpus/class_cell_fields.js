@@ -11,40 +11,42 @@ function bump(count) {
   count.value = (count.value + 1) >>> 0;
 }
 
-export function Counted(row) {
-  this.row = row;
-  this.reads = 0;
-  this.last = undefined;
-}
-
-Counted.prototype.rowCounted = function () {
-  this.reads = (this.reads + 1) >>> 0;
-  this.last = this.row;
-  return this.row;
-};
-
-Counted.prototype.rowBumped = function (times) {
-  const counted = this;
-  for (let i = 0; i < times; i++) {
-    bump({
-      get value() {
-        return counted.reads;
-      },
-      set value(value) {
-        counted.reads = value;
-      },
-    });
+export class Counted {
+  constructor(row) {
+    this.row = row;
+    this.reads = 0;
+    this.last = undefined;
   }
-  return this.row;
-};
 
-Counted.prototype.readCount = function () {
-  return this.reads;
-};
+  rowCounted() {
+    this.reads = (this.reads + 1) >>> 0;
+    this.last = this.row;
+    return this.row;
+  }
 
-Counted.prototype.lastRead = function () {
-  return this.last ?? undefined;
-};
+  rowBumped(times) {
+    const counted = this;
+    for (let i = 0; i < times; i++) {
+      bump({
+        get value() {
+          return counted.reads;
+        },
+        set value(value) {
+          counted.reads = value;
+        },
+      });
+    }
+    return this.row;
+  }
+
+  readCount() {
+    return this.reads;
+  }
+
+  lastRead() {
+    return this.last ?? undefined;
+  }
+}
 
 $main(main);
 

@@ -1,6 +1,6 @@
 # 0761. A `#[rust_js::class]` is a constructor function and its prototype
 
-Status: Accepted, by the user's decision of 2026-10-24; amended (rd682, the user's decision of 2026-11-03): a class its struct marks `#[rust_js::class(es)]` is an ES class; amended (#568, the user's decision of 2026-11-04): one marked `class(es, fields)` declares its fields; amended (rd325): a private class is its module's own; amended (rd554): a constructor may give an `Rc` of its instance; amended (#448): a prototype of methods isn't replaced at load; amended (#448, the user's decision of 2026-11-01): a load's prototype set right after its constructor; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone; amended by [1049](1049-js-class-is-typed-by-classed.md) (the user's decision of 2026-11-01): a class `js::class` names is `js::Classed`, one line of the program's, and may implement a trait of types alone. Amended by [1084](1084-a-field-named-proto-is-refused.md) (rd754): a field named `__proto__` is refused of any struct, a class's too. Extends
+Status: Accepted, by the user's decision of 2026-10-24; amended (#2495, the user's decision of 2026-11-24): every class is an ES class but one whose prototype the program replaces, its constants getters, its members in its body; amended (rd682, the user's decision of 2026-11-03): a class its struct marks `#[rust_js::class(es)]` is an ES class; amended (#568, the user's decision of 2026-11-04): one marked `class(es, fields)` declares its fields; amended (rd325): a private class is its module's own; amended (rd554): a constructor may give an `Rc` of its instance; amended (#448): a prototype of methods isn't replaced at load; amended (#448, the user's decision of 2026-11-01): a load's prototype set right after its constructor; amended (2026-11-01, the user's decision): a class whose `new` isn't `pub` is its type alone; amended by [1049](1049-js-class-is-typed-by-classed.md) (the user's decision of 2026-11-01): a class `js::class` names is `js::Classed`, one line of the program's, and may implement a trait of types alone. Amended by [1084](1084-a-field-named-proto-is-refused.md) (rd754): a field named `__proto__` is refused of any struct, a class's too. Extends
 [0047](0047-methods.md), whose object of functions stays every other
 struct's impl. Amended: its struct's comments, its `///` doc, are its
 constructor function's (below). Amended (2026-10-26, the user's
@@ -1015,3 +1015,39 @@ mutations `rc-instance-unasked`, `rc-new-cyclic-instance-unasked`,
 `rc-instance-asked-by-classify` (the const generic pairs) and
 `counted-library-class-unseen`, caught;
 `mir-body-std-call-asks-unread` refitted.
+
+## Amendment: every class is an ES class, but one whose prototype is replaced (#2495, Tu's decision, 2026-11-24)
+
+Rust-js's promise is that its JS plays with frontend tooling, tree shaking among it. A constructor function's
+methods are assigned to its prototype at its module's top, `Counter.prototype.bump = function () { .. };`. A
+bundler keeps such a statement whatever an app uses, so a class nothing used was bundled anyway. The tooling
+net found it (`test/tooling-tree-shaking.test.ts`).
+
+**Every `#[rust_js::class]` is an ES class** (`classes::forms::is_es_class`): a declaration a bundler drops where
+nothing uses it, its constructor, methods, getters, statics and `toString` in its body. This amendment supersedes
+rd682's per-class choice by attribute. `class(es)` and `class(es, fields)` still read as before.
+
+- **One rule, no opt-out:** a class whose prototype the program replaces, `js::class::<T>().set_prototype(..)`
+  written anywhere in its crate, is a constructor function, as an ES class's `prototype` can't be written. A HIR
+  scan of the crate's bodies finds them (`replaced_prototypes`). The React port has five: React's `ComponentDummy`
+  and `PureComponent`, the Flight client's and the reply server's `ReactPromise`, and `FlightIterator`. One
+  marked `class(es)`, or extending a binding's class, is an ES class always, and its prototype's replacement stays
+  refused.
+- **An associated constant is a getter in the body,** `get limit() { return 3; }`, not `Plugin.prototype.limit =
+  3;` after it. Its reads are the same, the prototype's and an instance's alike. It's made at each read, as a
+  Rust `const` is a value made at each use. It isn't enumerable, and a JS write to it throws where it shadowed it.
+  Neither is the program's: a Rust `const` is never written (ADR 0262's "no observable difference" case).
+- **Each class's members are in its own declaration,** an inherent impl's in another module too (`body_module`,
+  #2497, which compiled and threw at run time in both forms).
+- **A trait of classes' provided method is each class's own copy,** as Rust instantiates a provided method per
+  impl. It isn't one function assigned to each, as upstream's `ReactDOMHydrationRoot.prototype.render =
+  ReactDOMRoot.prototype.render = function ..` was. No Rust code can compare the two functions (ADR 0262). A
+  constructor function's still share one.
+
+What JS outside the program can tell: an ES class's methods aren't enumerable, so `Object.assign(proto,
+Component.prototype)` copies none. React's `PureComponent` reaches them through its prototype chain, as before.
+A call without `new` is a `TypeError`. These are the accepted ES-class difference of the React port (its
+PORTING.md), the user's decision.
+
+Held by `test/tooling-tree-shaking.test.ts` (an unused class dropped, by Vite and Bun), `test/classes.test.ts`,
+`test/es-classes.test.ts`, `test/classes-traits.test.ts` and `test/class-constructors.test.ts`.

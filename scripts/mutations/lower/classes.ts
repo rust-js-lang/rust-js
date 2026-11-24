@@ -5,7 +5,7 @@ const file = "crates/rust-js-lower/src/classes.rs";
 const base = [
   "test/classes.test.ts",
   "-t",
-  "React's Component is a constructor function",
+  "React's Component is an ES class",
 ];
 const refusals = ["test/classes.test.ts", "-t", "what a class is refused"];
 
@@ -495,7 +495,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/classes.rs",
     find: "                    && (tcx.associated_item_def_ids(id).iter()).any(|&item| tcx.def_kind(item) != DefKind::AssocTy)\n",
     replace: "                    && !tcx.associated_item_def_ids(id).is_empty()\n",
-    tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
+    tests: ["test/classes.test.ts", "-t", "React's Component is an ES class"],
   },
   {
     name: "namespace-value-of-anything",

@@ -4,7 +4,7 @@
 // that function (#566), and one its module names apart from that name is
 // refused, as a call through the namespace would be the function's
 // (#585); a constructor function's prototype's is the function itself,
-// `X.prototype.m = f;` (rd715). Each test is a program of its own,
+// `X.prototype.m = f;` (rd715), an ES class's a method of its body (#2495). Each test is a program of its own,
 // compiled and run.
 
 import { beforeAll, expect, test } from "bun:test";
@@ -20,7 +20,7 @@ beforeAll(buildReact, 600_000);
 function compiled(name: string, files: Record<string, string>) {
   const dir = fixture(name);
   for (const [file, text] of Object.entries(files)) writeFileSync(join(dir, file), text);
-  const p = runSync([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type", "lib"], root, 60_000);
+  const p = runSync([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type", "lib", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 60_000);
   const read = (file: string) => readFileSync(join(dir, file), "utf8");
   return { p, dir, read };
 }
@@ -217,6 +217,17 @@ pub struct HydrationRoot {
     pub internal_root: f64,
 }
 
+// Its prototype replaced, so a constructor function, whose prototype's
+// method can be the function it calls: an ES class's are in its body,
+// none forwarded (#2495). Its own, so its methods stay.
+js::on_load! {
+    js::class::<HydrationRoot>().set_prototype(js::class::<HydrationRoot>().prototype());
+}
+
+impl js::Classed for HydrationRoot {
+    type Constructor = js::AnyConstructor;
+}
+
 #[cfg_attr(rust_js, rust_js::class)]
 impl HydrationRoot {
     pub fn new(internal_root: f64) -> Self {
@@ -265,11 +276,11 @@ pub fn run(n: f64) -> (f64, f64, Vec<f64>) {
   expect(p.stderr).not.toContain("error");
   expect(p.code).toBe(0);
   const js = read("lib.js");
-  expect(js).toContain("HydrationRoot.prototype.unstable_scheduleHydration = scheduleHydration;\n");
-  expect(js).toContain("HydrationRoot.prototype.twice = doubled;\n");
-  expect(js).toContain("HydrationRoot.prototype.offset = function (n) {");
+  expect(js).toContain("Object.defineProperty(HydrationRoot.prototype, \"unstable_scheduleHydration\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: scheduleHydration,\n");
+  expect(js).toContain("Object.defineProperty(HydrationRoot.prototype, \"twice\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: doubled,\n");
+  expect(js).toContain("Object.defineProperty(HydrationRoot.prototype, \"offset\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: function (n) {");
   // Of `()`, its result isn't the function's.
-  expect(js).toContain("HydrationRoot.prototype.note = function (n) {");
+  expect(js).toContain("Object.defineProperty(HydrationRoot.prototype, \"note\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: function (n) {");
   const ran = run(["node", "--input-type=module", "--eval", `
     import { run } from ${JSON.stringify(join(dir, "lib.js"))};
     console.log(JSON.stringify(run(3)));
@@ -303,6 +314,17 @@ pub struct Root {
     pub n: f64,
 }
 
+// Its prototype replaced, so a constructor function, whose prototype's
+// method can be the function it calls: an ES class's are in its body,
+// none forwarded (#2495). Its own, so its methods stay.
+js::on_load! {
+    js::class::<Root>().set_prototype(js::class::<Root>().prototype());
+}
+
+impl js::Classed for Root {
+    type Constructor = js::AnyConstructor;
+}
+
 #[cfg_attr(rust_js, rust_js::class)]
 impl Root {
     pub fn new(n: f64) -> Self {
@@ -327,8 +349,8 @@ pub fn ran(n: f64) -> f64 {
   expect(p.stderr).not.toContain("error");
   expect(p.code).toBe(0);
   const js = read("lib.js");
-  expect(js).toContain("Root.prototype.thrice = function (n) {");
-  expect(js).toContain("Root.prototype.run = runNow;\n");
+  expect(js).toContain("Object.defineProperty(Root.prototype, \"thrice\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: function (n) {");
+  expect(js).toContain("Object.defineProperty(Root.prototype, \"run\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: runNow,\n");
   expect(js).toContain("function runNow(n) {");
   const ran = run(["node", "--input-type=module", "--eval", `
     import { ran } from ${JSON.stringify(join(dir, "lib.js"))};

@@ -182,29 +182,33 @@ pub fn force_each(components: &[Component]) {
 }
 `;
 
-test("React's Component is a constructor function and its prototype", () => {
+test("React's Component is an ES class, PureComponent, whose prototype it replaces, a constructor function", () => {
   const { js, ts, dir } = compiled("class-base", baseClasses);
-  expect(js).toContain(`export function Component(props, context, updater) {
-  this.props = props;
-  this.context = context;
-  // If a component has string refs, we will assign a different object later.
-  this.refs = emptyObject;
-  // We initialize the default updater but the real one gets injected by the
-  // renderer.
-  this.updater = updater ?? ReactNoopUpdateQueue;
+  // An ES class, its members in its body, its constant a getter (#2495).
+  expect(js).toContain(`export class Component {
+  constructor(props, context, updater) {
+    this.props = props;
+    this.context = context;
+    // If a component has string refs, we will assign a different object later.
+    this.refs = emptyObject;
+    // We initialize the default updater but the real one gets injected by the
+    // renderer.
+    this.updater = updater ?? ReactNoopUpdateQueue;
+  }
+
+  /** Sets a subset of the state. */
+  setState(partialState, callback) {`);
+  expect(js).toContain(`    this.updater.enqueueSetState(this, partialState, callback ?? undefined, "setState");
+  }
+
+  /** Forces an update. */
+  forceUpdate(callback) {
+    this.updater.enqueueForceUpdate(this, callback ?? undefined, "forceUpdate");
+  }
+  get isReactComponent() {
+    return {};
+  }
 }
-
-Component.prototype.isReactComponent = {};
-
-/** Sets a subset of the state. */
-Component.prototype.setState = function (partialState, callback) {`);
-  expect(js).toContain(`  this.updater.enqueueSetState(this, partialState, callback ?? undefined, "setState");
-};
-
-/** Forces an update. */
-Component.prototype.forceUpdate = function (callback) {
-  this.updater.enqueueForceUpdate(this, callback ?? undefined, "forceUpdate");
-};
 
 function ComponentDummy() {}
 `);
@@ -263,6 +267,8 @@ console.log(JSON.stringify(calls));
 console.log(Object.keys(counter).join(), counter.refs === new Counter({}).refs);
 console.log(counter instanceof Component, new Pure({}) instanceof Component, new Pure({}) instanceof PureComponent);
 console.log(JSON.stringify(Component.prototype.isReactComponent), PureComponent.prototype.isPureReactComponent, Component.prototype.isPureReactComponent);
+// Component's methods an ES class's, not enumerable, so Object.assign copies
+// none to PureComponent's prototype: reached through it as before (#2495).
 console.log(PureComponent.prototype.constructor === PureComponent, Object.hasOwn(PureComponent.prototype, "setState"));
 try { counter.setState(5); } catch (e) { console.log(e instanceof Error, e.message); }
 const made = mounted({ a: 1 });
@@ -277,7 +283,7 @@ console.log(calls.length);
 props,context,refs,updater,state true
 true true true
 {} true undefined
-true true
+true false
 true takes an object of state variables to update or a function which returns an object of state variables.
 true 1 0
 5
@@ -318,7 +324,7 @@ test("what a class is refused says what to write", () => {
 // React's `/** Base class helpers .. */ function Component(..)`: the
 // struct's doc is the constructor function's, as its `.d.ts` has it of the
 // class, before `new`'s own (ADR 0761, amended).
-test("a class struct's doc is its constructor function's", () => {
+test("a class struct's doc is its class's", () => {
   const { js } = compiled("class-doc", `/// Base class helpers for the updating state of a component.
 #[cfg_attr(rust_js, rust_js::class)]
 pub struct Component {
@@ -351,12 +357,15 @@ pub fn plain(n: f64) -> Plain {
 }
 `);
   expect(js).toContain(`/** Base class helpers for the updating state of a component. */
-/** Made of its props. */
-export function Component(props) {
-  this.props = props;
+export class Component {
+  /** Made of its props. */
+  constructor(props) {
+    this.props = props;
+  }
+  get limit() {
+    return 1;
+  }
 }
-
-Component.prototype.limit = 1;
 `);
   expect(js).not.toContain("What it's given");
   expect(js).not.toContain("A plain struct's doc");
@@ -396,8 +405,8 @@ impl Counter {
     }
 }
 `);
-  expect(js).toContain("    read: (k) => {\n      const x = (this.n + k) >>> 0;\n");
-  expect(js).toContain("    plain(k) {\n      const x = (k + 1) >>> 0;\n");
+  expect(js).toContain("      read: (k) => {\n        const x = (this.n + k) >>> 0;\n");
+  expect(js).toContain("      plain(k) {\n        const x = (k + 1) >>> 0;\n");
   const { Counter } = await import(join(dir, "lib.js"));
   const reader = new Counter(4).reader();
   expect([reader.read(1), reader.plain(1)]).toEqual([10, 4]);
@@ -447,8 +456,7 @@ pub fn real(parts: Parts) -> Complex {
 `);
   run([compiler, ...flags(dir)]);
   const complex = readFileSync(join(dir, "complex.js"), "utf8");
-  expect(complex).toContain("\nfunction Complex(re, im) {\n");
-  expect(complex).toContain("\nexport default Complex;\n");
+  expect(complex).toContain("\nexport default class Complex {\n  constructor(re, im) {\n");
   expect(complex).not.toContain("export function Complex");
   const declared = readFileSync(join(dir, "complex.d.ts"), "utf8");
   expect(declared).toContain("declare class Complex {\n");
@@ -560,13 +568,11 @@ pub fn diagonals(positions: &[QueenPosition]) -> Vec<i32> {
     positions.iter().map(QueenPosition::left_diagonal).collect()
 }
 `);
-  expect(js).toContain(`Object.defineProperty(QueenPosition.prototype, "leftDiagonal", {
-  get() {
+  expect(js).toContain(`  get leftDiagonal() {
     return (this.rowIndex - this.columnIndex) | 0;
-  },
-});`);
+  }`);
   expect(js).toContain("return a.leftDiagonal === b.leftDiagonal;");
-  expect(js).not.toContain("leftDiagonal()");
+  expect(js).not.toContain(".leftDiagonal()");
   expect(ts).toContain("    get leftDiagonal(): number;\n");
   const { QueenPosition, sameDiagonal, diagonals } = await import(join(dir, "lib.js"));
   const position = new QueenPosition(2, 1);
@@ -638,9 +644,9 @@ pub fn all(positions: &[QueenPosition]) -> String {
     joined(positions)
 }
 `);
-  expect(js).toContain(`QueenPosition.prototype.toString = function () {
-  return \`\${this.rowIndex},\${this.columnIndex}\`;
-};`);
+  expect(js).toContain(`  toString() {
+    return \`\${this.rowIndex},\${this.columnIndex}\`;
+  }`);
   // Called, never interpolated, `${position}`, whose `toString` a
   // minifier takes to run nothing (ADR 1138).
   expect(js).toContain("return `at ${position.toString()}`;");
@@ -852,8 +858,8 @@ pub fn wrap(value: f64) -> &'static js::Unknown {
 }
 `,
   );
-  expect(js).toContain("\nfunction Wrapper(value) {\n");
-  expect(js).not.toContain("export function Wrapper");
+  expect(js).toContain("\nclass Wrapper {\n  constructor(value) {\n");
+  expect(js).not.toContain("export class Wrapper");
   const lib = await import(join(dir, "lib.js"));
   expect(Object.keys(lib)).toEqual(["wrap"]);
   expect(lib.wrap(2).doubled).toBe(4);
@@ -921,9 +927,9 @@ pub fn wrap(value: f64) -> Rc<Wrapper> {
 }
 `,
   );
-  expect(js).toContain("\nfunction Wrapper(value) {\n");
-  expect(js).not.toContain("export function Wrapper");
-  expect(js).toContain("export function Made(value) {\n");
+  expect(js).toContain("\nclass Wrapper {\n  constructor(value) {\n");
+  expect(js).not.toContain("export class Wrapper");
+  expect(js).toContain("export class Made {\n  constructor(value) {\n");
   expect(ts).toContain("\ndeclare class Wrapper {\n");
   expect(ts).toContain("\nexport type { Wrapper };\n");
   expect(ts).toContain("export declare class Made {\n");
@@ -1118,4 +1124,115 @@ pub fn create() -> Container {
   expect(lib.create()).toBeInstanceOf(lib.Container);
   expect(Object.hasOwn(lib.Container, "default")).toBe(false);
   expect(Object.hasOwn(lib.Container.prototype, "default")).toBe(false);
+});
+
+// #2497: a class's inherent impl in another module is a member of its class,
+// in its one declaration, its module's: it compiled and threw, `twice is not
+// a function`, of either form.
+test("a class's inherent impl in another module is a member of its class", async () => {
+  const { js, dir } = compiled(
+    "class-impl-elsewhere",
+    `pub mod model {
+    #[cfg_attr(rust_js, rust_js::class)]
+    pub struct Plugin {
+        pub name: String,
+    }
+
+    #[cfg_attr(rust_js, rust_js::class)]
+    impl Plugin {
+        pub fn new(name: &str) -> Self {
+            Plugin { name: name.to_string() }
+        }
+    }
+}
+
+pub mod more {
+    use crate::model::Plugin;
+
+    #[cfg_attr(rust_js, rust_js::class)]
+    impl Plugin {
+        pub fn twice(&self) -> String {
+            format!("{0}{0}", self.name)
+        }
+    }
+}
+
+pub fn run() -> String {
+    model::Plugin::new("a").twice()
+}
+`,
+  );
+  const model = readFileSync(join(dir, "model.js"), "utf8");
+  expect(model).toContain("export class Plugin {\n  constructor(name) {\n    this.name = name;\n  }\n  twice() {");
+  expect(js).not.toContain("class Plugin");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.run()).toBe("aa");
+});
+
+// A class whose prototype the program replaces is a constructor function
+// and its prototype, as upstream's PureComponent (#2495): its struct's doc
+// the function's, before `new`'s, its methods, getters and constants its
+// prototype's, and its module's default exported as the default alone.
+// The program sets its prototype to its own here, so its members stay.
+test("a class whose prototype the program replaces is a constructor function and its prototype", async () => {
+  const { js, ts, dir } = compiled("class-constructor-function", `/// Base class helpers for the updating state of a component.
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Component {
+    // What it's given.
+    pub props: i32,
+}
+
+unsafe impl js::Defined for Component {}
+impl js::Classed for Component {
+    type Constructor = js::AnyConstructor;
+}
+
+js::on_load! {
+    js::class::<Component>().set_prototype(js::class::<Component>().prototype());
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Component {
+    pub const LIMIT: i32 = 1;
+
+    /// Made of its props.
+    pub fn new(props: i32) -> Self {
+        Component { props }
+    }
+
+    pub fn doubled(&self) -> i32 {
+        self.props * 2
+    }
+
+    /// Its props past its limit.
+    #[cfg_attr(rust_js, rust_js::getter)]
+    pub fn over(&self) -> i32 {
+        self.props - Component::LIMIT
+    }
+}
+
+js::export_default!(Component);
+
+pub fn read(component: &Component) -> i32 {
+    component.doubled() + component.over()
+}
+`);
+  expect(js).toContain(`/** Base class helpers for the updating state of a component. */
+/** Made of its props. */
+function Component(props) {
+  this.props = props;
+}
+`);
+  expect(js).toContain("\nexport default Component;\n");
+  expect(js).not.toContain("What it's given");
+  expect(js).not.toContain("export function Component");
+  expect(js).not.toContain("class Component");
+  expect(js).toContain(`Object.defineProperty(Component.prototype, "doubled", {`);
+  expect(js).toContain(`Object.defineProperty(Component.prototype, "over", {
+  get() {`);
+  expect(js).toContain("return (component.doubled() + component.over) | 0;");
+  expect(ts).toContain("    get over(): number;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const component = new lib.default(5);
+  expect([component.doubled(), component.over, lib.read(component), Object.keys(component)]).toEqual([10, 4, 14, ["props"]]);
 });

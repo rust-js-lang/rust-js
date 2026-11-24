@@ -120,10 +120,12 @@ pub fn read(chunk: &ReactPromise) -> Option<&'static Unknown> {
 }
 `,
   );
-  expect(js).toContain(`function ReactPromise(status, value, reason) {
-  this.status = status;
-  this.value = value;
-  this.reason = reason;
+  expect(js).toContain(`class ReactPromise {
+  constructor(status, value, reason) {
+    this.status = status;
+    this.value = value;
+    this.reason = reason;
+  }
 }`);
   expect(js).toContain('new ReactPromise("pending", null, null)');
   expect(js).toContain('  chunk.status = "fulfilled";\n  chunk.value = value;\n  chunk.reason = null;\n');

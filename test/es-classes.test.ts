@@ -1,8 +1,8 @@
 // An ES class (rd682): a `#[rust_js::class]` struct marked
 // `#[rust_js::class(es)]` is `class Plugin { constructor(..) { .. }
 // apply(..) { .. } }`, as React's ReactFlightWebpackPlugin.js writes
-// `export default class ReactFlightWebpackPlugin`, where one unmarked is a
-// constructor function and its prototype (ADR 0761). Each program is
+// `export default class ReactFlightWebpackPlugin`. Every class is one now,
+// but one whose prototype the program replaces (ADR 0761, #2495). Each program is
 // compiled and run in Node.
 
 import { beforeAll, expect, test } from "bun:test";
@@ -122,9 +122,10 @@ export default class Plugin {
   static shout(text) {
     return $toUppercase(text);
   }
+  get limit() {
+    return 3;
+  }
 }
-
-Plugin.prototype.limit = 3;
 
 const made = $local(() => new Plugin("early"));
 const SHOUTED = Plugin.shout("hi");
@@ -146,7 +147,8 @@ console.log(JSON.stringify([...said, thrown]));`,
   );
   const ran = runSync([node ?? "node", join(dir, "run.mjs")], dir, 30_000);
   expect(ran.stderr).toBe("");
-  expect(ran.stdout).toBe('made loud\nmade early\n["early applied to early","HI","LOUD APPLIED TO JS",1,3,"HI","limit",true,"name,applied","TypeError"]\n');
+  // Its constant a getter in its body, not enumerable as an assigned one was (#2495).
+  expect(ran.stdout).toBe('made loud\nmade early\n["early applied to early","HI","LOUD APPLIED TO JS",1,3,"HI","",true,"name,applied","TypeError"]\n');
 });
 
 test("a fieldless ES class with statics uses the implicit JavaScript constructor", async () => {
@@ -237,13 +239,8 @@ pub struct LoaderUtils {}
 #[cfg_attr(rust_js, rust_js::class)]
 impl LoaderUtils { pub fn relative(&self) -> &'static str { "./" } }
 `, "is made by its constructor, `fn new(..) -> Self`, in its impl"],
-    ["function-class-unmade-with-static", `#[cfg_attr(rust_js, rust_js::class)]
-pub struct LoaderUtils {}
-#[cfg_attr(rust_js, rust_js::class)]
-impl LoaderUtils { pub fn relative() -> &'static str { "./" } }
-`, "is made by its constructor, `fn new(..) -> Self`, in its impl"],
     ["es-class-on-impl", unmarked.replace("#[cfg_attr(rust_js, rust_js::class)]\nimpl Plugin", "#[cfg_attr(rust_js, rust_js::class(es, fields))]\nimpl Plugin"), "impl is marked `#[rust_js::class]` alone: its struct's attribute says its form, `#[rust_js::class(es)]`"],
-    ["es-class-of-another-word", unmarked.replace("rust_js::class(es, fields))]\npub struct", "rust_js::class(function))]\npub struct"), "is a constructor function, `#[rust_js::class]`, an ES class, `#[rust_js::class(es)]`, or one that declares its fields, `#[rust_js::class(es, fields)]`"],
+    ["es-class-of-another-word", unmarked.replace("rust_js::class(es, fields))]\npub struct", "rust_js::class(function))]\npub struct"), "is a class, `#[rust_js::class]`, an ES class but one whose prototype the program replaces, or one that declares its fields, `#[rust_js::class(es, fields)]`"],
     [
       "es-class-prototype-replaced",
       `${unmarked}
@@ -255,7 +252,7 @@ impl js::Classed for Plugin {
     type Constructor = js::AnyConstructor;
 }
 `,
-      "replacing the prototype of `Plugin`, an ES class, `#[rust_js::class(es)]`, whose `prototype` JS doesn't let be written: a constructor function's is, `#[rust_js::class]`",
+      "replacing the prototype of `Plugin`, an ES class, `#[rust_js::class(es)]`, whose `prototype` JS doesn't let be written: unmarked, `#[rust_js::class]`, one whose prototype the program replaces is a constructor function, whose is",
     ],
   ];
   for (const [name, rust, message] of cases) {

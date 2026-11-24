@@ -110,9 +110,8 @@ What rust-js writes is plain ES modules, for the tools you already use:
 
 - **Tree shaking.** A bundler keeps only what your app uses of a rust-js
   library: import one function and the others, their helpers and the
-  data only they read are dropped. A `#[rust_js::class]` is the exception
-  for now: its methods are assigned at its module's top, which a bundler
-  keeps ([#2495](https://github.com/rust-js-lang/rust-js/issues/2495)).
+  data only they read are dropped. A `#[rust_js::class]` is an ES `class`,
+  dropped where nothing uses it.
 - **Minification.** A production build minified by Vite runs as the Rust does.
 - **React Compiler.** Components and hooks compile with no bailout, so
   turning it on keeps their memos.

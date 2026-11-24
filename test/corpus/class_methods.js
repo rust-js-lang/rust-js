@@ -8,47 +8,50 @@
 
 import { $lazyRange, $main } from "@rust-js/std";
 
-export function Counter(step) {
-  if (step === 0) {
+export class Counter {
+  constructor(step) {
+    if (step === 0) {
+      this.count = 0;
+      this.step = 1;
+      this.history = [];
+      return;
+    }
     this.count = 0;
-    this.step = 1;
-    this.history = [];
-    return;
+    this.step = step;
+    this.history = [0];
   }
-  this.count = 0;
-  this.step = step;
-  this.history = [0];
+
+  static starting() {
+    return (Counter.prototype.limit / 2) >>> 0;
+  }
+
+  tick() {
+    if ((this.count + this.step) >>> 0 > Counter.prototype.limit) {
+      return false;
+    }
+    this.count = (this.count + this.step) >>> 0;
+    this.history.push(this.count);
+    return true;
+  }
+
+  current() {
+    return this.count;
+  }
+
+  summary() {
+    const shown = this.history.map((n) => String(n));
+    return `${this.count} after [${shown.join(", ")}]`;
+  }
+
+  reset(to) {
+    const before = this.current();
+    this.count = to;
+    this.history.push(before);
+  }
+  get limit() {
+    return 10;
+  }
 }
-
-Counter.prototype.limit = 10;
-
-Counter.starting = function () {
-  return (Counter.prototype.limit / 2) >>> 0;
-};
-
-Counter.prototype.tick = function () {
-  if ((this.count + this.step) >>> 0 > Counter.prototype.limit) {
-    return false;
-  }
-  this.count = (this.count + this.step) >>> 0;
-  this.history.push(this.count);
-  return true;
-};
-
-Counter.prototype.current = function () {
-  return this.count;
-};
-
-Counter.prototype.summary = function () {
-  const shown = this.history.map((n) => String(n));
-  return `${this.count} after [${shown.join(", ")}]`;
-};
-
-Counter.prototype.reset = function (to) {
-  const before = this.current();
-  this.count = to;
-  this.history.push(before);
-};
 
 function run(counter, times) {
   return $lazyRange(0, times)

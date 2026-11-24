@@ -8,26 +8,27 @@
 
 import { $borrow, $borrowMut, $fieldCell, $main, $unborrow } from "@rust-js/std";
 
-function Gate() {
-  this.flag = 1;
-}
-
-Gate.prototype.probe = function () {
-  return $borrow($fieldCell(this, "flag"), "test/corpus/class_trait_field_held.rs:38:20").value;
-};
-
-Gate.prototype.guarded = function () {
-  const _held = $borrowMut(
-    $fieldCell(this, "flag"),
-    "test/corpus/class_trait_field_held.rs:13:33",
-    true,
-  );
-  try {
-    return this.probe();
-  } finally {
-    $unborrow(_held);
+class Gate {
+  constructor() {
+    this.flag = 1;
   }
-};
+
+  probe() {
+    return $borrow($fieldCell(this, "flag"), "test/corpus/class_trait_field_held.rs:38:20").value;
+  }
+  guarded() {
+    const _held = $borrowMut(
+      $fieldCell(this, "flag"),
+      "test/corpus/class_trait_field_held.rs:13:33",
+      true,
+    );
+    try {
+      return this.probe();
+    } finally {
+      $unborrow(_held);
+    }
+  }
+}
 
 $main(main);
 
