@@ -164,15 +164,18 @@ test("a script's, a helper's or a doc's change runs what imports or reads it, an
   expect([none.all, none.files, none.cases, outcome(none)]).toEqual([false, [], [], "none"]);
 });
 
-// A workflow changes how CI runs, not what a test does here: the change's
-// own runs everything, as CI's run of it changes; another agent's since the
-// map's commit, checked by its own push and CI, only what reads it.
-test("a workflow of the change's own runs everything; another's since the map's commit, only what reads it", () => {
-  const changed = (own: boolean) => select([{ file: ".github/workflows/check.yml", hunks: [[1, 1]] }], { ...context, own: () => own });
-  expect(changed(true)).toMatchObject({ all: true, allOwn: true });
-  expect(changed(false)).toMatchObject({ all: false, files: [] });
-  const read: Reach = new Map([...reach, ["test/tool.test.ts", { modules: new Set(["test/setup.ts"]), reads: new Set([".github/workflows"]) }]]);
-  expect(select([{ file: ".github/workflows/check.yml", hunks: [[1, 1]] }], { ...context, reach: read, own: () => false }).files).toEqual(["test/tool.test.ts"]);
+// A workflow changes how CI runs, not what a test does here, and no local
+// check runs a workflow: CI's check of the push does. So a change of one,
+// the change's own or another agent's, runs the tests that read it, as
+// ci.test.ts reads check.yml (#2480).
+test("a workflow's change, the change's own or another's, runs only what reads it", () => {
+  for (const file of [".github/workflows/check.yml", ".github/actions/build-rust-js/action.yml"]) {
+    for (const own of [true, false]) {
+      expect([file, own, select([{ file, hunks: [[1, 1]] }], { ...context, own: () => own })]).toMatchObject([file, own, { all: false, files: [] }]);
+      const read: Reach = new Map([...reach, ["test/tool.test.ts", { modules: new Set(["test/setup.ts"]), reads: new Set([".github/workflows", ".github/actions"]) }]]);
+      expect([file, own, select([{ file, hunks: [[1, 1]] }], { ...context, reach: read, own: () => own }).files]).toEqual([file, own, ["test/tool.test.ts"]]);
+    }
+  }
 });
 
 // The selector's and the map's own code changes which tests run, not what
@@ -189,8 +192,8 @@ test("the selector or the map of the change's own runs everything; another's sin
   }
 });
 
-test("the workflows, the packages' manifests, the toolchain, the selector and the map run everything; so does a package's folder", () => {
-  for (const file of [".github/workflows/check.yml", ".github/actions/build-rust-js/action.yml", "package.json", "webapi/package.json", "bun.lock", "Cargo.lock", "rust-toolchain.toml", "bunfig.toml", "scripts/select.ts", "scripts/testMap.ts", "webapi/src/lib.rs", "tooling/build.js", "vendor/x/lib.rs"]) {
+test("the packages' manifests, the toolchain, the selector and the map run everything; so does a package's folder", () => {
+  for (const file of ["package.json", "webapi/package.json", "bun.lock", "Cargo.lock", "rust-toolchain.toml", "bunfig.toml", "scripts/select.ts", "scripts/testMap.ts", "webapi/src/lib.rs", "tooling/build.js", "vendor/x/lib.rs"]) {
     expect([file, of(file).all]).toEqual([file, true]);
   }
 });

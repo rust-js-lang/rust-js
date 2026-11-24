@@ -28,8 +28,10 @@
 //   std/**, crates/rust-js-program/src/runtime/** the runtime: its package tests, the whole corpus, every file the map saw compile
 //   test/<x>.test.ts       itself (the corpus's file: every case)
 //   test/corpus/<case>.*   the case, and the tests that read the corpus's files
-//   .github/**, package files, the selector, the map
+//   package files, the selector, the map
 //                          everything
+//   .github/**             the tests that read it, as CI's run of the push
+//                          checks how it runs (#2480)
 //   any other              each test that imports it, or reads it as text,
 //                          itself or through a module it imports; none where
 //                          none does (a doc nothing reads)
@@ -125,14 +127,16 @@ export const everything = [
   "rustfmt.toml",
 ];
 
-/** What changes which tests run, or how CI runs them, not what a test
- * does: of the change itself, everything, as its rule may be wrong; of
- * others' commits since the map's, only what reads it, as each was checked
- * by its own push and CI. Each with what it is: the workflows and actions,
- * and the selector and the map themselves, whose others' changes, a
- * selector's pushes, ran every agent's check whole a map behind them. */
+/** What changes which tests run, not what a test does: of the change
+ * itself, everything, as its rule may be wrong; of others' commits since
+ * the map's, only what reads it, as each was checked by its own push and
+ * CI. Each with what it is: the selector and the map themselves, whose
+ * others' changes, a selector's pushes, ran every agent's check whole a map
+ * behind them. Not the workflows and actions, `.github/`, which change how
+ * CI runs, which no local check can run: a change of them runs the tests
+ * that read them, `readOnly`'s, and CI's check of the push runs them whole
+ * (#2480). */
 export const ownRunsAll: Record<string, string> = {
-  ".github/**": "how CI runs every test",
   "scripts/select.ts": "the selector, which picks every test",
   "scripts/testMap.ts": "the test map, which the selector picks every test by",
   "scripts/testMapCompiler.ts": "the test map's counting build, which the selector picks every test by",
@@ -141,8 +145,9 @@ export const ownRunsAll: Record<string, string> = {
 /** The top folders whose files a test reads or imports, so a change there
  * runs only its readers and importers: the rest are packages and crates the
  * tests build as apps' dependencies, which no import or read says, and run
- * everything. And the files at the root, the docs. */
-export const readOnly = ["docs", "scripts", "test", "ports", "bench", "guide-site"];
+ * everything. And the files at the root, the docs. `.github/`, the
+ * workflows and actions, which CI's own run of the push checks (#2480). */
+export const readOnly = ["docs", "scripts", "test", "ports", "bench", "guide-site", ".github"];
 
 /** The runtime's paths: std's package and the runtime's helpers, which a
  * compiled program runs, in any test that compiles one. */

@@ -3,6 +3,15 @@
 import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
+    name: "select-workflows-run-everything",
+    breaks:
+      "a push whose own change touches `.github/` selects every test, though no local check runs a workflow and CI's check of the push runs them whole: a workflow's push ran check:fast --all, minutes, for what ci.test.ts alone reads (#2480)",
+    file: "scripts/select.ts",
+    find: '  "scripts/select.ts": "the selector, which picks every test",\n',
+    replace: '  ".github/**": "how CI runs every test",\n  "scripts/select.ts": "the selector, which picks every test",\n',
+    tests: ["test/select.test.ts", "-t", "a workflow's change"],
+  },
+  {
     name: "select-readers-dropped",
     breaks: "a script's, a helper's or a doc's change runs nothing, not what imports or reads it",
     file: "scripts/select.ts",
@@ -24,7 +33,7 @@ export const mutations: Mutation[] = [
     file: "scripts/select.ts",
     find: '  "scripts/select.ts": "the selector, which picks every test",\n',
     replace: "",
-    tests: ["test/select.test.ts", "-t", "the workflows, the packages' manifests"],
+    tests: ["test/select.test.ts", "-t", "the packages' manifests, the toolchain"],
   },
   {
     name: "select-package-folders-read-only",
@@ -32,7 +41,7 @@ export const mutations: Mutation[] = [
     file: "scripts/select.ts",
     find: '    if (top !== "" && !readOnly.includes(top)) return whole(',
     replace: '    if (top === "-" && !readOnly.includes(top)) return whole(',
-    tests: ["test/select.test.ts", "-t", "the workflows, the packages' manifests"],
+    tests: ["test/select.test.ts", "-t", "the packages' manifests, the toolchain"],
   },
   {
     name: "select-runtime-as-compiler",
