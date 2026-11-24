@@ -695,6 +695,37 @@ symptom with this table. When you hit a new kind of stall, add a row.
 | The Mac freezes, the pointer stops, and it resets itself (`WindowServer` `userspace_watchdog_timeout` in `/Library/Logs/DiagnosticReports`) | Native test binaries held 9 GB each: macOS has no data limit an allocator heeds, and a resident size leaves out compressed pages (#1515) | Fixed: `nativeCommand` runs each native program beside `memory-watch`, which kills it past `nativeShare()` by its footprint, reported "stopped past its memory share". A runner of your own that runs native binaries runs them through `nativeCommand`. |
 | A session restart, and all its agents stop | The host app was restarted or updated; agents' background jobs die with it | Commit WIP often. After a restart, check each worktree, clear stale gate entries and locks, and resume each agent with its hand-off. |
 
+
+#### Long-session slowdowns
+
+When steps run slower over a session of hours or days, with no change of
+yours to explain it, check the machine before the change:
+
+- **`fseventsd` stuck.** It sat at 100% CPU for 6½ days on one Mac, and
+  every file-heavy step slowed: test/support.test.ts's store prune went
+  from about 6 s to 38 s.
+  - Check: `ps -Ao pcpu,etime,command | grep '[f]seventsd'`.
+  - Fix: `sudo killall fseventsd`; launchd restarts it.
+  - Prevent: put the repo folders on Spotlight's Privacy list, or add a
+    `.metadata_never_index` file in each `target/` and `node_modules`.
+    That stops Spotlight's indexing, not `fseventsd`'s logging, so check
+    it again after long runs.
+- **`mediaanalysisd`**, Photos' analysis, took about 2 cores for hours on
+  a new machine. Turn off Photos' analysis.
+- **Background QoS.** `taskpolicy -b` throttles a run so far that tests
+  pass their limits. To yield to other work, use `nice -n 10`.
+- **Orphaned processes.** A timeout that kills only its top process, such
+  as perl's `alarm`, leaves its `bun`, `node` and `cargo` children running.
+  Use a timeout that kills the process group, and list orphans as the
+  table above says.
+- **The disk floor.** The floor and the stores' caps scale with the disk
+  (#2505); see [What the loop keeps on disk](#what-the-loop-keeps-on-disk-each-bounded).
+
+Already covered: the scan on new binaries,
+[The Mac, with the scan off](#the-mac-with-the-scan-off), and the
+compile cache,
+[sccache](#a-compile-cache-shared-by-the-worktrees-sccache).
+
 **Good practice:**
 - One agent per machine, with every heavy step at full width.
 - Independent steps at once: both corpus builds, the checks after a build, and probes with `xargs -P`.
