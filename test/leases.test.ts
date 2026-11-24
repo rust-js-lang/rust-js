@@ -293,6 +293,7 @@ const [name, kind, store, marks, batches, form] = process.argv.slice(2);
 holdLease(kind, { store, every: 50, say: () => writeFileSync(marks + "/" + name + ".waited", "") });
 writeFileSync(marks + "/" + name + ".held", String(Date.now()));
 const batch = async (i: number) => {
+  writeFileSync(marks + "/" + name + ".started" + i, String(Date.now()));
   while (!existsSync(marks + "/" + name + ".go" + i)) await Bun.sleep(20);
   writeFileSync(marks + "/" + name + ".batch" + i, String(Date.now()));
 };
@@ -362,6 +363,11 @@ for (const form of ["direct", "pool", "names"]) {
     mark("run.go1");
     expect(await until("run.batch1")).toBe(true);
     // Its second batch under way, a push begins to wait: it waits for it.
+    // Under way as the run says it began it, past where the run lets the
+    // turn go: a push that began waiting before that point, its own start
+    // quicker than the run's step past its first batch, had the turn then,
+    // in the pool's form under a whole `check:fast --all`.
+    expect(await until("run.started2")).toBe(true);
     const push = start("push", "push");
     expect(await until("push.waited")).toBe(true);
     await Bun.sleep(300);
