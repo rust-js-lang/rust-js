@@ -1,0 +1,3 @@
+#2532 P0: counted_rc_of_a_mut_ref_shown's observe-borrows variant throws `Cannot read properties of undefined (reading '0')` where native runs
+plain std observe-borrows counted_rc_of_a_mut_ref_shown.rs
+plain std observe-lens counted_rc_of_a_mut_ref_shown.rs

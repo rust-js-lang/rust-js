@@ -33,7 +33,9 @@ import { same } from "./oracle";
  * clones, its closures' calls and its loops' steps each a line, and each
  * kind's middle event made a panic (#1203); and each iterator given on as
  * an `impl Iterator`, each closure called through a `Box<dyn Fn>`, and a
- * neighbour that turns on one crate-wide fact, never run (#1204). */
+ * neighbour that turns on one crate-wide fact, never run (#1204); and
+ * each `RefCell` a local reaches said after each statement, its flag or
+ * the lengths behind its guard (#2481). */
 export const rewrites = [
   "outline", "boxed", "dyn-ref", "impl-ref", "impl-owned", "generic", "option", "rc-refcell", "field", "closure-fn", "library",
   "array", "tuple", "for-each", "for-loop", "if-let", "method-fn", "fn-method", "default-copy", "tuple-struct",
@@ -53,8 +55,16 @@ export const rewrites = [
   // A panic's payload kind (#2270): `main` in a `catch_unwind`, whether the
   // payload is a `String` or a `&str` said, of a case whose run panics.
   "payload-kind",
+  // What the case never prints of its cells (#2481): after each statement,
+  // each `RefCell` a local reaches, its borrow flag, and each length behind
+  // a guard.
+  "observe-borrows", "observe-lens",
 ] as const;
 export type Rewrite = (typeof rewrites)[number];
+
+/** The rewrites a push's sample doesn't run, the nightly's alone: new nets
+ * run there first (#2481, Quality vs velocity). */
+export const nightlyOnly: readonly Rewrite[] = ["observe-borrows", "observe-lens"];
 
 /** Where the rewriter's crate is, and what it builds. */
 const manifest = join(root, "scripts", "metamorph", "Cargo.toml");

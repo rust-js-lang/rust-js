@@ -169,9 +169,7 @@ pub fn places_of(program: &str, sites: &BTreeMap<usize, Vec<Range<usize>>>, d: &
     let ranges = || sites.iter().flat_map(|(&k, ranges)| ranges.iter().map(move |r| (k, r)));
     let mut places = Vec::new();
     for span in &d.spans {
-        let holding = ranges()
-            .filter(|(_, r)| r.start <= span.start && span.start < r.end.max(r.start + 1))
-            .min_by_key(|(_, r)| r.end - r.start);
+        let holding = innermost(sites, span);
         let following = || {
             ranges()
                 .filter(|(_, r)| {
@@ -183,9 +181,33 @@ pub fn places_of(program: &str, sites: &BTreeMap<usize, Vec<Range<usize>>>, d: &
                 .max_by_key(|(_, r)| r.end)
         };
         let before = || ranges().filter(|(_, r)| r.end <= span.start).max_by_key(|(_, r)| r.end);
-        if let Some((k, _)) = holding.or_else(following).or_else(before)
+        if let Some(k) = holding.or_else(|| following().or_else(before).map(|(k, _)| k))
             && !places.contains(&k)
         {
+            places.push(k);
+        }
+    }
+    places
+}
+
+/// The innermost place that holds `span`, if one does.
+fn innermost(sites: &BTreeMap<usize, Vec<Range<usize>>>, span: &Range<usize>) -> Option<usize> {
+    sites
+        .iter()
+        .flat_map(|(&k, ranges)| ranges.iter().map(move |r| (k, r)))
+        .filter(|(_, r)| r.start <= span.start && span.start < r.end.max(r.start + 1))
+        .min_by_key(|(_, r)| r.end - r.start)
+        .map(|(k, _)| k)
+}
+
+/// The places that hold one of an error's spans, never one made before or
+/// after it: of a rewrite whose every place is a probe beside the case's
+/// own code, an error of the case's code, a move a probe's later borrow
+/// finds, is no probe's but the one that borrows (`observe.rs`).
+pub fn holding(sites: &BTreeMap<usize, Vec<Range<usize>>>, d: &Diagnostic) -> Vec<usize> {
+    let mut places = Vec::new();
+    for k in d.spans.iter().filter_map(|span| innermost(sites, span)) {
+        if !places.contains(&k) {
             places.push(k);
         }
     }

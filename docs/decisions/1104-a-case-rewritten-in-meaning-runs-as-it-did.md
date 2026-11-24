@@ -508,3 +508,65 @@ runs of different lengths, is still compared exactly.
 ## Amendment: its known list is a directory, a file per issue (2026-11-21, #2260)
 
 Its known failures are `test/known/metamorphic/`, one file per issue, named for its heading, `1022.txt` or `difference-39.txt`, and read as one list by `knownText` ([1180](1180-a-known-list-is-a-directory-a-file-per-issue.md)).
+
+## Amendment: what a case never prints of its cells, said (2026-11-24, #2481)
+
+A `RefCell`'s borrow flag is invisible to the corpus unless the program
+asks it: a guard the JS never releases, or a borrow it never counts,
+changes nothing a case prints until some later `borrow_mut` panics, and
+programs written to run rarely make one. The same holds for a length
+behind a guard that the JS keeps stale. Two rewrites now say what a
+case's run never prints. `observe-borrows` (`scripts/metamorph/src/observe.rs`)
+gives each local in scope, after each statement, to a probe,
+`metamorph_observe::at_k(&x)`. The probe walks what the local holds
+through one trait, `Observe`: fields of the case's own structs and enums,
+boxes, `Rc`s, vectors, options, tuples and guards, down to each `RefCell`.
+It prints one line, `~observe <k> x.cells[0]=shared`, where each cell is
+`free`, `shared` or `unique` by `try_borrow_mut` and `try_borrow`.
+`observe-lens` prints each length behind a guard instead, `x.*.len()=3`.
+Each probe's own guards drop at once, so it changes no flag it reads. A
+probe rustc rejects (a local moved, a unique borrow live, a type no impl
+walks) is taken off by its errors. `narrow.rs` maps each error to the
+probe that holds it, so the others stay. A closure probes only what it
+binds, so no capture is added, and an `async` block or a case of threads
+is not probed. Both run in the nightly alone (`nightlyOnly`): a push's
+sample skips them, as new nets run there first.
+
+**A rewrite whose every variant is refused judged nothing.** The first
+sweep passed 804 of 804 because every variant was refused: the probe's
+own `impl Observe for BTreeMap<K, V>` had no `Ord` bound, and rust-js
+refuses that, called or not (#2528). A refusal is safe, and no wrong
+answer, so the net passed. Now the harness counts, per rewrite and build,
+the variants rust-js compiled and those it refused. It prints the tally
+as it ends, and it fails where a rewrite of at least 5 variants had every
+one refused (`judgedNothing`, with a test of its own).
+
+Its sweep, the corpus's RefCell cases in both builds, 10 parts on the
+Mac mini, 2 min a part: 400 variants of each rewrite, each built twice.
+Of each rewrite's 800 builds, 636 compiled, 38 were refused and 126
+crashed rust-js. Wrong answers and
+crashes, each listed under its issue:
+
+- #2527 (P0, fixed): a binary's `$main(main)` ran before a `const` that
+  its module declares after `main` and that `main` reaches through an
+  import cycle (ADR 1184's amendment).
+- #2531 and #2532 (P0): two variants' JS throws a `TypeError` where native
+  runs.
+- #2533 (P1): rust-js crashes inside rustc, writing an `Option` field's
+  declaration, in 63 cases.
+- #2522: three `cloned()` cases of the std build name `<unknown>` for a
+  panic's place.
+
+**What the probes can't see.** A probe is a read of each cell, and it is
+one the analysis can see. A guard that rust-js elides because it sees no
+read while the guard is held is kept once a probe reads the cell. So
+these rewrites can't show a guard elided through a read the analysis
+misses: #2529's, a cell read in generic code through `cloned()` or
+`map(T::clone)`. Reads through a trait of the program's own,
+`items.iter().map(T::state)`, are seen, and run as native does. The net
+for that class is #2491's differential: every case compiled with its
+elisions forced off (the planned `--count-every-cell`) against on. #2529's own
+cases join the corpus as `RefCell` cases with its fix, so both rewrites
+run over them too.
+
+ADR 0262's case: none. The compiler's JS is unchanged.

@@ -64,6 +64,12 @@
 //!   one of the facts rust-js decides for the whole crate, an address
 //!   asked, a capacity, a function's identity (`facts.rs`, #1204).
 //!
+//! - `observe-borrows` and `observe-lens`: after each statement, each local's
+//!   `RefCell`s, reached through its fields, boxes, `Rc`s, vectors and
+//!   options, said, `~observe <k> x.cells[0]=shared`: each one's flag, or
+//!   each length behind a guard, `x.*.len()=3`; each probe narrowed to the
+//!   places rustc accepts (`observe.rs`, #2481).
+//!
 //! - `emi-probe`, `emi-prune` and `emi-insert`: code a case's run never
 //!   reaches, found by the probe's native run, deleted, made
 //!   `unreachable!()`, or code never run added, `if black_box(false) {..}`
@@ -88,6 +94,7 @@ mod loud;
 mod matches;
 mod methods;
 mod narrow;
+mod observe;
 mod opaque;
 mod reduce;
 mod tuples;
@@ -101,7 +108,7 @@ use syn::{Block, FnArg, Item, Pat, Stmt, Type};
 
 use wrap::Wrap;
 
-const REWRITES: &str = "outline|payload-kind|boxed|option|rc-refcell|field|dyn-ref|impl-ref|impl-owned|generic|closure-fn|library|array|tuple|for-each|for-loop|if-let|method-fn|fn-method|default-copy|tuple-struct|loud|opaque|dyn-fn|generic-instances|fact-<fact>|emi-probe|emi-prune|emi-insert";
+const REWRITES: &str = "outline|payload-kind|boxed|option|rc-refcell|field|dyn-ref|impl-ref|impl-owned|generic|closure-fn|library|array|tuple|for-each|for-loop|if-let|method-fn|fn-method|default-copy|tuple-struct|loud|opaque|dyn-fn|generic-instances|fact-<fact>|emi-probe|emi-prune|emi-insert|observe-borrows|observe-lens";
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -176,6 +183,8 @@ fn main() {
             }
         },
         "emi-insert" => emi::insert(&mut ast, &mut budget),
+        "observe-borrows" => observe::observe(&mut ast, &source, observe::Observed::Borrows, &mut budget),
+        "observe-lens" => observe::observe(&mut ast, &source, observe::Observed::Lens, &mut budget),
         _ => {
             eprintln!("no rewrite `{rewrite}`: {REWRITES}");
             std::process::exit(64);

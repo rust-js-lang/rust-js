@@ -10,14 +10,14 @@
 //   METAMORPHIC=all RUST_JS_CASES=1/6 bun test test/metamorphic.test.ts    # every case, a sixth
 //   target/metamorph/debug/metamorph <rewrite> test/corpus/<case>.rs       # a rewrite, by hand
 
-import { beforeAll, expect, test } from "bun:test";
+import { afterAll, beforeAll, expect, test } from "bun:test";
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { corpus, nondeterministic } from "./corpus-cases";
 import { runSync } from "./child";
 import { mayBeUndefined, miriInstalled, undefinedBehaviour } from "./miri";
-import { agreesUpToHashOrder, buildRewriter, libraryCrate, middleEvent, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
+import { agreesUpToHashOrder, buildRewriter, libraryCrate, middleEvent, nightlyOnly, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
 import { deadlineOf, reducedRepros, toReduce, type Reduction } from "./reduced";
 import { agree, compileJs, compileJsLibrary, nativeFlags, returned, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, caseShard, firstPart, fixture, knownFileOf, root } from "./support";
@@ -34,7 +34,8 @@ const which = partSetting("METAMORPHIC");
 // `METAMORPHIC_REWRITES=emi-prune,emi-insert`: those rewrites alone, of a
 // round of new ones; every one unless it's given.
 const named = process.env.METAMORPHIC_REWRITES?.split(",").filter((name) => name !== "");
-const rewritesRun = rewrites.filter((rewrite) => named === undefined || named.includes(rewrite));
+// A push's sample runs every rewrite but the nightly's own (`nightlyOnly`).
+const rewritesRun = rewrites.filter((rewrite) => (named === undefined ? which === "all" || !nightlyOnly.includes(rewrite) : named.includes(rewrite)));
 if (named !== undefined && rewritesRun.length !== named.length) throw new Error(`METAMORPHIC_REWRITES=${named.join(",")}: of ${rewrites.join(", ")}`);
 if (which !== undefined && which !== "all") throw new Error(`METAMORPHIC=${which}: \`all\`, or unset for a push's sample`);
 const known = readKnown();
@@ -65,6 +66,46 @@ const tallied = process.env.METAMORPHIC_TALLY;
 const tally = (rewrite: Rewrite, name: string, what: string) => {
   if (tallied) appendFileSync(tallied, `${rewrite} ${name} ${what}\n`);
 };
+
+/** Of each rewrite, its variants rust-js compiled and those it refused, by
+ * build: a refusal is no wrong answer, and no answer either, so a rewrite
+ * whose every variant is refused judges nothing however long it runs. Its
+ * first sweep, #2481's `observe-borrows`, passed 804 of 804 so, each one
+ * refused by its own walk's `BTreeMap` impl. */
+const compiled = new Map<Rewrite, { compiled: number; refused: string[] }>();
+const compiles = (rewrite: Rewrite) => {
+  let counts = compiled.get(rewrite);
+  if (counts === undefined) compiled.set(rewrite, (counts = { compiled: 0, refused: [] }));
+  return counts;
+};
+
+/** How few variants of a rewrite, all refused, are no sample's chance:
+ * a push's sample of one case in 128 may give one or two its rewrite
+ * can't compile. */
+const allRefusedAt = 5;
+
+/** The rewrites of `counts` that judged nothing, every variant of at
+ * least `allRefusedAt` refused, each said with its first refusal; or
+ * `undefined`. */
+function judgedNothing(counts: Map<Rewrite, { compiled: number; refused: string[] }>): string | undefined {
+  const none = [...counts].filter(([, { compiled, refused }]) => compiled === 0 && refused.length >= allRefusedAt);
+  if (none.length === 0) return undefined;
+  return none.map(([rewrite, { refused }]) => `${rewrite}: every one of its ${refused.length} variants refused, so it judged nothing; the first: ${refused[0]}`).join("\n");
+}
+
+afterAll(() => {
+  const lines = [...compiled].map(([rewrite, { compiled, refused }]) => `${rewrite}: ${compiled} compiled, ${refused.length} refused`);
+  if (lines.length > 0) console.log(`metamorphic: the variants rust-js compiled, by rewrite, of both builds\n${lines.join("\n")}`);
+  const none = judgedNothing(compiled);
+  if (none !== undefined) throw new Error(none);
+});
+
+firstPart("a rewrite whose every variant rust-js refuses judged nothing, and says so", () => {
+  const refused = Array.from({ length: allRefusedAt }, (_, i) => `plain c${i}.rs: error: rust-js does not support it yet`);
+  expect(judgedNothing(new Map([["loud", { compiled: 0, refused }]]))).toContain("loud: every one of its 5 variants refused");
+  expect(judgedNothing(new Map([["loud", { compiled: 1, refused }]]))).toBeUndefined();
+  expect(judgedNothing(new Map([["loud", { compiled: 0, refused: refused.slice(1) }]]))).toBeUndefined();
+});
 
 /** What went wrong of `rewrite` of a case in each build, or nothing: its
  * JS run otherwise than native, or rust-js's crash. A refusal is safe, and
@@ -133,8 +174,10 @@ async function wrong(rewrite: Rewrite, name: string, edition: string, target: "h
     }
     if (!("js" in compiled)) {
       if (compiled.kind === "crashed") problems.set(build, `rust-js crashed: ${compiled.reason}`);
+      else compiles(rewrite).refused.push(`${build} ${name}: ${compiled.reason.split("\n")[0]}`);
       continue;
     }
+    compiles(rewrite).compiled++;
     // Its run, kept by what it ran (ADR 0567): the rewrite, the JS, what
     // native Rust printed and how it ended, what every case's runs share
     // and the net's harness. The same as a run that agreed before isn't run
@@ -565,4 +608,76 @@ firstPart("generic-instances keeps each place's cost of a case that says its poi
   expect(kept).toContain("metamorph_generic :: at_6");
   expect(kept).not.toMatch(stepping);
   expect(turned).toMatch(stepping);
+});
+
+// What a case's run never prints of its cells, said after each statement
+// (#2481): each `RefCell` a local reaches, through a struct's field and an
+// `Rc`, its flag; and each length behind a guard, the guard's own too. A
+// probe rustc rejects, of `guard` once it's moved, is taken off, and no
+// other with it; the closure's body probes only what it binds.
+const observeCase = `use std::cell::RefCell;
+use std::rc::Rc;
+
+struct Shelf {
+    items: RefCell<Vec<u32>>,
+    count: u32,
+}
+
+fn main() {
+    let shelf = Rc::new(Shelf { items: RefCell::new(vec![1]), count: 0 });
+    let guard = shelf.items.borrow();
+    let n = guard.len() as u32 + shelf.count;
+    drop(guard);
+    shelf.items.borrow_mut().push(n);
+    let add = |x: u32| x + 1;
+    println!("{}", add(n));
+}
+`;
+
+/** `rewrite` of `observeCase`, run natively: its lines. */
+function observed(rewrite: Rewrite): string[] {
+  const dir = fixture(`metamorphic-${rewrite}-harness`);
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "case.rs");
+  writeFileSync(file, observeCase);
+  const made = rewritten(rewrite, file, "2024");
+  expect(made).toBeDefined();
+  const program = join(dir, "observed.rs");
+  writeFileSync(program, made!.program);
+  const ran = runNative(program, dir, "2024");
+  if (typeof ran === "string") throw new Error(ran);
+  return ran.stdout.split("\n").filter((line) => line !== "");
+}
+
+firstPart("observe-borrows says each cell's flag after each statement, a moved local's probe alone taken off", () => {
+  expect(observed("observe-borrows")).toEqual([
+    "~observe 0 shelf.items=free",
+    "~observe 1 shelf.items=shared",
+    "~observe 3 shelf.items=shared",
+    "~observe 6 shelf.items=free",
+    "~observe 9 shelf.items=free",
+    "~observe 12 shelf.items=free",
+    "2",
+    "~observe 16 shelf.items=free",
+  ]);
+});
+
+firstPart("observe-lens says each length behind a guard, the guard's own too", () => {
+  expect(observed("observe-lens")).toEqual([
+    "~observe 0 shelf.items.*.len()=1",
+    "~observe 1 shelf.items.*.len()=1",
+    "~observe 2 guard.*.len()=1",
+    "~observe 3 shelf.items.*.len()=1",
+    "~observe 4 guard.*.len()=1",
+    "~observe 6 shelf.items.*.len()=1",
+    "~observe 9 shelf.items.*.len()=2",
+    "~observe 12 shelf.items.*.len()=2",
+    "2",
+    "~observe 16 shelf.items.*.len()=2",
+  ]);
+});
+
+firstPart("a push's sample runs no nightly-only rewrite", () => {
+  expect(nightlyOnly.every((rewrite) => (rewrites as readonly string[]).includes(rewrite))).toBe(true);
+  expect(which === "all" || named !== undefined || rewritesRun.every((rewrite) => !nightlyOnly.includes(rewrite))).toBe(true);
 });
