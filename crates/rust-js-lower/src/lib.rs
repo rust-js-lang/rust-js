@@ -52,15 +52,13 @@ use rustc_middle::ty::consts::ConstExt as _;
 use std::cell::{Cell, RefCell};
 
 use std::rc::Rc;
-use std::sync::Arc;
 
 use rustc_ast::LitKind;
 use rustc_hir::def::{CtorKind, DefKind};
-use rustc_hir::find_attr;
 use rustc_middle::thir::{ExprId, LocalVarId, Pat, PatKind, Thir};
 use rustc_middle::ty::{self, GenericArgsRef, Ty, TyCtxt, TypeVisitableExt};
-use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
-use rustc_span::{SourceFile, Span};
+use rustc_span::Span;
+use rustc_span::def_id::{DefId, LocalModId};
 
 use rust_js_program::js::{self, Expr, Prop, Stmt, StmtKind};
 
@@ -97,6 +95,9 @@ pub mod literals;
 pub mod liveness;
 pub mod load_order;
 mod loops;
+mod module_files;
+pub(crate) use module_files::module_path;
+pub use module_files::{located, module_file};
 pub mod mir_hooks;
 pub mod mut_refs;
 pub mod named_constants;
@@ -233,71 +234,6 @@ pub(crate) fn body_module(tcx: TyCtxt<'_>, instances: &Instances, def_id: DefId)
             tcx.def_path_str(def_id)
         )
     })
-}
-
-/// A module's path below the crate root, e.g. `["math", "stats"]`.
-fn module_path(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<String> {
-    if module == CRATE_MOD_ID {
-        return Vec::new();
-    }
-    let parent = tcx.parent_module_from_def_id(module.to_local_def_id());
-    let mut path = module_path(tcx, parent);
-    let name = tcx.item_name(module.to_def_id());
-    // A module in a block, as bitflags' macro writes in a function, is one of
-    // its own, though another of its parent's has its name: numbered in the
-    // order they're written, after the one the parent declares, `names$1`.
-    let in_block = |m: LocalModId| tcx.def_kind(tcx.local_parent(m.to_local_def_id())) != DefKind::Mod;
-    let mut namesakes: Vec<LocalModId> = tcx
-        .hir_crate_items(())
-        .definitions()
-        .filter(|&id| tcx.def_kind(id) == DefKind::Mod)
-        .map(LocalModId::new_unchecked)
-        .filter(|&m| {
-            m != CRATE_MOD_ID
-                && tcx.item_name(m.to_def_id()) == name
-                && tcx.parent_module_from_def_id(m.to_local_def_id()) == parent
-        })
-        .collect();
-    namesakes.sort_by_key(|&m| (in_block(m), m.to_local_def_id().local_def_index));
-    match namesakes.iter().position(|&m| m == module) {
-        Some(at) if at > 0 => {
-            let apart = js::Name::declared(name.to_string()).given_apart(at);
-            path.push(apart.into_word()); // word: a module's file, which its importers' paths name
-        }
-        _ => path.push(name.to_string()),
-    }
-    path
-}
-
-/// The `.rs` file a module's code lives in: its own file for `mod foo;`,
-/// the parent's file for an inline `mod foo { .. }`.
-pub fn module_file(tcx: TyCtxt<'_>, module: LocalModId) -> Arc<SourceFile> {
-    let inner = tcx.hir_get_module(module).0.spans.inner_span;
-    tcx.sess.source_map().lookup_source_file(inner.lo())
-}
-
-/// Whether a `#[path]` placed `module`'s file (ADR 0273), its own or an
-/// enclosing module's, `sandpack-rsc/bridge.rs` of `#[path = "sandpack-rsc"]
-/// mod sandpack_rsc { mod bridge; }`: where no module path can name it. Not
-/// an inline module's, which is its parent's file.
-pub fn located(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
-    if module == CRATE_MOD_ID {
-        return false;
-    }
-    let parent = tcx.parent_module_from_def_id(module.to_local_def_id());
-    if Arc::ptr_eq(&module_file(tcx, module), &module_file(tcx, parent)) {
-        return false;
-    }
-    let mut at = module;
-    loop {
-        if find_attr!(tcx, at.to_def_id(), Path(..)) {
-            return true;
-        }
-        if at == CRATE_MOD_ID {
-            return false;
-        }
-        at = tcx.parent_module_from_def_id(at.to_local_def_id());
-    }
 }
 
 /// A function item's type: the function, and its generic args. rustc 1.99
