@@ -42,8 +42,10 @@ test("each kind × area cell counts its open and closed issues, all time and ove
 
 test("a cluster calls for what docs/bug-kinds.md's table says its kind calls for, read from the table", () => {
   const kinds = kindsTable(readFileSync(join(root, "docs/bug-kinds.md"), "utf8"));
-  expect(kinds.size).toBeGreaterThanOrEqual(10);
+  expect(kinds.size).toBeGreaterThanOrEqual(11);
   expect(kinds.get("kind: protocol gap")).toContain("conformance matrix");
+  // A model of std's own code, missing what its body does (ADR 1085, amended).
+  expect(kinds.get("kind: semantic shortcut")).toBe("std's own body, or a refusal; never a model of it");
   const page = ["| # | Label | A cluster calls for |", "|---|---|---|", "| 1 | `kind: a` | One owner |", "| 2 | `kind: b` | A matrix |", "", "| x | y |"].join("\n");
   expect([...kindsTable(page)]).toEqual([
     ["kind: a", "One owner"],

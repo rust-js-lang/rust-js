@@ -177,3 +177,19 @@ Change 6's first half, one owner of a place's `None`, is #819's `NoneForm`
 #822's: every TypeScript caller of the declarations gives each `None` form
 a declaration admits, `null`, `undefined` and an absent key, against native
 Rust (ADR 1091, amended).
+
+## Amended: `semantic shortcut` is a kind of its own (2026-11-24)
+
+About twenty issues carried `kind: semantic shortcut`, but
+docs/bug-kinds.md's table had no row for it, so `scripts/clusters.ts`
+named no refactor for any of its cells. The count of 2026-11-24 found
+four of them in the last week in `iterators` alone, all wrong answers
+(#2421, #2377, #2405, #2367), and #2414 open in `functions-calls`. In each,
+rust-js wrote its own model of a std method (`$partition`, `unzip`'s
+reserve, a provided method's default) where std's body said what it
+does, and the model missed a call of the crate's impl, a reserve or an
+order. That's no `missing case`: the owner of the rule is std's body,
+which a model reproduces. The kind is question 9, asked before `missing
+case`, and a cluster of it calls for std's own body, or a refusal, never
+a model of it, which is #1458's change for iterators. `missing case` and
+`local slip` are 10 and 11.
