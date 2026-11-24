@@ -322,8 +322,8 @@ the held text joined to the line (#2320).
   closure that gives one gives it as an item, `map(|w| writeln!(out,
   "{w}"))`, and a collect of them into one is std's, the first `Err`. One
   held inside what generic code holds, a `Vec<Result<T, E>>`'s items, is
-  refused, #1416 (#1408, #1410; [0461](../decisions/0461-a-formatter-held.md),
-  amended).
+  refused, #2568 (#1408, #1410; [0461](../decisions/0461-a-formatter-held.md),
+  amended; [1201](../decisions/1201-campaign-6-s-stopgap-refusals-say-so-by-the-refusal-api.md)).
 - **What a writer prints as it formats lands inside the line,** as Rust's
   stdout, a line writer, puts it: where your `Display` or `Debug` prints,
   or runs a drop that prints, that `println!` writes each piece through

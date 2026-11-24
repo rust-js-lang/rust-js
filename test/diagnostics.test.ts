@@ -247,7 +247,7 @@ for (const [name, source, message, crate] of [
   ["an OpenOptions' Debug", "pub fn f() -> String { format!(\"{:?}\", std::fs::OpenOptions::new()) }", "`{:?}` of a `std::fs::OpenOptions`, which shows what the OS says of it (#1418)"],
   // A write's result held inside what generic code has as a `Result` of its
   // type parameters, a `Vec<Result<T, E>>`'s items, `{ TAG }` there, where
-  // the caller's is `undefined` or its error (#1416).
+  // the caller's is `undefined` or its error (#2568, split from #1416).
   ["a write's result inside generic code's Vec of Results", "use std::io::Write;\nfn first_ok<T, E>(rs: Vec<Result<T, E>>) -> Option<T> { rs.into_iter().find_map(Result::ok) }\npub fn f() -> bool { let mut v = Vec::new(); first_ok(vec![writeln!(v, \"x\")]).is_some() }", "a write's result, `std::result::Result<(), std::io::Error>`, held inside what generic code has as a `Result` of its type parameters"],
   ["a write's result read as a Result through a bound", "use std::fmt::{Debug, Write};\ntrait Get<T> { fn get(&self) -> &T; }\nimpl<T> Get<T> for T { fn get(&self) -> &T { self } }\nfn shown<T: Debug, E: Debug>(r: &impl Get<Result<T, E>>) -> String { format!(\"{:?}\", r.get()) }\npub fn f() -> String { let mut s = String::new(); shown(&write!(s, \"x\")) }", "which a bound reads as a `Result` of type parameters"],
   // One of a `&mut` to an object holds generic code's box of it (#1374); a

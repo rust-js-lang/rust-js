@@ -933,7 +933,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // amended, #1408), one held inside it refused.
         let crossing = (def_id, declared, self.instantiated(declared, generic_args));
         if let Some(held) = self.write_result_inside(crossing) {
-            return Err(self.unsupported(span, &crate::generic_facts::held_write_result(held)));
+            let what = crate::generic_facts::held_write_result(held);
+            return Err(self.unconverted(span, crate::refusal::Crossing::TaggedWithin, &what));
         }
         // A write's result generic code holds as a value, `Form::Valued`'s,
         // crosses in `fmt_result_value`, the one owner of a call's write

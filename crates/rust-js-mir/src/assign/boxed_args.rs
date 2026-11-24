@@ -134,7 +134,8 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 // there; one held inside what's given, refused (ADR 0461,
                 // amended, #1408).
                 if let Some(held) = self.write_result_inside(crossing) {
-                    return Err(self.unsupported(span, &rust_js_lower::generic_facts::held_write_result(held)));
+                    let what = rust_js_lower::generic_facts::held_write_result(held);
+                    return Err(self.unconverted(span, rust_js_lower::refusal::Crossing::TaggedWithin, &what));
                 }
                 if self.write_result_through_bound(crossing) {
                     return Err(self.unconverted(span, rust_js_lower::refusal::Crossing::TaggedArgument, &format!(

@@ -1059,10 +1059,10 @@ pub(crate) fn valued_where<'tcx>(
 }
 
 /// What's refused of a write's result held inside what generic code has as
-/// a `Result` of its type parameters (#1416).
+/// a `Result` of its type parameters, the stopgap cell #2568 lifts.
 pub fn held_write_result(held: Ty<'_>) -> String {
     format!(
-        "a write's result, `{held}`, held inside what generic code has as a `Result` of its type parameters, `{{ TAG }}` there (#1416)"
+        "a write's result, `{held}`, held inside what generic code has as a `Result` of its type parameters, `{{ TAG }}` there (#2568)"
     )
 }
 

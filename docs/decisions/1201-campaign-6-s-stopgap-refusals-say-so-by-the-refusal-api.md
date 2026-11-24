@@ -95,3 +95,16 @@ its own:
 It follows ADR 0262's last row: the results changed, and until the
 crossing converts them, a compile error. There are now 17 cells and 35
 refusals.
+
+## Amended 2026-11-25: a write's result held within, a cell of its own
+
+`held_write_result`'s two refusals were said by `unsupported`, outside the
+cells: a write's result held inside what generic code has as a `Result`
+of its type parameters, a `Vec<Result<T, E>>` given (`assign/boxed_args.rs`)
+or given back (`mut_refs.rs`), `{ TAG }` there where its caller holds
+`undefined` or the error (#1416's first shape). Each is a crossing that
+can't convert a form yet, so it's a stopgap, and it's said through the
+cell `Crossing::TaggedWithin`. The cell is lifted by #2568, split from
+#1416 because no two cells share an issue (#1416 stays
+`TaggedArgument`'s), and #2568 converts at that boundary. Their words
+name #2568 now. There are now 18 cells and 37 refusals.

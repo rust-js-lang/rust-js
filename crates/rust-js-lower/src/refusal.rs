@@ -63,6 +63,9 @@ pub enum Crossing {
     HandleArgument,
     /// A write's result given where a bound reads a `Result` of type parameters.
     TaggedArgument,
+    /// A write's result held inside what generic code has as a `Result` of
+    /// its type parameters, a `Vec<Result<T, E>>`'s, given or given back.
+    TaggedWithin,
     /// Write results as the items of an iterator given to generic code that
     /// reads them as a `Result` of its type parameters (#2560).
     TaggedItem,
@@ -98,6 +101,7 @@ impl Crossing {
             Crossing::LentDictionary => 1295,
             Crossing::HandleArgument => 2552,
             Crossing::TaggedArgument => 1416,
+            Crossing::TaggedWithin => 2568,
             Crossing::TaggedItem => 2566,
             Crossing::TrustedLen => 2546,
             Crossing::HintArgument => 2553,
