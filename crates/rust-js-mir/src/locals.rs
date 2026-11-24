@@ -42,11 +42,13 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     }
 
     /// Whether `place = rvalue`, `data`'s statement `at`, is `&mut guard`
-    /// of a `RefCell`'s guard given at once to `deref_mut` alone,
-    /// `guard[i] = x`'s, which writes what the guard guards, never the
-    /// guard itself: the last statement, moved there (`Moved`), or the one
-    /// before a reborrow of it that is, nothing else using it,
-    /// `kept(&mut state)`'s (`Reborrowed`, #2429).
+    /// of a `RefCell`'s guard only ever given to `deref_mut`, `guard[i] =
+    /// x`'s, which writes what the guard guards, never the guard itself:
+    /// the last statement, moved there at once (`Moved`), or a local
+    /// nothing that holds it uses to write the guard, which reaches
+    /// `deref_mut` through any chain of locals, moved, copied or
+    /// reborrowed, `kept(&mut state)`'s and `let r = &mut state; kept(r)`'s
+    /// (`only_derefed`, `Reborrowed`, #2429, #2443).
     fn derefs_guard(
         &self,
         body: &mir::Body<'tcx>,
@@ -61,34 +63,82 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         let ref_cell_guard = [StdItem::RefCellRef, StdItem::RefCellRefMut]
             .into_iter()
             .any(|item| self.is_std_type(guard, item));
-        let TerminatorKind::Call { func, args, .. } = &data.terminator().kind else {
+        if !ref_cell_guard || !borrowed.projection.is_empty() {
             return None;
-        };
-        let [only] = &args[..] else {
-            return None;
-        };
-        let Operand::Move(given) = &only.node else {
-            return None;
-        };
-        let last = data.statements.len();
-        let form = match (at + 1 == last, data.statements.get(at + 1).map(|s| &s.kind)) {
-            (true, _) if given == place => Derefed::Moved,
-            (false, Some(StatementKind::Assign(reborrow)))
-                if at + 2 == last
-                    && reborrow.0 == *given
-                    && matches!(&reborrow.1, Rvalue::Ref(_, BorrowKind::Mut { .. }, of)
-                        if of.local == place.local && of.projection.as_slice() == [PlaceElem::Deref])
-                    && place.projection.is_empty()
-                    && used_once(body, place.local) =>
-            {
-                Derefed::Reborrowed
+        }
+        let moved = at + 1 == data.statements.len()
+            && matches!(&data.terminator().kind, TerminatorKind::Call { func, args, .. }
+                if matches!(&args[..], [only] if matches!(&only.node, Operand::Move(given) if given == place))
+                    && self.is_deref_mut(body, func));
+        match moved {
+            true => Some(Derefed::Moved),
+            false => {
+                (place.projection.is_empty() && self.only_derefed(body, place.local)).then_some(Derefed::Reborrowed)
             }
-            _ => return None,
-        };
-        let deref_mut = fn_def(func.ty(&body.local_decls, self.tcx)).is_some_and(|(id, _)| {
+        }
+    }
+
+    /// Whether `func` is `DerefMut::deref_mut`.
+    fn is_deref_mut(&self, body: &mir::Body<'tcx>, func: &Operand<'tcx>) -> bool {
+        fn_def(func.ty(&body.local_decls, self.tcx)).is_some_and(|(id, _)| {
             (self.tcx.trait_of_assoc(id)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::DerefMut))
-        });
-        (ref_cell_guard && borrowed.projection.is_empty() && deref_mut).then_some(form)
+        })
+    }
+
+    /// Whether no use of `start`, a `&mut` of a guard, can write the guard
+    /// itself. Each local that may hold it, `start` and each written of one
+    /// that does, moved, copied or reborrowed (`&mut *r`), is used only so,
+    /// or written, or given to `deref_mut` as its one argument, or borrowed
+    /// shared, itself or through it, `&r` or `&**r`, which only reads, or
+    /// read by borrowck alone.
+    fn only_derefed(&self, body: &mir::Body<'tcx>, start: Local) -> bool {
+        let mut holding = IndexSet::from_iter([start]);
+        let mut next = 0;
+        while let Some(&local) = holding.get_index(next) {
+            next += 1;
+            let mut uses = UsesAt(local, Vec::new());
+            uses.visit_body(body);
+            for at in uses.1 {
+                let into = match body.stmt_at(at) {
+                    rustc_data_structures::either::Either::Left(statement) => match &statement.kind {
+                        StatementKind::Assign(assign) => match &**assign {
+                            (to, _) if *to == Place::from(local) => None,
+                            (_, Rvalue::Ref(_, BorrowKind::Shared | BorrowKind::Fake(_), of)) if of.local == local => {
+                                None
+                            }
+                            (to, Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _))
+                                if *of == Place::from(local) && to.projection.is_empty() =>
+                            {
+                                Some(to.local)
+                            }
+                            (to, Rvalue::Ref(_, BorrowKind::Mut { .. }, of))
+                                if of.local == local
+                                    && of.projection.as_slice() == [PlaceElem::Deref]
+                                    && to.projection.is_empty() =>
+                            {
+                                Some(to.local)
+                            }
+                            _ => return false,
+                        },
+                        // What borrowck alone reads, `let r = ..`'s: nothing runs.
+                        StatementKind::FakeRead(_) | StatementKind::PlaceMention(_) => None,
+                        _ => return false,
+                    },
+                    rustc_data_structures::either::Either::Right(terminator) => match &terminator.kind {
+                        TerminatorKind::Call { func, args, .. }
+                            if matches!(&args[..], [only] if matches!(&only.node,
+                                Operand::Copy(given) | Operand::Move(given) if *given == Place::from(local)))
+                                && self.is_deref_mut(body, func) =>
+                        {
+                            None
+                        }
+                        _ => return false,
+                    },
+                };
+                holding.extend(into);
+            }
+        }
+        true
     }
 
     /// Of `body`, the names of its inclusive ranges no step can leave
@@ -549,14 +599,6 @@ enum Derefed {
     Reborrowed,
 }
 
-/// Whether `local` is used once past where it's written, by the one
-/// operand that reads it.
-fn used_once(body: &mir::Body<'_>, local: Local) -> bool {
-    let mut uses = Uses(Vec::new());
-    uses.visit_body(body);
-    uses.0.iter().filter(|&&used| used == local).count() == 2
-}
-
 /// Each local a part of MIR uses, in the order it's met.
 struct Uses(Vec<Local>);
 
@@ -564,6 +606,17 @@ impl<'tcx> mir::visit::Visitor<'tcx> for Uses {
     fn visit_local(&mut self, local: Local, context: mir::visit::PlaceContext, _: mir::Location) {
         if !matches!(context, mir::visit::PlaceContext::NonUse(_)) {
             self.0.push(local);
+        }
+    }
+}
+
+/// Where `.0` is used, each place of MIR that uses it.
+struct UsesAt(Local, Vec<mir::Location>);
+
+impl<'tcx> mir::visit::Visitor<'tcx> for UsesAt {
+    fn visit_local(&mut self, local: Local, context: mir::visit::PlaceContext, at: mir::Location) {
+        if local == self.0 && !matches!(context, mir::visit::PlaceContext::NonUse(_)) {
+            self.1.push(at);
         }
     }
 }

@@ -269,3 +269,45 @@ Held by:
   that `&mut` could use it again, which no program found writes.
 - `flattened_state_chosen_in_branches` (new) holds the "written once" rule:
   a variable written in two branches records neither handle.
+
+## Amendment: a guard's `&mut` through any name (2026-11-24, #2443)
+
+The amendment above counted a guard's `&mut` as no write of the guard only
+where it was reborrowed straight into `deref_mut`, `kept(&mut state)`'s,
+and nothing else used it (`used_once`). A `&mut` given a name first, `let
+r = &mut state; *kept(r) = ..`, wasn't counted, as borrowck's `FakeRead`
+of the `let` was a second use. Its binding wasn't recorded as the
+flattened state's handle, and the handle lent assigned the variable
+holding the class's object: `undefined Pending { tries: 3 }` where Rust
+prints `task Pending { tries: 3 }`. A regression of #2429.
+
+**A guard's `&mut` is no write of the guard where no local that may hold
+it can write the guard** (`only_derefed`). The locals that may hold it are
+the `&mut`'s own and each written of one of them, moved, copied or
+reborrowed (`&mut *r`), through any chain. Each may otherwise be:
+
+- given to `deref_mut` as its one argument;
+- borrowed shared, itself or through it, `&r` or `tries(r)`'s `&**r`,
+  which only reads (the metamorphic net's `emi-insert` found this one,
+  `let _emi = &r;`);
+- written;
+- read by borrowck alone (`FakeRead`, `PlaceMention`).
+
+Any other use counts the `&mut` as a write of the guard, as before.
+`used_once` is gone: the rule asks every use of every holder, which is
+what it stood for (#2433's third check).
+
+The rule is narrower than the one under it. A guard given to a function
+as a `&mut RefMut`, `touch(r)`, is counted a write, and stays correct
+through a handle on its `value`. Counting any use but one that replaces the
+guard whole would read better, and is correct as long as a whole
+replacement through a `&mut` is refused. That is #2444, which must ask the
+owner of those refusals.
+
+No snapshot moved. Held by the corpus case
+`flattened_state_lent_through_a_name` (new) against native, and by the
+mutations `guard-name-borrowck-read-a-use`, `guard-name-reborrow-unfollowed`,
+`guard-name-shared-borrow-a-write` and `guard-name-write-a-use`, each a
+wrong answer, and `guard-name-moved-unfollowed`, held by its snapshot: a
+holder not followed falls back to a handle on its `value`, right but
+wrapped twice.
