@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-24 (#2494, ADR 0979 amended): mutation `nested-alias-kept`; four corpus snapshots lose a closure's alias of a dictionary its body declares.
+
 Changed on 2026-11-24 (#2490, ADR 1199): test/cell-form-shadow.test.ts, new, six tests: `CellForm`'s shadow, `--shadow cell-form=<file>`, of each `RefCell` borrow the form the compile takes beside the proof's from MIR, alone and with the crate's bodies' borrow summaries, and what defeated it: a borrow for a moment of std's method, a guard held across the crate's function the summaries prove asks nothing, its range ended where it's dropped, a guard held across what borrows its cell again or another borrow of it, a `try_borrow`, and a field a derive or a function is given whole.
 
 Changed on 2026-11-24 (#2490, ADR 1199): one shadow flag, `--shadow <kind>[,<kind>]=<file>`: test/cargo.test.ts gains a test, `RUST_JS_SHADOW` gives a Cargo build's crate the lines `--shadow` gives it; test/drops-shadow.test.ts gains a test, the old shadow flags and an unknown kind refused; the intervals' and drops' shadows' tests read their lines by kind.

@@ -172,3 +172,21 @@ body to keep it in). One written once stays where it's asked. Six corpus
 snapshots and `@rust-js/std`'s `iter.js` change: `const PartialOrd =
 VOrd.PartialOrd();`, `const FromResidual = RTry.FromResidual();`. The
 mutation is `given-entries-undeclared` (`lower/traits/dictionaries/declared.ts`).
+
+## Amendment: a closure's own declaration of a dictionary its body declares is its body's (2026-11-24, #2494)
+
+A closure lowered from its own MIR declares the dictionaries it writes
+twice at its top, as any body does. When the body around it then writes
+the same dictionary twice, counting the closure's declaration as one use,
+the closure's `const` became a bare alias of the body's,
+`const vecIndex = index;`. That turned the closure's arrow into a block,
+and the body's name took a suffix, `vecDequeIndex$1`, because the closure
+had claimed the plain one. Now `declare_repeated` removes each nested
+`const` of the dictionary it declares, and that block's reads read the
+body's name. Names are spelled when printed, so the body's is
+`vecDequeIndex` again. No behavior changes: the case of ADR 0262 is
+"none", a readability fix. Held by `index_through_a_generic_bound`'s
+snapshot, with three more cases' moves (`back_predicate_unwinds`,
+`flatten_folds_reach_its_sources_own`, `flatten_from_both_ends_drops_its_inners`),
+and the mutation `nested-alias-kept`.
+

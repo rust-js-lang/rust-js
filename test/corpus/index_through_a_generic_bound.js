@@ -57,7 +57,7 @@ $main(main);
 
 function main() {
   const index = { index: (items, i, location) => $index(items, i, location) };
-  const vecDequeIndex$1 = {
+  const vecDequeIndex = {
     index: (items, i, location) => $index(items, i, location, "out of bounds access"),
   };
   const words = ["a", "b", "c", "d"];
@@ -96,8 +96,8 @@ function main() {
   deque.unshift(6);
   got = Array.from(
     $iterator(
-      pick(deque, [0, 1], vecDequeIndex$1),
-      (iterator) => pickedIterator_next(iterator, vecDequeIndex$1),
+      pick(deque, [0, 1], vecDequeIndex),
+      (iterator) => pickedIterator_next(iterator, vecDequeIndex),
       true,
     ),
   );
@@ -113,27 +113,25 @@ function main() {
   console.log(`[${got.join(", ")}] ${arg$2}`);
   const message = (caught) =>
     caught.impl.typeId() === "alloc::string::String" ? caught.value : undefined;
-  let outOfBounds = $catchUnwind(() => {
-    const vecIndex = index;
-    return $iterator(
-      pick(v, [0, 5], vecIndex),
-      (iterator) => pickedIterator_next(iterator, vecIndex),
+  let outOfBounds = $catchUnwind(() =>
+    $iterator(
+      pick(v, [0, 5], index),
+      (iterator) => pickedIterator_next(iterator, index),
       true,
-    ).reduce((n) => n + 1, 0);
-  });
+    ).reduce((n) => n + 1, 0),
+  );
   const value =
     outOfBounds.TAG === "Err" ? { TAG: "Err", _0: message(outOfBounds._0) } : outOfBounds;
   console.log(
     `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0 == null ? "None" : `Some(${$debugStr(value._0)})`})`}`,
   );
-  outOfBounds = $catchUnwind(() => {
-    const vecDequeIndex = vecDequeIndex$1;
-    return $iterator(
+  outOfBounds = $catchUnwind(() =>
+    $iterator(
       pick(deque, [2], vecDequeIndex),
       (iterator) => pickedIterator_next(iterator, vecDequeIndex),
       true,
-    ).reduce((n) => n + 1, 0);
-  });
+    ).reduce((n) => n + 1, 0),
+  );
   const value$1 =
     outOfBounds.TAG === "Err" ? { TAG: "Err", _0: message(outOfBounds._0) } : outOfBounds;
   console.log(

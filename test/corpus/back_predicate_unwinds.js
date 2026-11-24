@@ -139,7 +139,7 @@ function generic(it, p, dropI) {
 $main(main);
 
 function main() {
-  const hintsExactSizeIterator$1 = { len: (it) => $exactLen(hintsIterator_sizeHint(it)) };
+  const hintsExactSizeIterator = { len: (it) => $exactLen(hintsIterator_sizeHint(it)) };
   second("rfind", (p) => {
     const value = $iter(ds());
     let result;
@@ -577,7 +577,6 @@ function main() {
     return result;
   });
   second("enumerate rfind", (p) => {
-    const hintsExactSizeIterator = hintsExactSizeIterator$1;
     const rfind = $findBack(
       $knowing(
         iterator_enumerate(
@@ -655,20 +654,20 @@ function main() {
       (iterator) =>
         enumerateDoubleEndedIterator_nextBack(
           iterator,
-          hintsExactSizeIterator$1,
+          hintsExactSizeIterator,
           { next_back: hintsDoubleEndedIterator_nextBack },
           undefined,
           dDrop_drop,
         ),
       (iterator) =>
-        enumerateExactSizeIterator_len(iterator, hintsExactSizeIterator$1, undefined, dDrop_drop),
+        enumerateExactSizeIterator_len(iterator, hintsExactSizeIterator, undefined, dDrop_drop),
       undefined,
       (iterator, k) =>
         enumerateDoubleEndedIterator_nthBack(
           iterator,
           k,
           { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
-          hintsExactSizeIterator$1,
+          hintsExactSizeIterator,
           { next_back: hintsDoubleEndedIterator_nextBack },
           undefined,
           dDrop_drop,
@@ -679,7 +678,7 @@ function main() {
           init,
           f,
           { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
-          hintsExactSizeIterator$1,
+          hintsExactSizeIterator,
           { next_back: hintsDoubleEndedIterator_nextBack },
           $tryOf(broke),
           undefined,
@@ -719,7 +718,7 @@ function main() {
   );
   const nextBack = enumerateDoubleEndedIterator_nextBack(
     counted,
-    hintsExactSizeIterator$1,
+    hintsExactSizeIterator,
     { next_back: hintsDoubleEndedIterator_nextBack },
     undefined,
     dDrop_drop,
@@ -738,7 +737,7 @@ function main() {
       undefined,
       dDrop_drop,
     ),
-    hintsExactSizeIterator$1,
+    hintsExactSizeIterator,
     { next_back: hintsDoubleEndedIterator_nextBack },
     undefined,
     dDrop_drop,
@@ -763,7 +762,7 @@ function main() {
         next_back: (iterator) =>
           enumerateDoubleEndedIterator_nextBack(
             iterator,
-            hintsExactSizeIterator$1,
+            hintsExactSizeIterator,
             { next_back: hintsDoubleEndedIterator_nextBack },
             undefined,
             dDrop_drop,
@@ -774,7 +773,7 @@ function main() {
             init,
             f,
             { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
-            hintsExactSizeIterator$1,
+            hintsExactSizeIterator,
             { next_back: hintsDoubleEndedIterator_nextBack },
             undefined,
             unwind,
@@ -786,7 +785,7 @@ function main() {
             iterator,
             k,
             { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
-            hintsExactSizeIterator$1,
+            hintsExactSizeIterator,
             { next_back: hintsDoubleEndedIterator_nextBack },
             undefined,
             dDrop_drop,
@@ -797,7 +796,7 @@ function main() {
             init,
             f,
             { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
-            hintsExactSizeIterator$1,
+            hintsExactSizeIterator,
             { next_back: hintsDoubleEndedIterator_nextBack },
             $tryOf(broke),
             undefined,

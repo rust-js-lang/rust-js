@@ -76,7 +76,7 @@ $main(main);
 
 function main() {
   // The back inner's rest is dropped as it's dropped, after its source's.
-  const intoIterator$1 = {
+  const intoIterator = {
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
     $dropItem: dDrop_drop,
@@ -156,7 +156,7 @@ function main() {
     iterator_flatten(
       [0, 3],
       { next: sourceIterator_next },
-      intoIterator$1,
+      intoIterator,
       false,
       undefined,
       false,
@@ -170,7 +170,7 @@ function main() {
     last = flattenDoubleEndedIterator_nextBack(
       value$2,
       { next_back: sourceDoubleEndedIterator_nextBack },
-      intoIterator$1,
+      intoIterator,
       { next: $next, advanceBy: $advanceSlice },
       { next_back: $nextBack },
       false,
@@ -213,7 +213,7 @@ function main() {
             iterator_flatten(
               [0, 3],
               { next: sourceIterator_next },
-              intoIterator$1,
+              intoIterator,
               false,
               undefined,
               false,
@@ -228,7 +228,7 @@ function main() {
                 flattenDoubleEndedIterator_nextBack(
                   iterator,
                   { next_back: sourceDoubleEndedIterator_nextBack },
-                  intoIterator$1,
+                  intoIterator,
                   { next: $next, advanceBy: $advanceSlice },
                   { next_back: $nextBack },
                   false,
@@ -245,7 +245,7 @@ function main() {
                   f,
                   { next: sourceIterator_next },
                   { next_back: sourceDoubleEndedIterator_nextBack },
-                  intoIterator$1,
+                  intoIterator,
                   { next: $next, advanceBy: $advanceSlice },
                   { next_back: $nextBack },
                   false,
@@ -263,7 +263,7 @@ function main() {
                   f,
                   { next: sourceIterator_next },
                   { next_back: sourceDoubleEndedIterator_nextBack },
-                  intoIterator$1,
+                  intoIterator,
                   { next: $next, advanceBy: $advanceSlice },
                   { next_back: $nextBack },
                   $tryOf(broke),
@@ -283,7 +283,7 @@ function main() {
                   n,
                   { next: sourceIterator_next },
                   { next_back: sourceDoubleEndedIterator_nextBack },
-                  intoIterator$1,
+                  intoIterator,
                   { next: $next, advanceBy: $advanceSlice },
                   { next_back: $nextBack },
                   false,
@@ -327,7 +327,6 @@ function main() {
 
   // Whose back inner's rest's drop panics.
   ended = $catchUnwind(() => {
-    const intoIterator = intoIterator$1;
     boom = 30;
     const firsts = $collectDropping(
       $roomForHint(

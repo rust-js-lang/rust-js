@@ -10,7 +10,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of `made`, a body's dictionaries and their names, each that `body`
     /// writes twice or more: named there, and declared, for its top, each
     /// before what names it (ADR 0979).
-    pub fn declare_repeated(&mut self, mut made: Vec<(String, Expr)>, body: &mut [js::Stmt]) -> Vec<js::Stmt> {
+    pub fn declare_repeated(&mut self, mut made: Vec<(String, Expr)>, body: &mut Vec<js::Stmt>) -> Vec<js::Stmt> {
         // The largest first, so one inside another is counted in its `const`.
         made.sort_by_key(|(_, e)| std::cmp::Reverse(size(e)));
         let mut declared: Vec<js::Stmt> = Vec::new();
@@ -25,6 +25,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let name = self.fresh(Base::Named(&hint));
+            // A nested body's own `const` of it, a closure's, which its own
+            // lowering declared first, names the same value: its reads read
+            // this one's name and it's gone, never a bare alias, `const
+            // vecIndex = index;`, which turned the closure's arrow into a
+            // block and this one's name into `vecDequeIndex$1` (#2494).
+            js::each_block_mut(body, &mut |list| {
+                let mut at = 0;
+                while at < list.len() {
+                    let js::StmtKind::Const(inner, value) = &list[at].kind else {
+                        at += 1;
+                        continue;
+                    };
+                    if !js::scopes::alpha_eq(value, &dictionary) {
+                        at += 1;
+                        continue;
+                    }
+                    let inner = inner.clone();
+                    list.remove(at);
+                    js::each_expr_mut(&mut list[at..], &mut |e| {
+                        if matches!(&e.kind, js::ExprKind::Var(v) if *v == inner) {
+                            *e = Expr::var(&name);
+                        }
+                    });
+                }
+            });
             let mut put = |e: &mut Expr| {
                 if js::scopes::alpha_eq(e, &dictionary) {
                     *e = Expr::var(&name);

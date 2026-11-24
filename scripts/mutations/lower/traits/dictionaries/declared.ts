@@ -77,4 +77,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_maps\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "nested-alias-kept",
+    breaks: "a closure's own `const` of a dictionary its body declares too is kept, a bare alias of the body's, `const vecIndex = index;`, which turns the closure's arrow into a block and the body's name into `vecDequeIndex$1` (#2494)",
+    file: "crates/rust-js-lower/src/traits/dictionaries/declared.rs",
+    find: "                    if !js::scopes::alpha_eq(value, &dictionary) {\n",
+    replace: "                    if true || !js::scopes::alpha_eq(value, &dictionary) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^index_through_a_generic_bound\\.rs$"],
+    snapshots: true,
+  },
 ];
