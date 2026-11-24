@@ -736,7 +736,7 @@ test("check:fast's install is of every manifest and the lockfile", () => {
 });
 
 // And where the hash is the one installed but a workspace the root depends
-// on isn't linked, a checkout whose install predates it: m1-lisa's
+// on isn't linked, a checkout whose install predates it: lisa agent's
 // check:fast failed `@rust-js/webapi`'s import so (#1817).
 test("check:fast installs where a workspace the root depends on isn't linked, its hash as installed", () => {
   const files: Record<string, string> = {

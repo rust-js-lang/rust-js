@@ -69,7 +69,7 @@ itself stays `pub(crate)` or narrower.
 crate's path, `rust_js_program::collections::IndexMap`, never through a
 `use` of the binary's root that keeps `crate::collections` resolving: two
 ways to name one module is what AGENTS.md's "one way" forbids.
-`bun scripts/move-paths.ts <from> <to> ..`, m3-max's script for moving
+`bun scripts/move-paths.ts <from> <to> ..`, max agent's script for moving
 files (#2299), rewrites the Rust paths too: which crate a module is of is
 the layout's answer, so it takes no map. It rewrites `crate::x`, the
 `super`s that reach a root, a root's bare `x::`, and splits a `use` tree's

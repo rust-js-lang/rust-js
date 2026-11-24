@@ -162,7 +162,7 @@ react.dev's TopNav passes the same closure instead.
   none of a rest parameter's), `fromIter: (arg0, TIntoIterInPlace) =>
   bagFromIteratorU32_fromIter(arg0)` of a fact its trait carries and the
   impl doesn't read, is the method, `fromIter:
-  bagFromIteratorU32_fromIter` (#801, assigned for the user by m6-react,
+  bagFromIteratorU32_fromIter` (#801, assigned for the user by thor agent,
   2026-11-06). Case none for every caller rust-js writes, which calls
   the entry and reads nothing else of it: what it gives past them the
   method never names, as the entry didn't pass it on, and a method reads

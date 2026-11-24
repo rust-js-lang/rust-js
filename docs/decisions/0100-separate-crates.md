@@ -447,7 +447,7 @@ bindings calling one copy, it's a compile error. Held by
 
 A crate copied a library's `Copy` type, every tuple and array, and every
 `Vec` wherever it read one, whether or not anything changed it: "a
-consumer still assumes a library may change what it hands over". In m6-lily's
+consumer still assumes a library may change what it hands over". In lily agent's
 deep chain, `use_floating`'s `boundary: Rect` and `placement: Placement`
 were copied four times on their way into geometry's `computePosition`,
 two copies a closure's captures, and `Menu`'s `items` was

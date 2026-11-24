@@ -267,7 +267,7 @@ the refusal.
 ## Amendment: a parameter taken by value whose address is taken is a cell of its own (#1381)
 
 `fn set(mut n: u32) -> u32 { let p = &raw mut n; unsafe { *p = 7 }; n }`
-threw (P0, found by m3-max's Rustlantis experiment): `n` is a local a
+threw (P0, found by max agent's Rustlantis experiment): `n` is a local a
 pointer is taken to, so it's read as its cell, `$ptr(n, "value", 0)` and
 `n.value`, but a parameter is what its callers give, the number itself,
 which no caller makes a cell. With a `bool`, "Cannot create property 'value'

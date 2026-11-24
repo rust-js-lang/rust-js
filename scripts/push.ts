@@ -97,7 +97,7 @@ export type Phase = (typeof phases)[number];
 /** Whether a round's React gate runs: of a change that touches the port's
  * compile inputs (`touchesPort`), unless an earlier round's passed and the
  * commits the rebase brought since, `incoming`, touch none of them, so the
- * port compiles as it did then: m3-max's long pushes ran it, 54 s, at
+ * port compiles as it did then: max agent's long pushes ran it, 54 s, at
  * each of two or three rounds (2026-11-17). */
 export function reactGate(changed: string[], incoming: string[] | undefined): "run" | "reused" | "none" {
   if (!touchesPort(changed)) return "none";
@@ -108,7 +108,7 @@ export function reactGate(changed: string[], incoming: string[] | undefined): "r
  * always; past a rebase, where the commits it brought, `incoming`, touch a
  * Rust source, a mutation list or the toolchain, any of which a `replace`
  * may read. Otherwise each `replace` type-checks as it did the round
- * before, its 22–93 s spent again on a moving `main` (m6-lily's health
+ * before, its 22–93 s spent again on a moving `main` (lily agent's health
  * check, 2026-11-20). */
 /** Whether a round runs the `fast` phase's tests again: the first always;
  * past a rebase, where the commits it brought, `incoming`, touch what they
@@ -365,7 +365,7 @@ async function main() {
   let named: ReadonlySet<string> | undefined;
   // The machine's log's line, written once, however the run ends: past
   // its end, a failure's, and a signal's, which stops `spawnSync`'s child
-  // and then runs here (m6-lily's push of b355dc824 wrote none).
+  // and then runs here (lily agent's push of b355dc824 wrote none).
   let written = !ownsTimes("push");
   // The push before this one ran again, its time and phases this line's too.
   const before = givenBefore(process.env);
@@ -706,7 +706,7 @@ export function lowerRatchets(text: string): string | undefined {
  * issue's file of one kept as a directory, `test/known/<list>/<issue>.txt`
  * (#2260), and the rustc suite's three (ADR 0089). Two changes that each
  * took a line off one conflict on rebase where the lines are neighbours:
- * m1-lisa's #2054 and m6-lily's #2056 off the metamorphic net's list
+ * lisa agent's #2054 and lily agent's #2056 off the metamorphic net's list
  * stopped a push (2026-11-18). */
 export const lineSet = (file: string) =>
   /^test\/[\w-]+-known\.txt$/.test(file) ||
@@ -841,7 +841,7 @@ const decision = (file: string) => /^docs\/decisions\/\d+-[^/]+\.md$/.test(file)
 /** An ADR both sides only appended to, each its amendment at the end of
  * `base`, the text they shared: `base`, then `ours`' amendment, the commit
  * the rebase is onto, then `theirs`, the one replayed, each whole, as two
- * pushes amending ADR 1150 at once stopped m3-max's twice (2026-11-18).
+ * pushes amending ADR 1150 at once stopped max agent's twice (2026-11-18).
  * Undefined where either side changed `base` itself, which stays the
  * change's author's to merge. */
 export function appendedBoth(base: string, ours: string, theirs: string): string | undefined {
@@ -854,7 +854,7 @@ export function appendedBoth(base: string, ours: string, theirs: string): string
 
 /** Onto origin/main. A conflict in a blessed baseline alone (`regenerated`)
  * is resolved as main's, and made again from the rebased tree: two pushes
- * that each blessed one stopped the second's rebase (2 of m3-max's 5
+ * that each blessed one stopped the second's rebase (2 of max agent's 5
  * failed pushes of 2026-11-17). Any other conflict aborts it, hand-written
  * code's too. The baselines it resolved so. */
 export function rebase(): string[] {

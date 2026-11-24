@@ -1,7 +1,7 @@
 # 1151. A fact of a call is of its node, asked of each node at MIR's span
 
 Status: Accepted (2026-11-14, #1681's change 3, M5, the lead's plan, taken
-beside m6-lily's M3; in progress, a fact a commit, each recorded here).
+beside lily agent's M3; in progress, a fact a commit, each recorded here).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
 Rust's. A fact keyed by a span was taken of every call a macro's
@@ -53,7 +53,7 @@ a span inside a macro:
    Rust's first is `1 10` (#1788, a wrong answer). Its lowering side, the
    source's name by the collect's span (`mir/locals.rs`'
    `in_place_source_names`, read by `mir.rs`' `in_place_source`), waits
-   on m6-lily's S4, which makes it a map to a `VarId`. Till then the
+   on lily agent's S4, which makes it a map to a `VarId`. Till then the
    analysis refuses collects at one span whose sources differ, naming
    #1789, which keys both sides by node; of one source alike, or none, as
    each expansion's own, they compile. Corpus case

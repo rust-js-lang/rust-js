@@ -629,7 +629,7 @@ test("the stores inside the checkouts are held to the budget together, the least
 
 // A checkout past the budget with every stale entry gone keeps its working
 // set, what was used since its last check or in the last day: idle
-// worktrees' builds took m6-lily's total to 100 of 40 GiB, so each check's
+// worktrees' builds took lily agent's total to 100 of 40 GiB, so each check's
 // measure removed every corpus run and cache it was about to reuse, and
 // check:fast went from ~300 s to 630-809 s (#2163's regression). Only the
 // disk's floor takes from the working set; what's left is said, with its

@@ -101,7 +101,7 @@ export function chainsOf(from: Shape): Adapter[][] {
   }
   chains.push([named("copied"), named("map"), named("rev")], [named("map"), named("rev"), named("map")]);
   // And what std's zip reads by index through what the source's copies
-  // are made into, its reader's chain (#1982, m1-lisa's rows).
+  // are made into, its reader's chain (#1982, lisa agent's rows).
   chains.push([named("cloned"), named("map"), named("zip")], [named("copied"), named("map"), named("zip")], [named("copied"), named("enumerate"), named("zip")]);
   const seen = new Set<string>();
   return chains.filter((chain) => {

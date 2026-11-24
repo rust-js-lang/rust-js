@@ -1,7 +1,7 @@
 # 1112. rust-js's own wasm-bindgen, js-sys and web-sys, for dependencies
 
 Status: Accepted (the user's choice of option (a) on #1121, 2026-11-10;
-m6-react decided, for the user, how it's substituted and which crates it
+thor agent decided, for the user, how it's substituted and which crates it
 refuses). Step 1 of #1121: the substitution and the refusals. The API
 itself grows crate by crate, in amendments.
 

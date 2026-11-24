@@ -214,7 +214,7 @@ change names (`bun scripts/iteratorSlice.ts run rows`, the picking
   destination among them). The runtime's generated module
   and the tests name nothing. The names are the generator's own lists, so
   there is no second catalog; picking is no compiler decision, so names
-  are enough (m6-react's decision, for the user).
+  are enough (thor agent's decision, for the user).
 - **What runs.** Every row of each adapter a hunk names, whatever its
   consumer; of a hunk that names no adapter, every row of each consumer it
   names; of `$given`, generic code's, every generic source's. The rows of
@@ -259,7 +259,7 @@ them can't pass.
 
 ## Amendment: every point a panic can be, the points table (#817, 2026-11-06)
 
-The user's decision, through m6-react: the matrix's panic sites were five
+The user's decision, through thor agent: the matrix's panic sites were five
 hand-picked places, the source's `next` at its third item, the chain's
 first closure and the consumer's at their second call, and `D(3)`'s drop.
 Most of the iterator P0s filed since 11-04 were one shape, what a step
@@ -307,7 +307,7 @@ too is filed or fixed before the change lands.
 
 ## Amendment: panic points beyond iterators, the unwind table (#854, 2026-11-07)
 
-The user's decision, through m6-react: #817's points found four P0s at
+The user's decision, through thor agent: #817's points found four P0s at
 once, and drops outside iterators had no such net.
 
 - **A fourth table, `ITERATOR_TABLE=unwind`** (`test/unwind-points.ts`),
@@ -352,7 +352,7 @@ once, and drops outside iterators had no such net.
 
 ## Amendment: every format spec of each value, the formatting grid (#941, 2026-11-08)
 
-The user's decision, through m6-react: the generated tables found most of
+The user's decision, through thor agent: the generated tables found most of
 the wrong answers, and `format!`'s output, the most visible a program
 has, had no table.
 
@@ -399,7 +399,7 @@ has, had no table.
 
 ## Amendment: every number operation of each type's boundary values, the numbers grid (#940, 2026-11-08)
 
-The user's decision, through m6-react: after the formatting grid (#941),
+The user's decision, through thor agent: after the formatting grid (#941),
 numbers, where JS and Rust differ most, get a table.
 
 - **A sixth table, `ITERATOR_TABLE=numbers`** (`test/number-grid.ts`), run
@@ -449,7 +449,7 @@ numbers, where JS and Rust differ most, get a table.
 
 ## Amendment: panic points across `.await`, the async table (#942, 2026-11-08)
 
-The user's decision, through m6-react: #817's and #854's points cover
+The user's decision, through thor agent: #817's and #854's points cover
 synchronous code; an async body holds its locals across `.await`, and what
 it drops as a panic unwinds there had no net.
 

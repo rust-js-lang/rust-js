@@ -11,7 +11,7 @@ import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
 // again from the rebased tree (`bun run push`, scripts/push.ts), where it
-// stopped the second of two pushes that each blessed one (2 of m3-max's 5
+// stopped the second of two pushes that each blessed one (2 of max agent's 5
 // failed pushes of 2026-11-17); one in hand-written code still stops it.
 // The baselines are those .gitattributes merges as `merge=binary`, each
 // with the test whose bless makes it.
@@ -53,7 +53,7 @@ test("a rebase's conflict in a ratchet is resolved by the lower count, anything 
   for (const file of ratchets) expect([file, existsSync(join(root, file))]).toEqual([file, true]);
 });
 
-// Two pushes amending one ADR at once each append to its end: m3-max's
+// Two pushes amending one ADR at once each append to its end: max agent's
 // stopped twice on ADR 1150 (2026-11-18). Both kept, main's first, each
 // whole; a change to the text they share still stops.
 test("a rebase's conflict in an ADR both sides only appended to keeps both amendments, any other stops", () => {
@@ -113,7 +113,7 @@ test("a rebase's conflict in TESTS.md's `Changed on` lines keeps both sides' new
 });
 
 // Two changes that each took a line off a known list conflict where the
-// lines are neighbours: m1-lisa's #2054 and m6-lily's #2056 off the
+// lines are neighbours: lisa agent's #2054 and lily agent's #2056 off the
 // metamorphic net's list stopped a push (2026-11-18). A line set's
 // conflict is merged as a set, of git's own merge (`git merge-file
 // --diff3`, as the rebase's stages give it): what either side took off is
@@ -244,7 +244,7 @@ test("a push's fast phase runs first, push-guard's rule and the catalog's quick 
 });
 
 // A round past a rebase spends again only what the commits it brought can
-// change (m6-lily's health check, 2026-11-20: a push's second round 230 s).
+// change (lily agent's health check, 2026-11-20: a push's second round 230 s).
 // The mutants type-check again where they touch a Rust source, a mutation
 // list or the toolchain; the sanity pass checks nothing where no test is
 // reached by both the change and them, and says why.

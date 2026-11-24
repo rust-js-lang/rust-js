@@ -218,7 +218,7 @@ the mutations `ended-before-arguments`, `-callee`, `-parts`,
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)): refusals lifted;
 what's borrowed, and when it's released, is native Rust's. Its runtime
-form is m6-react's decision for the user (2026-11-11), on condition that
+form is thor agent's decision for the user (2026-11-11), on condition that
 what it can't tell apart throws.
 
 `Ref::map`, `RefMut::map`, their `filter_map` and `map_split` were

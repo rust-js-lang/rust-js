@@ -1,6 +1,6 @@
 # 1134. std types' serde forms are one catalog
 
-Status: Accepted (2026-11-13, #1623). m6-react set the conditions: one
+Status: Accepted (2026-11-13, #1623). thor agent set the conditions: one
 catalog, extended row by row; each row serde's own impl's form, compared
 with native both ways, its errors among them; landed by family. Beside
 [0077](0077-serde-json.md), JSON by serde_json's rules, and

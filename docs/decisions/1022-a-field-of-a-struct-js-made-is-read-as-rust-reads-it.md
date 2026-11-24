@@ -474,7 +474,7 @@ rd204**, read where MIR tests it and again where it binds, until #1924:
 held once where it's tested, as #430 holds one of a struct JS makes, a
 `const` at each subject broke react.dev's `else if` chains, llms.txt's
 `extractGroupedRoutes` into a `continue` and a `let title` set twice;
-#1924 is to keep the chain, its held reads ahead of it (m6-react's
+#1924 is to keep the chain, its held reads ahead of it (thor agent's
 decision, 2026-11-15). What Rust itself reads twice is read twice, `if
 r.step.is_some() { r.step.unwrap() }`, as rd204 decided.
 

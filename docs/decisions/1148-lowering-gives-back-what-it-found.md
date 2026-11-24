@@ -165,7 +165,7 @@ rounds.
    (`call_graph::crate_graph`). It covers each function's MIR the emitter
    reads, and each constant's MIR rustc evaluates it by (a `const`'s, a
    `static`'s, an inline `const { .. }`'s), whose calls are a function's
-   callers too: m3-max's const callers (#1742), folded in from
+   callers too: max agent's const callers (#1742), folded in from
    `intervals::given_parameters`, which now asks the shared graph.
    Mutation intervals-constants-call-nothing follows its code into
    `lower/call_graph.ts`, and is caught.

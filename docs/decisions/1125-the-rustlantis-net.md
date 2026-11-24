@@ -12,7 +12,7 @@ Rustlantis's ideas into rust-js's own generator rather than the tool:
 its programs are custom MIR, mostly raw pointers, `transmute` and unions,
 whose failures would be those of programs no one writes. rust-js has
 since grown to handle far more unsafe code, and #1349–#1352 sat in the
-MIR space Rustlantis aims at, so it was measured (m3-max, 2026-11-11):
+MIR space Rustlantis aims at, so it was measured (max agent, 2026-11-11):
 2,000 programs of its default size and of a small one, each natively for
 wasm32 and as JS in both builds.
 

@@ -28,7 +28,7 @@ differs does; the table below is made of them (`BLESS=1 cargo test
 contract_table`); and bump `VERSION`. A crate fact a library's consumer
 needs names the `ContractField`s that carry it across, one only the crate
 reads says so (`CrateFacts`' `carried`, `crates/rust-js-lower/src/crate_facts.rs`). A
-new one is m6-react's to see first (#1462).
+new one is thor agent's to see first (#1462).
 
 ## The facts
 

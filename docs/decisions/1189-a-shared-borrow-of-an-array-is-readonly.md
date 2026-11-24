@@ -1,7 +1,7 @@
 # 1189. A shared borrow of an array is declared `readonly`
 
 Status: Accepted (2026-11-23, #2392; Tu approved, through the lead,
-m6-react, with React's port's declarations moved). Amends
+thor agent, with React's port's declarations moved). Amends
 [0196](0196-typescript-declarations.md)'s declarations.
 
 ## Context

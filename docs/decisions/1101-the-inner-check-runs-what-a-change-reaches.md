@@ -364,8 +364,8 @@ the fetch and the cache's pruning), `test/ci.test.ts`, and the mutations of
 Past a rebase that brought commits, `bun run push` checked again by the
 same selection: the map's diff to the new tree, which holds others'
 commits. Their non-function lines made it select everything, so a sanity
-pass took longer than the check: m3-max's took 594 s and 516 s after a
-491 s check, and m1-lisa's 1,228 s. Her push gave up after main moved
+pass took longer than the check: max agent's took 594 s and 516 s after a
+491 s check, and lisa agent's 1,228 s. Her push gave up after main moved
 three times (3,847 s, not pushed). Tu's rule: quick, then push; CI's full
 check covers the combination.
 
@@ -392,7 +392,7 @@ that side takes every test the map saw run any of its functions
 (`unitsReaching`). Where one side selects everything, the pass is the
 other side's. Where both do, it's the cap below. Past `sanityBudget`'s 40
 test files, about five minutes on the Mac mini, it's the interaction's
-corpus cases alone, `capped corpus of the interaction`. m1-lisa's runtime
+corpus cases alone, `capped corpus of the interaction`. lisa agent's runtime
 change (#1976), "some (360 of 361 files, every case)", ran all of it again
 after each rebase, about 1,120 s on the M1. It lost to a moving `main`
 three times, until her push's 4,200 s bound stopped it.
@@ -405,7 +405,7 @@ tests and cases the map, as of its commit, recorded running any function
 of the files the change touches, an approximation, `capped some (from the
 map at <sha>: N files, M cases)`; or, where that's none, the whole corpus,
 `capped corpus`. Two changes to one file, the change's and others', are
-where they most meet: m6-lily's tidy refactor's cap ran nothing. Others'
+where they most meet: lily agent's tidy refactor's cap ran nothing. Others'
 commits were checked by their own pushes, and CI checks the combination.
 With a pass this cheap, a push that meets a moved `main` rebases and runs
 it again until it lands, with no limit.
@@ -501,7 +501,7 @@ Proof: `test/ci-spend.test.ts` and the `ci-spend-*` mutations;
 
 ### Amended: a push's check is its own change's, never others' `all` (2026-11-16)
 
-m1-lisa's test-only push selected everything: "crates/rust-js-program/src/js/writes.rs's change
+lisa agent's test-only push selected everything: "crates/rust-js-program/src/js/writes.rs's change
 at line 89 is outside any function's counted code (others' since the map's
 commit)". The first check of a push took the whole diff from the map's
 commit, so any other agent's item, type or new file since the map ran
@@ -543,7 +543,7 @@ Mutations `push-selection-inherits-others-all` and
 ### Amended: comments, new items and a signature's visibility select no more than they change (2026-11-17)
 
 Every M1 handoff of 2026-11-16 selected everything for a line no test's
-outcome can turn on: m1-lisa's heap split's `mod derived;` ("writes an
+outcome can turn on: lisa agent's heap split's `mod derived;` ("writes an
 item"), #1983's `fn given_stepped` made `pub(super)` ("outside any
 function's counted code"). A hunk now keeps its removed lines too, and
 (`pick`):
@@ -612,7 +612,7 @@ micro-benchmark past 1.5 times"; mutations `attribute-slice-*`,
 
 ### Amended: a constant's value is its readers' change (2026-11-17)
 
-m3-max's adapter-family flips each grew `HELD_FLIPPED: [&str; N]` by one
+max agent's adapter-family flips each grew `HELD_FLIPPED: [&str; N]` by one
 entry, and each selected everything: the declaration's line is outside any
 function's code, and its type changed, its length. A constant's value is
 inlined where it's named, so its change is read only by the functions that
@@ -848,8 +848,8 @@ change first, within its budget"; mutations `sanity-budget-unranked`, `sanity-bu
 
 ### Amended: a known list's conflict on rebase is merged as a set (2026-11-18)
 
-Two pushes that each took a line off test/metamorphic-known.txt, m1-lisa's
-#2054 and m6-lily's #2056, conflicted where the lines were neighbours, and
+Two pushes that each took a line off test/metamorphic-known.txt, lisa agent's
+#2054 and lily agent's #2056, conflicted where the lines were neighbours, and
 `bun run push` stopped the second, as it stops every conflict it can't
 resolve mechanically. A known list is a set of lines, each standing for
 itself in a block under its issue: whatever either side took off is gone
@@ -926,7 +926,7 @@ If it compiles, each use resolves to the item it did before, so what the compile
 
 ## Amendment (2026-11-20): a round past a rebase spends only what the commits it brought can change
 
-A push whose rebase brought commits ran its round again. 69240fd35's second round spent fast 21 s, the mutants type-check 87 s and a sanity pass 118 s. m6-lily's S4 push went past 900 s this way.
+A push whose rebase brought commits ran its round again. 69240fd35's second round spent fast 21 s, the mutants type-check 87 s and a sanity pass 118 s. lily agent's S4 push went past 900 s this way.
 
 **The round now spends only what those commits can change:**
 - The mutants are type-checked again only where the incoming commits touch a Rust source, a mutation list or the toolchain, any of which a `replace` may read (`mutantsAgain`). Otherwise each `replace` type-checks as it did the round before.
@@ -1019,7 +1019,7 @@ regen's compiler as it was, and no other script links the checkout's build.
 A rebase that changes what push has loaded runs push again from the
 rebased tree (#2275). That run's own rebase finds nothing left to
 resolve, so the files the first rebase resolved as main's, std/'s
-generated files and blessed baselines, weren't made again: m6-lily's push
+generated files and blessed baselines, weren't made again: lily agent's push
 over 691b08b57 kept main's `std/runtime.js`, without the `$provided`
 helper her `std/iter.js` imports, and only test/mutations.test.ts caught
 it. `againEnv` now carries them, `RUST_JS_PUSH_REMADE`, and the run
@@ -1029,7 +1029,7 @@ as main's" holds it; mutation `remade-uncarried-into-the-run-again`.
 
 ## Amendment (2026-11-24, #2288): a line outside any function, by its kind, then its item's name
 
-m1-lisa's count of main's checks since 2026-11-21: 130 of 188 selected
+lisa agent's count of main's checks since 2026-11-21: 130 of 188 selected
 everything, and a Rust line outside any function's counted code was 71%
 of the excess, about 1,930 runner-minutes in 3 days. Of 41 such changes
 located: an item's definition 27 (a variant, a field, a `const`'s value,
@@ -1061,7 +1061,7 @@ selects its namers). Mutations: `test-map-item-selects-everything`,
 `-short-name-searched`, `-common-name-searched`,
 `-item-named-by-another-unseen`.
 
-Amended again (2026-11-24, the lead's and m1-lisa's probe of the rule,
+Amended again (2026-11-24, the lead's and lisa agent's probe of the rule,
 #2288 comment 7127339825): what changes what code does with no function
 changed.
 

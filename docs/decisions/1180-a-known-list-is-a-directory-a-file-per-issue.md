@@ -17,7 +17,7 @@ Three nets list the failures they know under issue headings, `#<issue>
 - the neighbour shuffle, `test/neighbours-known.txt`.
 
 Every iterator fix edits one of these files, so two agents' fixes
-conflicted there. m3-max and the Mac mini did on 2026-11-21, and with
+conflicted there. max agent and the Mac mini did on 2026-11-21, and with
 five pushers it gets worse. `bun run push` merges a known list's conflict
 as a line set, but a line both sides changed, an id list of the matrix,
 is still its author's to merge. And the push guard read the removal of a

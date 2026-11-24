@@ -1,7 +1,7 @@
 # 1129. A fact of a library's contract says what makes it true
 
 Status: Accepted (2026-11-12, #1462, of the architecture review of that
-day; m6-react, coordinating the other agents, had no objection). Beside
+day; thor agent, coordinating the other agents, had no objection). Beside
 [0100](0100-separate-crates.md), the contract, and
 [0906](0906-a-librarys-facts-are-sets.md), its facts as sets.
 
@@ -49,7 +49,7 @@ what a consumer that differs does. A fact without its row fails
 - The associated types' `Size` and `Align` (`Library.associated`, #1420)
   and `RoomSize` (`TypeParam.facts`, #1260) are `summary`: evidence a
   call gives or a dictionary carries, the same whoever calls.
-- A new fact is m6-react's to see before it lands (#1462).
+- A new fact is thor agent's to see before it lands (#1462).
 
 ## Consequences
 

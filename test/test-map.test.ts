@@ -627,7 +627,7 @@ test("CI's map of HEAD's nearest ancestor on main is the one fetched", () => {
 
 // Of a diff's own lines, what can't change a test (ADR 1101, amended): a
 // comment, a pure addition of items nothing referred to before, `mod
-// derived;` of m1-lisa's heap split, and a signature line's visibility,
+// derived;` of lisa agent's heap split, and a signature line's visibility,
 // `pub(super) fn`, #1983's, which is that function's change. An `impl`, a
 // `use` or a macro added, or a signature's types changed, of sources it
 // can't read, still can't be said.
@@ -812,7 +812,7 @@ test("CI's map is fetched packed, in its time, and an artifact of before holds n
 });
 
 // An item's change outside any function's code, by its line's kind, then
-// its name (#2288, m1-lisa's design): a variant added to an enum selects
+// its name (#2288, lisa agent's design): a variant added to an enum selects
 // the functions that name the enum, not every test; a name too short to
 // search, or one most of its crate's functions name, everything, said by
 // name.
@@ -846,7 +846,7 @@ test("an item outside any function selects the functions that name it; a short o
   expect(pick(map, [shadowing], files, cases, { ...lenNamed, naming: () => [] })).toMatchObject({ kind: "picked", files: ["test/reads.test.ts"] });
 });
 
-// m1-lisa's probe of #2288's rule (comment 7127339825): changes outside any
+// lisa agent's probe of #2288's rule (comment 7127339825): changes outside any
 // function that change what code does. A new free item shadows a glob's of
 // its name; a macro's body changes each expansion; an attribute decides of
 // the item below it; a trait's new impl is reached by what's bound by the

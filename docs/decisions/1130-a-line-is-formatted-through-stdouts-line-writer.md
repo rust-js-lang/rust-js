@@ -558,7 +558,7 @@ owner:
   knows the type of, is refused, naming #1530: show it in a `format!`
   first, whose text a panic drops, or where no `catch_unwind` catches.
   Case ([0262](0262-when-rust-and-js-disagree.md)): results change and
-  the library's JS can't keep them, so a compile error (m6-react's option
+  the library's JS can't keep them, so a compile error (thor agent's option
   (ii)); the library's JS is the same.
 
 And a library's writer the consumer compiles itself (ADR 0914), read from

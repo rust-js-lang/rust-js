@@ -96,7 +96,7 @@ test("what decides each chain's form runs each row of what it names, and of each
   const reach = reached(new Set(["map"]));
   expect([...reach].sort()).toEqual(["flatten", "map"]);
   // #1780's wrong answers: nothing folded, and a drop run twice more, each
-  // row it failed (m6-lily's `pairs` run) and the one it was found by.
+  // row it failed (lily agent's `pairs` run) and the one it was found by.
   const failed = ["take.flatten | rfold | stage", "chain.flatten | rfold | next", "flatten.flatten | rfold | next", "flatten.flatten | rfold | stage", "step_by.flatten | rfold | none", "chain.flatten | rfold | none"];
   for (const id of failed.map((row) => `generic own Every | ${row}`)) {
     expect(pattern(reach, new Set(), false)!.test(id)).toBe(true);

@@ -267,7 +267,7 @@ of call read worse than the pin's, as neither is a call the JS writes:
 `named_by_their_call` gives each name, marking a property's read
 (`js::Held::read`), and `spill_subject` drops a read's name where its
 caller's `base` is a closure's parameter. The user's decision, through
-m6-react. Held by corpus `option_subject_named_by_its_binding`, against
+thor agent. Held by corpus `option_subject_named_by_its_binding`, against
 native Rust in both builds and by its snapshot, and `lowering-moves`' "a
 getter's Option a closure binds is named by its parameter" and "a
 getter's Option a combinator reads more than once is read once".

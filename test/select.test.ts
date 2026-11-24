@@ -205,7 +205,7 @@ test("a baseline a test reads by a path its source doesn't spell picks its owner
 });
 
 // A sanity pass past a rebase runs the interaction: what both the change
-// and the commits the rebase brought can affect. m1-lisa's runtime change,
+// and the commits the rebase brought can affect. lisa agent's runtime change,
 // some 360 of 361 files and every case, ran all of it again after each
 // rebase, some 1,120 s on the M1, and lost to a moving main three times
 // until her push's bound stopped it (#1976).
@@ -252,7 +252,7 @@ test("a sanity pass runs what reaches most of the change first, within its budge
 
 // A sanity pass the selector can't say of is capped: the change's own
 // test files and cases; and of a change to the compiler's sources never
-// none, as two changes to one file are where they most meet: m6-lily's
+// none, as two changes to one file are where they most meet: lily agent's
 // tidy refactor, rebased onto others' edits to the same tidy.rs, was
 // capped to its own test files, none, and ran nothing.
 test("a sanity pass's cap is never empty for the compiler's code: the map's tests of its files, else the corpus", () => {
@@ -478,7 +478,7 @@ test("a test the night failed that no push's selection ran is a selector's miss"
 
 // A push's check runs what its own change can affect (ADR 1101, amended):
 // others' commits since the map's were checked by their pushes and by CI,
-// whose check keeps the full rule. m1-lisa's test-only push selected all,
+// whose check keeps the full rule. lisa agent's test-only push selected all,
 // "crates/rust-js-program/src/js/writes.rs's change at line 89 is outside any function's counted
 // code (others' since the map's commit)": an item of theirs. Their function
 // changes still count where this change touches the compiler's code, as a

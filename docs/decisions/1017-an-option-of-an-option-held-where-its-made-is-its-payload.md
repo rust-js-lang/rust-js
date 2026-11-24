@@ -455,7 +455,7 @@ undefined`, `== null` and `$someValue`, where it's made, given to a
 function and given back, set and read, of a type parameter's too. Its
 makers and readers were already the generic ones; what was refused was
 only the refusal, and the constant folding #832 fixed. So it's held so,
-as the user decided (m6-react, 2026-11-06): case
+as the user decided (thor agent, 2026-11-06): case
 ([0262](0262-when-rust-and-js-disagree.md)) none, the same results as
 Rust's.
 

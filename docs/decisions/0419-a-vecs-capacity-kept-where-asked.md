@@ -699,7 +699,7 @@ A `Vec` of a `String`'s bytes, `s.into_bytes()`, `s.into_boxed_bytes()` or
 string is an immutable primitive: no `WeakMap` keys it and it carries no
 state, so its capacity can't be kept, as `String::capacity()` is refused
 at compile time already. Carrying one would change how every string is
-held, for a capacity read: the user's decision, through m6-react, is
+held, for a capacity read: the user's decision, through thor agent, is
 won't-fix (ADR 0262's fourth case). Its bytes' `Vec` stays not known,
 `$untracked`, and `capacity()` of it refuses, naming #1261, the issue
 that explains it, since #1180 closed; never another number. The guide's
@@ -927,7 +927,7 @@ runs. Of an in-place collect whose source a call hides, `opaque(kept
 build, where JS's own helpers keep no link to the source, that error was
 thrown where the body that collected it read the capacity. A read the
 compiler sees is refused where it's compiled now (ADR 0262's fourth case,
-moved from run time to compile time; m6-react's decision): `rust-js does
+moved from run time to compile time; thor agent's decision): `rust-js does
 not support `capacity()` of a `Vec` std may collect in place from a source
 a call hides (#1926) yet: .. collect from `v.into_iter()` in the body
 that reads the capacity, or don't read it`.

@@ -888,7 +888,7 @@ constructor function and an ES class, and the mutation
 
 ## Amendment: an ES class's fields are apart from its first member (rd731)
 
-Decided by the user, relayed by m6-react (2026-11-04): a blank line
+Decided by the user, relayed by thor agent (2026-11-04): a blank line
 between an ES class's field declarations and its first member, as
 upstream's ReactFlightWebpackPlugin.js and react-test-renderer's
 `class ReactTestInstance { _fiber;\n\n  _currentFiber() { .. } }` have it and

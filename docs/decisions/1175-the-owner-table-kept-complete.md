@@ -120,7 +120,7 @@ area and routed to the owner, not given a row of its own.
   submodules not its own, a `\|` split, comments and test modules read as
   code.
 - The sweeps: the Mac mini's areas (iterators, drops-unwind,
-  modules-linking, readability passes, the runtime) first, then m6-lily's
+  modules-linking, readability passes, the runtime) first, then lily agent's
   (nullability, ranges and numbers, `&mut`s, functions and calls, classes
   and JS objects, declarations).
 
@@ -139,7 +139,7 @@ The first two rows are the runtime's: whether an iterator is an array's, `$array
 ## Amendment: the table is complete, and the ratchet goes (2026-11-20, #2162)
 
 The sweeps took test/owners-unclassified.txt from 1,229 lines to 0: the
-Mac mini's share and m6-lily's, the last five mir/nulled's (a0c190927).
+Mac mini's share and lily agent's, the last five mir/nulled's (a0c190927).
 With nothing left to classify, a list of exceptions is a second way to
 pass the test, so it goes: the file, its `lineSet` entry in
 scripts/push.ts, and `UNCLASSIFIED`. Completeness is strict: every

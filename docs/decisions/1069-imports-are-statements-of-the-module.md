@@ -1,7 +1,7 @@
 # 1069. Imports and re-exports are statements of the module, where their `use`s are
 
 Status: Accepted (rd637 and rd652, design (b), agreed by m6-wife and
-m6-react). Amends [0865](0865-a-blank-line-is-where-the-rust-has-one.md),
+thor agent). Amends [0865](0865-a-blank-line-is-where-the-rust-has-one.md),
 whose rule now places every blank line of a module, its imports' too, and
 [1063](1063-imports-are-in-the-order-of-their-uses.md), whose imports
 were one block of text above the code.

@@ -129,7 +129,7 @@ twice(self) {
 Held by `test/corpus/default_of_a_non_blanket_impl_steps_its_self.rs`, with
 native Rust, its `for _ in self` too, as generic code's `for` over a
 `Wrapper<I>` is since #806; about 40 snapshots move (the user's approval,
-through m6-react).
+through thor agent).
 
 ## Amendment: a collect in a copied default asks its types as they are (2026-11-06, #799)
 

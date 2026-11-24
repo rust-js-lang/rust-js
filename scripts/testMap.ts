@@ -610,7 +610,7 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     if (!texts.has(at)) texts.set(at, (sources.text(at) ?? "").split("\n"));
     return texts.get(at)!;
   };
-  // A line's kind, then its item's name (#2288, m1-lisa's design, Tu's
+  // A line's kind, then its item's name (#2288, lisa agent's design, Tu's
   // heuristic; the nightly and scripts/selector-audit.ts the backstop).
   // Whether each of `lines` is a `mod x;` or an `extern crate` alone: what
   // it brings in changes only where a function using it changed too,
@@ -651,7 +651,7 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
   // super::*;`'s `helper` for a new `fn helper`), or makes a `match` arm's
   // binding a constant's pattern; and of `impl Tr for X`, both `X` and
   // `Tr`, as generic code bound by `Tr` reaches the new impl without naming
-  // `X` (m1-lisa's probe, #2288).
+  // `X` (lisa agent's probe, #2288).
   const traitImpl = /^\s*(?:unsafe\s+)?impl\b(?:\s*<[^>]*>)?\s+(?:[\w]+::)*([A-Za-z_]\w*)(?:<[^>]*>)?\s+for\s+&?(?:mut\s+)?(?:[\w]+::)*([A-Za-z_]\w*)/;
   const definedIn = (added: string[]) => {
     const names: string[] = [];

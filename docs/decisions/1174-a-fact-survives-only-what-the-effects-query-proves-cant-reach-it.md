@@ -1,6 +1,6 @@
 # 1174. A fact survives only what the effects query proves can't reach it
 
-Status: Accepted (2026-11-19, #2112 Change B, m1-lisa's design, the lead's
+Status: Accepted (2026-11-19, #2112 Change B, lisa agent's design, the lead's
 approval). Step 2 of 4: the query is built and run in shadow beside the
 walk's forgetting rules; step 3 makes the transfer ask it and deletes the
 rules.
