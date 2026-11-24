@@ -13,7 +13,7 @@ import { boundEntries, budgetBytes, capOf, entriesOf, holdEntries, holdToBudget,
 import { adoptRetiredStores, holdKept, indexedSize, keptAppsCap, keptStores, mayKeep, nativeCache, nativeSources, noteKept, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, takeClaim, verifiedRuns, walkDue, workingSetMs, workingSetSince } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
-import { boundCrateProjects } from "../scripts/crate-corpus";
+import { boundCrateProjects, crateProjectsKept, holdCrateProject, removeCrateProject } from "../scripts/crate-corpus";
 import { boundCrater } from "../scripts/crater";
 import { keptMaps, mapsCap, pruneMaps } from "../scripts/testMap";
 import { keptSerdeFlags } from "./serde-kept";
@@ -688,6 +688,39 @@ test("the crate corpus's projects keep the most recently measured under their ca
   // Below the floor, another goes, whatever the cap.
   boundCrateProjects({ dir, cap: Number.POSITIVE_INFINITY, free: () => (existsSync(join(dir, "older")) ? floorBytes - 1 : floorBytes) });
   expect(readdirSync(dir)).toEqual(["newest"]);
+});
+
+// A project the crate corpus measures is held, `<crate>.owner`: the
+// stores' prune beside a check's jobs listed itertools' project by its old
+// `used`, the run began measuring it, and the prune removed it under Cargo
+// and rust-js by its listing, "itertools' JS has no adaptors.js", 3 checks
+// of 3 on the M6 (#2562). Held, it's neither listed nor, claimed after the
+// listing, removed: by its cap's bound and by the checkouts' budget alike.
+test("a crate project being measured is never removed under its run, claimed before or after the prune lists it", async () => {
+  const dir = fixture("crate-projects-held");
+  const made = (name: string) => {
+    mkdirSync(join(dir, name, "target"), { recursive: true });
+    writeFileSync(join(dir, name, "target", "lib.rlib"), Buffer.alloc(64 * 1024));
+    writeFileSync(join(dir, name, "used"), "");
+    utimesSync(join(dir, name, "used"), new Date(0), new Date(0));
+  };
+  for (const name of ["held", "listed", "free"]) made(name);
+  const release = await holdCrateProject(join(dir, "held"));
+  // Held as it's listed: not a project to remove, nor its claim one.
+  expect(crateProjectsKept(dir).map(({ path }) => basename(path)).sort()).toEqual(["free", "listed"]);
+  const listed = crateProjectsKept(dir);
+  // Held after it's listed, as the run begins measuring it.
+  const releaseListed = await holdCrateProject(join(dir, "listed"));
+  const store: Store = { name: "crate-corpus", dir, kept: () => listed, remove: removeCrateProject };
+  holdToBudget([store], Number.POSITIVE_INFINITY, { held: 0, free: () => floorBytes, since: Date.now() });
+  expect(readdirSync(dir).filter((name) => !name.includes(".")).sort()).toEqual(["held", "listed"]);
+  boundCrateProjects({ dir, cap: 0, free: () => floorBytes - 1 });
+  expect(readdirSync(dir).filter((name) => !name.includes(".")).sort()).toEqual(["held", "listed"]);
+  // Measured, each goes as any other.
+  release();
+  releaseListed();
+  boundCrateProjects({ dir, cap: 0, free: () => floorBytes });
+  expect(readdirSync(dir)).toEqual([]);
 });
 
 // One root of what development keeps (#1213): a worktree finds the main

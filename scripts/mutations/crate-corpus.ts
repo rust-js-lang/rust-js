@@ -42,4 +42,28 @@ export const mutations: Mutation[] = [
     replace: ".filter((path) => !files.has(path) && false)",
     tests: ["test/ci.test.ts", "-t", "the crate corpus's snapshotted functions are cut whole and held"],
   },
+  {
+    name: "crate-project-held-listed",
+    breaks: "the prune lists a crate's project a run is measuring, so its cap's bound removes it under Cargo and rust-js: itertools' JS gone mid-measure in check:fast, 3 of 3 on the M6 (#2562)",
+    file: "scripts/crate-corpus.ts",
+    find: "    .filter((path) => statSync(path, { throwIfNoEntry: false })?.isDirectory() && !claimHeld(`${path}.owner`))",
+    replace: "    .filter((path) => statSync(path, { throwIfNoEntry: false })?.isDirectory())",
+    tests: ["test/support.test.ts", "-t", "a crate project being measured is never removed under its run"],
+  },
+  {
+    name: "crate-project-removed-unclaimed",
+    breaks: "a crate's project the prune listed is removed without its claim, so one a run began measuring since is removed under it (#2562)",
+    file: "scripts/crate-corpus.ts",
+    find: "  if (!takeClaim(owner)) return false;\n  rmSync(entry.path, { recursive: true, force: true });",
+    replace: "  rmSync(entry.path, { recursive: true, force: true });",
+    tests: ["test/support.test.ts", "-t", "a crate project being measured is never removed under its run"],
+  },
+  {
+    name: "crate-project-measured-unheld",
+    breaks: "a crate's project is measured without its claim, so nothing keeps the stores' prune beside a check's jobs from removing it under the run (#2562)",
+    file: "scripts/crate-corpus.ts",
+    find: "  while (!takeClaim(owner)) await Bun.sleep(250);\n",
+    replace: "",
+    tests: ["test/support.test.ts", "-t", "a crate project being measured is never removed under its run"],
+  },
 ];

@@ -27,8 +27,8 @@ export const mutations: Mutation[] = [
     name: "disk-outside-stores-held-to-the-budget",
     breaks: "a store outside the checkouts, a tool's own, is evicted from to hold the checkouts' budget",
     file,
-    find: "  const kept = stores.filter((store) => !store.outside).flatMap((store) => store.kept?.() ?? []);",
-    replace: "  const kept = stores.flatMap((store) => store.kept?.() ?? []);",
+    find: "  const inside = stores.filter((store) => !store.outside);",
+    replace: "  const inside = stores;",
     tests,
   },
   {
@@ -59,8 +59,8 @@ export const mutations: Mutation[] = [
     name: "disk-budget-working-set-uncounted",
     breaks: "the stale kept past a budget take the room the working set uses, so the stores inside the checkouts keep that much past it",
     file,
-    find: "  const left = holdKept(kept, { past: held - rest - workingBytes(kept, since), free, since });",
-    replace: "  const left = holdKept(kept, { past: held - rest, free, since });",
+    find: "  const left = holdKept(kept, { past: held - rest - workingBytes(kept, since), free, since, remove });",
+    replace: "  const left = holdKept(kept, { past: held - rest, free, since, remove });",
     tests: ["test/support.test.ts", "-t", "a checkout past the budget keeps its working set"],
   },
   {
@@ -78,5 +78,13 @@ export const mutations: Mutation[] = [
     find: "  return { inUse, cap: inUse + store.past };",
     replace: "  return { inUse, cap: store.past };",
     tests: ["test/support.test.ts", "-t", "a store of things keeps its working set and what it keeps past it"],
+  },
+  {
+    name: "budget-removes-whole-past-its-store",
+    breaks: "the checkouts' budget removes a store's entry whole, not as its store does, so a crate's project a run began measuring since it was listed is removed under the run (#2562)",
+    file: "scripts/disk.ts",
+    find: "  const remove = (entry: Kept) => removers.get(entry)!(entry);",
+    replace: "  const remove = (entry: Kept) => removeWhole(entry);",
+    tests: ["test/support.test.ts", "-t", "a crate project being measured is never removed under its run"],
   },
 ];

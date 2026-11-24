@@ -312,3 +312,23 @@ checkout past the budget keeps its working set"; mutations
 `kept-past-less-the-working-set`, `store-walked-for-its-working-set`,
 `disk-budget-working-set-uncounted`, `things-store-held-whole`,
 `things-store-cap-without-its-working-set`, `test-maps-cap-a-constant`.
+
+## Amendment (2026-11-25, #2562): an entry a run is using is removed only as its store removes it
+
+The stores' prune runs beside a check's jobs (#2498). On lily's M6 it removed
+the crate corpus's itertools project while that run was measuring it, 3
+checks of 3: "itertools' JS has no adaptors.js", and sccache's "Couldn't
+determine current working directory". The prune had listed the project by
+its old `used` mark, the run then began measuring it, and the prune removed
+it by that listing. `holdKept`'s check before removing reads the directory's
+own time, which the mark doesn't change.
+
+A crate's project is now held while a run measures it, by its claim,
+`<crate>.owner` (test/kept.ts' `takeClaim`), as a kept app's build is held
+(#2446). The prune lists no held project and removes one only under its
+claim, `removeCrateProject`. A store says how its entries are removed,
+`Store.remove`, and the checkouts' budget removes each entry as its store
+does, where before it removed every store's entries whole. One claim
+protocol, test/kept.ts', is the only one, and `claimHeld` answers whether a
+live process holds a claim, for the kept apps' prune and the crate corpus's
+alike.

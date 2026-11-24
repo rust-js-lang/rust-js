@@ -125,7 +125,7 @@ export function holdKept(
 
 /** How `holdKept` removes an entry where its store says nothing else:
  * whole. */
-function removeWhole({ path }: Kept): boolean {
+export function removeWhole({ path }: Kept): boolean {
   rmSync(path, { recursive: true, force: true });
   return true;
 }
@@ -361,6 +361,11 @@ export function alive(pid: number): boolean {
   }
 }
 
+/** Whether a live process holds the claim `owner` (`takeClaim`). */
+export function claimHeld(owner: string): boolean {
+  return alive(Number(readOwner(owner)));
+}
+
 /** The pid a claim, `owner`, names, where it's there as it's read. */
 function readOwner(owner: string): string | undefined {
   try {
@@ -442,20 +447,11 @@ export function pruneKeptApps({ base = keptApps, cap = keptAppsCap, free = () =>
       return [];
     }
   };
-  const held = (dir: string) => {
-    try {
-      const pid = Number(readFileSync(`${dir}.owner`, "utf8"));
-      process.kill(pid, 0);
-      return true;
-    } catch {
-      return false;
-    }
-  };
   for (const scope of list(base)) {
     // Each `<name>_<n>`, not its claim nor a claim's makings beside it.
     for (const name of list(join(base, scope)).filter((entry) => /_\d+$/.test(entry))) {
       const path = join(base, scope, name);
-      if (!held(path)) kept.push({ path, bytes: bytesOf(path), used: statSync(path).mtimeMs });
+      if (!claimHeld(`${path}.owner`)) kept.push({ path, bytes: bytesOf(path), used: statSync(path).mtimeMs });
     }
   }
   const remove = ({ path }: Kept) => {
