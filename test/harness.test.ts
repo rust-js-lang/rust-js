@@ -67,8 +67,12 @@ test("a compiler that never ends is stopped, and fails the case", () => {
 }, underLoad(120_000));
 
 // The real compiler's JS, with a line only the JS as compiled runs, not
-// the bundle Vite ships of it.
-const onlyUnbundled = () => edited("unbundled-only", `echo 'if (import.meta.url.endsWith("/case.js")) console.log("only unbundled");' >> "$1"`);
+// the bundle Vite ships of it: its first, which runs before `main`. One
+// appended ran after it, which a binary's `main` that panics never does,
+// as `$main` ends the process at once (#2537): the run-fail case's JS was
+// right, and its test failed.
+const onlyUnbundled = () =>
+  edited("unbundled-only", `{ echo 'if (import.meta.url.endsWith("/case.js")) console.log("only unbundled");'; cat "$1"; } > "$1.edited-js" && mv "$1.edited-js" "$1"`);
 
 test("JS that's wrong in one way it's run only fails the case", () => {
   const { compiler: wrong, edits } = onlyUnbundled();
@@ -178,10 +182,12 @@ test("a test that prints what changes, listed so, is run until it does", async (
 }, underLoad(120_000));
 
 /** The real compiler, with JS that prints the bytes FF 0A in its place,
- * which read as UTF-8 are "\u{FFFD}\n", as it prints to stderr. */
+ * which read as UTF-8 are "\u{FFFD}\n", as it prints to stderr: as it
+ * runs, as a binary's JS does, not in an `entry` none calls, a library's
+ * shape, which since a case's JS is a binary's printed nothing (#2537). */
 function notUtf8(): { compiler: string; edits: string } {
   const js = join(fixture("harness-not-utf8-js"), "case.js");
-  writeFileSync(js, `export function entry() {\n  process.stdout.write(new Uint8Array([0xff, 10]));\n  process.stderr.write("\\uFFFD\\n");\n}\n`);
+  writeFileSync(js, `process.stdout.write(new Uint8Array([0xff, 10]));\nprocess.stderr.write("\\uFFFD\\n");\n`);
   return edited("not-utf8", `cp "${js}" "$1"`);
 }
 
