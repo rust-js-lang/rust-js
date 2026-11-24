@@ -196,9 +196,11 @@ blessed by. A listed function its file no longer declares, a snapshot that
 differs, and one no entry lists fail the check, as `listedLabels` does.
 Each crate's whole file isn't held: itertools' adaptors.js is 43,835 lines
 and 1.3 MB, and it moves with most changes; the five functions held are 216
-lines. The machine's `$CARGO_HOME/registry/src/` is written
-`/cargo/registry/src/`, ADR 0262's difference 63's form, as a crate's own
-panic locations still name the machine's (#2435).
+lines. A snapshot is the JS as it reads, nothing rewritten: since #2435 a
+fetched crate's own panic locations are named under `/cargo/`, as every
+machine names them, and `--check` fails of any crate's JS that names the
+machine's `$CARGO_HOME`, which a snapshot made on one machine couldn't
+hold on another, nor commit.
 
 Since `--check` holds them, a push's `crate-corpus` step holds them of a
 change to what compiles the crates, with nothing compiled again, and so

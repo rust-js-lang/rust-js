@@ -17,11 +17,13 @@ const flags = programFlags("2024");
 type Ran = { status: number; out: string };
 
 // What one stream shows of a run, `2>&1`, its process id said as `<pid>`,
-// as the hook names the thread's process, and std's files as rust-js names them.
-function ran(cmd: string[], cwd: string): Ran {
+// as the hook names the thread's process; and of native's, std's files and
+// a registry's as rust-js names them (`shippedStd`), its JS's as it is: of
+// both, a crate's own panic named its machine's `$CARGO_HOME` alike (#2435).
+function ran(cmd: string[], cwd: string, native = false): Ran {
   const p = runSync(["sh", "-c", `${cmd.map((part) => `'${part}'`).join(" ")} 2>&1`], cwd, 60_000);
   const out = p.stdout.replace(/thread 'main' \(\d+\)/g, "thread 'main' (<pid>)");
-  return { status: p.code ?? -1, out: shippedStd(out) };
+  return { status: p.code ?? -1, out: native ? shippedStd(out) : out };
 }
 
 // `source` as a binary, native and rust-js's, in `dir`, the same file
@@ -35,7 +37,7 @@ function both(name: string, source: string, dir = fixture(name), crates = { nati
   const js = join(dir, "main.js");
   run([compiler, join(dir, "native.rs"), "-o", js, "--", ...named, ...crates.js, "--crate-type", "bin", "-Awarnings"]);
   installStd(dir);
-  return { native: ran([built.binary], dir), node: ran(["node", js], dir), bun: ran(["bun", js], dir) };
+  return { native: ran([built.binary], dir, true), node: ran(["node", js], dir), bun: ran(["bun", js], dir) };
 }
 
 function same(name: string, source: string, dir?: string, crates?: { native: string[]; js: string[] }) {
@@ -349,7 +351,7 @@ test("a `usize`'s panic std raises names wasm32's std's line, as native wasm32's
   const built = nativeBinary(source, dir, [...flags, "--target=wasm32-wasip1"]);
   if ("error" in built) throw new Error(built.error);
   const at = (out: string) => /panicked at (.*):\n/.exec(out)?.[1];
-  const native = at(ran([process.execPath, join(root, "test", "wasi-run.ts"), built.binary, join(dir, "native.json")], dir).out);
+  const native = at(ran([process.execPath, join(root, "test", "wasi-run.ts"), built.binary, join(dir, "native.json")], dir, true).out);
   const js = join(dir, "main.js");
   run([compiler, join(dir, "native.rs"), "-o", js, "--", ...flags, "--crate-type", "bin", "-Awarnings"]);
   installStd(dir);

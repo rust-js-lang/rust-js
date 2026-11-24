@@ -2701,4 +2701,7 @@ React and JSX are [their own pages](README.md#react).
     `~/.cargo/registry/src/..`. The line and column are the same, found in
     that version's source as Cargo's check of it through rust-js is made
     (ADR 0262, the user's decision, 2026-11-22, #2325;
-    [ADR 0083](../decisions/0083-serde-json-value.md)).
+    [ADR 0083](../decisions/0083-serde-json-value.md)). A panic a fetched
+    crate's own body raises, compiled by rust-js, is named so too, and a
+    git dependency's under `/cargo/git/checkouts/..`, so no app's JS
+    carries the builder's home (#2435).

@@ -19,11 +19,11 @@ export const mutations: Mutation[] = [
     tests: ["test/ci.test.ts", "-t", "the crate corpus's snapshotted functions are cut whole and held"],
   },
   {
-    name: "crate-snapshot-names-the-machines-registry",
-    breaks: "a crate's snapshot names this machine's `$CARGO_HOME`, the committer's home, which no other machine's JS matches (#2435)",
+    name: "crate-js-naming-the-home-passes",
+    breaks: "a crate's JS that names the builder's `$CARGO_HOME`, its own panic locations', passes the crate corpus's check, the home shipped in an app's JS unseen (#2435)",
     file: "scripts/crate-corpus.ts",
-    find: "  return text.replaceAll(`${cargoHome}/registry/src/`, \"/cargo/registry/src/\");\n",
-    replace: "  return text;\n",
+    find: "  return text.includes(`${home}/`);\n",
+    replace: "  return false;\n",
     tests: ["test/ci.test.ts", "-t", "the crate corpus's snapshotted functions are cut whole and held"],
   },
   {

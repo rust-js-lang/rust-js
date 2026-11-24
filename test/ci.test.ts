@@ -11,7 +11,7 @@ import { checkedSince, jsonLines, latestRuns, MUTATION_SHARDS, mutationJobsPasse
 import { readersOf } from "./part-settings";
 import { runSync } from "./child";
 import { downloaded } from "../scripts/artifacts";
-import { corpusRows, crashes, declarationOf, dependency, labelProblems, lockedVersion, lockOf, registryNamed, sampledHeader, sampledIn, sampledOneIn, snapshotProblems, written } from "../scripts/crate-corpus";
+import { corpusRows, crashes, declarationOf, dependency, labelProblems, lockedVersion, lockOf, namesCargoHome, sampledHeader, sampledIn, sampledOneIn, snapshotProblems, written } from "../scripts/crate-corpus";
 import { cargoHome } from "./bounded";
 import { judgedInTheWasmJob, mutations, refusedFlags } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability, variantFamilies } from "../scripts/checkFast";
@@ -504,8 +504,8 @@ test("the crate corpus's labels MIR made are listed, each listed one still there
 });
 
 // A real crate's functions no corpus case makes are held to a snapshot,
-// each cut from its file whole, its registry named as on every machine
-// (#1979): a listed one that differs fails the check, `BLESS=1` writes it,
+// each cut from its file whole, as it reads (#1979), and JS that names the
+// machine's `$CARGO_HOME` is found (#2435): a listed one that differs fails the check, `BLESS=1` writes it,
 // and one gone from its file, or a snapshot no entry lists, fails too.
 test("the crate corpus's snapshotted functions are cut whole and held", () => {
   const js = ["/** Put back. */", "export function putBack(a) {", "  return {", `    at: "${cargoHome}/registry/src/index/x-1.0.0/src/lib.rs:1:1",`, "  };", "}", "", "export function putBackDebug(a) {}", "", "export const PutBack = {", "  of(a) {", "    return a;", "  },", "};"].join("\n");
@@ -513,7 +513,8 @@ test("the crate corpus's snapshotted functions are cut whole and held", () => {
   expect(declarationOf(js, "putBackDebug")).toBe("export function putBackDebug(a) {}");
   expect(declarationOf(js, "PutBack")).toBe(js.split("\n").slice(9).join("\n"));
   expect(declarationOf(js, "put")).toBeUndefined();
-  expect(registryNamed(js)).toContain('"/cargo/registry/src/index/x-1.0.0/src/lib.rs:1:1"');
+  expect(namesCargoHome(js)).toBe(true);
+  expect(namesCargoHome('"/cargo/registry/src/index/x-1.0.0/src/lib.rs:1:1"')).toBe(false);
   const dir = mkdtempSync(join(tmpdir(), "crate-snapshots-"));
   try {
     const [built, kept] = [join(dir, "x"), join(dir, "snapshots")];
@@ -524,7 +525,7 @@ test("the crate corpus's snapshotted functions are cut whole and held", () => {
     expect(check()).toEqual([expect.stringContaining("x@1.0.0/lib.js: its JS isn't scripts/crate-corpus/snapshots/x@1.0.0/lib.js, which isn't written")]);
     expect(check(true)).toEqual([]);
     const snapshot = readFileSync(join(kept, "x@1.0.0/lib.js"), "utf8");
-    expect(snapshot).toContain("/cargo/registry/src/index/x-1.0.0");
+    expect(snapshot).toContain(`"${cargoHome}/registry/src/index/x-1.0.0/src/lib.rs:1:1"`);
     expect(snapshot).not.toContain("putBackDebug");
     expect(check()).toEqual([]);
     writeFileSync(join(built, "lib.js"), js.replace("return a;", "return a + 1;"));

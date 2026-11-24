@@ -83,22 +83,38 @@ pub fn find_sites(name: &str, dir: &Path) -> Result<IndexMap<&'static str, Strin
     sites_of(name, dir, &source)
 }
 
+/// Where `path`, a file of a dependency Cargo fetched, is named the same on
+/// every machine, whatever its `$CARGO_HOME` (ADR 0262's difference 63, the
+/// user's decision): a registry's crate's, `<home>/registry/src/<index>/..`,
+/// as `/cargo/registry/src/<index>/..`, and a git dependency's,
+/// `<home>/git/checkouts/..`, as `/cargo/git/checkouts/..`, so no JS
+/// rust-js writes carries the machine's home (#2435). The one rule, of a
+/// panic's location the crate's own body raises (`location_at`) and of each
+/// site found here; `None` of any other file, which is named as rustc
+/// names it.
+pub fn cargo_named(path: &Path) -> Option<String> {
+    let parts: Vec<String> = path
+        .components()
+        .map(|part| part.as_os_str().to_string_lossy().into_owned())
+        .collect();
+    let at = parts.windows(3).position(|three| {
+        let pair = [&three[0][..], &three[1][..]];
+        pair == ["registry", "src"] || pair == ["git", "checkouts"]
+    })?;
+    Some(format!("/cargo/{}", parts[at..].join("/")))
+}
+
 /// `find_sites`' of the crate's file's text, `source`.
 fn sites_of(name: &str, dir: &Path, source: &str) -> Result<IndexMap<&'static str, String>, String> {
     let Some(&CrateSites { file, sites, .. }) = CATALOG.iter().find(|each| each.name == name) else {
         return Ok(IndexMap::default());
     };
-    let parts: Vec<String> = dir
-        .components()
-        .map(|part| part.as_os_str().to_string_lossy().into_owned())
-        .collect();
-    let Some(index) = parts.iter().position(|part| part.starts_with("index.crates.io-")) else {
+    let Some(under) = cargo_named(&dir.join(file)).filter(|under| under.starts_with("/cargo/registry/")) else {
         return Err(format!(
             "{name} at {} isn't crates.io's, under a registry's index",
             dir.display()
         ));
     };
-    let under = format!("/cargo/registry/src/{}/{file}", parts[index..].join("/"));
     (sites.iter())
         .map(|&(site, message)| {
             let (line, column) = panic_of(source, message)
@@ -166,6 +182,23 @@ mod tests {
     }
 
     #[test]
+    fn a_fetched_dependency_s_file_is_named_under_cargo_whatever_the_home() {
+        let named = |path: &str| cargo_named(Path::new(path));
+        assert_eq!(
+            named("/Users/u/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/itertools-0.14.0/src/lib.rs")
+                .as_deref(),
+            Some("/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/itertools-0.14.0/src/lib.rs")
+        );
+        assert_eq!(
+            named("/opt/cargo-home/git/checkouts/ui-3a5c1e/9f8e7d6/src/lib.rs").as_deref(),
+            Some("/cargo/git/checkouts/ui-3a5c1e/9f8e7d6/src/lib.rs")
+        );
+        assert_eq!(named("src/main.rs"), None);
+        assert_eq!(named("/home/u/app/src/registry.rs"), None);
+        assert_eq!(named("/home/u/app/registry/src"), None);
+    }
+
+    #[test]
     fn a_crate_s_sites_are_named_under_cargo_s_registry() {
         let dir = Path::new("/home/u/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.17.1");
         let source = "\n    fn d() {\n                    panic!(\"duplicate keys found\");\n    }\n";
@@ -175,6 +208,8 @@ mod tests {
             Some("/cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hashbrown-0.17.1/src/raw.rs:3:21")
         );
         assert!(sites_of("hashbrown", Path::new("/elsewhere/hashbrown-0.17.1"), source).is_err());
+        let checkout = Path::new("/home/u/.cargo/git/checkouts/hashbrown-3a5c1e/9f8e7d6");
+        assert!(sites_of("hashbrown", checkout, source).is_err());
         assert!(sites_of("hashbrown", dir, "fn d() {}\n").is_err());
     }
 }

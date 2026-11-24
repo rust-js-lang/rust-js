@@ -193,6 +193,9 @@ export type Result = {
   // <function>` (scripts/labels.ts), which `--check` holds to
   // `listedLabels` (#2215).
   labels: string[];
+  // Each file of its JS that names this machine's `$CARGO_HOME`, which
+  // `--check` fails of (#2435).
+  homes: string[];
   // Where each crate of its graph it compiled has its JS, by its id,
   // `itertools@0.14.0`, which `--check` cuts `snapshotted`'s from.
   js: Record<string, string>;
@@ -236,10 +239,24 @@ export function labelProblems(labeled: ReadonlySet<string>, listed: ReadonlySet<
   return problems;
 }
 
-/** Each label MIR made in the JS under `dir`, a crate's, `id`'s, by file. */
-function labelsUnder(id: string, dir: string): string[] {
-  if (!existsSync(dir)) return [];
-  return [...new Bun.Glob("**/*.js").scanSync(dir)].sort().flatMap((file) => mirLabels(readFileSync(join(dir, file), "utf8"), `${id}/${file}`));
+/** Of the JS under `dir`, a crate's, `id`'s, each label MIR made, by file,
+ * and each file that names this machine's `$CARGO_HOME` (`namesCargoHome`). */
+function readUnder(id: string, dir: string): { labels: string[]; homes: string[] } {
+  if (!existsSync(dir)) return { labels: [], homes: [] };
+  const files = [...new Bun.Glob("**/*.js").scanSync(dir)].sort().map((file) => ({ file, text: readFileSync(join(dir, file), "utf8") }));
+  return {
+    labels: files.flatMap(({ file, text }) => mirLabels(text, `${id}/${file}`)),
+    homes: files.filter(({ text }) => namesCargoHome(text)).map(({ file }) => `${id}/${file}`),
+  };
+}
+
+/** Whether `text`, a crate's JS, names `home`, this machine's `$CARGO_HOME`,
+ * where Cargo keeps what it fetched: rust-js names each file of a fetched
+ * crate under `/cargo/`, whatever the machine (ADR 0262's difference 63),
+ * where a crate's own panic locations named the builder's home in an app's
+ * JS (#2435). `--check` fails of any. */
+export function namesCargoHome(text: string, home = cargoHome): boolean {
+  return text.includes(`${home}/`);
 }
 
 /** The functions of crates' JS a snapshot holds, each `<crate>@<version>/
@@ -276,21 +293,13 @@ export function declarationOf(text: string, name: string): string | undefined {
   return lines.slice(from, to + 1).join("\n");
 }
 
-/** `text` with this machine's registry, where Cargo keeps crates.io's
- * sources, written as ADR 0262's difference 63 writes it, `/cargo/registry/
- * src/`: a crate's own panic locations name the machine's (#2435), which a
- * snapshot made anywhere can't hold, nor commit. */
-export function registryNamed(text: string): string {
-  return text.replaceAll(`${cargoHome}/registry/src/`, "/cargo/registry/src/");
-}
-
 /** What a snapshot of `crate`'s `file`, the functions `names`, says: a
  * header naming them and how it's written, then each, cut from `text`. */
 function snapshotOf(crate: string, file: string, names: string[], text: string): { snapshot: string; missing: string[] } {
   const missing: string[] = [];
   const cut = names.map((name) => declarationOf(text, name) ?? (missing.push(name), ""));
   const header = `// ${crate}'s ${file}: ${names.join(", ")}, as scripts/crate-corpus.ts's \`snapshotted\` lists them.\n// \`BLESS=1 bun scripts/crate-corpus.ts --check ${crate.split("@")[0]}\` writes it.\n`;
-  return { snapshot: `${header}\n${registryNamed(cut.join("\n\n"))}\n`, missing };
+  return { snapshot: `${header}\n${cut.join("\n\n")}\n`, missing };
 }
 
 /** What's wrong of `snapshotted`'s snapshots, of each crate `measured` this
@@ -485,6 +494,7 @@ async function main() {
     const refused = new Map<string, string>();
     const labels = new Set<string>();
     const js: Record<string, string> = {};
+    const homes = new Set<string>();
     // The probe's JS: its manifest is the first line of the `.rust-js` beside
     // its metadata, and its crate root's JS beside that.
     let probeJs: string | undefined;
@@ -501,7 +511,9 @@ async function main() {
         if (marker && existsSync(marker)) {
           const dir = dirname(readFileSync(marker, "utf8").split("\n")[0]!);
           if (!id.startsWith("probe@")) js[id] = dir;
-          for (const label of labelsUnder(owner, dir)) labels.add(label);
+          const read = readUnder(owner, dir);
+          for (const label of read.labels) labels.add(label);
+          for (const file of read.homes) homes.add(file);
         }
         if (id.startsWith("probe@") && marker && existsSync(marker)) {
           probeJs = join(dirname(readFileSync(marker, "utf8").split("\n")[0]), "lib.js");
@@ -528,6 +540,7 @@ async function main() {
         }),
       own: compiled.some(own) ? "compiles" : refused.size && [...refused.keys()].some(own) ? "refused" : "blocked",
       labels: [...labels].sort(),
+      homes: [...homes].sort(),
       js,
     };
     if (result.own !== "compiles" && !result.refused.length && !result.crashed.length) {
@@ -596,6 +609,7 @@ async function main() {
     // graphs compile, num-traits, counted once.
     const measured = (crate: string) => results.some((r) => r.name === crate || r.compiled.some((id) => id.startsWith(`${crate}@`)));
     failed.push(...labelProblems(new Set(results.flatMap((r) => r.labels)), listedLabels, measured));
+    for (const file of new Set(results.flatMap((r) => r.homes))) failed.push(`${file}: its JS names this machine's \`$CARGO_HOME\`, ${cargoHome}, where a fetched crate's files are named under \`/cargo/\` (#2435)`);
     // Each snapshotted crate's functions, of the first graph that compiled
     // it, against their snapshots; `BLESS=1` writes them.
     const compiledAt = (crate: string) => results.map((r) => r.js[crate]).find((dir) => dir !== undefined);

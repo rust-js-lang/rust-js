@@ -92,6 +92,13 @@ react.dev's TopNav passes the same closure instead.
   machine keeps its registry, as `/cargo` is the toolchain's own build's.
   Tests write native's local prefix so, and nothing else. Listed in the
   guide's differences (`semantics.md`, 63) ([0083](0083-serde-json-value.md)).
+  Amended (#2435, the lead's decision for the user, 2026-11-24): a panic
+  the crate's own body raises, which rust-js compiles, is named the same
+  way, and a git dependency's file under `/cargo/git/checkouts/..`, by one
+  rule (`registry_sites::cargo_named`, which `location_at` and the sites
+  both ask): its own locations had named the builder's `$CARGO_HOME`, two
+  forms in one output and the home in an app's JS. The crate corpus's
+  check fails of any JS that names the machine's `$CARGO_HOME`.
 - **Each decision says which case it's in**, on a `Case:` line under its
   status, every case its parts are in, the first the main one; N where it
   decides no disagreement, tooling, bindings' shape or the output's

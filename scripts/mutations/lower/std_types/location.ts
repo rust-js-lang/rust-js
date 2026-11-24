@@ -52,4 +52,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
     snapshots: true,
   },
+  {
+    name: "own-panic-names-the-builders-home",
+    breaks: "a crate Cargo fetched names its own panics' files under the builder's `$CARGO_HOME`, its home shipped in an app's JS, where its sites are under `/cargo/` (#2435)",
+    file: "crates/rust-js-lower/src/std_types/location.rs",
+    find: "        let file = rust_js_program::library::registry_sites::cargo_named(std::path::Path::new(&file)).unwrap_or(file);\n",
+    replace: "",
+    tests: ["test/crate-snapshots.test.ts", "-t", "itertools"],
+  },
 ];

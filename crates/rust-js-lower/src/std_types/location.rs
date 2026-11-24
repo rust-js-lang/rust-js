@@ -211,7 +211,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Where `span` is, as rustc places a call, at the outermost macro's
     /// call, its file as rustc names it: a call's, or a definition's, which
     /// a shim of a function that takes its caller's location gives it, a
-    /// function pointer's or a dictionary's entry's, as rustc's does.
+    /// function pointer's or a dictionary's entry's, as rustc's does; a
+    /// file of a dependency Cargo fetched under `/cargo/` (`cargo_named`).
     pub fn location_at(&self, span: Span) -> Expr {
         let topmost = span.ctxt().outer_expn().expansion_cause().unwrap_or(span);
         let at = self.tcx.sess.source_map().lookup_char_pos(topmost.lo());
@@ -221,6 +222,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .display(RemapPathScopeComponents::MACRO)
             .to_string_lossy()
             .into_owned();
+        let file = rust_js_program::library::registry_sites::cargo_named(std::path::Path::new(&file)).unwrap_or(file);
         Expr::str(format!("{file}:{}:{}", at.line, at.col_display + 1))
     }
 }
