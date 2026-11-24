@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic iterator held as it is, stepped by its `Iterator` dictionary, is stepped by `$nextBack`, which it has no back for",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: "            ty::Param(param) => !given_as_it_is(self.tcx, id, *param),\n",
+    find: "            ty::Param(param) => !given_as_it_is(self.tcx, (id, None), *param),\n",
     replace: "            ty::Param(_) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
   },

@@ -287,7 +287,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Arguments::Formed => &instantiated[..],
             Arguments::FormedOf { given } => given,
         };
-        self.given_iterators(callee, values, given, span, out)
+        self.given_iterators((callee, args), values, given, span, out)
     }
 
     /// Whether `source`, an iterator only a caller knows, is a
@@ -1023,7 +1023,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty::Ref(_, pointee, _) = *instantiated.kind() else {
             return RefHeld::AsItIs;
         };
-        let given_as_it_is = |p: ty::ParamTy| crate::iterators::given_as_it_is(self.tcx, def_id, p);
+        let given_as_it_is = |p: ty::ParamTy| crate::iterators::given_as_it_is(self.tcx, (def_id, None), p);
         let unconverted = match self.implements_iterator(pointee) {
             true => RefHeld::Stepped,
             false => RefHeld::AsItIs,

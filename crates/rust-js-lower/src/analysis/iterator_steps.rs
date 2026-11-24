@@ -285,7 +285,7 @@ pub(crate) fn stepped_params<'tcx>(
             // dictionary does (#1147).
             if is_std_crate(tcx, callee) && foreign.item(callee).is_none() {
                 let iterables = (std_iterables_given(tcx, callee, args).into_iter()).filter(|&(param, theirs)| {
-                    given_as_it_is(tcx, caller, param) && iterable_bound(tcx, callee, theirs)
+                    given_as_it_is(tcx, (caller, None), param) && iterable_bound(tcx, callee, theirs)
                 });
                 stepped.extend(iterables.map(|(param, _)| (caller, param.index, iterator)));
             }
@@ -601,7 +601,7 @@ pub(crate) fn stepped_params<'tcx>(
         let iterates = bounds
             .iter()
             .any(|&tr| tr == iterator || is_iterator_extension(tcx, tr) || is_std_def(tcx, tr, StdItem::IntoIterator));
-        if !iterates || given_as_it_is(tcx, id, param) {
+        if !iterates || given_as_it_is(tcx, (id, None), param) {
             return Vec::new();
         }
         let extensions = bounds.into_iter().filter(|&tr| is_iterator_extension(tcx, tr));
@@ -655,7 +655,7 @@ pub(crate) fn stepped_params<'tcx>(
             && match tcx.generics_of(id).param_at(index as usize, tcx).kind {
                 ty::GenericParamDefKind::Type { .. } => {
                     let param = tcx.generics_of(id).param_at(index as usize, tcx);
-                    given_as_it_is(tcx, id, ty::ParamTy::new(param.index, param.name))
+                    given_as_it_is(tcx, (id, None), ty::ParamTy::new(param.index, param.name))
                 }
                 _ => false,
             }

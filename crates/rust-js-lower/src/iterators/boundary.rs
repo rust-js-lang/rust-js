@@ -28,7 +28,7 @@ pub(crate) struct BoundaryIterator<'tcx> {
 /// for it, as its bounds say; none of one generic code is given as it is
 /// (ADR 0411), the crate's own value, which no JS caller has.
 pub(crate) fn of_param<'tcx>(tcx: TyCtxt<'tcx>, function: DefId, param: ty::ParamTy) -> Option<BoundaryIterator<'tcx>> {
-    if given_as_it_is(tcx, function, param) {
+    if given_as_it_is(tcx, (function, None), param) {
         return None;
     }
     let env = ty::TypingEnv::post_analysis(tcx, function);

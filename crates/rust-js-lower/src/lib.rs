@@ -911,7 +911,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|i| js::Name::declared(format!("arg{i}")))
             .collect();
         let mut values: Vec<Expr> = names.iter().map(Expr::var).collect();
-        self.given_iterators(def_id, &mut values, &given, span, &mut Vec::new())?;
+        self.given_iterators((def_id, args), &mut values, &given, span, &mut Vec::new())?;
         Ok((values.iter().zip(&names)).any(|(value, name)| !matches!(&value.kind, js::ExprKind::Var(v) if v == name)))
     }
 

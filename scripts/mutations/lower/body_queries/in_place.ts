@@ -57,8 +57,8 @@ export const mutations: Mutation[] = [
     "name": "rev-given-js-held",
     "breaks": "a `rev()` given to the crate's generic function as a JS iterator is std's struct",
     "file": "crates/rust-js-lower/src/body_queries/in_place.rs",
-    "find": "            && (std || callee.is_local() && !crate::iterators::given_as_it_is(tcx, callee, param))\n",
-    "replace": "            && (std || false && callee.is_local() && !crate::iterators::given_as_it_is(tcx, callee, param))\n",
+    "find": "            && (std || callee.is_local() && !crate::iterators::given_as_it_is(tcx, (callee, Some(callee_args)), param))\n",
+    "replace": "            && (std || false && callee.is_local() && !crate::iterators::given_as_it_is(tcx, (callee, Some(callee_args)), param))\n",
     "snapshots": true,
     "tests": [
       "test/corpus.test.ts",

@@ -842,3 +842,25 @@ iterator (corpus `unzip_of_a_chain_held_in_a_variable`; #2398 for these two).
 Mutations: `helper-filled-consumer-holds-its-source`, `helper-filled-consumer-holds-its-variable`, `unzip-helper-of-mixed-sides`, `observably-default-row-unread`,
 `unzip-crate-extend-unnamed`, `tuple-word-its-text`; `partition-param-side-refused`
 is gone with the refusal it mutated.
+
+## Amendment: whether a call gives std's body its value as it is is asked of the call (2026-11-24, #2398, commit 1 of 3)
+
+`iterators::given_as_it_is` said whether a trait's own method compiled into
+`@rust-js/std` takes `Self` as its signature says by the catalog's
+membership alone, `is_compiled_std(id)`, while the lowering asks the call,
+`compiled_instance(id, args)`: so a chain given to a `partition` into `Vec`
+sides, which its helper fills, was analysed as given to std's compiled
+body. Now `given_as_it_is(tcx, (id, args), param)` takes the call's
+arguments where it's asked of a call (the crossing's `given_iterators`,
+`given_iterator`, `given_as_iterator`; `body_queries/in_place.rs`) and asks
+`compiled_instance` of them; asked of a definition, a body's own evidence
+or an impl's dictionary, `None`, the catalog's answer, as before. The one
+answer of a call's.
+
+No output moves: the snapshot #2398 named moved back with f4e8f472b's
+`filled_by_its_helper` gate, and a helper-filled `partition` or `unzip`
+never reaches the crossing that asks it. So no mutation of the per-call
+answer is caught by output; the rule is held by #2398's architecture test
+(`is_compiled_std` read only in recognition), its third commit.
+`naming-parameter-not-as-it-is` and `std-provided-self-given-by-trait`
+retargeted.

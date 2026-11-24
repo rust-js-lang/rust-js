@@ -242,14 +242,25 @@ pub(crate) fn given_by_its_trait(tcx: ty::TyCtxt<'_>, callee: DefId, index: u32)
 /// 0474), whose value its caller may read as its own type, and so stepped
 /// by its `Iterator` dictionary, `{ next }`, where it's stepped. One given
 /// only itself, `i: I`, is a JS iterator (ADR 0061). The one answer, of a
-/// callee's evidence and its caller's argument alike.
-pub(crate) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy) -> bool {
-    let as_it_is = given_as_it_is_of(tcx, id, param);
+/// callee's evidence and its caller's argument alike: of a call, `args`
+/// its generic arguments, where what std's catalog compiles is asked of
+/// the call (`compiled_instance`), `partition` into `Vec` sides its
+/// helper's, never std's body; of the definition, `None` (#2398).
+pub(crate) fn given_as_it_is<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    (id, args): (DefId, Option<ty::GenericArgsRef<'tcx>>),
+    param: ty::ParamTy,
+) -> bool {
+    let as_it_is = given_as_it_is_of(tcx, (id, args), param);
     rust_js_program::decisions::record("iterator-given", if as_it_is { "as-it-is" } else { "js-iterator" });
     as_it_is
 }
 
-fn given_as_it_is_of<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy) -> bool {
+fn given_as_it_is_of<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    (id, args): (DefId, Option<ty::GenericArgsRef<'tcx>>),
+    param: ty::ParamTy,
+) -> bool {
     // Bound by `Iterator` itself, or a trait that extends it, std's or the
     // crate's, whose `Iterator` `bounds` gives it (ADRs 0488, 0511), as
     // `bounds` reads its clauses, which make its evidence.
@@ -278,7 +289,7 @@ fn given_as_it_is_of<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy)
         // One whose own bound names an iterator given as it is, `impl
         // Is<I>`'s, `A: Into<I>`'s: what its methods give of that one is
         // its own value, which goes as it is, as that one's does (#966).
-        return names_given_as_it_is(tcx, id, param);
+        return names_given_as_it_is(tcx, (id, args), param);
     }
     // A bound whose methods read its value as its own type, `Clone`'s or
     // `Debug`'s, or the crate's trait that extends `Iterator` (ADR 0511):
@@ -309,7 +320,11 @@ fn given_as_it_is_of<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy)
     let signature = matches!(
         tcx.def_kind(id),
         rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
-    ) && (tcx.trait_of_assoc(id).is_none() || super::recognition::is_compiled_std(tcx, id))
+    ) && (tcx.trait_of_assoc(id).is_none()
+        || match args {
+            Some(args) => super::recognition::compiled_instance(tcx, id, args),
+            None => super::recognition::is_compiled_std(tcx, id),
+        })
         && tcx.trait_impl_of_assoc(id).is_none()
         && {
             let sig = tcx.fn_sig(id).instantiate_identity().skip_binder();
@@ -442,7 +457,11 @@ pub(crate) fn named_by_another_bound<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, par
 /// `IntoIterator` held as it is (`into_iter_held_as_it_is`), `I` of `P:
 /// Is<I>`, `A: Into<I>` or `F: FnOnce() -> I`: the one value passes between
 /// them, so one representation (#966, #969).
-fn names_given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy) -> bool {
+fn names_given_as_it_is<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    (id, args): (DefId, Option<ty::GenericArgsRef<'tcx>>),
+    param: ty::ParamTy,
+) -> bool {
     let itself = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Param(p) if p.index == param.index);
     let iterator = std_item(tcx, StdItem::Iterator);
     // Bound by `Iterator`, or a trait that extends it, as `given_as_it_is`
@@ -458,7 +477,7 @@ fn names_given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::Param
         while let Some(arg) = walk.next() {
             match arg.as_type().map(|t| *t.kind()) {
                 Some(ty::Alias(..)) => walk.skip_current_subtree(),
-                Some(ty::Param(p)) if p.index != param.index && stepped(p) && given_as_it_is(tcx, id, p) => {
+                Some(ty::Param(p)) if p.index != param.index && stepped(p) && given_as_it_is(tcx, (id, args), p) => {
                     return true;
                 }
                 // An `IntoIterator` held as it is, `impl Is<T>`'s `T`.

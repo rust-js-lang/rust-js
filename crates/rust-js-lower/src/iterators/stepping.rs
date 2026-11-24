@@ -407,11 +407,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// value isn't an iterator, where one goes: one of the crate's own, or a
     /// range, an object (ADR 0129), where `input` is an `Iterator` or an
     /// `IntoIterator`. A range is itself anywhere else.
-    fn given_as_iterator(&self, callee: DefId, input: ty::Ty<'tcx>, ty: ty::Ty<'tcx>) -> bool {
+    fn given_as_iterator(
+        &self,
+        (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+        input: ty::Ty<'tcx>,
+        ty: ty::Ty<'tcx>,
+    ) -> bool {
         // As it is, with its dictionary (ADR 0411), or as its trait's impl
         // takes it.
         if let ty::Param(param) = input.kind()
-            && (given_as_it_is(self.tcx, callee, *param) || given_by_its_trait(self.tcx, callee, param.index))
+            && (given_as_it_is(self.tcx, (callee, Some(args)), *param)
+                || given_by_its_trait(self.tcx, callee, param.index))
         {
             return false;
         }
@@ -509,7 +515,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// alike.
     pub(crate) fn given_iterators(
         &mut self,
-        callee: DefId,
+        (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
         values: &mut [Expr],
         given: &[ty::Ty<'tcx>],
         span: Span,
@@ -517,7 +523,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
         for ((value, &input), &given) in values.iter_mut().zip(inputs).zip(given) {
-            self.given_iterator(callee, value, (input, given), span, out)?;
+            self.given_iterator((callee, args), value, (input, given), span, out)?;
         }
         Ok(())
     }
@@ -532,7 +538,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// moved (ADR 0262's no difference, #2268).
     fn given_iterator(
         &mut self,
-        callee: DefId,
+        (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
         value: &mut Expr,
         (input, given): (ty::Ty<'tcx>, ty::Ty<'tcx>),
         span: Span,
@@ -549,7 +555,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .any(|item| matches!(item.kind, rust_js_program::js::ExprKind::Spread(_)))
             {
                 for (item, &pair) in items.iter_mut().zip(&pairs) {
-                    self.given_iterator(callee, item, pair, span, out)?;
+                    self.given_iterator((callee, args), item, pair, span, out)?;
                 }
                 return Ok(());
             }
@@ -558,7 +564,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let name = self.fresh(Role::Value);
                 let mut part = Expr::var(&name);
                 let mut made = Vec::new();
-                self.given_iterator(callee, &mut part, pair, span, &mut made)?;
+                self.given_iterator((callee, args), &mut part, pair, span, &mut made)?;
                 crossed.push((part != Expr::var(&name) || !made.is_empty()).then(|| {
                     made.push(StmtKind::Return(Some(part)).at(rust_js_program::js::Span::NONE));
                     Expr::arrow(vec![name.into()], made)
@@ -586,7 +592,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // already where it's lent, the crate's own iterator's
         // (`user_iterator_knowing`), std's compiled struct's, a range's.
         let lent = (crate::generic_facts::type_parameter(input).is_some_and(|param| {
-            bound_by_iterator(self.tcx, callee, param.index) && !given_as_it_is(self.tcx, callee, param)
+            bound_by_iterator(self.tcx, callee, param.index) && !given_as_it_is(self.tcx, (callee, Some(args)), param)
         }) && matches!(*given.kind(), ty::Ref(_, to, ty::Mutability::Mut)
                 if to.is_sized(self.tcx, self.typing_env) && crate::generic_facts::is_type_parameter(to))
             && self.implements_iterator(given))
@@ -622,7 +628,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // them (`wrapper_lends`, #2179). The crate's own reads its steps
         // through the box already (`own_method`).
         if crate::generic_facts::type_parameter(input).is_some_and(|param| {
-            bound_by_iterator(self.tcx, callee, param.index) && !given_as_it_is(self.tcx, callee, param)
+            bound_by_iterator(self.tcx, callee, param.index) && !given_as_it_is(self.tcx, (callee, Some(args)), param)
         }) && given.is_box()
             && let lends = self.wrapper_lends(given)
             && !lends.is_empty()
@@ -653,7 +659,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else if self.double_ended_param(callee, input) {
             let held = std::mem::replace(value, Expr::taken());
             *value = self.as_double_ended(held, given, span)?;
-        } else if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {
+        } else if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator((callee, args), input, given) {
             let held = std::mem::replace(value, Expr::taken());
             *value = match made_knowing {
                 Some((back, len)) => self.as_knowing(held, given, (back, len), span)?,
@@ -703,7 +709,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (`slicing`, #703, #704); one given as it is is told by its
         // dictionary (`iterator_dictionary`).
         if let ty::Param(param) = input.kind()
-            && !given_as_it_is(self.tcx, callee, *param)
+            && !given_as_it_is(self.tcx, (callee, Some(args)), *param)
         {
             let back = self.double_ended_param(callee, input);
             let held = std::mem::replace(value, Expr::taken());
@@ -835,7 +841,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // in one and not the other (#1239).
         (self.is_user_iterator(given) || matches!(given.kind(), ty::Param(_)))
             && self.tcx.erase_and_anonymize_regions(ty) == self.tcx.erase_and_anonymize_regions(given)
-            && self.given_as_iterator(callee, ty::Ty::new_param(self.tcx, param.index, param.name), given)
+            && self.given_as_iterator(
+                (callee, args),
+                ty::Ty::new_param(self.tcx, param.index, param.name),
+                given,
+            )
     }
 
     /// The items of `value`, an `IntoIterator` of type `ty` a function takes

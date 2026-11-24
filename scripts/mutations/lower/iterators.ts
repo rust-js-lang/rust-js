@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`impl Is<I>` of an iterator given as it is isn't given as it is, so a `Vec`'s iterator of items whose drop may panic given for it is wrapped in its slice's steps, `$slicing(it, drop)`, which `I`'s dictionary steps already (#966, #1109)",
     file: "crates/rust-js-lower/src/iterators.rs",
-    find: "        return names_given_as_it_is(tcx, id, param);\n",
+    find: "        return names_given_as_it_is(tcx, (id, args), param);\n",
     replace: "        return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_named_by_another_bound.rs$"],
     snapshots: true,
@@ -173,8 +173,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a compiled std provided method's `Self`, `peekable`'s, isn't given as it is, so `@rust-js/std`'s `iterator_peekable` takes no dictionary for it, and a caller's generic iterator steps nothing",
     file: "crates/rust-js-lower/src/iterators.rs",
-    find: "    ) && (tcx.trait_of_assoc(id).is_none() || super::recognition::is_compiled_std(tcx, id))\n",
-    replace: "    ) && tcx.trait_of_assoc(id).is_none()\n",
+    find: "    ) && (tcx.trait_of_assoc(id).is_none()\n        || match args {\n",
+    replace: "    ) && (tcx.trait_of_assoc(id).is_none()\n        || false && match args {\n",
     tests: ["test/std-package.test.ts"],
   },
   {

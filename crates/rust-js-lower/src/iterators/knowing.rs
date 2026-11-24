@@ -286,7 +286,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // length on (ADR 1177, #2227).
         let ty = crate::recognition::held_unboxed(ty);
         let js_iterator = match ty.kind() {
-            ty::Param(param) => !given_as_it_is(self.tcx, id, *param),
+            ty::Param(param) => !given_as_it_is(self.tcx, (id, None), *param),
             // Not one its type's own value, its trait's dictionary steps
             // (`projection_as_it_is`, #2330).
             ty::Alias(..) => !projection_as_it_is(self.tcx, id, ty),
@@ -330,7 +330,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let owner = self.generics_fn();
         crate::iterators::given_by_its_trait(self.tcx, owner, index)
-            || given_as_it_is(self.tcx, owner, ty::ParamTy::new(index, param.name))
+            || given_as_it_is(self.tcx, (owner, None), ty::ParamTy::new(index, param.name))
     }
 
     /// Whether an adapter of `source`, a type parameter given as it is, is

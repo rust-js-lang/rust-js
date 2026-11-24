@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     breaks:
       "every function of an `I` given as it is takes its dictionary, `doubled(inner, IIterator)`, stepped or not",
     file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
-    find: "                    given_as_it_is(tcx, id, ty::ParamTy::new(param.index, param.name))\n",
+    find: "                    given_as_it_is(tcx, (id, None), ty::ParamTy::new(param.index, param.name))\n",
     replace: "                    true\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_types.rs$"],
     snapshots: true,

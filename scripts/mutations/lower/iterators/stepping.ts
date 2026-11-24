@@ -80,9 +80,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an iterator of the crate's given where a generic iterator goes is its struct, which JS can't step",
     file: "crates/rust-js-lower/src/iterators/stepping.rs",
-    find: "        } else if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {\n",
+    find: "        } else if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator((callee, args), input, given) {\n",
     replace:
-      "        } else if false && matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {\n",
+      "        } else if false && matches!(input.kind(), ty::Param(_)) && self.given_as_iterator((callee, args), input, given) {\n",
     tests: ["test/corpus.test.ts", "-t", "generic_iterator_rest_lazy"],
   },
   {
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a crate's iterator given as a JS iterator is dropped as the JS iterator, not what it's of",
     file: "crates/rust-js-lower/src/iterators/stepping.rs",
-    find: "            && self.given_as_iterator(callee, ty::Ty::new_param(self.tcx, param.index, param.name), given)\n",
+    find: "            && self.given_as_iterator(\n                (callee, args),\n                ty::Ty::new_param(self.tcx, param.index, param.name),\n                given,\n            )\n",
     replace: "            && true\n",
     tests: ["test/corpus.test.ts", "-t", "^(std_projection_drops|trait_param_drops|adapter_drops).rs$"],
   },
@@ -196,9 +196,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait's `Self`, given to its method through a dictionary, is made a JS iterator",
     file: "crates/rust-js-lower/src/iterators/stepping.rs",
-    find: "(given_as_it_is(self.tcx, callee, *param) || given_by_its_trait(self.tcx, callee, param.index))",
-    replace: "given_as_it_is(self.tcx, callee, *param)",
-    tests: ["test/corpus.test.ts", "-t", "^(blanket_iterator_trait|fused_iterators|std_fuse).rs$"],
+    find: "            && (given_as_it_is(self.tcx, (callee, Some(args)), *param)\n                || given_by_its_trait(self.tcx, callee, param.index))\n",
+    replace: "            && given_as_it_is(self.tcx, (callee, Some(args)), *param)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(blanket_iterator_trait|fused_iterators|std_fuse|partition_into_own_extend_unwinds).rs$"],
   },
   {
     name: "btree-given-unordered",

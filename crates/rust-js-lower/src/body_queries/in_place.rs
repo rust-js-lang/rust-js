@@ -515,7 +515,7 @@ pub(super) fn in_place_adapters<'tcx>(
             return false;
         };
         crate::iterators::bound_as_iterator(tcx, callee, param)
-            && (std || callee.is_local() && !crate::iterators::given_as_it_is(tcx, callee, param))
+            && (std || callee.is_local() && !crate::iterators::given_as_it_is(tcx, (callee, Some(callee_args)), param))
     };
     let mut found = IndexSet::default();
     // What a closure gives that's stepped where it's given, `flat_map`'s:
