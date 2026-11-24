@@ -266,8 +266,14 @@ test("each mutation's test pattern names a test of its file", () => {
       const source = existsSync(join(root, file)) ? readFileSync(join(root, file), "utf8") : "";
       const literal = /^\s*(?:test|it)(?:\.\w+)?\(\s*"((?:[^"\\]|\\.)*)"/gm;
       const dynamic = /^\s*(?:test|it)(?:\.\w+)?\(\s*[^"\s]/m.test(source) || !file.endsWith(".test.ts");
-      // The corpus's tests are its cases, each by its file's name.
-      const cases = file === "test/corpus.test.ts" ? readdirSync(join(root, "test/corpus")).filter((name) => name.endsWith(".rs")) : [];
+      // The corpus's tests are its cases, each by its file's name; a
+      // snapshots file's, each row of the table it gives `snapshotTests`
+      // (test/snapshot-cases.ts), by its name.
+      const cases = file === "test/corpus.test.ts"
+        ? readdirSync(join(root, "test/corpus")).filter((name) => name.endsWith(".rs"))
+        : source.includes("snapshotTests(")
+          ? [...source.matchAll(/^\s*\["(\w+)", "/gm)].map((m) => `${m[1]}: the generated JS is its snapshot`)
+          : [];
       named.set(file, { names: [...cases, ...[...source.matchAll(literal)].map((m) => JSON.parse(`"${m[1]}"`))], dynamic });
     }
     return named.get(file)!;

@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
     find: "                ty::Adt(_, args) if ty.is_box() || self.is_std_type(ty, StdItem::Rc) => args.type_at(0).peel_refs(),\n",
     replace:
       "                ty::Adt(_, args) if ty.is_box() || self.is_std_type(ty, StdItem::Rc) || self.is_std_type(ty, StdItem::Result) => args.type_at(0).peel_refs(),\n",
-    tests: ["test/snapshots.test.ts", "-t", "inbox"],
+    tests: ["test/snapshots-serde.test.ts", "-t", "inbox"],
   },
   {
     name: "every-role-says-nothing",

@@ -197,7 +197,7 @@ test("the workflows, the packages' manifests, the toolchain, the selector and th
 
 test("a baseline a test reads by a path its source doesn't spell picks its owners", () => {
   const owners = (file: string) => baselines.filter(({ path }) => new Bun.Glob(path).match(file)).flatMap(({ owners }) => owners);
-  expect(owners("test/snapshots/std/iterators.js")).toEqual(["test/snapshots.test.ts", "test/readability.test.ts"]);
+  expect(owners("test/snapshots/std/iterators.js")).toEqual(["test/snapshots.test.ts", "test/snapshots-serde.test.ts", "test/readability.test.ts"]);
   for (const { owners } of baselines) for (const owner of owners) expect(suiteFiles()).toContain(owner);
 });
 

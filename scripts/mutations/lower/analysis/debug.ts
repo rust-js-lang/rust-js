@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/debug.rs",
     find: "                        &ty::FnDef(made_by, _) => is_debug_argument(tcx, made_by),",
     replace: "                        &ty::FnDef(_, _) => true,",
-    tests: ["test/snapshots.test.ts", "-t", "dynamic"],
+    tests: ["test/snapshots-serde.test.ts", "-t", "dynamic"],
     snapshots: true,
   },
   {

@@ -390,7 +390,7 @@ export function importsOf(files: string[]): string[] {
  * a corpus case's, leaves the job's answer as it was. */
 export const wasmPaths = [
   ...wasmInputs(),
-  ...importsOf(["test/snapshots.test.ts", "test/playground.test.ts"]),
+  ...importsOf(["test/snapshots.test.ts", "test/snapshots-serde.test.ts", "test/playground.test.ts"]),
   "wasm/**",
   "std/**",
   "vendor/**",

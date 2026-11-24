@@ -167,7 +167,7 @@ export const leftToCi: { run: string; why: string }[] = [
     why: "React's port at its pin, fetched and its crates built, about 100 s of a runner: here `bun scripts/react-in-rust.ts regen` by hand, as a port's change is one's own (#1188)",
   },
   {
-    run: "bun test test/snapshots.test.ts test/playground.test.ts",
+    run: "bun test test/snapshots.test.ts test/snapshots-serde.test.ts test/playground.test.ts",
     why: "the snapshots and the playground with the WASM compiler (`RUST_JS_REQUIRE_WASM`), which only CI builds; check:fast runs both with the native one",
   },
   {

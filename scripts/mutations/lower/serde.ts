@@ -1,7 +1,7 @@
 // Mutations of crates/rust-js-lower/src/serde.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
-const examples = ["test/snapshots.test.ts", "-t", "wire|inbox|api"];
+const examples = ["test/snapshots-serde.test.ts", "-t", "wire|inbox|api"];
 const renaming = ["test/serde-values.test.ts", "-t", "renaming rules of variants"];
 
 export const mutations: Mutation[] = [

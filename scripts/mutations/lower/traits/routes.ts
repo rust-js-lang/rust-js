@@ -147,6 +147,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/routes.rs",
     find: "        || is_std_def(tcx, trait_id, StdItem::TryFrom)\n",
     replace: "",
-    tests: ["test/snapshots.test.ts", "-t", "api"],
+    tests: ["test/snapshots-serde.test.ts", "-t", "api"],
   },
 ];

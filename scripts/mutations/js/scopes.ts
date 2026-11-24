@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/js/scopes.rs",
     find: "        for param in params {\n            self.pattern(param);\n        }\n        self.block_in_scope(body);",
     replace: "        self.block_in_scope(body);",
-    tests: ["test/snapshots.test.ts", "-t", "dynamic"],
+    tests: ["test/snapshots-serde.test.ts", "-t", "dynamic"],
     snapshots: true,
   },
   {

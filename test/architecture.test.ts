@@ -1169,7 +1169,7 @@ test("only refusal.rs words a refusal", () => {
 test("the readability baseline is blessed after the snapshots", () => {
   const bless: string = JSON.parse(read("package.json")).scripts.bless;
   const [snapshots, readability] = bless.split(" && ");
-  expect(snapshots).toMatch(/^BLESS=1 bun test (test\/\w+\.test\.ts ?)+$/);
+  expect(snapshots).toMatch(/^BLESS=1 bun test (test\/[\w-]+\.test\.ts ?)+$/);
   expect(snapshots).not.toContain("readability");
   expect(readability).toBe("BLESS=1 bun test test/readability.test.ts");
 });

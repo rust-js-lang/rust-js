@@ -178,7 +178,7 @@ export const baselines: { path: string; owners: string[] }[] = [
   // Each case's own JS, `${name}.js`, beside its source.
   { path: "test/corpus/*.js", owners: ["test/readability.test.ts"] },
   // Each snapshot's files, by the snapshot's name.
-  { path: "test/snapshots/**", owners: ["test/snapshots.test.ts", "test/readability.test.ts"] },
+  { path: "test/snapshots/**", owners: ["test/snapshots.test.ts", "test/snapshots-serde.test.ts", "test/readability.test.ts"] },
   // The playground's committed JS, its snapshot (test/snapshots.test.ts).
   { path: "wasm/web/rust/**/*.{js,jsx}", owners: ["test/snapshots.test.ts", "test/playground.test.ts", "test/readability.test.ts"] },
 ];

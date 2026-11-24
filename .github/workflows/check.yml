@@ -917,7 +917,7 @@ jobs:
         if: ${{ inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.wasm == 'true') }}
         env:
           RUST_JS_REQUIRE_WASM: '1'
-        run: bun test test/snapshots.test.ts test/playground.test.ts
+        run: bun test test/snapshots.test.ts test/snapshots-serde.test.ts test/playground.test.ts
       # The shards' own selection, its mutations that need the WASM alone
       # (`--wasm`); each other one the shards judge. The Nightly's, every
       # one, in its suite part's call, whose job this already is: its

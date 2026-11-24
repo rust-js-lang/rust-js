@@ -4,13 +4,10 @@
 // as the snapshot, so `git diff` shows what the change did to the JS.
 
 import { beforeAll, expect, test } from "bun:test";
-import { rmSync } from "node:fs";
-import { basename, join } from "node:path";
+import { join } from "node:path";
 import { underLoad } from "../scripts/timing";
-import { buildSerde } from "./serde-crate";
-import { buildCompiler, buildReact, compiler, expectSnapshot, root, run, target } from "./support";
-
-type Crate = "web" | "react" | "serde";
+import { type Crate, snapshotTests } from "./snapshot-cases";
+import { buildCompiler, buildReact, compiler, root, target } from "./support";
 
 // A name (its folder in test/snapshots/), the crate's root, the crates it
 // uses, and where its snapshot is, of one whose JS an app commits beside its
@@ -34,11 +31,6 @@ const cases: [string, string, Crate[], string?][] = [
   ["lexer", "examples/lexer.rs", []],
   ["values", "examples/values.rs", []],
   ["versions", "examples/versions.rs", []],
-  ["wire", "examples/wire.rs", ["serde"]],
-  ["inbox", "examples/inbox.rs", ["serde"]],
-  ["api", "examples/api.rs", ["serde"]],
-  ["dynamic", "examples/dynamic.rs", ["serde"]],
-  ["wide", "examples/wide.rs", ["serde"]],
   ["traits", "examples/traits.rs", []],
   ["consts", "examples/consts.rs", []],
   ["enums", "examples/enums.rs", []],
@@ -70,32 +62,14 @@ const cases: [string, string, Crate[], string?][] = [
 ];
 
 // Each crate a case uses, built before any case, whose own time is its
-// compile's alone: serde's build is minutes on a cold cache.
+// compile's alone. The examples of serde's are snapshots-serde.test.ts',
+// whose compiles start with the pool's other files (#2465).
 beforeAll(() => {
   buildCompiler();
   buildReact();
-  buildSerde();
 }, 600_000);
 
-for (const [name, input, crates, committed] of cases) {
-  test(`${name}: the generated JS is its snapshot`, () => {
-    const out = join(target, "snapshots", name);
-    rmSync(out, { recursive: true, force: true });
-    const flags: string[] = [];
-    if (crates.includes("web")) flags.push("--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target);
-    if (crates.includes("react")) flags.push("--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target);
-    if (crates.includes("serde")) flags.push(...buildSerde());
-    // From the repository's root, so each file's header names its source the
-    // same way on every machine.
-    run([compiler, input, "-o", join(out, `${basename(input, ".rs")}.js`), ...(flags.length > 0 ? ["--", ...flags] : [])]);
-    expectSnapshot(out, join(root, committed ?? join("test/snapshots", name)));
-    // A compile of a crate of serde's, `inbox`'s, takes past bun's 5 s on a
-    // loaded machine, the wasm job's too: its compile's time, not a hang.
-    // Beside `check:fast`'s rebuilds of a change's ten mutations, its 15 s
-    // alone took past 60 s, and at a load of 43 on 12 cores past 120 s:
-    // longer as the machine's load is (`underLoad`).
-  }, underLoad(120_000));
-}
+snapshotTests(cases);
 
 // The playground's own bindings declare JS types as a program does, and a
 // program is stable Rust (ADRs 0110, 0111): a JS type is a struct of a

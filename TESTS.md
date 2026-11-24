@@ -266,6 +266,13 @@ That regression remains failing; no waiver or known-failure entry is added.
 The first full gate also requires the new facts total (67) and the full new
 module path in the architecture. Exact results are retained by the port.
 
+Split on 2026-11-24 (#2465, A.3): `test/snapshots-serde.test.ts` holds the
+snapshots of serde's examples (`wire`, `inbox`, `api`, `dynamic`, `wide`: 5
+tests), moved from `test/snapshots.test.ts` (42), so `inbox`'s compile, the
+snapshots' longest (45.5 s of CI's 92 s), starts with the pool; both run their
+table through `test/snapshot-cases.ts`. On the M5 Pro, quiet, the compile
+cache off: 17.5 s before; 7.8 s and 11.2 s side by side after.
+
 Split on 2026-11-24 (#2465, B.4): `test/compat-surfaces.test.ts` holds what
 rust-js's own wasm-bindgen, js-sys and web-sys serve of each crate that uses
 them (inline JS imports, getrandom's backends, chrono's `wasmbind`,
