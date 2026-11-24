@@ -227,7 +227,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
     find: "            return self.knows_its_back(source) || self.stepped_from_its_back(ty);\n",
     replace: "            return self.knows_its_back(source);\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_stepped_from_its_back_past_an_arguments_statement\\.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^std_rev\\.rs$"],
     snapshots: true,
   },
   {

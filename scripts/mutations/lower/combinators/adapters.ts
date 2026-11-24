@@ -327,7 +327,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/combinators/adapters.rs",
     find: "    let value = value.given_item();\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^trailing_none_items.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^insert_of_none_at_an_index_known_in_bounds.rs$"],
   },
   {
     name: "never-nan-text-unmarked",

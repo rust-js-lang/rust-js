@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
   {
     name: "strict-switch-of-a-subject-read-again",
     breaks:
-      "a chain whose subject a call reads, `next() === a`, is a `switch` that calls it once, not once a test (ADR 0958)",
+      "a chain whose subject a getter answers, a binding's global `rustJsTag === a`, is a `switch` that reads it once, not once a test as Rust calls it; a call's, `next() === a`, `same_path` keeps a chain already (ADR 0958)",
     file,
     find: "    (strict && s.reads_same() && !value.has_effects())",
     replace: "    (strict && !value.has_effects())",

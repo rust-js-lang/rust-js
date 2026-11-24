@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/generic_facts.rs",
     find: "    [ty::ClosureKind::Fn, ty::ClosureKind::FnMut, ty::ClosureKind::FnOnce]\n",
     replace: "    [ty::ClosureKind::FnOnce, ty::ClosureKind::FnMut, ty::ClosureKind::Fn]\n",
-    tests: ["test/corpus.test.ts", "-t", "^std_function_value_panic_fn.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^std_function_value_panic.rs$"],
   },
   {
     name: "placed-form-unasked",

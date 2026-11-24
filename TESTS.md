@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#1979): corpus gains `insert_of_none_at_an_index_known_in_bounds`, a `None` inserted where the body's ranges show its index in bounds, `v.splice(at, 0, undefined)`; test/lowering-strict-switches.test.ts' chain-stays test gains a chain of a getter-answered global.
+
 Changed on 2026-11-25 (ADR 1200 amended): test/mutations.test.ts' check of each mutation's test pattern is each mutation's tests, a file there and a test it names, refused as a list of what to run (`refuseUnmatched`), of a file named by templates by Bun's listing where the change touches it (test/test-names.ts, new); a test of the read and the listing; three mutations (scripts/mutations/test-names.ts).
 
 Changed on 2026-11-25 (#2485, ADR 1154 amended): test/source-mutations.test.ts gains a test, a source workspace's files are the working tree's, its untracked files too, not its ignored, its deleted nor a nested checkout; three mutations.

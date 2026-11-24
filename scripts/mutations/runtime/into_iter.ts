@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/into_iter.js",
     find: "  if (Array.isArray(items)) return $iter(items);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^generic_into_iter_values.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_bound_stepped_from_its_back.rs$"],
   },
   {
     name: "into-iter-of-steps-protocol",

@@ -237,13 +237,35 @@ fn log(n: u8) {
 
 pub fn called(a: &'static Unknown, b: &'static Unknown, c: &'static Unknown) -> u8 {
     if js::strict_equals(next(), a) {
+        log(1);
         1
     } else if js::strict_equals(next(), b) {
+        log(2);
         2
     } else if js::strict_equals(next(), c) {
+        log(3);
         3
     } else {
+        log(4);
         4
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "get rustJsTag")]
+fn tag() -> &'static Unknown {
+    unreachable!()
+}
+
+pub fn tagged(a: &'static Unknown, b: &'static Unknown) -> u8 {
+    if js::strict_equals(tag(), a) {
+        log(5);
+        5
+    } else if js::strict_equals(tag(), b) {
+        log(6);
+        6
+    } else {
+        log(7);
+        7
     }
 }
 
@@ -298,7 +320,14 @@ pub fn guarded(s: &'static Unknown, a: &'static Unknown, b: &'static Unknown) ->
   global.rustJsLog = (n: number) => logged.push(n);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.called(9, 9, 3), lib.valued(5, 1, 6), lib.valued(5, 1, 5)]).toEqual([3, 4, 2]);
-  expect([lib.looped([1, 3, 1, 2, 1], 1, 2), lib.guarded(1, 1, 2), lib.guarded(2, 1, 2), lib.guarded(5, 1, 2), logged]).toEqual([12, 1, 2, 3, [3]]);
+  // \`called\`'s and \`tagged\`'s branches are statements, an \`if\` chain a
+  // \`switch\` could be made of: a call, and a global a getter answers,
+  // read once a test, as Rust reads it, never once (#1979's survivor
+  // \`strict-switch-of-a-subject-read-again\`).
+  const tags = [1, 2];
+  Object.defineProperty(global, "rustJsTag", { get: () => tags.shift(), configurable: true });
+  expect(lib.tagged(9, 2)).toBe(6);
+  expect([lib.looped([1, 3, 1, 2, 1], 1, 2), lib.guarded(1, 1, 2), lib.guarded(2, 1, 2), lib.guarded(5, 1, 2), logged]).toEqual([12, 1, 2, 3, [3, 6, 3]]);
 });
 
 // React's processLink writes `switch (rel) { case 'preload': .. case
