@@ -1219,7 +1219,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The crate's own `from_iter` of `output`, made of `item`s, called with
     /// `items`, of type `given`, an array of values where it's `None`
-    /// (`values_from_iter`). `None` of another's.
+    /// (`values_from_iter`), or a library's the crate compiles; `None` of
+    /// another's. A library's impl's whose JS reaches it only through the
+    /// dictionary it exports, `hintedFromIteratorU32`, is asked of the
+    /// libraries as `dictionary_entry` asks an impl whose method has type
+    /// parameters of its own, `from_iter<I>`'s, and called by name once it's
+    /// compiled here (ADR 0914, amended; #2515).
     fn made_by_own_from_iter(
         &mut self,
         items: Expr,
@@ -1232,12 +1237,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         else {
             return Ok(None);
         };
-        let Some(instance) = self
-            .resolve_instance(from_iter, args)?
-            .filter(|i| self.is_rust_fn(i.def_id()))
-        else {
+        let Some(instance) = self.resolve_instance(from_iter, args)? else {
             return Ok(None);
         };
+        if !self.is_rust_fn(instance.def_id()) {
+            return Ok(match self.dictionary_entry(from_iter, args, 1, span)? {
+                Some((_, asked)) if matches!(asked.kind, rust_js_program::js::ExprKind::Hole(_)) => Some(asked),
+                _ => None,
+            });
+        }
         let mut values = vec![items];
         let mut made = Vec::new();
         self.crossing_into(

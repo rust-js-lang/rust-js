@@ -2237,3 +2237,30 @@ crate's own body, walked as one.
   `asking-impl-of-a-callers-parameter-unasked`
   (`lower/analysis/hint_asked.ts`), `std-reach-library-taken-for-std` and
   `std-reach-instance-taken-for-export` (`lower/instances/std_reach.ts`).
+
+## Amendment: a collect into a library's type whose impl only its dictionary reaches (2026-11-24, #2515)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a refusal lifted,
+the program run as Rust runs it.
+
+A consumer's `Hinted::from_iter(it)` or `collect()` into a library's
+`Hinted` was refused, "`collect` into a `dep::Hinted`, from its MIR",
+once the library's own generic code collected into it, so its JS exported
+the impl's dictionary, `hintedFromIteratorU32`, and no `from_iter` by name;
+without that use, the impl was the consumer's to compile, and ran. The
+collect called the impl's `from_iter` only where it was the crate's own or
+one the crate compiles (`is_rust_fn`), never asking the rule above.
+
+**It asks it** (`made_by_own_from_iter`): a library impl's method its JS
+reaches only through the dictionary it exports is called through it only
+as its entry takes it, and `from_iter<I>` has a type parameter of its own,
+so `dictionary_entry` asks the libraries for the impl, compiled here and
+called by name once it is: `hintedFromIteratorU32_fromIter($taking($iter(
+[1, 2, 3]), 2))`. One rule of which impls a consumer compiles, wherever its
+method is called. A fallible `collect()` into a `Result` of it asks the same
+of the impl compiled here.
+
+Held by the pair `consumer_collects_into_a_type_its_library_collects_into`
+(by name, by `collect()`, by a fallible `collect()`, beside the library's
+own use) against native Rust, and mutation `library-from-iter-unasked`
+(`lower/iterators/mir_steps/collect.ts`).

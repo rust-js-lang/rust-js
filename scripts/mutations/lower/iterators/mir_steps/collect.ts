@@ -815,4 +815,13 @@ export const mutations: Mutation[] = [  {
     replace: "            let (unbounded, layout) = (Expr::std_site(unbounded, 0), Expr::std_site(unbounded, 0));\n",
     tests: ["test/corpus.test.ts", "-t", "^(rc_slice_collect_past_a_layout_panics_at_its_unwrap|arc_slice_collect_by_generic_code_past_a_layout).rs$"],
   },
+  {
+    name: "library-from-iter-unasked",
+    breaks:
+      "a consumer's `collect()` into, or `from_iter` by name of, a library's type whose `FromIterator` impl its library exports as a dictionary, as its own generic code collects into it, isn't asked of the libraries, so it's refused, \"`collect` into a `dep::Hinted`, from its MIR\", where native prints `by name 2 Some(2)` (#2515)",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
+    find: "                Some((_, asked)) if matches!(asked.kind, rust_js_program::js::ExprKind::Hole(_)) => Some(asked),\n",
+    replace: "                Some((_, asked)) if false && matches!(asked.kind, rust_js_program::js::ExprKind::Hole(_)) => Some(asked),\n",
+    tests: ["test/crates-pairs-2.test.ts", "-t", "^two crates: consumer_collects_into_a_type_its_library_collects_into$"],
+  },
 ];
