@@ -49,7 +49,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/hint_knowing.rs",
     find: "        let Some(form) = self.hint_knowing_form_of(ty) else {\n            return given;\n        };\n",
     replace: "        let Some(form) = self.hint_knowing_form_of(ty) else {\n            return value;\n        };\n",
-    tests: ["test/metamorphic.test.ts", "-t", "^(skip_of_a_filter_counts_by_its_count|identity_map_hides_a_filters_count).rs, rewritten$"],
-    env: { METAMORPHIC: "all", METAMORPHIC_REWRITES: "library" },
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_chained_in_what_generic_code_asks_the_hint_of\\.rs$"],
   },
 ];
