@@ -66,10 +66,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "writes-handle-on-a-part-unchanged",
-    breaks: "a handle or a `dyn`'s pair on a part of an object, `guard.value`, isn't a change of the object at its root, so tidy's `read_handles` reads a `RefCell` field's guard at once, `const guard = slots.slot`, and the pair's setter assigns that `const`: \"Assignment to constant variable\" (#2445)",
+    breaks:
+      "a handle or a `dyn`'s pair on a part of an object, `guard.value`, isn't a change of the object at its root, so tidy's `read_handles` may read the handle at once, `const guard = slots.slot`, and the pair's setter assign that `const`: \"Assignment to constant variable\" (#2445). No program reaches it since #2433 records every held handle, whose `value` lent is the handle itself, and #2467 never reads a dead one: the whole corpus, as binaries, and binaries.test pass with it, so `Writes`' own test holds it",
     file: "crates/rust-js-program/src/js/writes.rs",
     find: "                    _ => self.changed_at(place),\n",
     replace: "                    _ => {}\n",
-    tests: ["test/binaries.test.ts", "-t", "quiet `RefCell` field's guard lent as a `&mut dyn`"],
+    unitTests: "js::writes::tests::each_target_of_a_destructuring_assignment_is_written",
   },
 ];
