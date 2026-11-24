@@ -1123,20 +1123,23 @@ export function installNeeded(read: (file: string) => string, stamp: string | un
  * manifests (`installNeeded`), as a rebase over a new workspace or package
  * leaves it, before anything runs, else nothing: its stamp,
  * `node_modules/.rust-js-installed`, the manifests' hash it installed. A
- * lockfile the manifests don't match fails it, saying what to run. */
-export function installed(who = "check:fast") {
+ * lockfile the manifests don't match fails it, saying what to run. Of a
+ * run whose stdout is an answer, `bun scripts/mutations.ts --browser`'s
+ * one line, all it says goes to stderr (`quiet`). */
+export function installed(who = "check:fast", quiet = false) {
   const stamp = join(root, "node_modules", ".rust-js-installed");
   const read = (file: string) => readFileSync(join(root, file), "utf8");
   const why = installNeeded(read, existsSync(stamp) ? readFileSync(stamp, "utf8") : undefined, (name) => existsSync(join(root, "node_modules", name)));
   if (!why) return;
   const now = manifestsHash(read);
   const installing = Date.now();
-  const install = Bun.spawnSync(["bun", "install", "--frozen-lockfile"], { cwd: root, stdout: "inherit", stderr: "inherit" });
+  const install = Bun.spawnSync(["bun", "install", "--frozen-lockfile"], { cwd: root, stdout: quiet ? "pipe" : "inherit", stderr: "inherit" });
+  if (quiet && install.stdout) process.stderr.write(install.stdout);
   if (install.exitCode !== 0) {
     console.error(`${who}: \`bun install --frozen-lockfile\` failed: bun.lock doesn't match the package.json files; run \`bun install\` and commit bun.lock`);
     process.exit(1);
   }
   writeFileSync(stamp, now);
-  console.log(timed("bun install", (Date.now() - installing) / 1000, { detail: why }));
+  (quiet ? console.error : console.log)(timed("bun install", (Date.now() - installing) / 1000, { detail: why }));
 }
 

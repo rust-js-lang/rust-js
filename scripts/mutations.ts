@@ -2197,7 +2197,9 @@ export class Answers extends Map<Mutation, string> {
 async function main() {
   // The packages, installed as check:fast installs them, where the install
   // isn't of the manifests: a fresh worktree's mutants found none (#2485).
-  installed("mutations");
+  // Its stdout is an answer in `--browser` and `--list`: the install says
+  // what it did on stderr.
+  installed("mutations", true);
   const args = process.argv.slice(2);
   // Where the run's time goes, phase by phase, written beside its
   // mutations' times, `phases.json`, which CI uploads with them: of a
