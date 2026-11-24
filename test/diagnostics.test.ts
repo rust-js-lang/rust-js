@@ -838,22 +838,6 @@ test("a write in place of a type whose copies are left out is refused, naming #1
   ]);
 });
 
-// `clamp` of `&mut`s gives one of them back, std's `Ord for &mut A`'s, as
-// `max` and `min` do, which compare what they point at (#2188); its helper,
-// given their `PartialOrd`, would read them as generic code's boxes, so it's
-// refused where it's called, never `$clamp` of the handles.
-test("clamp of &muts to numbers is refused where it's called", () => {
-  const dir = fixture("clamp-of-mut-refs");
-  writeFileSync(join(dir, "lib.rs"), `pub fn clamped(mut x: i32, mut low: i32, mut high: i32) -> i32 {
-    *(&mut x).clamp(&mut low, &mut high) -= 1;
-    x + low + high
-}
-`);
-  expect(() => run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")])).toThrow(
-    "rust-js does not support `clamp` of `&mut` references yet: it gives one of them back, which its helper can't",
-  );
-});
-
 // A fold of generic code's `Box<I>` by a closure that holds a destructor:
 // std's default `fold` drops its `f` before the box, which the box's
 // consumer closing it first would turn around, so the box of a type

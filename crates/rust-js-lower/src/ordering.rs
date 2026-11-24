@@ -874,6 +874,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         own || by_hand || self.order_seen(ty) || !self.order_total(ty)
     }
 
+    /// The `PartialOrd` `$clampBy` asks of `&mut`s to cells, `ty`'s: `{ le,
+    /// lt, gt }`, each comparing what the two point at by `operator_value`,
+    /// as `max` and `min` of them do (#2188, #2191).
+    fn cell_order(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let mut props = Vec::new();
+        for (name, op) in [("le", Op::Le), ("lt", Op::Lt), ("gt", Op::Gt)] {
+            let made_b = self.unspelled("b");
+            let made_a = self.unspelled("a");
+            let mut body = Vec::new();
+            let order = self.operator_value(op, Expr::var(&made_a), Expr::var(&made_b), ty, span, &mut body)?;
+            body.push(StmtKind::Return(Some(order)).at(js::Span::NONE));
+            props.push(js::Prop::Field(
+                name.into(),
+                Expr::arrow(vec![made_a.into(), made_b.into()], body),
+            ));
+        }
+        Ok(Expr::object(props))
+    }
+
     /// `(a, b) => a.max(b)` of `ty`s, or `min`: its `Ord`'s, an impl's own
     /// where it writes one, else std's `other < self` (`ordering_call`),
     /// which `Iterator::max` reduces by since 1.100 (ADR 0109, amended).
@@ -957,11 +976,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // parameters (#912).
         if matches!(call, OrderingCall::Clamp) {
             // std's `min <= max`, `self < min` and `self > max`, its
-            // `PartialOrd` dictionary's, an impl's own included (#937).
-            let compare = self.operators(ty, span)?;
+            // `PartialOrd` dictionary's, an impl's own included (#937). Of
+            // `&mut`s to cells, std's `Ord for &mut A`'s default `clamp`:
+            // what each points at compared, as `max` and `min` compare them
+            // (#2188), and the chosen `&mut` given back, `$clampBy`'s pick
+            // (#2191); its panic is the default's, never a `char`'s.
+            let cells = self.is_cell(ty);
+            let compare = match cells {
+                true => self.cell_order(ty, span)?,
+                false => self.operators(ty, span)?,
+            };
             let mut args = values;
             args.push(compare);
-            let show = ty.peel_refs().is_char().then(|| {
+            let show = (!cells && ty.peel_refs().is_char()).then(|| {
                 let c = js::Name::declared("c".to_string());
                 let shown = Expr::call_helper("$debugStr", vec![Expr::var(c.clone()), Expr::str("'")]);
                 Expr::arrow(vec![c.into()], vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)])
@@ -973,7 +1000,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             args.extend(drop);
             // A `char`'s tracks its caller; std's default, `Ord::clamp`'s,
             // doesn't, so its panic is std's own line (#2324).
-            if ty.peel_refs().is_char() {
+            if !cells && ty.peel_refs().is_char() {
                 return Ok(Some(Expr::call_helper("$clampBy", args)));
             }
             return Ok(Some(Expr::raised_at(Expr::std_site("ordClamp", 0), || {

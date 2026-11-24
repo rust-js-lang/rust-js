@@ -14,16 +14,8 @@ export const mutations: Mutation[] = [
     name: "max-of-mut-refs-their-pointees",
     breaks: "`ra.max(rb)` of two `&mut i32` is `Math.max` of their handles, which prints `undefined` where native prints 2, and `*rc.min(rd) += 10` throws (#2188)",
     file: "crates/rust-js-mir/src/dispatch/cells_compared.rs",
-    find: "            if let Some((call @ (OrderingCall::Max | OrderingCall::Min | OrderingCall::Clamp), _)) =\n",
-    replace: "            if let Some((call @ (OrderingCall::Clamp), _)) =\n",
+    find: "            if let Some((OrderingCall::Max | OrderingCall::Min | OrderingCall::Clamp, _)) =\n",
+    replace: "            if let Some((OrderingCall::Clamp, _)) =\n",
     tests: ["test/corpus.test.ts", "-t", "^ord_of_mut_refs.rs$"],
-  },
-  {
-    name: "clamp-of-mut-refs-given-its-helper",
-    breaks: "`clamp` of `&mut`s is given to `$clampBy` with their `PartialOrd`, which would read them as generic code's boxes, refused only as generic code where none is written (#2188)",
-    file: "crates/rust-js-mir/src/dispatch/cells_compared.rs",
-    find: "                if matches!(call, OrderingCall::Clamp) {\n",
-    replace: "                if matches!(call, OrderingCall::Lt) {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "clamp of &muts to numbers is refused"],
   },
 ];

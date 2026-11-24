@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     name: "clamp-by-cmp",
     breaks: "`clamp` asks `cmp`, where std's asks `<=`, `<` and `>`, `partial_cmp`'s (#937)",
     file: "crates/rust-js-lower/src/ordering.rs",
-    find: "            // `PartialOrd` dictionary's, an impl's own included (#937).\n            let compare = self.operators(ty, span)?;\n",
-    replace: "            // `PartialOrd` dictionary's, an impl's own included (#937).\n            let compare = self.cmp_fn(ty, false, span)?;\n",
+    find: "                false => self.operators(ty, span)?,\n",
+    replace: "                false => self.cmp_fn(ty, false, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
   },
   {
@@ -375,7 +375,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `char`'s `clamp` of bounds the wrong way round panics as `Ord`'s default does, not showing them",
     file: "crates/rust-js-lower/src/ordering.rs",
-    find: "            let show = ty.peel_refs().is_char().then(|| {\n",
+    find: "            let show = (!cells && ty.peel_refs().is_char()).then(|| {\n",
     replace: "            let show = (false && ty.peel_refs().is_char()).then(|| {\n",
     tests: [
       "test/corpus.test.ts",
@@ -696,8 +696,32 @@ export const mutations: Mutation[] = [
     name: "default-clamp-raised-by-its-caller",
     breaks: "a `String`'s `clamp`, std's default, which tracks no caller, names its caller's line, not std's (#2324)",
     file: "crates/rust-js-lower/src/ordering.rs",
-    find: "            if ty.peel_refs().is_char() {\n                return Ok(Some(Expr::call_helper(\"$clampBy\", args)));",
+    find: "            if !cells && ty.peel_refs().is_char() {\n                return Ok(Some(Expr::call_helper(\"$clampBy\", args)));",
     replace: "            if true {\n                return Ok(Some(Expr::call_helper(\"$clampBy\", args)));",
     tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
+  },
+  {
+    name: "clamp-of-cells-compares-handles",
+    breaks: "`clamp` of `&mut`s to cells orders them by the `PartialOrd` generic code's boxes have, not what each points at, so it gives back the wrong `&mut` (#2191)",
+    file: "crates/rust-js-lower/src/ordering.rs",
+    find: "                true => self.cell_order(ty, span)?,\n",
+    replace: "                true => self.operators(ty, span)?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^clamp_of_mut_references_gives_back_the_chosen.rs$"],
+  },
+  {
+    name: "cell-order-lt-is-gt",
+    breaks: "the order `clamp` of `&mut`s to cells asks answers `self < min` as `self > min`, so a value inside the bounds is given back as `min` (#2191)",
+    file: "crates/rust-js-lower/src/ordering.rs",
+    find: '        for (name, op) in [("le", Op::Le), ("lt", Op::Lt), ("gt", Op::Gt)] {\n',
+    replace: '        for (name, op) in [("le", Op::Le), ("lt", Op::Gt), ("gt", Op::Gt)] {\n',
+    tests: ["test/corpus.test.ts", "-t", "^clamp_of_mut_references_gives_back_the_chosen.rs$"],
+  },
+  {
+    name: "clamp-of-mut-char-shows-a-char",
+    breaks: "`clamp` of `&mut char`s of bounds the wrong way round panics with a `char`'s own message, where std's `Ord for &mut A` default says `assertion failed: min <= max` (#2191)",
+    file: "crates/rust-js-lower/src/ordering.rs",
+    find: "            let show = (!cells && ty.peel_refs().is_char()).then(|| {\n",
+    replace: "            let show = (ty.peel_refs().is_char()).then(|| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^clamp_of_mut_references_gives_back_the_chosen.rs$"],
   },
 ];

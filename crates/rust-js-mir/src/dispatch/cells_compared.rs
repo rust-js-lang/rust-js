@@ -4,7 +4,6 @@
 
 use super::*;
 use rust_js_lower::recognition::OrderingCall;
-use rust_js_lower::refusal;
 
 impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// A comparison of cells, its value; `None` where it's no comparison
@@ -27,19 +26,13 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             )
             && generic_args.types().any(|t| self.is_cell(t))
         {
-            // `ra.max(rb)` and `min` take the `&mut`s themselves and give one
-            // back, std's `Ord for &mut A`'s: what they point at compared, the
-            // handle chosen (#2188). `clamp`'s, whose `PartialOrd` its helper
-            // is given would read them as generic code's boxes, is refused.
+            // `ra.max(rb)`, `min` and `clamp` take the `&mut`s themselves and
+            // give one back, std's `Ord for &mut A`'s: what they point at
+            // compared, the handle chosen (#2188, #2191).
             let tr = ty::TraitRef::new_from_args(tcx, trait_id, generic_args);
-            if let Some((call @ (OrderingCall::Max | OrderingCall::Min | OrderingCall::Clamp), _)) =
+            if let Some((OrderingCall::Max | OrderingCall::Min | OrderingCall::Clamp, _)) =
                 self.recognition().ordering_call(def_id, tr)
             {
-                if matches!(call, OrderingCall::Clamp) {
-                    let why = "it gives one of them back, which its helper can't";
-                    let refused = refusal::Refused::Because("`clamp` of `&mut` references", why);
-                    return Err(refusal::refuse(tcx, span, refused));
-                }
                 let exprs = (std::mem::take(values).into_iter())
                     .map(|v| self.value_expr(v, span))
                     .collect::<R<Vec<_>>>()?;

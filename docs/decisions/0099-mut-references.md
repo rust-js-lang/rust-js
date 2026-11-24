@@ -903,3 +903,20 @@ the refusal. Mutations `max-of-mut-refs-their-pointees`,
 `clamp-of-mut-refs-given-its-helper` and `ord-of-a-mut-ref-a-numbers` are
 new, and caught; `mir-cell-compare-handles` follows the block to
 `cells_compared.rs`.
+
+## Amendment (2026-11-24, #2191): `clamp` of `&mut`s compiled
+
+`clamp` of `&mut`s to cells, std's `Ord for &mut A`'s default `clamp`,
+gives back the chosen `&mut` as `max` and `min` of them do: `$clampBy` is
+given the three handles and an order of what each points at, `{ le, lt,
+gt }`, each an arrow comparing their pointees by `operator_value`, as
+`max` and `min` compare them (`ordering.rs`' `cell_order`). Its bounds the
+wrong way round panic as the default does, `assertion failed: min <=
+max` at std's `ordClamp` line, of a `&mut char` too: `Ord for &mut A`
+writes no `clamp`, so a `char`'s own message isn't its. The refusal, its
+diagnostics test and the guide's limitation go. Corpus
+`clamp_of_mut_references_gives_back_the_chosen`, native in both builds
+and under every metamorphic rewrite; mutations
+`clamp-of-cells-compares-handles`, `cell-order-lt-is-gt` and
+`clamp-of-mut-char-shows-a-char`, and `clamp-of-mut-refs-given-its-helper`
+retired with the refusal it held.
