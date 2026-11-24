@@ -968,7 +968,10 @@ test("a shard whose mutations' tests launch a browser gets one", () => {
 test("a waiting mutation run says where it is, and each answer as it's given", async () => {
   const said: string[] = [];
   const stop = heartbeat(() => "building and judging the mutants: 3 of 9 answered", (line) => said.push(line), 20);
-  await Bun.sleep(70);
+  // Two beats waited for, not counted in a fixed sleep: under load a timer
+  // fires late, and one beat in 70 ms was no fault (#2469).
+  const deadline = performance.now() + 5_000;
+  while (said.length < 2 && performance.now() < deadline) await Bun.sleep(10);
   stop();
   const beats = said.length;
   expect(beats).toBeGreaterThanOrEqual(2);
