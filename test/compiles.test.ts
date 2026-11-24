@@ -52,7 +52,9 @@ test("a compile is given again only where all it's made of is the same", () => {
   writeFileSync(join(dir, "text.txt"), "first");
   const js = join(dir, "lib.js");
   const { ran, compile, own } = counting();
-  const kept = (flags: string[] = [], env: Record<string, string> = {}) => keptCompile([compiler, join(dir, "lib.rs"), "-o", js, "--", "-Awarnings", ...flags], root, { ...own, ...env }, compile, room);
+  // `flags` rustc's, after `--`; `before` rust-js's own.
+  const kept = (flags: string[] = [], env: Record<string, string> = {}, before: string[] = []) =>
+    keptCompile([compiler, join(dir, "lib.rs"), "-o", js, ...before, "--", "-Awarnings", ...flags], root, { ...own, ...env }, compile, room);
 
   expect(kept().code).toBe(0);
   expect(ran.length).toBe(1);
@@ -71,27 +73,33 @@ test("a compile is given again only where all it's made of is the same", () => {
   // An option.
   kept(["--cfg", "other"]);
   expect(ran.length).toBe(3);
+  // One of rust-js's own, before `--`: the corpus with std's iterator
+  // structs is compiled so, its JS another (#2501).
+  kept(["--cfg", "other"], {}, ["--std-iterators"]);
+  expect(ran.length).toBe(4);
+  kept(["--cfg", "other"], {}, ["--std-iterators"]);
+  expect(ran.length).toBe(4);
   // A variable of its environment, an `env!`'s or not.
   kept([], { COMPILES_TEST_VALUE: "a" });
-  expect(ran.length).toBe(4);
+  expect(ran.length).toBe(5);
   kept([], { COMPILES_TEST_VALUE: "a" });
-  expect(ran.length).toBe(4);
+  expect(ran.length).toBe(5);
   // A crate where it searches, which another of the same name would be.
   const search = join(dir, "search");
   mkdirSync(search);
   kept(["-L", search]);
-  expect(ran.length).toBe(5);
+  expect(ran.length).toBe(6);
   writeFileSync(join(search, "libother.rmeta"), "");
   kept(["-L", search]);
-  expect(ran.length).toBe(6);
+  expect(ran.length).toBe(7);
   // The source itself, back as it was first: that compile again.
   writeFileSync(join(dir, "text.txt"), "first");
   kept();
-  expect(ran.length).toBe(6);
+  expect(ran.length).toBe(7);
   expect(readFileSync(js, "utf8")).toBe(first);
   // A compile asked to keep none.
   kept([], { RUST_JS_COMPILE_CACHE_MB: "0" });
-  expect(ran.length).toBe(7);
+  expect(ran.length).toBe(8);
 });
 
 // What a compile writes beside its JS where it's asked, the facts a reader

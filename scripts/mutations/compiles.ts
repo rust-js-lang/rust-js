@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/compiles.test.ts", "-t", "an entry another build kept is never given again"],
   },
+  {
+    name: "compile-key-rust-js-flags-dropped",
+    breaks: "a kept compile's key has rustc's arguments alone, not rust-js's own before `--`, so the corpus compiled with `--std-iterators` is given the JS made without (#2501)",
+    file: "test/compiles.ts",
+    find: "  return sha(JSON.stringify([VERSION, identity, cwd, args, environment, searched]));",
+    replace: "  return sha(JSON.stringify([VERSION, identity, cwd, args.filter((arg, i) => i >= args.indexOf(\"--\") || !arg.startsWith(\"--\")), environment, searched]));",
+    tests: ["test/compiles.test.ts", "-t", "a compile is given again only where all it's made of is the same"],
+  },
 ];
