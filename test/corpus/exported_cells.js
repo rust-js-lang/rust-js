@@ -10,20 +10,13 @@
 import { isRendering } from "./fiber.js";
 import * as Fiber from "./fiber.js";
 import * as Probe from "./probe.js";
-import { $debugStr, $main, $stdSites, $withBorrow, $withBorrowMut } from "@rust-js/std";
+import { $debugStr, $main } from "@rust-js/std";
 
 function told() {
   const rendering = isRendering;
   const current = Fiber.current;
   const name = Fiber.name;
-  $withBorrowMut(
-    Fiber.log,
-    (log) => {
-      log.push(current ?? 0);
-    },
-    $stdSites.localKeyWithBorrowMut[0],
-    true,
-  );
+  Fiber.log.push(current ?? 0);
   // What was read before is what it was then, not what it's set to now.
   Fiber.setIsRendering(!rendering);
   const arg = Probe.renderingNow();
@@ -39,8 +32,6 @@ function main() {
   console.log(`${told()}`);
   Fiber.setCurrent(undefined, "");
   console.log(`${told()}`);
-  console.log(
-    `[${$withBorrow(Fiber.log, (log) => log.slice(), $stdSites.localKeyWithBorrow[0], true).join(", ")}]`,
-  );
+  console.log(`[${Fiber.log.slice().join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

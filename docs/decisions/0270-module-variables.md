@@ -393,3 +393,43 @@ the export, against native Rust in both builds. Mutation
 `own-bindings-of-its-name-counted` (`lower/std_types/cell/variables.ts`);
 `mir-statics-closure-set-unseen` and `module-array-set-const`
 re-anchored. Guide: limitations.md.
+
+## Amendment (2026-11-24, #2531): another module's borrow is given the variable too
+
+Whether a thread-local is its module's variable, none of whose borrows is
+counted (`quiet_locals`, `plain_thread_locals`), is decided once for the
+crate, of every body that borrows it. But only its own module consumed the
+answer. Another module's `with_borrow` and `with_borrow_mut` were lowered
+as a counted cell's borrow, `$withBorrowMut(Fiber.log, f, at, true)`, by
+the cell's type. That worked only while the type's form was the object
+itself (ADR 0863). Where the crate has a generic impl for `RefMut<'_, T>`,
+a `RefCell` of an object is a `{ value }`, which its module unboxes into its
+variable, `export const log = []`. The other module's borrow then read the
+array's `value`, and threw `Cannot read properties of undefined (reading
+'push')` where Rust printed. This was a wrong answer, found by #2481's
+`observe-borrows` rewrite of `exported_cells.rs`, whose probes add such an
+impl.
+
+**A quiet thread-local's `with_borrow` and `with_borrow_mut` are given the
+variable where they're lowered, in every module**, as its own module's
+are: `Fiber.log.push(1)`, `Fiber.log.slice()`. So is a consumer's borrow
+of a library's thread-local every lend of which here is quiet
+(`quiet_library_keys`), which threw alike where the library has the impl:
+`log.push(1)`, as the library's own form gives it. `CrateFacts::quiet_key`
+is the one answer, of the crate's (`quiet_local`) and a library's: MIR's
+quiet calls ask it (`QuietCells`), and so do the `RefCell` drops' held
+guards. A `with`, which hands out the cell, is still
+quiet only in its own module. A thread-local of a value, a `String` or a
+number, is unchanged: another module reads it by name, and its writes stay
+refused (`outside_writes`). This supersedes ADR 0866's amendment "Another
+module's is as its import reads it".
+
+ADR 0262's case: results change, so Rust's behavior is preserved. The
+output reads better, too: `exported_cells.js` loses its two counted
+borrows. Held by the corpus case
+`thread_local_object_borrowed_from_another_module`, the crate pair
+`thread_local_object_of_a_library_borrowed`, the module variables test's
+"a thread-local of an array its module sets is its export let", and the
+mutations `quiet-local-counted-in-another-module` and
+`quiet-library-key-counted` (moved to `quiet_key`). The mutation
+`quiet-with-borrow-of-another-module`, which held the old form, is gone.

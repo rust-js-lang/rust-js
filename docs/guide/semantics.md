@@ -730,7 +730,8 @@ amended, the user's decision, rd418).
   keeps its name, `MAX_SIZE` ([0270](../decisions/0270-module-variables.md),
   [0579](../decisions/0579-a-thread-local-is-named-as-a-variable.md)). Its
   `with_borrow_mut(|queue| ..)` is its closure's body, reading the variable
-  in place ([0581](../decisions/0581-a-closure-called-as-a-statement-is-its-body.md)):
+  in place ([0581](../decisions/0581-a-closure-called-as-a-statement-is-its-body.md)),
+  in another module too, `Fiber.log.push(1)` ([0270](../decisions/0270-module-variables.md), amended):
 
 ```rust
 # use std::cell::RefCell;

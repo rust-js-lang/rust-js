@@ -1122,10 +1122,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     !facts.momentary.contains(&fun) && !facts.let_held.contains(&fun)
                 }
                 Some(Std::LocalBorrow { .. }) => {
-                    let quiet = crate::analysis::borrowed(recognition, thir, id).is_some_and(|b| {
-                        matches!(b.cell, Cell::Key(key) if key.as_local().is_some_and(|k| self.krate.quiet_locals.contains(&k))
-                            || self.krate.quiet_library_keys.contains(&key))
-                    });
+                    let quiet = crate::analysis::borrowed(recognition, thir, id)
+                        .is_some_and(|b| matches!(b.cell, Cell::Key(key) if self.krate.quiet_key(key)));
                     !quiet
                 }
                 // Of two that may be one, but a flattened state's, told

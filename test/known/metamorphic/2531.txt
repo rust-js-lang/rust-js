@@ -1,3 +1,0 @@
-#2531 P0: exported_cells' observe-borrows variant throws `Cannot read properties of undefined (reading 'push')` where native runs
-plain std observe-borrows exported_cells.rs
-plain std observe-lens exported_cells.rs

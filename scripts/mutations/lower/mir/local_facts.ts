@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "quiet-local-counted-in-another-module",
+    breaks: "another module's `with_borrow_mut` of a thread-local that's its module's variable is counted as a cell's borrow, so where the crate has a generic impl for `RefMut<'_, T>` it reads the `value` of the array the variable is and throws where Rust prints (#2531)",
+    file: "crates/rust-js-mir/src/local_facts.rs",
+    find: "                        && self.krate.quiet_key(key) =>\n                {\n                    quiet.calls.insert(block);\n                }\n                // A `with` of one of this module's, its cell.\n",
+    replace: "                        && self.krate.quiet_key(key)\n                        && key.as_local().is_some_and(|key| tcx.parent_module_from_def_id(key) == self.module) =>\n                {\n                    quiet.calls.insert(block);\n                }\n                // A `with` of one of this module's, its cell.\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_object_borrowed_from_another_module.rs$"],
+  },
+  {
     name: "lent-not-recorded",
     breaks: "a nullable thread-local's `with` of a closure isn't recorded as lending it `null` or a value",
     file: "crates/rust-js-mir/src/local_facts.rs",
@@ -17,15 +25,6 @@ export const mutations: Mutation[] = [
     find: "        !self.captures.is_empty() && local == Local::from_u32(1)\n",
     replace: "        !self.captures.is_empty() && (local == Local::from_u32(1) || local.as_u32() > 1)\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_captures_a_closure_by_reference.rs$"],
-  },
-  {
-    name: "quiet-with-borrow-of-another-module",
-    breaks:
-      "another module's quiet thread-local's `with_borrow` is given its value where it's lowered, not as that module's import reads it (ADR 0866, amended)",
-    file: "crates/rust-js-mir/src/local_facts.rs",
-    find: "                        && tcx.parent_module_from_def_id(key) == self.module =>\n",
-    replace: "                        =>\n",
-    tests: ["test/lowering-module-variables.test.ts"],
   },
   {
     name: "facts-held-arms-unjoined",
@@ -273,8 +272,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `with` of a module's variable isn't quiet, so a nullable one's cell is lent whole, kept a `$nullableCell`, not its module's variable (#541)",
     file: "crates/rust-js-mir/src/local_facts.rs",
-    find: "                Some(Std::LocalBorrow { .. } | Std::LocalWith { .. })\n",
-    replace: "                Some(Std::LocalBorrow { .. })\n",
+    find: "                // A `with` of one of this module's, its cell.\n                Some(Std::LocalWith { .. })\n",
+    replace: "                // A `with` of one of this module's, its cell.\n                Some(Std::LocalWith { tried: true })\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
     snapshots: true,
   },

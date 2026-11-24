@@ -187,6 +187,23 @@ pub struct CrateFacts<'a, 'tcx> {
 }
 
 impl CrateFacts<'_, '_> {
+    /// Whether `key` is a thread-local the crate made its module's variable,
+    /// none of whose borrows is counted (`plain_thread_locals`, ADRs 0270,
+    /// 0580): the crate's one answer, so every module that borrows it gives
+    /// its closure what the variable holds, its own and another's (#2531).
+    pub fn quiet_local(&self, key: DefId) -> bool {
+        key.as_local().is_some_and(|key| self.quiet_locals.contains(&key))
+    }
+
+    /// Whether no borrow of the thread-local `key` is counted, so each is its
+    /// function given what it holds where it's lowered: one of the crate's
+    /// that's its module's variable (`quiet_local`), or a library's every
+    /// lend of which here is quiet (`quiet_library_keys`, ADR 0863,
+    /// amended), whose JS the library's own form gives (#2531).
+    pub fn quiet_key(&self, key: DefId) -> bool {
+        self.quiet_local(key) || self.quiet_library_keys.contains(&key)
+    }
+
     /// Whether the crate's item `def_id` is declared at its module's top,
     /// so its name is the module's (`js::Name::module`): not a function or
     /// a `const` written in a function's body, nor a function a block makes

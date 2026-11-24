@@ -868,14 +868,23 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             }
             match self.recognition().classify(def_id, generic_args) {
                 Some(Std::Drop) => drops.push((block, first.node.place())),
-                // A `with_borrow` of one of this module's, given what it
-                // holds where it's called (`cell_call`, ADR 0866, amended),
-                // and a `with`, its cell.
-                Some(Std::LocalBorrow { .. } | Std::LocalWith { .. })
+                // A `with_borrow` or a `with_borrow_mut` of one no borrow of
+                // which is counted, given what it holds where it's called
+                // (`cell_call`, ADR 0866, amended), in any module or crate,
+                // as none counts its borrows (#2531).
+                Some(Std::LocalBorrow { .. })
                     if let Some(key) = local_key(&first.node)
-                        && let Some(key) = key.as_local()
-                        && self.krate.quiet_locals.contains(&key)
-                        && tcx.parent_module_from_def_id(key) == self.module =>
+                        && self.krate.quiet_key(key) =>
+                {
+                    quiet.calls.insert(block);
+                }
+                // A `with` of one of this module's, its cell.
+                Some(Std::LocalWith { .. })
+                    if let Some(key) = local_key(&first.node)
+                        && self.krate.quiet_local(key)
+                        && key
+                            .as_local()
+                            .is_some_and(|key| tcx.parent_module_from_def_id(key) == self.module) =>
                 {
                     quiet.calls.insert(block);
                 }
@@ -887,7 +896,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                     quiet.nullable.insert(block, form);
                 }
                 Some(Std::CellSet | Std::CellReplace | Std::CellTake) if let Some(key) = local_key(&first.node) => {
-                    if key.as_local().is_some_and(|key| self.krate.quiet_locals.contains(&key)) {
+                    if self.krate.quiet_local(key) {
                         quiet.calls.insert(block);
                     }
                     if let Some(form) = nulled(rust_js_lower::representation::NonePlace::Local(key)) {

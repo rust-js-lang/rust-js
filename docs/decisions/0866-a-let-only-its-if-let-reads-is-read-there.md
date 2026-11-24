@@ -214,6 +214,8 @@ borrows nothing counts, is its function given what the cell holds where
 it's lowered (`QuietCells`), as `plain_statics` gives it, so tidy reads a
 place, `LAST_FIBER.value`, not a call. Another module's is as its import
 reads it, `$withBorrow(callbacks, (items) => items.length, true)`.
+(Superseded 2026-11-24, #2531: another module's is given the variable too,
+`callbacks.length`, ADR 0270's amendment.)
 
 - **Not a binding of a field**, which a let chain reads once (ADR 0842):
   `const count = counts.count; if (count != null && count > 3)` stays.
@@ -229,7 +231,8 @@ code, so the variable holds what the binding read. Tested by
 `test/lowering-shadows.test.ts`'s "an if let's binding of a thread-local
 only its test reads", run, and the module variables test's another
 module's `with_borrow`; its mutations are
-`quiet-with-borrow-called-late` and `quiet-with-borrow-of-another-module`.
+`quiet-with-borrow-called-late` and `quiet-with-borrow-of-another-module`
+(gone with #2531, ADR 0270's amendment).
 
 Later (2026-10-28): the pattern's binding taken apart by a rule of its own
 is gone. ADR 0277's amendment of 7915789d0, a copy of a thread-local set
