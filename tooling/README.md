@@ -178,6 +178,12 @@ How rustc names the files of rust-js's own `wasm-bindgen` family, `compat/`'s,
 is `RUST_JS_COMPAT`, `<dir>=/rust-js/<version>/tooling/compat`, which every
 compile is given as `--remap-path-prefix`, so a panic's location in one names
 no machine's path (ADR 0262's difference 63, #2438).
+Which rust-js builds them, `rust-js --build-identity`'s line, asked so, is
+`RUST_JS_BUILD`, which each crate built for the target names in its
+dep-info, the binding crates rustc checks too, so another rust-js builds them
+again under the same names; Cargo's `rustc -vV` names rust-js but never which, so its build
+scripts and procedural macros are built once for every rust-js (#2473). A
+crate for the target Cargo gives no `RUST_JS_BUILD`, or another's, is refused.
 Each of those that `frontend` uses, the crate of an npm package too, and
 `frontend` itself, is JS in Cargo's target directory, beside the metadata
 of that build of it, importing the others, then written beside its Rust. A

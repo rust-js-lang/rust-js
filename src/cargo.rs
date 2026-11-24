@@ -42,6 +42,17 @@ pub const CLIPPY: &str = "RUST_JS_CLIPPY";
 /// workspace (ADR 0360, amended).
 pub const APPS: &str = "RUST_JS_APPS";
 
+/// Which rust-js builds for rust-js's target, `identity()`, as the tooling
+/// asks it once a build (`rust-js --build-identity`) and gives Cargo: each
+/// crate built for the target names it in its dep-info, the JS's crates and
+/// the binding crates rustc checks alike, so another rust-js, an upgrade, a
+/// rollback, another build of one version or another declarations printer,
+/// builds them again; and a build script's or a procedural macro's, for the
+/// host, which no rust-js decision reaches, doesn't, nor is any crate's
+/// `-C metadata`, its file names and `stable_crate_id`, another, as Cargo's
+/// `rustc -vV` names rust-js but never which (ADR 1003, amended; #2473).
+pub const BUILD: &str = "RUST_JS_BUILD";
+
 /// Set by `rust-js test`: its programs, `RUST_JS_APPS`' crates, are
 /// compiled as `rust-js build` compiles them, and write a contract for
 /// their integration tests, which use them (ADR 1076, amended, #597).
@@ -247,6 +258,12 @@ pub fn translate(args: Vec<String>) -> Invocation {
     // and a registry's, which `RUST_JS_CRATES` leaves out, are checked by it.
     if !(library || tests || bin) || flag_values(&flags, "--target").next().as_deref() != Some(TARGET) {
         return rustc_itself(&rustc, given);
+    }
+    // A crate for the target names `BUILD` in its dep-info as Cargo gave it,
+    // so it's built only where Cargo gave this compiler's own.
+    if let Err(error) = given_build() {
+        eprintln!("rust-js: {error}");
+        return Invocation::Rustc(ExitCode::FAILURE);
     }
     let clippy = std::env::var(CLIPPY).ok();
     match whose() {
@@ -720,17 +737,14 @@ fn expand(given: &[String]) -> Result<Vec<String>, String> {
     Ok(flags)
 }
 
-/// `rustc -vV`, and rust-js's own identity after it. Cargo hashes what it
-/// says into each crate's fingerprint and file names, so a build by another
-/// rust-js, an app's upgrade or its rollback, is another build: an installed
-/// compiler's file is as old as its package says, too old for Cargo to see
-/// by its date that it changed. Its build too: another build of one version,
-/// another checkout's or worktree's, is another build (ADR 1003). And the
-/// `@rust-js/typescript` that prints its `.d.ts`, which isn't in the binary:
-/// another, at the same path, is another build too (ADR 1003, amended; #675).
-/// The app's Prettier, which lays its JS out (#684), isn't: it's the
-/// crates' own, `RUST_JS_LAYOUT` in each one's dep-info, so a binding
-/// crate's build is one in every app, and a `-vV` starts no Node (#892).
+/// `rustc -vV`, and that rust-js is its wrapper, `WRAPPED`, never which:
+/// Cargo hashes what it says into every crate's `-C metadata`, the host's
+/// too, so a crate rustc checked without rust-js is another unit, not one
+/// Cargo has as done when rust-js is asked for; but every rust-js's is the
+/// same, so a build script or a procedural macro, which no rust-js decision
+/// reaches, is built once for all of them, and a crate's file names and
+/// `stable_crate_id` are the same in each. Which rust-js builds a crate is
+/// `BUILD`, in its dep-info (ADR 1003, amended; #2473).
 fn verbose_version(rustc: &str) -> Invocation {
     let output = match std::process::Command::new(rustc).arg("-vV").output() {
         Ok(output) => output,
@@ -743,6 +757,30 @@ fn verbose_version(rustc: &str) -> Invocation {
         let _ = std::io::stderr().write_all(&output.stderr);
         return Invocation::Rustc(ExitCode::FAILURE);
     }
+    let mut out = std::io::stdout().lock();
+    match out.write_all(&output.stdout).and_then(|()| writeln!(out, "{WRAPPED}")) {
+        Ok(()) => Invocation::Rustc(ExitCode::SUCCESS),
+        Err(error) => {
+            eprintln!("rust-js: cannot write rustc's version: {error}");
+            Invocation::Rustc(ExitCode::FAILURE)
+        }
+    }
+}
+
+/// What `rustc -vV` through the wrapper says after rustc's lines: the same
+/// of every rust-js (`verbose_version`).
+const WRAPPED: &str = "rust-js: the wrapper, its build in each target crate's dep-info";
+
+/// rust-js's own identity, `BUILD`'s: its version, its Rust and ABI, its
+/// build, a hash of what it's made of, as another build of one version,
+/// another checkout's or worktree's, decides otherwise (ADR 1003), and the
+/// `@rust-js/typescript` that prints its `.d.ts`, which isn't in the binary:
+/// another, at the same path, is another build too (#675). An installed
+/// compiler's file is as old as its package says, too old for Cargo to see
+/// by its date that it changed, so it's by what it is. The app's Prettier,
+/// which lays its JS out (#684), isn't of it: it's the crates' own,
+/// `RUST_JS_LAYOUT` in each one's dep-info (#892).
+pub fn identity() -> Result<String, String> {
     let Compiler {
         version,
         toolchain,
@@ -750,26 +788,29 @@ fn verbose_version(rustc: &str) -> Invocation {
         ..
     } = Compiler::current();
     let build = rust_js_program::manifest::build();
-    // What prints its `.d.ts`, which isn't in the binary (#675).
-    let printer = match rust_js_emit::typescript::printer() {
-        Ok(printer) => printer.map(|hash| format!(", declarations {hash}")).unwrap_or_default(),
-        Err(error) => {
-            eprintln!("rust-js: {error}");
-            return Invocation::Rustc(ExitCode::FAILURE);
-        }
-    };
-    let mut out = std::io::stdout().lock();
-    match out.write_all(&output.stdout).and_then(|()| {
-        writeln!(
-            out,
-            "rust-js: {version}, Rust {toolchain}, ABI {abi}, build {build}{printer}"
-        )
-    }) {
-        Ok(()) => Invocation::Rustc(ExitCode::SUCCESS),
-        Err(error) => {
-            eprintln!("rust-js: cannot write rustc's version: {error}");
-            Invocation::Rustc(ExitCode::FAILURE)
-        }
+    let printer = rust_js_emit::typescript::printer()?
+        .map(|hash| format!(", declarations {hash}"))
+        .unwrap_or_default();
+    Ok(format!(
+        "rust-js: {version}, Rust {toolchain}, ABI {abi}, build {build}{printer}"
+    ))
+}
+
+/// Whether Cargo was given this compiler's own `BUILD`: a crate for the
+/// target names it in its dep-info as Cargo gave it, so one built where
+/// Cargo was given none, or another's, would be another rust-js's crate
+/// Cargo has as this one's (ADR 1003, amended; #2473).
+fn given_build() -> Result<(), String> {
+    let own = identity()?;
+    match std::env::var(BUILD) {
+        Ok(given) if given == own => Ok(()),
+        given => Err(format!(
+            "Cargo was given {}, not this compiler's own build, `{own}`, so what it builds couldn't be told from another rust-js's: build through rust-js's tooling (`rust-js build`), which gives it",
+            match given {
+                Ok(given) => format!("`{BUILD}={given}`"),
+                Err(_) => format!("no `{BUILD}`"),
+            }
+        )),
     }
 }
 

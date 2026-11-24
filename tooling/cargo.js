@@ -76,6 +76,10 @@ export function cargoSaid(error) {
  * which each of those crates names in its dep-info (ADR 1003, amended;
  * #892). And how rustc names rust-js's own crates' files, `RUST_JS_COMPAT`
  * (`compatNamed`), on every machine the same (#2438).
+ * And which rust-js builds them, `RUST_JS_BUILD`, asked so, which
+ * each crate built for the target names in its dep-info, so Cargo's `rustc
+ * -vV`, and every crate's `-C metadata`, are the same of every rust-js
+ * (#2473).
  * @returns {NodeJS.ProcessEnv} */
 export function cargoEnv(compiler, react, { apps, crates, dependencies = [] }, { tests = false } = {}) {
   const env = {
@@ -89,6 +93,7 @@ export function cargoEnv(compiler, react, { apps, crates, dependencies = [] }, {
     RUST_JS_COMPAT: compatNamed(),
   };
   env.RUST_JS_LAYOUT = layoutIdentity(compiler, env);
+  env.RUST_JS_BUILD = buildIdentity(compiler, env);
   if (react) env.RUST_JS_REACT = react;
   else delete env.RUST_JS_REACT;
   if (tests) env.RUST_JS_TEST_BUILD = "1";
@@ -336,6 +341,21 @@ export function layoutIdentity(compiler, env) {
   return asked.stdout.trim();
 }
 
+/** Which rust-js `compiler` is, in `env`, whose `RUST_JS_TYPESCRIPT` names
+ * its declarations printer, as `rust-js --build-identity` says: what each
+ * crate it builds for the target names in its dep-info, `RUST_JS_BUILD`,
+ * which the wrapper refuses a build without (ADR 1003, amended; #2473).
+ * @param {string} compiler
+ * @param {NodeJS.ProcessEnv} env
+ * @returns {string} */
+export function buildIdentity(compiler, env) {
+  const asked = spawnSync(resolve(compiler), ["--build-identity"], { env, encoding: "utf8" });
+  if (asked.status !== 0) {
+    throw new Error(`rust-js can't say which build it is:\n${(asked.stderr || String(asked.error ?? "")).trim()}`);
+  }
+  return asked.stdout.trim();
+}
+
 /** Cargo's rustc, for every crate it compiles: rust-js's `--rustc`, rustc
  * with rust-js's tool known (ADR 0112). The binding crates need it, which
  * the wrapper gives to rustc, and a plain rustc doesn't know the tool. The
@@ -347,10 +367,7 @@ export function rustcShim(compiler) {
   // Written whole, then moved into place: every build with this compiler
   // shares the shim, and one rewriting it in place while another's Cargo
   // runs it fails both, Linux's ETXTBSY. A Cargo running it keeps the file
-  // it opened; the next one runs the new. A new file each build is also what
-  // has Cargo ask `rustc -vV` again, which it keeps by the dates of its
-  // rustc and wrapper: the `@rust-js/typescript` that line names, of each
-  // build, isn't either of them (ADR 1003, amended; #675).
+  // it opened; the next one runs the new.
   const writing = `${shim}.${process.pid}`;
   writeFileSync(writing, `#!/bin/sh\nexec ${JSON.stringify(compiler)} --rustc "$@"\n`, { mode: 0o755 });
   renameSync(writing, shim);

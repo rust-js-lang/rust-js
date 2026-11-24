@@ -186,6 +186,18 @@ impl Callbacks for Syntax {
     }
 
     fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut rustc_ast::Crate) -> Compilation {
+        // Which rust-js builds it, `cargo::BUILD`, which Cargo reads of the
+        // dep-info, as of an `env!`, of each crate for the target, rust-js's
+        // and the binding crates its `--rustc` checks, the wrapper having
+        // refused one Cargo gave another's or none; never a build script's
+        // or a procedural macro's, for the host, nor a compile outside
+        // Cargo's, which none gave (ADR 1003, amended; #2473).
+        if compiler.sess.opts.target_triple.tuple() == command::TARGET
+            && let Ok(value) = std::env::var(cargo::BUILD)
+        {
+            let read = (Symbol::intern(cargo::BUILD), Some(Symbol::intern(&value)));
+            compiler.sess.env_depinfo.lock().insert(read);
+        }
         rust_js_jsx::expand(&compiler.sess, krate, stable_crate_id(compiler, krate));
         Compilation::Continue
     }
@@ -307,7 +319,7 @@ impl Callbacks for RustJs {
         // tooling's `RUST_JS_LAYOUT`: Cargo's `-vV` line named it, so every
         // crate of a build, a binding crate's too, was another build in
         // each app, and each `-vV` started a Node session (ADR 1003,
-        // amended; #892).
+        // amended; #892). Which rust-js compiles it is `Syntax`'s.
         if self.cargo {
             for var in [cargo::APPS, cargo::TEST_BUILD, rust_js_emit::prettier::LAYOUT] {
                 let value = std::env::var(var).ok().map(|value| Symbol::intern(&value));
@@ -599,6 +611,18 @@ fn run() -> ExitCode {
     };
     let build = match command::parse(args) {
         Ok(command::Command::Build(build)) => *build,
+        Ok(command::Command::BuildIdentity) => {
+            return match cargo::identity() {
+                Ok(identity) => {
+                    println!("{identity}");
+                    ExitCode::SUCCESS
+                }
+                Err(error) => {
+                    eprintln!("rust-js: {error}");
+                    ExitCode::FAILURE
+                }
+            };
+        }
         Ok(command::Command::LayoutIdentity) => {
             return match cargo::layout() {
                 Ok(identity) => {

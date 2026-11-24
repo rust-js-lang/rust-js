@@ -10,6 +10,8 @@ import { node } from "./programs";
 import { buildSerde } from "./serde-crate";
 import { buildCompiler, cargoArtifacts, compiler, fixture, outsideFixture, root, run, rustJsUnits } from "./support";
 import { cargo, check, printed, throughRustJs } from "./crates";
+import { buildIdentity } from "../tooling/cargo.js";
+import { compatNamed } from "../tooling/patch.js";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -67,27 +69,48 @@ test("a Cargo workspace built with rust-js as its wrapper prints what native Rus
   expect(printed((await check(manifest, { packageNames: ["shell"] })).js!)).toBe(after);
 }, 600_000);
 
-// Which rust-js runs is in what Cargo hashes into each crate's fingerprint
-// and file names: what `rustc -vV` says through its wrapper. A build by
-// another rust-js, an app's upgrade or its rollback, is another build, as an
-// installed compiler's file is as old as its package says: by its date
-// alone, Cargo had the other one's crates as done. Found upgrading the
-// pilot to 0.0.3 and back. And which build of it, a hash of what it's made
-// of: another checkout's or worktree's compiler of one version had a
-// workspace's crates as done, and their libraries' facts were another
-// build's (ADR 1003).
+// Which rust-js runs is in each crate for the target's dep-info, which Cargo
+// reads of it as of an `env!`: `RUST_JS_BUILD`, which the tooling asks of
+// the compiler. A build by another rust-js, an app's upgrade or its
+// rollback, is another build, as an installed compiler's file is as old as
+// its package says: by its date alone, Cargo had the other one's crates as
+// done. Found upgrading the pilot to 0.0.3 and back. And which build of it,
+// a hash of what it's made of: another checkout's or worktree's compiler of
+// one version had a workspace's crates as done, and their libraries' facts
+// were another build's (ADR 1003). It was what `rustc -vV` said through the
+// wrapper, which Cargo hashes into every crate's `-C metadata`, the host's
+// too: every build of rust-js built its build scripts and procedural macros
+// again, and gave each crate another `stable_crate_id` (#2473). A crate for
+// the target is built only where Cargo was given this compiler's own.
 test("Cargo is told which rust-js it runs, so another one's crates are built again", async () => {
   serde.rmeta();
   const identity = JSON.parse(run([compiler, "--version-json"]));
   expect(identity.build).toMatch(/^[0-9a-f]{16}$/);
   const line = `rust-js: ${identity.version}, Rust ${identity.toolchain}, ABI ${identity.abi}, build ${identity.build}`;
   // With no printer of declarations named, whose hash it says too.
-  const said = run([compiler, "rustc", "-vV"], undefined, { RUST_JS_TYPESCRIPT: undefined });
-  expect(said).toBe(run(["rustc", "-vV"]) + line + "\n");
-  // As Cargo asked it, and kept what it said.
+  expect(run([compiler, "--build-identity"], undefined, { RUST_JS_TYPESCRIPT: undefined })).toBe(`${line}\n`);
+  // `-vV` names the wrapper, never which rust-js it is.
+  const wrapped = "rust-js: the wrapper, its build in each target crate's dep-info";
+  expect(run([compiler, "rustc", "-vV"])).toBe(`${run(["rustc", "-vV"])}${wrapped}\n`);
+  // As Cargo asked it and kept what it said, and as each crate's dep-info names it.
   const dir = fixture("crates-cargo-identity");
   await check(workspace(dir));
-  expect(readFileSync(join(dir, "target", ".rustc_info.json"), "utf8")).toContain(line);
+  const asked = readFileSync(join(dir, "target", ".rustc_info.json"), "utf8");
+  expect([asked.includes(wrapped), asked.includes(identity.build)]).toEqual([true, false]);
+  const profile = join(dir, "target", "wasm32-unknown-unknown", "debug");
+  const recorded = cargoArtifacts(profile).filter((f) => basename(f).startsWith("validation-") && f.endsWith(".d"));
+  expect(recorded.map((f) => readFileSync(f, "utf8").includes(`# env-dep:RUST_JS_BUILD=${line}`))).toEqual([true]);
+  // A crate for the target that Cargo gave no build, or another's.
+  const source = join(dir, "lone.rs");
+  writeFileSync(source, "pub fn answer() -> u32 {\n    42\n}\n");
+  const lone = ["rustc", "--crate-name", "lone", "--crate-type", "lib", "--target", "wasm32-unknown-unknown", "--edition=2024", source, "--out-dir", join(dir, "lone")];
+  for (const given of [undefined, `${line}, another`]) {
+    const { RUST_JS_BUILD: _, ...rest } = process.env;
+    // As the tooling gives it, past which the wrapper asks the build.
+    const env = { ...rest, RUST_JS_COMPAT: compatNamed() };
+    const built = Bun.spawnSync([compiler, ...lone], { cwd: dir, env: given === undefined ? env : { ...env, RUST_JS_BUILD: given } });
+    expect([built.exitCode, built.stderr.toString()]).toEqual([1, expect.stringContaining("not this compiler's own build")]);
+  }
 }, 600_000);
 
 // And which `@rust-js/typescript` prints its `.d.ts`, which isn't in the
@@ -109,10 +132,11 @@ test("Cargo is told which declarations printer rust-js runs, so another one's cr
   const module = join(printer, "index.js");
   const manifest = join(dir, "Cargo.toml");
   // The `.d.ts` of the build of `app` Cargo has now, built or found done,
-  // in the environment each build gives Cargo, its rustc's shim written
-  // again, so Cargo asks `rustc -vV` again: it can't see the printer change.
+  // in the environment each build gives Cargo, the printer's identity in
+  // its `RUST_JS_BUILD`, as the tooling asks it of its own printer.
   const declared = async () => {
-    const env = { ...(await throughRustJs(manifest)), RUST_JS_TYPESCRIPT: module };
+    const env: NodeJS.ProcessEnv = { ...(await throughRustJs(manifest)), RUST_JS_TYPESCRIPT: module };
+    env.RUST_JS_BUILD = buildIdentity(compiler, env);
     const messages = run(cargo(manifest, "check", "--target", "wasm32-unknown-unknown", "--message-format=json"), 600_000, env);
     const built = messages.split("\n").filter(Boolean).map((line) => JSON.parse(line))
       .find((message) => message.reason === "compiler-artifact" && message.target.name === "app");
@@ -127,6 +151,62 @@ test("Cargo is told which declarations printer rust-js runs, so another one's cr
   writeFileSync(module, readFileSync(module, "utf8").replace("texts.push(await ts.print(module));", 'texts.push((await ts.print(module)) + "// another printer\'s\\n");'));
   utimesSync(module, mtime, mtime);
   expect(await declared()).toBe(`${before}// another printer's\n`);
+}, 600_000);
+
+// Another rust-js, here another declarations printer, builds each crate for
+// the target again, the app's and a binding crate rustc checks, but under
+// the same names: its `-C metadata`, of which its file names and its
+// `stable_crate_id` are made, a brand's key (#2403), is Cargo's of rustc's
+// own `-vV`. And a build script's and a procedural macro's, for the host,
+// which no rust-js decision reaches, are done: it named rust-js in `-vV`,
+// and every build of the compiler built them again (#2473).
+test("another rust-js builds each crate for the target again, under the same names, and none for the host", async () => {
+  const dir = fixture("cargo-identity-host");
+  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app", "maker", "dom"]\nresolver = "2"\n');
+  const crate = (name: string, manifest: string, files: Record<string, string>) => {
+    mkdirSync(join(dir, name, "src"), { recursive: true });
+    writeFileSync(join(dir, name, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2024"\n${manifest}`);
+    for (const [file, text] of Object.entries(files)) writeFileSync(join(dir, name, file), text);
+  };
+  crate("maker", "\n[lib]\nproc-macro = true\n", { "src/lib.rs": 'use proc_macro::TokenStream;\n\n#[proc_macro]\npub fn answer(_: TokenStream) -> TokenStream {\n    "41".parse().unwrap()\n}\n' });
+  crate("dom", "\n[package.metadata.rust-js]\nbindings = true\n", {
+    "src/lib.rs": '#[cfg_attr(rust_js, rust_js::link_name = "@floating-ui/dom#computePosition")]\npub fn compute_position(x: f64) -> f64 {\n    unreachable!("{x}")\n}\n',
+  });
+  crate("app", '\n[dependencies]\nmaker = { path = "../maker" }\ndom = { path = "../dom" }\n', {
+    "build.rs": 'fn main() {\n    println!("cargo::rustc-env=APP_GREETING=hello");\n}\n',
+    "src/lib.rs": 'pub fn answer() -> u32 {\n    maker::answer!() + 1\n}\n\npub fn greeting() -> &\'static str {\n    env!("APP_GREETING")\n}\n\npub fn position() -> f64 {\n    dom::compute_position(1.0)\n}\n',
+  });
+  const printer = join(dir, "printer");
+  mkdirSync(printer);
+  for (const file of ["index.js", "package.json"]) cpSync(join(root, "typescript", file), join(printer, file));
+  symlinkSync(join(root, "typescript", "node_modules"), join(printer, "node_modules"));
+  const module = join(printer, "index.js");
+  const manifest = join(dir, "Cargo.toml");
+  // Each unit Cargo built or found done: its package, its kind, whether it
+  // was done, and its files.
+  const units = async () => {
+    const env: NodeJS.ProcessEnv = { ...(await throughRustJs(manifest)), RUST_JS_TYPESCRIPT: module };
+    env.RUST_JS_BUILD = buildIdentity(compiler, env);
+    const messages = run(cargo(manifest, "check", "--target", "wasm32-unknown-unknown", "--message-format=json"), 600_000, env);
+    // A procedural macro of the workspace's twice: checked, and built for its user.
+    return messages.split("\n").filter(Boolean).map((line) => JSON.parse(line))
+      .filter((message) => message.reason === "compiler-artifact")
+      .map((message) => ({ unit: `${message.target.name} ${message.target.kind.join(",")}`, fresh: message.fresh as boolean, files: (message.filenames as string[]).map((file) => basename(file)) }))
+      .sort((a, b) => `${a.unit} ${a.files}`.localeCompare(`${b.unit} ${b.files}`));
+  };
+  const first = await units();
+  expect([...new Set(first.map(({ unit }) => unit))]).toEqual(["app lib", "build-script-build custom-build", "dom lib", "maker proc-macro"]);
+  // Each crate for the target names the build in its dep-info.
+  const profile = join(dir, "target", "wasm32-unknown-unknown", "debug");
+  for (const name of ["app", "dom"]) {
+    const recorded = cargoArtifacts(profile).filter((f) => basename(f).startsWith(`${name}-`) && f.endsWith(".d"));
+    expect(recorded.map((f) => readFileSync(f, "utf8").includes("# env-dep:RUST_JS_BUILD=rust-js: "))).toEqual([true]);
+  }
+  writeFileSync(module, `${readFileSync(module, "utf8")}\n// another printer's\n`);
+  const second = await units();
+  expect(second.map(({ unit, fresh, files }) => ({ unit, fresh, files }))).toEqual(
+    first.map(({ unit, files }) => ({ unit, fresh: unit.endsWith(" proc-macro") || unit.endsWith(" custom-build"), files })),
+  );
 }, 600_000);
 
 // What Cargo has as done is what rust-js made (ADR 0101): Cargo rebuilds a

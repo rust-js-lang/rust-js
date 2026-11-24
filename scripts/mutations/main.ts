@@ -84,6 +84,22 @@ export const mutations: Mutation[] = [
     tests: ["test/cargo-workspace.test.ts", "-t", "told which Prettier"],
   },
   {
+    name: "cargo-build-identity-unrecorded",
+    breaks: "a crate for the target doesn't name `RUST_JS_BUILD` in its dep-info, so Cargo has another rust-js's crates as done, an upgrade's or a rollback's (ADR 1003, amended; #2473)",
+    file: "src/main.rs",
+    find: "        if compiler.sess.opts.target_triple.tuple() == command::TARGET\n",
+    replace: "        if compiler.sess.opts.target_triple.tuple() == \"\"\n",
+    tests: ["test/cargo-workspace.test.ts", "-t", "told which rust-js"],
+  },
+  {
+    name: "cargo-build-identity-of-the-host",
+    breaks: "a build script's and a procedural macro's dep-info name `RUST_JS_BUILD` too, so every rust-js build builds the host's units again, which no rust-js decision reaches (#2473)",
+    file: "src/main.rs",
+    find: "        if compiler.sess.opts.target_triple.tuple() == command::TARGET\n",
+    replace: "        if !compiler.sess.opts.target_triple.tuple().is_empty()\n",
+    tests: ["test/cargo-workspace.test.ts", "-t", "another rust-js builds each crate for the target again"],
+  },
+  {
     name: "main-stack-default",
     breaks: "a long function's MIR overflows rustc's default stack",
     file: "src/main.rs",

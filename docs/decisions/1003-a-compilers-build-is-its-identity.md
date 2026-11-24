@@ -266,3 +266,68 @@ them. A script standing in for the compiler, which isn't run to ask, is
 keyed by its text. The compile cache's `buildIdentity` (test/compiles.ts)
 asks the same `buildOf`, one reader of the identity.
 
+## Amendment (2026-11-25, #2473): the compiler's identity is each target crate's, not `-vV`'s
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. What a build
+writes is the same; this changes only which crates Cargo builds again.
+
+Cargo hashes what `rustc -vV` says into every unit's `-C metadata`, the
+host's too, and the line rust-js added there named its build and its
+declarations' printer. So each build of the compiler made every unit
+another, with three costs:
+- a build script's and a procedural macro's units, which plain rustc
+  builds for the host and no rust-js decision reaches, were built again:
+  about 44% of a cold app build's CPU (#2473's measure, the M5 Pro);
+- no cache of them keyed by `Cargo.lock` and the toolchain could hit;
+- each crate's `stable_crate_id`, made of its `-C metadata`, was another,
+  so a key made of it, #2403's brands, `crate#stable_crate_id`, re-keyed
+  the whole React port on every compiler change.
+
+**`-vV` names rust-js but never which, and the identity is each target crate's dep-info's.**
+- `rustc -vV` through the wrapper says rustc's lines and one the same of
+  every rust-js (`verbose_version`'s `WRAPPED`), so a crate rustc checked
+  without rust-js is still another unit, not one Cargo has as done when
+  rust-js is asked for ("a crate Cargo checked without rust-js is compiled
+  by it once it's the wrapper", which plain rustc's `-vV` failed), and
+  every rust-js's units are the same.
+- `rust-js --build-identity` says the line `-vV` added: version, Rust, ABI,
+  build and printer (`cargo::identity`). The tooling asks it once a build
+  and gives it to Cargo as `RUST_JS_BUILD` (`cargoEnv`, `buildIdentity`),
+  as it gives `RUST_JS_LAYOUT`.
+- Each crate built for rust-js's target names `RUST_JS_BUILD` in its
+  dep-info, as of an `env!` (`Syntax::after_crate_root_parsing`, which the
+  JS crates' callbacks and clippy's call too): the crates rust-js compiles,
+  and the binding crates and crates.io's that its `--rustc` checks, whose
+  metadata and notes rust-js's decisions make. Cargo builds them again
+  where it differs, in place: their names and `stable_crate_id` stay.
+- A unit for the host names nothing of rust-js, so another rust-js finds
+  them done.
+- The wrapper refuses a crate for the target where Cargo was given no
+  `RUST_JS_BUILD`, or another's (`given_build`): its dep-info would record
+  what Cargo then has as another rust-js's crate. Cargo run without the
+  tooling builds no crate for the target, as it compiled none before
+  without `RUST_JS_CRATES`.
+
+**Its cost**, accepted by the lead: two rust-js builds in one target
+directory now build each other's crates in turn, as both have the same
+names, where before each had its own. Each checkout's and each app's
+target is its own, so it's a target shared on purpose that pays it.
+
+Considered: the identity in a `--cfg` that Cargo's rustflags carry,
+which would keep each build's files apart. Cargo reads rustflags from one
+source of four, so a user's `RUSTFLAGS` or `build.rustflags` would drop
+it, or it theirs; and those flags are in `-C metadata`, so the brands'
+keys would move again.
+
+What holds it: `test/cargo-workspace.test.ts`, "Cargo is told which
+rust-js it runs, so another one's crates are built again" (the identity,
+`-vV` plain, the dep-info's line and the refusal), "Cargo is told which
+declarations printer rust-js runs" and "another rust-js builds each crate
+for the target again, under the same names, and none for the host" (the
+app's and a binding crate's files the same and built again, the build
+script's and the procedural macro's done), the precondition of #2403's
+"a brand's key is the same of every build of rust-js". Mutations
+`cargo-build-identity-unrecorded`, `cargo-build-identity-of-the-host`,
+`cargo-build-identity-unchecked`, `cargo-version-without-identity`, `cargo-version-without-build` and
+`cargo-version-without-printer`.
+
