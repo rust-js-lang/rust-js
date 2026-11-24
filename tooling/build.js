@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { bytesOf, evict, freeBytes } from "./bounded.js";
-import { cargoWorkspace, checkCargo, ledgerName, lintCheck, packageOf } from "./cargo.js";
+import { cargoWorkspace, checkCargo, ledgerName, lintCheck, packageOf, watched } from "./cargo.js";
 import { parseCompilerIdentity } from "./manifest.js";
 
 /** The rust-js checkout this `@rust-js/build` is of, where one runs it from
@@ -202,8 +202,9 @@ function checkStd(root, version) {
 /** `command`'s stdout; what it says on stderr as it succeeds, its warnings,
  * go to `warn`, if given. */
 function run(command, args, cwd, env = {}, warn) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { cwd, env: { ...process.env, RUST_JS_JS_RUNTIME: process.execPath, ...env }, stdio: ["ignore", "pipe", "pipe"] });
+  let child;
+  const done = new Promise((resolve, reject) => {
+    child = spawn(command, args, { cwd, env: { ...process.env, RUST_JS_JS_RUNTIME: process.execPath, ...env }, stdio: ["ignore", "pipe", "pipe"] });
     let output = "";
     let errors = "";
     child.stdout.setEncoding("utf8").on("data", chunk => { output += chunk; });
@@ -215,6 +216,7 @@ function run(command, args, cwd, env = {}, warn) {
       resolve(output);
     });
   });
+  return watched(done, child, command, args);
 }
 
 /**

@@ -32,6 +32,11 @@ asNode();
 // passed its minute and failed, where alone it takes seconds.
 setDefaultTimeout(underLoad(60_000));
 
+// A command tooling runs that hasn't ended by half that says which it is,
+// and whether it exited and Bun never gave its `close`: a test hung at its
+// timeout once with nothing to say where (#2441).
+process.env.RUST_JS_COMMAND_NOTICE_MS ??= String(underLoad(30_000));
+
 // The printer of declarations the tests' compiles run, named, as `rust-js
 // build` names its own (ADR 0412): the checkout's, which Node would find
 // from a fixture in it, so a compile that prints declarations says what it

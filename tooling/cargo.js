@@ -15,7 +15,37 @@ import { commit, fingerprint, removable } from "./publish.js";
 /** rust-js's target (ADR 0090), which Cargo checks its crates for: the compiler's `TARGET`. */
 export const target = "wasm32-unknown-unknown";
 
-const execute = promisify(execFile);
+const executed = promisify(execFile);
+
+/** A command's run, as `execFile`'s, watched (`watched`). */
+const execute = (command, args, options) => {
+  const done = executed(command, args, options);
+  return watched(done, done.child, command, args);
+};
+
+/** `done`, the end of `child`, a run of `command` with `args`; where it
+ * hasn't ended past `RUST_JS_COMMAND_NOTICE_MS`, which the test suite sets
+ * (test/setup.ts), a line on stderr saying which command it is, and
+ * whether it exited and its `close` hasn't come, or it's still running,
+ * the two a test that hangs at its timeout can't tell apart (#2441). The
+ * run goes on: a crate's `cargo check` may take longer. Unset, no notice.
+ * @template T
+ * @param {Promise<T>} done
+ * @param {import("node:child_process").ChildProcess} child
+ * @param {string} command
+ * @param {readonly string[]} args
+ * @param {(line: string) => void} [say]
+ * @returns {Promise<T>} */
+export function watched(done, child, command, args, say = (line) => process.stderr.write(`${line}\n`), env = process.env) {
+  const ms = Number(env.RUST_JS_COMMAND_NOTICE_MS);
+  if (!(ms > 0)) return done;
+  const timer = setTimeout(() => {
+    const ended = child.exitCode ?? child.signalCode;
+    say(`rust-js: \`${[command, ...args].join(" ")}\` (pid ${child.pid}) unfinished after ${ms} ms: ${ended === null ? "still running" : `it exited (${ended}) and its \`close\` hasn't come`}`);
+  }, ms);
+  timer.unref?.();
+  return done.finally(() => clearTimeout(timer));
+}
 
 /** What a Cargo command that failed said: its stderr; where it said
  * nothing, how it ended, a signal or an error spawning it, `spawn cargo
