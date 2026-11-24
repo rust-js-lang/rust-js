@@ -78,4 +78,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^nested_item_drops\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "suggested-takes-a-digit",
+    breaks: "a tuple struct's field `0` is suggested as a guard's name, `const 0 = ..`, a module JS can't read (#1715)",
+    file: "crates/rust-js-lower/src/temporary_names.rs",
+    find: "    let starts_a_word = name.starts_with(|c: char| c.is_alphabetic() || c == '_' || c == '$');\n",
+    replace: "    let starts_a_word = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^guard_named_after_the_field_it_borrows.rs$"],
+  },
 ];

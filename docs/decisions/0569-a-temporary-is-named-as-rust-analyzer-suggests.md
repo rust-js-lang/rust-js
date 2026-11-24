@@ -533,3 +533,29 @@ string literal is written in rust-js-lower or rust-js-mir outside
 temporary_names.rs, a unit test's own aside. rust-js-program, below
 lowering, reaches no `Role`: its JS layer's rewrites and preparation's
 sentinels name their own. No output changes.
+
+## Amendment (2026-11-24, #1715): a guard is named after the field it borrows
+
+A `RefCell` guard the source never names was named after the call that
+made it, `const borrowMut = request.log`, where hand-written JS, and
+upstream React, names it after the field, `log`. rust-analyzer names a
+method by its receiver; a guard's maker, `borrow`, `borrow_mut` or
+`lock` (`temporary_names::names_its_receiver`), now suggests the field it
+borrows first (`hints/names.rs`' `receiver_word`, of the place MIR takes a
+reference of to call with), and its own name after, so a field's word
+taken there leaves `borrowMut`. Not a variable's word, `cell` of
+`cell.borrow()`: the call reads the variable, so it's in scope, and the
+guard would be given apart, `cell$1`. `suggested` gives none of a word a
+digit starts, a tuple struct's `0`, which no JS variable can be.
+
+And preparation's temporaries take no word a variable lowering made, not
+spelled yet, will take in their scope, as they take none the program's
+will (#2048): `scope_struct_generic`'s flattened field `parts` kept its
+word, where its guard had taken it and pushed it to `parts$1`. Lowering's
+names outrank a made one, as this file's rule says of those spelled.
+
+17 corpus snapshots move, renames only, the whole corpus native-equal;
+React's port moves in 10 files toward upstream's words (`next`,
+`keyPath`, `chunk`). Corpus `guard_named_after_the_field_it_borrows`;
+mutations `guard-named-by-its-call`, `suggested-takes-a-digit` and
+`temporary-takes-a-lowering-word`.

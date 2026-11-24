@@ -92,10 +92,10 @@ function main() {
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
 
   const items = [{ x: 1 }, undefined, { x: 3 }, { x: 4 }];
-  const length$1 = 3;
+  const length = 3;
 
   function flipFrom(first) {
-    $reverseRange(items, first, "test/corpus/slice_range_reverse.rs:30:19", length$1);
+    $reverseRange(items, first, "test/corpus/slice_range_reverse.rs:30:19", length);
   }
 
   try {
@@ -173,15 +173,15 @@ function main() {
     }, error);
     throw error;
   }
-  const length = part.length;
-  if (0 >= length) {
+  const value = part.length;
+  if (0 >= value) {
     for (const item of items) {
       if (item != null) {
         pointDrop_drop(item);
       }
     }
     throw $stringPanic(
-      `index out of bounds: the len is ${length} but the index is 0`,
+      `index out of bounds: the len is ${value} but the index is 0`,
       "test/corpus/slice_range_reverse.rs:96:5",
     );
   }

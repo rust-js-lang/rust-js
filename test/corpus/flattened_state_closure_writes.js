@@ -48,7 +48,7 @@ function finish(state, value) {
 }
 
 function lentByAClosure(chunk) {
-  const borrowMut = {
+  const state = {
     get value() {
       return chunk;
     },
@@ -58,7 +58,7 @@ function lentByAClosure(chunk) {
       chunk.reason = value.reason;
     },
   };
-  const done = (v) => finish(borrowMut, v);
+  const done = (v) => finish(state, v);
   done("c");
 }
 

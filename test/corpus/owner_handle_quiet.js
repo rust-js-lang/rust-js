@@ -57,9 +57,9 @@ function createRequest(name, onAllReady, onShellReady) {
   if (request.log.borrows) {
     $alreadyBorrowed("test/corpus/owner_handle_quiet.rs:80:17");
   }
-  const borrowMut = request.log;
+  const log = request.log;
   for (let i = 0; i < names.length; i++) {
-    borrowMut.push(names[i]);
+    log.push(names[i]);
   }
   return request;
 }
@@ -95,12 +95,12 @@ function createClosingRequest(name, onAllReady, held) {
     }, error);
     throw error;
   }
-  let borrowMut;
+  let log;
   try {
     if (request.log.borrows) {
       $alreadyBorrowed("test/corpus/owner_handle_quiet.rs:122:17");
     }
-    borrowMut = request.log;
+    log = request.log;
   } catch (error) {
     $cleanup(() => {
       const close = held.closer.close;
@@ -109,7 +109,7 @@ function createClosingRequest(name, onAllReady, held) {
     throw error;
   }
   try {
-    borrowMut.push(`held ${held.closer.name}`);
+    log.push(`held ${held.closer.name}`);
   } catch (error) {
     $cleanup(() => {
       const close = held.closer.close;
@@ -151,11 +151,11 @@ function exactMatcher_matches(exact, TPartialEq, dropT) {
 
 function createMatchedRequest(name, onAllReady, matcher) {
   const request = requestInstance(name, onAllReady);
-  const borrowMut = $borrowMut(request.log, "test/corpus/owner_handle_quiet.rs:148:17", true);
+  const log = $borrowMut(request.log, "test/corpus/owner_handle_quiet.rs:148:17", true);
   try {
-    borrowMut.push(`matched ${matcher.impl.matches(matcher.value)}`);
+    log.push(`matched ${matcher.impl.matches(matcher.value)}`);
   } finally {
-    $unborrow(borrowMut);
+    $unborrow(log);
   }
   return request;
 }
@@ -235,9 +235,9 @@ function main() {
   if (a.log.borrows < 0) {
     $alreadyMutablyBorrowed("test/corpus/owner_handle_quiet.rs:238:46");
   }
-  const borrow = a.log;
+  const log = a.log;
   console.log(
-    `${a.name}: [${borrow.map((item) => $debugStr(item)).join(", ")}] ${a.flowed} ${a.tasks.size}`,
+    `${a.name}: [${log.map((item) => $debugStr(item)).join(", ")}] ${a.flowed} ${a.tasks.size}`,
   );
 
   const b = renderLogged("b");
@@ -245,16 +245,16 @@ function main() {
   if (b.log.borrows < 0) {
     $alreadyMutablyBorrowed("test/corpus/owner_handle_quiet.rs:242:43");
   }
-  const value = b.log;
-  console.log(`${b.name}: [${value.map((item) => $debugStr(item)).join(", ")}] ${b.flowed}`);
+  const borrow = b.log;
+  console.log(`${b.name}: [${borrow.map((item) => $debugStr(item)).join(", ")}] ${b.flowed}`);
 
   const d = renderClosing("d");
   completeAll(d);
   if (d.log.borrows < 0) {
     $alreadyMutablyBorrowed("test/corpus/owner_handle_quiet.rs:246:43");
   }
-  const value$1 = d.log;
-  console.log(`${d.name}: [${value$1.map((item) => $debugStr(item)).join(", ")}] ${d.flowed}`);
+  const value = d.log;
+  console.log(`${d.name}: [${value.map((item) => $debugStr(item)).join(", ")}] ${d.flowed}`);
 
   for (const [name, kind] of [
     ["e", "Root"],

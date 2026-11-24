@@ -47,6 +47,10 @@ impl<'tcx> MirCx<'_, '_, 'tcx> {
                     }
                 }
                 let suggested = [
+                    // A guard's, its place's first, `log` of `request.log.borrow_mut()`.
+                    (called.get(&at))
+                        .filter(|&&def_id| temporary_names::names_its_receiver(self.tcx, def_id))
+                        .and_then(|_| self.receiver_word(mir_body, at)),
                     called
                         .get(&at)
                         .and_then(|&def_id| temporary_names::call_name(self.tcx, def_id)),
@@ -58,6 +62,49 @@ impl<'tcx> MirCx<'_, '_, 'tcx> {
                 (name.clone(), names)
             })
             .collect()
+    }
+
+    /// The word of the field `local`'s call is called on, the one it reads
+    /// last, `log` of `request.log.borrow_mut()`, through the reference MIR
+    /// takes of it to call with, `_6 = &((*_1).log)`. Not a variable's,
+    /// `cell` of `cell.borrow()`: the call reads it, so it's in scope there,
+    /// and a guard named so would be given apart, `cell$1`.
+    fn receiver_word(&self, mir_body: &mir::Body<'tcx>, local: Local) -> Option<String> {
+        let called_on = (mir_body.basic_blocks.iter()).find_map(|data| match &data.terminator().kind {
+            TerminatorKind::Call { destination, args, .. } if destination.as_local() == Some(local) => {
+                match &args.first()?.node {
+                    Operand::Copy(place) | Operand::Move(place) => Some(*place),
+                    _ => None,
+                }
+            }
+            _ => None,
+        })?;
+        // The place the argument was taken a reference of, where it's a
+        // temporary MIR made to call with.
+        let taken = (called_on.as_local())
+            .and_then(|arg| {
+                (mir_body.basic_blocks.iter())
+                    .flat_map(|data| &data.statements)
+                    .find_map(|statement| match &statement.kind {
+                        StatementKind::Assign(assign) if assign.0.as_local() == Some(arg) => match &assign.1 {
+                            Rvalue::Ref(_, _, from) => Some(*from),
+                            _ => None,
+                        },
+                        _ => None,
+                    })
+            })
+            .unwrap_or(called_on);
+        let Some((base, mir::ProjectionElem::Field(field, _))) = taken.iter_projections().last() else {
+            return None;
+        };
+        let base = base.ty(mir_body, self.tcx);
+        match base.ty.kind() {
+            ty::Adt(adt, _) if !adt.is_union() => {
+                let variant = adt.variant(base.variant_index.unwrap_or(rustc_abi::FIRST_VARIANT));
+                Some(variant.fields[field].name.to_string())
+            }
+            _ => None,
+        }
     }
 
     /// The variables each of whose locals is a `bool`, a shared reference to

@@ -73,8 +73,12 @@ pub(super) fn spelled(module: &mut js::Module) {
                                 name.apart_of().is_some_and(|(of, _)| of == to)
                                     // And one of the program's not spelled
                                     // yet, a scope's function, which it's
-                                    // spelled (#2048).
-                                    || (name.is_the_programs() && name.made_base() == Some(to))
+                                    // spelled (#2048), or lowering's, a
+                                    // flattened struct's field's `parts`,
+                                    // which outranks a made one as the
+                                    // program's does (#1715).
+                                    || (name.made_base() == Some(to)
+                                        && (name.is_the_programs() || !name.is_suggested()))
                             })
                     }) && !reclaimed.contains(to)
                 });

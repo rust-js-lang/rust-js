@@ -182,9 +182,9 @@ function main() {
       strong: 1,
       weak: 0,
     };
-    let borrow;
+    let parent;
     try {
-      borrow = $borrow($fieldCell(leaf.value, "parent"), "test/corpus/rc_counts.rs:43:34", true);
+      parent = $borrow($fieldCell(leaf.value, "parent"), "test/corpus/rc_counts.rs:43:34", true);
     } catch (error) {
       $cleanup(() => {
         $rcDrop(leaf, dropNode);
@@ -198,10 +198,10 @@ function main() {
       return result;
     }
     try {
-      upgrade = $upgrade(borrow.value);
+      upgrade = $upgrade(parent.value);
     } catch (error) {
       $cleanup(() => {
-        $unborrow(borrow);
+        $unborrow(parent);
         $rcDrop(leaf, dropNode);
       }, error);
       throw error;
@@ -211,12 +211,12 @@ function main() {
       console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
     } catch (error) {
       $cleanup(() => {
-        $unborrow(borrow);
+        $unborrow(parent);
         $rcDrop(leaf, dropNode);
       }, error);
       throw error;
     }
-    $unborrow(borrow);
+    $unborrow(parent);
     let tmp;
     try {
       tmp = [$rcClone(leaf)];
@@ -264,9 +264,9 @@ function main() {
     $weakDrop(borrowMut.value);
     borrowMut.value = tmp$1;
     $unborrow(borrowMut);
-    let tmp$2;
+    let borrow;
     try {
-      tmp$2 = $borrow($fieldCell(leaf.value, "parent"), "test/corpus/rc_counts.rs:53:25", true);
+      borrow = $borrow($fieldCell(leaf.value, "parent"), "test/corpus/rc_counts.rs:53:25", true);
     } catch (error) {
       $cleanup(() => {
         $rcDrop(branch, dropNode);
@@ -281,30 +281,30 @@ function main() {
       return result;
     }
     try {
-      upgrade$1 = $upgrade(tmp$2.value);
+      upgrade$1 = $upgrade(borrow.value);
     } catch (error) {
       $cleanup(() => {
-        $unborrow(tmp$2);
+        $unborrow(borrow);
         $rcDrop(branch, dropNode);
         $rcDrop(leaf, dropNode);
       }, error);
       throw error;
     }
-    let tmp$4;
+    let tmp$2;
     try {
-      tmp$4 = upgrade$1 != null ? map$1(upgrade$1) : undefined;
+      tmp$2 = upgrade$1 != null ? map$1(upgrade$1) : undefined;
     } catch (error) {
       $cleanup(() => {
-        $unborrow(tmp$2);
+        $unborrow(borrow);
         $rcDrop(branch, dropNode);
         $rcDrop(leaf, dropNode);
       }, error);
       throw error;
     }
     console.log(
-      `${tmp$4 == null ? "None" : `Some(${$debugStr(tmp$4)})`} ${branch.strong} ${branch.weak} ${branch.value.children.length}`,
+      `${tmp$2 == null ? "None" : `Some(${$debugStr(tmp$2)})`} ${branch.strong} ${branch.weak} ${branch.value.children.length}`,
     );
-    $unborrow(tmp$2);
+    $unborrow(borrow);
     console.log(`${leaf.strong}`);
     try {
       $rcDrop(branch, dropNode);
@@ -314,9 +314,9 @@ function main() {
       }, error);
       throw error;
     }
-    let tmp$5;
+    let tmp$4;
     try {
-      tmp$5 = $borrow($fieldCell(leaf.value, "parent"), "test/corpus/rc_counts.rs:60:37", true);
+      tmp$4 = $borrow($fieldCell(leaf.value, "parent"), "test/corpus/rc_counts.rs:60:37", true);
     } catch (error) {
       $cleanup(() => {
         $rcDrop(leaf, dropNode);
@@ -330,26 +330,26 @@ function main() {
       return result;
     }
     try {
-      upgrade$2 = $upgrade(tmp$5.value);
+      upgrade$2 = $upgrade(tmp$4.value);
     } catch (error) {
       $cleanup(() => {
-        $unborrow(tmp$5);
+        $unborrow(tmp$4);
         $rcDrop(leaf, dropNode);
       }, error);
       throw error;
     }
-    let tmp$6;
+    let tmp$5;
     try {
-      tmp$6 = upgrade$2 != null ? map$2(upgrade$2) : undefined;
+      tmp$5 = upgrade$2 != null ? map$2(upgrade$2) : undefined;
     } catch (error) {
       $cleanup(() => {
-        $unborrow(tmp$5);
+        $unborrow(tmp$4);
         $rcDrop(leaf, dropNode);
       }, error);
       throw error;
     }
-    console.log(`${tmp$6 == null ? "None" : `Some(${$debugStr(tmp$6)})`} ${leaf.strong}`);
-    $unborrow(tmp$5);
+    console.log(`${tmp$5 == null ? "None" : `Some(${$debugStr(tmp$5)})`} ${leaf.strong}`);
+    $unborrow(tmp$4);
 
     let text = { value: "hi", strong: 1, weak: 0 };
     let other;
@@ -362,9 +362,9 @@ function main() {
       }, error);
       throw error;
     }
-    let tmp$7;
+    let tmp$6;
     try {
-      tmp$7 = $unwrapOrClone(text);
+      tmp$6 = $unwrapOrClone(text);
     } catch (error) {
       $cleanup(() => {
         $rcDrop(other);
@@ -372,7 +372,7 @@ function main() {
       }, error);
       throw error;
     }
-    console.log(`${tmp$7} ${other.strong}`);
+    console.log(`${tmp$6} ${other.strong}`);
 
     // Its text, as `{}` shows it, what it points at.
     const seven = { value: 7, strong: 1, weak: 0 };

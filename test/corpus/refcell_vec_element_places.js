@@ -105,9 +105,9 @@ function count(root, index) {
   if (root.counts.borrows) {
     $alreadyBorrowed("test/corpus/refcell_vec_element_places.rs:78:17");
   }
-  const borrowMut = root.counts;
-  borrowMut[$at(borrowMut, index, "test/corpus/refcell_vec_element_places.rs:78:29")] =
-    (borrowMut[index] + 1) & 255;
+  const counts = root.counts;
+  counts[$at(counts, index, "test/corpus/refcell_vec_element_places.rs:78:29")] =
+    (counts[index] + 1) & 255;
 }
 
 function meets(root) {

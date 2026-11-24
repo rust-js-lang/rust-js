@@ -7721,14 +7721,14 @@ export function skipIterator_tryFold(
 export function skipIterator_advanceBy(skip, n, IIterator = { next: $next }, dropI, dropIItem) {
   const skipInner = skip.n;
   const skipAndAdvance = Math.min(skipInner + n, 4294967295);
-  const value = $advanceBy($lent($given(skip.iter, IIterator, true)), skipAndAdvance, dropIItem);
+  const value$1 = $advanceBy($lent($given(skip.iter, IIterator, true)), skipAndAdvance, dropIItem);
   let tmp$3;
   let tmp$2;
   let tmp$1;
   let tmp;
   let advancedInner;
   let remainder;
-  if (value.TAG === "Ok") {
+  if (value$1.TAG === "Ok") {
     remainder = 0;
     tmp = remainder;
     tmp$1 = $overflowing((skipAndAdvance - tmp) >>> 0, skipAndAdvance - tmp, 0, 4294967295);
@@ -7750,7 +7750,7 @@ export function skipIterator_advanceBy(skip, n, IIterator = { next: $next }, dro
     n = tmp$3[0];
     skip.n = Math.max(skip.n - advancedInner, 0);
   } else {
-    const n$1 = value._0;
+    const n$1 = value$1._0;
     remainder = n$1;
     tmp = remainder;
     tmp$1 = $overflowing((skipAndAdvance - tmp) >>> 0, skipAndAdvance - tmp, 0, 4294967295);
@@ -7772,8 +7772,8 @@ export function skipIterator_advanceBy(skip, n, IIterator = { next: $next }, dro
     n = tmp$3[0];
     skip.n = Math.max(skip.n - advancedInner, 0);
     if (remainder) {
-      const value$1 = n === 0 ? undefined : n;
-      return value$1 != null ? { TAG: "Err", _0: value$1 } : { TAG: "Ok" };
+      const value = n === 0 ? undefined : n;
+      return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
     }
   }
   if (n > 0) {
@@ -7784,8 +7784,8 @@ export function skipIterator_advanceBy(skip, n, IIterator = { next: $next }, dro
       n = value._0;
     }
   }
-  const value$1 = n === 0 ? undefined : n;
-  return value$1 != null ? { TAG: "Err", _0: value$1 } : { TAG: "Ok" };
+  const value = n === 0 ? undefined : n;
+  return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
 }
 
 export function skipDoubleEndedIterator_nextBack(
@@ -8045,20 +8045,20 @@ export function skipDoubleEndedIterator_advanceBackBy(
   dropIItem,
 ) {
   const [_18, _19] = $sizeHint(skip.iter, IIterator);
-  const value = Math.max(_18 - skip.n, 0);
+  const value$1 = Math.max(_18 - skip.n, 0);
   let tmp$1;
   let tmp$2;
   let tmp;
   if (_19 == null) {
     tmp = undefined;
     tmp$1 = tmp;
-    tmp$2 = value;
+    tmp$2 = value$1;
   } else {
     tmp = Math.max(_19 - skip.n, 0);
     tmp$1 = tmp;
-    tmp$2 = value;
-    if (tmp === value) {
-      const min = Math.min(value, n);
+    tmp$2 = value$1;
+    if (tmp === value$1) {
+      const min = Math.min(value$1, n);
       const rem = $advanceBackBy(
         $given(skip.iter, IIterator, true, IDoubleEndedIterator),
         min,
@@ -8072,8 +8072,8 @@ export function skipDoubleEndedIterator_advanceBackBy(
         );
       }
       const n$1 = (n - min) >>> 0;
-      const value$1 = n$1 === 0 ? undefined : n$1;
-      return value$1 != null ? { TAG: "Err", _0: value$1 } : { TAG: "Ok" };
+      const value = n$1 === 0 ? undefined : n$1;
+      return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
     }
   }
   $assertFailed(
@@ -8165,18 +8165,18 @@ export function takeIterator_nth(take, n, IIterator = { next: $next }, dropI, dr
 
 export function takeIterator_advanceBy(take, n, IIterator = { next: $next }, dropI, dropIItem) {
   const min = Math.min(take.n, n);
-  const value = $advanceBy($lent($given(take.iter, IIterator, true)), min, dropIItem);
+  const value$1 = $advanceBy($lent($given(take.iter, IIterator, true)), min, dropIItem);
   let rem;
-  if (value.TAG === "Ok") {
+  if (value$1.TAG === "Ok") {
     rem = 0;
   } else {
-    rem = value._0;
+    rem = value$1._0;
   }
   const advanced = (min - rem) >>> 0;
   take.n = (take.n - advanced) >>> 0;
-  const value$1 = (n - advanced) >>> 0;
-  const value$2 = value$1 === 0 ? undefined : value$1;
-  return value$2 != null ? { TAG: "Err", _0: value$2 } : { TAG: "Ok" };
+  const value$2 = (n - advanced) >>> 0;
+  const value = value$2 === 0 ? undefined : value$2;
+  return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
 }
 
 export function takeIterator_count(take, IIterator = { next: $next }, dropI, dropIItem) {
@@ -8663,25 +8663,25 @@ export function takeIDoubleEndedIterator_advanceBackBy(
 ) {
   const trimInner = Math.max(IExactSizeIterator.len(take.iter) - take.n, 0);
   const advanceBy = Math.min(trimInner + n, 4294967295);
-  const value = $advanceBackBy(
+  const value$1 = $advanceBackBy(
     $given(take.iter, IIterator, true, IDoubleEndedIterator),
     advanceBy,
     undefined,
     dropIItem,
   );
   let remainder;
-  if (value.TAG === "Ok") {
+  if (value$1.TAG === "Ok") {
     remainder = 0;
   } else {
-    const rem = value._0;
+    const rem = value$1._0;
     remainder = rem;
   }
   const advancedByInner = (advanceBy - remainder) >>> 0;
   const advancedBy = (advancedByInner - trimInner) >>> 0;
   take.n = (take.n - advancedBy) >>> 0;
-  const value$1 = (n - advancedBy) >>> 0;
-  const value$2 = value$1 === 0 ? undefined : value$1;
-  return value$2 != null ? { TAG: "Err", _0: value$2 } : { TAG: "Ok" };
+  const value$2 = (n - advancedBy) >>> 0;
+  const value = value$2 === 0 ? undefined : value$2;
+  return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
 }
 
 export function takeRepeatTDoubleEndedIterator_advanceBackBy(take, n, TClone, dropT) {
@@ -10642,11 +10642,11 @@ export function cycleIterator_advanceBy(
   dropI,
   dropIItem,
 ) {
-  const value = $advanceBy($lent($given(cycle.iter, IIterator, true)), n, dropIItem);
-  if (value.TAG === "Ok") {
+  const value$1 = $advanceBy($lent($given(cycle.iter, IIterator, true)), n, dropIItem);
+  if (value$1.TAG === "Ok") {
     return { TAG: "Ok" };
   }
-  const rem = value._0;
+  const rem = value$1._0;
   n = rem;
   while (n > 0) {
     const value = IClone.clone(cycle.orig);
@@ -10669,8 +10669,8 @@ export function cycleIterator_advanceBy(
     }
     n = rem;
   }
-  const value$1 = n === 0 ? undefined : n;
-  return value$1 != null ? { TAG: "Err", _0: value$1 } : { TAG: "Ok" };
+  const value = n === 0 ? undefined : n;
+  return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
 }
 
 export function cycleClone_clone(cycle, IClone, dropI) {
@@ -14172,7 +14172,7 @@ export function flattenCompatIUIterator_advanceBy(
   dropIItem,
   dropUItem,
 ) {
-  const value = FlattenCompat.iterTryFold(
+  const value$1 = FlattenCompat.iterTryFold(
     flattenCompat,
     n,
     (n, iter) =>
@@ -14194,9 +14194,9 @@ export function flattenCompatIUIterator_advanceBy(
     dropIItem,
     dropUItem,
   );
-  if (value.TAG === "Continue") {
-    const value$1 = value._0 === 0 ? undefined : value._0;
-    return value$1 != null ? { TAG: "Err", _0: value$1 } : { TAG: "Ok" };
+  if (value$1.TAG === "Continue") {
+    const value = value$1._0 === 0 ? undefined : value$1._0;
+    return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
   }
   return { TAG: "Ok" };
 }
@@ -14819,7 +14819,7 @@ export function flattenCompatIUDoubleEndedIterator_advanceBackBy(
   dropIItem,
   dropUItem,
 ) {
-  const value = FlattenCompat.iterTryRfold(
+  const value$1 = FlattenCompat.iterTryRfold(
     flattenCompat,
     n,
     (n, iter) =>
@@ -14842,9 +14842,9 @@ export function flattenCompatIUDoubleEndedIterator_advanceBackBy(
     dropIItem,
     dropUItem,
   );
-  if (value.TAG === "Continue") {
-    const value$1 = value._0 === 0 ? undefined : value._0;
-    return value$1 != null ? { TAG: "Err", _0: value$1 } : { TAG: "Ok" };
+  if (value$1.TAG === "Continue") {
+    const value = value$1._0 === 0 ? undefined : value$1._0;
+    return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
   }
   return { TAG: "Ok" };
 }

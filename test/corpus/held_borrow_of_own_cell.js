@@ -41,22 +41,22 @@ const pending = { items: [] };
 // can't see calls, the callback reaching the queue by its key, not by
 // anything it's given.
 function eachPending(f) {
-  const borrow = $borrow(pending.items, "test/corpus/held_borrow_of_own_cell.rs:44:42", true);
+  const items = $borrow(pending.items, "test/corpus/held_borrow_of_own_cell.rs:44:42", true);
   try {
-    return borrow.map(f);
+    return items.map(f);
   } finally {
-    $unborrow(borrow);
+    $unborrow(items);
   }
 }
 
 // A callback that may borrow what's walked: each item's, here the same
 // cell's, which finds it borrowed.
 function each(watched, f) {
-  const borrow = $borrow(watched.items, "test/corpus/held_borrow_of_own_cell.rs:54:19", true);
+  const items = $borrow(watched.items, "test/corpus/held_borrow_of_own_cell.rs:54:19", true);
   try {
-    return borrow.map(f);
+    return items.map(f);
   } finally {
-    $unborrow(borrow);
+    $unborrow(items);
   }
 }
 
@@ -112,7 +112,7 @@ function main() {
   if (watched.items.borrows < 0) {
     $alreadyMutablyBorrowed("test/corpus/held_borrow_of_own_cell.rs:93:46");
   }
-  const borrow = watched.items;
-  console.log(`[${tried.join(", ")}] [${borrow.join(", ")}]`);
+  const items = watched.items;
+  console.log(`[${tried.join(", ")}] [${items.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

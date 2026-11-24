@@ -24,31 +24,33 @@ function fallenBack(x, TClone) {
 }
 
 function unwraps(a, r) {
-  const value$1 = $someValue(
+  const value = $someValue(
     $unwrap(
       cloned(a, {
-        clone(value$1) {
-          const value = $someValue(value$1);
-          return value$1 == null
-            ? value$1
-            : $some(value == null ? value : $some($someValue(value)));
+        clone(value) {
+          const value$1 = $someValue(value);
+          return value == null
+            ? value
+            : $some(value$1 == null ? value$1 : $some($someValue(value$1)));
         },
       }),
       "test/corpus/clone_dictionary_of_a_nested_option.rs:23:20",
     ),
   );
-  const value = $someValue(
+  const value$1 = $someValue(
     copiedOut(a, {
-      clone(value$1) {
-        const value = $someValue(value$1);
-        return value$1 == null ? value$1 : $some(value == null ? value : $some($someValue(value)));
+      clone(value) {
+        const value$1 = $someValue(value);
+        return value == null
+          ? value
+          : $some(value$1 == null ? value$1 : $some($someValue(value$1)));
       },
     }) ?? $some(undefined),
   );
   const option = defaulted(a, {
-    clone(value$1) {
-      const value = $someValue(value$1);
-      return value$1 == null ? value$1 : $some(value == null ? value : $some($someValue(value)));
+    clone(value) {
+      const value$1 = $someValue(value);
+      return value == null ? value : $some(value$1 == null ? value$1 : $some($someValue(value$1)));
     },
   });
   const result = fallenBack(r, {
@@ -58,8 +60,8 @@ function unwraps(a, r) {
         : value,
   });
   return [
-    value$1,
     value,
+    value$1,
     option != null ? $someValue(option) : undefined,
     result.TAG === "Ok" ? result._0 : undefined,
     r.TAG === "Ok" ? r._0 : undefined,

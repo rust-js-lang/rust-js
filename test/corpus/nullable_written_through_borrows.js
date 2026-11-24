@@ -107,7 +107,7 @@ function reportFiber(what, fiber) {
   const value = absent(fiber.owner);
   const isNone =
     $index(fiber.lanes, 0, "test/corpus/nullable_written_through_borrows.rs:108:20") == null;
-  const borrow = {
+  const target = {
     get value() {
       return fiber.target;
     },
@@ -116,7 +116,7 @@ function reportFiber(what, fiber) {
     },
   };
   console.log(
-    `${what}: ${value} ${fiber.owner === null} ${fiber.owner == null ? "None" : `Some(${fiber.owner})`} ${isNone} ${borrow.value == null ? "None" : `Some(${borrow.value})`} ${fiber.target === null}`,
+    `${what}: ${value} ${fiber.owner === null} ${fiber.owner == null ? "None" : `Some(${fiber.owner})`} ${isNone} ${target.value == null ? "None" : `Some(${target.value})`} ${fiber.target === null}`,
   );
 }
 

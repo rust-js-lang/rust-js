@@ -131,9 +131,9 @@ function main() {
     }, error);
     throw error;
   }
-  let borrowMut;
+  let parent;
   try {
-    borrowMut = $borrowMut(
+    parent = $borrowMut(
       $fieldCell(leaf.value, "parent"),
       "test/corpus/rc_refcell_dyn_shared.rs:85:18",
       true,
@@ -150,9 +150,9 @@ function main() {
     }, error);
     throw error;
   }
-  $weakDrop(borrowMut.value);
-  borrowMut.value = tmp;
-  $unborrow(borrowMut);
+  $weakDrop(parent.value);
+  parent.value = tmp;
+  $unborrow(parent);
   let tmp$1;
   try {
     tmp$1 = $borrow(
@@ -264,9 +264,9 @@ function main() {
           }
           const i = tmp[0];
           const sink = tmp[1];
-          let tmp$1;
+          let borrowMut;
           try {
-            tmp$1 = $borrowMut(sink.value, "test/corpus/rc_refcell_dyn_shared.rs:92:18", true);
+            borrowMut = $borrowMut(sink.value, "test/corpus/rc_refcell_dyn_shared.rs:92:18", true);
           } catch (error) {
             $cleanup(() => {
               $dropItems(sinks, (item) => {
@@ -278,10 +278,10 @@ function main() {
             throw error;
           }
           try {
-            tmp$1.impl.take(tmp$1, i + 1);
+            borrowMut.impl.take(borrowMut, i + 1);
           } catch (error) {
             $cleanup(() => {
-              $unborrow(tmp$1);
+              $unborrow(borrowMut);
               $dropItems(sinks, (item) => {
                 $rcDrop(item, (value) => {
                   value.impl.$drop?.(value.value);
@@ -290,7 +290,7 @@ function main() {
             }, error);
             throw error;
           }
-          $unborrow(tmp$1);
+          $unborrow(borrowMut);
         }
         let tmp;
         try {

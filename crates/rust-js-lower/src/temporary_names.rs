@@ -474,16 +474,28 @@ pub fn call_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
 
 /// What a call names its result as a JS variable, `trailingZeros` of
 /// `a.trailing_zeros()`: `call_name`'s, `suggested`.
+/// Whether a call of `def_id` is named first after the place it's called
+/// on, as rust-analyzer names a method by its receiver: a guard's maker,
+/// `RefCell::borrow_mut`, `Mutex::lock`, whose guard is the place's, `log`
+/// of `request.log.borrow_mut()`, and else its own name, `borrowMut`, where
+/// the place's word is taken there, a parameter's own (#1715).
+pub fn names_its_receiver(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let is_method = tcx.opt_associated_item(def_id).is_some_and(|item| item.is_method());
+    is_method && matches!(tcx.item_name(def_id).as_str(), "borrow" | "borrow_mut" | "lock")
+}
+
 pub fn call_suggestion(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     suggested(&call_name(tcx, def_id)?)
 }
 
 /// A name rust-analyzer suggests, Rust's spelling or a type's, as a JS
 /// variable's, lower camel case: `trailingZeros` of `trailing_zeros`,
-/// `httpServer` of `HTTPServer`; none where that's no JS identifier.
+/// `httpServer` of `HTTPServer`; none where that's no JS identifier, a
+/// word JS keeps or one a digit starts, a tuple struct's field `0` (#1715).
 pub fn suggested(name: &str) -> Option<String> {
     let name = variable_name(&rust_js_program::casing::camel_case(name));
-    (rust_js_program::names::js_ident(&name) == name).then_some(name)
+    let starts_a_word = name.starts_with(|c: char| c.is_alphabetic() || c == '_' || c == '$');
+    (starts_a_word && rust_js_program::names::js_ident(&name) == name).then_some(name)
 }
 
 impl<'tcx> FnCx<'_, 'tcx> {

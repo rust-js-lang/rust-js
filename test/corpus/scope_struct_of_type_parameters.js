@@ -44,11 +44,11 @@ export function createReactiveSystem({ notify }) {
 }
 
 export function keepLast(items, cleared) {
-  let count$1 = 0;
+  let count = 0;
   let last;
 
   function add(item) {
-    count$1 = (count$1 + 1) >>> 0;
+    count = (count + 1) >>> 0;
     put(item);
   }
 
@@ -67,18 +67,18 @@ export function keepLast(items, cleared) {
   if (cleared) {
     put();
   }
-  const count = count$1;
-  const value = lastIsSome();
+  const value = count;
+  const value$1 = lastIsSome();
   const old = last;
   last = undefined;
-  return [count, value, old];
+  return [value, value$1, old];
 }
 
 function keepLastBoxed(items, cleared) {
-  let count$1 = 0;
+  let count = 0;
   let last;
   function add(item) {
-    count$1 = (count$1 + 1) >>> 0;
+    count = (count + 1) >>> 0;
     put($some(item));
   }
   function put(item) {
@@ -94,11 +94,11 @@ function keepLastBoxed(items, cleared) {
   if (cleared) {
     put();
   }
-  const count = count$1;
-  const value = lastIsSome();
+  const value = count;
+  const value$1 = lastIsSome();
   const old = last;
   last = undefined;
-  return [count, value, old];
+  return [value, value$1, old];
 }
 
 function loudDrop_drop(loud) {
@@ -107,9 +107,9 @@ function loudDrop_drop(loud) {
 
 const Stack = {
   push(stack, k, dropK) {
-    let borrowMut;
+    let items;
     try {
-      borrowMut = $borrowMut(
+      items = $borrowMut(
         $fieldCell(stack, "items"),
         "test/corpus/scope_struct_of_type_parameters.rs:110:20",
         true,
@@ -121,23 +121,23 @@ const Stack = {
       throw error;
     }
     try {
-      borrowMut.value.push(k);
+      items.value.push(k);
     } finally {
-      $unborrow(borrowMut);
+      $unborrow(items);
     }
   },
 
   pop(stack, dropK) {
-    const borrowMut = $borrowMut(
+    const items = $borrowMut(
       $fieldCell(stack, "items"),
       "test/corpus/scope_struct_of_type_parameters.rs:114:33",
       true,
     );
     let popped;
     try {
-      popped = $pop(borrowMut.value);
+      popped = $pop(items.value);
     } finally {
-      $unborrow(borrowMut);
+      $unborrow(items);
     }
     if (popped != null) {
       dropK?.($someValue(popped));
@@ -201,9 +201,9 @@ function popTwice(items, more, dropT) {
 
 const Pile = {
   push(pile, k, dropK) {
-    let borrowMut;
+    let items;
     try {
-      borrowMut = $borrowMut(
+      items = $borrowMut(
         $fieldCell(pile, "items"),
         "test/corpus/scope_struct_of_type_parameters.rs:136:20",
         true,
@@ -215,23 +215,23 @@ const Pile = {
       throw error;
     }
     try {
-      borrowMut.value.push(k);
+      items.value.push(k);
     } finally {
-      $unborrow(borrowMut);
+      $unborrow(items);
     }
   },
 
   pop(pile, dropK) {
-    const borrowMut = $borrowMut(
+    const items = $borrowMut(
       $fieldCell(pile, "items"),
       "test/corpus/scope_struct_of_type_parameters.rs:140:33",
       true,
     );
     let popped;
     try {
-      popped = borrowMut.value.pop();
+      popped = items.value.pop();
     } finally {
-      $unborrow(borrowMut);
+      $unborrow(items);
     }
     if (popped != null) {
       dropK?.(popped);
@@ -242,11 +242,11 @@ const Pile = {
 
 function popLoud() {
   const pile = { items: [["x"]] };
-  let borrow;
+  let items;
   try {
     Pile.push(pile, ["y"], loudDrop_drop);
     Pile.pop(pile, loudDrop_drop);
-    borrow = $borrow(
+    items = $borrow(
       $fieldCell(pile, "items"),
       "test/corpus/scope_struct_of_type_parameters.rs:152:16",
     );
@@ -259,7 +259,7 @@ function popLoud() {
       }
     }
   }
-  return borrow.value.length;
+  return items.value.length;
 }
 
 const Shown = {

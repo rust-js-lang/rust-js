@@ -64,4 +64,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^temporary_names.rs$"],
     snapshots: true,
   },
+  {
+    name: "guard-named-by-its-call",
+    breaks: "a `RefCell` guard the source never names is `borrowMut` of `request.log.borrow_mut()`, not `log`, the field it borrows (#1715)",
+    file: "crates/rust-js-mir/src/hints/names.rs",
+    find: "                        .filter(|&&def_id| temporary_names::names_its_receiver(self.tcx, def_id))\n",
+    replace: "                        .filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^guard_named_after_the_field_it_borrows.rs$"],
+    snapshots: true,
+  },
 ];

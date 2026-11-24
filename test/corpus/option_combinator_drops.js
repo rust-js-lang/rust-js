@@ -231,7 +231,7 @@ function main() {
         if (d != null) {
           dDrop_drop(d);
         }
-        const value = keep(
+        const value$1 = keep(
           $some(make(7)),
           (d) => d != null,
           (option) => {
@@ -240,19 +240,19 @@ function main() {
             }
           },
         );
-        console.log(`generic ${value != null}`);
-        if (value != null) {
-          if ($someValue(value) != null) {
-            dDrop_drop($someValue(value));
+        console.log(`generic ${value$1 != null}`);
+        if (value$1 != null) {
+          if ($someValue(value$1) != null) {
+            dDrop_drop($someValue(value$1));
           }
         }
 
-        const value$2 = make(8);
+        const value = make(8);
         const fallback = "Nothing";
         let mapped;
-        if (value$2 != null) {
+        if (value != null) {
           try {
-            mapped = { TAG: "One", _0: value$2 };
+            mapped = { TAG: "One", _0: value };
           } catch (error) {
             throw $unwindsOn(error);
           } finally {
@@ -269,13 +269,13 @@ function main() {
         if (one.TAG === "One") {
           console.log(`one ${one._0[0]}`);
         }
-        const value$1 = make(0);
+        const value$2 = make(0);
         const fallback$1 = { TAG: "One", _0: [9] };
         try {
           let mapped;
-          if (value$1 != null) {
+          if (value$2 != null) {
             try {
-              mapped = { TAG: "One", _0: value$1 };
+              mapped = { TAG: "One", _0: value$2 };
             } catch (error) {
               throw $unwindsOn(error);
             } finally {

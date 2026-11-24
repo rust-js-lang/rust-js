@@ -69,11 +69,11 @@ function lentAgain() {
   } finally {
     $unborrow(guard);
   }
-  const borrow = $borrow(
+  const slot = $borrow(
     $fieldCell(slots, "slot"),
     "test/corpus/refcell_guard_lent_as_a_dyn_after_get_mut.rs:38:33",
   );
-  console.log(`${borrow.value == null ? "None" : `Some(${borrow.value})`}`);
+  console.log(`${slot.value == null ? "None" : `Some(${slot.value})`}`);
   first = {
     impl: u32SetU32,
     get value() {
@@ -132,11 +132,11 @@ function lentOnce() {
   } finally {
     $unborrow(guard);
   }
-  const borrow = $borrow(
+  const slot = $borrow(
     $fieldCell(slots, "slot"),
     "test/corpus/refcell_guard_lent_as_a_dyn_after_get_mut.rs:59:36",
   );
-  console.log(`${borrow.value == null ? "None" : `Some(${borrow.value})`} ${slots.count}`);
+  console.log(`${slot.value == null ? "None" : `Some(${slot.value})`} ${slots.count}`);
 }
 
 function main() {

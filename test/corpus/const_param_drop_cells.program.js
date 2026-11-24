@@ -57,11 +57,11 @@ function main() {
     $alreadyBorrowed("test/corpus/const_param_drop_cells.rs:42:12");
   }
   h.cell.push(1);
-  const borrow = $borrow(h.cell, "test/corpus/const_param_drop_cells.rs:43:32", true);
+  const cell = $borrow(h.cell, "test/corpus/const_param_drop_cells.rs:43:32", true);
   try {
-    console.log(`[${borrow.join(", ")}] ${filled("a", 3)}`);
+    console.log(`[${cell.join(", ")}] ${filled("a", 3)}`);
   } finally {
-    $unborrow(borrow);
+    $unborrow(cell);
   }
 }
 //# sourceMappingURL=case.js.map

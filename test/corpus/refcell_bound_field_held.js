@@ -27,11 +27,8 @@ function main() {
   );
   const held = $borrow(lent, "test/corpus/refcell_bound_field_held.rs:22:21", true);
   try {
-    const borrowMut = $borrowMut(
-      $fieldCell(wrap, "n"),
-      "test/corpus/refcell_bound_field_held.rs:23:13",
-    );
-    borrowMut.value = (borrowMut.value + 1) & 65535;
+    const n = $borrowMut($fieldCell(wrap, "n"), "test/corpus/refcell_bound_field_held.rs:23:13");
+    n.value = (n.value + 1) & 65535;
     console.log(`${held.value}`);
   } finally {
     $unborrow(held);

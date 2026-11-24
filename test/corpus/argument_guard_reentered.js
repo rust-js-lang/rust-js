@@ -34,16 +34,16 @@ export function main() {
   console.log(`${prepare(copied, response)}`);
   $borrowMut($fieldCell(response, "nonce"), "test/corpus/argument_guard_reentered.rs:30:21").value =
     "again";
-  const borrow = $borrow(
+  const nonce = $borrow(
     $fieldCell(response, "nonce"),
     "test/corpus/argument_guard_reentered.rs:31:41",
     true,
   );
   let length;
   try {
-    length = prepare(borrow.value, response);
+    length = prepare(nonce.value, response);
   } finally {
-    $unborrow(borrow);
+    $unborrow(nonce);
   }
   console.log(`${length}`);
 }

@@ -95,7 +95,7 @@ pub fn detach(fiber: &Fiber) {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  const times = root.times;\n  times[$at(times, index, \"lib.rs:16:10\")] = 1;\n");
   expect(js).toContain("  const old = root.times;\n  root.times = [];\n  return old;\n");
-  expect(js).toContain('  const borrow = $borrow($fieldCell(cursor, "current"), "lib.rs:41:20", true);\n');
+  expect(js).toContain('  const current = $borrow($fieldCell(cursor, "current"), "lib.rs:41:20", true);\n');
   expect(js).toContain("export let current;\n");
   expect(js).toContain("  current = fiber;\n");
   // Its guard the field itself, no drop of its own to hold it (#700).

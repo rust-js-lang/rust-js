@@ -344,7 +344,7 @@ test("a library's checked cell of a Vec of dyn Fns is no consumer's cell of a Ve
   // Checked: the held borrow counted, the momentary one checked alone (3901c815a).
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
   expect(dep).toContain("  if (hooks.list.borrows) {\n    $alreadyBorrowed(\"dep.rs:17:16\");\n  }\n  hooks.list.push(hook);\n");
-  expect(dep).toContain("  const borrow = $borrow(hooks.list, \"dep.rs:21:28\", true);\n");
+  expect(dep).toContain("  const list = $borrow(hooks.list, \"dep.rs:21:28\", true);\n");
   expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("function push(siblings, child) {\n  siblings.push(child);\n}");
 }, 300_000);
 

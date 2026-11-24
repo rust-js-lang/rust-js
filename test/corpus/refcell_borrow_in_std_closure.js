@@ -16,10 +16,10 @@ function main() {
   }
   log.items.push(3);
   console.log(`${$borrow(log.items, "test/corpus/refcell_borrow_in_std_closure.rs:17:30").length}`);
-  const borrow = $borrow(log.items, "test/corpus/refcell_borrow_in_std_closure.rs:18:27", true);
+  const items = $borrow(log.items, "test/corpus/refcell_borrow_in_std_closure.rs:18:27", true);
   let found;
   try {
-    found = borrow.some((item) => {
+    found = items.some((item) => {
       if (log.items.borrows) {
         $alreadyBorrowed("test/corpus/refcell_borrow_in_std_closure.rs:19:19");
       }
@@ -27,7 +27,7 @@ function main() {
       return false;
     });
   } finally {
-    $unborrow(borrow);
+    $unborrow(items);
   }
   console.log(`${found}`);
 }

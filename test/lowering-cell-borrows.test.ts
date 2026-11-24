@@ -459,7 +459,7 @@ pub fn first(parent: &Node) -> String {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("function push(siblings, child) {\n  siblings.push(child);\n}");
   expect(js).toContain("export function first(parent) {\n  return $index(parent.children, 0, \"lib.rs:44:29\").name;\n}");
-  expect(js).toContain("const borrow = $borrow(root.hooks, \"lib.rs:20:16\", true);");
+  expect(js).toContain("const hooks = $borrow(root.hooks, \"lib.rs:20:16\", true);");
   const lib = await import(join(dir, "lib.js"));
   const r = lib.root();
   const parent = lib.node("root");
@@ -941,7 +941,7 @@ pub fn grab() -> bool {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function last(node) {\n  let next;\n  while ((next = node.next) != null) {\n    node = next;\n  }\n  return node;\n}");
-  expect(js).toContain('const borrow = $borrow($fieldCell(slot, "item"), "lib.rs:43:15", true);');
+  expect(js).toContain('const item = $borrow($fieldCell(slot, "item"), "lib.rs:43:15", true);');
   const lib = await import(join(dir, "lib.js"));
   expect(lib.signal(lib.chain(4))()).toBe(3);
   expect(() => lib.grab()).toThrow("RefCell already borrowed");
