@@ -329,6 +329,32 @@ A crate's project is now held while a run measures it, by its claim,
 claim, `removeCrateProject`. A store says how its entries are removed,
 `Store.remove`, and the checkouts' budget removes each entry as its store
 does, where before it removed every store's entries whole. One claim
-protocol, test/kept.ts', is the only one, and `claimHeld` answers whether a
-live process holds a claim, for the kept apps' prune and the crate corpus's
+protocol, test/kept.ts', is the only one, and `claimHeld` (since `isHeld`,
+below) answers whether a live process holds a claim, for the kept apps' prune and the crate corpus's
 alike.
+
+## Amendment (2026-11-25): the Crater's work is held as a run uses it, by the same claim
+
+`target/crater/` had #2562's shape: nothing held what a Crater run was
+using, so the stores' prune beside a check's jobs, or its budget, could
+remove the native target every crate's tests build in, or a crate's
+source copy, under the run, by a listing made before the run began it.
+
+The claim is now one mechanism, test/kept.ts', where three stores had
+their own pieces of it (the kept apps' prune, the crate corpus's
+`holdCrateProject` and `removeCrateProject`):
+
+- `whileHeld(paths, use)` runs `use` with each path held by its claim,
+  `<path>.owner`, waited for where another live process holds it;
+- `isHeld(path)` answers whether a live process holds it, and a store's
+  listing leaves out what's held and the claims themselves (`claimMaking`);
+- `removeClaimed(entry)` removes a listed entry only under its claim, so
+  one a run began using after the listing stays.
+
+A Crater run holds what its crates share, `native/`, `js/`, `fetch/` and
+`expand/`, for the whole run (`sharedOf`), and each crate's copies, its
+source's, its JS's and that one's expansion, while it's measured (`ownOf`).
+Each path the run works in is one of these, so what it holds is what it
+uses. Its store's bound and the checkouts' budget remove its
+entries by `removeClaimed`. A second Crater run in the same checkout waits
+for the first, saying so, as two would race on a crate's copies anyway.

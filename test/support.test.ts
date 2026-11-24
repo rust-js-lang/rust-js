@@ -10,11 +10,11 @@ import { basename, dirname, join, relative } from "node:path";
 import { bytesOf, volumeBytes } from "../tooling/bounded.js";
 import { disk, diskProfile, floorBytes, mainCheckoutOf } from "./bounded";
 import { boundEntries, budgetBytes, capOf, entriesOf, holdEntries, holdToBudget, overBudget, pinnedToolchains, sccacheConfigText, sccacheWritten, sizeSccache, unpinnedToolchains, type Store } from "../scripts/disk";
-import { adoptRetiredStores, holdKept, indexedSize, keptAppsCap, keptStores, mayKeep, nativeCache, nativeSources, noteKept, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, takeClaim, verifiedRuns, walkDue, workingSetMs, workingSetSince } from "./kept";
+import { adoptRetiredStores, claimMaking, holdKept, indexedSize, keptAppsCap, keptStores, mayKeep, nativeCache, nativeSources, noteKept, pruneKept, pruneKeptApps, pruneKeptStores, removeClaimed, retiredStores, takeClaim, verifiedRuns, walkDue, whileHeld, workingSetMs, workingSetSince } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
-import { boundCrateProjects, crateProjectsKept, holdCrateProject, removeCrateProject } from "../scripts/crate-corpus";
-import { boundCrater } from "../scripts/crater";
+import { boundCrateProjects, crateProjectsKept, type Crate } from "../scripts/crate-corpus";
+import { boundCrater, craterKept, ownOf, sharedOf } from "../scripts/crater";
 import { keptMaps, mapsCap, pruneMaps } from "../scripts/testMap";
 import { keptSerdeFlags } from "./serde-kept";
 import { runSync } from "./child";
@@ -705,22 +705,66 @@ test("a crate project being measured is never removed under its run, claimed bef
     utimesSync(join(dir, name, "used"), new Date(0), new Date(0));
   };
   for (const name of ["held", "listed", "free"]) made(name);
-  const release = await holdCrateProject(join(dir, "held"));
-  // Held as it's listed: not a project to remove, nor its claim one.
-  expect(crateProjectsKept(dir).map(({ path }) => basename(path)).sort()).toEqual(["free", "listed"]);
-  const listed = crateProjectsKept(dir);
-  // Held after it's listed, as the run begins measuring it.
-  const releaseListed = await holdCrateProject(join(dir, "listed"));
-  const store: Store = { name: "crate-corpus", dir, kept: () => listed, remove: removeCrateProject };
-  holdToBudget([store], Number.POSITIVE_INFINITY, { held: 0, free: () => floorBytes, since: Date.now() });
-  expect(readdirSync(dir).filter((name) => !name.includes(".")).sort()).toEqual(["held", "listed"]);
-  boundCrateProjects({ dir, cap: 0, free: () => floorBytes - 1 });
-  expect(readdirSync(dir).filter((name) => !name.includes(".")).sort()).toEqual(["held", "listed"]);
+  const left = () => readdirSync(dir).filter((name) => !claimMaking(name)).sort();
+  await whileHeld([join(dir, "held")], async () => {
+    // Held as it's listed: not a project to remove, nor its claim one.
+    expect(crateProjectsKept(dir).map(({ path }) => basename(path)).sort()).toEqual(["free", "listed"]);
+    const listed = crateProjectsKept(dir);
+    // Held after it's listed, as the run begins measuring it.
+    await whileHeld([join(dir, "listed")], async () => {
+      const store: Store = { name: "crate-corpus", dir, kept: () => listed, remove: removeClaimed };
+      holdToBudget([store], Number.POSITIVE_INFINITY, { held: 0, free: () => floorBytes, since: Date.now() });
+      expect(left()).toEqual(["held", "listed"]);
+      boundCrateProjects({ dir, cap: 0, free: () => floorBytes - 1 });
+      expect(left()).toEqual(["held", "listed"]);
+    });
+  });
   // Measured, each goes as any other.
-  release();
-  releaseListed();
   boundCrateProjects({ dir, cap: 0, free: () => floorBytes });
   expect(readdirSync(dir)).toEqual([]);
+});
+
+// The Crater's work is held as a run uses it, as a crate corpus's project
+// is (#2562), by the one claim (test/kept.ts' `whileHeld`): what its
+// crates share the whole run, the native target, the JS targets' folder,
+// the fetches' and the expansions' target, and a crate's copies while
+// it's measured. Neither
+// held as it's listed nor held after it's listed is removed, by the
+// store's cap or the checkouts' budget alike.
+test("the Crater's work a run is using is never removed under it, held before or after the prune lists it", async () => {
+  const dir = fixture("crater-held");
+  const crate: Crate = { name: "a", version: "1.0.0", bar: "runs" };
+  for (const name of ["native", "js", "fetch", "expand", "a-1.0.0", "a-1.0.0-js", "a-1.0.0-js-expanded", "b-1.0.0", "kept"]) {
+    mkdirSync(join(dir, name), { recursive: true });
+    writeFileSync(join(dir, name, "made"), Buffer.alloc(64 * 1024));
+    utimesSync(join(dir, name), new Date(0), new Date(0));
+  }
+  const left = () => readdirSync(dir).filter((name) => !claimMaking(name)).sort();
+  const using = ["a-1.0.0", "a-1.0.0-js", "a-1.0.0-js-expanded", "expand", "fetch", "js", "kept", "native"];
+  await whileHeld(Object.values(sharedOf(dir)), async () => {
+    const listed = craterKept(dir);
+    expect(listed.map(({ path }) => basename(path)).sort()).toEqual(["a-1.0.0", "a-1.0.0-js", "a-1.0.0-js-expanded", "b-1.0.0"]);
+    await whileHeld(Object.values(ownOf(dir, crate)), async () => {
+      holdToBudget([{ name: "crater", dir, kept: () => listed, remove: removeClaimed }], Number.POSITIVE_INFINITY, { held: 0, free: () => floorBytes, since: Date.now() });
+      expect(left()).toEqual(using);
+      boundCrater({ dir, cap: 0, free: () => floorBytes - 1 });
+      expect(left()).toEqual(using);
+    });
+  });
+  // Held by a run as the cap's bound is about to remove it, after its
+  // listing: it stays.
+  const { copy } = ownOf(dir, crate);
+  let asked = 0;
+  const free = () => {
+    if (asked++ === 0) takeClaim(`${copy}.owner`);
+    return floorBytes - 1;
+  };
+  boundCrater({ dir, cap: Number.POSITIVE_INFINITY, free });
+  expect(left()).toEqual(["a-1.0.0", "kept"]);
+  rmSync(`${copy}.owner`);
+  // The run over, all of it goes but the verdicts.
+  boundCrater({ dir, cap: 0, free: () => floorBytes });
+  expect(readdirSync(dir)).toEqual(["kept"]);
 });
 
 // One root of what development keeps (#1213): a worktree finds the main

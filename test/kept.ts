@@ -361,9 +361,53 @@ export function alive(pid: number): boolean {
   }
 }
 
-/** Whether a live process holds the claim `owner` (`takeClaim`). */
-export function claimHeld(owner: string): boolean {
-  return alive(Number(readOwner(owner)));
+/** Whether a live process holds `path`, a thing a store keeps, by its
+ * claim, `<path>.owner` (`takeClaim`). */
+export function isHeld(path: string): boolean {
+  return alive(Number(readOwner(`${path}.owner`)));
+}
+
+/** Whether `name`, beside the things a store keeps, is a claim or a
+ * claim's makings (`takeClaim`): `<thing>.owner`, `<thing>.owner.<pid>`
+ * or `<thing>.owner.taking`, never a thing to list or remove. */
+export function claimMaking(name: string): boolean {
+  return /\.owner(\.\d+|\.taking)?$/.test(name);
+}
+
+/** `use` run with each of `paths` held, things a run uses that a store's
+ * prune may remove: each by its claim, `<path>.owner`, this process's
+ * (`takeClaim`), taken in the order given and waited for where another
+ * live process holds it, then given up as `use` ends. A store lists no held
+ * thing (`isHeld`) and removes one only under its claim (`removeClaimed`):
+ * the prune beside a check's jobs removed a crate's project under the run
+ * measuring it, by a listing made before the run began it (#2562). */
+export async function whileHeld<T>(paths: string[], use: () => Promise<T>): Promise<T> {
+  const owners: string[] = [];
+  try {
+    for (const path of paths) {
+      const owner = `${path}.owner`;
+      mkdirSync(dirname(owner), { recursive: true });
+      for (let waited = false; !takeClaim(owner); waited = true) {
+        if (!waited) console.error(`waiting for ${path}, which process ${readOwner(owner)} is using`);
+        await Bun.sleep(250);
+      }
+      owners.push(owner);
+    }
+    return await use();
+  } finally {
+    for (const owner of owners) rmSync(owner, { force: true });
+  }
+}
+
+/** A thing a store kept, `entry`, removed as a prune removes it: only
+ * under its claim, so one a run began using since the prune listed it
+ * stays (`whileHeld`). Whether it removed it. */
+export function removeClaimed(entry: Kept): boolean {
+  const owner = `${entry.path}.owner`;
+  if (!takeClaim(owner)) return false;
+  rmSync(entry.path, { recursive: true, force: true });
+  rmSync(owner, { force: true });
+  return true;
 }
 
 /** The pid a claim, `owner`, names, where it's there as it's read. */
@@ -451,17 +495,10 @@ export function pruneKeptApps({ base = keptApps, cap = keptAppsCap, free = () =>
     // Each `<name>_<n>`, not its claim nor a claim's makings beside it.
     for (const name of list(join(base, scope)).filter((entry) => /_\d+$/.test(entry))) {
       const path = join(base, scope, name);
-      if (!claimHeld(`${path}.owner`)) kept.push({ path, bytes: bytesOf(path), used: statSync(path).mtimeMs });
+      if (!isHeld(path)) kept.push({ path, bytes: bytesOf(path), used: statSync(path).mtimeMs });
     }
   }
-  const remove = ({ path }: Kept) => {
-    const owner = `${path}.owner`;
-    if (!takeClaim(owner)) return false;
-    rmSync(path, { recursive: true, force: true });
-    rmSync(owner, { force: true });
-    return true;
-  };
-  return evict(kept, { cap, free, floor: floorBytes, remove });
+  return evict(kept, { cap, free, floor: floorBytes, remove: removeClaimed });
 }
 
 /** Whether a store may keep what it's about to write: not below the disk's

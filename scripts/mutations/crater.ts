@@ -20,6 +20,22 @@ export const mutations: Mutation[] = [
     tests: ["test/crater.test.ts", "-t", "a run past its budget runs each test it didn't say again alone"],
   },
   {
+    name: "crater-held-listed",
+    breaks: "the prune lists the Crater's work a run is using, its native target or a crate's copy, so the stores' prune beside a check's jobs removes it under the run, as it removed a crate corpus's project (#2562)",
+    file: "scripts/crater.ts",
+    find: "    .filter((path) => !isHeld(path))\n",
+    replace: "",
+    tests: ["test/support.test.ts", "-t", "the Crater's work a run is using is never removed under it"],
+  },
+  {
+    name: "crater-removed-unclaimed",
+    breaks: "the Crater's cap's bound removes what it listed whole, unclaimed, so a crate a run began measuring since the listing is removed under it (#2562)",
+    file: "scripts/crater.ts",
+    find: "  return evict(craterKept(dir), { cap, free, floor: floorBytes, remove: removeClaimed });",
+    replace: "  return evict(craterKept(dir), { cap, free, floor: floorBytes });",
+    tests: ["test/support.test.ts", "-t", "the Crater's work a run is using is never removed under it"],
+  },
+  {
     name: "crater-bound-throws-on-gone",
     breaks: "Crater's store's bound throws on an entry another run removed since it was listed",
     file: "scripts/crater.ts",

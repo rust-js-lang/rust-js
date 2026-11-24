@@ -35,8 +35,8 @@ import { worktreeRoots } from "./strays";
 import { sanityRunsCap, sanityRunsStore } from "./select";
 import { jobTimesCap, jobTimesStore } from "./jobTimes";
 import { compileCache, capBytes as compileCap, prune as pruneCompiles } from "../test/compiles";
-import { holdKept, keptAppsCap, keptBuilds, keptStores, lastCheckMark, pruneKeptStores, removeWhole, rustlantisCap, rustlantisStore, workingBytes, workingSetSince } from "../test/kept";
-import { boundCrateProjects, crateProjectsCap, crateProjectsKept, removeCrateProject } from "./crate-corpus";
+import { holdKept, keptAppsCap, keptBuilds, keptStores, lastCheckMark, pruneKeptStores, removeClaimed, removeWhole, rustlantisCap, rustlantisStore, workingBytes, workingSetSince } from "../test/kept";
+import { boundCrateProjects, crateProjectsCap, crateProjectsKept } from "./crate-corpus";
 import { boundCrater, craterCap, craterKept } from "./crater";
 import { bound as boundPorts, ports, portsCap } from "./react-in-rust";
 import { keptMaps, mapStore, mapsCap, pruneMaps } from "./testMap";
@@ -146,8 +146,8 @@ export function holdToBudget(
   const inside = stores.filter((store) => !store.outside);
   const listed = inside.map((store) => ({ entries: store.kept?.() ?? [], remove: store.remove ?? removeWhole }));
   const kept = listed.flatMap(({ entries }) => entries);
-  // Each removed as its store removes it: a crate's project only under its
-  // claim, as a run measuring it holds it (#2562).
+  // Each removed as its store removes it: a crate's project and the
+  // Crater's work only under its claim, as a run using it holds it (#2562).
   const removers = new Map(listed.flatMap(({ entries, remove }) => entries.map((entry) => [entry, remove] as const)));
   const remove = (entry: Kept) => removers.get(entry)!(entry);
   const rest = total - kept.reduce((n, entry) => n + entry.bytes, 0);
@@ -289,8 +289,8 @@ export function stores(): Store[] {
     const bounded = own || !leasedIn(tree);
     const label = (path: string) => (tree === main ? `target/${path}` : `${resolve(tree).split("/").pop()}/target/${path}`);
     inChecks.push(
-      { name: label("crate-corpus"), dir: at("crate-corpus"), cap: crateProjectsCap, bound: bounded ? (free) => void boundCrateProjects({ dir: at("crate-corpus"), free }) : undefined, kept: bounded ? () => crateProjectsKept(at("crate-corpus")) : undefined, remove: removeCrateProject },
-      { name: label("crater"), dir: at("crater"), cap: craterCap, bound: bounded ? (free) => void boundCrater({ dir: at("crater"), free }) : undefined, kept: bounded ? () => craterKept(at("crater")) : undefined },
+      { name: label("crate-corpus"), dir: at("crate-corpus"), cap: crateProjectsCap, bound: bounded ? (free) => void boundCrateProjects({ dir: at("crate-corpus"), free }) : undefined, kept: bounded ? () => crateProjectsKept(at("crate-corpus")) : undefined, remove: removeClaimed },
+      { name: label("crater"), dir: at("crater"), cap: craterCap, bound: bounded ? (free) => void boundCrater({ dir: at("crater"), free }) : undefined, kept: bounded ? () => craterKept(at("crater")) : undefined, remove: removeClaimed },
       { name: label("kept-apps"), dir: at("kept-apps"), cap: keptAppsCap },
       { name: label("compile-cache"), dir: at("compile-cache"), cap: compileCap(), bound: own ? (free) => void pruneCompiles({ root: compileCache, free }) : undefined },
       mutantsStore(tree, label("mutants"), bounded),

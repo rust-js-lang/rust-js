@@ -50,6 +50,7 @@ import {
 import { join, resolve } from "node:path";
 import { currentBuild } from "../test/compiles";
 import { floorBytes } from "../test/bounded";
+import { claimMaking, isHeld, removeClaimed, whileHeld } from "../test/kept";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { corpusRows, type Crate } from "./crate-corpus";
 import { cut, cutFor, dropped, errorsAt, followed, items, leftByCut, modulePath, offTarget, placeOf, testModulePath, testOnlyFile, testsOfExpanded, underItems } from "./crater-cuts";
@@ -260,23 +261,51 @@ function endedWith(signal: "SIGINT" | "SIGTERM" | "SIGHUP") {
 export const craterCap = 6 * 2 ** 30;
 
 /** `target/crater/` held to `cap`, its least recently changed entries
- * first, its verdicts never, nothing kept below the disk's floor. */
+ * first, its verdicts never, nothing kept below the disk's floor, nor
+ * what a run is using: each removed only under its claim (test/kept.ts'
+ * `removeClaimed`). */
 export function boundCrater({ dir = work, cap = craterCap, free = () => freeBytes(dir) }: { dir?: string; cap?: number; free?: () => number } = {}): { removed: number; size: number } {
-  return evict(craterKept(dir), { cap, free, floor: floorBytes });
+  return evict(craterKept(dir), { cap, free, floor: floorBytes, remove: removeClaimed });
 }
 
-/** Each run's work in `dir`, but what it keeps, `kept`, with when it last
- * changed. */
+/** Each run's work in `dir` no run is using (test/kept.ts' `whileHeld`),
+ * but what it keeps, `kept`, nor a claim, with when it last changed. */
 export function craterKept(dir: string): Kept[] {
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
-    .filter((name) => name !== "kept")
+    .filter((name) => name !== "kept" && !claimMaking(name))
     .map((name) => join(dir, name))
+    .filter((path) => !isHeld(path))
     .flatMap((path) => {
       // One another run removed since it was listed is no longer kept.
       const seen = statSync(path, { throwIfNoEntry: false });
       return seen === undefined ? [] : [{ path, bytes: bytesOf(path), used: seen.mtimeMs }];
     });
+}
+
+/** Where a run's crates work in `dir` that they share, each held the
+ * whole run (test/kept.ts' `whileHeld`), so the stores' prune beside a
+ * check's jobs removes none of it under the run, as it removed a crate
+ * corpus's project (#2562): the native target each crate's tests build
+ * in, the folder of each crate's JS target, where a crate not in Cargo's
+ * registry yet is fetched, and the target its tests are expanded in. */
+export function sharedOf(dir: string) {
+  return { native: join(dir, "native"), js: join(dir, "js"), fetch: join(dir, "fetch"), expand: join(dir, "expand") };
+}
+
+/** Where `crate`'s run in `dir` works of its own, held while it's
+ * measured: its source's copy, its native tests built from it; the copy
+ * its JS is cut and built from; and where that copy's tests are expanded. */
+export function ownOf(dir: string, crate: Crate) {
+  const copy = join(dir, `${crate.name}-${crate.version}`);
+  const js = `${copy}-js`;
+  return { copy, js, expanded: expandedOf(js) };
+}
+
+/** Where the tests of `jsDir`, a crate's JS copy, are expanded: beside it,
+ * not in it, where no scan of its source reads it. */
+function expandedOf(jsDir: string): string {
+  return `${jsDir}-expanded`;
 }
 
 function spawned(
@@ -327,7 +356,7 @@ async function source(crate: Crate): Promise<string | { problem: string }> {
       : undefined;
   const found = find();
   if (found) return found;
-  const fetching = join(work, "fetch", crate.name);
+  const fetching = join(sharedOf(work).fetch, crate.name);
   mkdirSync(join(fetching, "src"), { recursive: true });
   writeFileSync(join(fetching, "src", "lib.rs"), "");
   writeFileSync(
@@ -407,7 +436,7 @@ async function measure(crate: Crate, build: string): Promise<Verdict> {
     `${crate.name}-${crate.version}-${keptKey(crate, build)}.json`,
   );
   if (existsSync(kept)) return JSON.parse(readFileSync(kept, "utf8"));
-  const verdict = await asked(crate);
+  const verdict = await whileHeld(Object.values(ownOf(work, crate)), () => asked(crate));
   // One that couldn't be asked is asked again next time.
   if (!("problem" in verdict)) {
     mkdirSync(join(work, "kept"), { recursive: true });
@@ -420,7 +449,7 @@ async function measure(crate: Crate, build: string): Promise<Verdict> {
 async function asked(crate: Crate): Promise<Verdict> {
   const from = await source(crate);
   if (typeof from !== "string") return from;
-  const dir = join(work, `${crate.name}-${crate.version}`);
+  const { copy: dir, js: jsDir } = ownOf(work, crate);
   rmSync(dir, { recursive: true, force: true });
   cpSync(from, dir, { recursive: true });
   // Its own lock where it packs one, as its tests were run against.
@@ -428,7 +457,7 @@ async function asked(crate: Crate): Promise<Verdict> {
   // The features its row names, its default ones off, Cargo's own flags,
   // the same to both runs (#1121).
   const featured = crate.features ? ["--no-default-features", "--features", crate.features.join(",")] : [];
-  const nativeEnv = { CARGO_TARGET_DIR: join(work, "native"), TZ: zone };
+  const nativeEnv = { CARGO_TARGET_DIR: sharedOf(work).native, TZ: zone };
   // Its library's tests and its integration tests'; where those don't
   // build, its library's alone: each test binary built, then run by itself,
   // an integration test's outcomes keyed by its file, `tests/version.rs::t1`
@@ -454,7 +483,6 @@ async function asked(crate: Crate): Promise<Verdict> {
   }
   // The JS's own copy, whose refused tests are cut from it, round by round:
   // what one cut leaves may be refused next, a helper's callers.
-  const jsDir = `${dir}-js`;
   rmSync(jsDir, { recursive: true, force: true });
   cpSync(from, jsDir, { recursive: true });
   const manifest = readFileSync(join(jsDir, "Cargo.toml"), "utf8");
@@ -464,7 +492,7 @@ async function asked(crate: Crate): Promise<Verdict> {
   // read as the other's, and chrono's whole run failed (#1087). Made anew
   // each time, as a build that stopped may have left its unit as done
   // with no tests written, and gone after, as its verdict is kept.
-  const target = join(work, "js", crate.name);
+  const target = join(sharedOf(work).js, crate.name);
   rmSync(target, { recursive: true, force: true });
   // The tests listed to cut before its JS is built, each under its issue,
   // typenum's that hangs rust-js's layout (#1269): cut, never asked.
@@ -698,16 +726,15 @@ export async function testsMadeBy(
 async function expanded(jsDir: string, featured: string[]): Promise<{ tests: Set<string> } | { problem: string }> {
   const manifest = readFileSync(join(jsDir, "Cargo.toml"), "utf8");
   const test = /^\[\[test\]\]\n(?:(?!\[)[^\n]*\n)*?name\s*=\s*"([^"]+)"/m.exec(manifest)?.[1];
-  // Beside the copy, not in it, where no scan of its source reads it; in
-  // a folder of its own, gone after, as rustc writes its dep-info by it.
-  const folder = `${jsDir}-expanded`;
+  // A folder of its own, gone after, as rustc writes its dep-info by it.
+  const folder = expandedOf(jsDir);
   const out = join(folder, "expanded.rs");
   rmSync(folder, { recursive: true, force: true });
   mkdirSync(folder);
   const ran = await spawned(
     ["cargo", "rustc", ...(test === undefined ? ["--lib"] : ["--test", test]), "--profile", "test", ...featured, "--", "-Zunpretty=expanded", "-o", out],
     jsDir,
-    { CARGO_TARGET_DIR: join(work, "expand"), RUSTC_BOOTSTRAP: "1", RUSTFLAGS: "--cap-lints=warn" },
+    { CARGO_TARGET_DIR: sharedOf(work).expand, RUSTC_BOOTSTRAP: "1", RUSTFLAGS: "--cap-lints=warn" },
     600,
   );
   const text = existsSync(out) ? readFileSync(out, "utf8") : "";
@@ -1056,15 +1083,17 @@ if (import.meta.main) {
     const width = atOnce("crateBuild");
     const verdicts = new Map<string, Verdict>();
     let next = 0;
-    await Promise.all(
-      Array.from({ length: Math.min(width, chosen.length) }, async () => {
-        while (next < chosen.length) {
-          const crate = chosen[next++];
-          const verdict = await measure(crate, build);
-          verdicts.set(crate.name, verdict);
-          console.log(said(crate, verdict, decided));
-        }
-      }),
+    await whileHeld(Object.values(sharedOf(work)), () =>
+      Promise.all(
+        Array.from({ length: Math.min(width, chosen.length) }, async () => {
+          while (next < chosen.length) {
+            const crate = chosen[next++];
+            const verdict = await measure(crate, build);
+            verdicts.set(crate.name, verdict);
+            console.log(said(crate, verdict, decided));
+          }
+        }),
+      ),
     );
     const out = option("out");
     if (out) writeFileSync(out, JSON.stringify({ shard, of, verdicts: Object.fromEntries(verdicts) } satisfies Shard));

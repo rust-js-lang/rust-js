@@ -30,7 +30,7 @@ import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { cargoBuild, cargoEnv } from "../tooling/cargo.js";
 import { channel } from "./toolchain";
 import { cargoHome, floorBytes } from "../test/bounded";
-import { claimHeld, takeClaim } from "../test/kept";
+import { claimMaking, isHeld, removeClaimed, whileHeld } from "../test/kept";
 import { run as runChild, stopped, type Exit } from "../test/child";
 import { atOnce } from "./shard";
 import { mirLabels } from "./labels";
@@ -60,12 +60,12 @@ export const crateProjectsCap = 4 * 2 ** 30;
  * (tooling/bounded.js's `evict`). How many it removed, and the size of
  * what's left. */
 export function boundCrateProjects({ dir = crateProjects, cap = crateProjectsCap, free = () => freeBytes(dir) }: { dir?: string; cap?: number; free?: () => number } = {}): { removed: number; size: number } {
-  return evict(crateProjectsKept(dir), { cap, free, floor: floorBytes, remove: removeCrateProject });
+  return evict(crateProjectsKept(dir), { cap, free, floor: floorBytes, remove: removeClaimed });
 }
 
-/** Each crate's project in `dir` no run is measuring, with when it was last
- * used, its `used` mark's time: not its claim, `<crate>.owner`, nor the
- * claim's makings beside it. */
+/** Each crate's project in `dir` no run is measuring (test/kept.ts'
+ * `whileHeld`), with when it was last used, its `used` mark's time: not its
+ * claim, `<crate>.owner`, nor the claim's makings beside it. */
 export function crateProjectsKept(dir: string): Kept[] {
   let names: string[];
   try {
@@ -74,36 +74,13 @@ export function crateProjectsKept(dir: string): Kept[] {
     return [];
   }
   return names
-    .filter((name) => !name.includes("."))
+    .filter((name) => !claimMaking(name))
     .map((name) => join(dir, name))
-    .filter((path) => statSync(path, { throwIfNoEntry: false })?.isDirectory() && !claimHeld(`${path}.owner`))
+    .filter((path) => statSync(path, { throwIfNoEntry: false })?.isDirectory() && !isHeld(path))
     .map((path) => {
       const marked = join(path, "used");
       return { path, bytes: bytesOf(path), used: statSync(existsSync(marked) ? marked : path).mtimeMs };
     });
-}
-
-/** A crate's project, `project`, held while a run measures it: its claim,
- * `<crate>.owner`, this process's (test/kept.ts' `takeClaim`), waited for
- * where another live process holds it. The stores' prune, beside a check's
- * jobs, removed a project under its run by a listing made before the run
- * began it (#2562). What gives it up. */
-export async function holdCrateProject(project: string): Promise<() => void> {
-  const owner = `${project}.owner`;
-  mkdirSync(dirname(owner), { recursive: true });
-  while (!takeClaim(owner)) await Bun.sleep(250);
-  return () => rmSync(owner, { force: true });
-}
-
-/** A crate's project, `entry`, removed, as a prune removes it: only under
- * its claim, so one a run began measuring since the prune listed it stays.
- * Whether it removed it. */
-export function removeCrateProject(entry: Kept): boolean {
-  const owner = `${entry.path}.owner`;
-  if (!takeClaim(owner)) return false;
-  rmSync(entry.path, { recursive: true, force: true });
-  rmSync(owner, { force: true });
-  return true;
 }
 
 export type Verdict = "runs" | "compiles" | "refused" | "blocked";
@@ -589,14 +566,7 @@ async function main() {
   };
   // Each measured with its project held, so the stores' prune beside a
   // check's jobs never removes it under the run (#2562).
-  const measureHeld = async (crate: Crate): Promise<Result> => {
-    const release = await holdCrateProject(join(crateProjects, crate.name));
-    try {
-      return await measure(crate);
-    } finally {
-      release();
-    }
-  };
+  const measureHeld = (crate: Crate): Promise<Result> => whileHeld([join(crateProjects, crate.name)], () => measure(crate));
   // As many crates at once as the cores and memory hold, each `cargo
   // check` of its graph keeping about two busy (scripts/shard.ts' `atOnce`).
   const width = atOnce("crateCheck");
