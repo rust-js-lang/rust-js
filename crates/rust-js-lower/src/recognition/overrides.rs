@@ -43,12 +43,13 @@ pub(crate) fn dispatched_override(tcx: TyCtxt<'_>, provided: DefId) -> bool {
         && tcx.defaultness(provided).has_value()
         && super::OwnStep::of_method(name.as_str()).is_none()
         && name.as_str() != "size_hint"
-        // Left as it was, undispatched, pending the user's decision of
-        // whether an impl's own `collect` is ADR 0262's exception or its
-        // entry carries what it asks (#2430): itertools writes it for
-        // its generic adapters.
+        // Left as it was, undispatched, until generic code can name what its
+        // overrides' entries take: itertools' own `collect_vec` collects into
+        // a `Vec<Self::Item>`, whose `FromIterator` dictionary needs the
+        // item's layout, which generic code over `Self` doesn't carry
+        // (#2442, which blocks #2430).
         && name.as_str() != "collect"
-        && tcx.all_impls(iterator).any(|imp| {
-            !super::is_std_crate(tcx, imp) && tcx.impl_item_implementor_ids(imp).contains_key(&provided)
-        })
+        && tcx
+            .all_impls(iterator)
+            .any(|imp| !super::is_std_crate(tcx, imp) && tcx.impl_item_implementor_ids(imp).contains_key(&provided))
 }

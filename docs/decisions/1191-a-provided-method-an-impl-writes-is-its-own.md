@@ -230,3 +230,33 @@ walks a lend of a lend to its end, but no mutation of that can be caught on
 this path: `$lent` makes a `&mut` of a `&mut` the lend itself, so a
 `by_ref().by_ref()` is one lend. `provided-never-on-the-value` and `provided-took-dropped-again`
 retired with their sites.
+
+## Amended: the facts an override's entry takes, one calling convention (2026-11-24, #2430, staged)
+
+An override's entry took the trait method's own evidence and refused a fact
+slot, so an override whose own body asks a layout fact of what the call
+knows, an itertools adapter's `collect` of `T::Item`, couldn't be made
+where only a generic maker holds it. Now (traits/evidence.rs
+`provided_fact_convention`) each provided method has one calling
+convention for its overrides' entries: of its own fact slots, those some
+override in reach, an impl not std's that writes it, asks of the same type,
+in the method's slot order, decided once. Every entry takes exactly those
+(`provided_entry`, matched to the impl's own facts by type through
+`GivenEvidence`'s `facts`, normalized as bounds are), and the call passes
+exactly those (`own_evidence_keeping`), or is refused there, naming the
+override that asks the fact it can't name. A fact only std's default asks,
+its `Vec`'s growth, isn't in the convention: std's runs in the thunk by its
+own lowering, which gives it itself. No argument is ever an `undefined` no
+one reads (the lead's rule).
+
+`collect` stays excluded, and #2430 open: itertools' own `collect_vec`,
+`fn collect_vec(self) -> Vec<Self::Item> { self.collect() }`, would pass
+its overrides the `FromIterator` dictionary of `Vec<Self::Item>`, which
+needs the item's layout, which generic code over `Self` doesn't carry; so
+dispatching it would refuse itertools. That's #2442 (dictionaries and
+generic code carrying associated types' facts), which blocks #2430; the
+convention is what #2430 builds on once it's done. No output moves. Of the
+methods dispatched today no override asks a fact the trait's own slots
+name, so the convention is empty for each and no mutation of it is caught
+by output yet; #2430's case will (a crate's own `collect` through generic
+code, `target/` until then).

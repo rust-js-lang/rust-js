@@ -104,7 +104,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         let mut values: Vec<Expr> = params.iter().map(Expr::var).collect();
-        let (mut bounds, mut drops, mut location) = (Vec::new(), Vec::new(), None);
+        let (mut bounds, mut drops, mut facts, mut location) = (Vec::new(), Vec::new(), Vec::new(), None);
+        let convention = self.provided_fact_convention(id);
         for slot in self.own_slots_through(id, args) {
             let name = match slot {
                 Slot::Location => {
@@ -142,8 +143,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                     }
                 }
-                Slot::Const(_) | Slot::Fact(..) => {
-                    return Err(self.unsupported(span, "an own provided method given a const or a fact (#2421)"));
+                // A fact of the type the call asks it of, `T::Item`'s size of an
+                // itertools adapter's `collect`, which the impl's function asks
+                // of the same type and only the call knows (#2430).
+                // Of the calling convention alone (`provided_fact_convention`).
+                Slot::Fact(index, fact) if !convention.iter().any(|&(kept, _)| kept == (index, fact)) => continue,
+                Slot::Fact(index, fact) => {
+                    let of = self.drop_slot_of(id, index, args);
+                    let of = (tcx.try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(of)))
+                        .unwrap_or(of);
+                    let name = self.fresh(Base::Named(&format!("{}{}", drop_word(tcx, of), fact.text())));
+                    facts.push((of, fact, Expr::var(&name)));
+                    name
+                }
+                Slot::Const(_) => {
+                    return Err(self.unsupported(span, "an own provided method given a const (#2421)"));
                 }
             };
             params.push(name);
@@ -152,6 +166,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let given = GivenEvidence {
             bounds: &bounds,
             drops: &drops,
+            facts: &facts,
         };
         values.extend(self.evidence_args_given(method, instance.args, location, given, span)?);
         let call = Expr::call(self.fn_ref(method), values);
@@ -166,6 +181,74 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
         );
         Ok(crate::passed_on::passed_on(&entry, crate::passed_on::Taker::Made, &[]).unwrap_or(entry))
+    }
+
+    /// The facts generic code's call of `Iterator`'s provided method `id`
+    /// gives the entries of the overrides in reach, and what each entry
+    /// takes, in one order, decided once (#2430): of the method's own fact
+    /// slots (`own_slots_through`), each that some override, an impl not
+    /// std's that writes `id`, asks of the same type, with that override's
+    /// method, which a refusal names. A fact only std's default asks, its
+    /// `Vec`'s growth, isn't in it: std's runs in the thunk by its own
+    /// lowering, which gives it itself.
+    pub(crate) fn provided_fact_convention(&self, id: DefId) -> Vec<((u32, TypeFact), DefId)> {
+        let tcx = self.tcx;
+        let Some(trait_id) = tcx.trait_of_assoc(id) else {
+            return Vec::new();
+        };
+        let identity = ty::GenericArgs::identity_for_item(tcx, id);
+        let asked: Vec<(u32, TypeFact)> = (self.own_slots_through(id, identity).into_iter())
+            .filter_map(|slot| match slot {
+                Slot::Fact(index, fact) => Some((index, fact)),
+                _ => None,
+            })
+            .collect();
+        if asked.is_empty() {
+            return Vec::new();
+        }
+        let mut convention = Vec::new();
+        for imp in tcx.all_impls(trait_id) {
+            if crate::recognition::is_std_crate(tcx, imp) {
+                continue;
+            }
+            let Some(&method) = tcx.impl_item_implementor_ids(imp).get(&id) else {
+                continue;
+            };
+            // The impl's type, and the method's own parameters as the trait's.
+            let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+            let args = ty::GenericArgs::for_item(tcx, id, |param, _| match param.kind {
+                ty::GenericParamDefKind::Lifetime => tcx.lifetimes.re_erased.into(),
+                _ if param.index == 0 => self_ty.into(),
+                _ => tcx.mk_param_from_def(param),
+            });
+            let Ok(Some(instance)) = super::resolve(tcx, ty::TypingEnv::non_body_analysis(tcx, method), id, args)
+            else {
+                continue;
+            };
+            let env = ty::TypingEnv::non_body_analysis(tcx, method);
+            let normalized = |ty: ty::Ty<'tcx>| {
+                let ty = tcx.erase_and_anonymize_regions(ty);
+                tcx.try_normalize_erasing_regions(env, ty::Unnormalized::new_wip(ty))
+                    .unwrap_or(ty)
+            };
+            let own: Vec<(ty::Ty<'tcx>, TypeFact)> = (self.evidence_slots(method, Scope::Whole).into_iter())
+                .filter_map(|slot| match slot {
+                    Slot::Fact(index, fact) => {
+                        Some((normalized(self.drop_slot_of(method, index, instance.args)), fact))
+                    }
+                    _ => None,
+                })
+                .collect();
+            for &(index, fact) in &asked {
+                let of = normalized(self.drop_slot_of(id, index, args));
+                if own.contains(&(of, fact)) && !convention.iter().any(|&(kept, _)| kept == (index, fact)) {
+                    convention.push(((index, fact), method));
+                }
+            }
+        }
+        // In the method's own order, decided once.
+        convention.sort_by_key(|&((index, _), _)| asked.iter().position(|&(at, _)| at == index));
+        convention
     }
 
     /// `facts_through_dictionary` of the lowering's.

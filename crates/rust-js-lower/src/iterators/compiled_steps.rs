@@ -446,6 +446,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             instance.args,
             location,
             crate::traits::GivenEvidence {
+                facts: &[],
                 bounds: &[],
                 drops: &dropped,
             },
@@ -520,6 +521,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             instance.args,
             location,
             crate::traits::GivenEvidence {
+                facts: &[],
                 bounds: &given,
                 drops: &[(acc, Expr::var(unwind)), (acc + 1, Expr::var(ends))],
             },

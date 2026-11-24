@@ -167,6 +167,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         GivenEvidence {
             bounds: given,
             drops: dropped,
+            facts: given_facts,
         }: GivenEvidence<'_, 'tcx>,
         span: Span,
     ) -> R<Vec<Expr>> {
@@ -283,6 +284,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         && self.stepped_as_a_js_iterator((id, args, index), of)
                     {
                         values.push(Expr::bool(false));
+                        continue;
+                    }
+                    // One the caller gives of the same type, however it's
+                    // spelled, an own provided method's entry's (#2430).
+                    let normalized = |ty: Ty<'tcx>| {
+                        let ty = self.tcx.erase_and_anonymize_regions(ty);
+                        (self
+                            .tcx
+                            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty)))
+                        .unwrap_or(ty)
+                    };
+                    let wanted = normalized(of);
+                    if let Some((_, _, given)) = given_facts
+                        .iter()
+                        .find(|(given, asked, _)| *asked == fact && normalized(*given) == wanted)
+                    {
+                        values.push(given.clone());
                         continue;
                     }
                     values.push(self.type_fact_value(of, fact, span)?);
@@ -832,8 +850,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         let location = self.caller_location(span);
+        // The facts its overrides' entries take, each named where it's
+        // called, or refused there, naming the override that asks it (#934,
+        // #2430).
+        let convention = self.provided_fact_convention(id);
+        for &((index, fact), method) in &convention {
+            let of = self.drop_slot_of(id, index, args);
+            if self.type_fact_value(of, fact, span).is_err() {
+                let what = format!(
+                    "{} of `{of}`, which `{}` asks of its own `{}` and generic code here can't name, as its caller's dictionary doesn't carry it (#2442)",
+                    fact.text(),
+                    self.tcx.def_path_str(method),
+                    self.tcx.item_name(id),
+                );
+                return Err(self.unsupported(span, &what));
+            }
+        }
+        let kept =
+            |index: u32, fact: crate::recognition::TypeFact| convention.iter().any(|&(at, _)| at == (index, fact));
         let mut entry = values;
-        entry.extend(self.own_evidence(id, args, Some(location), None, span)?);
+        entry.extend(self.own_evidence_keeping(id, args, (Some(location), None), &kept, span)?);
         Ok(provided_call(
             steps,
             crate::iterators::own_provided_key(self.tcx, id),
@@ -964,6 +1000,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         closed: Option<Ty<'tcx>>,
         span: Span,
     ) -> R<Vec<Expr>> {
+        self.own_evidence_keeping(id, generic_args, (location, closed), &|_, _| true, span)
+    }
+
+    /// `own_evidence`, of its fact slots those `keep` keeps alone: the
+    /// calling convention of an override's entry (`provided_fact_convention`,
+    /// #2430).
+    pub(crate) fn own_evidence_keeping(
+        &mut self,
+        id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        (location, closed): (Option<Expr>, Option<Ty<'tcx>>),
+        keep: &dyn Fn(u32, crate::recognition::TypeFact) -> bool,
+        span: Span,
+    ) -> R<Vec<Expr>> {
         // Each of its own `evidence_slots`', of the types given for them:
         // where it's called, unless it's given none (ADR 0427); its own
         // consts', `repeat::<3>`'s `3` (ADR 0135), bounds' and type
@@ -996,6 +1046,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         span,
                     )?,
                 ),
+                Slot::Fact(index, fact) if !keep(index, fact) => {}
                 Slot::Fact(index, _) if !self.gives_slot(id, index, generic_args) => values.push(Expr::js_undefined()),
                 Slot::Fact(index, fact) => {
                     let of = self.drop_slot_of(id, index, generic_args);
@@ -1135,6 +1186,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 pub struct GivenEvidence<'g, 'tcx> {
     pub(crate) bounds: &'g [(ty::TraitRef<'tcx>, Expr)],
     pub(crate) drops: &'g [(u32, Expr)],
+    /// A fact of a type it names, the value it gives (#2430).
+    pub(crate) facts: &'g [(Ty<'tcx>, crate::recognition::TypeFact, Expr)],
 }
 
 /// A provided method's call by Rust's dispatch, `$provided(dictionary, key,
