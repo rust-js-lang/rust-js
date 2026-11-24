@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "impl-self-mut-object-unasked",
+    breaks: "a `&mut` to an object within the type a generic impl is for, `Rc<&mut Loud>`, is given to generic code, whose impl over `&mut T` reads the object's `value` and throws where Rust prints (#2532)",
+    file: "crates/rust-js-lower/src/mut_refs.rs",
+    find: "        let todo = self\n            .past_own(self_ty, self.tcx.param_env(impl_id))\n            .into_iter()\n            .collect();\n",
+    replace: "        let todo: Vec<Ty<'tcx>> = Vec::new();\n        let _ = self_ty;\n",
+    tests: ["test/diagnostics.test.ts", "-t", "given to generic code by an impl over &mut T"],
+  },
+  {
+    name: "impl-self-own-mut-refused",
+    breaks: "an impl over `&mut T` given a `&mut` to an object at the top, `shown(&r)` of `T = &mut Loud`, is refused, though the call gives generic code its box, `$cellOf(r)` (#2532)",
+    file: "crates/rust-js-lower/src/mut_refs.rs",
+    find: "        let todo = self\n            .past_own(self_ty, self.tcx.param_env(impl_id))\n            .into_iter()\n            .collect();\n",
+    replace: "        let todo = vec![self_ty];\n",
+    tests: ["test/corpus.test.ts", "-t", "^(forwarding_mut_impl|guard_deref_dictionary|mut_given_as_type_param|mut_of_one_value_kept|mut_ref_given_for_a_bound).rs$"],
+  },
+  {
     name: "closure-through-is-unadapted",
     breaks:
       "a closure given to generic code through a type parameter read as another, `f: impl Is<F>` of `F: Fn(*mut T)`, is given generic code's handle where it takes the array",

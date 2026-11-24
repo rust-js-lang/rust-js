@@ -1075,3 +1075,34 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): the fourth, compile
 error. Held by corpus cases `guard_replaced_by_a_closure_refused` and
 `flattened_guard_replaced_by_a_closure_refused`, and mutation
 guard-replaced-in-a-closure-unrefused.
+
+## Amendment: a `&mut` to an object inside the type an impl is for is refused (2026-11-25, #2532)
+
+A type parameter given a `&mut` to an object at the top, `shown(&r)` of `T =
+&mut Loud`, is given generic code's box, `$cellOf(r)`, and an impl over
+`&mut T` reached through `T`'s dictionary reads it as one. One nested in the
+type argument, `T = Rc<&mut Loud>` (or a `Box`), is not boxed: the `Rc`
+holds the object, `[4]`. `Rc<T>`'s generic impl passes its `T` to the same
+dictionary of the impl over `&mut T`, whose body reads `self.value` of the
+object. The JS threw `Cannot read properties of undefined (reading '0')`
+where Rust printed. This was a wrong answer, found by #2481's
+`observe-borrows` rewrite of `counted_rc_of_a_mut_ref_shown.rs`, whose
+probes walk an `Rc<&mut Loud>` through such impls.
+
+**Refused where the dictionary is made** (`impl_self_mut_object`, beside
+`impl_nested_mut_object`): a `&mut` to an object within the type a generic
+impl is for, past its own `&mut`, of a call that gives generic code's box
+where the caller has the object. The error says what to write instead:
+give the generic code the `&mut` itself, which it's given as its box. No
+case of the corpus, the crate corpus or the React port is refused.
+
+ADR 0262's case: Rust's behavior can't be preserved yet, so it's a compile
+error. The fix is Campaign 6's (#2539), the owner of every crossing into
+generic code: generic code holds a `T` that's a `&mut` to an object as the
+object, at any depth, and an impl over `&mut T`'s dictionary entry, made
+where `T` is known, gives its body the in-place cell, `$cellOf(self)`.
+Held by `test/diagnostics.test.ts`' two rows, "a &mut to an object in an
+Rc/a Box, given to generic code by an impl over &mut T", and the mutations
+`impl-self-mut-object-unasked` and `impl-self-own-mut-refused` (the
+`&mut` itself at the top stays given, as `mut_given_as_type_param.rs` and
+four more cases hold).

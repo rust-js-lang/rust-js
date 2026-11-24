@@ -580,6 +580,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.nested_mut_within(impl_id, impl_args, todo)
     }
 
+    /// A `&mut` to an object within the type a generic impl of the crate's,
+    /// `impl_id`, is for, past its own `&mut`, given `impl_args`: `impl<T:
+    /// Show> Show for Rc<T>` of `Rc<&mut Loud>`. Its generic code reads its
+    /// `T` as generic code's box, where the `Rc` holds the object, so the
+    /// impl over `&mut T` its `T`'s dictionary is read `.value` of the
+    /// object (#2532). Refused where its dictionary is made, until Campaign
+    /// 6's crossing owner holds such a `T` as the object at any depth
+    /// (#2539).
+    pub(crate) fn impl_self_mut_object(&self, impl_id: DefId, impl_args: ty::GenericArgsRef<'tcx>) -> Option<Ty<'tcx>> {
+        let self_ty = self.tcx.type_of(impl_id).instantiate_identity().skip_normalization();
+        let todo = self
+            .past_own(self_ty, self.tcx.param_env(impl_id))
+            .into_iter()
+            .collect();
+        self.nested_mut_within(impl_id, impl_args, todo)
+    }
+
     /// A `&mut` to one of `def_id`'s type parameters that's an object in a
     /// call of it, `generic_args`, anywhere but a parameter or its result: in
     /// a field of the crate's own type, an `Option` or a `Vec`, or within

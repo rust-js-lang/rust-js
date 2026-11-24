@@ -1207,6 +1207,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let what = format!("a `{here}` inside what a generic impl gives a method of a trait it's bound by (#1421)");
             return Err(self.unsupported(span, &what));
         }
+        // A `&mut` to an object within the type a generic impl is for,
+        // `Rc<&mut Loud>`, whose generic code reads it as its box (#2532).
+        if let Some(here) = self.impl_self_mut_object(impl_id, impl_args) {
+            let ty = tr.self_ty();
+            let what = format!(
+                "a `{here}` inside `{ty}` given to generic code by its `{}` impl (#2532, #2539)",
+                self.tcx.def_path_str(tr.def_id)
+            );
+            let instead =
+                format!("give the generic code the `{here}` itself, or what it points to, where it's given a `{ty}`");
+            return Err(crate::refusal::refuse(
+                self.tcx,
+                span,
+                crate::refusal::Refused::Instead(&what, &instead),
+            ));
+        }
         let callee = self.fn_ref(impl_id);
         let args = self.evidence_args(impl_id, impl_args, span)?;
         // One that takes nothing, its module's `const`, `circleShape` (ADR 0592).
