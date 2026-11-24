@@ -70,6 +70,11 @@ export function evaluateIf(expr: string, inputs: Record<string, unknown>): true 
     if (text === "true" || text === "false") return { known: true, value: text === "true" };
     if (/^\d+$/.test(text)) return { known: true, value: text };
     if (/^inputs\.[\w-]+$/.test(text)) return { known: true, value: inputs[text.slice("inputs.".length)] ?? "" };
+    // Of an input and a literal, `contains(inputs.mutation_args, '--corpus')`,
+    // GitHub's: whether the text holds the literal, of any case. A job of
+    // a `--corpus` dispatch alone is no nightly's (#2404).
+    const holds = text.match(/^contains\(\s*inputs\.([\w-]+)\s*,\s*'((?:[^']|'')*)'\s*\)$/);
+    if (holds) return { known: true, value: String(inputs[holds[1]!] ?? "").toLowerCase().includes(holds[2]!.replace(/''/g, "'").toLowerCase()) };
     return { known: false };
   };
   const compared = (): Val => {

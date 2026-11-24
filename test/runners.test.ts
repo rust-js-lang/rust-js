@@ -36,6 +36,12 @@ test("the runners' bound reads `if:` of inputs alone, and counts jobs no need or
   expect(evaluateIf("inputs.tests != ''", {})).toBe(false);
   expect(evaluateIf("${{ inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.wasm == 'true') }}", { part: "suite", nightly: true })).toBe(true);
   expect(evaluateIf("always() && inputs.fuzz_seeds != ''", { fuzz_seeds: "600" })).toBe("?");
+  // A `contains` of an input and a literal, as GitHub reads it: of no case,
+  // the input given or not; of any other's arguments, unknown (#2404).
+  expect(evaluateIf("${{ inputs.mutations && contains(inputs.mutation_args, '--corpus') }}", { mutations: true, mutation_args: "" })).toBe(false);
+  expect(evaluateIf("${{ inputs.mutations && contains(inputs.mutation_args, '--corpus') }}", { mutations: true, mutation_args: "a --CORPUS b" })).toBe(true);
+  expect(evaluateIf("contains(inputs.mutation_args, '--corpus')", {})).toBe(false);
+  expect(evaluateIf("contains(needs.*.result, 'failure')", {})).toBe("?");
   const yaml: Record<string, string> = {
     "w.yml": `jobs:
   a: { runs-on: x, if: "\${{ inputs.go }}" }

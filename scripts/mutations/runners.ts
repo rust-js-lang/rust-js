@@ -10,8 +10,16 @@ export const mutations: Mutation[] = [
     name: "runners-unknown-if-ruled-out",
     breaks: "an `if:` a run's results decide, `needs.*.result`, is read as false, and a job that may run holds no runner",
     file: "scripts/runners.ts",
-    find: "    if (/^inputs\\.[\\w-]+$/.test(text)) return { known: true, value: inputs[text.slice(\"inputs.\".length)] ?? \"\" };\n    return { known: false };\n",
-    replace: "    if (/^inputs\\.[\\w-]+$/.test(text)) return { known: true, value: inputs[text.slice(\"inputs.\".length)] ?? \"\" };\n    return { known: true, value: \"\" };\n",
+    find: "    return { known: false };\n  };\n  const compared",
+    replace: "    return { known: true, value: \"\" };\n  };\n  const compared",
+    tests: bound,
+  },
+  {
+    name: "runners-contains-of-an-input-unread",
+    breaks: "a `contains` of a caller's input and a literal, `contains(inputs.mutation_args, '--corpus')`, is unknown, so a `--corpus` dispatch's job counts as one more of the nightly's runners (#2404)",
+    file: "scripts/runners.ts",
+    find: "    if (holds) return { known: true,",
+    replace: "    if (holds && false) return { known: true,",
     tests: bound,
   },
   {
