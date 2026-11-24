@@ -74,3 +74,24 @@ is the author's call, made where the refusal is written and reviewed.
 A length or discriminant "only a caller knows" (a generic array's length,
 a chunk's, `mem::discriminant` of a type parameter) isn't a cell yet. Those
 refusals become cells if `ParamForm` takes const facts.
+
+## Amended 2026-11-25: write results as an iterator's items (#2560)
+
+A wrong answer of Campaign 6's matrix was closed by a stopgap, a cell of
+its own:
+
+- `Crossing::TaggedItem` (#2566): write results as the items of an
+  iterator given to generic code that reads them as `Result`s of its type
+  parameters, `I: Iterator<Item = Result<T, E>>`, an `IntoIterator`'s, or
+  inside them, `Option<Result<T, E>>`. Items cross as their caller holds
+  them, `undefined` or the error, so `r.is_ok()` read `.TAG` of
+  `undefined` (#2560). `generic_facts/refusals.rs`' `refuse_tagged_item`
+  refuses the call. std's code given them, a collect into a `Result`,
+  reads them tagged where it's called (`std_reads_tagged`), and never
+  comes this way. The call's one check of what crosses unconverted,
+  `refuse_placed_within`, is renamed `refuse_unconverted_call`, as it
+  asks both. Lifting the cell tags each item where it crosses.
+
+It follows ADR 0262's last row: the results changed, and until the
+crossing converts them, a compile error. There are now 17 cells and 35
+refusals.

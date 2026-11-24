@@ -42,11 +42,12 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     ) -> R<Vec<Expr>> {
         let callee = self.call_callee(def_id, generic_args)?;
         let fn_id = callee.map(|(id, _)| id);
-        // An iterator generic code holds in a place of its own inside what
-        // it takes or gives, a `Vec<I>`'s, which its caller holds as it is
-        // (#2255).
+        // What crosses into generic code that no crossing converts yet: an
+        // iterator it holds in a place of its own inside what it takes or
+        // gives, a `Vec<I>`'s, which its caller holds as it is (#2255), and
+        // write results among its iterators' items (#2560).
         if let Some(called) = callee {
-            self.refuse_placed_within(called, span)?;
+            self.refuse_unconverted_call(called, span)?;
         }
         let mut exprs: Vec<Expr> = Vec::new();
         for (i, value) in values.into_iter().enumerate() {

@@ -46,4 +46,24 @@ export const mutations: Mutation[] = [
     replace: "            if false && self.placed_iterator(instantiated) {\n",
     tests: ["test/corpus.test.ts", "-t", "^placed_items_stepped_through_their_bound\\.rs$"],
   },
+  {
+    name: "tagged-item-unrefused",
+    breaks:
+      "write results as the items of an iterator given to generic code that reads them as `Result`s of its type parameters compile: `r.is_ok()` reads `.TAG` of `undefined` (#2560)",
+    file: "crates/rust-js-lower/src/generic_facts/refusals.rs",
+    find: "        self.refuse_tagged_item((id, args), span)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^tagged_items_given_to_generic_code\\.rs$"],
+  },
+  {
+    name: "tagged-item-at-the-top-only",
+    breaks:
+      "write results held inside the items generic code reads, `Item = Option<Result<T, E>>`, compile: `somes` counts none where Rust counts one (#2560)",
+    file: "crates/rust-js-lower/src/generic_facts/refusals.rs",
+    find: "            if let Some(held) = self.tagged_below(declared, self.instantiated(declared, args)) {\n",
+    replace:
+      "            if let Some(held) = Some(self.instantiated(declared, args)).filter(|&given| self.tagged_where(declared, given)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^tagged_items_below_the_top\\.rs$"],
+  },
+
 ];

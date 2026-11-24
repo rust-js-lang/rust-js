@@ -145,3 +145,15 @@ for (const [name, line, printed] of [
   }, 300_000);
 }
 
+// #2560 across crates: write results as the items of an iterator given to
+// a library's generic code that reads them as `Result`s of its type
+// parameters: refused at the call, as one crate refuses it, until each item
+// is tagged where it crosses (#2566).
+test("a consumer giving a library's generic code write results as Result items is refused", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "library_given_write_results_as_items", ["dep", "app"], [
+    "among the items of generic code's `I`, which it reads as `std::result::Result<T, E>`",
+    "app.rs:9:",
+  ]);
+  expect(native).toBe("2\n");
+}, 300_000);
+

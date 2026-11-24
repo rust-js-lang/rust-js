@@ -2,8 +2,10 @@
 //! them as its caller does (`generic_facts.rs`' crossing, ADR 1115): a
 //! `RefCell` guard's `&mut` it may write whole (#2475), and an iterator JS
 //! holds as no object, which it holds in a place of its own, inside what
-//! it takes or gives or among another iterator's items (#2255, #2534).
-//! Each route of a call asks `refuse_placed_within`; `crossing_into` asks
+//! it takes or gives or among another iterator's items (#2255, #2534),
+//! and write results among an iterator's items it reads as `Result`s of
+//! its type parameters (#2560). Each route of a call asks
+//! `refuse_unconverted_call`; `crossing_into` asks
 //! `refuse_guard_written_whole`. Each is a stopgap, its cell a
 //! `refusal::Crossing` the issue it names lifts (ADR 1201).
 
@@ -47,10 +49,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A call of generic code `id`, its instance of `args`, refused where
-    /// an iterator generic code holds in a place of its own is inside what
-    /// it takes or gives, a `Vec<I>`'s, which its caller holds as it is
-    /// (`placed_within`, #2255): each route of a call asks it.
-    pub fn refuse_placed_within(&self, (id, args): (DefId, ty::GenericArgsRef<'tcx>), span: Span) -> R<()> {
+    /// what crosses into it isn't converted yet: write results among its
+    /// iterators' items (`refuse_tagged_item`), an iterator it holds in a
+    /// place of its own inside what it takes or gives, a `Vec<I>`'s, which
+    /// its caller holds as it is (`placed_within`, #2255), or among another
+    /// iterator's items (`refuse_placed_item`). Each route of a call asks it.
+    pub fn refuse_unconverted_call(&self, (id, args): (DefId, ty::GenericArgsRef<'tcx>), span: Span) -> R<()> {
+        self.refuse_tagged_item((id, args), span)?;
         let sig = (self.tcx)
             .instantiate_bound_regions_with_erased(self.tcx.fn_sig(id).instantiate_identity().skip_normalization());
         for declared in sig.inputs_and_output.iter() {
@@ -73,17 +78,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// each item is made a place where it crosses (#2535).
     fn refuse_placed_item(&self, (id, args): (DefId, ty::GenericArgsRef<'tcx>), span: Span) -> R<()> {
         let tcx = self.tcx;
-        let items = [StdItem::Iterator, StdItem::IntoIterator]
-            .map(|item| crate::recognition::trait_method(tcx, crate::recognition::std_item(tcx, item), "Item"));
-        for (clause, _) in tcx.clauses_of(id).instantiate_identity(tcx) {
-            let Some(p) = clause.skip_normalization().as_projection_clause() else {
-                continue;
-            };
-            let p = p.skip_binder();
-            let Some(term) = p.term.as_type() else { continue };
-            if !items.contains(&p.def_id()) {
-                continue;
-            }
+        let items = items_of(tcx);
+        for (of, term) in items_bound(tcx, id) {
             // Its type parameters, not one a projection names, `I::Item`,
             // nor the one whose items they are.
             let mut walk = term.walk();
@@ -93,14 +89,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     walk.skip_current_subtree();
                     continue;
                 }
-                if !matches!(param.kind(), ty::Param(_)) || param == p.self_ty() {
+                if !matches!(param.kind(), ty::Param(_)) || param == of {
                     continue;
                 }
                 let instantiated = self.instantiated(param, args);
                 if self.holds_in_place((id, param, instantiated)) {
                     return Err(self.unconverted(span, crate::refusal::Crossing::PlacedItem, &format!(
                             "a `{instantiated}` generic code holds in a place of its own, `{{ value }}`, as its `{param}`, which it's also given as `{}`'s items, as their caller holds them (#2534, #2535)",
-                            p.self_ty()
+                            of
                         ),
                     ));
                 }
@@ -135,4 +131,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Ok(())
     }
+
+    /// A call of generic code `id`, its instance of `args`, refused where
+    /// the items of an iterator it's given, `I: Iterator<Item = Result<T,
+    /// E>>`, an `IntoIterator`'s, or a part of them, `Item = Option<Result<T,
+    /// E>>`, are what it reads as a `Result` of its type parameters, `{ TAG
+    /// }`, and its caller has as a write's result, `undefined` or its error
+    /// (`tagged_below`): they come as their caller holds them, `.TAG` of
+    /// `undefined` (#2560), until each is tagged where it crosses (#2566).
+    /// std's code given them, a collect into a `Result`, is told where it's
+    /// called (`std_reads_tagged`), never through this route.
+    fn refuse_tagged_item(&self, (id, args): (DefId, ty::GenericArgsRef<'tcx>), span: Span) -> R<()> {
+        for (of, declared) in items_bound(self.tcx, id) {
+            if let Some(held) = self.tagged_below(declared, self.instantiated(declared, args)) {
+                return Err(self.unconverted(
+                    span,
+                    crate::refusal::Crossing::TaggedItem,
+                    &format!(
+                        "a write's result, `{held}`, among the items of generic code's `{}`, which it reads as `{declared}`, `{{ TAG }}` there, where they come as their caller holds them (#2560)",
+                        of
+                    ),
+                ));
+            }
+        }
+        Ok(())
+    }
+}
+
+/// `Iterator::Item` and `IntoIterator::Item`.
+fn items_of(tcx: ty::TyCtxt<'_>) -> [DefId; 2] {
+    [StdItem::Iterator, StdItem::IntoIterator]
+        .map(|item| crate::recognition::trait_method(tcx, crate::recognition::std_item(tcx, item), "Item"))
+}
+
+/// What `id`'s bounds say an iterator's items are, `I: Iterator<Item =
+/// Result<T, E>>`, an `IntoIterator`'s too: the iterator, `I`, and its
+/// items, `Result<T, E>`.
+fn items_bound<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId) -> impl Iterator<Item = (Ty<'tcx>, Ty<'tcx>)> {
+    let items = items_of(tcx);
+    (tcx.clauses_of(id).instantiate_identity(tcx).into_iter())
+        .filter_map(|(clause, _)| clause.skip_normalization().as_projection_clause())
+        .map(|p| p.skip_binder())
+        .filter(move |p| items.contains(&p.def_id()))
+        .filter_map(|p| Some((p.self_ty(), p.term.as_type()?)))
 }

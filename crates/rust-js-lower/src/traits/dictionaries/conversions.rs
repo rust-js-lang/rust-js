@@ -110,7 +110,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // call of it is: a tuple of iterators held in places of their own,
         // itertools' `multizip` (#2255).
         let called = (instance.def_id(), instance.args);
-        self.refuse_placed_within(called, span)?;
+        self.refuse_unconverted_call(called, span)?;
         let sig = (self.tcx).instantiate_bound_regions_with_erased(
             self.tcx
                 .fn_sig(instance.def_id())

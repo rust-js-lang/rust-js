@@ -63,6 +63,9 @@ pub enum Crossing {
     HandleArgument,
     /// A write's result given where a bound reads a `Result` of type parameters.
     TaggedArgument,
+    /// Write results as the items of an iterator given to generic code that
+    /// reads them as a `Result` of its type parameters (#2560).
+    TaggedItem,
     /// A `TrustedRandomAccess` or `TrustedLen` fact std's zip or `eq` is
     /// picked by, at any crossing.
     TrustedLen,
@@ -95,6 +98,7 @@ impl Crossing {
             Crossing::LentDictionary => 1295,
             Crossing::HandleArgument => 2552,
             Crossing::TaggedArgument => 1416,
+            Crossing::TaggedItem => 2566,
             Crossing::TrustedLen => 2546,
             Crossing::HintArgument => 2553,
             Crossing::HintBoundary => 1562,
