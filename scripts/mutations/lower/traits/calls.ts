@@ -732,4 +732,12 @@ export const mutations: Mutation[] = [
     replace: "                    let made = match None::<Expr> {\n",
     tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_trait_default_into_iters_items_held_as_no_object"],
   },
+  {
+    name: "compiled-impl-method-given-a-js-iterator",
+    breaks: "a compiled std impl's own `Iterator` method in generic code, `Bytes::next`, is given `Iterator.from(..)` of the struct it reads, and throws a `TypeError` (#2567)",
+    file: "crates/rust-js-lower/src/traits/calls.rs",
+    find: "                && self.tcx.trait_of_assoc(instance.def_id()).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_bytes_stepped_by_next.rs$"],
+  },
 ];

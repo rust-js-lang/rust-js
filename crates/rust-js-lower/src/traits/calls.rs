@@ -687,9 +687,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // dictionary of its `Self` and steps it as a JS iterator,
             // `partition`'s: given the crate's iterator as one, as generic
             // code is, a compiled adapter its `Self` with its dictionary
-            // (`given_self_iterator`, ADR 0061, #2387).
+            // (`given_self_iterator`, ADR 0061, #2387). A provided method of
+            // the trait's, over `Self`: never an impl's own, `Bytes::next`,
+            // whose `Self` is std's struct it reads, given as it is (#2567).
             if crate::recognition::compiled_instance(self.tcx, instance.def_id(), instance.args)
                 && self.tcx.trait_of_assoc(id) == Some(crate::recognition::std_item(self.tcx, StdItem::Iterator))
+                && self.tcx.trait_of_assoc(instance.def_id()).is_some()
                 && !self.given_self_iterator(instance.def_id())
                 && let Some(self_ty) = instance.args.types().next()
                 && let Some(receiver) = values.first_mut()

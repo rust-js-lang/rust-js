@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2567, ADR 0061 amended): corpus gains `generic_bytes_stepped_by_next`, a reader's `bytes()` in generic code stepped by `next()`, held, by a `for` and taken.
+
 Changed on 2026-11-25 (ADR 1118 amended): test/support.test.ts gains a test, the Crater's work a run is using is never removed under it, held before or after the prune lists it, by its cap's bound and the checkouts' budget alike; the crate corpus's test holds its projects by test/kept.ts' `whileHeld`, the one claim; mutations `crater-held-listed`, `crater-removed-unclaimed`, `claimed-thing-used-unheld` and `claim-making-listed`, where `crate-project-removed-unclaimed` and `crate-project-measured-unheld` are now `kept-app-removed-unclaimed` and `claimed-thing-used-unheld`.
 
 Changed on 2026-11-25 (#1979): corpus gains `insert_of_none_at_an_index_known_in_bounds`, a `None` inserted where the body's ranges show its index in bounds, `v.splice(at, 0, undefined)`; test/lowering-strict-switches.test.ts' chain-stays test gains a chain of a getter-answered global.

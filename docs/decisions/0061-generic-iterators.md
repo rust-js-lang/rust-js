@@ -648,3 +648,21 @@ Crate pairs `library_iterator_shown_inside_take` and
 `library_clones_an_iterator_held_in_place`, corpus case
 `into_iterator_another_bound_reads`. Mutations `placed-fmt-into-unshaped`
 and `placed-copy-entry-unshaped`.
+
+## Amendment: a compiled std impl's own method is given its struct as it is (2026-11-25, #2567)
+
+`trait_call` gives a compiled std consumer of `Iterator`'s, `partition`'s,
+its `Self` as a JS iterator, as generic code holds one (#2387). It asked
+only whether the call was `Iterator`'s and its instance compiled. So in
+generic code, `<Bytes<R> as Iterator>::next`, std's compiled impl method
+that reads the `Bytes` struct's `inner`, was given `Iterator.from(b)`.
+`r.bytes().next()`, a `let mut b = r.bytes(); b.next()` and a `for b in
+r.bytes()` threw a `TypeError` where native read a byte. The wrap is now a
+provided method's, over `Self`, alone (`trait_of_assoc` of the instance).
+An impl's own method is given the struct as it is, as concrete code gives
+it.
+
+The whole corpus is unchanged in both builds, the main build and the
+iterator forms'. `test/corpus/generic_bytes_stepped_by_next.rs` holds
+`next`, held and stepped by a `for`, of a slice's, a `Cursor`'s and the
+crate's reader with a `Drop`. Mutation `compiled-impl-method-given-a-js-iterator`.
