@@ -308,3 +308,38 @@ The check is both halves:
   stepped as a JS iterator), fixed before this landed.
 
 Mutation `dictionary-count-by-its-reach`.
+
+## Amendment (2026-11-24, #1458 P1, #2128): a form is chosen by the steps asked of the value
+
+A form was chosen by every step its *type* could be asked. A flatten of
+the crate's iterators, whose `last` and `count` are their own and whose
+`size_hint` runs their code, was `$flatMap` wherever one was made, though
+`vec![..].into_iter().flatten().skip(7).next()` asks it only `nth`: JS's
+own `[..].values().flatMap(..)` runs alike there (#2128). #2474's item 5
+lists the sites that choose so, #2130's `copied` among them.
+
+**What a value's later uses ask is one answer, by its maker's MIR
+identity:** `back_stepped`'s `Asked` gains `steps` (#1458's `Steps`, std's
+catalog's step names), the steps of `Iterator`, `DoubleEndedIterator` and
+`ExactSizeIterator` called of the local and of each adapter made of it,
+what each adapter's own asked steps ask of what it holds read from std's
+catalog alone (`std_steps::asked_of_held`, the runs `observably_owns`
+reads). A use the walk doesn't read, a call that isn't a step of it, a
+return, a value it's moved into, asks every step, as any may be.
+`made_asks(step)` asks it of what the call being lowered makes.
+
+The flatten's site asks it first: its `count` and `last` take the inner
+iterators' own only where a later use asks that step (`iter_comb`), and its
+hint is asked of the crate's inner iterators only where a later use asks
+the flatten's hint (`flattened_form`). This follows ADR 0262's case N: the
+two forms run alike where the step isn't asked, so JS's own reads as a
+person writes it.
+
+The other sites of item 5's table move to the steps asked in #1458's P1,
+each with the mutation of its `Sure`/`May` (#2474's items 7 and 8). Tests:
+corpus `own_last_and_nth_passed_on` and `dyn_wrapper_hides_the_crates_own_steps`
+move to JS's `flatMap`, each against native; `flatten_asks_its_inner_iterators_hint`
+holds a hint asked by `Filter::count` and a collect. New mutations:
+`made-asks-every-step`, `steps-of-what-is-held-unasked`; a value moved or
+lent into another local, and a use the walk doesn't read, have none yet,
+as no in-place form is chosen of such a value until P4's flip.

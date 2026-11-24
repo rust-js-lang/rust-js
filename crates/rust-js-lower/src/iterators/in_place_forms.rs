@@ -519,11 +519,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// run the crate's code, which std's `FlattenCompat::size_hint` asks
     /// and `$flatMap` asks as it does, where JS's own `flatMap` of a JS
     /// iterator has none (`hint_reaches_own_where`, of what a `dyn` holds
-    /// too, #2207); else JS's own `flatMap`.
+    /// too, #2207), where a later use asks the flatten's hint, of it or of
+    /// what's made of it, not wherever it could be (`made_asks`, #2128);
+    /// else JS's own `flatMap`.
     pub(crate) fn flattened_form(&self, inner: Ty<'tcx>, own: bool) -> InPlaceForm {
         let gives = self.iterable_item(inner);
         let made = crate::recognition::iterator_type_of(self.tcx, self.typing_env, inner);
-        let hint_runs = self.recognition().hint_reaches_own_where(made, true);
+        let hint_runs = self.recognition().hint_reaches_own_where(made, true) && self.made_asks("size_hint");
         let form = match own || hint_runs || self.drops(gives) != crate::drops::Drops::Nothing {
             true => InPlaceForm::FlatMap,
             false => InPlaceForm::StepsFlatMap,

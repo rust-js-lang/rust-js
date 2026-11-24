@@ -166,6 +166,12 @@ pub(crate) const CATALOGUE: &[Decision] = &[
         typed: true,
     },
     Decision {
+        name: "made-asks",
+        owner: "crates/rust-js-lower/src/iterators/back_facts.rs made_asks",
+        answers: &["asked", "unasked"],
+        typed: false,
+    },
+    Decision {
         name: "back-counted",
         owner: "crates/rust-js-lower/src/iterators/back_facts.rs made_counted_from_its_back",
         answers: &["counted", "uncounted"],

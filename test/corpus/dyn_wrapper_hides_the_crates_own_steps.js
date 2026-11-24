@@ -79,14 +79,28 @@ function boxes() {
   ];
 }
 function boxed() {
-  console.log(`a ${$flatMap($iter(boxes()), (item) => item).reduce((n) => n + 1, 0)}`);
   console.log(
-    `b ${$count($flatMap($iter(boxes()), (item) => item).drop(1), undefined, "test/corpus/dyn_wrapper_hides_the_crates_own_steps.rs:45:60")}`,
+    `a ${boxes()
+      .values()
+      .flatMap((item) => item)
+      .reduce((n) => n + 1, 0)}`,
+  );
+  console.log(
+    `b ${$count(
+      boxes()
+        .values()
+        .flatMap((item) => item)
+        .drop(1),
+      undefined,
+      "test/corpus/dyn_wrapper_hides_the_crates_own_steps.rs:45:60",
+    )}`,
   );
   console.log(
     `c ${$count(
       $lazyChain(
-        $flatMap($iter(boxes()), (item) => item),
+        boxes()
+          .values()
+          .flatMap((item) => item),
         $iterator(
           [2],
           ownIterator_next,
@@ -156,12 +170,36 @@ function boxed() {
   );
   const nth = Array.from($lent(b).drop(1).take(1))[0];
   console.log(`i ${nth == null ? "None" : `Some(${nth})`}`);
-  const value = Array.from($flatMap($iter(boxes()), (item) => item)).at(-1);
+  const value = Array.from(
+    boxes()
+      .values()
+      .flatMap((item) => item),
+  ).at(-1);
   console.log(`j ${value == null ? "None" : `Some(${value})`}`);
-  console.log(`k ${$flatMap($iter(boxes()), (item) => item).reduce((a, x) => (a + x) >>> 0, 0)}`);
+  console.log(
+    `k ${boxes()
+      .values()
+      .flatMap((item) => item)
+      .reduce((a, x) => (a + x) >>> 0, 0)}`,
+  );
   let sized = [[3]];
   console.log(
-    `l ${$flatMap($iter(sized), (item) => $iterator(item, ownIterator_next, false, undefined, undefined, undefined, undefined, ownIterator_nth, ownIterator_last)).reduce((n) => n + 1, 0)}`,
+    `l ${sized
+      .values()
+      .flatMap((item) =>
+        $iterator(
+          item,
+          ownIterator_next,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ownIterator_nth,
+          ownIterator_last,
+        ),
+      )
+      .reduce((n) => n + 1, 0)}`,
   );
   sized = [[3]];
   const value$1 = $last(
@@ -305,7 +343,12 @@ function wrapped() {
       ownIterator_nth,
     ),
   ];
-  console.log(`e ${$flatMap($iter(lents), (item) => item).reduce((n) => n + 1, 0)}`);
+  console.log(
+    `e ${lents
+      .values()
+      .flatMap((item) => item)
+      .reduce((n) => n + 1, 0)}`,
+  );
   x = [2];
   y = [2];
   lents = [
@@ -330,7 +373,7 @@ function wrapped() {
       ownIterator_nth,
     ),
   ];
-  const last = Array.from($flatMap($iter(lents), (item) => item)).at(-1);
+  const last = Array.from(lents.values().flatMap((item) => item)).at(-1);
   console.log(`f ${last == null ? "None" : `Some(${last})`}`);
   own = [3];
   const lent = $iterator(
@@ -370,7 +413,22 @@ function wrapped() {
     `j ${counted($iterator([3], ownIterator_next, false, undefined, undefined, undefined, undefined, ownIterator_nth, ownIterator_last))}`,
   );
   console.log(
-    `k ${$flatMap($iter([[2], [2]]), (item) => $iterator(item, ownIterator_next, false, undefined, undefined, undefined, undefined, ownIterator_nth, ownIterator_last)).reduce((n) => n + 1, 0)}`,
+    `k ${[[2], [2]]
+      .values()
+      .flatMap((item) =>
+        $iterator(
+          item,
+          ownIterator_next,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ownIterator_nth,
+          ownIterator_last,
+        ),
+      )
+      .reduce((n) => n + 1, 0)}`,
   );
   console.log(
     `l ${$count($iterator([3], ownIterator_next, false, undefined, undefined, undefined, undefined, ownIterator_nth, ownIterator_last).drop(1))}`,

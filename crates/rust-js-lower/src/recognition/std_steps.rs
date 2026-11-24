@@ -30,7 +30,7 @@ pub(crate) struct Asked {
 /// the steps std's impls of it write, and of each step, what it asked in
 /// each of the probe's runs.
 #[derive(Default)]
-struct Steps {
+struct Catalogued {
     writes: Vec<&'static str>,
     runs: BTreeMap<&'static str, Vec<Vec<Asked>>>,
     /// The steps of its `DoubleEndedIterator`, the probe's line of them,
@@ -38,10 +38,10 @@ struct Steps {
     back: Vec<&'static str>,
 }
 
-fn catalog() -> &'static BTreeMap<&'static str, Steps> {
-    static PARSED: OnceLock<BTreeMap<&'static str, Steps>> = OnceLock::new();
+fn catalog() -> &'static BTreeMap<&'static str, Catalogued> {
+    static PARSED: OnceLock<BTreeMap<&'static str, Catalogued>> = OnceLock::new();
     PARSED.get_or_init(|| {
-        let mut all: BTreeMap<&'static str, Steps> = BTreeMap::new();
+        let mut all: BTreeMap<&'static str, Catalogued> = BTreeMap::new();
         for line in CATALOG.lines().filter(|line| !line.starts_with('#')) {
             if let Some((name, written)) = line.split_once(" writes:") {
                 all.entry(name).or_default().writes = written.split_whitespace().collect();
@@ -159,6 +159,105 @@ pub(crate) fn asks(name: &str, step: &str) -> Vec<Asked> {
             if !asked.contains(&one) {
                 asked.push(one);
             }
+        }
+    }
+    asked
+}
+
+/// Each step the catalog runs, std's name: what a value's later uses may
+/// ask of it, one bit each of `Steps` (#1458).
+const STEP_NAMES: [&str; 25] = [
+    "next",
+    "size_hint",
+    "size_hint_after_next",
+    "nth",
+    "advance_by",
+    "fold",
+    "try_fold",
+    "last",
+    "count",
+    "position",
+    "find",
+    "find_map",
+    "any",
+    "all",
+    "max_by",
+    "min_by",
+    "next_back",
+    "nth_back",
+    "advance_back_by",
+    "rfold",
+    "try_rfold",
+    "rfind",
+    "rposition",
+    "len",
+    "is_empty",
+];
+
+/// The steps of std's `Iterator`, `DoubleEndedIterator` and
+/// `ExactSizeIterator` a value's later uses ask of it, by the catalog's
+/// names (`STEP_NAMES`): what's asked of a value, never what its type may
+/// be asked (#1458, #2474's item 6). `ALL` of one whose uses aren't all
+/// seen, or that asks one the catalog doesn't run, which every step may
+/// then be.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Hash)]
+pub struct Steps(u32);
+
+impl Steps {
+    /// Every step, the answer where what's asked isn't known.
+    pub const ALL: Steps = Steps(u32::MAX);
+    /// None.
+    pub const NONE: Steps = Steps(0);
+
+    /// The step std's method `name` is, or `ALL` of a method the catalog
+    /// doesn't run, which may ask any.
+    pub fn of(name: &str) -> Steps {
+        match STEP_NAMES.iter().position(|&step| step == name) {
+            Some(at) => Steps(1 << at),
+            None => Steps::ALL,
+        }
+    }
+
+    /// Whether `name`, a step, is among them: of `ALL`, every step.
+    pub fn asks(self, name: &str) -> bool {
+        self == Steps::ALL
+            || STEP_NAMES
+                .iter()
+                .position(|&step| step == name)
+                .is_some_and(|at| self.0 & (1 << at) != 0)
+    }
+
+    /// Both's steps.
+    // helper: a set's union, which decides nothing.
+    #[must_use]
+    pub fn and(self, other: Steps) -> Steps {
+        Steps(self.0 | other.0)
+    }
+
+    /// Each step's name, of `ALL` each the catalog runs.
+    pub fn names(self) -> impl Iterator<Item = &'static str> {
+        STEP_NAMES.into_iter().filter(move |&step| self.asks(step))
+    }
+}
+
+/// What `steps` of std's adapter `name`, a catalog name, ask of what it
+/// holds at `of`, `src` or `other`: each step any run of each asked of it,
+/// whether std's impls write the step or the trait's default asks it, as
+/// the catalog ran them. `ALL` of `ALL`, as what's unseen of the adapter
+/// may be a method the catalog doesn't run, a `Peekable`'s `peek`; of a
+/// name the catalog hasn't; and of a step it doesn't run of it, which may
+/// ask any.
+pub(crate) fn asked_of_held(name: &str, steps: Steps, of: &str) -> Steps {
+    let Some(entry) = catalog().get(name).filter(|_| steps != Steps::ALL) else {
+        return Steps::ALL;
+    };
+    let mut asked = Steps::NONE;
+    for step in steps.names() {
+        let Some(runs) = entry.runs.get(step) else {
+            return Steps::ALL;
+        };
+        for call in runs.iter().flatten().filter(|call| call.of == of) {
+            asked = asked.and(Steps::of(call.step));
         }
     }
     asked

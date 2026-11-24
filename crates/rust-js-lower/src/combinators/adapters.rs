@@ -364,10 +364,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let made_a = self.unspelled("a");
         // A flatten's, whose `count` and `last` are each inner iterator's
         // own, the crate's where one writes it (#736, #2123): `$flatMap`,
-        // which counts them and takes their last so.
+        // which counts them and takes their last so, where a later use asks
+        // that step of it, not wherever its type could (#2128, #2474's
+        // item 6).
         let own_count = [OwnStep::Count, OwnStep::Last]
             .into_iter()
-            .any(|step| self.recognition().owns_its_step(output, step));
+            .any(|step| self.made_asks(step.method()) && self.recognition().owns_its_step(output, step));
         let mut next = || rest.next().expect("rustc checked the arguments");
         let method = |items: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(items, name), list);
         // Whether the item is `Some`, `item != null`, whatever it holds

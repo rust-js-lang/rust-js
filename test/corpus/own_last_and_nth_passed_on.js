@@ -7,9 +7,7 @@
 // chain, each side's.
 
 import {
-  $flatMap,
   $foldOf,
-  $iter,
   $iterator,
   $last,
   $lent,
@@ -159,19 +157,22 @@ function main() {
     ).some((x) => x === 4)}`,
   );
   const value$5 = $next(
-    $flatMap($iter([c("flat1"), c("flat2")]), (item) =>
-      $iterator(
-        item,
-        cIterator_next,
-        false,
-        undefined,
-        undefined,
-        cIterator_sizeHint,
-        undefined,
-        cIterator_nth,
-        cIterator_last,
-      ),
-    ).drop(7),
+    [c("flat1"), c("flat2")]
+      .values()
+      .flatMap((item) =>
+        $iterator(
+          item,
+          cIterator_next,
+          false,
+          undefined,
+          undefined,
+          cIterator_sizeHint,
+          undefined,
+          cIterator_nth,
+          cIterator_last,
+        ),
+      )
+      .drop(7),
   );
   console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
 }

@@ -241,7 +241,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// and a flatten of `Option`s', `Flatten<Option>`, which the
     /// recognizers make a filter of the `Some`s (`flattened_options`);
     /// `None` of another type.
-    fn catalog_name(&self, ty: Ty<'tcx>) -> Option<String> {
+    pub(crate) fn catalog_name(&self, ty: Ty<'tcx>) -> Option<String> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, _) = ty.kind() else {
             return None;

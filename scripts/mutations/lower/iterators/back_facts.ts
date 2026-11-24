@@ -2,6 +2,16 @@
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
+  {
+    name: "made-asks-every-step",
+    breaks:
+      "a flatten of the crate's iterators, whose `last` and `count` are their own and whose hint runs their code, is `$flatMap` wherever its type could be asked those, though `.skip(7).next()` asks neither: JS's own `[..].values().flatMap(..)` reads as a person writes it (#2128)",
+    file: "crates/rust-js-lower/src/iterators/back_facts.rs",
+    find: "                self.asked_of(local).steps.asks(step)\n",
+    replace: "                self.asked_of(local).steps.asks(step) || true\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on\\.rs$"],
+    snapshots: true,
+  },
 
   {
     name: "made-from-unread",

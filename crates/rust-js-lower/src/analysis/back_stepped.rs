@@ -17,6 +17,8 @@ mod locals;
 pub use locals::SteppedLocal;
 use locals::{borrows, stepped_locals};
 
+mod steps;
+
 use super::iterator_facts::typed_key::{TypedKey, typed_key};
 use crate::analysis::mir_reads::user_variable::user_variable;
 use crate::generic_facts::{GivenADrop, given_a_drop_of};
@@ -45,11 +47,14 @@ pub(super) fn of_crate<'tcx>(
     let mut typed = back_stepped(tcx, recognition, all_bodies, (library, drops));
     let (locals, typed_sources, lengths) = stepped_locals(tcx, recognition, all_bodies, (drops, keeps_capacity), given);
     typed.extend(typed_sources);
+    let (steps, steps_read) = steps::asked_steps(tcx, recognition, all_bodies);
     BackStepped {
         typed,
         borrows: borrows(all_bodies),
         locals,
         lengths,
+        steps,
+        steps_read,
     }
 }
 
@@ -426,6 +431,11 @@ pub struct BackStepped<'tcx> {
     /// Each local whose length is asked, made knowing it where it's made,
     /// and how (`LengthAsked`).
     pub(crate) lengths: IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), LengthAsked>,
+    /// What each local's later uses ask of its value, by std's steps
+    /// (`steps::asked_steps`, #1458); of a body not read here, `steps_read`
+    /// none, every step.
+    pub(crate) steps: IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), crate::recognition::Steps>,
+    pub(crate) steps_read: IndexSet<rustc_span::def_id::DefId>,
 }
 
 /// How a local whose length the crate asks is made knowing it
@@ -446,11 +456,14 @@ pub enum LengthAsked {
 
 /// What the crate's later uses ask of a local's value, by its maker's MIR
 /// identity (`BackStepped::asked_of`): its back, and how it's held where
-/// it's stepped so, and its length. Its maker makes it knowing each.
+/// it's stepped so, and its length. Its maker makes it knowing each. And
+/// the steps std's traits are asked of it, of it and what's made of it
+/// (`steps`, #1458): a form of it is chosen by those, not by its type's.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub struct Asked {
     pub(crate) back: Option<SteppedLocal>,
     pub(crate) len: Option<LengthAsked>,
+    pub(crate) steps: crate::recognition::Steps,
 }
 
 impl<'tcx> BackStepped<'tcx> {
@@ -463,9 +476,14 @@ impl<'tcx> BackStepped<'tcx> {
     /// What's asked of `local`'s value, of `owner`'s body: the one answer of
     /// its back and its length, which its maker reads.
     pub(crate) fn asked_of(&self, owner: rustc_span::def_id::DefId, local: rustc_middle::mir::Local) -> Asked {
+        use crate::recognition::Steps;
         Asked {
             back: self.locals.get(&(owner, local)).copied(),
             len: self.lengths.get(&(owner, local)).copied(),
+            steps: match self.steps_read.contains(&owner) {
+                true => self.steps.get(&(owner, local)).copied().unwrap_or(Steps::NONE),
+                false => Steps::ALL,
+            },
         }
     }
 

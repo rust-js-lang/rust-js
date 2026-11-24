@@ -52,6 +52,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// being lowered, by its maker's MIR identity (`BackStepped::asked_of`):
     /// its back and its length, the one answer of each, which its maker
     /// makes it knowing (#814, #1795).
+    /// Whether a later use of what the call being lowered makes asks std's
+    /// `step` of it, `count`'s or `last`'s, of it or of what's made of it
+    /// (`Asked::steps`, #1458): every step where what it makes isn't a
+    /// local's, or its uses aren't all seen. A form chosen by the steps a
+    /// type could reach asks this of each instead (#2474's item 6).
+    pub(crate) fn made_asks(&self, step: &str) -> bool {
+        let asked = match self.made_into {
+            Some((local, _)) => {
+                let local = self.krate.iterators.back_stepped.lent(self.frame.owner, local);
+                self.asked_of(local).steps.asks(step)
+            }
+            None => true,
+        };
+        rust_js_program::decisions::record("made-asks", if asked { "asked" } else { "unasked" });
+        asked
+    }
+
     pub(crate) fn asked_of(&self, local: rustc_middle::mir::Local) -> crate::analysis::Asked {
         self.krate.iterators.back_stepped.asked_of(self.frame.owner, local)
     }

@@ -999,7 +999,9 @@ What's refused is in [the limitations](limitations.md).
   `FlattenCompat::count` does, one made in place then `$count($flatMap(src,
   f))` ([0510](../decisions/0510-flat-map-and-flatten-of-destructors.md),
   amended), as is one of inner iterators whose `size_hint` may be the
-  crate's, boxed as `dyn` too, which asks theirs as std's does (#2207,
+  crate's, boxed as `dyn` too, which asks theirs as std's does, each where
+  a later use asks that of it, its `count`, its `last` or its hint, else
+  JS's own `flatMap`, which runs alike (#2128, #1458, #2207,
   [1092](../decisions/1092-the-iterator-protocol-is-one-contract.md),
   amended); dropped, it's closed once,
   `it.return()`; one a `cycle()` or a clone holds to clone is std's struct

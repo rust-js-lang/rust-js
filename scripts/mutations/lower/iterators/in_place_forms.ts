@@ -154,8 +154,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a flatten of `Box<dyn Iterator>`s is JS's `flatMap`, which has no hint, so a filter's `count` of it never asks what the boxes hold, the crate's iterators with their own `size_hint` (#2207)",
     file: "crates/rust-js-lower/src/iterators/in_place_forms.rs",
-    find: "        let hint_runs = self.recognition().hint_reaches_own_where(made, true);\n",
-    replace: "        let hint_runs = self.recognition().hint_reaches_own_where(made, false);\n",
+    find: "let hint_runs = self.recognition().hint_reaches_own_where(made, true) && self.made_asks(\"size_hint\");",
+    replace: "let hint_runs = self.recognition().hint_reaches_own_where(made, false) && self.made_asks(\"size_hint\");",
     tests: ["test/corpus.test.ts", "-t", "^flatten_asks_its_inner_iterators_hint.rs$"],
   },
   {

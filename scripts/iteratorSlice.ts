@@ -112,6 +112,7 @@ export const iteratorPaths = [
   "crates/rust-js-lower/src/analysis/type_facts/knowing.rs",
   "crates/rust-js-lower/src/analysis/back_stepped.rs",
   "crates/rust-js-lower/src/analysis/back_stepped/locals.rs",
+  "crates/rust-js-lower/src/analysis/back_stepped/steps.rs",
   "crates/rust-js-lower/src/analysis/hint_asked.rs",
   "crates/rust-js-lower/src/analysis/iterator_facts/typed_key.rs",
   "crates/rust-js-lower/src/body_queries.rs",
