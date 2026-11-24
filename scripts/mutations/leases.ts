@@ -5,6 +5,30 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "heavy-runs-at-once",
+    breaks: "a second heavy run on the machine starts beside the first, not after it, the agents' runs fighting for the cores (Tu's rule, 2026-11-24)",
+    file: "scripts/leases.ts",
+    find: "    releaseTurn = acquire(turnLock(store), {",
+    replace: "    releaseTurn = undefined && acquire(turnLock(store), {",
+    tests: ["test/leases.test.ts", "-t", "one heavy run at a time"],
+  },
+  {
+    name: "lane-starts-beside-a-run",
+    breaks: "a lane's run starts while a heavy run holds the machine, taking its cores (Tu's rule, 2026-11-24)",
+    file: "scripts/leases.ts",
+    find: "    while (liveLeases(store).some((lease) => lease.pid !== process.pid) || lockState(turnLock(store)) === \"held\") {",
+    replace: "    while (false) {",
+    tests: ["test/leases.test.ts", "-t", "one heavy run at a time"],
+  },
+  {
+    name: "lane-counted-against-a-run",
+    breaks: "a run started beside a lane takes half the machine, the lane's lower priority counted as an equal share",
+    file: "scripts/leases.ts",
+    find: "!own.has(lease.pid) && (lane || !lease.lane)",
+    replace: "!own.has(lease.pid)",
+    tests: ["test/leases.test.ts", "-t", "one heavy run at a time"],
+  },
+  {
     name: "lock-held-past-its-owner",
     breaks: "a lock whose owner's process is gone is held still, so `acquire` waits on a killed run's lock for hours and the pruner never bounds its store again (#2272)",
     file: "scripts/leases.ts",

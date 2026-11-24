@@ -72,3 +72,13 @@ the same lease, lock and target isolation. Generator chains use existing
 build workers; pure module tests use existing test slots.
 
 Amended (#1767): a mutation run took its share of the cores (`ownShare`) but sized its builds and its tests' memory by the whole budget, so beside another run it planned for memory its neighbour held. Both now come from one part of the machine, `ownPart`: `ownShare` of the cores and `ownMemory` of the memory budget, which `compilerBuildsAsked` and `testsMemory` read.
+
+## Amendment: one heavy run at a time (Tu's rule, 2026-11-24)
+
+Where agents share a machine, as the Mac mini's and the M5 Pro's coordinators each run two, a fair share of the cores still slows every run: two checks at half the machine each take about twice as long as one alone, so neither lands sooner. The rule is now **one heavy run at a time on a machine**, built on the lease:
+
+- **A lease is taken with the machine's turn** (`turnLock`, a lock beside the leases' store). A check, a push (its whole run, its check and mutants inheriting it), a mutation run or a sweep built on them waits for the turn while another holds it, and says so each minute with the holder's process. What other agents do meanwhile is medium or light: reading, editing, single test files, small builds.
+- **A lane's run (`RUST_JS_LANE=1`), background work, starts only where no run holds a lease,** and takes no turn. A run started after it goes on at once beside it. The lane runs at `nice -n 10`, and `sharers` doesn't count it against the run's share, while the lane counts the run.
+- **What a run starts inherits its lease,** `RUST_JS_LEASED` naming the holder's process, which `sharers` doesn't count again.
+
+The fair share stays for what still overlaps: a run beside a lane, or a lane beside a lane.

@@ -68,6 +68,7 @@
 // `check <outcome>; sanity <outcome>` (#2258), and the map's commit and
 // how far behind it is (scripts/select.ts); the machine and agent each
 // machine's sessions name (`whoRuns`). Written on every exit, a signal's too.
+import { holdLease } from "./leases";
 import { spawn, spawnSync } from "node:child_process";
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { isCompilerSource } from "./compiler-crates";
@@ -345,6 +346,9 @@ async function main() {
     console.error("push: --skip-check needs its reason, naming which it is: --skip-check=\"(a) <the selector over-selects: select.ts, the test map or CI config>\" or --skip-check=\"(b) <Tu's or the lead's say-so for this push>\" (DEVELOPMENT.md's \"Pushing\")");
     process.exit(2);
   }
+  // One heavy run at a time on the machine, the push's whole run its own,
+  // what it starts, its check and its mutants, inheriting it (ADR 1146).
+  holdLease("push");
   const started = performance.now();
   const timed: [string, number][] = [];
   let mark = performance.now();

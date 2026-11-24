@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { readJobTimes } from "../scripts/jobTimes";
-import { acquire, fairShare, holdLease, leasedIn, liveLeases, lockState, ownMemory, ownPart, ownShare, withLock } from "../scripts/leases";
+import { acquire, fairShare, holdLease, leasedIn, sharers, turnLock, liveLeases, lockState, ownMemory, ownPart, ownShare, withLock } from "../scripts/leases";
 import { mutantsLock, mutantsStore } from "../scripts/disk";
 import { underLoad } from "../scripts/timing";
 import { fixture, root } from "./support";
@@ -200,3 +200,75 @@ test("a lock found absent is made again, never removing what another run made th
   expect(lockState(join(dir, "never-made"))).toBe("absent");
   rmSync(lock, { recursive: true, force: true });
 });
+
+// One heavy run at a time where agents share a machine (Tu's rule,
+// 2026-11-24): a lease is taken with the machine's turn, so a second run
+// waits for the first to end; a lane's run starts only where none holds a
+// lease and takes no turn, so a run started after it goes on beside it, the
+// lane's share not counted against it; and what a run starts is in its
+// lease, not another sharer.
+test("one heavy run at a time: a second waits for the first's turn, a lane only for no run at all", async () => {
+  const dir = fixture("leases-turn");
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const store = join(dir, "leases");
+  const marks = join(dir, "marks");
+  mkdirSync(marks, { recursive: true });
+  // A run: holds its lease, marks when it has it, and ends when told.
+  const child = join(dir, "run.ts");
+  writeFileSync(
+    child,
+    `import { existsSync, writeFileSync } from "node:fs";
+import { holdLease } from ${JSON.stringify(join(root, "scripts/leases.ts"))};
+const [name, store, marks] = process.argv.slice(2);
+holdLease(name, { store, every: 50, say: () => writeFileSync(marks + "/" + name + ".waited", "") });
+writeFileSync(marks + "/" + name + ".held", String(Date.now()));
+while (!existsSync(marks + "/" + name + ".end")) Bun.sleepSync(20);
+`,
+  );
+  const env = { ...process.env, RUST_JS_LEASED: "", RUST_JS_LANE: "" };
+  const start = (name: string, lane = false) => Bun.spawn(["bun", child, name, store, marks], { cwd: root, stdout: "inherit", stderr: "inherit", env: { ...env, RUST_JS_LANE: lane ? "1" : "" } });
+  const until = async (file: string) => {
+    for (let i = 0; i < 400 && !existsSync(join(marks, file)); i++) await Bun.sleep(25);
+    return existsSync(join(marks, file));
+  };
+  const end = (name: string) => writeFileSync(join(marks, `${name}.end`), "");
+
+  const first = start("first");
+  expect(await until("first.held")).toBe(true);
+  const second = start("second");
+  // The second waits, and says so, while the first holds the turn.
+  expect(await until("second.waited")).toBe(true);
+  await Bun.sleep(300);
+  expect(existsSync(join(marks, "second.held"))).toBe(false);
+  // A lane waits too, while any run holds a lease.
+  const lane = start("lane", true);
+  expect(await until("lane.waited")).toBe(true);
+  end("first");
+  expect(await first.exited).toBe(0);
+  expect(await until("second.held")).toBe(true);
+  await Bun.sleep(300);
+  expect(existsSync(join(marks, "lane.held"))).toBe(false);
+  end("second");
+  expect(await second.exited).toBe(0);
+  // With no run, the lane goes, taking no turn.
+  expect(await until("lane.held")).toBe(true);
+  expect(lockState(turnLock(store))).toBe("absent");
+  // A run started beside the lane goes at once, and the lane isn't one of
+  // its sharers, though it is the lane's.
+  const beside = start("beside");
+  expect(await until("beside.held")).toBe(true);
+  expect(existsSync(join(marks, "beside.waited"))).toBe(false);
+  const leases = liveLeases(store);
+  expect(leases.map((lease) => [lease.kind, lease.lane ?? false]).sort()).toEqual([["beside", false], ["lane", true]]);
+  const lanePid = leases.find((lease) => lease.lane)!.pid;
+  const runPid = leases.find((lease) => !lease.lane)!.pid;
+  expect(sharers({ RUST_JS_LEASED: String(runPid) }, store)).toBe(1);
+  expect(sharers({ RUST_JS_LEASED: String(lanePid), RUST_JS_LANE: "1" }, store)).toBe(2);
+  end("beside");
+  end("lane");
+  expect([await beside.exited, await lane.exited]).toEqual([0, 0]);
+  // Each let go of what it held.
+  expect(liveLeases(store)).toEqual([]);
+  expect(lockState(turnLock(store))).toBe("absent");
+}, underLoad(60_000));

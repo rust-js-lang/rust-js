@@ -11,6 +11,15 @@
 // and neither swings with the other's load. What a run starts inherits its
 // lease (`RUST_JS_LEASED`) and holds none of its own, being in its share.
 //
+// One heavy run at a time (Tu's rule, 2026-11-24, where agents share a
+// machine): a lease is taken only with the machine's turn (`turnLock`),
+// waited for while another run holds it, so a check, a push, a mutation run
+// or a sweep runs alone, and what agents beside it do meanwhile is light,
+// reading and single tests. A lane's run (`RUST_JS_LANE`), the background
+// work, starts only where no run holds a lease and takes no turn, so a run
+// started after it goes on at once beside it, the lane at its lower
+// priority, its share not counted against the run's (`sharers`).
+//
 // A lock (`withLock`) serializes what two runs read, change and write
 // again, the machine's job times, or keeps one at a time where only one
 // can work, a checkout's mutants' build. Its owner is a process: one whose
@@ -23,7 +32,10 @@ import { checkout, machineStore } from "../test/bounded";
 export const leaseStore = join(machineStore, "leases");
 
 /** A run's lease: its process, its checkout, what it is. */
-export type Lease = { pid: number; checkout: string; kind: string };
+export type Lease = { pid: number; checkout: string; kind: string; lane?: true };
+
+/** The machine's turn of `store`'s leases: one run's at a time. */
+export const turnLock = (store = leaseStore) => `${store}.turn`;
 
 /** Whether `pid` is a live process. */
 export function alive(pid: number): boolean {
@@ -56,16 +68,48 @@ export function liveLeases(store = leaseStore): Lease[] {
 }
 
 /** This process's lease of `kind` held until it exits, in `store`: none
- * where what started it holds one (`RUST_JS_LEASED`), being in its share. */
-export function holdLease(kind: string, { store = leaseStore, env = process.env }: { store?: string; env?: NodeJS.ProcessEnv } = {}): void {
+ * where what started it holds one (`RUST_JS_LEASED`, the holder's process),
+ * being in its share. Taken with the machine's turn, waited for while
+ * another run holds it; a lane's, where no run holds a lease, no turn
+ * taken. What this process starts inherits it: `RUST_JS_LEASED` set. */
+export function holdLease(
+  kind: string,
+  { store = leaseStore, env = process.env, say = (line: string) => console.log(line), every = 60_000 }: { store?: string; env?: NodeJS.ProcessEnv; say?: (line: string) => void; every?: number } = {},
+): void {
   if (env.RUST_JS_LEASED) return;
   mkdirSync(store, { recursive: true });
+  const lane = Boolean(env.RUST_JS_LANE);
+  let releaseTurn: (() => void) | undefined;
+  if (lane) {
+    const began = Date.now();
+    let said: number | undefined;
+    while (liveLeases(store).some((lease) => lease.pid !== process.pid) || lockState(turnLock(store)) === "held") {
+      if (said === undefined || Date.now() - said >= every) {
+        say(`${kind}: a lane's run, waiting until no other run holds the machine${said === undefined ? "" : `: ${Math.round((Date.now() - began) / 60_000)} min so far`}`);
+        said = Date.now();
+      }
+      Bun.sleepSync(1000);
+    }
+  } else {
+    const holder = () => {
+      try {
+        return readFileSync(join(turnLock(store), "owner"), "utf8").trim();
+      } catch {
+        return "";
+      }
+    };
+    releaseTurn = acquire(turnLock(store), { wait: Number.POSITIVE_INFINITY, waiting: `${kind}: waiting for the machine's other heavy run, process ${holder()}, one at a time (ADR 1146)`, every, say });
+  }
   const at = join(store, `${process.pid}.json`);
-  const lease: Lease = { pid: process.pid, checkout, kind };
+  const lease: Lease = { pid: process.pid, checkout, kind, ...(lane ? { lane: true as const } : {}) };
   writeFileSync(`${at}.writing`, JSON.stringify(lease));
   rmSync(at, { force: true });
   renameSync(`${at}.writing`, at);
-  const release = () => rmSync(at, { force: true });
+  env.RUST_JS_LEASED = String(process.pid);
+  const release = () => {
+    rmSync(at, { force: true });
+    releaseTurn?.();
+  };
   process.on("exit", release);
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
     process.once(signal, () => {
@@ -73,6 +117,15 @@ export function holdLease(kind: string, { store = leaseStore, env = process.env 
       process.exit(128 + (signal === "SIGINT" ? 2 : signal === "SIGTERM" ? 15 : 1));
     });
   }
+}
+
+/** How many runs share the machine with this one, itself among them: the
+ * live leases but its own and its holder's (`RUST_JS_LEASED`), and, of a
+ * run not a lane's, but the lanes', whose lower priority yields to it. */
+export function sharers(env = process.env, store = leaseStore): number {
+  const own = new Set([process.pid, Number(env.RUST_JS_LEASED)]);
+  const lane = Boolean(env.RUST_JS_LANE);
+  return liveLeases(store).filter((lease) => !own.has(lease.pid) && (lane || !lease.lane)).length + 1;
 }
 
 /** A run's share of `whole`, the machine's cores or memory: divided by the
@@ -88,7 +141,7 @@ export function fairShare(whole: number, leases = liveLeases().length): number {
  * runs did, sized its builds and tests for memory its neighbours held too
  * (#1767). */
 export function ownPart(env = process.env, leases?: number): number {
-  return env.RUST_JS_LEASED ? 1 : fairShare(1, leases);
+  return env.RUST_JS_LEASED ? 1 : fairShare(1, leases ?? sharers(env));
 }
 
 /** A run's own whole cores of `whole`, at least one (`ownPart`). */

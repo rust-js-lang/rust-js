@@ -32,7 +32,7 @@ import { ownCompiler, ownFolder } from "./own-compiler";
 import { said, strays } from "./strays";
 import { type CheckLogRun, checkLogRun } from "./checkLogs";
 import { expected, jobTimesStore, readJobTimes, recordJobTimes } from "./jobTimes";
-import { fairShare, holdLease, leaseStore, liveLeases } from "./leases";
+import { fairShare, holdLease, leaseStore, liveLeases, sharers } from "./leases";
 import { elapsed, loadScale, median, shown, timed } from "./timing";
 import { devTimes, ownsTimes, slowest } from "./devTimes";
 
@@ -665,7 +665,7 @@ export function run(
   // at most each second as a job waits for room.
   let shares = { count: 1, at: 0 };
   const share = (whole: number) => {
-    if (Date.now() - shares.at > 1000) shares = { count: liveLeases(leases).filter((lease) => lease.pid !== process.pid).length + 1, at: Date.now() };
+    if (Date.now() - shares.at > 1000) shares = { count: sharers(process.env, leases), at: Date.now() };
     return fairShare(whole, shares.count);
   };
   // The next job to start, of those still queued: the first, longest
@@ -721,7 +721,7 @@ export function run(
           const expected = Math.max(2, scale);
           const p = Bun.spawn(cmd, {
             cwd: root,
-            env: { ...process.env, RUST_JS_COMPILER: compiler, RUST_JS_LOAD_SCALE: String(expected), RUST_JS_LEASED: "1", ...env },
+            env: { ...process.env, RUST_JS_COMPILER: compiler, RUST_JS_LOAD_SCALE: String(expected), RUST_JS_LEASED: process.env.RUST_JS_LEASED || String(process.pid), ...env },
             stdout: "pipe",
             stderr: "pipe",
           });
