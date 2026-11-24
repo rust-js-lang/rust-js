@@ -156,4 +156,4 @@ itertools tests/specializations.rs::while_some  #2326 its test file doesn't run 
 itertools tests/specializations.rs::with_position  #2326 its test file doesn't run as JS on CI since f19e64f17's shipped getrandom, where natively each passes (#2460)
 itertools tests/specializations.rs::zip_eq  #2326 its test file doesn't run as JS on CI since f19e64f17's shipped getrandom, where natively each passes (#2460)
 itertools tests/specializations.rs::zip_longest  #2326 its test file doesn't run as JS on CI since f19e64f17's shipped getrandom, where natively each passes (#2460)
-itertools tests/laziness.rs::multi_cartesian_product  #2460 fails as JS where natively it passes: laziness.rs compiles since f19e64f17, cut before
+itertools tests/laziness.rs::multi_cartesian_product  #2466 a unit-struct iterator its items into_iter() in generic code is held bare, $held(undefined) throws
