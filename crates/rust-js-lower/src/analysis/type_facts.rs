@@ -139,7 +139,7 @@ pub(super) fn type_fact_params<'tcx>(
                 }
                 for (id, each) in collect_asks(
                     recognition,
-                    typing_env,
+                    (typing_env, given),
                     (drops, keeps_capacity),
                     caller,
                     (callee, args),
@@ -311,7 +311,7 @@ pub(super) fn type_fact_params<'tcx>(
             }
             for (id, each) in collect_asks(
                 recognition,
-                typing_env,
+                (typing_env, given),
                 (drops, keeps_capacity),
                 caller,
                 (callee, args),
@@ -722,12 +722,6 @@ pub(super) struct FactParams<'tcx> {
     pub(super) carried_super: CarriedSuper,
 }
 
-/// What `caller` asks of its slots where it names `callee`, a std
-/// function, with `args`, as a body read from its THIR or its MIR alike: a
-/// map or a set of a type parameter's keys it makes, called or given,
-/// `HashMap::new()`'s, `collect()`'s, `or_insert_with(BTreeMap::new)`'s,
-/// what it gives, or what a `&mut` it gives points at, which it may have
-/// made, an entry's `or_default()`'s. Its class, its caller's (ADR 0466).
 /// What a call of `callee`, std's `Rc::new` or `Rc::new_cyclic`, of an
 /// `Rc` the crate counts of a type parameter a counted class of the crate's
 /// may be, asks of its caller: whether that `Rc` is its class's instance
@@ -753,12 +747,51 @@ fn instance_asked<'tcx>(
     .then_some(pointee)
 }
 
+/// What a B-tree built of items asks, of a key that holds a type
+/// parameter, whose class may be std's nodes, which sort its entries by
+/// std's stable sort, as their type picks: their caller's, a slot's or a
+/// built slot's (#926). Of a body's own call (`std_call_asks`), and of a std
+/// collection's `fromIter` entry's collect (`collect_asked`, #2442).
+fn tree_built_asked<'tcx>(
+    (tcx, foreign): (TyCtxt<'tcx>, &crate::library::Foreign<'_, 'tcx>),
+    typing_env: ty::TypingEnv<'tcx>,
+    caller: DefId,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Vec<Asked<'tcx>> {
+    let Some(entries) = tree_built_entries(tcx, callee, args) else {
+        return Vec::new();
+    };
+    ([TypeFact::StableSort, TypeFact::Size].into_iter())
+        .filter_map(|fact| asked_of(tcx, foreign, typing_env, caller, (entries, fact)))
+        .collect()
+}
+
+/// What `caller` asks of its slots where it names `callee`, a std
+/// function, with `args`, as a body read from its THIR or its MIR alike: a
+/// map or a set of a type parameter's keys it makes, called or given,
+/// `HashMap::new()`'s, `collect()`'s, `or_insert_with(BTreeMap::new)`'s,
+/// what it gives, or what a `&mut` it gives points at, which it may have
+/// made, an entry's `or_default()`'s. Its class, its caller's (ADR 0466).
 fn map_made<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &crate::library::Foreign<'_, 'tcx>,
     caller: DefId,
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
 ) -> Vec<(u32, TypeFact)> {
+    (maps_made(tcx, foreign, (callee, args)).into_iter())
+        .filter_map(|(key, fact)| Some((slot_of(tcx, foreign, caller, key)?, fact)))
+        .collect()
+}
+
+/// The keys, and their class's fact, of each map or set of keys only a
+/// caller knows that `callee`, a std function, makes with `args`
+/// (`map_made`): of a std collection's `fromIter` entry's collect too, its
+/// `from_iter`'s (`collect_asked`, #2442).
+fn maps_made<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::library::Foreign<'_, 'tcx>,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Vec<(ty::Ty<'tcx>, TypeFact)> {
     if foreign.compiled_by_rust_js(callee) {
         return Vec::new();
     }
@@ -770,9 +803,7 @@ fn map_made<'tcx>(
         ty::Ref(_, pointee, ty::Mutability::Mut) => pointee,
         _ => output,
     };
-    (map_of_param(tcx, made).into_iter())
-        .filter_map(|(key, fact)| Some((slot_of(tcx, foreign, caller, key)?, fact)))
-        .collect()
+    map_of_param(tcx, made)
 }
 
 /// Whether dropping a value of a type runs anything where a function is,
@@ -902,16 +933,8 @@ impl<'tcx> Asking<'tcx> {
             self.asked.insert((caller, index, TypeFact::Size));
             return true;
         }
-        // A B-tree built of items, of a key that holds a type parameter,
-        // whose class may be std's nodes, which sort its entries by std's
-        // stable sort, as their type picks: their caller's, a slot's or a
-        // built slot's (#926).
-        if let Some(entries) = tree_built_entries(tcx, callee, args) {
-            for fact in [TypeFact::StableSort, TypeFact::Size] {
-                if let Some(each) = asked_of(tcx, foreign, typing_env, caller, (entries, fact)) {
-                    self.ask(caller, each);
-                }
-            }
+        for each in tree_built_asked((tcx, foreign), typing_env, caller, (callee, args)) {
+            self.ask(caller, each);
         }
         // `sort_by_cached_key` of a key that holds a type parameter, whose
         // `(K, usize)` pairs std sorts unstably, as their type picks:

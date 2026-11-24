@@ -206,3 +206,66 @@ for five of them, of a hint that overflows their capacity. It runs against
 native in both builds, and so do the 13 cases whose JS lost the wrapper.
 The mutations `from-iter-dictionary-unclosed` and
 `collecting-left-unclosed` go with the code they mutated.
+
+## Amendment: what the entry's collect asks is its caller's (2026-11-24, #2442)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): the program was
+refused; it now runs as Rust does.
+
+A std collection's `fromIter` entry, made where a call gives it for a
+callee's `B: FromIterator<A>`, lowers a collect of an iterator of its own
+(#1239), and that collect reads what a body's own collect of it would:
+into a `Vec`, the items' layout, `$collectsInPlace(IInPlace, TSize,
+TAlign)`, where std may collect them in place; into a set or a map, its
+keys' class; into a B-tree, its entries' `TStableSort` and `TSize`. The
+facts analysis never counted what the entry asks, as std's impl declares
+none (`foreign.type_facts` of it is empty), so of items only a caller
+knows, a `T` or an `I::Item`, the caller was given none and the lowering
+refused valid Rust: `fn items<I: Iterator>(i: I) -> Vec<I::Item> {
+gather(i) }`, `fn of_param<T, I: Iterator<Item = T>>(i: I) -> Vec<T>`,
+and a trait's default in a blanket impl, `fn gathered(self) ->
+Vec<Self::Item> { gather(self) }`, itertools' `collect_vec` once its
+`collect` is dispatched (#2430). Of `fn again<T>(v: Vec<T>)` it worked
+only as `gather`'s own `IInPlace` of `vec::IntoIter<T>` asked `TSize`
+and `TAlign` already.
+
+The analysis now asks of each collect a call runs (`collects_run`): its
+own, and the entry's of each std collection's `FromIterator` it gives a
+callee's bound, of the iterator the entry collects, one stand-in
+(`traits::collected_stand_in`) the entry's lowering and the analysis
+share, so what's counted is what's collected. Only of a call lowered as
+one given its bounds' dictionaries, a crate's or a library's function:
+std's own `collect()` into one of its collections is lowered in place, of
+no dictionary, and asked as a body's collect is. Asked of that too, its
+first version moved 65 corpus snapshots and refused three crate pairs, a
+library's `impl Iterator` method asked its items' layout no maker of its
+dictionary gives; none of std's bodies compiled into `@rust-js/std` takes
+a `FromIterator`'s, and one that did would be refused it, as before
+(#934), never given a wrong one. Of the crate's own impl or a caller's
+bound, what's made is no std collection, so nothing is asked either way,
+and no test says otherwise (the three conditions retired with
+`--retire`, the whole suite, the port and crates.io's corpus run with
+each). What the stand-in is
+given, `from_iter`'s declared `IInPlace` and `ITrustedLen`, the entry
+takes as its parameters, as before; a `Vec`'s entry, given no
+`IVecCollect`, makes its way of them and the items' layout
+(`given_vec_collect`), which is what's asked. And what a body's scan asks
+of a std `from_iter` it names past its collect, its maps' keys' class
+(`maps_made`, ADR 0466) and its B-tree's entries' order
+(`tree_built_asked`, #926), is shared, not copied; the scan's other asks
+are of other std functions. A trait's default's are asked of each impl
+that copies it, in its terms, as its collects' are (#1313): the blanket
+impl's dictionary takes its items' layout, `iExt(IIterator, ITrustedLen,
+IInPlace, IItemSize, IItemAlign)`, each maker giving it. No new form.
+
+No program's JS moved: the corpus, the crate corpus (itertools' rows
+too) and React's port are as they were. Held by
+`collect_entry_of_generic_items.rs`, whose rows main refused (a `Vec` of a
+`T` and of an `I::Item`, the blanket impl's default), with a `BTreeSet`,
+a `HashSet`, a `BTreeMap` of pairs, an `Option<Vec<T>>` std's shunt
+stops, items that drop and callers that call each other, which the
+fixpoint settles; and the mutations `entry-collects-unasked`,
+`entry-collects-of-stds-own-collect`, `entry-vec-layout-unasked`,
+`entry-vec-asked-as-a-body`, `entry-map-class-unasked` and
+`entry-tree-order-unasked`, with seven of the collect asks' retargeted to
+where they moved.

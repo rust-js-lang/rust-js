@@ -5,6 +5,7 @@ use super::*;
 use crate::temporary_names::Role;
 
 mod collecting;
+pub(crate) use collecting::collected_stand_in;
 mod conversions;
 mod declared;
 mod dyn_objects;

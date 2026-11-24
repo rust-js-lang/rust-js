@@ -1064,8 +1064,14 @@ What's refused is in [the limitations](limitations.md).
   after its first item and again each time it's full, as std's
   `extend_desugared` does, `$roomForHint(it, size, false)`, in generic
   code too, of what its caller gives. There it's full by the items' size
-  its caller gives, `TSize` of a `Vec<T>`, or the layout of a type built
-  of its type parameters, a `Vec<(T, u8)>`'s; and a
+  its caller gives, `TSize` of a `Vec<T>`, `IItemSize` of a
+  `Vec<I::Item>`, or the layout of a type built of its type parameters, a
+  `Vec<(T, u8)>`'s, of the collection it collects into itself or whose
+  `FromIterator` it gives a callee's `B`, `gather::<I, Vec<I::Item>>`:
+  that dictionary's `fromIter` collects as its own collect would, so what
+  it asks, the items' layout, a set's keys' class, a B-tree's order, is
+  asked of its caller too ([0445](../decisions/0445-extend-and-collect-in-generic-code.md),
+  amended, #2442); and a
   `filter()`'s `count()` its source's first ([1092](../decisions/1092-the-iterator-protocol-is-one-contract.md)).
 - **`len()` of an iterator made where it's asked is counted, not
   stepped:** each adapter's is its source's, as std's: `v.iter().map(f).len()`

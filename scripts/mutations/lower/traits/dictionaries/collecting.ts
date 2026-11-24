@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "collecting-entry-param-unsized",
     breaks: "the type parameter a `fromIter` entry stands for what's given by isn't `Sized`, so `GenericShunt` of it is no iterator and its `IntoIter` has no drop (#1588)",
     file: "crates/rust-js-lower/src/traits/dictionaries/collecting.rs",
-    find: "            ty::TraitRef::new(tcx, sized, [param]).upcast(tcx),\n",
-    replace: "            ty::TraitRef::new(tcx, iterator, [param]).upcast(tcx),\n",
+    find: "        ty::TraitRef::new(tcx, sized, [param]).upcast(tcx),\n",
+    replace: "        ty::TraitRef::new(tcx, iterator, [param]).upcast(tcx),\n",
     tests: ["test/corpus.test.ts", "-t", "^fallible_collect_into_own_from_iter.rs$"],
   },
 ];

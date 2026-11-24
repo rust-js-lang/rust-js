@@ -35,8 +35,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a map of a type parameter's keys a std function makes, `BTreeMap::new()`, `map(BTreeMap::from)`, has no class, its caller never asked, and is refused (ADR 0466)",
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
-    find: "    (map_of_param(tcx, made).into_iter())\n",
-    replace: "    (map_of_param(tcx, made).into_iter().filter(|_| false))\n",
+    find: "    map_of_param(tcx, made)\n",
+    replace: "    map_of_param(tcx, made).into_iter().filter(|_| false).collect()\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -192,8 +192,8 @@ export const mutations: Mutation[] = [
     name: "tree-built-entries-unasked",
     breaks: "generic code's collect into a B-tree of a type parameter's keys asks its caller no `TStableSort`, and is refused (#926)",
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
-    find: "        if let Some(entries) = tree_built_entries(tcx, callee, args) {\n",
-    replace: "        if let Some(entries) = tree_built_entries(tcx, callee, args).filter(|_| false) {\n",
+    find: "    let Some(entries) = tree_built_entries(tcx, callee, args) else {\n",
+    replace: "    let Some(entries) = tree_built_entries(tcx, callee, args).filter(|_| false) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_nodes_generic.rs$|^generic_btree_keys.rs$"],
   },
   {

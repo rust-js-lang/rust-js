@@ -32,7 +32,7 @@ fn vec_collected<'tcx>(
 /// default reads them (ADR 0049).
 pub(super) fn collect_asks<'tcx>(
     recognition: &crate::recognition::Recognition<'_, 'tcx>,
-    typing_env: ty::TypingEnv<'tcx>,
+    (typing_env, given): (ty::TypingEnv<'tcx>, Given<'_>),
     (drops, keeps_capacity): (ItemDrops<'_, 'tcx>, bool),
     caller: DefId,
     (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
@@ -40,29 +40,19 @@ pub(super) fn collect_asks<'tcx>(
 ) -> Vec<(DefId, Asked<'tcx>)> {
     let (tcx, foreign) = (recognition.tcx, recognition.foreign);
     let asked_by = |typing_env: ty::TypingEnv<'tcx>, owner: DefId, args: ty::GenericArgsRef<'tcx>| {
-        // Of a collect into a `Vec` of what its caller gives, how std
-        // collects it, `IVecCollect`, which answers what `IInPlace` would.
-        let mut asked = match vec_collected(recognition, typing_env, (callee, args)) {
-            Some(this) => Vec::from_iter(asked_of(tcx, foreign, typing_env, owner, (this, TypeFact::VecCollect))),
-            None => in_place_asked(recognition, typing_env, drops, owner, (callee, args)),
-        };
-        asked.extend(grown_asked(
-            recognition,
-            typing_env,
-            owner,
-            (callee, args),
-            keeps_capacity,
-        ));
-        asked.extend(room_asked(recognition, typing_env, owner, (callee, args)));
-        asked.extend(trusted_asked(
-            recognition,
-            typing_env,
-            owner,
-            (callee, args),
-            keeps_capacity,
-        ));
-        asked.extend(table_room_asked(recognition, typing_env, owner, (callee, args)));
-        asked.extend(extend_trusted_asked(recognition, typing_env, owner, (callee, args)));
+        let mut asked = Vec::new();
+        for (collect, typing_env, stand_in) in collects_run(recognition, (typing_env, given), (callee, args)) {
+            // Of the stand-in, a type parameter no caller has, what's asked
+            // is no slot of the caller's and none's built of one: the entry
+            // is given it (`std_method_facts`), `IInPlace` and `ITrustedLen`.
+            asked.extend(collect_asked(
+                recognition,
+                typing_env,
+                (drops, keeps_capacity),
+                owner,
+                (collect, stand_in),
+            ));
+        }
         asked
     };
     // A library's default the crate compiles itself as a function over
@@ -116,6 +106,119 @@ pub(super) fn collect_asks<'tcx>(
         }
     }
     asked
+}
+
+/// What one collect `collects_run` finds asks of `owner`'s slots: of one
+/// into a `Vec` of what its caller gives, how std collects it,
+/// `IVecCollect`, which answers what `IInPlace` would; of a dictionary's
+/// entry's stand-in, which is given no `IVecCollect`, what the entry makes
+/// it of, its items' layout where std may collect them in place
+/// (`given_vec_collect`, `caller_in_place`); and the rest of a collect's.
+fn collect_asked<'tcx>(
+    recognition: &crate::recognition::Recognition<'_, 'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    (drops, keeps_capacity): (ItemDrops<'_, 'tcx>, bool),
+    owner: DefId,
+    ((callee, args), stand_in): ((DefId, ty::GenericArgsRef<'tcx>), Option<ty::Ty<'tcx>>),
+) -> Vec<Asked<'tcx>> {
+    use crate::recognition::collected_items;
+    let (tcx, foreign) = (recognition.tcx, recognition.foreign);
+    let mut asked = match (vec_collected(recognition, typing_env, (callee, args)), stand_in) {
+        (Some(this), None) => Vec::from_iter(asked_of(tcx, foreign, typing_env, owner, (this, TypeFact::VecCollect))),
+        (Some(_), Some(_)) => {
+            // The stand-in, a type parameter, is its own source: whether std
+            // collects it in place is the entry's caller's, `IInPlace`,
+            // against the items' layout (`caller_in_place`).
+            let dest = collected_items(tcx, typing_env, callee, args).map(|(_, _, dest, _)| dest);
+            (dest.into_iter())
+                .flat_map(|dest| [(dest, TypeFact::Size), (dest, TypeFact::Align)])
+                .filter_map(|each| asked_of(tcx, foreign, typing_env, owner, each))
+                .collect()
+        }
+        (None, _) => in_place_asked(recognition, typing_env, drops, owner, (callee, args)),
+    };
+    // Of an entry's, what a body's own call of std's `from_iter` asks past
+    // its collect, which the body's scan asks of each std function it names:
+    // the class of the keys of the map or the set it makes (`map_made`) and
+    // the order and size of a B-tree's entries it sorts (`std_call_asks`).
+    // The scan's other asks are of other std functions, a sort's, an
+    // `Rc`'s, a lend's, `clone_from_slice`'s, `Iterator::eq`'s, none of
+    // them a `from_iter`; and its items' drops are given as any function's
+    // are, by the drops' own owner (ADR 0421).
+    if stand_in.is_some() {
+        let maps = maps_made(tcx, foreign, (callee, args)).into_iter();
+        asked.extend(maps.filter_map(|each| asked_of(tcx, foreign, typing_env, owner, each)));
+        asked.extend(tree_built_asked((tcx, foreign), typing_env, owner, (callee, args)));
+    }
+    asked.extend(grown_asked(
+        recognition,
+        typing_env,
+        owner,
+        (callee, args),
+        keeps_capacity,
+    ));
+    asked.extend(room_asked(recognition, typing_env, owner, (callee, args)));
+    asked.extend(trusted_asked(
+        recognition,
+        typing_env,
+        owner,
+        (callee, args),
+        keeps_capacity,
+    ));
+    asked.extend(table_room_asked(recognition, typing_env, owner, (callee, args)));
+    asked.extend(extend_trusted_asked(recognition, typing_env, owner, (callee, args)));
+    asked
+}
+
+/// The collects a call runs, each with where it's asked: its own, a
+/// `collect()` or a `from_iter`; and, of each std collection's
+/// `FromIterator` it gives a dictionary of for a callee's bound, `B:
+/// FromIterator<A>` of a `gather::<I, Vec<T>>`, that dictionary's
+/// `fromIter`, which collects what the callee gives it as an iterator of a
+/// type parameter of its own, the lowering's (`collecting_entry`), with
+/// that stand-in (`collected_stand_in`, #2442). Of the crate's own impl,
+/// whose `from_iter` is its entry, or a caller's bound's, which it's given,
+/// what it makes is no std collection, so its collect asks nothing.
+fn collects_run<'tcx>(
+    recognition: &crate::recognition::Recognition<'_, 'tcx>,
+    (typing_env, given): (ty::TypingEnv<'tcx>, Given<'_>),
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Vec<(
+    (DefId, ty::GenericArgsRef<'tcx>),
+    ty::TypingEnv<'tcx>,
+    Option<ty::Ty<'tcx>>,
+)> {
+    use crate::recognition::{StdItem, std_item, trait_method};
+    let (tcx, foreign) = (recognition.tcx, recognition.foreign);
+    let mut run = vec![((callee, args), typing_env, None)];
+    // Only of a call lowered as one given its bounds' dictionaries, a crate's
+    // or a library's function's: std's own `collect()` or `from_iter` into
+    // one of its collections is lowered in place, of no dictionary, and asks
+    // as a body's collect does. None of std's bodies compiled into
+    // `@rust-js/std` takes a `FromIterator`'s; one that did would be refused
+    // its items' layout, as before (#934), never given a wrong one.
+    if crate::recognition::is_std_crate(tcx, callee) {
+        return run;
+    }
+    let from_iterator = std_item(tcx, StdItem::FromIterator);
+    for bound in crate::traits::bounds(tcx, foreign, given, callee) {
+        let bound = ty::EarlyBinder::bind(tcx, bound).instantiate(tcx, args);
+        let Ok(bound) = tcx.try_normalize_erasing_regions(typing_env, bound) else {
+            continue;
+        };
+        if bound.def_id != from_iterator {
+            continue;
+        }
+        let (output, item) = (bound.self_ty(), bound.args.type_at(1));
+        let (stand_in, entry_env) = crate::traits::collected_stand_in(tcx, typing_env, item);
+        let from_iter = trait_method(tcx, from_iterator, "from_iter");
+        run.push((
+            (from_iter, tcx.mk_args(&[output.into(), item.into(), stand_in.into()])),
+            entry_env,
+            Some(stand_in),
+        ));
+    }
+    run
 }
 
 /// What a collect into a `Vec`, `collect()` or `from_iter`, of `caller`'s

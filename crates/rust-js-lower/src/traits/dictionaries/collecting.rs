@@ -18,29 +18,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn collecting_entry(&mut self, output: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Expr> {
         let made_items = self.unspelled("items");
         let tcx = self.tcx;
-        let iterator = std_item(tcx, StdItem::Iterator);
         let from_iterator = std_item(tcx, StdItem::FromIterator);
         let from_iter = crate::recognition::trait_method(tcx, from_iterator, "from_iter");
-        // Numbered past any body's own, so it's no parameter of this one.
-        let param = Ty::new_param(tcx, 1 << 20, rustc_span::Symbol::intern("I"));
-        let item_def = crate::recognition::trait_method(tcx, iterator, "Item");
-        // Sized, as a type parameter is unless it says otherwise, so a std
-        // struct of it, `GenericShunt<'_, I, R>`'s, is an iterator (#1588).
-        let sized = tcx.require_lang_item(crate::traits::LangItem::Sized, span);
-        let bounds: [ty::Clause<'tcx>; 3] = [
-            ty::TraitRef::new(tcx, sized, [param]).upcast(tcx),
-            ty::TraitRef::new(tcx, iterator, [param]).upcast(tcx),
-            ty::ProjectionClause {
-                projection_term: match *Ty::new_projection(tcx, ty::IsRigid::No, item_def, [param]).kind() {
-                    ty::Alias(_, alias) => alias.into(),
-                    _ => unreachable!("a projection is an alias"),
-                },
-                term: item.into(),
-            }
-            .upcast(tcx),
-        ];
-        let clauses = self.typing_env.param_env.caller_bounds().chain(bounds);
-        let typing_env = ty::TypingEnv::new(ty::ParamEnv::new(tcx, clauses), self.typing_env.typing_mode());
+        let (param, typing_env) = collected_stand_in(tcx, self.typing_env, item);
         let facts = crate::traits::std_method_facts(tcx, self.krate.foreign, from_iter);
         let mut params: Vec<js::Name> = vec![made_items.clone()];
         let given: Vec<(Ty<'tcx>, crate::recognition::TypeFact, Expr)> = (facts.iter())
@@ -79,4 +59,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             vec![StmtKind::Return(Some(made)).at(js::Span::NONE)],
         ))
     }
+}
+
+/// The iterator a std collection's `fromIter` entry collects
+/// (`collecting_entry`), and where it's bound: a type parameter numbered
+/// past any body's own, so it's no parameter of one, `Sized` and an
+/// `Iterator<Item = item>` where `typing_env`'s bounds hold. The one
+/// stand-in the entry's lowering and the facts analysis's asks of what it
+/// collects share (`collect_asks`, #2442).
+pub(crate) fn collected_stand_in<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    item: Ty<'tcx>,
+) -> (Ty<'tcx>, ty::TypingEnv<'tcx>) {
+    let iterator = std_item(tcx, StdItem::Iterator);
+    let param = Ty::new_param(tcx, 1 << 20, rustc_span::Symbol::intern("I"));
+    let item_def = crate::recognition::trait_method(tcx, iterator, "Item");
+    // Sized, as a type parameter is unless it says otherwise, so a std
+    // struct of it, `GenericShunt<'_, I, R>`'s, is an iterator (#1588).
+    let sized = tcx.require_lang_item(crate::traits::LangItem::Sized, rustc_span::DUMMY_SP);
+    let bounds: [ty::Clause<'tcx>; 3] = [
+        ty::TraitRef::new(tcx, sized, [param]).upcast(tcx),
+        ty::TraitRef::new(tcx, iterator, [param]).upcast(tcx),
+        ty::ProjectionClause {
+            projection_term: match *Ty::new_projection(tcx, ty::IsRigid::No, item_def, [param]).kind() {
+                ty::Alias(_, alias) => alias.into(),
+                _ => unreachable!("a projection is an alias"),
+            },
+            term: item.into(),
+        }
+        .upcast(tcx),
+    ];
+    let clauses = typing_env.param_env.caller_bounds().chain(bounds);
+    let typing_env = ty::TypingEnv::new(ty::ParamEnv::new(tcx, clauses), typing_env.typing_mode());
+    (param, typing_env)
 }

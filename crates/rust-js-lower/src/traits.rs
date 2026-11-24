@@ -12,7 +12,7 @@ mod routes;
 mod words;
 
 pub use self::{calls::GivenEvidence, drop_params::*, given::*, routes::*};
-pub(crate) use self::{evidence::*, words::*};
+pub(crate) use self::{dictionaries::collected_stand_in, evidence::*, words::*};
 use rust_js_program::collections::{IndexMap, IndexSet};
 
 use super::bindings;
