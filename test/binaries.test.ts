@@ -107,6 +107,18 @@ test("a quiet `RefCell` field's guard lent as a `&mut dyn` after a `get_mut` len
   expect(same("guard-lent-as-a-dyn", source)).toEqual({ status: 0, out: "Some(2)\n4\nSome(5) 0\n" });
 }, 300_000);
 
+// A binary's quiet `RefCell` is still counted where its borrows are asked
+// of: `try_borrow_mut()` while a `borrow()` is held fails, as Rust's does,
+// in a `let`-`else` guard and in a `Drop` or a `Clone` that asks it during
+// a held borrow (the Mac mini's #2447 runs of the corpus as binaries,
+// #2450, #2451). A library's cells are judged by their type, so another
+// borrow of one of the type counted answers for them there.
+for (const name of ["let_else_guard_released", "refcell_held_while_asked", "refcell_try_borrow_in_a_closure_while_held"]) {
+  test(`a binary's \`RefCell\` held while it's asked of answers as Rust's: ${name}.rs`, () => {
+    same(name.replaceAll("_", "-"), readFileSync(join(root, `test/corpus/${name}.rs`), "utf8"));
+  }, 300_000);
+}
+
 test("what stdout holds of a line is written as a panic ends a binary", () => {
   same("partial", 'fn main() {\n    print!("partial");\n    panic!("then");\n}\n');
 }, 300_000);

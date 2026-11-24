@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-24 (#2450, #2451, ADR 0863 amended): test/binaries.test.ts gains three tests, `let_else_guard_released.rs`, `refcell_held_while_asked.rs` and `refcell_try_borrow_in_a_closure_while_held.rs` built as binaries and run against native Rust, a `try_borrow_mut()` a closure or a `Drop` asks while a borrow of its cell is held finding it borrowed, which a library's build judges by the cell's type and a binary's by its flow; and the corpus gains the last.
+
 Changed on 2026-11-24 (#2112, Change A step 2b′): the paths table gains two paths, a library's generic function given the adapter, as itself and in a `Box`, the library compiled apart from its own JS and manifest as a dependency is, 5,877 cases in 99 programs, still all of it per push of the iterators' code; its first run found #2419.
 
 Changed on 2026-11-23 (#2392, ADR 1189): test/declarations-readonly.test.ts, new, one test, type-checked: a shared borrow of an array declared `readonly T[]` as a parameter, a result and a field, a `readonly` array accepted where Rust reads and refused where it takes `&mut`; five declarations tests' expectations say `readonly` where they declare such a borrow.

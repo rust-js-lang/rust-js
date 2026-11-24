@@ -1631,3 +1631,26 @@ their runs native's; test/borrow-forms.test.ts's forms. Mutations
 `guard-assigned-its-own-cell-kept`; `place-behind-ref-dropped`
 retargeted. The issue's `$index` and `>>> 0` arithmetic is
 the range owners' part, still open under #1815.
+
+## Amended: code that may run anything still makes its own borrows (2026-11-24, #2450, #2451)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a binary printed
+`true` where Rust prints `false`.
+
+A body that may run anything, one that drops a value with a destructor,
+had its summary given up (`CellBorrows::of`'s `None`), and what it may
+ask of a held borrow was then only what code rust-js can't see may borrow
+(`anything_asks`), which no cell of the crate's own class is: its own
+borrows were lost. A closure that asks `cell.try_borrow_mut().is_ok()`
+drops the `Result` it made, which isn't a guard, so a borrow of `cell`
+held while the closure ran, `cell.borrow().map(|v| (v,
+cell.try_borrow_mut().is_ok()))`, wasn't counted, and the closure found
+`cell` free. A library's cells are judged by their type, so another
+counted borrow of one of the type hid it there; a binary judges the
+crate's own by their flow, where the Mac mini's #2447 runs of the corpus
+as binaries found it, in `let_else_guard_released.rs` and
+`refcell_held_while_asked.rs`. Now `runs_asks` of such a body asks its
+seen borrows too (`seen_asks`), which it surely makes. Held by
+`refcell_try_borrow_in_a_closure_while_held.rs` and the two corpus cases,
+each run as a binary against native (test/binaries.test.ts), and the
+mutation `runs-anything-loses-own-borrows`.

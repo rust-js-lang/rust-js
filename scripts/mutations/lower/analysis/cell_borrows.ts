@@ -501,4 +501,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "scope_struct_of_type_parameters"],
     snapshots: true,
   },
+  {
+    name: "runs-anything-loses-own-borrows",
+    breaks: "a body that may run anything, a closure that drops the `Result` of its `try_borrow_mut()`, is asked only what unseen code may borrow, never its own borrows, so a borrow held across it isn't counted and the closure finds its cell free where Rust's finds it borrowed (#2450, #2451)",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows.rs",
+    find: "        let anything = || self.anything_asks(tcx, held) || self.seen_asks(tcx, body, args, held);\n",
+    replace: "        let anything = || self.anything_asks(tcx, held);\n",
+    tests: ["test/binaries.test.ts", "-t", "held while it's asked of"],
+  },
 ];

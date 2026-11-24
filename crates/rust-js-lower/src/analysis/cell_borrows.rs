@@ -746,6 +746,12 @@ impl<'tcx> CellBorrows<'tcx> {
         drops: &dyn Fn(Ty<'tcx>) -> bool,
     ) -> bool {
         let tcx = recognition.tcx;
+        // Of one that may run anything, a destructor's drop, what anything
+        // may borrow, and its own borrows still, which it surely makes: a
+        // closure's `cell.try_borrow_mut().is_ok()`, which drops the
+        // `Result` it made, meets a borrow of `cell` held across it, though
+        // nothing unseen can reach a cell of the crate's own (#2450, #2451).
+        let anything = || self.anything_asks(tcx, held) || self.seen_asks(tcx, body, args, held);
         match self.of.get(&body) {
             Some(Some(theirs)) => match instantiated(
                 tcx,
@@ -754,9 +760,9 @@ impl<'tcx> CellBorrows<'tcx> {
                 (drops, &|ty| read_may_run(recognition, Some(&self.pointers), ty)),
             ) {
                 Some(theirs) => theirs.asks(tcx, &self.closed, held),
-                None => self.anything_asks(tcx, held),
+                None => anything(),
             },
-            _ => self.anything_asks(tcx, held),
+            _ => anything(),
         }
     }
 }
