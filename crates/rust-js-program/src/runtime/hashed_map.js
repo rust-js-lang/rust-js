@@ -53,6 +53,21 @@ class $HashedKeys {
     under.splice(under.indexOf(entry), 1);
     if (under.length === 0) this.#under.delete(entry[2]);
   }
+  // Each of `items` put under the bytes at its index in `bytes`, asking no
+  // key's `Hash`: a clone's, of a table of the same keys, whose bytes are
+  // its source's, as std's table clone copies its buckets (#2543). Of a
+  // map, each `[key, value]`; of a set, each item.
+  putEach(items, bytes, pairs) {
+    let at = 0;
+    for (const item of items) {
+      const [key, value] = pairs ? item : [item, undefined];
+      this.put({ there: false, bytes: bytes[at++] }, key, value);
+    }
+  }
+  // The bytes each key it holds was put under, in their order.
+  heldBytes() {
+    return Array.from(this.#table.values(), (entry) => entry[2]);
+  }
   // The key a search found given `key` in its place, a set's `replace`.
   replace(found, key) {
     this.#table.delete(found.key);
@@ -74,6 +89,20 @@ function $hashedMap(KHash, eq) {
   return class extends Map {
     static way = { find: "hashed", KHash, eq };
     #keys = new $HashedKeys(KHash, eq);
+    // A clone of `source`, one of the same keys, of `made`, its entries
+    // each cloned in its order: each under the bytes `source` holds it by,
+    // asking no key's `Hash`, as std's table clone (#2543).
+    static ofHashed(made, source) {
+      const clone = new this();
+      clone.putHashed(made, source.heldBytes());
+      return clone;
+    }
+    putHashed(made, bytes) {
+      this.#keys.putEach(made, bytes, true);
+    }
+    heldBytes() {
+      return this.#keys.heldBytes();
+    }
     constructor(entries) {
       super();
       if (entries) {
@@ -151,6 +180,20 @@ function $hashedSet(KHash, eq) {
   return class extends Set {
     static way = { find: "hashed", KHash, eq };
     #keys = new $HashedKeys(KHash, eq);
+    // A clone of `source`, one of the same keys, of `made`, its entries
+    // each cloned in its order: each under the bytes `source` holds it by,
+    // asking no key's `Hash`, as std's table clone (#2543).
+    static ofHashed(made, source) {
+      const clone = new this();
+      clone.putHashed(made, source.heldBytes());
+      return clone;
+    }
+    putHashed(made, bytes) {
+      this.#keys.putEach(made, bytes, false);
+    }
+    heldBytes() {
+      return this.#keys.heldBytes();
+    }
     constructor(items) {
       super();
       if (items) {

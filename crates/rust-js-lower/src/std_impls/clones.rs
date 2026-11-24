@@ -645,12 +645,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let nodes = sorted && self.tree_of_nodes(key_ty, value);
                 let in_order = sorted && self.found_by_cmp(key_ty) || nodes;
                 let shape = nodes.then(|| place.clone());
-                let made_in_order = |made: Expr| match in_order {
-                    true => Expr::call(
+                // A hash map's or set's of keys found by their own `Hash`,
+                // each entry under the bytes its source holds it by, asking
+                // no key's `Hash`, as std's table clone copies its buckets:
+                // `ofHashed` (#2543).
+                let hashed = !sorted && self.found_by_hash(key_ty);
+                let source = place.clone();
+                let made_in_order = |made: Expr| match (in_order, hashed) {
+                    (true, _) => Expr::call(
                         Expr::member(class.clone(), "ofSorted"),
                         [made].into_iter().chain(shape.clone()).collect(),
                     ),
-                    false => Expr::new_(class.clone(), vec![made]),
+                    (false, true) => Expr::call(Expr::member(class.clone(), "ofHashed"), vec![made, source.clone()]),
+                    (false, false) => Expr::new_(class.clone(), vec![made]),
                 };
                 let Some((f, entry, may_panic)) = self.entry_clone(ty, span, out)? else {
                     return Ok(made_in_order(place));

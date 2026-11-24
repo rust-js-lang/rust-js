@@ -179,3 +179,31 @@ Held by corpus case `hashed_keys_looked_up_by_their_borrow.rs` (an `Rc`
 of a number, an `Rc` and a `Box` of a struct whose `Hash` counts its
 calls, a `Vec` by its slice) against native Rust in both builds, and a
 diagnostics row of the counted one. Mutations `borrowed-key-*`.
+
+## Amendment: a hashed map's clone asks no key's `Hash` (2026-11-25, #2543)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a user `Hash`'s side
+effects ran where Rust runs none.
+
+std's `HashMap` and `HashSet` clone their table by copying its buckets,
+and so does their `clone_from`: no key's `hash` runs. rust-js made a clone
+by putting each entry again, `new ($hashedMap(..))(m)`, which asked each
+key's `Hash`, so a `Hash` that prints printed, and `identity_inside_keys`'
+observe rewrite saw its probes early. Each entry already keeps the bytes
+it was put under, `[key, value, bytes]`. A clone is now
+`Class.ofHashed(made, source)`, and `clone_from` (`$cloneIntoMap`) puts
+the same way. Each cloned entry, made as before in the source's order,
+goes under the bytes the source holds it by, with no search
+(`$HashedKeys.putEach`). So does a hashed map written in place, `$assign`'s
+(a box's `clone_from`, `$take`). A hashed map taken apart, `$apart`'s (the
+old value a `mem::replace` gives back), is a copy of its own class through
+`ofHashed`. It was a plain `Map`, which finds keys by identity, so a lookup
+of an equal key in it was `None`. Keys found by value or by a B-tree's
+`cmp` are unaffected. Held by `hashed_map_clone_hashes_no_key` (a clone, a
+`clone_from` of a map with and without values that drop and into a box,
+a `mem::replace` of a boxed one, and a set's clone), `identity_inside_keys`' observe rewrite, and the mutations
+`hashed-clone-rehashed`, `clone-into-rehashed`, `assign-rehashed` and
+`apart-hashed-plain`. Moves:
+`keys_found_by_their_own_hash`'s and
+`impl_asks_the_layout_of_a_type_of_its_parameters`' clones become
+`ofHashed`.

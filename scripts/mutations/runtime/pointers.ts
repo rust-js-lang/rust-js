@@ -827,4 +827,12 @@ export const mutations: Mutation[] = [
     replace: "  return $writeIntegral(f, true, \"0x\", digits, { ...$ptrOptions(options, padTo) });\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_shown_by_options\\.rs$"],
   },
+  {
+    name: "ptr-offset-unrefined",
+    breaks: "a field's handle generic code made first, at no offset, keeps none where a caller that knows the layout names it, so an `Option` payload in a tuple is its own allocation, `64` where Rust's is 4 bytes in (#2543)",
+    file: "crates/rust-js-program/src/runtime/pointers.js",
+    find: "  if (handle !== undefined && typeof offset === \"number\" && handle.offset === undefined) handle.offset = offset;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^option_payload_address_after_a_generic_walk\\.rs$"],
+  },
 ];

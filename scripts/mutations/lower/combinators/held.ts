@@ -15,8 +15,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a field of plain data no `Own` fact covers, an untagged enum variant's, `parentInstance.children`, is held in a `const result` first, where it's read as it is (rd614)",
     file: "crates/rust-js-lower/src/combinators/held.rs",
-    find: "        subject.reads_alike_twice() || self.plain_field(subject) || subject.facts.has(js::Known::Own)\n",
-    replace: "        subject.reads_alike_twice() || subject.facts.has(js::Known::Own)\n",
+    find: "        (subject.reads_alike_twice() || self.plain_field(subject) || subject.facts.has(js::Known::Own))\n",
+    replace: "        (subject.reads_alike_twice() || subject.facts.has(js::Known::Own))\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_field_of_each_variant\\.rs$"],
     snapshots: true,
   },  {
@@ -32,8 +32,8 @@ export const mutations: Mutation[] = [
     name: "own-field-read-once-always",
     breaks: "a field of a struct only the program makes, `history.open` in the undo stack's `record` closure, is held in a `const` though no getter answers it and nothing runs between its reads, so the closure's condition becomes a nested function, `function holds(group)`, where upstream writes it inline (#1908's scope)",
     file: "crates/rust-js-lower/src/combinators/held.rs",
-    find: "        subject.reads_alike_twice() || self.plain_field(subject) || subject.facts.has(js::Known::Own)\n",
-    replace: "        subject.reads_alike_twice() || self.plain_field(subject)\n",
+    find: "        (subject.reads_alike_twice() || self.plain_field(subject) || subject.facts.has(js::Known::Own))\n",
+    replace: "        (subject.reads_alike_twice() || self.plain_field(subject))\n",
     tests: ["test/corpus.test.ts", "-t", "^undo_stack_map_reentered\\.rs$"],
   },
 
@@ -54,5 +54,13 @@ export const mutations: Mutation[] = [
     replace: "    let (name, held) = (name.clone(), held.clone());\n    if true {\n        return value;\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^combinator_subject_read_in_place\\.rs$"],
     snapshots: true,
+  },
+  {
+    name: "subject-handle-unread",
+    breaks: "an inlined closure that writes the `Option` field `map` took a copy of, through a `&mut` of it kept, `reset(&mut slot.x)`, is taken to write nothing of it, so the field is read again after the write: `Some(0)` for Rust's `Some(101)` (#2543)",
+    file: "crates/rust-js-lower/src/combinators/held.rs",
+    find: "            found |= matches!(&e.kind, js::ExprKind::Handle(at, _) | js::ExprKind::Pair(_, at, _) if js::same_path(at, place));\n",
+    replace: "            found |= false && matches!(&e.kind, js::ExprKind::Handle(at, _) | js::ExprKind::Pair(_, at, _) if js::same_path(at, place));\n",
+    tests: ["test/corpus.test.ts", "-t", "^(option_map_subject_written_through_a_kept_mut)\\.rs$"],
   },
 ];

@@ -330,6 +330,9 @@ test("a `#[track_caller]` function made a value whose calls the body doesn't say
     // Captured; a returned one is told by its callers (#2530), one a
     // `pub` function returns isn't (tracked_fn_returned_by_a_pub_fn_refused).
     "fn main() {\n    let f = Option::unwrap;\n    let c = move |x: Option<i32>| f(x);\n    println!(\"{}\", c(Some(1)));\n}\n",
+    // Returned in a struct's field, which its callers' uses don't follow
+    // (#2530's rule reads a value returned whole).
+    "struct Held<F>(F);\n\nfn get() -> Held<impl Fn(Option<i32>) -> i32> {\n    Held(Option::unwrap)\n}\n\nfn main() {\n    println!(\"{}\", (get().0)(Some(1)));\n}\n",
     // Stored in a struct given whole; the crate's own, two parameters.
     "struct Held<F>(F);\n\nfn run<F: Fn(Option<i32>) -> i32>(h: Held<F>) -> i32 {\n    (h.0)(Some(1))\n}\n\nfn main() {\n    println!(\"{}\", run(Held(Option::unwrap)));\n}\n",
     "#[track_caller]\nfn pick(v: &[i32], i: usize) -> i32 {\n    v[i]\n}\n\nfn by_fn<F: Fn(&[i32], usize) -> i32>(f: F) -> i32 {\n    f(&[1], 0)\n}\n\nfn by_once<F: FnOnce(&[i32], usize) -> i32>(f: F) -> i32 {\n    f(&[1], 0)\n}\n\nfn main() {\n    let f = pick;\n    println!(\"{} {}\", by_fn(f), by_once(f));\n}\n",

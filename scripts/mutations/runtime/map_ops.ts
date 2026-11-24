@@ -590,4 +590,12 @@ export const mutations: Mutation[] = [
     replace: "      throw $panic(\"duplicate keys found\");\n",
     tests: ["test/binaries.test.ts", "-t", "each panic std raises in its own code"],
   },
+  {
+    name: "clone-into-rehashed",
+    breaks: "a hash map's `clone_from` of keys found by their own `Hash` puts each again, asking its `hash`, where std's table copies its buckets (#2543)",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
+    find: "  if (typeof m.putHashed === \"function\") {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(hashed_map_clone_hashes_no_key)\\.rs$"],
+  },
 ];

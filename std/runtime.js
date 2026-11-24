@@ -2553,6 +2553,21 @@ export class $HashedKeys {
     under.splice(under.indexOf(entry), 1);
     if (under.length === 0) this.#under.delete(entry[2]);
   }
+  // Each of `items` put under the bytes at its index in `bytes`, asking no
+  // key's `Hash`: a clone's, of a table of the same keys, whose bytes are
+  // its source's, as std's table clone copies its buckets (#2543). Of a
+  // map, each `[key, value]`; of a set, each item.
+  putEach(items, bytes, pairs) {
+    let at = 0;
+    for (const item of items) {
+      const [key, value] = pairs ? item : [item, undefined];
+      this.put({ there: false, bytes: bytes[at++] }, key, value);
+    }
+  }
+  // The bytes each key it holds was put under, in their order.
+  heldBytes() {
+    return Array.from(this.#table.values(), (entry) => entry[2]);
+  }
   // The key a search found given `key` in its place, a set's `replace`.
   replace(found, key) {
     this.#table.delete(found.key);
@@ -2574,6 +2589,20 @@ export function $hashedMap(KHash, eq) {
   return class extends Map {
     static way = { find: "hashed", KHash, eq };
     #keys = new $HashedKeys(KHash, eq);
+    // A clone of `source`, one of the same keys, of `made`, its entries
+    // each cloned in its order: each under the bytes `source` holds it by,
+    // asking no key's `Hash`, as std's table clone (#2543).
+    static ofHashed(made, source) {
+      const clone = new this();
+      clone.putHashed(made, source.heldBytes());
+      return clone;
+    }
+    putHashed(made, bytes) {
+      this.#keys.putEach(made, bytes, true);
+    }
+    heldBytes() {
+      return this.#keys.heldBytes();
+    }
     constructor(entries) {
       super();
       if (entries) {
@@ -2651,6 +2680,20 @@ export function $hashedSet(KHash, eq) {
   return class extends Set {
     static way = { find: "hashed", KHash, eq };
     #keys = new $HashedKeys(KHash, eq);
+    // A clone of `source`, one of the same keys, of `made`, its entries
+    // each cloned in its order: each under the bytes `source` holds it by,
+    // asking no key's `Hash`, as std's table clone (#2543).
+    static ofHashed(made, source) {
+      const clone = new this();
+      clone.putHashed(made, source.heldBytes());
+      return clone;
+    }
+    putHashed(made, bytes) {
+      this.#keys.putEach(made, bytes, false);
+    }
+    heldBytes() {
+      return this.#keys.heldBytes();
+    }
     constructor(items) {
       super();
       if (items) {
@@ -8805,6 +8848,10 @@ export function $ptr(object, key, offset, root, at) {
     handle.others.set(offset, placed);
     return placed;
   }
+  // One generic code made first, which knows no layout, at no offset: the
+  // same place, its offset the one a caller that knows says, as its root
+  // is below, so what it holds is in its container's allocation (#2543).
+  if (handle !== undefined && typeof offset === "number" && handle.offset === undefined) handle.offset = offset;
   if (handle !== undefined && root !== undefined && (handle.root === undefined || !$rooted(handle))) {
     handle.root = root;
     handle.rootAt = at;
@@ -11540,6 +11587,12 @@ export function $dropTable(m, drop) {
 export function $cloneIntoMap(m, from, make, drop) {
   $dropTable(m, drop);
   const made = drop ? $madeEach(from, make ?? ((entry) => entry), drop) : Array.from(from, make);
+  // Of keys found by their `Hash`, under the bytes `from` holds each by,
+  // asking no key's `Hash`, as std's table `clone_from` copies (#2543).
+  if (typeof m.putHashed === "function") {
+    m.putHashed(made, from.heldBytes());
+    return;
+  }
   for (const entry of made) {
     if (m instanceof Set) m.add(entry);
     else m.set(entry[0], entry[1]);
@@ -13949,6 +14002,12 @@ export function $assign(target, value) {
   if (Array.isArray(target)) {
     target.length = value.length;
     for (let i = 0; i < value.length; i++) target[i] = value[i];
+  } else if (typeof target.putHashed === "function" && typeof value.heldBytes === "function") {
+    // Of keys found by their own `Hash`: each under the bytes `value` holds
+    // it by, asking no key's `hash`, as a move of std's table asks none
+    // (#2548).
+    target.clear();
+    target.putHashed(value, value.heldBytes());
   } else if (target instanceof Map) {
     target.clear();
     for (const [key, item] of value) target.set(key, item);
@@ -24189,6 +24248,9 @@ export function $sort(v, compare) {
 // written back after, becomes what the box holds then.
 export function $apart(value) {
   if (Array.isArray(value)) return value.slice();
+  // Of keys found by their own `Hash`, one of its class, which finds them
+  // so, each under the bytes it's held by, asking no key's `hash` (#2548).
+  if (typeof value?.heldBytes === "function") return value.constructor.ofHashed(value, value);
   if (value instanceof Map) return new Map(value);
   if (value instanceof Set) return new Set(value);
   // std's compiled struct, whose methods step itself: another of its

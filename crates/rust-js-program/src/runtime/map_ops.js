@@ -619,6 +619,12 @@ function $dropTable(m, drop) {
 function $cloneIntoMap(m, from, make, drop) {
   $dropTable(m, drop);
   const made = drop ? $madeEach(from, make ?? ((entry) => entry), drop) : Array.from(from, make);
+  // Of keys found by their `Hash`, under the bytes `from` holds each by,
+  // asking no key's `Hash`, as std's table `clone_from` copies (#2543).
+  if (typeof m.putHashed === "function") {
+    m.putHashed(made, from.heldBytes());
+    return;
+  }
   for (const entry of made) {
     if (m instanceof Set) m.add(entry);
     else m.set(entry[0], entry[1]);

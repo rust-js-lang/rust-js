@@ -600,7 +600,7 @@ test("the runtime steps what may be a Rust iterator by its stepping helpers alon
     "crates/rust-js-program/src/runtime/btree.js": [4, "a B-tree made of a collect's array or another tree's entries"],
     "crates/rust-js-program/src/runtime/extract_if.js": [1, "a map's entries"],
     "crates/rust-js-program/src/runtime/fold_of.js": [1, "`$foldToArray`'s copy of an array"],
-    "crates/rust-js-program/src/runtime/hashed_map.js": [3, "a map or a set made of a collect's array or another's entries or items, or a map's entries given handles"],
+    "crates/rust-js-program/src/runtime/hashed_map.js": [4, "a map or a set made of a collect's array or another's entries or items, a map's entries given handles, or a clone's entries put under their source's bytes"],
     "crates/rust-js-program/src/runtime/hasher.js": [1, "a collection's items, hashed"],
     "crates/rust-js-program/src/runtime/index_map.js": [1, "a map's entries"],
     "crates/rust-js-program/src/runtime/key_map.js": [1, "a map made of a collect's array or another map's entries"],

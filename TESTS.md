@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2543, ADRs 0562, 1022 and 1120 amended): corpus gains `option_payload_address_after_a_generic_walk`, `option_map_subject_written_through_a_kept_mut` and `hashed_map_clone_hashes_no_key`; test/known/metamorphic/2543.txt is removed; mutations `ptr-offset-unrefined`, `subject-handle-unread`, `hashed-clone-rehashed`, `clone-into-rehashed`, `assign-rehashed` and `apart-hashed-plain`.
+
 Changed on 2026-11-25 (#2558): test/support.test.ts gains a test, a claim whose process is gone is taken over only by the one process taking it, in-process, which judges `claim-taken-over-unlocked` where the racers' child processes judged it by luck; mutation `claim-taking-left-by-the-dead-kept`.
 
 Changed on 2026-11-25 (ADR 1122 amended): test/twin-net.test.ts gains three tests, a gap fails a run, drift fails none and its bless writes the lists, and `BLESS=1 bun test/twin-net.ts helpers` blesses a whole run that passed alone; six mutations (scripts/mutations/twin-net.ts).

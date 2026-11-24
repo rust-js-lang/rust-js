@@ -226,7 +226,7 @@ function maps() {
       .join(", ")}]`,
   );
 
-  const copy = new ($hashedMap(wordHash, wordPartialEq_eq))(counts);
+  const copy = $hashedMap(wordHash, wordPartialEq_eq).ofHashed(counts, counts);
   console.log(`${$mapEq(copy, counts)}`);
   const other = new ($hashedMap(wordHash, wordPartialEq_eq))();
   other.set(["APPLE"], 1);
@@ -391,8 +391,9 @@ function holding() {
   for (const list of Array.from(lists.values())) {
     list.push(4);
   }
-  const copy = new ($hashedMap(wordHash, wordPartialEq_eq))(
+  const copy = $hashedMap(wordHash, wordPartialEq_eq).ofHashed(
     Array.from(lists).map(([key, value]) => [key, value.slice()]),
+    lists,
   );
   $unwrap(lists.get(["K"]), "test/corpus/keys_found_by_their_own_hash.rs:241:38").push(5);
   console.log(
@@ -409,7 +410,7 @@ function holding() {
 
   const one = new ($hashedSet(wordHash, wordPartialEq_eq))();
   one.add(["q"]);
-  const other = new ($hashedSet(wordHash, wordPartialEq_eq))(one);
+  const other = $hashedSet(wordHash, wordPartialEq_eq).ofHashed(one, one);
   const arg = $setEq(other, one);
   console.log(
     `{${Array.from(other)

@@ -74,6 +74,10 @@ function $ptr(object, key, offset, root, at) {
     handle.others.set(offset, placed);
     return placed;
   }
+  // One generic code made first, which knows no layout, at no offset: the
+  // same place, its offset the one a caller that knows says, as its root
+  // is below, so what it holds is in its container's allocation (#2543).
+  if (handle !== undefined && typeof offset === "number" && handle.offset === undefined) handle.offset = offset;
   if (handle !== undefined && root !== undefined && (handle.root === undefined || !$rooted(handle))) {
     handle.root = root;
     handle.rootAt = at;

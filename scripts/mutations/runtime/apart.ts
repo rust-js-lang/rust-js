@@ -19,4 +19,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet.rs$"],
   },
+  {
+    name: "apart-hashed-plain",
+    breaks: "a hash map of keys found by their own `Hash`, taken apart, the old value a `mem::replace` gives back, is a plain `Map`, which finds keys by identity, so a lookup of an equal key in it is `None` (#2548)",
+    file: "crates/rust-js-program/src/runtime/apart.js",
+    find: "  if (typeof value?.heldBytes === \"function\") return value.constructor.ofHashed(value, value);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^hashed_map_clone_hashes_no_key\\.rs$"],
+  },
 ];

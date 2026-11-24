@@ -646,4 +646,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^(untagged_null_option_held|local_borrow_nested_option)\\.rs$"],
   },
+  {
+    name: "hashed-clone-rehashed",
+    breaks: "a hash map's clone of keys found by their own `Hash` puts each key again, asking its `hash`, where std's table clone copies its buckets and asks none (#2543)",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "                let hashed = !sorted && self.found_by_hash(key_ty);\n",
+    replace: "                let hashed = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(hashed_map_clone_hashes_no_key)\\.rs$"],
+  },
 ];

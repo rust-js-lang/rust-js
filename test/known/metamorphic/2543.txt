@@ -1,6 +1,0 @@
-#2543 P0: under the observe rewrites, an Option payload's address in a tuple is wrong, a value lost and observations missing, hidden by #2533's ICE
-plain std observe-borrows address_of_an_option_payload.rs
-plain std observe-lens address_of_an_option_payload.rs
-plain std observe-borrows identity_inside_keys.rs
-plain std observe-borrows option_subject_of_a_cells_field.rs
-plain std observe-lens option_subject_of_a_cells_field.rs

@@ -198,11 +198,12 @@ export function hashMapArbitrary(
     () => ({
       Clone: () => ({
         clone(value) {
-          return new KMap(
+          return KMap.ofHashed(
             Array.from(value).map(([key, value]) => [
               KArbitrary.Clone().clone(key),
               VArbitrary.Clone().clone(value),
             ]),
+            value,
           );
         },
         cloneFrom(to, from) {
@@ -266,11 +267,12 @@ function hashMapArbitrary_shrink(
   KVSize,
 ) {
   const vec = Array.from(
-    new KMap(
+    KMap.ofHashed(
       Array.from(hashMap).map(([key, value]) => [
         KArbitrary.Clone().clone(key),
         VArbitrary.Clone().clone(value),
       ]),
+      hashMap,
     ),
   );
   return $lent(

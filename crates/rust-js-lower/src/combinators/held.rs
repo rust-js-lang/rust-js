@@ -48,7 +48,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         values: &[Expr],
         out: &mut Vec<Stmt>,
     ) -> (Expr, Option<usize>, bool) {
-        let read_twice = self.subject_read_twice(&subject);
+        let read_twice = self.subject_read_twice(&subject, values);
         if read_twice && (comb != Comb::MapOr || matches!(subject.kind, js::ExprKind::Var(_))) {
             return (subject, None, true);
         }
@@ -65,16 +65,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it, a variable's, a constant's, the program's item's
     /// (`reads_alike_twice`, #1908), a field of its plain data, which
     /// nothing changes (`plain_field`, rd614), or a field of a struct only
-    /// the program makes, which no getter answers (`Known::Own`). Nothing a
-    /// program rustc accepts runs between the test and the read that writes
-    /// such a field: a closure inlined there is one expression, which can't
-    /// write the field it was given but through a `&mut` of it, a call
-    /// borrowck refuses beside the read, and a closure of more is a
-    /// function called with the field, read before it runs (ADR 1022,
-    /// amended). Else it's held in a `const` first.
-    pub(crate) fn subject_read_twice(&self, subject: &Expr) -> bool {
-        subject.reads_alike_twice() || self.plain_field(subject) || subject.facts.has(js::Known::Own)
+    /// the program makes, which no getter answers (`Known::Own`), where
+    /// nothing that runs between the test and the read, `between`, the
+    /// closure inlined there, writes it. A closure of more is a function
+    /// called with the field, read before it runs; one inlined is one
+    /// expression, which writes the field only through a `&mut` of it: of a
+    /// `Copy` subject, which the combinator takes a copy of, borrowck allows
+    /// one, `slot.x.map(|v| reset(&mut slot.x) + v)`, whose handle's setter
+    /// assigns the field (#2543; ADR 1022, amended). Else it's held in a
+    /// `const` first.
+    pub(crate) fn subject_read_twice(&self, subject: &Expr, between: &[Expr]) -> bool {
+        (subject.reads_alike_twice() || self.plain_field(subject) || subject.facts.has(js::Known::Own))
+            && !assigned_in(between, subject)
     }
+}
+
+/// Whether `values`, however deep, a closure inlined, may write `place`,
+/// by its path (`same_path`): a handle on it, a `&mut` kept, which writes
+/// it through (ADR 0099). One expression assigns nothing itself.
+fn assigned_in(values: &[Expr], place: &Expr) -> bool {
+    let mut stmts: Vec<Stmt> = values
+        .iter()
+        .map(|value| StmtKind::Expr(value.clone()).at(js::Span::NONE))
+        .collect();
+    let mut found = false;
+    js::each_block_mut(&mut stmts, &mut |list| {
+        js::each_expr_mut(list, &mut |e| {
+            found |= matches!(&e.kind, js::ExprKind::Handle(at, _) | js::ExprKind::Pair(_, at, _) if js::same_path(at, place));
+        });
+    });
+    found
 }
 
 /// `value`, a combinator's, with the `const` its subject, which may be read

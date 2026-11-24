@@ -4,6 +4,9 @@
 // written back after, becomes what the box holds then.
 function $apart(value) {
   if (Array.isArray(value)) return value.slice();
+  // Of keys found by their own `Hash`, one of its class, which finds them
+  // so, each under the bytes it's held by, asking no key's `hash` (#2548).
+  if (typeof value?.heldBytes === "function") return value.constructor.ofHashed(value, value);
   if (value instanceof Map) return new Map(value);
   if (value instanceof Set) return new Set(value);
   // std's compiled struct, whose methods step itself: another of its

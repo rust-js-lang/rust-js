@@ -603,3 +603,25 @@ Rust, reading the discriminant once, picks `Two`.
 Case of [0262](0262-when-rust-and-js-disagree.md): results change, so
 Rust's reads are kept. Held by test/getter-reads/getter_enum_tag.rs and the
 mutations `held-tag-never` and `js-given-enums-unheld`.
+
+## Amendment: a field subject is read again only where nothing inlined between writes it (2026-11-25, #2543)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a lost value.
+
+A combinator's subject that is a field was read twice, once for its test
+and once for its value, on the argument that an inlined closure can write
+the field only through a `&mut` of it, "a call borrowck refuses beside the
+read". That's not so of a `Copy` subject: `slot.x.map(..)` takes a copy, so
+its closure may take `&mut slot.x`. `slot.x.map(|v| reset(&mut slot.x) + v)`
+printed `Some(0)` for Rust's `Some(101)` once `reset` handed its `&mut` on
+to generic code, which keeps it as a handle on the field. The closure was
+then one expression, inlined with `v` read again as `slot.x`, after
+`reset` had written it. `subject_read_twice` now takes the values that
+run between the test and the read, the body inlined there. A field is
+read twice only where none of them holds a handle on its place (or a
+`dyn` pair of one); otherwise it's held in a `const` first. A closure that
+isn't inlined is a function given the field, read before it runs, and is
+unaffected. Held by `option_map_subject_written_through_a_kept_mut`
+(reduced by `scripts/reduce.ts` from `option_subject_of_a_cells_field`'s
+`observe-borrows` rewrite), that rewrite itself, and the mutation
+`subject-handle-unread`.

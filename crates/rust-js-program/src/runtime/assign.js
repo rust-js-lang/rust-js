@@ -9,6 +9,12 @@ function $assign(target, value) {
   if (Array.isArray(target)) {
     target.length = value.length;
     for (let i = 0; i < value.length; i++) target[i] = value[i];
+  } else if (typeof target.putHashed === "function" && typeof value.heldBytes === "function") {
+    // Of keys found by their own `Hash`: each under the bytes `value` holds
+    // it by, asking no key's `hash`, as a move of std's table asks none
+    // (#2548).
+    target.clear();
+    target.putHashed(value, value.heldBytes());
   } else if (target instanceof Map) {
     target.clear();
     for (const [key, item] of value) target.set(key, item);

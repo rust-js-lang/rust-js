@@ -458,9 +458,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             return Ok(Some(chain));
                         }
                         // Read twice where no getter can answer it, as it is
-                        // (`subject_read_twice`, #1908); else in a `const` first,
-                        // as Rust reads it once.
-                        let option = match self.subject_read_twice(&option) {
+                        // (`subject_read_twice`, #1908), and the body inlined
+                        // between, a closure called is given it read first,
+                        // writes nothing of it (#2543); else in a `const`
+                        // first, as Rust reads it once.
+                        let option = match self.subject_read_twice(&option, body.as_slice()) {
                             true => option,
                             false => self.spill_subject(base, option, (true, base != Base::Role(Role::Option)), out),
                         };

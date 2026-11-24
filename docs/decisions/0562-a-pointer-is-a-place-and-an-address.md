@@ -1682,3 +1682,21 @@ expansion for each, `usize::next_multiple_of(0)`'s, names wasm32's std's
 line, the width rust-js models, not the 64-bit host's: the catalogue of
 std's sites walks wasm32's std, and its row is checked against native Rust
 built for `wasm32-wasip1` (ADR 1184).
+
+## Amendment: a place's handle made first by generic code takes the offset a caller gives (2026-11-25, #2543)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a wrong address.
+
+`$ptr` keeps one handle for each object and key. A later call that gives a
+`root` refines the handle's, but a later offset was dropped: the handle
+kept the first caller's. Generic code, which knows no layout, makes a
+field's handle at no offset, `$stored($ptr(self, 0))` of a tuple it walks
+by reference. A caller that knows the layout, `&raw const` of the
+tuple's payload, then got that handle with no offset back, and the
+payload was put in an allocation of its own: `64` where Rust's is 4 bytes
+into the tuple. A handle with no offset now takes the numeric offset a
+later caller gives, as its root is refined. Its other fields can't be
+missing: `of` and `at` are its key, and `root` and `rootAt` were already
+refined together. Held by `option_payload_address_after_a_generic_walk`,
+`address_of_an_option_payload`'s observe rewrites, and the mutation
+`ptr-offset-unrefined`.

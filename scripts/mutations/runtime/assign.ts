@@ -27,4 +27,12 @@ export const mutations: Mutation[] = [
     replace: "    for (const key of Object.keys(target)) if (!(key in value)) delete target[key];\n    Object.assign(target, value);\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet.rs$"],
   },
+  {
+    name: "assign-rehashed",
+    breaks: "a hash map of keys found by their own `Hash`, written in place, a box's `clone_from`, puts each key again, asking its `hash`, where std's table asks none (#2548)",
+    file: "crates/rust-js-program/src/runtime/assign.js",
+    find: "  } else if (typeof target.putHashed === \"function\" && typeof value.heldBytes === \"function\") {\n",
+    replace: "  } else if (false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^hashed_map_clone_hashes_no_key\\.rs$"],
+  },
 ];
