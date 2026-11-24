@@ -547,3 +547,69 @@ no std type, and the mutations `clone-site-of-std-unread`,
 `cloned-at-oracle-unread`, `cloned-at-defaults-unused` and
 `cloned-at-key-shapes-unsaid`. The item-cloning models, a `cloned()`'s, an
 `extend_from_slice`'s and an `Option<&T>`'s `cloned`, follow.
+
+## Amendment: an item a std method clones is placed at std's line of that method (2026-11-24, #2509)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a panic named the
+caller's line where Rust names std's.
+
+A `cloned()`, an `Option<&T>`'s `cloned` and a `Vec`'s
+`extend_from_slice` clone each item by `T::clone` handed to a `Fn*`
+trait, so a borrowed `RefCell` item's clone, which tracks its caller,
+names the shim's line, `function.rs:166:5` (`FnMut::call_mut`) or `250:5`
+(`FnOnce::call_once`), or `Cloned`'s `try_fold` closure's,
+`cloned.rs:29:32`. Which one depends on the step that runs: a `count()`
+and a `fold` reach `166:5`, a `next()` and an `nth` `250:5`, an `any` the
+closure. `bun run std` walks each of these methods from std's MIR by the
+same walk (`cloned_methods`), each step of the catalog's `STEP_NAMES`
+of a `Cloned` of a `slice::Iter` of a `RefCell<u8>`, and writes a
+`clonedAt` row for each, keyed by its path,
+`core::iter::adapters::cloned::Cloned::count`. The native oracle settles
+`nth`, `max_by` and `min_by`, whose walks find two paths.
+
+The lowering places a `cloned()`'s item clone by the steps `back_stepped`
+says its value is asked (`made_asked_steps`), and `cloned_items` (clones.rs)
+is the one owner of that choice, which #1458's form will read. Where every
+asked step's row is the same line, the clone is placed there; where no
+asked step clones an item, nothing is placed. Where the steps aren't
+known, or are of two lines, the clone keeps the call's line: a `cloned()`
+collected, whose native line follows its source's `TrustedLen` (`166:5`
+of a slice's, `250:5` of a `filter()`'s), a `for` loop's, one returned,
+stored or handed to generic code, a `zip`'s (std's
+`__iterator_get_unchecked`, `cloned.rs:70:55`), or a `next()` then a
+`count()`. JS can't tell a `collect` from a `for` loop: both step
+`next()`. A runtime form that chooses by the step that runs would guess
+wrong, and a refusal would reject common code for a line, so these keep
+the call's line, `located-otherwise` against #2509 (Tu's decision), until
+std's `Cloned` and `collect` are compiled (#1458), which places them by
+construction. An `Option<&T>`'s `cloned` and `extend_from_slice` each have
+one line and are always placed. The metamorphic net's rewrites that move
+the iterator into a `Box`, an `Option`, a field, an array or a tuple, or
+hand it to generic code, are listed in test/known/metamorphic/2509.txt
+until `back_stepped` follows a value into a container (#1458).
+
+Built of std's compiled `Cloned` (`--std-iterators`, #1458's path), a
+`count()`'s, a `fold`'s and an `any`'s clone name `std/lib.rs:1:1` and
+`<unknown>`: the compiled `FnMut::call_mut` shim and `try_fold` closure
+pass no line of their own. That is #2522, a P0 to fix before #1458 can
+close #2509's cases by construction; the three cases are in
+test/iterator-forms.test.ts' `differs`, and their rewrites in
+test/known/metamorphic/2522.txt.
+
+`back_stepped` read a named variable's debug info as a use, so any
+iterator held in a `let` was asked every step. It now reads it as no use
+(`steps.rs`). The one corpus move is `dyn_wrapper_hides_the_crates_own_steps`.
+A flatten of `Box<dyn Iterator>`s there, asked only `next` and `count`,
+is JS's own `flatMap` instead of `$flatMap`: the `dyn` hides the crate's
+own `count`, so std's `FlattenCompat::count` asks nothing JS's form
+doesn't.
+
+Held by the corpus cases `cloned_count_`, `cloned_fold_`,
+`cloned_next_`, `cloned_nth_`, `cloned_any_`, `option_cloned_` and
+`extend_from_slice_of_a_borrowed_refcell_names_std_line`, and the
+`located-otherwise` cases `cloned_collect_`, `cloned_for_loop_` and
+`cloned_next_then_count_of_a_borrowed_refcell_names_its_call`. They are
+also held by test/std-cloned-at.test.ts' three new rows, and by the
+mutations `cloned-items-row-unread`, `cloned-items-mixed-guessed`, `steps-debug-info-read`,
+`cloned-items-at-unplaced`, `option-cloned-row-unread`,
+`extend-from-slice-row-unread` and `cloned-methods-backs-unwalked`.

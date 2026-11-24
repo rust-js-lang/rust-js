@@ -121,7 +121,9 @@ function boxed() {
       "test/corpus/dyn_wrapper_hides_the_crates_own_steps.rs:46:66",
     )}`,
   );
-  const e = $flatMap($iter(boxes()), (item) => item);
+  const e = boxes()
+    .values()
+    .flatMap((item) => item);
   $next(e);
   console.log(`e ${e.reduce((n) => n + 1, 0)}`);
   let b = $iterator(

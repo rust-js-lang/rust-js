@@ -53,8 +53,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Vec`'s `extend_from_slice(xs)` is `$extend(v, xs)`, not the index loop its `extend(xs)` is (ADR 1042, amended)",
     file: "crates/rust-js-lower/src/combinators.rs",
-    find: "        if self.is_std_type(into, crate::recognition::StdItem::Vec) {\n            return self.pushed_each(collection, items, cloned, span, out);\n",
-    replace: "        if false {\n            return self.pushed_each(collection, items, cloned, span, out);\n",
+    find: "        // Each item's clone at `extend_from_slice`'s line of it (#2509).\n        if self.is_std_type(into, crate::recognition::StdItem::Vec) {\n",
+    replace: "        // Each item's clone at `extend_from_slice`'s line of it (#2509).\n        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_extend_indexed.rs$"],
     snapshots: true,
   },
@@ -901,5 +901,13 @@ export const mutations: Mutation[] = [
     find: "        let unbounded = onto_vec && crate::recognition::hint_may_be_unbounded(self.tcx, iter_ty);",
     replace: "        let unbounded = false;",
     tests: ["test/corpus.test.ts", "-t", "^(extend_past_usize_max_panics_at_stds_line)\\.rs$"],
+  },
+  {
+    name: "extend-from-slice-row-unread",
+    breaks: "a `Vec`'s `extend_from_slice` of a `RefCell` mutably borrowed names the caller's line, not its `fold`'s `FnMut::call_mut` shim's (#2509)",
+    file: "crates/rust-js-lower/src/combinators.rs",
+    find: "            return match cloned.and_then(|item| self.clone_row_site(item, \"alloc::vec::Vec::extend_from_slice\")) {\n",
+    replace: "            return match cloned.and_then(|item| self.clone_row_site(item, \"alloc::vec::Vec::extend_from_slice\")).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^extend_from_slice_of_a_borrowed_refcell_names_std_line\\.rs$"],
   },
 ];

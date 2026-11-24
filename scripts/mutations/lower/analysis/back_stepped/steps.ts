@@ -19,4 +19,12 @@ export const mutations: Mutation[] = [
     replace: "                Reached::Held(_) => Steps::NONE,\n",
     tests: flattenHint,
   },
+  {
+    name: "steps-debug-info-read",
+    breaks: "a named variable's debug info is read as a use of it, so a `let` held iterator is asked every step: a held `cloned()` stepped by `next()` clones a borrowed `RefCell` at the caller's line, not `Cloned::next`'s `function.rs:250:5` (#2509)",
+    file: "crates/rust-js-lower/src/analysis/back_stepped/steps.rs",
+    find: "                    NonUseContext::StorageLive | NonUseContext::StorageDead | NonUseContext::VarDebugInfo\n",
+    replace: "                    NonUseContext::StorageLive | NonUseContext::StorageDead\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_next_of_a_borrowed_refcell_names_std_line\\.rs$"],
+  },
 ];

@@ -1160,6 +1160,7 @@ pub(crate) fn raised_catalogue(tcx: TyCtxt<'_>) -> Result<String, String> {
     }
     held_steps_checked(HELD_STEPS, HELD_STEPS_ELSEWHERE)?;
     let cloned: ::serde_json::Map<String, ::serde_json::Value> = (super::cloned_at::cloned_at(tcx)?.into_iter())
+        .chain(super::cloned_at::cloned_methods(tcx)?)
         .map(|(key, sites)| (key, ::serde_json::Value::from(sites)))
         .collect();
     kept.insert("clonedAt", ::serde_json::Value::Object(cloned));

@@ -316,3 +316,204 @@ pub(crate) fn cloned_by<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>
         .collect();
     ClonedBy::Std { key, parts }
 }
+
+/// Of each std method a runtime model stands for that clones an item,
+/// where it raises a borrowed `RefCell`'s panic, by the same walk: each
+/// step std's catalog names of a `cloned()`, `Cloned`'s, by its path,
+/// `core::iter::adapters::cloned::Cloned::next`, a fold's through
+/// `FnMut::call_mut`'s shim, `next`'s through `FnOnce::call_once`'s; an
+/// `Option<&T>`'s `cloned`; and a `Vec`'s `extend_from_slice`. Each a row of
+/// `clonedAt`, its item at 0, which the lowering reads by the steps a value
+/// is asked (`cloned_steps_row`, #2509).
+pub(super) fn cloned_methods(tcx: TyCtxt<'_>) -> Result<IndexMap<String, Vec<Option<String>>>, String> {
+    let refcell = registry::by_path(tcx, StdCrate::Core, &["cell", "RefCell"]).ok_or("std has no `RefCell`")?;
+    let cell = Ty::new_adt(tcx, tcx.adt_def(refcell), tcx.mk_args(&[tcx.types.u8.into()]));
+    let lent = Ty::new_imm_ref(tcx, tcx.lifetimes.re_erased, cell);
+    let mut kept: IndexMap<String, Vec<Option<String>>> = IndexMap::default();
+    // Of one whose walk finds several, the oracle's; each it has none of,
+    // said at once.
+    let mut unsettled: Vec<String> = Vec::new();
+    let settled = |key: &str, sites: Vec<String>, unsettled: &mut Vec<String>| match sites.len() {
+        0 => None,
+        1 => sites.into_iter().next(),
+        _ => cloned_at_oracle(key, 0).or_else(|| {
+            unsettled.push(format!("{key}: {}", sites.join(", ")));
+            None
+        }),
+    };
+    // The steps of a `Cloned` of a `slice::Iter` of the cell.
+    let iter = registry::by_path(tcx, StdCrate::Core, &["slice", "iter", "Iter"]).ok_or("std has no `slice::Iter`")?;
+    let iter = Ty::new_adt(
+        tcx,
+        tcx.adt_def(iter),
+        tcx.mk_args(&[tcx.lifetimes.re_erased.into(), cell.into()]),
+    );
+    let cloned = registry::by_path(tcx, StdCrate::Core, &["iter", "adapters", "cloned", "Cloned"])
+        .ok_or("std has no `Cloned`")?;
+    let cloned = Ty::new_adt(tcx, tcx.adt_def(cloned), tcx.mk_args(&[iter.into()]));
+    let traits = [
+        Some(std_item(tcx, StdItem::Iterator)),
+        registry::by_path(
+            tcx,
+            StdCrate::Core,
+            &["iter", "traits", "double_ended", "DoubleEndedIterator"],
+        ),
+        registry::by_path(
+            tcx,
+            StdCrate::Core,
+            &["iter", "traits", "exact_size", "ExactSizeIterator"],
+        ),
+    ];
+    for step in crate::recognition::Steps::ALL.names() {
+        let Some(method) = (traits.iter().flatten()).find_map(|&trait_| {
+            (tcx.associated_items(trait_)
+                .filter_by_name_unhygienic(rustc_span::Symbol::intern(step)))
+            .find(|each| matches!(tcx.def_kind(each.def_id), DefKind::AssocFn))
+            .map(|each| each.def_id)
+        }) else {
+            continue;
+        };
+        let key = format!("core::iter::adapters::cloned::Cloned::{step}");
+        let sites = method_sites(tcx, method, (cloned, None), cell)?;
+        kept.insert(key.clone(), vec![settled(&key, sites, &mut unsettled)]);
+    }
+    // `Option<&T>::cloned` and `Vec::extend_from_slice`, each of the impl
+    // whose self type it is.
+    let option = registry::by_path(tcx, StdCrate::Core, &["option", "Option"]).ok_or("std has no `Option`")?;
+    let vec = registry::by_path(tcx, StdCrate::Alloc, &["vec", "Vec"]).ok_or("std has no `Vec`")?;
+    for (key, adt, name, self_ty) in [
+        (
+            "core::option::Option<&_>::cloned",
+            option,
+            "cloned",
+            Ty::new_adt(tcx, tcx.adt_def(option), tcx.mk_args(&[lent.into()])),
+        ),
+        ("alloc::vec::Vec::extend_from_slice", vec, "extend_from_slice", {
+            // Its allocator its parameter's default, `Global`.
+            let allocator = tcx.generics_of(vec).param_at(1, tcx);
+            let allocator = tcx
+                .type_of(allocator.def_id)
+                .instantiate_identity()
+                .skip_normalization();
+            Ty::new_adt(tcx, tcx.adt_def(vec), tcx.mk_args(&[cell.into(), allocator.into()]))
+        }),
+    ] {
+        let name = rustc_span::Symbol::intern(name);
+        // The impl whose self type `self_ty` is, its arguments as they make
+        // it, `impl<T> Option<&T>`'s `T` the cell.
+        let (method, impl_args) = (tcx.inherent_impls(adt).iter())
+            .find_map(|&imp| {
+                use rustc_trait_selection::infer::TyCtxtInferExt;
+                let infcx = tcx.infer_ctxt().build(ty::TypingMode::non_body_analysis());
+                let fresh = infcx.fresh_args_for_item(rustc_span::DUMMY_SP, imp);
+                let of = tcx.type_of(imp).instantiate(tcx, fresh).skip_normalization();
+                let _unified = (infcx.at(&rustc_middle::traits::ObligationCause::dummy(), ty::ParamEnv::empty()))
+                    .eq(rustc_trait_selection::infer::DefineOpaqueTypes::No, of, self_ty)
+                    .ok()?;
+                let method = (tcx.associated_items(imp).filter_by_name_unhygienic(name))
+                    .next()?
+                    .def_id;
+                let args: Vec<ty::GenericArg<'_>> = (fresh.iter())
+                    .map(|arg| tcx.erase_and_anonymize_regions(infcx.deeply_resolve_ignoring_regions(arg)))
+                    .collect();
+                Some((method, args))
+            })
+            .ok_or_else(|| format!("std has no `{key}`"))?;
+        let sites = method_sites(tcx, method, (self_ty, Some(impl_args)), cell)?;
+        kept.insert(key.to_string(), vec![settled(key, sites, &mut unsettled)]);
+    }
+    if !unsettled.is_empty() {
+        return Err(format!(
+            "these clone a cell at several sites in std's MIR, and test/std-cloned-at.rs's oracle has none of them (#2509): {}",
+            unsettled.join("; ")
+        ));
+    }
+    Ok(kept)
+}
+
+/// Where `method`, of a `self_ty` over a `cell`, raises a borrowed cell's
+/// panic, by the walk (`raised_through`): its own type parameters each a
+/// type its clauses take, a closure's a function pointer of its bound's
+/// signature, a `Try`'s an `Option` of its output, another `()`; an
+/// inherent method's impl's, `impl_args`, a trait's method's `Self`.
+fn method_sites<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    method: DefId,
+    (self_ty, impl_args): (Ty<'tcx>, Option<Vec<ty::GenericArg<'tcx>>>),
+    cell: Ty<'tcx>,
+) -> Result<Vec<String>, String> {
+    let generics = tcx.generics_of(method);
+    let mut args: Vec<ty::GenericArg<'tcx>> = vec![self_ty.into()];
+    // A trait's method's `Self`, else an inherent one's impl's parameters,
+    // as `self_ty` gives them.
+    if let Some(impl_args) = impl_args {
+        args = impl_args;
+    }
+    let own = generics.parent_count..generics.count();
+    for _ in own.clone() {
+        args.push(tcx.types.unit.into());
+    }
+    let clauses: Vec<ty::Clause<'tcx>> = (tcx.clauses_of(method).instantiate_identity(tcx).into_iter())
+        .map(|(clause, _)| clause.skip_normalization())
+        .collect();
+    let fn_traits = [LangItem::Fn, LangItem::FnMut, LangItem::FnOnce].map(|item| tcx.lang_items().get(item));
+    let try_trait = tcx.lang_items().get(LangItem::Try);
+    for at in own {
+        let param = generics.param_at(at, tcx);
+        if !matches!(param.kind, ty::GenericParamDefKind::Type { .. }) {
+            continue;
+        }
+        let is_param = |of: Ty<'tcx>| type_parameter_of(of) == Some(at as u32);
+        let now = tcx.mk_args(&args);
+        let instantiate = |of: Ty<'tcx>| {
+            ty::EarlyBinder::bind(tcx, of)
+                .instantiate(tcx, now)
+                .skip_normalization()
+        };
+        for clause in &clauses {
+            let Some(tr) = clause.as_trait_clause().and_then(|clause| clause.no_bound_vars()) else {
+                continue;
+            };
+            if !is_param(tr.self_ty()) {
+                continue;
+            }
+            if fn_traits.contains(&Some(tr.def_id())) {
+                let ty::Tuple(inputs) = *tr.trait_ref.args.type_at(1).kind() else {
+                    continue;
+                };
+                let inputs: Vec<Ty<'tcx>> = inputs.iter().map(instantiate).collect();
+                let output = (clauses.iter())
+                    .filter_map(|clause| clause.as_projection_clause()?.no_bound_vars())
+                    .find(|projection| is_param(projection.self_ty()))
+                    .and_then(|projection| projection.term.as_type())
+                    .map(instantiate)
+                    .unwrap_or(tcx.types.unit);
+                let sig = tcx.mk_fn_sig(
+                    inputs,
+                    output,
+                    ty::FnSigKind::default().set_safety(rustc_hir::Safety::Safe),
+                );
+                args[at] = Ty::new_fn_ptr(tcx, ty::Binder::dummy(sig)).into();
+            } else if Some(tr.def_id()) == try_trait {
+                let output = (clauses.iter())
+                    .filter_map(|clause| clause.as_projection_clause()?.no_bound_vars())
+                    .find(|projection| is_param(projection.self_ty()))
+                    .and_then(|projection| projection.term.as_type())
+                    .map(instantiate)
+                    .unwrap_or(tcx.types.unit);
+                let option = tcx.lang_items().get(LangItem::Option).ok_or("std has no `Option`")?;
+                args[at] = Ty::new_adt(tcx, tcx.adt_def(option), tcx.mk_args(&[output.into()])).into();
+            }
+        }
+    }
+    let env = ty::TypingEnv::fully_monomorphized();
+    let Ok(Some(instance)) = crate::traits::resolve(tcx, env, method, tcx.mk_args(&args)) else {
+        return Ok(Vec::new());
+    };
+    let mut found = IndexSet::default();
+    raised_through(tcx, instance, cell, 0, &mut IndexSet::default(), &mut found, None);
+    Ok(found
+        .into_iter()
+        .map(|(file, line, column)| format!("{file}:{line}:{column}"))
+        .collect())
+}

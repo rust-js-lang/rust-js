@@ -137,9 +137,11 @@ fn of_body<'tcx>(
         }
         seen.insert((location, receiver));
     }
-    // Each other use of a local, but where it's made and its storage's
-    // marks and drops, asks every step: what it's given to, a call that
-    // isn't its step, a value it's moved into, may ask any.
+    // Each other use of a local, but where it's made, its storage's marks
+    // and drops, and its debug info, a named variable's, which reads
+    // nothing, asks every step: what it's given to, a call that isn't its
+    // step, a value it's moved into, may ask any (#2509: a `let` held
+    // iterator was asked every step by its name alone).
     struct Unread<'a> {
         seen: &'a IndexSet<(mir::Location, mir::Local)>,
         unread: IndexSet<mir::Local>,
@@ -151,8 +153,9 @@ fn of_body<'tcx>(
                 context,
                 PlaceContext::MutatingUse(
                     MutatingUseContext::Store | MutatingUseContext::Call | MutatingUseContext::Drop
-                ) | PlaceContext::NonUse(NonUseContext::StorageLive | NonUseContext::StorageDead)
-                    | PlaceContext::NonMutatingUse(NonMutatingUseContext::Inspect)
+                ) | PlaceContext::NonUse(
+                    NonUseContext::StorageLive | NonUseContext::StorageDead | NonUseContext::VarDebugInfo
+                ) | PlaceContext::NonMutatingUse(NonMutatingUseContext::Inspect)
             );
             if !made && !self.seen.contains(&(location, local)) {
                 self.unread.insert(local);

@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "            \"_\".to_string()\n",
     tests: ["test/std-sites.test.ts"],
   },
+  {
+    name: "cloned-methods-backs-unwalked",
+    breaks: "`bun run std` writes no row of a `cloned()`'s `DoubleEndedIterator` steps, `next_back` and the rest, so a back step's clone of a borrowed `RefCell` names no std line (#2509)",
+    file: "crates/rust-js-lower/src/recognition/compiled_std/cloned_at.rs",
+    find: "            &[\"iter\", \"traits\", \"double_ended\", \"DoubleEndedIterator\"],\n",
+    replace: "            &[\"iter\", \"traits\", \"double_ended\", \"NoSuchIterator\"],\n",
+    tests: ["test/std-sites.test.ts"],
+  },
 ];

@@ -7,4 +7,7 @@ alloc::collections::vec_deque::VecDeque 0 library/core/src/ops/function.rs:166:5
 alloc::collections::vec_deque::into_iter::IntoIter 0 library/core/src/ops/function.rs:166:5
 alloc::collections::btree::map::BTreeMap 0 library/alloc/src/collections/btree/map.rs:258:45
 alloc::collections::btree::map::BTreeMap 1 library/alloc/src/collections/btree/map.rs:258:56
+core::iter::adapters::cloned::Cloned::nth 0 library/core/src/ops/function.rs:250:5
+core::iter::adapters::cloned::Cloned::max_by 0 library/core/src/ops/function.rs:166:5
+core::iter::adapters::cloned::Cloned::min_by 0 library/core/src/ops/function.rs:166:5
 alloc::collections::btree::set::BTreeSet 0 library/alloc/src/collections/btree/map.rs:258:45

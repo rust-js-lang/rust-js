@@ -54,6 +54,14 @@ fn main() {
     let _held = map[&0].borrow_mut();
     at("alloc::collections::btree::map::BTreeMap", 1, || drop(map.clone()));
     drop(_held);
+    // A `cloned()`'s steps whose walk reaches the item's clone by more
+    // than one path, each stepped past a first item to the borrowed one.
+    let items = [RefCell::new(0u8), RefCell::new(1u8)];
+    let _held = items[1].borrow_mut();
+    at("core::iter::adapters::cloned::Cloned::nth", 0, || drop(items.iter().cloned().nth(1)));
+    at("core::iter::adapters::cloned::Cloned::max_by", 0, || drop(items.iter().cloned().max_by(|_, _| std::cmp::Ordering::Equal)));
+    at("core::iter::adapters::cloned::Cloned::min_by", 0, || drop(items.iter().cloned().min_by(|_, _| std::cmp::Ordering::Equal)));
+    drop(_held);
     let set = BTreeSet::from([RefCell::new(0u8)]);
     let _held = set.first().expect("an item").borrow_mut();
     at("alloc::collections::btree::set::BTreeSet", 0, || drop(set.clone()));

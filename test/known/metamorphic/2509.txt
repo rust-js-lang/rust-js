@@ -1,0 +1,8 @@
+#2509 P3: a `cloned()` whose asked steps back_stepped can't see, moved into a `Box`, an `Option`, a field, an array or a tuple, or handed to generic code, names its call's line where Rust names std's, until back_stepped follows a value into a container (#1458)
+plain array cloned_next_of_a_borrowed_refcell_names_std_line.rs
+plain boxed cloned_next_of_a_borrowed_refcell_names_std_line.rs
+plain field cloned_next_of_a_borrowed_refcell_names_std_line.rs
+plain generic-instances cloned_count_of_a_borrowed_refcell_names_std_line.rs
+plain generic-instances cloned_nth_of_a_borrowed_refcell_names_std_line.rs
+plain option cloned_next_of_a_borrowed_refcell_names_std_line.rs
+plain tuple cloned_next_of_a_borrowed_refcell_names_std_line.rs

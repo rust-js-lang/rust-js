@@ -620,4 +620,30 @@ export const mutations: Mutation[] = [
     replace: "            .then(|| Expr::std_site_of(\"clonedAt\", &key, at)).filter(|_| false)\n",
     tests: ["test/binaries.test.ts", "-t", "a container's clone of a borrowed"],
   },
+  {
+    name: "cloned-items-row-unread",
+    breaks: "a `cloned()` whose value is asked `count()` alone clones a borrowed `RefCell` item at the caller's line, not `Cloned::fold`'s `FnMut::call_mut` shim's, `function.rs:166:5` (#2509)",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "            Some((key, _)) => ClonedItems::At(key),\n",
+    replace: "            Some(_) => ClonedItems::Unknown,\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_count_of_a_borrowed_refcell_names_std_line\\.rs$"],
+  },
+  {
+    name: "cloned-items-mixed-guessed",
+    breaks: "a `cloned()` asked `next()` and then `count()`, whose items std clones at two lines, names the last asked step's row, a guess, where Tu's decision keeps the call's line until #1458 (#2509)",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "                Some(_) => return ClonedItems::Unknown,\n",
+    replace: "                Some(_) => row = Some((key, site)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_next_then_count_of_a_borrowed_refcell_names_its_call\\.rs$"],
+  },
+  {
+    name: "clone-row-site-unchecked",
+    breaks:
+      "an `Option<&T>`'s `cloned()` of an item that can't be a `RefCell` is cloned part by part at its row, not by `Option`'s own form: `$stdSites` imported where nothing panics, a map's value given back as it is no longer (#2509)",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "        (self.part_may_be_cell(item) && rust_js_program::runtime::std_site_written(\"clonedAt\", row, 0))\n",
+    replace: "        (rust_js_program::runtime::std_site_written(\"clonedAt\", row, 0))\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(untagged_null_option_held|local_borrow_nested_option)\\.rs$"],
+  },
 ];

@@ -1972,7 +1972,13 @@ Differences:
   ([0427](../decisions/0427-track-caller.md), amended, #2324, #2457); of a
   container's clone of a `RefCell`, where its clone clones it: std's line of
   std's, `option.rs:2280:31` of `Option`'s, a crate's derive's of its own
-  (#2471); or a
+  (#2471); of an item std's method clones by `T::clone`, std's line of
+  it, an `Option<&T>`'s `cloned` and `extend_from_slice`'s, and a
+  `cloned()`'s where every step its value is asked clones at one line,
+  `function.rs:166:5` of a `count()` or a `fold`, `250:5` of a `next()`;
+  of a `cloned()` collected, returned, stored, handed to generic code or
+  asked steps of two lines, the call's line for now, until std's `Cloned`
+  is compiled (#2509, #1458); or a
   line of std's own, `VecDeque::swap`'s assertion's, a constant of the
   toolchain the runtime keeps, `$stdSites`. A library's panic writes
   nothing, its host's to catch: a JS stack trace and exit code 1 where it

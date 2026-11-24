@@ -623,4 +623,12 @@ export const mutations: Mutation[] = [  {
     replace: "        Some(message) if matches!(message.kind, js::ExprKind::Str(_)) => (message.clone(), js::Payload::Str),\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_payload_kinds\\.rs$"],
   },
+  {
+    name: "option-cloned-row-unread",
+    breaks: "an `Option<&RefCell<_>>`'s `cloned()` of one mutably borrowed names the caller's line, not `map(T::clone)`'s `FnOnce::call_once` shim's (#2509)",
+    file: "crates/rust-js-lower/src/std_types/option.rs",
+    find: "                    false => self.clone_value_at(value, (ty, item), \"core::option::Option<&_>::cloned\", span, out)?,\n",
+    replace: "                    false => self.clone_value(value, ty, span, out)?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_cloned_of_a_borrowed_refcell_names_std_line\\.rs$"],
+  },
 ];

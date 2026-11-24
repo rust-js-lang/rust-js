@@ -434,18 +434,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             crate::recognition::ClonedBy::Derive(imp) => return Some(self.location_at(self.tcx.def_span(imp))),
             crate::recognition::ClonedBy::Other => return None,
         };
-        let clone = self.tcx.require_lang_item(LangItem::CloneFn, rustc_span::DUMMY_SP);
-        let may_be_cell = |part: Ty<'tcx>| {
-            self.is_std_type(part, StdItem::RefCell)
-                || (crate::recognition::known_by_bounds(part)
-                    && crate::recognition::tracking_impl_may_be(
-                        self.tcx,
-                        self.frame.owner,
-                        clone,
-                        self.tcx.mk_args(&[part.into()]),
-                    ))
+        let cell_at = |at: usize| {
+            parts
+                .get(at)
+                .copied()
+                .flatten()
+                .is_some_and(|part| self.part_may_be_cell(part))
         };
-        let cell_at = |at: usize| parts.get(at).copied().flatten().is_some_and(may_be_cell);
         let at = match position {
             Some(at) => at,
             None => {
@@ -460,6 +455,85 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `slice::Iter`'s of what it lends: no panic to place.
         (cell_at(at) && rust_js_program::runtime::std_site_written("clonedAt", &key, at))
             .then(|| Expr::std_site_of("clonedAt", &key, at))
+    }
+
+    /// Whether `part`, what a std clone clones, may be a `RefCell`, whose
+    /// clone tracks its caller: one, or a type only its bounds know that a
+    /// tracking impl may be, by this body's bounds (#2457, #2509).
+    fn part_may_be_cell(&self, part: Ty<'tcx>) -> bool {
+        let clone = self.tcx.require_lang_item(LangItem::CloneFn, rustc_span::DUMMY_SP);
+        self.is_std_type(part, StdItem::RefCell)
+            || (crate::recognition::known_by_bounds(part)
+                && crate::recognition::tracking_impl_may_be(
+                    self.tcx,
+                    self.frame.owner,
+                    clone,
+                    self.tcx.mk_args(&[part.into()]),
+                ))
+    }
+
+    /// Where a `cloned()`'s item clone is placed, of the steps its value is
+    /// asked (`made_asked_steps`): the row of `clonedAt` each asked step of
+    /// std's `Cloned` reaches the item's clone at, where they're known and
+    /// one line, a `count()`'s `FnMut::call_mut` shim's; none where no asked
+    /// step clones one. Where they differ, a `next()` then a `count()`, or
+    /// aren't known, a `cloned()` collected, returned, stored or handed to
+    /// generic code, every step, whose rows are three lines, `Unknown`:
+    /// the call's line, as before, until std's
+    /// `Cloned` and `collect` are compiled (#1458), `located-otherwise`
+    /// against #2509 (Tu's decision). The one answer of it, which #1458's
+    /// form reads (#2509).
+    pub(crate) fn cloned_items(&self, steps: crate::recognition::Steps) -> ClonedItems {
+        let mut row: Option<(String, &'static str)> = None;
+        for step in steps.names() {
+            let key = format!("core::iter::adapters::cloned::Cloned::{step}");
+            let Some(site) = rust_js_program::runtime::std_site_text("clonedAt", &key, 0) else {
+                continue;
+            };
+            match &row {
+                None => row = Some((key, site)),
+                Some((_, kept)) if *kept == site => {}
+                Some(_) => return ClonedItems::Unknown,
+            }
+        }
+        match row {
+            Some((key, _)) => ClonedItems::At(key),
+            None => ClonedItems::Never,
+        }
+    }
+
+    /// `clone_value` of `ty`, whose `item` std's code clones at `row`'s site
+    /// of `clonedAt` by `T::clone` through a `Fn*` shim: a `cloned()`'s
+    /// step's, `ty` the item; an `Option<&T>`'s `cloned`'s, `ty` the
+    /// `Option<T>`, `map(T::clone)`, never `Option`'s own clone's line; or
+    /// `extend_from_slice`'s. Where `item` is a `RefCell`, or may be one,
+    /// its clone, which tracks its caller, raises there; a nearer clone, a
+    /// `Vec`'s or a derive's, places its own (`clone_site`, #2509).
+    pub(crate) fn clone_value_at(
+        &mut self,
+        place: Expr,
+        (ty, item): (Ty<'tcx>, Ty<'tcx>),
+        row: &str,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let Some(at) = self.clone_row_site(item, row) else {
+            return self.clone_value(place, ty, span, out);
+        };
+        Expr::raised_at(at, || match ty == item {
+            true => self.clone_value(place, ty, span, out),
+            false => self.clone_parts_of(place, ty, span, out),
+        })
+    }
+
+    /// The site of `row`, a method's of `clonedAt`, where std's code of it
+    /// clones `item` by `T::clone` and `item` is a `RefCell` or may be one,
+    /// whose clone tracks its caller: `$stdSites.clonedAt[row][0]`. None
+    /// where it isn't, whose clone is made as it is, an `Option`'s by its
+    /// own form, or `bun run std` wrote none (#2509).
+    pub(crate) fn clone_row_site(&self, item: Ty<'tcx>, row: &str) -> Option<Expr> {
+        (self.part_may_be_cell(item) && rust_js_program::runtime::std_site_written("clonedAt", row, 0))
+            .then(|| Expr::std_site_of("clonedAt", row, 0))
     }
 
     /// The position of `ty`'s, a std enum's, `variant`'s part, the type
@@ -984,4 +1058,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 pub(crate) fn trivially_cloned<'tcx>(tcx: ty::TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
     (tcx.lang_items().get(LangItem::TrivialClone))
         .is_some_and(|trivial| crate::recognition::trait_holds_in(tcx, typing_env, ty, trivial) == Some(true))
+}
+
+/// Where a `cloned()`'s item clone is placed (`cloned_items`, #2509).
+pub(crate) enum ClonedItems {
+    /// At one row of `clonedAt`, by its key, every asked step's.
+    At(String),
+    /// Nowhere: no asked step clones an item.
+    Never,
+    /// Not known, or several lines: the call's line, as before (#2509).
+    Unknown,
 }

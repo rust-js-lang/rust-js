@@ -15450,6 +15450,9 @@ export const $stdSites = {
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
       null
     ],
+    "alloc::vec::Vec::extend_from_slice": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
+    ],
     "alloc::vec::into_iter::IntoIter": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
       null
@@ -15486,6 +15489,78 @@ export const $stdSites = {
     ],
     "core::iter::adapters::cloned::Cloned": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:17:10"
+    ],
+    "core::iter::adapters::cloned::Cloned::advance_back_by": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+    ],
+    "core::iter::adapters::cloned::Cloned::advance_by": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:29:32"
+    ],
+    "core::iter::adapters::cloned::Cloned::all": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:29:32"
+    ],
+    "core::iter::adapters::cloned::Cloned::any": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:29:32"
+    ],
+    "core::iter::adapters::cloned::Cloned::count": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
+    ],
+    "core::iter::adapters::cloned::Cloned::find": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:29:32"
+    ],
+    "core::iter::adapters::cloned::Cloned::find_map": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:29:32"
+    ],
+    "core::iter::adapters::cloned::Cloned::fold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
+    ],
+    "core::iter::adapters::cloned::Cloned::is_empty": [
+      null
+    ],
+    "core::iter::adapters::cloned::Cloned::last": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
+    ],
+    "core::iter::adapters::cloned::Cloned::len": [
+      null
+    ],
+    "core::iter::adapters::cloned::Cloned::max_by": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
+    ],
+    "core::iter::adapters::cloned::Cloned::min_by": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
+    ],
+    "core::iter::adapters::cloned::Cloned::next": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+    ],
+    "core::iter::adapters::cloned::Cloned::next_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+    ],
+    "core::iter::adapters::cloned::Cloned::nth": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+    ],
+    "core::iter::adapters::cloned::Cloned::nth_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+    ],
+    "core::iter::adapters::cloned::Cloned::position": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:29:32"
+    ],
+    "core::iter::adapters::cloned::Cloned::rfind": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:29:32"
+    ],
+    "core::iter::adapters::cloned::Cloned::rfold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
+    ],
+    "core::iter::adapters::cloned::Cloned::rposition": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:29:32"
+    ],
+    "core::iter::adapters::cloned::Cloned::size_hint": [
+      null
+    ],
+    "core::iter::adapters::cloned::Cloned::try_fold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:29:32"
+    ],
+    "core::iter::adapters::cloned::Cloned::try_rfold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:29:32"
     ],
     "core::iter::adapters::copied::Copied": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/copied.rs:18:10"
@@ -15633,6 +15708,9 @@ export const $stdSites = {
     ],
     "core::option::Option": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
+    ],
+    "core::option::Option<&_>::cloned": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
     ],
     "core::option::OptionFlatten": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"

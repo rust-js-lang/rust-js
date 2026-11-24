@@ -210,9 +210,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `copied()`'s item is its bits, `Copy`'s, never a hand-written
         // `Clone` of a `Copy` type, which std's `Copied` doesn't call; a
         // `cloned()`'s is its `Clone`.
+        // A `cloned()`'s at the line std's steps of it clone the item at,
+        // where what's asked of it says one (`cloned_items`, #2509).
         let copy = match crate::recognition::copied_source(self.tcx, output) {
             Some(_) => self.copy_if_needed(Expr::var(&x), pointee),
-            None => self.clone_value(Expr::var(&x), pointee, span, &mut body)?,
+            None => match self.cloned_items(self.made_asked_steps()) {
+                crate::std_impls::ClonedItems::At(row) => {
+                    self.clone_value_at(Expr::var(&x), (pointee, pointee), &row, span, &mut body)?
+                }
+                _ => self.clone_value(Expr::var(&x), pointee, span, &mut body)?,
+            },
         };
         // Its source itself, of items whose copy is the item, where it asks
         // the crate's own steps as its source does (`asks_as_its_source`):

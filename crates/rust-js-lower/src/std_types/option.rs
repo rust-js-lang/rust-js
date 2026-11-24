@@ -542,9 +542,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.tcx.mk_args(&[item.into()]),
                 );
                 // `copied()`'s, its bits (ADR 0623).
+                // `cloned()`'s, `map(T::clone)`'s, each part at that line
+                // (#2509).
                 match crate::recognition::option_cloned_kind(self.tcx, def_id) == Some(true) {
                     true => self.copy_if_needed(value, ty),
-                    false => self.clone_value(value, ty, span, out)?,
+                    false => self.clone_value_at(value, (ty, item), "core::option::Option<&_>::cloned", span, out)?,
                 }
             }
             _ => return Ok(None),

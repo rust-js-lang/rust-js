@@ -69,6 +69,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         asked
     }
 
+    /// What later uses ask of what the call being lowered makes, by std's
+    /// steps (`Asked::steps`): every step where what it makes isn't a
+    /// local's, or its uses aren't all seen, generic code's or a library
+    /// caller's (#2509).
+    pub(crate) fn made_asked_steps(&self) -> crate::recognition::Steps {
+        match self.made_into {
+            Some((local, _)) => {
+                let local = self.krate.iterators.back_stepped.lent(self.frame.owner, local);
+                self.asked_of(local).steps
+            }
+            None => crate::recognition::Steps::ALL,
+        }
+    }
+
     pub(crate) fn asked_of(&self, local: rustc_middle::mir::Local) -> crate::analysis::Asked {
         self.krate.iterators.back_stepped.asked_of(self.frame.owner, local)
     }

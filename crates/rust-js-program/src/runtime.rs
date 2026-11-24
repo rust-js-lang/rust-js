@@ -541,6 +541,13 @@ pub(crate) fn never_throws(name: &str) -> bool {
 /// session, whose std's MIR is inlined otherwise than the whole std's
 /// `bun run std` walks (#2509).
 pub fn std_site_written(name: &str, tag: &str, at: usize) -> bool {
+    std_site_text(name, tag, at).is_some()
+}
+
+/// The site `bun run std` wrote of `$stdSites`' row `name` of `tag` at
+/// `at`, its text, of the runtime's own table (`std_site_written`): which
+/// two rows' sites are the same line, a `cloned()`'s steps' (#2509).
+pub fn std_site_text(name: &str, tag: &str, at: usize) -> Option<&'static str> {
     static SITES: std::sync::OnceLock<serde_json::Value> = std::sync::OnceLock::new();
     let sites = SITES.get_or_init(|| {
         let text = include_str!("runtime/std_sites.js");
@@ -551,7 +558,7 @@ pub fn std_site_written(name: &str, tag: &str, at: usize) -> bool {
         .get(name)
         .and_then(|row| row.get(tag))
         .and_then(|sites| sites.get(at)))
-    .is_some_and(serde_json::Value::is_string)
+    .and_then(serde_json::Value::as_str)
 }
 
 /// The helper that declares `name`, an export of the runtime's.
