@@ -290,7 +290,7 @@ test("a source workspace's files are the working tree's, its untracked files too
   const dir = fixture("source-files-of");
   const git = (...args: string[]) => Bun.spawnSync(["git", ...args], { cwd: dir, stdout: "pipe", stderr: "pipe" });
   git("init", "-q");
-  writeFileSync(join(dir, ".gitignore"), "target/\n");
+  writeFileSync(join(dir, ".gitignore"), "built/\n");
   writeFileSync(join(dir, "tracked.ts"), "");
   writeFileSync(join(dir, "gone.ts"), "");
   git("add", ".");
@@ -298,8 +298,8 @@ test("a source workspace's files are the working tree's, its untracked files too
   rmSync(join(dir, "gone.ts"));
   mkdirSync(join(dir, "test"));
   writeFileSync(join(dir, "test", "new.test.ts"), "");
-  mkdirSync(join(dir, "target"));
-  writeFileSync(join(dir, "target", "built.js"), "");
+  mkdirSync(join(dir, "built"));
+  writeFileSync(join(dir, "built", "out.js"), "");
   // Nor another checkout inside it, a worktree under `.claude/worktrees/`.
   mkdirSync(join(dir, "nested"));
   Bun.spawnSync(["git", "init", "-q"], { cwd: join(dir, "nested") });
