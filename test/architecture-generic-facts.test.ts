@@ -27,8 +27,9 @@ test("a type parameter's facts are asked of their owner", () => {
   const counted = (text: string) =>
     text.split("\n").filter((line) => !line.trim().startsWith("//"))
       .reduce((n, line) => n + (line.match(/ty::Param\(|has_param\(\)|is_unknown\(/g) ?? []).length, 0);
-  // The catalogue's own file asks them for its owners.
-  const grown = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs") && file !== "crates/rust-js-lower/src/generic_facts.rs")
+  // The catalogue's own files ask them for its owners: generic_facts.rs
+  // and what's split from it by concept, generic_facts/.
+  const grown = [...files("crates/rust-js-lower/src").filter((f) => f !== "crates/rust-js-lower/src/lib.rs"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs") && file !== "crates/rust-js-lower/src/generic_facts.rs" && !file.startsWith("crates/rust-js-lower/src/generic_facts/"))
     .map((file) => [file, counted(read(file)), typeParameterReads[file] ?? 0] as const)
     .filter(([, now, was]) => now > was)
     .map(([file, now, was]) => `${file}: ${now} reads of a type parameter, the audit's ${was}: ask the owner crates/rust-js-lower/src/generic_facts.rs names`);

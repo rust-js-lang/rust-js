@@ -22,13 +22,13 @@
 //! | a bound's methods, its dictionary (ADR 0049) | Given | `crates/rust-js-lower/src/traits/routes.rs evidence_for` |
 //! | a std function's `Iterator` dictionary of what it's given as it is (#1147, #1163) | Given | `crates/rust-js-lower/src/analysis/iterator_steps.rs stepped_params` |
 //! | what dropping one runs, its drop slot (ADR 0421) | Given | `crates/rust-js-lower/src/traits/drop_params.rs drop_slot` |
-//! | whether a derived `Clone` or `Default` of a type makes a field of it before another, which it drops as a later one panics, so the derive is given drops (#1517) | Given | `crates/rust-js-lower/src/generic_facts.rs makes_a_param_field_first` |
+//! | whether a derived `Clone` or `Default` of a type makes a field of it before another, which it drops as a later one panics, so the derive is given drops (#1517) | Given | `crates/rust-js-lower/src/generic_facts/caller_facts.rs makes_a_param_field_first` |
 //! | whether a type holds a function's type parameter, as `repeat_n`'s `RepeatN<T>` holds its `T`, so a std maker of a compiled iterator is given its drop (#1458) | Given | `crates/rust-js-lower/src/generic_facts.rs holds_type_parameter` |
 //! | whether a `partition`'s or an `unzip`'s side is a type parameter, its caller's, which std fills by its `Default` and `Extend`, so it's the helper's array as before #2377; filling it by its dictionaries is #2387's | Given | `crates/rust-js-lower/src/generic_facts.rs is_type_parameter` |
 //! | whether a type names a type parameter, so what it is isn't known: of a walk for a kept raw pointer, it may be the `&mut`'s pointee or a reference to it, so it may keep it (#1781); of a type a `dyn` in a cell may be, its trait's impls may hold of it, so it may be (#1006); of what a property read reads, a getter of the program's may answer it, each caller's instance settling it (#2109) | Given | `crates/rust-js-lower/src/generic_facts.rs may_be_any_type` |
 //! | whether each parameter a type names, of the body that made it, is another body's own, by index and name, so what its drop runs is asked in that body's env, where a caller's `SIZE` isn't and rustc crashes (#1608) | Instances | `crates/rust-js-lower/src/generic_facts.rs params_owned_by` |
-//! | whether what a `Box<I>` holds is stepped by a dictionary its caller gives, which may carry the crate's own `fold` or `count` std's `Box<I>` never calls, so no default passes on to it (#1611) | Given | `crates/rust-js-lower/src/generic_facts.rs boxed_steps_given` |
-//! | whether a clone of it is its caller's, which may run any code, so a `cycle()` of an array's items of it clones as std's `Cycle` does (#1630) | Given | `crates/rust-js-lower/src/generic_facts.rs clone_given_by_caller` |
+//! | whether what a `Box<I>` holds is stepped by a dictionary its caller gives, which may carry the crate's own `fold` or `count` std's `Box<I>` never calls, so no default passes on to it (#1611) | Given | `crates/rust-js-lower/src/generic_facts/caller_facts.rs boxed_steps_given` |
+//! | whether a clone of it is its caller's, which may run any code, so a `cycle()` of an array's items of it clones as std's `Cycle` does (#1630) | Given | `crates/rust-js-lower/src/generic_facts/caller_facts.rs clone_given_by_caller` |
 //! | whether a bound's dictionary is read by its function, a closure's or an inline constant's it makes, or a callee it gives it to, so it's given one; of a trait Copy's, Clone's and the iterators' own analyses don't answer for (#1915) | Given | `crates/rust-js-lower/src/analysis/read_bounds.rs unread_bounds` |
 //! | a raw pointer whose pointee is a type parameter, a handle (ADR 1114), and a `&mut` of one, generic code's box (ADRs 0454, 1086), and of one given a `&mut`, a box of its box (#1300, #1303), and a `Result` of its type parameters given a write's result, tagged (ADR 0461, amended, #1408), `Form`'s | Form | `crates/rust-js-lower/src/generic_facts.rs form_given` |
 //! | a `Some` of it, boxed or not, by its value, `$some(x)`'s (ADR 0051) | Given | `crates/rust-js-lower/src/representation/options.rs boxed_payload` |
@@ -46,10 +46,10 @@
 //! | which `Fn` trait a function value given for it is called through, the most its bounds name of `Fn`, `FnMut` and `FnOnce`, whose shim's location a `#[track_caller]` function made a value is given (#2335) | Given | `crates/rust-js-lower/src/generic_facts.rs called_through` |
 //! | what std decides by its type, `eq` of `TrustedLen`s, a zip's fold (ADR 1014) | Instances | `crates/rust-js-lower/src/analysis/callers_decide.rs refuse_what_callers_decide` |
 //! | whether it's shown with a `Formatter`'s options, pretty or in hex, so each caller's type it's given has a writer that takes them (#1331) | Instances | `crates/rust-js-lower/src/analysis/shown_params.rs shown_params` |
-//! | whether an iterator built of type parameters a `Vec` is collected of is `TrustedLen`, which std's room and its fold of it ask, its parts' facts and its items' `ConstSize` (#1614) | Given | `crates/rust-js-lower/src/generic_facts.rs trusted_len_asked` |
+//! | whether an iterator built of type parameters a `Vec` is collected of is `TrustedLen`, which std's room and its fold of it ask, its parts' facts and its items' `ConstSize` (#1614) | Given | `crates/rust-js-lower/src/generic_facts/caller_facts.rs trusted_len_asked` |
 //! | whether a caller's `&mut` to a value is one generic code may write whole, through its box, as a function declares a `&mut` of a type parameter there, `Self` too, which the copy policy asks (#1665) | Instances | `crates/rust-js-lower/src/generic_facts.rs writes_through_its_box` |
-//! | an `Error` impl's `type_id`, which a `dyn Error`'s downcasts compare: none of a generic impl's, a downcast to its type refused (ADR 0331, amended) | Instances | `crates/rust-js-lower/src/generic_facts.rs error_impl_has_type_id` |
-//! | whether a caller gives it a value with a destructor, its function given a drop for it, `drop_params`' (ADR 0098), what steps its items from their back made closed where it's made (#1406) | Instances | `crates/rust-js-lower/src/generic_facts.rs given_a_drop_of` |
+//! | an `Error` impl's `type_id`, which a `dyn Error`'s downcasts compare: none of a generic impl's, a downcast to its type refused (ADR 0331, amended) | Instances | `crates/rust-js-lower/src/generic_facts/caller_facts.rs error_impl_has_type_id` |
+//! | whether a caller gives it a value with a destructor, its function given a drop for it, `drop_params`' (ADR 0098), what steps its items from their back made closed where it's made (#1406) | Instances | `crates/rust-js-lower/src/generic_facts/caller_facts.rs given_a_drop_of` |
 //! | whether a trait of a type built of it can hold for any `T`, a fact no impl answers yes to, `vec::IntoIter<Held<T>>`'s `TrustedRandomAccessNoCoerce`, known here, no caller's (#1385) | Instances | `crates/rust-js-lower/src/generic_facts.rs may_hold_for_some` |
 //! | whether a std impl's type, its first argument or a raw pointer's pointee, is the impl's type parameter, `impl<T> NonNull<T>`'s, as a std path names its block apart from `NonNull::<[T]>`'s and `*const [T; N]`'s, so a method is known by whose it is and its name (#1681) | Instances | `crates/rust-js-lower/src/generic_facts.rs is_impl_parameter` |
 
@@ -60,6 +60,12 @@ use rust_js_program::js::Expr;
 use rustc_middle::ty::{self, Mutability, Ty, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::{CRATE_DEF_ID, DefId};
+
+mod caller_facts;
+pub(crate) use caller_facts::{
+    GivenADrop, boxed_steps_given, clone_given_by_caller, error_impl_has_type_id, given_a_drop_of,
+    makes_a_param_field_first, trusted_len_asked,
+};
 
 /// Whether `def` takes a type parameter of its own that its bounds make an
 /// `Iterator` or an `IntoIterator`, `from_iter`'s `I`: what a caller gives
@@ -288,27 +294,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Arguments::FormedOf { given } => given,
         };
         self.given_iterators((callee, args), values, given, span, out)
-    }
-
-    /// Whether `source`, an iterator only a caller knows, is a
-    /// `FusedIterator`, as its callers say: of each type parameter what it
-    /// is fused by is of, `I`'s of a `Map<I, F>` (`held_facts`), its caller's
-    /// `IFused`, each together; `None` where one isn't given, a trait's
-    /// method's or a library's, which only its callers could say (#2242).
-    pub(crate) fn callers_fused(&self, source: Ty<'tcx>) -> Option<Expr> {
-        let held = crate::recognition::held_facts(self.tcx, self.typing_env, source, crate::TypeFact::Fused);
-        let mut fused: Option<Expr> = None;
-        for (of, _) in held {
-            let ty::Param(param) = of.kind() else {
-                return None;
-            };
-            let given = self.fused_fact(param.index)?;
-            fused = Some(match fused {
-                Some(both) => Expr::bin(rust_js_program::js::Op::And, both, given),
-                None => given,
-            });
-        }
-        fused
     }
 
     /// Whether a value of generic code's `declared` type, `def_id`'s, its
@@ -1112,14 +1097,6 @@ fn past_shared_refs<'tcx>(mut declared: Ty<'tcx>, mut instantiated: Ty<'tcx>) ->
     (declared, instantiated)
 }
 
-/// Whether `imp`, an `Error` impl, gives its dictionary its type's
-/// `TypeId`: one of a type of no type parameter. A generic one's, whose key
-/// its caller's types would make, gives none, and a downcast to a type it's
-/// of is refused (ADR 0331, amended).
-pub(crate) fn error_impl_has_type_id(tcx: rustc_middle::ty::TyCtxt<'_>, imp: DefId) -> bool {
-    !tcx.type_of(imp).instantiate_identity().skip_normalization().has_param()
-}
-
 /// Whether any types given for `ty`'s type parameters, and values for its
 /// const parameters, may make `trait_id` hold of it, each an unknown: of `vec::IntoIter<T>`'s
 /// `TrustedRandomAccessNoCoerce`, whose impl asks `T: Copy`, yes; of
@@ -1245,82 +1222,6 @@ pub(crate) fn params_owned_by<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, ty: Ty<'tc
         },
         ty::GenericArgKind::Lifetime(_) => true,
     })
-}
-
-/// Whether `ty`, what a `Box<I>` holds, is stepped by a dictionary its
-/// caller gives, which may carry the crate's own steps, `fold` or `count`,
-/// that std's `Box<I>` never calls: a type only its bounds know, a type
-/// parameter or an associated type of one (#1611). No default of the box
-/// passes on to it (`passed_through_box`).
-pub(crate) fn boxed_steps_given<'tcx>(
-    tcx: rustc_middle::ty::TyCtxt<'tcx>,
-    ty: Ty<'tcx>,
-    typing_env: ty::TypingEnv<'tcx>,
-) -> bool {
-    crate::recognition::is_unknown_where(tcx, ty, typing_env)
-}
-
-/// Whether a clone of `ty` is what its caller gives: of a type parameter,
-/// a `dyn`'s or an opaque type's, which may run any code, so a clone of it
-/// shows (`clone_shows`, #1630).
-pub(crate) fn clone_given_by_caller(ty: Ty<'_>) -> bool {
-    matches!(ty.kind(), ty::Param(_) | ty::Dynamic(..) | ty::Alias(..))
-}
-
-/// Whether a caller gives function `DefId`'s type parameter of an index
-/// one whose drop runs, `drop_params`' answer (ADR 0098).
-pub(crate) type GivenADrop<'a> = dyn Fn(DefId, u32) -> bool + 'a;
-
-/// Whether `item` is a type parameter of `owner`'s function that a caller
-/// gives a value with a destructor, so a drop (`drop_params`', ADR 0098):
-/// `given` answers it by the function and the parameter's index. Of a
-/// library's, whose callers it can't see, `given` is `None`, and any may
-/// be, where `params_may_drop` (ADR 0521, amended by #580).
-pub(crate) fn given_a_drop_of<'tcx>(
-    tcx: rustc_middle::ty::TyCtxt<'tcx>,
-    owner: DefId,
-    item: Ty<'tcx>,
-    (params_may_drop, given): (bool, Option<&GivenADrop<'_>>),
-) -> bool {
-    params_may_drop
-        && matches!(item.kind(), ty::Param(param)
-            if given.is_none_or(|given| given(tcx.typeck_root_def_id(owner), param.index)))
-}
-
-/// Whether a value of `ty`, a struct or an enum, has a variant with a field
-/// of a type parameter's before another field, which a derived `Clone` or
-/// `Default` makes first, and drops as a later one panics (#1517).
-pub(crate) fn makes_a_param_field_first<'tcx>(tcx: rustc_middle::ty::TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    let ty::Adt(adt, args) = ty.kind() else { return false };
-    adt.variants().iter().any(|variant| {
-        let fields = &variant.fields.raw;
-        (fields.iter().rev().skip(1)).any(|field| field.ty(tcx, args).skip_normalization().has_param())
-    })
-}
-
-/// Of a collect into a `Vec` of `iter`, an iterator built of type
-/// parameters, what says whether it's `TrustedLen` that only its callers
-/// know (#1614): `vec_collect_trusted_facts`'s, its parts rustc says here
-/// asked of no caller, one that's `TrustedLen` saying nothing and one that
-/// isn't, a `Chain`'s side, that it's never one. None of one known by its
-/// bounds, whose `IVecCollect` says it, nor of one of no type parameter.
-pub(crate) fn trusted_len_asked<'tcx>(
-    tcx: rustc_middle::ty::TyCtxt<'tcx>,
-    typing_env: ty::TypingEnv<'tcx>,
-    iter: Ty<'tcx>,
-) -> Vec<(Ty<'tcx>, crate::recognition::TypeFact)> {
-    use crate::recognition::{TypeFact, is_trusted_len, known_by_bounds, vec_collect_trusted_facts};
-    if !iter.has_param() || known_by_bounds(iter) {
-        return Vec::new();
-    }
-    let facts = vec_collect_trusted_facts(tcx, typing_env, iter);
-    let never = |&(part, fact): &(Ty<'tcx>, TypeFact)| {
-        fact == TypeFact::TrustedLen && !part.has_param() && !is_trusted_len(tcx, typing_env, part)
-    };
-    if facts.iter().any(never) {
-        return Vec::new();
-    }
-    facts.into_iter().filter(|&(part, _)| part.has_param()).collect()
 }
 
 /// How generic code holds a reference its caller gave (`ref_held`): in the
