@@ -1096,6 +1096,15 @@ let testRuns = 0;
  * starts: half the run's own memory (`ownMemory`), 4 GB at least. A run's peak is a
  * test file's compiles, under 2 GB; one past this is a compiler that runs
  * away, which took CI's runners of 16 GB down before (#1097). */
+/** How many parts the snapshot judge cuts `cases` into on `cores`, each a
+ * `bun test` of its own in a slot of the run's (#2504): what the cores
+ * hold of a file of cases (`caseParts`), but never more parts than cases.
+ * It was a part for each 50 cases, so a mutation reaching under 50, most
+ * of them, was judged one case at a time on any machine. */
+export function snapshotParts(cases: number, cores = machine().cores): number {
+  return Math.max(1, Math.min(caseParts(cores), cases));
+}
+
 const testsMemory = () => Math.max(4, ownMemory(memoryBudget()) / 2) * 2 ** 30;
 
 /** How `tests` do with `compiler`, what they printed, and how many ran:
@@ -2582,7 +2591,7 @@ async function main() {
     const chosen = reached.cases;
     if (chosen.length === 0) return { caught: false, said: `${reached.why}: no case reaches it`, output: "" };
     const named = (names: string[]) => `^(${names.map((name) => name.replaceAll(".", "\\.")).join("|")})$`;
-    const parts = Math.max(1, Math.min(caseParts(machine().cores), Math.ceil(chosen.length / 50)));
+    const parts = snapshotParts(chosen.length);
     const ran = await Promise.all(
       Array.from({ length: parts }, (_, i) =>
         own(() => test(["test/corpus.test.ts", "-t", named(chosen)], mutant, "alone", { env: { RUST_JS_CASES: `${i + 1}/${parts}` } })),

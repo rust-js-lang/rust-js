@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, Answers, heartbeat, failingOf, bySnapshots, inconclusiveSaid, judgedApart, unplaced, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, timedOut, lists, unitsAsItIs, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, removedOfCrate, retireControls, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
+import { againstWholeCorpus, Answers, heartbeat, failingOf, bySnapshots, inconclusiveSaid, judgedApart, unplaced, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, timedOut, lists, unitsAsItIs, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, snapshotParts, removedOfCrate, retireControls, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
 import type { ControlPart } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { cratePairParts, partOf } from "../scripts/shard";
@@ -166,6 +166,17 @@ test("a mutation's judging that throws is its own inconclusive verdict, counted 
   expect(inconclusiveSaid(["caught", "SURVIVED: x"])).toBe("");
   expect(inconclusiveSaid(["caught", "INCONCLUSIVE: a", "INCONCLUSIVE: b"])).toBe(", 2 inconclusive");
   expect(failingOf([["a", "INCONCLUSIVE: a"]], true)).toEqual(["a"]);
+});
+
+// The snapshot judge's parts are the cores', never more than its cases: a
+// part for each 50 cases judged a mutation reaching 20 one case at a time,
+// on 18 cores or 4 (#2504).
+test("a mutation's cases are judged by their snapshots in as many parts as the cores hold", () => {
+  expect(snapshotParts(20, 18)).toBe(9);
+  expect(snapshotParts(20, 4)).toBe(2);
+  expect(snapshotParts(3, 18)).toBe(3);
+  expect(snapshotParts(1, 18)).toBe(1);
+  expect(snapshotParts(400, 18)).toBe(9);
 });
 
 // Each lexes, built alone and in a build of many, so a build of many fails

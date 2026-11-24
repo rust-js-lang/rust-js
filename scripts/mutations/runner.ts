@@ -466,4 +466,12 @@ export const mutations: Mutation[] = [
     replace: "  for (let next = queue.shift(); next; next = queue.shift()) await one(next, 0);\n  await Promise.all(buildsTesting); void runYielding;",
     tests: ["test/leases.test.ts", "-t", "let the turn go through leases' own"],
   },
+  {
+    name: "snapshot-parts-per-50-cases",
+    breaks: "the snapshot judge cuts a mutation's cases a part for each 50, so one reaching under 50 is judged one case at a time on any machine (#2504)",
+    file: "scripts/mutations.ts",
+    find: "  return Math.max(1, Math.min(caseParts(cores), cases));",
+    replace: "  return Math.max(1, Math.min(caseParts(cores), Math.ceil(cases / 50)));",
+    tests: ["test/mutations.test.ts", "-t", "judged by their snapshots in as many parts as the cores hold"],
+  },
 ];
