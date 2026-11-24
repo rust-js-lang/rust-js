@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, Answers, heartbeat, failingOf, bySnapshots, inconclusiveSaid, judgedApart, unplaced, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, unitsAsItIs, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
+import { againstWholeCorpus, Answers, heartbeat, failingOf, bySnapshots, inconclusiveSaid, judgedApart, unplaced, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, timedOut, lists, unitsAsItIs, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
 import type { ControlPart } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
@@ -687,6 +687,20 @@ test("a mutant is caught by a test that fails with it twice, a flake inconclusiv
   expect(flaky.flake).toContain("wrapping.rs failed with it once and passed run again with it");
   // Another test that fails the second time isn't the first failing twice.
   expect((await judgeTwice(first.exit, first.output, tests, runs(fail("other.rs"), fail("other.rs")).again)).verdict).toBe("inconclusive");
+  // A compile that didn't finish, its test out of time run again, is the
+  // mutant's hang twice (#2458: nightly 45309220022's drops-itself-revisits,
+  // judged a flake that "passed run again" where each run timed out).
+  const late = (name: string) => ({ exit: exit(1), output: `(fail) ${name} [239428.88ms]\n  ^ this test timed out after 239400ms.\nBailed out after 1 failure\n` });
+  expect(failures(late("wrapping.rs").output)).toEqual([]);
+  expect(timedOut(late("wrapping.rs").output)).toEqual(["wrapping.rs"]);
+  const hung = { exit: exit(1), output: `+ "rust-js crashed: didn't finish in 60s\n${fail("wrapping.rs").output}` };
+  expect((await judgeTwice(hung.exit, hung.output, tests, runs(late("wrapping.rs")).again)).verdict).toBe("caught");
+  // Another failure out of time run again says nothing, and says it ran out.
+  const outOfTime = await judgeTwice(first.exit, first.output, tests, runs(late("wrapping.rs"), late("wrapping.rs")).again);
+  expect(outOfTime.verdict).toBe("inconclusive");
+  expect(outOfTime.flake).toContain("wrapping.rs failed with it once and ran out of time run again with it");
+  // Nor is a hang caught by another test out of time.
+  expect((await judgeTwice(hung.exit, hung.output, tests, runs(late("other.rs"), late("other.rs")).again)).verdict).toBe("inconclusive");
   // What isn't caught is run once.
   const once = runs();
   expect((await judgeTwice(pass.exit, pass.output, tests, once.again)).verdict).toBe("survived");

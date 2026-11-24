@@ -946,6 +946,12 @@ export function failures(output: string): string[] {
   return [...new Set([...failed.map((m) => m[1]!.replace(/ \[[\d.]+m?s\]$/, "")), ...between.map(() => betweenTests)])];
 }
 
+/** The tests of a `bun test` run that ran out of time, by name: those
+ * `failures` leaves out. */
+export function timedOut(output: string): string[] {
+  return [...new Set([...output.matchAll(/\(fail\) (.*)$\n? {2}\^ .* timed out\b/gm)].map((m) => m[1]!.replace(/ \[[\d.]+m?s\]$/, "")))];
+}
+
 /** The first test that failed in a `bun test` run, by its file and its
  * name as bun prints it, `test/corpus.test.ts > alias_reads.rs`: what
  * caught a mutant, which a result line and `results.json`'s `caughtBy`
@@ -1043,7 +1049,12 @@ export function recorded(args: string[]): boolean {
  * where a test fails both times. Each passed as the compiler is, the run's
  * controls (`--retire`'s, `failingWith`); one that failed once and passed
  * again is a flake, the verdict inconclusive, which fails the run as a
- * survivor does, `flake` naming it to be fixed (ADR 0093). */
+ * survivor does, `flake` naming it to be fixed (ADR 0093). A compile that
+ * didn't finish fails its test, and its test running out of time run
+ * again is that failure again, the mutant's hang, caught: a hang was
+ * judged a flake that "passed run again", every night, where each run
+ * timed out (#2458). Otherwise a test that ran out of time run again says
+ * nothing, and the flake says it ran out of time, not that it passed. */
 export async function judgeTwice(
   exit: Exit,
   output: string,
@@ -1053,14 +1064,20 @@ export async function judgeTwice(
   const verdict = judge(exit, output);
   if (verdict !== "caught" || exit.overgrown) return { verdict, again: "" };
   const failed = failures(output);
+  const hung = /\brust-js crashed: didn't finish in\b/.test(output);
   const narrowed = narrowedTo(tests, failed);
   let said = "";
+  let ranOut = false;
   for (const rerun of narrowed === tests ? [tests] : [narrowed, tests]) {
     const r = await again(rerun);
     said += `\n--- run again with it: bun test ${rerun.join(" ")}\n${r.output}`;
     if (r.exit.overgrown || failures(r.output).some((name) => failed.includes(name))) return { verdict: "caught", again: said };
+    const late = timedOut(r.output).some((name) => failed.includes(name));
+    if (late && hung) return { verdict: "caught", again: said };
+    ranOut ||= late;
   }
-  return { verdict: "inconclusive", again: said, flake: `${failed.join(", ")} failed with it once and passed run again with it, a flake, which says nothing of it: fix the flake` };
+  const then = ranOut ? "ran out of time run again with it" : "passed run again with it";
+  return { verdict: "inconclusive", again: said, flake: `${failed.join(", ")} failed with it once and ${then}, a flake, which says nothing of it: fix the flake` };
 }
 
 

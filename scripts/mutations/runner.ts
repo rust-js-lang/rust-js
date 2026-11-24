@@ -11,6 +11,22 @@ export const mutations: Mutation[] = [
     tests: ["test/mutations.test.ts", "-t", "an inconclusive mutant's report says how its tests ended"],
   },
   {
+    name: "hang-run-again-a-flake",
+    breaks: "a mutant that hangs the compiler, its test out of time each run again, is judged a flake that \"passed run again\", not caught (#2458)",
+    file: "scripts/mutations.ts",
+    find: "    if (late && hung) return { verdict: \"caught\", again: said };\n",
+    replace: "",
+    tests: ["test/mutations.test.ts", "-t", "a mutant is caught by a test that fails with it twice"],
+  },
+  {
+    name: "out-of-time-run-again-said-passed",
+    breaks: "a test out of time run again is said to have passed run again (#2458)",
+    file: "scripts/mutations.ts",
+    find: "    ranOut ||= late;\n",
+    replace: "",
+    tests: ["test/mutations.test.ts", "-t", "a mutant is caught by a test that fails with it twice"],
+  },
+  {
     name: "mutation-run-reads-the-live-checkout",
     breaks: "a run's builds and sites read the checkout as it's edited, not its snapshot",
     file: "scripts/mutations.ts",

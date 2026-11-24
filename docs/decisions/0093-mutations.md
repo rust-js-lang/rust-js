@@ -1093,6 +1093,19 @@ catch or a flake passed over in silence. A test that ran out of time
 still says nothing (`failures`, the one reader of a run's failures, which
 `judge` asks too).
 
+Amended (#2458): but a mutant's hang, run again. A compile that didn't
+finish fails its test (`rust-js crashed: didn't finish in 60s`), and run
+again, that test's compiles, each up to its 60 s, outlast the test's own
+time, so bun says it timed out and `failures` drops it. Nightly
+45309220022's `drops-itself-revisits` was judged that way: it failed three
+times, once as a compile that didn't finish and twice out of time, and it
+was named a flake that "passed run again", as `drop-of-its-own-type-inlined`
+had been the night before. Now, where the first failure was a compile that
+didn't finish, the same test out of time run again (`timedOut`) is that
+failure again, caught. Any other test out of time run again still says
+nothing, and its flake says it "ran out of time run again with it", never
+that it passed.
+
 ## Amendment: a retirement judges nothing below the disk's floor, and runs each control beside its mutant (2026-11-18)
 
 A `--retire` of `guard-named-twice-kept-whole` and
