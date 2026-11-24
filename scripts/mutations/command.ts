@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "            continue;\n",
     tests: ["test/tidy-stages.test.ts", "-t", "a case's JS without a fact a reader found"],
   },
+  {
+    name: "old-shadow-flags-unnamed",
+    breaks: "`--drops-shadow` and `--intervals-shadow` are refused without naming `--shadow`, which replaced them (ADR 1199)",
+    file: "src/command.rs",
+    find: "        if ours.iter().any(|arg| arg == gone) {\n",
+    replace: "        if ours.iter().any(|arg| arg == gone) && false {\n",
+    tests: ["test/drops-shadow.test.ts", "-t", "are refused for --shadow"],
+  },
 ];

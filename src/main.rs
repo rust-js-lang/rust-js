@@ -143,12 +143,9 @@ struct RustJs {
     without_moves: bool,
     /// `--intervals-by-effects` (#2112 B step 3a).
     intervals_by_effects: bool,
-    /// `--intervals-shadow <file>`, where to write the checks THIR leaves out
-    /// that MIR doesn't prove (#1672).
-    intervals_shadow: Option<PathBuf>,
-    /// `--drops-shadow <file>`, where to write each `Drop`'s comparison
-    /// with rustc's elaboration (#2112's change D).
-    drops_shadow: Option<PathBuf>,
+    /// `--shadow <kind>[,<kind>]=<file>`, the shadows recorded and where
+    /// their lines are written (`lower::session::ShadowKind`).
+    shadow: Option<(Vec<rust_js_lower::session::ShadowKind>, PathBuf)>,
     /// Cargo's build (ADR 0101), which is told what `RUST_JS_APPS` was.
     cargo: bool,
     /// `-C panic=abort`, which rust-js unwinds (ADR 0090): unwinding is
@@ -407,8 +404,7 @@ impl RustJs {
             without_moves: self.without_moves,
             intervals_by_effects: self.intervals_by_effects,
             records_recognized: self.recognizers_found.is_some(),
-            records_intervals_shadow: self.intervals_shadow.is_some(),
-            records_drops_shadow: self.drops_shadow.is_some(),
+            shadows: self.shadow.as_ref().map(|(kinds, _)| kinds.clone()).unwrap_or_default(),
         }
     }
 
@@ -478,17 +474,10 @@ impl RustJs {
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
-        // Each check THIR's ranges leave out that MIR doesn't prove (#1672).
-        if let Some(path) = &self.intervals_shadow
+        // Each shadow's lines, of the kinds asked.
+        if let Some((_, path)) = &self.shadow
             && let Err(error) =
-                rust_js_emit::publish::publish_file(path, rust_js_lower::session::intervals_shadow(tcx).into_bytes())
-        {
-            tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
-        }
-        // Each `Drop` compared with rustc's elaboration (#2112's change D).
-        if let Some(path) = &self.drops_shadow
-            && let Err(error) =
-                rust_js_emit::publish::publish_file(path, rust_js_lower::session::drops_shadow(tcx).into_bytes())
+                rust_js_emit::publish::publish_file(path, rust_js_lower::session::shadow_report(tcx).into_bytes())
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
@@ -854,8 +843,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         without_intervals,
         without_moves,
         intervals_by_effects,
-        intervals_shadow,
-        drops_shadow,
+        shadow,
         std_iterators,
         js_made_all,
         no_thir_hints,
@@ -899,8 +887,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         &build_recognizers_found,
         &props_replayed,
         &tidy_fired,
-        &intervals_shadow,
-        &drops_shadow,
+        &shadow.as_ref().map(|(_, path)| path.clone()),
         &std_catalogue,
         &std_raised,
     ]
@@ -933,8 +920,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         without_intervals,
         without_moves,
         intervals_by_effects,
-        intervals_shadow,
-        drops_shadow,
+        shadow,
         cargo,
         panics_abort: false,
         local_js: rust_js_emit::output::LocalJs::new(&plan),

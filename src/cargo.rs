@@ -47,6 +47,12 @@ pub const APPS: &str = "RUST_JS_APPS";
 /// their integration tests, which use them (ADR 1076, amended, #597).
 pub const TEST_BUILD: &str = "RUST_JS_TEST_BUILD";
 
+/// The shadows a run asks of each crate a Cargo build compiles (ADR 1199):
+/// `<kind>[,<kind>]=<dir>`, which this, the wrapper, carries to each as
+/// `--shadow <kind>[,<kind>]=<dir>/<crate>.txt`, the one flag's; the driver
+/// never reads it.
+pub const SHADOW: &str = "RUST_JS_SHADOW";
+
 /// The crates rust-js compiles, the app's own, by their directories, as the
 /// tooling says: each of Cargo's packages of a path, its workspace's, a path
 /// dependency, or a crate an npm package has, but a binding crate (ADR 0414).
@@ -565,6 +571,16 @@ fn compile(flags: &[String]) -> Result<Vec<String>, String> {
         (false, false) => ours.push("--library".into()),
         (false, true) if std::env::var_os(TEST_BUILD).is_some() => ours.push("--tested".into()),
         (false, true) => {}
+    }
+    // The shadows a run asks, each crate's lines in a file of its own, as
+    // each build's JS is (`dir`'s name).
+    if let Some(shadow) = std::env::var_os(SHADOW) {
+        let shadow = shadow.to_string_lossy().into_owned();
+        ours.push("--shadow".into());
+        ours.push(match shadow.split_once('=') {
+            Some((kinds, at)) => format!("{kinds}={}", Path::new(at).join(format!("{name}{extra}.txt")).display()),
+            None => shadow,
+        });
     }
     for manifest in dependencies(flags)? {
         ours.push("--dependency".into());

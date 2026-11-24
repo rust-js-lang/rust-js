@@ -1,8 +1,11 @@
 import { expect, test } from "bun:test";
-import { chmodSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { cargoSaid, rustcShim, watched } from "../tooling/cargo.js";
-import { fixture, root } from "./support";
+import { createNativeBuilder } from "../tooling/build.js";
+import { cargoApp } from "./cargo-app";
+import { buildCompiler, compiler, fixture, installStd, root, run, shadowLines } from "./support";
 import { underLoad } from "../scripts/timing";
 
 // Every Cargo build with one compiler runs the same rustc shim, and each
@@ -79,3 +82,35 @@ test("a command past its notice says which it is, and whether it exited", async 
   await done;
   expect(unset).toEqual([]);
 });
+
+// A shadow of a Cargo build, a port's, is asked by `RUST_JS_SHADOW`, the
+// one `--shadow` flag carried by Cargo's wrapper to each crate it compiles,
+// as its other flags are (ADR 1199): each crate's lines are those the flag
+// gives the crate compiled by itself, its places but where its file is.
+test("RUST_JS_SHADOW gives a Cargo build's crate the lines --shadow gives it", async () => {
+  buildCompiler();
+  const app = realpathSync(mkdtempSync(join(tmpdir(), "rust-js-shadow-")));
+  installStd(app);
+  const source = "pub fn first(v: &[u32]) -> u32 {\n    if v.is_empty() { 0 } else { v[0] }\n}\n";
+  const lines = (file: string) => shadowLines(file, "intervals").map((line) => line.replace(/\S*lib\.rs:/, "lib.rs:")).sort();
+  try {
+    const options = cargoApp(app, source);
+    const shadows = join(app, "shadows");
+    mkdirSync(shadows);
+    process.env.RUST_JS_SHADOW = `intervals=${shadows}`;
+    try {
+      await createNativeBuilder({ root: app, rustJs: compiler }).checkCargo(options);
+    } finally {
+      delete process.env.RUST_JS_SHADOW;
+    }
+    const written = readdirSync(shadows).filter((name) => name.startsWith("app"));
+    expect(written.length).toBe(1);
+    const log = join(app, "flag.txt");
+    run([compiler, "--shadow", `intervals=${log}`, join(app, "src/lib.rs"), "-o", join(app, "flag.js"), "--", "--crate-type=lib", "--crate-name=app", "--edition=2024"]);
+    const byFlag = lines(log);
+    expect(byFlag.some((line) => line.startsWith("proved-bounds\t"))).toBe(true);
+    expect(lines(join(shadows, written[0]!))).toEqual(byFlag);
+  } finally {
+    rmSync(app, { recursive: true, force: true });
+  }
+}, 600_000);

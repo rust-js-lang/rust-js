@@ -1,26 +1,26 @@
 // The drop elaboration's shadow (#2112's change D, step 1): of each `Drop`
 // of a case's bodies, whether what rust-js's elaboration drops of each part
 // is what rustc's own elaborated body drops there, never, always or as a
-// flag says, `--drops-shadow`'s lines. On the normal path no case may
+// flag says, the `drops` shadow's lines (`--shadow drops=<file>`). On the normal path no case may
 // disagree or be unmatched, either refused; a cleanup's are apart, as
 // rust-js's body has no unwinding of what can't throw (ADR 0301).
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { buildCompiler, compiler, fixture, root } from "./support";
+import { buildCompiler, compiler, fixture, root, shadowLines } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
-/** Each line `--drops-shadow` writes of a corpus case, by its verdict and path. */
+/** Each line the `drops` shadow writes of a corpus case, by its verdict and path. */
 function shadowOf(name: string): string[][] {
   const dir = fixture("drops-shadow");
   const log = join(dir, `${name}.txt`);
   writeFileSync(log, "");
-  const args = [compiler, "--drops-shadow", log, join(root, "test/corpus", name), "-o", join(dir, `${name}.js`), "--", "--edition=2024"];
+  const args = [compiler, "--shadow", `drops=${log}`, join(root, "test/corpus", name), "-o", join(dir, `${name}.js`), "--", "--edition=2024"];
   const out = runSync(args, dir, 120_000);
   expect(out.code, out.stderr).toBe(0);
-  return readFileSync(log, "utf8").split("\n").filter(Boolean).map((line) => line.split("\t"));
+  return shadowLines(log, "drops").map((line) => line.split("\t"));
 }
 
 const count = (lines: string[][], verdict: string, path: string) =>
@@ -280,4 +280,19 @@ test("a packed struct's part rustc moves out to drop is compared as the part", (
   expect(lines.filter(([verdict]) => verdict !== "agree" && verdict !== "unreached").map((line) => line.join(" "))).toEqual([]);
   const end = lines.filter(([, path, , at]) => path === "normal" && at.includes(":43:1:"));
   expect(end.map(([verdict, , , , detail]) => `${verdict} ${detail}`).sort()).toContain("agree 2 compared");
+});
+
+// One shadow flag (ADR 1199): the two it replaced are refused, naming it,
+// as is a kind it has none of.
+test("--drops-shadow and --intervals-shadow are refused for --shadow, and an unknown kind is", () => {
+  const dir = fixture("shadow-flags");
+  const said = (...flags: string[]) => runSync([compiler, ...flags, join(root, "test/corpus/drop_partial.rs"), "-o", join(dir, "case.js")], dir, 120_000);
+  for (const [gone, kind] of [["--drops-shadow", "drops"], ["--intervals-shadow", "intervals"]]) {
+    const refused = said(gone!, join(dir, "log.txt"));
+    expect(refused.code).not.toBe(0);
+    expect(refused.stderr).toContain(`${gone} is gone: \`--shadow ${kind}=<file>\` records it`);
+  }
+  const unknown = said("--shadow", `borrows=${join(dir, "log.txt")}`);
+  expect(unknown.code).not.toBe(0);
+  expect(unknown.stderr).toContain("--shadow: no shadow `borrows`; there are `intervals`, `drops`");
 });

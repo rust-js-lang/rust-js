@@ -1301,3 +1301,7 @@ seeds 1 to 200, each the same. No hole.
 
 Mutation `without-intervals-forgets-nothing` is caught by "a case's JS
 without the intervals keeps the checks they leave out".
+
+## Amended by [1199](1199-one-shadow-flag.md) (2026-11-24, #2490)
+
+`--intervals-shadow` is `--shadow intervals=<file>`, the one shadow flag, its lines each after their kind; the old flag is refused, naming the new form.

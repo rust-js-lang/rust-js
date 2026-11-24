@@ -143,13 +143,11 @@ pub(crate) struct Build {
     /// written forgotten (#2112 B step 3a). A test hook till the query is
     /// the transfer's own: `test/intervals-shadow.test.ts`' rows.
     pub intervals_by_effects: bool,
-    /// `--intervals-shadow <file>`: where to write each check THIR's ranges
-    /// leave out that MIR's intervals don't prove, a line each (#1672).
-    pub intervals_shadow: Option<PathBuf>,
-    /// `--drops-shadow <file>`: where to write, of each `Drop` of the
-    /// crate's bodies, whether rust-js's elaboration drops what rustc's
-    /// does, a line each (#2112's change D).
-    pub drops_shadow: Option<PathBuf>,
+    /// `--shadow <kind>[,<kind>]=<file>`: the shadows to record, and where
+    /// to write their lines, `<kind><TAB><line>` each: MIR's intervals'
+    /// proofs (#1672), each `Drop` compared with rustc's elaboration
+    /// (#2112's change D); `lower::session::ShadowKind` names them.
+    pub shadow: Option<(Vec<rust_js_lower::session::ShadowKind>, PathBuf)>,
     /// `--recognizers-found <file>`: where to write which std functions a
     /// recogniser took, a line each (ADR 1128).
     pub recognizers_found: Option<PathBuf>,
@@ -311,8 +309,15 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     }
     let recognizers_found = valued(&mut ours, "--recognizers-found", "a path")?.map(PathBuf::from);
     let props_replayed = valued(&mut ours, "--props-replayed", "a path")?.map(PathBuf::from);
-    let intervals_shadow = valued(&mut ours, "--intervals-shadow", "a path")?.map(PathBuf::from);
-    let drops_shadow = valued(&mut ours, "--drops-shadow", "a path")?.map(PathBuf::from);
+    for (gone, kind) in [("--intervals-shadow", "intervals"), ("--drops-shadow", "drops")] {
+        if ours.iter().any(|arg| arg == gone) {
+            return Err(format!("{gone} is gone: `--shadow {kind}=<file>` records it"));
+        }
+    }
+    let shadow = match valued(&mut ours, "--shadow", "`<kind>[,<kind>]=<file>`")? {
+        Some(value) => Some(shadow_of(&value)?),
+        None => None,
+    };
     let mut without_mutated = Vec::new();
     while let Some(ty) = valued(&mut ours, "--without-mutated", "a type, as rustc prints it")? {
         without_mutated.push(ty);
@@ -358,8 +363,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         without_intervals,
         without_moves,
         intervals_by_effects,
-        intervals_shadow,
-        drops_shadow,
+        shadow,
         recognizers_found,
         props_replayed,
         std_iterators,
@@ -380,6 +384,33 @@ fn flag(args: &mut Vec<String>, name: &str) -> bool {
 }
 
 /// The value after `name` in `args`, both taken out of them.
+/// `--shadow`'s value, `<kind>[,<kind>]=<file>`: the kinds it names, each
+/// one `ShadowKind` has, and the file.
+fn shadow_of(value: &str) -> Result<(Vec<rust_js_lower::session::ShadowKind>, PathBuf), String> {
+    use rust_js_lower::session::ShadowKind;
+    let known = || {
+        (ShadowKind::ALL.iter())
+            .map(|kind| format!("`{}`", kind.name()))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    let Some((kinds, file)) = value
+        .split_once('=')
+        .filter(|(kinds, file)| !kinds.is_empty() && !file.is_empty())
+    else {
+        return Err(format!(
+            "--shadow takes `<kind>[,<kind>]=<file>`, of the kinds {}",
+            known()
+        ));
+    };
+    let kinds = (kinds.split(','))
+        .map(|name| {
+            ShadowKind::named(name).ok_or_else(|| format!("--shadow: no shadow `{name}`; there are {}", known()))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok((kinds, PathBuf::from(file)))
+}
+
 fn valued(args: &mut Vec<String>, name: &str, what: &str) -> Result<Option<String>, String> {
     let Some(i) = args.iter().position(|arg| arg == name) else {
         return Ok(None);

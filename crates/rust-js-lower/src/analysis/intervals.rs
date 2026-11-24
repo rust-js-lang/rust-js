@@ -2,7 +2,7 @@
 //! the emitter reads (#1671 change 1, #1672 M2): which bounds checks and
 //! wraps that MIR proves never fail, of what it says alone, each order
 //! rustc's. Run in shadow first: where THIR's ranges leave out a check this
-//! doesn't prove, a line is logged (`--intervals-shadow`), a wrong-answer
+//! doesn't prove, a line is logged (`--shadow intervals=<file>`), a wrong-answer
 //! candidate or a gap of this analysis's precision.
 //!
 //! Each integer local holds an interval, its type's range where nothing is
@@ -181,7 +181,7 @@ fn proofs<'a, 'tcx>(
     let mut walk = walk(tcx, typing_env, body, given);
     walk.libraries = libraries;
     let caches = crate::session::caches(tcx);
-    if caches.intervals_shadow.is_some() || caches.intervals_by_effects {
+    if crate::session::shadowing(tcx, crate::session::ShadowKind::Intervals) || caches.intervals_by_effects {
         let made = body.local_decls.len();
         walk.effects = Some(crate::analysis::Effects::of(
             tcx,

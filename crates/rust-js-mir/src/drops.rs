@@ -349,7 +349,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// type is counted (`QuietCells::unchecked_guards`, ADR 0863, amended;
     /// #700).
     /// And compared with rustc's own, where the session records it
-    /// (`--drops-shadow`, `elaborated.rs`).
+    /// (the `drops` shadow, `elaborated.rs`).
     pub(super) fn mir_elaboration(
         &self,
         mir: &rust_js_lower::analysis::Mir<'tcx>,

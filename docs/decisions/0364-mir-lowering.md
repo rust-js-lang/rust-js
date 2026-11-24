@@ -2390,3 +2390,7 @@ this inverts, goes with its line. The guide's limitations page says it.
 
 Case of [0262](0262-when-rust-and-js-disagree.md): none. No output
 changes.
+
+## Amended by [1199](1199-one-shadow-flag.md) (2026-11-24, #2490)
+
+`--drops-shadow` is `--shadow drops=<file>`, the one shadow flag, its lines each after their kind; the old flag is refused, naming the new form.

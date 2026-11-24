@@ -1,7 +1,7 @@
 //! The effects query's shadow (#2112 B, step 2): of each statement and
 //! terminator, from the fixed point's states, each fact the walk's
 //! forgetting rules and the query (`analysis::Effects`) decide otherwise,
-//! a line of what `--intervals-shadow` writes. `effects-forgets`: a fact
+//! a line of what the `intervals` shadow writes. `effects-forgets`: a fact
 //! the rules keep that the query would forget, of a local the statement
 //! may write, an output move or a fact the rules kept past a write.
 //! `effects-keeps`: one the rules forget that the query would keep, a
@@ -233,7 +233,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             record_effects(
                 self.tcx,
                 format!(
-                    "{kind}\t{owner}\t{at}\t{name} [{}]\t{what}{}\n",
+                    "{kind}\t{owner}\t{at}\t{name} [{}]\t{what}{}",
                     names.join(", "),
                     if guard { " under a guard" } else { "" }
                 ),

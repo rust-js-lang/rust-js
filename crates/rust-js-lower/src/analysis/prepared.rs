@@ -34,7 +34,7 @@ pub struct Mir<'tcx> {
     /// `match` is written, whose comments are before the case.
     pub cases: IndexMap<BasicBlock, Span>,
     /// rustc's own body of it, its drops elaborated, where the session
-    /// compares them with rust-js's (`--drops-shadow`, `elaborated.rs`).
+    /// compares them with rust-js's (the `drops` shadow, `elaborated.rs`).
     /// Of a closure's body as `call_once` runs it (`called_once`), the
     /// closure's own: its drops but those of itself, whose are rustc's
     /// `ClosureOnce` shim's. Its captures, which rustc's reads through its

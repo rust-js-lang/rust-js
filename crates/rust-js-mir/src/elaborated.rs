@@ -10,12 +10,13 @@
 //! on the normal path is refused (change D's (c), ADR 0364): the JS would
 //! drop otherwise than Rust does; and so is an unmatched drop there (D2):
 //! what can't be compared can't be said to drop as Rust does, so the
-//! comparison fails closed. `--drops-shadow` writes each verdict.
+//! comparison fails closed. the `drops` shadow writes each verdict.
 
 use super::drops::{Elaboration, Style};
 use crate::MirCx;
 use rust_js_lower::analysis::Mir;
 use rust_js_lower::drops::Drops;
+use rust_js_lower::session::ShadowKind;
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::mir::{
     self, BasicBlock, Local, Operand, Place, ProjectionElem, Rvalue, StatementKind, TerminatorKind,
@@ -363,7 +364,7 @@ enum Verdict {
 }
 
 impl Verdict {
-    /// How `--drops-shadow` writes it.
+    /// How the `drops` shadow writes it.
     fn word(self) -> &'static str {
         match self {
             Verdict::Agree => "agree",
@@ -407,7 +408,7 @@ struct Part {
     split: bool,
 }
 
-/// Each part that differs, as a refusal and `--drops-shadow` say it.
+/// Each part that differs, as a refusal and the `drops` shadow say it.
 fn said(differ: &[Differ]) -> String {
     (differ.iter())
         .map(|(what, ours, theirs, _)| format!("`{what}`: rust-js drops it {}, rustc {}", ours.word(), theirs.word()))
@@ -442,7 +443,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// `agree`, `disagree` with each part that differs, or `unmatched` with
     /// why it can't be said. A disagreement on the normal path is refused,
     /// in every compile; each verdict is a line where the session records
-    /// them (`--drops-shadow`).
+    /// them (the `drops` shadow).
     pub(super) fn shadow_drops(
         &self,
         mir: &Mir<'tcx>,
@@ -452,7 +453,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         let tcx = self.tcx;
         // Nothing to compare: nothing refused, its lines written only where
         // the session records them.
-        let recording = rust_js_lower::session::caches(tcx).drops_shadow.is_some();
+        let recording = rust_js_lower::session::shadowing(tcx, ShadowKind::Drops);
         if !recording && (mir.elaborated.is_none() || elaboration.is_none()) {
             return;
         }
@@ -720,7 +721,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// compare, `uncompared`, nor a cleanup no terminator that unwinds in
     /// JS reaches, `unreached`, whose rustc's reaches where what can't
     /// throw in JS unwinds (ADR 0301). And each a line
-    /// where the session records them (`--drops-shadow`). The function's
+    /// where the session records them (the `drops` shadow). The function's
     /// path is printed only where one is said: printing a path walks every
     /// crate's modules, 37 ms of a compile (#2314).
     fn say_shadowed(
@@ -753,18 +754,14 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 format!("rust-js: this drop in `{function}`{unwinding} {why}: {detail} (#2112's change D)"),
             );
         }
-        let caches = rust_js_lower::session::caches(self.tcx);
-        let Some(lines) = &caches.drops_shadow else {
-            return;
-        };
-        lines
-            .borrow_mut()
-            .extend(verdicts.iter().map(|(verdict, block, detail)| {
+        for (verdict, block, detail) in verdicts {
+            rust_js_lower::session::shadow(self.tcx, ShadowKind::Drops, || {
                 let (span, _, cleanup) = site_of(*block);
                 let at = source_map.span_to_diagnostic_string(span);
                 let path = if cleanup { "cleanup" } else { "normal" };
                 format!("{}\t{path}\t{}\t{at}\t{detail}", verdict.word(), function())
-            }));
+            });
+        }
     }
 
     /// The cleanup blocks of `body` a terminator that unwinds in JS

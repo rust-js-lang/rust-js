@@ -1,6 +1,6 @@
 // The MIR intervals' rule ablation (ADR 1137's audit): each mutation of the
 // intervals and what they recognize applied in turn, the compiler built,
-// and the shadow (`--intervals-shadow`, a `proved-<kind>` line of each site
+// and the shadow (`--shadow intervals=<file>`, a `proved-<kind>` line of each site
 // MIR proves, #1672 M4) run again over the corpus's cases that have a line
 // and over the bounds matrix's programs. A site whose line a mutation takes
 // away is one its rule proves; a matrix program whose shadow lines a
@@ -30,6 +30,7 @@ import { mutate, mutations, type Mutation } from "./mutations";
 import { shard, shardArg } from "./shard";
 import { directives } from "../test/corpus-cases";
 import { programs } from "../test/bounds-matrix";
+import { shadowLines } from "../test/support";
 
 const root = join(import.meta.dir, "..");
 const compiler = join(root, "target/debug/rust-js");
@@ -69,14 +70,14 @@ async function shadow(
         const file = files[next++];
         const log = join(work, `${next}.shadow`);
         writeFileSync(log, "");
-        const proc = Bun.spawn([compiler, "--intervals-shadow", log, file.path, "-o", join(work, `${next}.js`), "--", `--edition=${file.edition}`], {
+        const proc = Bun.spawn([compiler, "--shadow", `intervals=${log}`, file.path, "-o", join(work, `${next}.js`), "--", `--edition=${file.edition}`], {
           stdout: "ignore",
           stderr: "ignore",
         });
         const timer = setTimeout(() => proc.kill(), 120_000);
         await proc.exited;
         clearTimeout(timer);
-        const lines = readFileSync(log, "utf8").split("\n").filter(Boolean);
+        const lines = shadowLines(log, "intervals");
         if (file.row) {
           rows.set(file.row, lines.filter((l) => l.startsWith("proved-")).map(site).sort().join("\n"));
           continue;

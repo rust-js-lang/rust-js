@@ -291,4 +291,12 @@ export const mutations: Mutation[] = [
     replace: "                true => Whose::Rustc(None),\n",
     tests: ["test/shipped-crates.test.ts", "-t", "serde_json's sites are noted"],
   },
+  {
+    name: "shadow-carried-to-one-file",
+    breaks: "Cargo's wrapper gives each crate `RUST_JS_SHADOW`'s directory as its shadow's file, not a file of its own there, so no crate's lines are written (ADR 1199)",
+    file: "src/cargo.rs",
+    find: "            Some((kinds, at)) => format!(\"{kinds}={}\", Path::new(at).join(format!(\"{name}{extra}.txt\")).display()),\n",
+    replace: "            Some((kinds, at)) => format!(\"{kinds}={at}\"),\n",
+    tests: ["test/cargo.test.ts", "-t", "RUST_JS_SHADOW"],
+  },
 ];

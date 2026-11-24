@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { runSync } from "./child";
 import { agree, compileJs, runJs, runNative, runtimes } from "./programs";
 import { buildSerde } from "./serde-crate";
-import { buildCompiler, compiler, fixture, root } from "./support";
+import { buildCompiler, compiler, fixture, root, shadowLines } from "./support";
 import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler, 600_000);
@@ -19,9 +19,9 @@ function shadowOf(source: string): string[] {
   const log = join(dir, "shadow.txt");
   writeFileSync(input, source);
   writeFileSync(log, "");
-  const out = runSync([compiler, "--intervals-shadow", log, input, "-o", join(dir, "case.js"), "--", "--edition=2024"], dir, 60_000);
+  const out = runSync([compiler, "--shadow", `intervals=${log}`, input, "-o", join(dir, "case.js"), "--", "--edition=2024"], dir, 60_000);
   expect(out.code, out.stderr).toBe(0);
-  return readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("proved-")).map((line) => line.split("\t").slice(0, 2).join(" "));
+  return shadowLines(log, "intervals").filter((line) => line.startsWith("proved-")).map((line) => line.split("\t").slice(0, 2).join(" "));
 }
 
 // The effects query's shadow (#2112 B, step 2): of each corpus case named,
@@ -36,9 +36,9 @@ function keptByTheQuery(names: string[], underAGuard: string[] = []): string[] {
   return names.flatMap((name) => {
     const log = join(dir, `${name}.txt`);
     writeFileSync(log, "");
-    const out = runSync([compiler, "--intervals-shadow", log, join(root, "test/corpus", name), "-o", join(dir, `${name}.js`)], dir, 120_000);
+    const out = runSync([compiler, "--shadow", `intervals=${log}`, join(root, "test/corpus", name), "-o", join(dir, `${name}.js`)], dir, 120_000);
     expect(out.code, out.stderr).toBe(0);
-    const kept = readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("effects-keeps\t"));
+    const kept = shadowLines(log, "intervals").filter((line) => line.startsWith("effects-keeps\t"));
     underAGuard.push(...kept.filter((line) => line.endsWith(" under a guard")).map((line) => `${name}: ${line.split("\t")[1]}`));
     return kept
       .filter((line) => !/\tassign (ref|raw)|\tcall .*::(iter_mut|index_mut|deref_mut)$| under a guard$/.test(line))
@@ -287,7 +287,7 @@ pub fn every_other(v: &[u32]) -> u32 {
 `);
   const log = join(dir, "shadow.txt");
   writeFileSync(log, "");
-  const out = runSync([compiler, "--intervals-shadow", log, join(dir, "case.rs"), "-o", join(dir, "case.js"), "--", "--edition=2024", "--crate-type=lib"], dir, 60_000);
+  const out = runSync([compiler, "--shadow", `intervals=${log}`, join(dir, "case.rs"), "-o", join(dir, "case.js"), "--", "--edition=2024", "--crate-type=lib"], dir, 60_000);
   expect(out.code, out.stderr).toBe(0);
   const js = readFileSync(join(dir, "case.js"), "utf8");
   expect(js).toContain("return (v[i >>> 1] + v[i]) >>> 0;");
@@ -335,10 +335,10 @@ test("the MIR intervals of serde's derived bodies take what a compile does, not 
   const dir = fixture("inbox-memory");
   const log = join(dir, "shadow.txt");
   writeFileSync(log, "");
-  const p = Bun.spawnSync([compiler, "--intervals-shadow", log, "examples/inbox.rs", "-o", join(dir, "inbox.js"), "--", ...buildSerde()], { cwd: root, stdout: "ignore", stderr: "pipe" });
+  const p = Bun.spawnSync([compiler, "--shadow", `intervals=${log}`, "examples/inbox.rs", "-o", join(dir, "inbox.js"), "--", ...buildSerde()], { cwd: root, stdout: "ignore", stderr: "pipe" });
   expect(p.exitCode, p.stderr.toString()).toBe(0);
   expect(p.resourceUsage.maxRSS).toBeLessThan(2 * 2 ** 30);
-  const walked = readFileSync(log, "utf8").split("\n").find((line) => line.startsWith("walked-for-callers\t"))?.split("\t");
+  const walked = shadowLines(log, "intervals").find((line) => line.startsWith("walked-for-callers\t"))?.split("\t");
   expect(walked).toBeDefined();
   const [, walks, bodies] = walked!.map(Number);
   expect(bodies).toBeGreaterThan(50);
@@ -361,9 +361,9 @@ pub fn main() {
 }
 `);
   writeFileSync(log, "");
-  const out = runSync([compiler, "--intervals-shadow", log, join(dir, "case.rs"), "-o", join(dir, "case.js"), "--", "--edition=2024"], dir, 60_000);
+  const out = runSync([compiler, "--shadow", `intervals=${log}`, join(dir, "case.rs"), "-o", join(dir, "case.js"), "--", "--edition=2024"], dir, 60_000);
   expect(out.code, out.stderr).toBe(0);
-  expect(readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("walked-for-callers\t"))).toEqual(["walked-for-callers\t1\t3"]);
+  expect(shadowLines(log, "intervals").filter((line) => line.startsWith("walked-for-callers\t"))).toEqual(["walked-for-callers\t1\t3"]);
 });
 
 test("a macro's repeated index: of `[$($v[$i]),*]`, MIR proves `v[k]` alone", () => {
@@ -1022,9 +1022,9 @@ test("the effects shadow says where the query keeps what the rules forget", () =
   const dir = fixture("effects-shadow-said");
   const log = join(dir, "shadow.txt");
   writeFileSync(log, "");
-  const out = runSync([compiler, "--intervals-shadow", log, join(root, "test/corpus/raw_pointer_written_after_its_owner_reads.rs"), "-o", join(dir, "case.js")], dir, 120_000);
+  const out = runSync([compiler, "--shadow", `intervals=${log}`, join(root, "test/corpus/raw_pointer_written_after_its_owner_reads.rs"), "-o", join(dir, "case.js")], dir, 120_000);
   expect(out.code, out.stderr).toBe(0);
-  const kept = readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("effects-keeps\t"));
+  const kept = shadowLines(log, "intervals").filter((line) => line.startsWith("effects-keeps\t"));
   expect(kept.some((line) => /\tinterval .*\[n\]\tassign ref mut$/.test(line))).toBe(true);
 });
 
@@ -1060,9 +1060,9 @@ test("the effects query keeps what the rules prove of what no write reaches", ()
   const proved = (name: string, flags: string[]) => {
     const log = join(dir, `${name}.${flags.length}.txt`);
     writeFileSync(log, "");
-    const out = runSync([compiler, "--intervals-shadow", log, ...flags, join(root, "test/corpus", name), "-o", join(dir, `${name}.${flags.length}.js`)], dir, 120_000);
+    const out = runSync([compiler, "--shadow", `intervals=${log}`, ...flags, join(root, "test/corpus", name), "-o", join(dir, `${name}.${flags.length}.js`)], dir, 120_000);
     expect(out.code, out.stderr).toBe(0);
-    return readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("proved-"));
+    return shadowLines(log, "intervals").filter((line) => line.startsWith("proved-"));
   };
   for (const name of [
     "table_rows.rs",
@@ -1107,10 +1107,9 @@ test("a guard keeps what it covers only while it's held", () => {
   const log = join(dir, "shadow.txt");
   writeFileSync(log, "");
   const file = join(root, "test/corpus/refcell_written_through_a_clone_under_its_guard.rs");
-  const out = runSync([compiler, "--intervals-shadow", log, file, "-o", join(dir, "case.js")], dir, 120_000);
+  const out = runSync([compiler, "--shadow", `intervals=${log}`, file, "-o", join(dir, "case.js")], dir, 120_000);
   expect(out.code, out.stderr).toBe(0);
-  const guarded = readFileSync(log, "utf8")
-    .split("\n")
+  const guarded = shadowLines(log, "intervals")
     .filter((line) => line.startsWith("effects-keeps\t") && line.endsWith(" under a guard"))
     .map((line) => line.split("\t")[1]);
   expect([...new Set(guarded)]).toEqual(["read_under", "read_under_dyn"]);

@@ -24,7 +24,10 @@ use crate::mir_hooks::MirHooks;
 // each body keeps (`--label-census`) and the tidy passes that fired
 // (`--tidy-fired`), the session's since #2299 moved them from `mir`.
 pub mod label_census;
+pub mod shadows;
 pub mod tidy_fired;
+
+pub use shadows::{ShadowKind, shadow, shadow_report, shadowing};
 
 /// What a lowering session finds once, and the flags of its run.
 pub struct Caches {
@@ -95,9 +98,9 @@ pub struct Caches {
     /// That what MIR's intervals keep is asked of the effects query too,
     /// `--intervals-by-effects`'s (#2112 B step 3a).
     pub intervals_by_effects: bool,
-    /// Each check THIR's facts leave out that MIR doesn't prove, where the
-    /// session records them, `--intervals-shadow`'s (#1672).
-    pub intervals_shadow: Option<RefCell<super::analysis::Shadow>>,
+    /// The shadows the session records, `--shadow`'s, where it records
+    /// any (`shadows.rs`).
+    pub shadows: Option<shadows::Shadows>,
     /// What std's own code reaches of the crate's impls that take an
     /// iterator that `crate_impl_called_by` doesn't answer, found as the
     /// crate is analyzed (`instances::check_std_reach`), each said where the
@@ -105,10 +108,6 @@ pub struct Caches {
     /// program (#2376).
     #[cfg(debug_assertions)]
     pub(crate) std_reach_unanswered: RefCell<Vec<String>>,
-    /// Of each `Drop` of the crate's bodies, its comparison with rustc's
-    /// elaboration, a line each, where the session records them,
-    /// `--drops-shadow`'s (#2112's change D).
-    pub drops_shadow: Option<RefCell<Vec<String>>>,
     /// What MIR proves of the bodies being lowered, and what each function
     /// only calls reach is given (#1672, ADR 1137).
     pub intervals: RefCell<super::analysis::Intervals>,
@@ -140,24 +139,6 @@ pub fn recognized(tcx: TyCtxt<'_>) -> String {
         return String::new();
     };
     recognized.borrow().iter().map(|path| format!("{path}\n")).collect()
-}
-
-/// Each check THIR's ranges leave out that MIR's intervals don't prove, a
-/// line each: what `--intervals-shadow` writes (#1672).
-pub fn intervals_shadow(tcx: TyCtxt<'_>) -> String {
-    super::analysis::intervals_shadow_report(tcx)
-}
-
-/// Each `Drop` of the crate's bodies compared with rustc's elaboration, a
-/// line each: what `--drops-shadow` writes (#2112's change D).
-pub fn drops_shadow(tcx: TyCtxt<'_>) -> String {
-    let caches = caches(tcx);
-    let Some(lines) = &caches.drops_shadow else {
-        return String::new();
-    };
-    let lines = lines.borrow();
-    let unique: IndexSet<&String> = lines.iter().collect();
-    unique.into_iter().map(|line| format!("{line}\n")).collect()
 }
 
 /// Records which of tidy's passes change a body, for the rest of the
@@ -233,10 +214,8 @@ pub struct Flags {
     pub intervals_by_effects: bool,
     /// Whether the functions a recogniser takes are recorded.
     pub records_recognized: bool,
-    /// Whether the checks THIR leaves out that MIR doesn't prove are.
-    pub records_intervals_shadow: bool,
-    /// Whether each `Drop`'s comparison with rustc's elaboration is.
-    pub records_drops_shadow: bool,
+    /// The shadows recorded, `--shadow`'s kinds.
+    pub shadows: Vec<ShadowKind>,
 }
 
 /// Holds a session's caches in place; dropped, it takes them away, as the
@@ -290,10 +269,9 @@ fn start_keyed(gcx: usize, flags: Flags, hooks: &'static dyn MirHooks) -> Sessio
             without_intervals: flags.without_intervals,
             without_moves: flags.without_moves,
             intervals_by_effects: flags.intervals_by_effects,
-            intervals_shadow: flags.records_intervals_shadow.then(RefCell::default),
+            shadows: shadows::Shadows::of(&flags.shadows),
             #[cfg(debug_assertions)]
             std_reach_unanswered: RefCell::default(),
-            drops_shadow: flags.records_drops_shadow.then(RefCell::default),
             intervals: RefCell::default(),
             recognized: flags.records_recognized.then(RefCell::default),
             elided: RefCell::default(),

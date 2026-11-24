@@ -1,9 +1,11 @@
 //! What a session keeps of the MIR intervals (ADR 1137): the proofs of
 //! each body being lowered, what its functions' callers give them, and,
-//! `--intervals-shadow`'s, each check compared with THIR's ranges.
+//! the `intervals` shadow's (`--shadow intervals=<file>`), each check MIR
+//! proves.
 
 use super::*;
 use crate::recognition::{MapKey, map_key, once_method};
+use crate::session::ShadowKind;
 use crate::std_types::once::OnceOp;
 
 /// What MIR proves of the session's bodies: what each function only calls
@@ -22,12 +24,6 @@ pub struct Intervals {
     /// Each body's address, of `bodies`' each: what's asked of a block is
     /// of the body proved, never another's.
     proved: Vec<usize>,
-}
-
-/// What `--intervals-shadow` records: each line.
-#[derive(Default)]
-pub struct Shadow {
-    lines: IndexSet<String>,
 }
 
 /// The crate's caller-given parameters, of the crate's call graph, its
@@ -50,10 +46,9 @@ pub fn given_parameters<'tcx>(
     // the session records the shadow: only those whose calls reach a
     // function only calls reach, a closure's makers and once each with a
     // `Given` (#1672, #2313).
-    if let Some(shadow) = &crate::session::caches(tcx).intervals_shadow {
-        let walked = format!("walked-for-callers\t{}\t{}\n", points.walked.get(), calls.bodies.len());
-        shadow.borrow_mut().lines.insert(walked);
-    }
+    crate::session::shadow(tcx, ShadowKind::Intervals, || {
+        format!("walked-for-callers\t{}\t{}", points.walked.get(), calls.bodies.len())
+    });
     crate::session::caches(tcx).intervals.borrow_mut().given = given;
 }
 
@@ -105,7 +100,7 @@ pub fn body_proofs<'tcx>(
         proofs = Proofs::default();
     }
     let mut exact: IndexMap<Span, bool> = IndexMap::default();
-    if caches.intervals_shadow.is_some() {
+    if crate::session::shadowing(tcx, ShadowKind::Intervals) {
         for (block, data) in body.basic_blocks.iter_enumerated() {
             for (statement_index, statement) in data.statements.iter().enumerate() {
                 if let StatementKind::Assign(assign) = &statement.kind
@@ -151,7 +146,7 @@ pub enum Proof {
 }
 
 /// A check, `check`'s, that MIR's intervals prove: a line each,
-/// `proved-<kind>`, of what `--intervals-shadow` writes, so a mutation of
+/// `proved-<kind>`, of what the `intervals` shadow writes, so a mutation of
 /// the intervals that takes proofs away, or gives them, shows in what it
 /// counts (`scripts/ablate.ts`). THIR's ranges, which the shadow compared
 /// MIR's proofs with until #1672's step 5, are gone (M4).
@@ -162,9 +157,9 @@ pub fn shadow_check(
     check: impl FnOnce() -> Option<Proof>,
 ) {
     let caches = crate::session::caches(tcx);
-    let Some(shadow) = &caches.intervals_shadow else {
+    if !crate::session::shadowing(tcx, ShadowKind::Intervals) {
         return;
-    };
+    }
     let Some(check) = check() else {
         return;
     };
@@ -183,29 +178,16 @@ pub fn shadow_check(
         return;
     }
     let at = tcx.sess.source_map().span_to_diagnostic_string(span);
-    let line = format!("proved-{kind}\t{}\t{at}\n", tcx.def_path_str(owner));
-    shadow.borrow_mut().lines.insert(line);
+    drop(intervals);
+    crate::session::shadow(tcx, ShadowKind::Intervals, || {
+        format!("proved-{kind}\t{}\t{at}", tcx.def_path_str(owner))
+    });
 }
 
 /// A line of the effects query's shadow (`shadowed`), where the session
 /// records the shadow.
 pub(super) fn record_effects(tcx: TyCtxt<'_>, line: String) {
-    if let Some(shadow) = &crate::session::caches(tcx).intervals_shadow {
-        shadow.borrow_mut().lines.insert(line);
-    }
-}
-
-/// Each check MIR's intervals prove, a line each,
-/// `proved-<kind><TAB>function<TAB>where`, and how many bodies the walks for
-/// what callers give walked, `walked-for-callers<TAB>walked<TAB>bodies`:
-/// what `--intervals-shadow` writes.
-pub(crate) fn shadow_report(tcx: TyCtxt<'_>) -> String {
-    let caches = crate::session::caches(tcx);
-    caches
-        .intervals_shadow
-        .as_ref()
-        .map(|s| s.borrow().lines.iter().map(String::as_str).collect())
-        .unwrap_or_default()
+    crate::session::shadow(tcx, ShadowKind::Intervals, || line);
 }
 
 /// What `closure`'s result's `Some` knows: a capture by shared reference,

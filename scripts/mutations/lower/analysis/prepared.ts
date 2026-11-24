@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
     breaks: "rustc's elaborated body is kept only where `--drops-shadow` records the comparison, so a compile without it compares nothing and never refuses a disagreement (#2112's change D (c))",
     file: "crates/rust-js-lower/src/analysis/prepared.rs",
     find: "    if !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure) {\n",
-    replace: "    if crate::session::caches(tcx).drops_shadow.is_none()\n        || !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure)\n    {\n",
+    replace: "    if !crate::session::shadowing(tcx, crate::session::ShadowKind::Drops)\n        || !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure)\n    {\n",
     tests: ["test/drops-shadow.test.ts", "-t", "a normal path's drop that disagrees with rustc's elaboration is refused"],
   },
   {

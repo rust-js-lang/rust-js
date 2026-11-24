@@ -33,7 +33,7 @@ pub(super) struct FixedPoints {
     /// Of those, each fixed point.
     points: RefCell<IndexMap<Key, Rc<Entry>>>,
     /// How many fixed points the walks found, not taken from one before:
-    /// what `--intervals-shadow` says of them (`walked-for-callers`).
+    /// what the `intervals` shadow says of them (`walked-for-callers`).
     pub(super) walked: std::cell::Cell<usize>,
     /// Of each maker, what's known just before each closure it makes.
     pub(super) at_sites: RefCell<IndexMap<Key, Vec<Option<State>>>>,

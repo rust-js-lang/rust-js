@@ -112,6 +112,15 @@ export function run(cmd: string[], timeout = 600_000, env: Record<string, string
   return p.stdout;
 }
 
+/** Of a shadow's file, `--shadow <kind>[,<kind>]=<file>`'s (ADR 1199), the
+ * lines of `kind`, each without the kind it begins with. */
+export function shadowLines(file: string, kind: string): string[] {
+  return readFileSync(file, "utf8")
+    .split("\n")
+    .filter((line) => line.startsWith(`${kind}\t`))
+    .map((line) => line.slice(kind.length + 1));
+}
+
 /** `lib.rs` of `dir` compiled to `lib.js`, `args` given too, and each wrap
  * MIR's intervals prove never leaves its type's range (ADR 1137), `kind
  * function`, `proved-wrap` lines of the shadow, sorted: a test of a range
@@ -119,9 +128,8 @@ export function run(cmd: string[], timeout = 600_000, env: Record<string, string
 export function wrapsProved(dir: string, args: string[] = []): string[] {
   const log = join(dir, "shadow.txt");
   writeFileSync(log, "");
-  run([compiler, "--intervals-shadow", log, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...args]);
-  return readFileSync(log, "utf8")
-    .split("\n")
+  run([compiler, "--shadow", `intervals=${log}`, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...args]);
+  return shadowLines(log, "intervals")
     .filter((line) => line.startsWith("proved-wrap\t"))
     .map((line) => line.split("\t").slice(0, 2).join(" "))
     .sort();

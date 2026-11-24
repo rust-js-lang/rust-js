@@ -800,6 +800,10 @@ export const harness = [
   "RUST_JS_NATIVE_RECHECK",
   "RUST_JS_OUTCOME_VALUE",
   "RUST_JS_PHASE_TIMES",
+  // A Cargo build's shadow, which a test gives the build it runs
+  // (test/cargo.test.ts, ADR 1199): Cargo's wrapper carries it to each
+  // crate as `--shadow`.
+  "RUST_JS_SHADOW",
   "RUST_JS_SNAPSHOTS",
   "RUST_JS_SYSTEM_TMPDIR",
   "RUST_JS_TARGET",

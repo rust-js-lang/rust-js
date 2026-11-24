@@ -86,10 +86,9 @@ mod intervals;
 pub(crate) use intervals::carries_code;
 mod tests;
 mod throwing;
-pub(crate) use intervals::shadow_report as intervals_shadow_report;
 pub use intervals::{
-    Intervals, Proof, Shadow, body_proofs, bounds_proved, call_bounds_proved, cast_proved, empty_set_proved,
-    exact_proved, given_parameters, present_proved, shadow_check,
+    Intervals, Proof, body_proofs, bounds_proved, call_bounds_proved, cast_proved, empty_set_proved, exact_proved,
+    given_parameters, present_proved, shadow_check,
 };
 mod unwinding;
 pub(crate) use unwinding::{never_unwinds_given, std_call_never_unwinds, std_quiet};

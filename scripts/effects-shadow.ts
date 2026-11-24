@@ -1,5 +1,5 @@
 // The effects query's shadow over the corpus (#2112 B, step 2): each case
-// compiled with `--intervals-shadow`, its `effects-forgets` and
+// compiled with `--shadow intervals=<file>`, its `effects-forgets` and
 // `effects-keeps` lines tallied by what each is at and the fact's kind,
 // each group with a case that shows it.
 //
@@ -18,6 +18,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { machine } from "./shard";
+import { shadowLines } from "../test/support";
 
 const root = join(import.meta.dir, "..");
 const corpus = join(root, "test", "corpus");
@@ -36,10 +37,9 @@ type Line = { kind: string; owner: string; at: string; fact: string; what: strin
 async function shadow(name: string): Promise<Line[] | undefined> {
   const stem = basename(name, ".rs");
   const lines = join(out, `${stem}.txt`);
-  const p = Bun.spawn([compiler, join(corpus, name), "-o", join(out, `${stem}.js`), "--intervals-shadow", lines], { stdout: "ignore", stderr: "ignore" });
+  const p = Bun.spawn([compiler, join(corpus, name), "-o", join(out, `${stem}.js`), "--shadow", `intervals=${lines}`], { stdout: "ignore", stderr: "ignore" });
   if ((await p.exited) !== 0) return undefined;
-  return readFileSync(lines, "utf8")
-    .split("\n")
+  return shadowLines(lines, "intervals")
     .filter((line) => line.startsWith("effects-"))
     .map((line) => {
       const [kind, owner, at, fact, what] = line.split("\t");
