@@ -86,7 +86,9 @@ Every `P0: wrong answer` also carries one `found-by: …`, the net or method
 that found it (#1206), so which nets pay off is a count, not a reading of
 prose. The filer sets it from how the issue says it was found (Filing's
 item 4); a coordinator filing an agent's report sets it from the report,
-which always says what found it.
+which always says what found it. The labels check (`scripts/issue-labels.ts`,
+the `issue labels` workflow) asks it of every open P0, as it asks a
+priority, a `kind` and an `area` (#2481).
 
 | Label | When |
 |---|---|

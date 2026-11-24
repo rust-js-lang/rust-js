@@ -1,7 +1,10 @@
 // Every open issue carries the labels docs/bug-kinds.md asks for (ADR 1085):
 // exactly one priority (CONTRIBUTING.md's `P0`..`P3`), or `tracking` for a
 // tracker, or a `perf: …` label for a performance issue; and, unless it's a tracker or a dev-loop issue, one `kind: …` and
-// one `area: …`. A `Nightly red: <date>` report carries none of these.
+// one `area: …`. A `P0: wrong answer` also carries one `found-by: …`, the
+// net or method that found it (bug-kinds.md's "Found by", #1206), so which
+// nets pay off is a count: 35 of the P0s filed in 14 days lacked one (#2481).
+// A `Nightly red: <date>` report carries none of these.
 //
 // `bun scripts/issue-labels.ts`             lists the open issues that miss a label
 // `bun scripts/issue-labels.ts --issue 12`  checks one issue
@@ -34,6 +37,10 @@ export function missing(issue: Issue): string[] {
   const needs: string[] = [];
   if (!tracker && priorities.length !== 1 && !(perf && priorities.length === 0)) {
     needs.push(priorities.length === 0 ? "a priority (`P0: wrong answer` … `P3: readability`), or `tracking`" : `exactly one priority (it has ${priorities.join(", ")})`);
+  }
+  if (names.includes("P0: wrong answer")) {
+    const found = names.filter((name) => name.startsWith("found-by: "));
+    if (found.length !== 1) needs.push(found.length === 0 ? "a `found-by: …`" : `exactly one \`found-by: …\` (it has ${found.join(", ")})`);
   }
   if (!tracker && !names.includes("dev-loop")) {
     if (!names.some((name) => name.startsWith("kind: "))) needs.push("a `kind: …`");
