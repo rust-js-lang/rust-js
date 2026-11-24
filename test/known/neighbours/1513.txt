@@ -2,3 +2,4 @@
 plain std buf_reader_of_a_borrowed_reader.rs beside address_of_a_field_through_a_reference.rs reference_given_as_its_pointer.rs
 plain std io_buf_reader.rs beside addresses_of_short_lived_allocations.rs
 std std_lends_beside_an_address.rs beside vec_set_len.rs
+plain std btree_end_entries.rs beside transparent_constructor_value.rs user_fmt_traits.rs

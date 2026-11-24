@@ -8,3 +8,4 @@ plain generic_count_of_an_into_iter_by_its_own.rs beside address_of_a_tuple_item
 plain heap_pop_of_a_param.rs beside pointer_addresses.rs
 plain mut_ref_fields_of_a_type_parameter.rs beside unwrap_dropping.rs user_fmt_traits.rs
 plain untagged_variant_mapped_into_a_nullable_field.rs beside raw_pointers.rs
+plain std associated_type_drops.rs beside std_lends_beside_an_address.rs

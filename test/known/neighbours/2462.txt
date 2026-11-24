@@ -1,0 +1,5 @@
+#2462 P2 (neighbours): four cases refused beside a neighbour (a FnOnce closure's drops, a RefCell of a dyn tail, Chars written piecewise, a Map's next_back)
+plain std fn_closure_moved_through_a_blanket_impl_drops.rs beside pointer_kept_of_a_mut_given.rs
+plain std dyn_tail_in_a_ref_cell.rs beside iterator_held_in_a_place_dropped_with_it.rs
+plain std debug_of_flatten_and_flat_map.rs beside dyn_error_debug_written_piecewise.rs
+plain map_as_it_is_of_a_call_made_once.rs beside generic_map_cloned_beside_another_bound.rs
