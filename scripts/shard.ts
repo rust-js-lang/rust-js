@@ -613,6 +613,7 @@ export const nightly = [
   "editor-check",
   "harness",
   "history",
+  "crate-snapshots",
 ].map((name) => `test/${name}.test.ts`);
 
 /** The push suite's test files of `names`, the test folder's entries,

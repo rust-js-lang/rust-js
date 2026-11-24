@@ -2032,7 +2032,7 @@ async function crateVerdicts(compiler: string, check: boolean): Promise<Map<stri
   const p = await run(["bun", "scripts/crate-corpus.ts", ...(check ? ["--check"] : [])], root, crateTimeout, { RUST_JS_COMPILER: compiler });
   if (stopped(p, crateTimeout)) throw new Error(`the crate corpus with ${compiler} ${stopped(p, crateTimeout)}: it says nothing`);
   if (p.code !== 0) return (p.stdout + p.stderr).trim().split("\n").slice(-3).join(" ");
-  const results = JSON.parse(readFileSync(join(root, resultsFile), "utf8")) as CrateResult[];
+  const results = JSON.parse(readFileSync(resultsFile, "utf8")) as CrateResult[];
   return new Map(results.map((result) => [result.name, verdictOf(result)]));
 }
 

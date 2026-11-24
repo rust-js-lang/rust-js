@@ -29,14 +29,19 @@ import { dirname, join, resolve } from "node:path";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { cargoBuild, cargoEnv } from "../tooling/cargo.js";
 import { channel } from "./toolchain";
-import { floorBytes } from "../test/bounded";
+import { cargoHome, floorBytes } from "../test/bounded";
 import { run as runChild, stopped, type Exit } from "../test/child";
 import { atOnce } from "./shard";
 import { mirLabels } from "./labels";
 
+/** The target a run keeps what it builds and writes in: the checkout's, or
+ * with `RUST_JS_TARGET`, a mutant's tests' own (ADR 0093), so mutants
+ * measured at once share no project and no results file. */
+const ownTarget = process.env.RUST_JS_TARGET ? resolve(process.env.RUST_JS_TARGET) : join(resolve(import.meta.dir, ".."), "target");
+
 /** Where each crate's Cargo project and targets are kept between runs,
  * `<crate>/`, so a run builds only what changed. */
-export const crateProjects = join(resolve(import.meta.dir, ".."), "target/crate-corpus");
+export const crateProjects = join(ownTarget, "crate-corpus");
 
 /** The most the crates' projects keep together. From nothing they're about
  * 600 MB, built in 43 s on the M1 (2026-11-10, 23 crates); each build of
@@ -188,6 +193,9 @@ export type Result = {
   // <function>` (scripts/labels.ts), which `--check` holds to
   // `listedLabels` (#2215).
   labels: string[];
+  // Where each crate of its graph it compiled has its JS, by its id,
+  // `itertools@0.14.0`, which `--check` cuts `snapshotted`'s from.
+  js: Record<string, string>;
 };
 
 /** The labels MIR made that the crate corpus's JS has today, each
@@ -234,6 +242,105 @@ function labelsUnder(id: string, dir: string): string[] {
   return [...new Bun.Glob("**/*.js").scanSync(dir)].sort().flatMap((file) => mirLabels(readFileSync(join(dir, file), "utf8"), `${id}/${file}`));
 }
 
+/** The functions of crates' JS a snapshot holds, each `<crate>@<version>/
+ * <file>: <function>`, a top-level declaration of that file: what a change
+ * of the compiler makes of a real crate's code where no corpus case makes
+ * it, as itertools' `putBack` keeps an unread drop flag under a mutant no
+ * copy of it in the corpus reproduces (#1979). `--check` cuts each from
+ * the crate's JS and holds it to `snapshots/<crate>@<version>/<file>`,
+ * which `BLESS=1` writes: a crate's whole file is too large to hold,
+ * itertools' adaptors.js 44,000 lines, and it moves with most changes. */
+export const snapshotted: readonly string[] = [
+  "itertools@0.14.0/adaptors.js: putBack",
+  "itertools@0.14.0/adaptors.js: interleave",
+  "itertools@0.14.0/adaptors.js: whileSomeIterator_next",
+  "itertools@0.14.0/diff.js: diffClone_clone",
+  "itertools@0.14.0/ziptuple.js: zipTuple2DoubleEndedIterator_nextBack",
+];
+
+/** Where the snapshots of `snapshotted` are, a file each of a crate's. */
+export const snapshotsDir = join(import.meta.dir, "crate-corpus", "snapshots");
+
+/** The top-level declaration `name` of `text`, a crate's JS, with the
+ * comments just above it, to its closing line at the first column; or
+ * none. */
+export function declarationOf(text: string, name: string): string | undefined {
+  const lines = text.split("\n");
+  const opens = new RegExp(`^(?:export )?(?:async )?(?:function\\*? |class |const |let )${name.replace(/\$/g, "\\$")}\\b`);
+  const at = lines.findIndex((line) => opens.test(line));
+  if (at === -1) return undefined;
+  let from = at;
+  while (from > 0 && /^(?:\/\*\*|\/\/| \*)/.test(lines[from - 1]!)) from--;
+  let to = at;
+  if (!/[;}]$/.test(lines[at]!)) while (to + 1 < lines.length && !/^[}\]]/.test(lines[to]!)) to++;
+  return lines.slice(from, to + 1).join("\n");
+}
+
+/** `text` with this machine's registry, where Cargo keeps crates.io's
+ * sources, written as ADR 0262's difference 63 writes it, `/cargo/registry/
+ * src/`: a crate's own panic locations name the machine's (#2435), which a
+ * snapshot made anywhere can't hold, nor commit. */
+export function registryNamed(text: string): string {
+  return text.replaceAll(`${cargoHome}/registry/src/`, "/cargo/registry/src/");
+}
+
+/** What a snapshot of `crate`'s `file`, the functions `names`, says: a
+ * header naming them and how it's written, then each, cut from `text`. */
+function snapshotOf(crate: string, file: string, names: string[], text: string): { snapshot: string; missing: string[] } {
+  const missing: string[] = [];
+  const cut = names.map((name) => declarationOf(text, name) ?? (missing.push(name), ""));
+  const header = `// ${crate}'s ${file}: ${names.join(", ")}, as scripts/crate-corpus.ts's \`snapshotted\` lists them.\n// \`BLESS=1 bun scripts/crate-corpus.ts --check ${crate.split("@")[0]}\` writes it.\n`;
+  return { snapshot: `${header}\n${registryNamed(cut.join("\n\n"))}\n`, missing };
+}
+
+/** What's wrong of `snapshotted`'s snapshots, of each crate `measured` this
+ * run, its JS where `compiledAt` says: a function listed that its file
+ * doesn't declare, a snapshot that differs, and a snapshot no entry lists.
+ * With `bless`, each that differs or isn't listed is written or removed
+ * instead. */
+export function snapshotProblems(compiledAt: (crate: string) => string | undefined, measured: (crate: string) => boolean, { bless = false, listed = snapshotted, dir = snapshotsDir }: { bless?: boolean; listed?: readonly string[]; dir?: string } = {}): string[] {
+  const problems: string[] = [];
+  const files = new Map<string, string[]>();
+  for (const entry of listed) {
+    const [path, name] = entry.split(": ") as [string, string];
+    files.set(path, [...(files.get(path) ?? []), name]);
+  }
+  for (const [path, names] of files) {
+    const crate = path.split("/")[0]!;
+    const js = compiledAt(crate);
+    if (!js) {
+      if (measured(crate.split("@")[0]!)) problems.push(`${path}: snapshotted, and ${crate} wasn't compiled: a row's crate at another release names its entries anew in \`snapshotted\``);
+      continue;
+    }
+    const file = path.slice(crate.length + 1);
+    const source = join(js, file);
+    if (!existsSync(source)) {
+      problems.push(`${path}: snapshotted, and ${crate}'s JS has no ${file}, in ${js}: take its entries off \`snapshotted\`, or name the file it's in now`);
+      continue;
+    }
+    const { snapshot, missing } = snapshotOf(crate, file, names, readFileSync(source, "utf8"));
+    for (const name of missing) problems.push(`${path}: ${name}: snapshotted, and ${file} declares no \`${name}\`: take it off \`snapshotted\``);
+    const kept = join(dir, path);
+    const was = existsSync(kept) ? readFileSync(kept, "utf8") : undefined;
+    if (was === snapshot) continue;
+    if (bless) {
+      mkdirSync(dirname(kept), { recursive: true });
+      writeFileSync(kept, snapshot);
+    } else {
+      const [a, b] = [(was ?? "").split("\n"), snapshot.split("\n")];
+      const at = (a.length >= b.length ? a : b).findIndex((_, i) => a[i] !== b[i]);
+      const where = was === undefined ? ", which isn't written" : `, first at its line ${at + 1}: ${JSON.stringify(a[at] ?? "")}, now ${JSON.stringify(b[at] ?? "")}`;
+      problems.push(`${path}: its JS isn't scripts/crate-corpus/snapshots/${path}${where}: \`BLESS=1 bun scripts/crate-corpus.ts --check ${crate.split("@")[0]}\` writes it; read what it moved`);
+    }
+  }
+  const unlisted = existsSync(dir) ? [...new Bun.Glob("*/**/*.js").scanSync(dir)].filter((path) => !files.has(path) && measured(path.split("@")[0]!)) : [];
+  for (const path of unlisted) {
+    if (bless) rmSync(join(dir, path));
+    else problems.push(`scripts/crate-corpus/snapshots/${path}: no entry of \`snapshotted\` lists it: remove it`);
+  }
+  return problems;
+}
+
 /** What a crate measured does, its row's verdict: `runs` where it compiles
  * and its probe's JS reports what native Rust does, else whether it
  * compiles. `--check` holds it to the row's bar, and `--retire` a mutant's
@@ -242,8 +349,8 @@ export function verdictOf(result: Result): Verdict {
   return result.own === "compiles" && result.runs === "same" ? "runs" : result.own;
 }
 
-/** Where a run writes what it measured of each crate, of the checkout. */
-export const resultsFile = "target/crate-corpus.json";
+/** Where a run writes what it measured of each crate, in its target. */
+export const resultsFile = join(ownTarget, "crate-corpus.json");
 
 /** `text` written to `path`, unless it's there already: a file written
  * again has a new date, which Cargo takes for a change (#998). */
@@ -377,6 +484,7 @@ async function main() {
     const compiled: string[] = [];
     const refused = new Map<string, string>();
     const labels = new Set<string>();
+    const js: Record<string, string> = {};
     // The probe's JS: its manifest is the first line of the `.rust-js` beside
     // its metadata, and its crate root's JS beside that.
     let probeJs: string | undefined;
@@ -390,7 +498,11 @@ async function main() {
         // Its JS, beside its manifest, the marker's first line.
         // A probe, each crate's own, by the crate it probes.
         const owner = id.startsWith("probe@") ? `${crate.name}'s probe` : id;
-        if (marker && existsSync(marker)) for (const label of labelsUnder(owner, dirname(readFileSync(marker, "utf8").split("\n")[0]!))) labels.add(label);
+        if (marker && existsSync(marker)) {
+          const dir = dirname(readFileSync(marker, "utf8").split("\n")[0]!);
+          if (!id.startsWith("probe@")) js[id] = dir;
+          for (const label of labelsUnder(owner, dir)) labels.add(label);
+        }
         if (id.startsWith("probe@") && marker && existsSync(marker)) {
           probeJs = join(dirname(readFileSync(marker, "utf8").split("\n")[0]), "lib.js");
         }
@@ -416,6 +528,7 @@ async function main() {
         }),
       own: compiled.some(own) ? "compiles" : refused.size && [...refused.keys()].some(own) ? "refused" : "blocked",
       labels: [...labels].sort(),
+      js,
     };
     if (result.own !== "compiles" && !result.refused.length && !result.crashed.length) {
       result.unexplained = run.stderr.trim().split("\n").slice(-12).join("\n");
@@ -461,8 +574,7 @@ async function main() {
     if (result.runs) console.log(`  runs: ${result.runs}`);
   }
 
-  writeFileSync(join(root, resultsFile), JSON.stringify(results, null, 2));
-  boundCrateProjects();
+  writeFileSync(resultsFile, JSON.stringify(results, null, 2));
 
   // `--check`, the nightly's: what docs/crate-corpus.md records of each
   // crate is the bar, a crate doing worse failing the run, as chrono and
@@ -484,9 +596,16 @@ async function main() {
     // graphs compile, num-traits, counted once.
     const measured = (crate: string) => results.some((r) => r.name === crate || r.compiled.some((id) => id.startsWith(`${crate}@`)));
     failed.push(...labelProblems(new Set(results.flatMap((r) => r.labels)), listedLabels, measured));
+    // Each snapshotted crate's functions, of the first graph that compiled
+    // it, against their snapshots; `BLESS=1` writes them.
+    const compiledAt = (crate: string) => results.map((r) => r.js[crate]).find((dir) => dir !== undefined);
+    failed.push(...snapshotProblems(compiledAt, measured, { bless: !!process.env.BLESS }));
     for (const line of failed) console.error(line);
-    if (failed.length) process.exit(1);
+    if (failed.length) process.exitCode = 1;
   }
+  // Bounded last, as the check reads the snapshotted crates' JS where its
+  // projects keep it: bounded first, it read none of a crate it removed.
+  boundCrateProjects();
 }
 
 if (import.meta.main) await main();

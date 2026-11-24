@@ -59,8 +59,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare/temporaries.rs",
     find: "        let mut tree = scopes::Tree::of_in(item, &top);\n",
     replace: "        let mut tree = scopes::Tree::of_in(item, &[]);\n",
-    tests: ["test/declarations-libraries.test.ts", "-t", "a library without declarations has its types as any"],
-    snapshots: true,
+    tests: ["test/crate-snapshots.test.ts", "-t", "itertools"],
   },
   {
     name: "temporaries-named-by-nesting",

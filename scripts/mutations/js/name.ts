@@ -19,8 +19,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/js/name.rs",
     find: "            crate::names::made(base, id.0 as usize),\n            Of::Item,\n",
     replace: "            crate::names::made(base, id.0 as usize),\n            self.1,\n",
-    tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
-    snapshots: true,
+    tests: ["test/crate-snapshots.test.ts", "-t", "itertools"],
   },
   {
     name: "spelled-later-apart-of-the-item",

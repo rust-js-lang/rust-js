@@ -4,14 +4,15 @@
 // change touches test/mutation-changes.test.ts's.
 
 import { expect, test } from "bun:test";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { checkedSince, jsonLines, latestRuns, MUTATION_SHARDS, mutationJobsPassed, NET_JOBS, nets, netsSummary, alwaysRun, resultsBase, wasmResults } from "../scripts/ci";
 import { readersOf } from "./part-settings";
 import { runSync } from "./child";
 import { downloaded } from "../scripts/artifacts";
-import { corpusRows, crashes, dependency, labelProblems, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
+import { corpusRows, crashes, declarationOf, dependency, labelProblems, lockedVersion, lockOf, registryNamed, sampledHeader, sampledIn, sampledOneIn, snapshotProblems, written } from "../scripts/crate-corpus";
+import { cargoHome } from "./bounded";
 import { judgedInTheWasmJob, mutations, refusedFlags } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability, variantFamilies } from "../scripts/checkFast";
 import { lostObject } from "../scripts/testMap";
@@ -500,6 +501,45 @@ test("the crate corpus's labels MIR made are listed, each listed one still there
   expect(problems).toHaveLength(3);
   expect(problems[0]).toStartWith("num-traits@0.2.19/lib.js: new: a label MIR made");
   expect(problems.slice(1).every((p) => p.endsWith("and gone: take it off the list"))).toBe(true);
+});
+
+// A real crate's functions no corpus case makes are held to a snapshot,
+// each cut from its file whole, its registry named as on every machine
+// (#1979): a listed one that differs fails the check, `BLESS=1` writes it,
+// and one gone from its file, or a snapshot no entry lists, fails too.
+test("the crate corpus's snapshotted functions are cut whole and held", () => {
+  const js = ["/** Put back. */", "export function putBack(a) {", "  return {", `    at: "${cargoHome}/registry/src/index/x-1.0.0/src/lib.rs:1:1",`, "  };", "}", "", "export function putBackDebug(a) {}", "", "export const PutBack = {", "  of(a) {", "    return a;", "  },", "};"].join("\n");
+  expect(declarationOf(js, "putBack")).toBe(js.split("\n").slice(0, 6).join("\n"));
+  expect(declarationOf(js, "putBackDebug")).toBe("export function putBackDebug(a) {}");
+  expect(declarationOf(js, "PutBack")).toBe(js.split("\n").slice(9).join("\n"));
+  expect(declarationOf(js, "put")).toBeUndefined();
+  expect(registryNamed(js)).toContain('"/cargo/registry/src/index/x-1.0.0/src/lib.rs:1:1"');
+  const dir = mkdtempSync(join(tmpdir(), "crate-snapshots-"));
+  try {
+    const [built, kept] = [join(dir, "x"), join(dir, "snapshots")];
+    mkdirSync(built);
+    writeFileSync(join(built, "lib.js"), js);
+    const listed = ["x@1.0.0/lib.js: putBack", "x@1.0.0/lib.js: PutBack"];
+    const check = (bless = false, of = listed) => snapshotProblems((crate) => (crate === "x@1.0.0" ? built : undefined), (crate) => crate === "x", { bless, listed: of, dir: kept });
+    expect(check()).toEqual([expect.stringContaining("x@1.0.0/lib.js: its JS isn't scripts/crate-corpus/snapshots/x@1.0.0/lib.js, which isn't written")]);
+    expect(check(true)).toEqual([]);
+    const snapshot = readFileSync(join(kept, "x@1.0.0/lib.js"), "utf8");
+    expect(snapshot).toContain("/cargo/registry/src/index/x-1.0.0");
+    expect(snapshot).not.toContain("putBackDebug");
+    expect(check()).toEqual([]);
+    writeFileSync(join(built, "lib.js"), js.replace("return a;", "return a + 1;"));
+    expect(check()).toEqual([expect.stringContaining('x@1.0.0/lib.js, first at its line 13: "    return a;", now "    return a + 1;"')]);
+    expect(check(false, [...listed, "x@1.0.0/lib.js: gone"])).toContainEqual(expect.stringContaining("declares no `gone`"));
+    writeFileSync(join(kept, "x@1.0.0/other.js"), "");
+    expect(check(true)).toEqual([]);
+    writeFileSync(join(kept, "x@1.0.0/other.js"), "");
+    expect(check()).toEqual([expect.stringContaining("snapshots/x@1.0.0/other.js: no entry of `snapshotted` lists it")]);
+    expect(check(false, ["x@1.0.0/gone.js: putBack"])).toContainEqual(expect.stringContaining("x@1.0.0/gone.js: snapshotted, and x@1.0.0's JS has no gone.js"));
+    expect(snapshotProblems(() => undefined, () => false, { listed, dir: kept })).toEqual([]);
+    expect(snapshotProblems(() => undefined, (crate) => crate === "x", { listed, dir: kept })).toContainEqual(expect.stringContaining("x@1.0.0 wasn't compiled"));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 // A change that adds or edits a corpus case runs each metamorphic rewrite of

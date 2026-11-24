@@ -97,7 +97,7 @@ behind `main`'s queue, was 2,156 runner-minutes, all wasted (#1989).
 | react.dev port: its JS against what it committed, `bun run port measure`; its build's 823 pages, `bun run port compare` | yes: the port is private | | |
 | React's port, react-in-rust at `ports/react-in-rust.pin`: `cargo check` of it, `bun scripts/react-in-rust.ts check` | when a change touches a binding | **React port** workflow, of a push that changes `builtins/`, `webapi/`, `node/` or `react/` | |
 | React's port compiled again, its JS against what the pin committed, `bun scripts/react-in-rust.ts regen` | when a change would move React's JS | | yes (`port`) |
-| The crates of crates.io's corpus against `docs/crate-corpus.md`, `bun scripts/crate-corpus.ts --check [--sample] [name ..]`, a push's `--sample` one in 8 of its top crates by downloads | when a change touches what a crate uses | | yes (`crates`) |
+| The crates of crates.io's corpus against `docs/crate-corpus.md`, `bun scripts/crate-corpus.ts --check [--sample] [name ..]`, a push's `--sample` one in 8 of its top crates by downloads, and the functions of their JS `snapshotted` lists against `scripts/crate-corpus/snapshots/`, which `BLESS=1` writes (ADR 1067) | when a change touches what a crate uses | | yes (`crates`) |
 | The small Crater, each corpus crate's own `#[test]`s natively and as JS, `bun scripts/crater.ts --check [name ..]` (ADR 1109) | when a change touches what a crate's tests use | | yes (`crater`) |
 | How the generated JS reads, `test/readability.test.ts` against `docs/readability.txt` (ADR 0565) | with `bun run bless` | in the suite | in the suite |
 

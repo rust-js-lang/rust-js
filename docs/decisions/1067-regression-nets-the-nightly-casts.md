@@ -176,3 +176,37 @@ what the pin committed failing it: ba69090b3's port diff went unseen till
 the nightly (#1189). `check:fast` leaves it to CI (`leftToCi`), as it
 fetches the port and builds its crates; `bun scripts/react-in-rust.ts
 regen` runs it here.
+
+## Amendment: a real crate's functions held to a snapshot (#1979)
+
+Four survivors of #1979's tidy and naming mutations change only the JS of
+real crates: under each, itertools' `putBack` keeps an unread drop flag,
+`let _2$live = true; .. _2$live = false;`, its ziptuple `next_back` tests
+`_56$0$0$live`, `interleave` names its flag `tmp$live`. No corpus case
+makes those shapes, and copies of the code in the corpus don't reproduce
+them (editions, targets and derives tried), so the suite can't catch them,
+and the crate corpus judged only whether each crate compiles and runs.
+
+`snapshotted`, in `scripts/crate-corpus.ts`, is one catalog of functions
+of crates' JS, each `<crate>@<version>/<file>: <function>`, a top-level
+declaration. `--check` cuts each from the crate's JS, from its comments to
+its closing line, and holds it to `scripts/crate-corpus/snapshots/<crate>@
+<version>/<file>`; `BLESS=1` writes it, the env the corpus's snapshots are
+blessed by. A listed function its file no longer declares, a snapshot that
+differs, and one no entry lists fail the check, as `listedLabels` does.
+Each crate's whole file isn't held: itertools' adaptors.js is 43,835 lines
+and 1.3 MB, and it moves with most changes; the five functions held are 216
+lines. The machine's `$CARGO_HOME/registry/src/` is written
+`/cargo/registry/src/`, ADR 0262's difference 63's form, as a crate's own
+panic locations still name the machine's (#2435).
+
+Since `--check` holds them, a push's `crate-corpus` step holds them of a
+change to what compiles the crates, with nothing compiled again, and so
+does the nightly's `crates` job. test/crate-snapshots.test.ts, the
+nightly's alone (`nightly` in scripts/shard.ts), runs `--check` of each
+snapshotted crate with the tests' compiler, which a mutation names: the
+crate corpus's projects and results follow `RUST_JS_TARGET`, so mutants
+run at once share none.
+
+Case: none ([0262](0262-when-rust-and-js-disagree.md)); this decides what
+is measured, not what the JS does.

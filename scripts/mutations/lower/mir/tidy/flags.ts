@@ -24,8 +24,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy/flags.rs",
     find: "        ExprKind::Binary(js::Op::And, a, b) => tests_flag(a, flag) || tests_flag(b, flag),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^question_drops.rs$"],
-    snapshots: true,
+    tests: ["test/crate-snapshots.test.ts", "-t", "itertools"],
   },
   {
     name: "flags-known-test-kept",
@@ -92,8 +91,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy/flags.rs",
     find: "pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {\n    unread_gone(body, flags);\n",
     replace: "pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
-    snapshots: true,
+    tests: ["test/crate-snapshots.test.ts", "-t", "itertools"],
   },
   {
     name: "flattened-panic-drops-unguarded",
