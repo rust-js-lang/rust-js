@@ -73,4 +73,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^guard_named_after_the_field_it_borrows.rs$"],
     snapshots: true,
   },
+  {
+    name: "held-field-unnamed",
+    breaks: "a struct literal's field initializer held before a later field runs is `value`, not the field it initializes, `second` (#1865)",
+    file: "crates/rust-js-mir/src/hints/names.rs",
+    find: "                    fields.get(&local).cloned(),\n",
+    replace: "                    None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^field_initializer_held_named_after_its_field.rs$"],
+    snapshots: true,
+  },
 ];

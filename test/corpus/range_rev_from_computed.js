@@ -29,8 +29,8 @@ function changedStart(n) {
 
 function grown(items) {
   const out = [];
-  const value = (items.length - 2) >>> 0;
-  for (let j = items.length + 2 - 1; j >= value; j--) {
+  const start = (items.length - 2) >>> 0;
+  for (let j = items.length + 2 - 1; j >= start; j--) {
     items.push(j);
     out.push(j);
   }

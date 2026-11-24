@@ -25,10 +25,10 @@ import {
 function root(n) {
   $roomFor(n, 4);
   $roomFor(n, 12);
-  const value = new Array(n).fill(0);
+  const lanes = new Array(n).fill(0);
   $roomFor(n, 1);
   return {
-    lanes: value,
+    lanes,
     hidden: Array.from({ length: n }, () => undefined),
     counts: new Array(n).fill(0),
   };

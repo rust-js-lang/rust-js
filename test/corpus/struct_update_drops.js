@@ -21,9 +21,9 @@ function partialDefault_default() {
 
 function swapY(p) {
   let p$x$live = true;
-  let noisy;
+  let y;
   try {
-    noisy = keep(p.y);
+    y = keep(p.y);
     p$x$live = false;
   } catch (error) {
     $cleanup(() => {
@@ -33,7 +33,7 @@ function swapY(p) {
     }, error);
     throw error;
   }
-  return { ...p, y: noisy };
+  return { ...p, y };
 }
 
 function keep(n) {

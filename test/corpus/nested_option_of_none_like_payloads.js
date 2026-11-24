@@ -62,13 +62,13 @@ function show(h) {
 function make(i, n) {
   switch (i) {
     case 0: {
-      const value = $some($weakNone);
-      const value$1 = $some($some(undefined));
-      const value$2 = $some($some(undefined));
+      const weak = $some($weakNone);
+      const pin = $some($some(undefined));
+      const uninit = $some($some(undefined));
       return {
-        weak: value == null ? undefined : ($someValue(value) ?? null),
-        pin: value$1 == null ? undefined : ($someValue(value$1) ?? null),
-        uninit: value$2 == null ? undefined : ($someValue(value$2) ?? null),
+        weak: weak == null ? undefined : ($someValue(weak) ?? null),
+        pin: pin == null ? undefined : ($someValue(pin) ?? null),
+        uninit: uninit == null ? undefined : ($someValue(uninit) ?? null),
         unit: $some(undefined),
       };
     }
@@ -77,9 +77,9 @@ function make(i, n) {
     case 2:
       return { weak: null };
     default: {
-      const value = $some($some(undefined));
+      const pin = $some($some(undefined));
       return {
-        pin: value == null ? undefined : ($someValue(value) ?? null),
+        pin: pin == null ? undefined : ($someValue(pin) ?? null),
         uninit: 1,
         unit: $some(undefined),
       };

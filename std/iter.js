@@ -1698,22 +1698,22 @@ export function peekableClone_clone(
   dropI,
   dropIItem,
 ) {
-  const value$1 = IClone.clone(peekable.iter);
-  let tmp;
+  const iter = IClone.clone(peekable.iter);
+  let peeked;
   if (peekable.peeked == null) {
-    tmp = undefined;
+    peeked = undefined;
   } else {
     const value = $someValue(peekable.peeked);
     try {
-      tmp = $some(value == null ? value : $some(IItemClone.clone($someValue(value))));
+      peeked = $some(value == null ? value : $some(IItemClone.clone($someValue(value))));
     } catch (error) {
       $cleanup(() => {
-        dropI?.(value$1);
+        dropI?.(iter);
       }, error);
       throw error;
     }
   }
-  return $stdIterator({ iter: value$1, peeked: tmp }, peekable.$steps, peekable.$knows);
+  return $stdIterator({ iter, peeked }, peekable.$steps, peekable.$knows);
 }
 
 export function peekableDebug_fmt(peekable, options, IDebug, IItemDebug) {
@@ -3376,7 +3376,7 @@ export function mapExactSizeIterator_len(map, IExactSizeIterator, dropB, dropI, 
 }
 
 export function mapClone_clone(map, IClone, FClone, dropI, dropF) {
-  const value = IClone.clone(
+  const iter = IClone.clone(
     map.iter,
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/map.rs:60:10",
   );
@@ -3384,7 +3384,7 @@ export function mapClone_clone(map, IClone, FClone, dropI, dropF) {
   try {
     result = $stdIterator(
       {
-        iter: value,
+        iter,
         f: FClone.clone(
           map.f,
           "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/map.rs:60:10",
@@ -3395,7 +3395,7 @@ export function mapClone_clone(map, IClone, FClone, dropI, dropF) {
     );
   } catch (error) {
     $cleanup(() => {
-      dropI?.(value);
+      dropI?.(iter);
     }, error);
     throw error;
   }
@@ -3779,7 +3779,7 @@ export function filterDoubleEndedIterator_tryRfold(
 }
 
 export function filterClone_clone(filter, IClone, PClone, dropI, dropP) {
-  const value = IClone.clone(
+  const iter = IClone.clone(
     filter.iter,
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/filter.rs:20:10",
   );
@@ -3787,7 +3787,7 @@ export function filterClone_clone(filter, IClone, PClone, dropI, dropP) {
   try {
     result = $stdIterator(
       {
-        iter: value,
+        iter,
         predicate: PClone.clone(
           filter.predicate,
           "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/filter.rs:20:10",
@@ -3798,7 +3798,7 @@ export function filterClone_clone(filter, IClone, PClone, dropI, dropP) {
     );
   } catch (error) {
     $cleanup(() => {
-      dropI?.(value);
+      dropI?.(iter);
     }, error);
     throw error;
   }
@@ -4757,7 +4757,7 @@ export function filterMapDoubleEndedIterator_tryRfold(
 }
 
 export function filterMapClone_clone(filterMap, IClone, FClone, dropI, dropF) {
-  const value = IClone.clone(
+  const iter = IClone.clone(
     filterMap.iter,
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/filter_map.rs:17:10",
   );
@@ -4765,7 +4765,7 @@ export function filterMapClone_clone(filterMap, IClone, FClone, dropI, dropF) {
   try {
     result = $stdIterator(
       {
-        iter: value,
+        iter,
         f: FClone.clone(
           filterMap.f,
           "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/filter_map.rs:17:10",
@@ -4776,7 +4776,7 @@ export function filterMapClone_clone(filterMap, IClone, FClone, dropI, dropF) {
     );
   } catch (error) {
     $cleanup(() => {
-      dropI?.(value);
+      dropI?.(iter);
     }, error);
     throw error;
   }
@@ -4964,7 +4964,7 @@ export function takeWhileIterator_fold(
 }
 
 export function takeWhileClone_clone(takeWhile, IClone, PClone, dropI, dropP) {
-  const value = IClone.clone(
+  const iter = IClone.clone(
     takeWhile.iter,
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/take_while.rs:16:10",
   );
@@ -4972,7 +4972,7 @@ export function takeWhileClone_clone(takeWhile, IClone, PClone, dropI, dropP) {
   try {
     result = $stdIterator(
       {
-        iter: value,
+        iter,
         flag: takeWhile.flag,
         predicate: PClone.clone(
           takeWhile.predicate,
@@ -4984,7 +4984,7 @@ export function takeWhileClone_clone(takeWhile, IClone, PClone, dropI, dropP) {
     );
   } catch (error) {
     $cleanup(() => {
-      dropI?.(value);
+      dropI?.(iter);
     }, error);
     throw error;
   }
@@ -5255,7 +5255,7 @@ export function skipWhileIterator_tryFold(
 }
 
 export function skipWhileClone_clone(skipWhile, IClone, PClone, dropI, dropP) {
-  const value = IClone.clone(
+  const iter = IClone.clone(
     skipWhile.iter,
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/skip_while.rs:16:10",
   );
@@ -5263,7 +5263,7 @@ export function skipWhileClone_clone(skipWhile, IClone, PClone, dropI, dropP) {
   try {
     result = $stdIterator(
       {
-        iter: value,
+        iter,
         flag: skipWhile.flag,
         predicate: PClone.clone(
           skipWhile.predicate,
@@ -5275,7 +5275,7 @@ export function skipWhileClone_clone(skipWhile, IClone, PClone, dropI, dropP) {
     );
   } catch (error) {
     $cleanup(() => {
-      dropI?.(value);
+      dropI?.(iter);
     }, error);
     throw error;
   }
@@ -5431,7 +5431,7 @@ export function mapWhileIterator_fold(
 }
 
 export function mapWhileClone_clone(mapWhile, IClone, PClone, dropI, dropP) {
-  const value = IClone.clone(
+  const iter = IClone.clone(
     mapWhile.iter,
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/map_while.rs:16:10",
   );
@@ -5439,7 +5439,7 @@ export function mapWhileClone_clone(mapWhile, IClone, PClone, dropI, dropP) {
   try {
     result = $stdIterator(
       {
-        iter: value,
+        iter,
         predicate: PClone.clone(
           mapWhile.predicate,
           "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/map_while.rs:16:10",
@@ -5450,7 +5450,7 @@ export function mapWhileClone_clone(mapWhile, IClone, PClone, dropI, dropP) {
     );
   } catch (error) {
     $cleanup(() => {
-      dropI?.(value);
+      dropI?.(iter);
     }, error);
     throw error;
   }
@@ -5654,19 +5654,19 @@ export function scanIterator_fold(
 }
 
 export function scanClone_clone(scan, IClone, StClone, FClone, dropI, dropSt, dropF) {
-  const value = IClone.clone(
+  const iter = IClone.clone(
     scan.iter,
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/scan.rs:16:10",
   );
-  let tmp;
+  let f;
   try {
-    tmp = FClone.clone(
+    f = FClone.clone(
       scan.f,
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/scan.rs:16:10",
     );
   } catch (error) {
     $cleanup(() => {
-      dropI?.(value);
+      dropI?.(iter);
     }, error);
     throw error;
   }
@@ -5674,8 +5674,8 @@ export function scanClone_clone(scan, IClone, StClone, FClone, dropI, dropSt, dr
   try {
     result = $stdIterator(
       {
-        iter: value,
-        f: tmp,
+        iter,
+        f,
         state: StClone.clone(
           scan.state,
           "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/scan.rs:16:10",
@@ -5686,8 +5686,8 @@ export function scanClone_clone(scan, IClone, StClone, FClone, dropI, dropSt, dr
     );
   } catch (error) {
     $cleanup(() => {
-      dropF?.(tmp);
-      dropI?.(value);
+      dropF?.(f);
+      dropI?.(iter);
     }, error);
     throw error;
   }
@@ -5957,7 +5957,7 @@ export function inspectExactSizeIterator_len(inspect, IExactSizeIterator, dropI,
 }
 
 export function inspectClone_clone(inspect, IClone, FClone, dropI, dropF) {
-  const value = IClone.clone(
+  const iter = IClone.clone(
     inspect.iter,
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/inspect.rs:17:10",
   );
@@ -5965,7 +5965,7 @@ export function inspectClone_clone(inspect, IClone, FClone, dropI, dropF) {
   try {
     result = $stdIterator(
       {
-        iter: value,
+        iter,
         f: FClone.clone(
           inspect.f,
           "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/inspect.rs:17:10",
@@ -5976,7 +5976,7 @@ export function inspectClone_clone(inspect, IClone, FClone, dropI, dropF) {
     );
   } catch (error) {
     $cleanup(() => {
-      dropI?.(value);
+      dropI?.(iter);
     }, error);
     throw error;
   }
@@ -9696,7 +9696,7 @@ export function chainDoubleEndedIterator_advanceBackBy(
 }
 
 export function chainClone_clone(chain, AClone, BClone, dropA, dropB) {
-  const value =
+  const a =
     chain.a == null
       ? undefined
       : $some(
@@ -9705,12 +9705,12 @@ export function chainClone_clone(chain, AClone, BClone, dropA, dropB) {
             "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31",
           ),
         );
-  let tmp;
+  let b;
   if (chain.b == null) {
-    tmp = undefined;
+    b = undefined;
   } else {
     try {
-      tmp = $some(
+      b = $some(
         BClone.clone(
           $someValue(chain.b),
           "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31",
@@ -9718,14 +9718,14 @@ export function chainClone_clone(chain, AClone, BClone, dropA, dropB) {
       );
     } catch (error) {
       $cleanup(() => {
-        if (value !== undefined) {
-          dropA?.($someValue(value));
+        if (a !== undefined) {
+          dropA?.($someValue(a));
         }
       }, error);
       throw error;
     }
   }
-  return $stdIterator({ a: value, b: tmp }, chain.$steps, chain.$knows);
+  return $stdIterator({ a, b }, chain.$steps, chain.$knows);
 }
 
 export function chainABDebug_fmt(chain, options, ADebug, BDebug) {
@@ -10031,7 +10031,7 @@ export function zipIterator___iteratorGetUnchecked(
 }
 
 export function zipClone_clone(zip, AClone, BClone, dropA, dropB) {
-  const value = AClone.clone(
+  const a = AClone.clone(
     zip.a,
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/zip.rs:10:10",
   );
@@ -10039,7 +10039,7 @@ export function zipClone_clone(zip, AClone, BClone, dropA, dropB) {
   try {
     result = $stdIterator(
       {
-        a: value,
+        a,
         b: BClone.clone(
           zip.b,
           "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/zip.rs:10:10",
@@ -10052,7 +10052,7 @@ export function zipClone_clone(zip, AClone, BClone, dropA, dropB) {
     );
   } catch (error) {
     $cleanup(() => {
-      dropA?.(value);
+      dropA?.(a);
     }, error);
     throw error;
   }
@@ -10674,7 +10674,7 @@ export function cycleIterator_advanceBy(
 }
 
 export function cycleClone_clone(cycle, IClone, dropI) {
-  const value = IClone.clone(
+  const orig = IClone.clone(
     cycle.orig,
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cycle.rs:12:10",
   );
@@ -10682,7 +10682,7 @@ export function cycleClone_clone(cycle, IClone, dropI) {
   try {
     result = $stdIterator(
       {
-        orig: value,
+        orig,
         iter: IClone.clone(
           cycle.iter,
           "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cycle.rs:12:10",
@@ -10693,7 +10693,7 @@ export function cycleClone_clone(cycle, IClone, dropI) {
     );
   } catch (error) {
     $cleanup(() => {
-      dropI?.(value);
+      dropI?.(orig);
     }, error);
     throw error;
   }
@@ -10766,7 +10766,7 @@ export function successorsIterator_sizeHint(successors, dropT, dropF) {
 }
 
 export function successorsClone_clone(successors, TClone, FClone, dropT, dropF) {
-  const value =
+  const next =
     successors.next$ == null
       ? undefined
       : $some(
@@ -10779,7 +10779,7 @@ export function successorsClone_clone(successors, TClone, FClone, dropT, dropF) 
   try {
     result = $stdIterator(
       {
-        next$: value,
+        next$: next,
         succ: FClone.clone(
           successors.succ,
           "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/successors.rs:40:10",
@@ -10790,8 +10790,8 @@ export function successorsClone_clone(successors, TClone, FClone, dropT, dropF) 
     );
   } catch (error) {
     $cleanup(() => {
-      if (value !== undefined) {
-        dropT?.($someValue(value));
+      if (next !== undefined) {
+        dropT?.($someValue(next));
       }
     }, error);
     throw error;
@@ -12417,10 +12417,10 @@ export function iterator_chain(
 ) {
   const IntoIterIterator = UIntoIterator.IntoIterIterator();
   let tmp;
-  let tmp$1;
+  let a;
   try {
     tmp = UIntoIterator.intoIter(other);
-    tmp$1 = $some(self);
+    a = $some(self);
   } catch (error) {
     $cleanup(() => {
       dropSelf?.(self);
@@ -12430,7 +12430,7 @@ export function iterator_chain(
   let result;
   try {
     result = $stdIterator(
-      { a: tmp$1, b: $some(tmp) },
+      { a, b: $some(tmp) },
       {
         next(iterator) {
           return chainIterator_next(

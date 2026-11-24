@@ -21,10 +21,10 @@ function find(points, x) {
 }
 
 function marks(points) {
-  const point = { x: 5, y: points.length };
+  const at = { x: 5, y: points.length };
   const p = find(points, 3);
   return {
-    at: point,
+    at,
     next: p != null ? Math.imul(p.x, p.y) : undefined,
   };
 }

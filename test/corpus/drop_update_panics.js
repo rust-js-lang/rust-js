@@ -25,9 +25,9 @@ function keep(n, fail) {
 
 function swapY(p, fail) {
   let p$x$live = true;
-  let noisy;
+  let y;
   try {
-    noisy = keep(p.y, fail);
+    y = keep(p.y, fail);
     p$x$live = false;
   } catch (error) {
     $cleanup(() => {
@@ -37,7 +37,7 @@ function swapY(p, fail) {
     }, error);
     throw error;
   }
-  return { ...p, y: noisy };
+  return { ...p, y };
 }
 
 $main(main);

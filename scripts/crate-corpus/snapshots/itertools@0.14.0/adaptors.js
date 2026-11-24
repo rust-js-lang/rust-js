@@ -3,13 +3,13 @@
 
 /** Create an iterator where you can put back a single item */
 export function putBack(iterable, IIntoIterator, dropIItem) {
-  let tmp;
+  let iter;
   try {
-    tmp = $held(IIntoIterator.intoIter(iterable));
+    iter = $held(IIntoIterator.intoIter(iterable));
   } catch (error) {
     throw error;
   }
-  return { iter: tmp };
+  return { iter };
 }
 
 /**

@@ -59,13 +59,13 @@ function main() {
   const x = make(3);
   loudDrop_drop(make(4));
   console.log(`after let ${x[0]}`);
-  const loud = make(30);
+  const left = make(30);
   let pair;
   try {
-    pair = { left: loud, right: make(31) };
+    pair = { left, right: make(31) };
   } catch (error) {
     $cleanup(() => {
-      loudDrop_drop(loud);
+      loudDrop_drop(left);
       loudDrop_drop(x);
     }, error);
     throw error;

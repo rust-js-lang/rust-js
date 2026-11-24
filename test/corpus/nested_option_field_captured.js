@@ -114,11 +114,11 @@ $main(main);
 
 function main() {
   function made(at) {
-    const value = at === 0 ? undefined : at === 1 ? $some(undefined) : `n${at}`;
+    const name = at === 0 ? undefined : at === 1 ? $some(undefined) : `n${at}`;
     return {
       done: at === 0,
       value: at === 0 ? undefined : at === 1 ? null : at,
-      name: value == null ? undefined : ($someValue(value) ?? null),
+      name: name == null ? undefined : ($someValue(name) ?? null),
     };
   }
   for (const at of [0, 1, 2, 13]) {

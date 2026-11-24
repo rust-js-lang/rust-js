@@ -35,32 +35,32 @@ function tail(n) {
 }
 
 function early(stop) {
-  const noisy = make(9);
+  const a = make(9);
   if (stop) {
     const result = undefined;
-    console.log(`drop ${noisy[0]}`);
+    console.log(`drop ${a[0]}`);
     return result;
   }
   return {
-    a: noisy,
+    a,
     b: 1,
   };
 }
 
 function keptEarly(stop) {
   const kept = 30;
-  const noisy = make(31);
+  const a = make(31);
   let result;
   if (!stop) {
     result = {
-      a: noisy,
+      a,
       b: 3,
     };
     console.log(`drop ${kept}`);
     return result;
   }
   result = undefined;
-  console.log(`drop ${noisy[0]}`);
+  console.log(`drop ${a[0]}`);
   console.log(`drop ${kept}`);
   return result;
 }
@@ -151,14 +151,14 @@ function main() {
   }
   console.log(`check ${check(10)}`);
   pair = (stop) => {
-    const value = make(11);
+    const a = make(11);
     if (stop) {
       const result = undefined;
-      console.log(`drop ${value[0]}`);
+      console.log(`drop ${a[0]}`);
       return result;
     }
     return {
-      a: value,
+      a,
       b: 2,
     };
   };

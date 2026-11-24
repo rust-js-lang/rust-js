@@ -22,6 +22,7 @@ impl<'tcx> MirCx<'_, '_, 'tcx> {
         state: &State<'_, 'tcx>,
     ) -> IndexMap<js::Name, Vec<String>> {
         let called = self.calls_named_in_source(mir_body);
+        let fields = self.struct_fields_given(mir_body);
         let mut taken_from: IndexMap<Local, Local> = IndexMap::default();
         for data in mir_body.basic_blocks.iter() {
             for statement in &data.statements {
@@ -54,6 +55,9 @@ impl<'tcx> MirCx<'_, '_, 'tcx> {
                     called
                         .get(&at)
                         .and_then(|&def_id| temporary_names::call_name(self.tcx, def_id)),
+                    // The field of a struct literal it's given, `second` of
+                    // `Q { second: side(..), first: .. }` held (#1865).
+                    fields.get(&local).cloned(),
                     self.held_type_name(mir_body.local_decls[local].ty),
                 ];
                 let names = (suggested.into_iter().flatten())
@@ -62,6 +66,33 @@ impl<'tcx> MirCx<'_, '_, 'tcx> {
                 (name.clone(), names)
             })
             .collect()
+    }
+
+    /// Each temporary a struct literal is given as a field, by that field's
+    /// name, as rust-analyzer suggests a value by the field it initializes:
+    /// `second` of `Q { second: side(..), first: { base.first = 9; .. } }`,
+    /// whose `side(..)` is held before `first` runs (#1865). Of a struct's
+    /// or a variant's own fields, not a tuple's, which have none.
+    fn struct_fields_given(&self, mir_body: &mir::Body<'tcx>) -> IndexMap<Local, String> {
+        let mut fields = IndexMap::default();
+        for data in mir_body.basic_blocks.iter() {
+            for statement in &data.statements {
+                if let StatementKind::Assign(assign) = &statement.kind
+                    && let Rvalue::Aggregate(kind, operands) = &assign.1
+                    && let mir::AggregateKind::Adt(adt, variant, _, _, None) = **kind
+                {
+                    let variant = self.tcx.adt_def(adt).variant(variant);
+                    for (field, operand) in operands.iter_enumerated() {
+                        if let Operand::Move(place) | Operand::Copy(place) = operand
+                            && let Some(local) = place.as_local()
+                        {
+                            fields.insert(local, variant.fields[field].name.to_string());
+                        }
+                    }
+                }
+            }
+        }
+        fields
     }
 
     /// The word of the field `local`'s call is called on, the one it reads

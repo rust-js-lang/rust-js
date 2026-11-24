@@ -113,9 +113,9 @@ function insert(root, word) {
         entry._0[0],
         entry._0[1],
         () => {
-          let tmp;
+          let children;
           try {
-            tmp = new $BTreeMap();
+            children = new $BTreeMap();
           } catch (error) {
             $cleanup(() => {
               console.log(`drop ${$debugStr(label[0])}`);
@@ -127,7 +127,7 @@ function insert(root, word) {
             parent = $downgrade(node);
           } catch (error) {
             $cleanup(() => {
-              $dropItems($sortedEntries(tmp, $cmp), ([, value]) => {
+              $dropItems($sortedEntries(children, $cmp), ([, value]) => {
                 $rcDrop(value, dropNode);
               });
               console.log(`drop ${$debugStr(label[0])}`);
@@ -137,7 +137,7 @@ function insert(root, word) {
           return {
             value: {
               label,
-              children: tmp,
+              children,
               parent,
             },
             strong: 1,
@@ -249,9 +249,9 @@ function main() {
     }
   }
   const label = [""];
-  let tmp;
+  let children;
   try {
-    tmp = new $BTreeMap();
+    children = new $BTreeMap();
   } catch (error) {
     $cleanup(() => {
       console.log(`drop ${$debugStr(label[0])}`);
@@ -261,7 +261,7 @@ function main() {
   const root = {
     value: {
       label,
-      children: tmp,
+      children,
       parent: $weakNone,
     },
     strong: 1,
@@ -334,12 +334,12 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp$1;
+  let tmp;
   try {
     if (a.value.borrows < 0) {
       $alreadyMutablyBorrowed("test/corpus/trie_of_counted_rcs.rs:62:27");
     }
-    tmp$1 = a.value;
+    tmp = a.value;
   } catch (error) {
     $cleanup(() => {
       $rcDrop(a, dropNode);
@@ -353,7 +353,7 @@ function main() {
   try {
     ab = $rcClone(
       $unwrap(
-        tmp$1.children.get("b"),
+        tmp.children.get("b"),
         "test/corpus/trie_of_counted_rcs.rs:62:44",
         "no entry found for key",
       ),
@@ -367,22 +367,22 @@ function main() {
     }, error);
     throw error;
   }
+  let tmp$1;
+  try {
+    tmp$1 = depth(root);
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(ab, dropNode);
+      $rcDrop(a, dropNode);
+      if (root$live) {
+        $rcDrop(root, dropNode);
+      }
+    }, error);
+    throw error;
+  }
   let tmp$2;
   try {
-    tmp$2 = depth(root);
-  } catch (error) {
-    $cleanup(() => {
-      $rcDrop(ab, dropNode);
-      $rcDrop(a, dropNode);
-      if (root$live) {
-        $rcDrop(root, dropNode);
-      }
-    }, error);
-    throw error;
-  }
-  let tmp$3;
-  try {
-    tmp$3 = depth(a);
+    tmp$2 = depth(a);
   } catch (error) {
     $cleanup(() => {
       $rcDrop(ab, dropNode);
@@ -394,7 +394,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${tmp$2} ${tmp$3} ${depth(ab)}`);
+    console.log(`${tmp$1} ${tmp$2} ${depth(ab)}`);
   } catch (error) {
     $cleanup(() => {
       $rcDrop(ab, dropNode);
@@ -469,9 +469,9 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp$4;
+  let tmp$3;
   try {
-    tmp$4 = $borrow(ab.value, "test/corpus/trie_of_counted_rcs.rs:70:44", true);
+    tmp$3 = $borrow(ab.value, "test/corpus/trie_of_counted_rcs.rs:70:44", true);
   } catch (error) {
     $cleanup(() => {
       $rcDrop(ab, dropNode);
@@ -480,10 +480,10 @@ function main() {
   }
   let upgrade;
   try {
-    upgrade = $upgrade(tmp$4.parent);
+    upgrade = $upgrade(tmp$3.parent);
   } catch (error) {
     $cleanup(() => {
-      $unborrow(tmp$4);
+      $unborrow(tmp$3);
       $rcDrop(ab, dropNode);
     }, error);
     throw error;
@@ -495,12 +495,12 @@ function main() {
     }
   } catch (error) {
     $cleanup(() => {
-      $unborrow(tmp$4);
+      $unborrow(tmp$3);
       $rcDrop(ab, dropNode);
     }, error);
     throw error;
   }
-  $unborrow(tmp$4);
+  $unborrow(tmp$3);
   $rcDrop(ab, dropNode);
 }
 //# sourceMappingURL=case.js.map

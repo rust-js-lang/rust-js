@@ -698,21 +698,13 @@ export function socketAddrFromSocketAddrV6_from(sock6) {
 
 export function socketAddrFromTuple2_from(pieces, IIntoIpAddr, dropI) {
   const value = IIntoIpAddr.into(pieces[0]);
-  const value$1 = pieces[1];
+  const port = pieces[1];
   if (value.TAG === "V4") {
-    return {
-      TAG: "V4",
-      _0: { ip: { ...value._0, octets: value._0.octets.slice() }, port: value$1 },
-    };
+    return { TAG: "V4", _0: { ip: { ...value._0, octets: value._0.octets.slice() }, port } };
   }
   return {
     TAG: "V6",
-    _0: {
-      ip: { ...value._0, octets: value._0.octets.slice() },
-      port: value$1,
-      flowinfo: 0,
-      scopeId: 0,
-    },
+    _0: { ip: { ...value._0, octets: value._0.octets.slice() }, port, flowinfo: 0, scopeId: 0 },
   };
 }
 
