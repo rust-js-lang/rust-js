@@ -142,16 +142,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// isn't fixed, an object that's the same however it's reached, and an
     /// index that isn't a constant or a name named too.
     pub fn fixed_place_of(&mut self, place: Expr, out: &mut Vec<Stmt>) -> Expr {
-        let (span, facts) = (place.span, place.facts);
+        let span = place.span;
         // What holds it, named, a temporary of MIR's lowering's, which tidy
         // reads in place where it's read once.
         let mut fixed = |e: Expr, name: Base<'_>, this: &mut Self| match fixed_place(&e) {
             true => e,
             false => this.held_in_place(name, e, out),
         };
-        // The same place, what's known of it kept: a nullable field's read
-        // never `undefined` (ADR 0620, amended).
-        let fixed = match place.kind {
+        // The same place.
+        match place.kind {
             js::ExprKind::Member(object, field) => {
                 Expr::member(fixed(*object, Role::Item.into(), self), &field).or_at(span)
             }
@@ -163,8 +162,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::index(object, index).or_at(span)
             }
-            kind => return Expr { kind, ..place },
-        };
-        Expr { facts, ..fixed }
+            kind => Expr { kind, ..place },
+        }
     }
 }

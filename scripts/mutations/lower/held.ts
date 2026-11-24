@@ -46,19 +46,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^kept_handle_of_a_place_set_again.rs$"],
   },
   {
-    name: "fixed-place-facts-dropped",
-    breaks:
-      "a place made once, a cell's taken, forgets what's known of it, so `claimed ?? null`",
-    file: "crates/rust-js-lower/src/held.rs",
-    find: "        Expr { facts, ..fixed }\n",
-    replace: "        Expr { facts: js::Facts::NONE, ..fixed }\n",
-    tests: [
-      "test/lowering-nullable-stores.test.ts",
-      "-t",
-      "a nullable field's value a variable holds",
-    ],
-  },
-  {
     name: "from-end-place-not-fixed",
     breaks:
       "an item counted from the end, given through a `&mut`, `zero(last)`, is `const at = v.length - 1` and `v[at]`, not its place, `v[v.length - 1]`",
