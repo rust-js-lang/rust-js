@@ -7,8 +7,10 @@ import { beforeAll, expect, test } from "bun:test";
 import { copyFileSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 
+import { run as runAsync, type Exit } from "./child";
 import { decode, expected, same, type Outcome } from "./oracle";
 import { callInNode, type Call } from "./programs";
+import { atOnce } from "../scripts/shard";
 import { buildSerde } from "./serde-crate";
 import { root, target, run, buildCompiler, buildReact, compiler, fixture, programFlags } from "./support";
 
@@ -60,91 +62,117 @@ let asyncs: Record<string, (...args: any[]) => any>;
 // What each native case's call did as JS, under Node, at the case's index.
 let outcomes: Outcome[];
 
+/** `cmds`, compiles of the examples, at once, as many as the machine runs
+ * of a test file's own (`atOnce`'s `fileCompile`), through the compile
+ * cache: each run one after another, they were 57 s of CI's 58 s of this
+ * file (#2465). Not one worker job, which is one input's builds. Each must
+ * succeed, as `run`'s. */
+async function compiled(cmds: string[][]) {
+  const width = atOnce("fileCompile");
+  const exits: Exit[] = new Array(cmds.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(width, cmds.length) }, async () => {
+    while (next < cmds.length) {
+      const at = next++;
+      exits[at] = await runAsync(cmds[at], root, 600_000);
+    }
+  }));
+  exits.forEach((p, i) => {
+    if (p.code !== 0 || p.timedOut) throw new Error(`${cmds[i].join(" ")} failed:\n${p.stderr}`);
+  });
+}
+
 beforeAll(async () => {
   buildCompiler();
-  run([compiler, "examples/fib.rs", "-o", join(target, "fib.js")]);
+  await compiled([
+    [compiler, "examples/fib.rs", "-o", join(target, "fib.js")],
+    [compiler, "examples/structs.rs", "-o", join(target, "structs.js")],
+    [compiler, "examples/closures.rs", "-o", join(target, "closures.js")],
+    [compiler, "examples/collections.rs", "-o", join(target, "collections.js")],
+    [compiler, "examples/options.rs", "-o", join(target, "options.js")],
+    [compiler, "examples/methods.rs", "-o", join(target, "methods.js")],
+    [compiler, "examples/generic_options.rs", "-o", join(target, "generic_options.js")],
+    [compiler, "examples/std_traits.rs", "-o", join(target, "std_traits.js")],
+    [compiler, "examples/combinators.rs", "-o", join(target, "combinators.js")],
+    [compiler, "examples/text.rs", "-o", join(target, "text.js")],
+    [compiler, "examples/calc.rs", "-o", join(target, "calc.js")],
+    [compiler, "examples/numbers.rs", "-o", join(target, "numbers.js")],
+    [compiler, "examples/inventory.rs", "-o", join(target, "inventory.js")],
+    [compiler, "examples/queues.rs", "-o", join(target, "queues.js")],
+    [compiler, "examples/report.rs", "-o", join(target, "report.js")],
+    [compiler, "examples/lexer.rs", "-o", join(target, "lexer.js")],
+    [compiler, "examples/values.rs", "-o", join(target, "values.js")],
+    [compiler, "examples/versions.rs", "-o", join(target, "versions.js")],
+    [compiler, "examples/wire.rs", "-o", join(target, "wire.js"), "--", ...buildSerde()],
+    [compiler, "examples/inbox.rs", "-o", join(target, "inbox.js"), "--", ...buildSerde()],
+    [compiler, "examples/api.rs", "-o", join(target, "api.js"), "--", ...buildSerde()],
+    [compiler, "examples/dynamic.rs", "-o", join(target, "dynamic.js"), "--", ...buildSerde()],
+    [compiler, "examples/wide.rs", "-o", join(target, "wide.js"), "--", ...buildSerde()],
+    [compiler, "examples/consts.rs", "-o", join(target, "consts.js")],
+    [compiler, "examples/enums.rs", "-o", join(target, "enums.js")],
+    [compiler, "examples/strings.rs", "-o", join(target, "strings.js")],
+    [compiler, "examples/results.rs", "-o", join(target, "results.js")],
+    [compiler, "examples/iterators.rs", "-o", join(target, "iterators.js")],
+    [compiler, "examples/thread_locals.rs", "-o", join(target, "thread_locals.js")],
+  ]);
   fib = await import(join(target, "fib.js"));
-  run([compiler, "examples/structs.rs", "-o", join(target, "structs.js")]);
   structs = await import(join(target, "structs.js"));
-  run([compiler, "examples/closures.rs", "-o", join(target, "closures.js")]);
   closures = await import(join(target, "closures.js"));
-  run([compiler, "examples/collections.rs", "-o", join(target, "collections.js")]);
   collections = await import(join(target, "collections.js"));
-  run([compiler, "examples/options.rs", "-o", join(target, "options.js")]);
   options = await import(join(target, "options.js"));
-  run([compiler, "examples/methods.rs", "-o", join(target, "methods.js")]);
   methods = await import(join(target, "methods.js"));
-  run([compiler, "examples/generic_options.rs", "-o", join(target, "generic_options.js")]);
   genericOptions = await import(join(target, "generic_options.js"));
-  run([compiler, "examples/std_traits.rs", "-o", join(target, "std_traits.js")]);
-  run([compiler, "examples/combinators.rs", "-o", join(target, "combinators.js")]);
   combinators = await import(join(target, "combinators.js"));
-  run([compiler, "examples/text.rs", "-o", join(target, "text.js")]);
   text = await import(join(target, "text.js"));
-  run([compiler, "examples/calc.rs", "-o", join(target, "calc.js")]);
   calc = await import(join(target, "calc.js"));
-  run([compiler, "examples/numbers.rs", "-o", join(target, "numbers.js")]);
   numbers = await import(join(target, "numbers.js"));
-  run([compiler, "examples/inventory.rs", "-o", join(target, "inventory.js")]);
   inventory = await import(join(target, "inventory.js"));
-  run([compiler, "examples/queues.rs", "-o", join(target, "queues.js")]);
   queues = await import(join(target, "queues.js"));
-  run([compiler, "examples/report.rs", "-o", join(target, "report.js")]);
   report = await import(join(target, "report.js"));
-  run([compiler, "examples/lexer.rs", "-o", join(target, "lexer.js")]);
   lexer = await import(join(target, "lexer.js"));
-  run([compiler, "examples/values.rs", "-o", join(target, "values.js")]);
   values = await import(join(target, "values.js"));
-  run([compiler, "examples/versions.rs", "-o", join(target, "versions.js")]);
   versions = await import(join(target, "versions.js"));
-  run([compiler, "examples/wire.rs", "-o", join(target, "wire.js"), "--", ...buildSerde()]);
   wire = await import(join(target, "wire.js"));
-  run([compiler, "examples/inbox.rs", "-o", join(target, "inbox.js"), "--", ...buildSerde()]);
   inbox = await import(join(target, "inbox.js"));
-  run([compiler, "examples/api.rs", "-o", join(target, "api.js"), "--", ...buildSerde()]);
   api = await import(join(target, "api.js"));
-  run([compiler, "examples/dynamic.rs", "-o", join(target, "dynamic.js"), "--", ...buildSerde()]);
   dynamic = await import(join(target, "dynamic.js"));
-  run([compiler, "examples/wide.rs", "-o", join(target, "wide.js"), "--", ...buildSerde()]);
   wide = await import(join(target, "wide.js"));
-  run([compiler, "examples/consts.rs", "-o", join(target, "consts.js")]);
   consts = await import(join(target, "consts.js"));
-  run([compiler, "examples/enums.rs", "-o", join(target, "enums.js")]);
   enums = await import(join(target, "enums.js"));
-  run([compiler, "examples/strings.rs", "-o", join(target, "strings.js")]);
   strings = await import(join(target, "strings.js"));
-  run([compiler, "examples/results.rs", "-o", join(target, "results.js")]);
   results = await import(join(target, "results.js"));
-  run([compiler, "examples/iterators.rs", "-o", join(target, "iterators.js")]);
   iterators = await import(join(target, "iterators.js"));
-  run([compiler, "examples/thread_locals.rs", "-o", join(target, "thread_locals.js")]);
   // The webapi crate is used from its metadata (ADR 0024).
   buildReact();
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
-  run([compiler, "examples/counter.rs", "-o", join(target, "counter.js"), ...withWeb]);
-  run([compiler, "test/web_forms.rs", "-o", join(target, "web_forms.js"), ...withWeb]);
-  run([compiler, "examples/todo.rs", "-o", join(target, "todo.js"), ...withWeb]);
-  run([compiler, "examples/countdown.rs", "-o", join(target, "countdown.js"), ...withWeb]);
-  run([compiler, "examples/fetch.rs", "-o", join(target, "fetch.js"), ...withWeb]);
-  run([compiler, "test/throws.rs", "-o", join(target, "throws.js"), ...withWeb]);
+  await compiled([
+    [compiler, "examples/counter.rs", "-o", join(target, "counter.js"), ...withWeb],
+    [compiler, "test/web_forms.rs", "-o", join(target, "web_forms.js"), ...withWeb],
+    [compiler, "examples/todo.rs", "-o", join(target, "todo.js"), ...withWeb],
+    [compiler, "examples/countdown.rs", "-o", join(target, "countdown.js"), ...withWeb],
+    [compiler, "examples/fetch.rs", "-o", join(target, "fetch.js"), ...withWeb],
+    [compiler, "test/throws.rs", "-o", join(target, "throws.js"), ...withWeb],
+  ]);
   throws = await import(join(target, "throws.js"));
   // The playground's own Rust (ADRs 0032, 0044), as compile-rust.ts compiles it with
   // rust-js.wasm: with React.
   buildReact();
   // Into an empty folder, so a file an older layout wrote can't pass for its output.
   rmSync(join(target, "playground"), { recursive: true, force: true });
-  run([compiler, "wasm/web/rust/lib.rs", "-o", join(target, "playground", "lib.js"),
-    ...withWeb, "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
-  run([compiler, "test/async.rs", "-o", join(target, "async.js"), ...withWeb]);
+  await compiled([
+    [compiler, "wasm/web/rust/lib.rs", "-o", join(target, "playground", "lib.js"),
+      ...withWeb, "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target],
+    [compiler, "test/async.rs", "-o", join(target, "async.js"), ...withWeb],
+    [compiler, "examples/modules/lib.rs", "-o", join(target, "modules", "lib.js")],
+    [compiler, "test/imports/lib.rs", "-o", join(target, "imports", "lib.js"), ...withWeb],
+  ]);
   asyncs = await import(join(target, "async.js"));
-  run([compiler, "examples/modules/lib.rs", "-o", join(target, "modules", "lib.js")]);
   modules = {
     lib: await import(join(target, "modules", "lib.js")),
     stats: await import(join(target, "modules", "stats.js")),
     util: await import(join(target, "modules", "util.js")),
   };
   // Imports (ADR 0028): `./greet.js` is relative to the root's JS, so it goes beside it.
-  run([compiler, "test/imports/lib.rs", "-o", join(target, "imports", "lib.js"), ...withWeb]);
   copyFileSync(join(root, "test/imports/greet.js"), join(target, "imports", "greet.js"));
   copyFileSync(join(root, "test/imports/inner/wave.js"), join(target, "imports", "inner", "wave.js"));
   imports = {

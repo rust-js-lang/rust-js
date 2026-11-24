@@ -314,10 +314,10 @@ test("a run's --jobs never builds more at once than the memory holds", () => {
 test("each kind of job runs as many at once as the machine's cores and memory hold", () => {
   const on = (cores: number, totalGB: number) => ({ cores, totalGB, freeGB: 0.85 * totalGB });
   const sizes = (cores: number, totalGB: number) =>
-    Object.fromEntries((["test", "compilerBuild", "crateBuild", "crateCheck"] as const).map((kind) => [kind, atOnce(kind, on(cores, totalGB))]));
-  expect(sizes(8, 16)).toEqual({ test: 8, compilerBuild: 2, crateBuild: 4, crateCheck: 4 });
-  expect(sizes(14, 36)).toEqual({ test: 14, compilerBuild: 7, crateBuild: 7, crateCheck: 7 });
-  expect(sizes(4, 16)).toEqual({ test: 4, compilerBuild: 2, crateBuild: 2, crateCheck: 2 });
+    Object.fromEntries((["test", "compilerBuild", "crateBuild", "crateCheck", "fileCompile"] as const).map((kind) => [kind, atOnce(kind, on(cores, totalGB))]));
+  expect(sizes(8, 16)).toEqual({ test: 8, compilerBuild: 2, crateBuild: 4, crateCheck: 4, fileCompile: 4 });
+  expect(sizes(14, 36)).toEqual({ test: 14, compilerBuild: 7, crateBuild: 7, crateCheck: 7, fileCompile: 7 });
+  expect(sizes(4, 16)).toEqual({ test: 4, compilerBuild: 2, crateBuild: 2, crateCheck: 2, fileCompile: 2 });
   // Where little is free, the memory says, at least one.
   expect(atOnce("compilerBuild", { cores: 14, totalGB: 36, freeGB: 6 })).toBe(1);
   expect(atOnce("test", { cores: 14, totalGB: 36, freeGB: 3 })).toBe(11);

@@ -458,12 +458,17 @@ export function machine(): Machine {
  * a time, one core; a build of the compiler's crate, two; a crate's
  * native and JS Cargo builds and tests, the Crater's, two and some 2 GB
  * (2.1 GB of four at once, `peakGB`); a crate's `cargo check` and compile,
- * the crate corpus's, two and 0.6 GB. */
+ * the crate corpus's, two and 0.6 GB; a test file's own compiles, two. */
 export const jobKinds = {
   test: { cores: 1, gb: peakGB.test },
   compilerBuild: { cores: 2, gb: peakGB.compilerBuild },
   crateBuild: { cores: 2, gb: 2 },
   crateCheck: { cores: 2, gb: peakGB.crate },
+  // A test file's own compiles, started together beside the pool's other
+  // files: one for each two cores, so a file whose setup compiles many,
+  // compiler.test.ts' examples, isn't the pool's tail, two on CI's four
+  // (#2465).
+  fileCompile: { cores: 2, gb: peakGB.test },
 } as const;
 
 /** How many jobs of `kind` a run starts at once on `on`: as many as its
