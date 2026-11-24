@@ -84,7 +84,10 @@ export function fresh(TDefault) {
 }
 
 export function twice(x, TClone) {
-  return [TClone.clone(x), TClone.clone(x)];
+  return [
+    TClone.clone(x, "examples/std_traits.rs:93:12"),
+    TClone.clone(x, "examples/std_traits.rs:93:23"),
+  ];
 }
 
 /** A `T: Copy` clones by copying. */
@@ -351,7 +354,7 @@ function repeatIterator_next(repeat, TClone) {
     return;
   }
   repeat.times--;
-  return $some(TClone.clone(repeat.item));
+  return $some(TClone.clone(repeat.item, "examples/std_traits.rs:398:24"));
 }
 
 function fibonacci() {

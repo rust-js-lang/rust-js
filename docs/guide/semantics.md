@@ -1950,7 +1950,19 @@ Differences:
   of one made a value, `.map(Option::unwrap)`, the line of the shim it's
   called through, `FnMut::call_mut`'s, or a `fn` pointer's own, as the body
   says how it's called; a binary refuses one whose calls it doesn't say
-  (#2335, [limitations](limitations.md)); or a
+  (#2335, [limitations](limitations.md)); of a std method whose impl
+  tracks its caller where its trait's declaration doesn't, called through
+  generic code's dictionary, the generic line, as rustc's instance names
+  it: integers' `/` and `%` (and `/=`, `%=`), integers' and a `char`'s
+  `clamp`, a `RefCell`'s `clone`, and so its `clone_from`, generic code's
+  `*dest = source.clone()` of it. Generic code's call gives
+  its entry where it's made, `TClone.clone(x, "src/lib.rs:9:7")`, only where
+  a type whose impl tracks may be its `T`: of callers it sees, as theirs
+  give; of a `pub` function's or a dictionary's own, any type its bounds
+  allow, so a `T: Iterator + Clone`, never a `RefCell`, gives none; and an
+  entry takes it only where its impl tracks, `{ clone: (value, location) =>
+  $borrow(value, location).slice() }`
+  ([0427](../decisions/0427-track-caller.md), amended, #2324, #2457); or a
   line of std's own, `VecDeque::swap`'s assertion's, a constant of the
   toolchain the runtime keeps, `$stdSites`. A library's panic writes
   nothing, its host's to catch: a JS stack trace and exit code 1 where it

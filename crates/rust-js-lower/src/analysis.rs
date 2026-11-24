@@ -30,9 +30,11 @@ pub(super) use cell_borrows::{
 };
 pub(super) use cell_flow::CellClass;
 mod clones;
+mod located_calls;
 pub(crate) use clones::Cloned;
 pub(crate) use hint_asked::{Hinted, asked_of_own};
 pub(crate) use iterator_facts::IteratorFacts;
+pub(crate) use located_calls::Located;
 mod closures;
 mod collected;
 pub use collected::{
@@ -244,6 +246,9 @@ pub struct AnalyzedCrate<'a, 'tcx> {
     pub closure_facts: ClosureFacts<'tcx>,
     /// The types the crate clones, and those their clones clone (ADR 0525).
     pub cloned: clones::Cloned<'tcx>,
+    /// Which of generic code's calls through a dictionary give its entry
+    /// their location (#2457).
+    pub located: located_calls::Located<'tcx>,
     /// The crate's iterator facts: what it steps from its back, and what
     /// generic code asks the hint of (`iterator_facts.rs`).
     pub iterators: IteratorFacts<'tcx>,
@@ -385,6 +390,7 @@ pub fn analyze_crate<'a, 'tcx>(
         foreign,
         trait_impls,
         cloned,
+        located,
         asks_capacity,
         names,
     } = ground;
@@ -1262,6 +1268,7 @@ pub fn analyze_crate<'a, 'tcx>(
         wholes,
         closure_facts,
         cloned,
+        located,
         iterators,
         chars_whole,
         searches_whole,

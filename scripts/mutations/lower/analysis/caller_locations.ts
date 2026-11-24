@@ -72,4 +72,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^track_caller.rs$"],
   },
+  {
+    name: "tracked-fn-dividing-generically-untaken",
+    breaks: "a `#[track_caller]` function that divides through a dictionary takes no location, so its `/` names its own line, not where it was called (#2457)",
+    file: "crates/rust-js-lower/src/analysis/caller_locations.rs",
+    find: "            if crate::recognition::model_raises_at_caller(tcx, resolved) {\n",
+    replace: "            if false && crate::recognition::model_raises_at_caller(tcx, resolved) {\n",
+    tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
+  },
 ];

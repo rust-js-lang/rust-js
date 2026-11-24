@@ -563,4 +563,12 @@ export const mutations: Mutation[] = [
     replace: "                        Ok(part)\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
   },
+  {
+    name: "generic-clone-unlocated",
+    breaks: "generic code's clone through a dictionary gives no location, so a `RefCell`'s raises where its dictionary was made (#2457)",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "        given.extend(self.model_location((clone, tr.args), span));\n",
+    replace: "",
+    tests: ["test/binaries.test.ts", "-t", "s `clone` through a dictionary"],
+  },
 ];

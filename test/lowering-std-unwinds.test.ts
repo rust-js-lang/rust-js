@@ -232,7 +232,10 @@ pub fn concrete(w: &mut Option<Vec<Loud>>, v: &Option<Vec<Loud>>) {
 `,
   );
   expect(body(flat, "assign")).toContain(
-    "if (TClone.cloneFrom) { TClone.cloneFrom(dest, source); } else { const old = $apart(dest.value); dest.value = TClone.clone(source); dropT?.(old); }",
+    // Its `T: Clone` may be a `RefCell`, whose `clone` raises at its caller:
+    // given where it's called, and its `clone_from`, which none has, its
+    // clone's (#2457).
+    'if (TClone.cloneFrom) { TClone.cloneFrom(dest, source); } else { const old = $apart(dest.value); dest.value = TClone.clone(source, "lib.rs:29:10"); dropT?.(old); }',
   );
   expect(body(flat, "assignOption")).toContain(
     "if (dest.value != null && source != null && TClone.cloneFrom) { TClone.cloneFrom(dest, source); } else {",

@@ -14,7 +14,10 @@ function pairsFromI_from(rest, IIterator, IClone) {
 }
 
 function pairsIterator_next(pairs, IIterator, IClone, AClone) {
-  const value = pairs.first == null ? pairs.first : $some(AClone.clone($someValue(pairs.first)));
+  const value =
+    pairs.first == null
+      ? pairs.first
+      : $some(AClone.clone($someValue(pairs.first), "test/corpus/callee_field_own_terms.rs:28:32"));
   if (value == null) {
     return;
   }

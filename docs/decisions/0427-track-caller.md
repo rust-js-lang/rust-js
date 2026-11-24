@@ -344,3 +344,65 @@ React's port's crates, and not `@rust-js/std`, lists one; the binding
 crates, `js`, `webapi` and `react`, are checked by rustc alone and make no
 such value.
 
+
+## Amendment: what a generic call gives is what its instances may track (2026-11-24, #2457)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a panic named another
+line than Rust's.
+
+A `RefCell`'s `Clone::clone` is `#[track_caller]` in std's impl, though `Clone`'s declaration isn't, as #2324 found of
+integers' `Div`, `Rem` and `clamp`; through generic code's dictionary its
+panic named where the dictionary was made, `$borrow(value,
+"main.rs:5:16")`, where native names `x.clone()` in the generic function.
+And #2324's rule was a hand list, per method: every entry of a listed
+method took a location, the crate's own impls' too, and every generic call
+gave one. Of `Clone`, that would be every entry and every generic clone.
+
+The rule has two halves now. rust-js's: which of its models raise at
+their caller, `recognition::model_raises_at_caller`, integers' `/` and
+`%`, `clamp`, a `RefCell`'s `clone`, whose `clone_from` generic code runs
+as `*dest = source.clone()`, its clone's, as std's borrows its source
+there too; not `Add`, which
+std's impl tracks but rust-js's wraps, as a release build does (ADR 0011).
+rustc's: whether the impl it resolves tracks its caller where the
+declaration doesn't, its attribute (`impl_raises_at_caller`).
+`SliceIndex::index` leaves the list: its declaration tracks its caller
+itself, so #2350's rule gives it, and slice.rs asks `takes_caller_location`.
+
+It's per instance. An entry takes the location only where its impl
+tracks (`entry_takes_location`), `{ clone: (value, location) =>
+$borrow(value, location).slice() }`; a `Vec`'s and the crate's own take
+none. A call through a dictionary gives it (`model_location`) only where
+an instance that tracks may reach it (`analysis::Located::gives_location`):
+of callers it sees, `instances`'s, the one owner of what generic code's
+type parameters may be (ADR 1115); of callers it can't all see, a `pub`
+function's, a dictionary's impl parameters, past 64, where a std impl
+that tracks may be the call's `Self` by the owner's own bounds
+(`tracking_impl_may_be`, an inference probe of each impl's type against
+every bound), so `T: Iterator + Clone`, never a `RefCell`, gives none
+whoever calls it. That's sound across crates: no crate downstream may
+write an impl of another crate's trait for a `RefCell`, which isn't its
+own, so the owner's environment sees every impl that may make a bound hold;
+through `&T` or `Box<T>`, fundamental, a self type still has to be local,
+which `&RefCell<Local>` isn't; only a bound whose other arguments are
+unknowns too, `T: Into<U>`, may be met downstream, so it may hold. A call
+that gives more after the location, `clamp`'s drop, says so
+(`location_followed`): each entry takes the location's place, and the
+call gives `undefined` where nothing that tracks reaches; another model
+method given evidence after its location is refused where it's called.
+A `#[track_caller]` function that calls one through a dictionary takes
+its own caller's location, which it gives on (`caller_locations`).
+
+Moved: 13 corpus cases, each a generic clone given its location where its
+`T: Clone` may be a `RefCell`, a `clamp`'s `undefined`, and `Div`'s
+entries losing their unused parameter; std's `T: Clone`-only impls'
+clones, `Option`'s, `Rev`'s, `Cycle::new`'s, which native names std's
+line of. Held by test/binaries.test.ts's rows against native, the two
+clones, #2324's operators, a `#[track_caller]` function dividing
+generically, and a library whose bound a `RefCell` meets through its own
+impl and whose `I: Iterator + Clone` gives none, and the mutations
+`model-clone-unraised`, `impl-tracking-unread`, `tracking-bounds-unread`,
+`location-unfollowed`, `located-entry-untaken`, `generic-clone-unlocated`,
+`dictionary-call-unlocated`,
+`operator-entry-unlocated`, `tracked-fn-dividing-generically-untaken` and
+`gives-location-never`, with #2324's retargeted.

@@ -119,6 +119,79 @@ for (const name of ["let_else_guard_released", "refcell_held_while_asked", "refc
   }, 300_000);
 }
 
+// A std impl that tracks its caller where its trait's declaration doesn't,
+// `RefCell`'s `Clone`, reached through generic code's dictionary: its panic
+// names the generic call's line, as native Rust's does, not where the
+// dictionary was made (#2457).
+for (const [name, body] of [
+  ["clone", "x.clone()"],
+] as const) {
+  test(`a \`RefCell\`'s \`${name}\` through a dictionary panics naming the generic call`, () => {
+    const source = [
+      "use std::cell::RefCell;",
+      "fn main() {",
+      "    let cell = RefCell::new(vec![1]);",
+      "    let writing = cell.borrow_mut();",
+      "    let copy = at_0(&(cell));",
+      '    println!("{:?} {}", copy, writing.len());',
+      "}",
+      "pub fn at_0<T: ::std::clone::Clone>(x: &T) -> T {",
+      `    ${body}`,
+      "}",
+      "",
+    ].join("\n");
+    same(`refcell-${name}-through-a-dictionary`, source);
+  }, 300_000);
+}
+
+// Its `clone_from`, which borrows what it clones from: the clone made before
+// the borrow, so only the `clone_from` meets it (#2457).
+test("a `RefCell`'s `clone_from` through a dictionary panics naming the generic call", () => {
+  const source = [
+    "use std::cell::RefCell;",
+    "fn main() {",
+    "    let cell = RefCell::new(vec![1]);",
+    "    let mut out = cell.clone();",
+    "    let writing = cell.borrow_mut();",
+    "    refill(&mut out, &cell);",
+    '    println!("{:?} {}", out, writing.len());',
+    "}",
+    "pub fn refill<T: ::std::clone::Clone>(out: &mut T, x: &T) {",
+    "    out.clone_from(x)",
+    "}",
+    "",
+  ].join("\n");
+  expect(same("refcell-clone-from-through-a-dictionary", source).out).toContain("native.rs:10:9:");
+}, 300_000);
+
+// A library's generic clone, compiled by its consumer, gives its location
+// where its own bounds let a `RefCell` be its `T`, through the library's own
+// impl, `T: Kept + Clone` of an `impl Kept for RefCell<T>`, and none where
+// they don't, `I: Iterator + Clone`: no crate downstream may write another
+// crate's trait's impl for a `RefCell`, which isn't its own, so the
+// library's bounds say all that may meet them (#2457).
+test("a library's generic clone names its own line where its bounds let a `RefCell` be its `T`, and gives none where they don't", () => {
+  const dir = fixture("located-across-crates");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "lib.rs"), "use std::cell::RefCell;\n\npub trait Kept {\n    fn kept(&self) -> u8;\n}\n\nimpl<T: Clone> Kept for RefCell<T> {\n    fn kept(&self) -> u8 {\n        1\n    }\n}\n\npub fn through_kept<T: Kept + Clone>(t: &T) -> T {\n    t.clone()\n}\n\npub fn of_iterator<I: Iterator + Clone>(i: &I) -> I {\n    i.clone()\n}\n\npub fn any_clone<T: Clone>(t: &T) -> T {\n    t.clone()\n}\n");
+  const lib = compileJsLibrary(join(dir, "lib.rs"), dir, "2024", "tracked");
+  if (!("manifest" in lib)) throw new Error(lib.error);
+  run(["rustc", "--edition=2024", "--crate-type", "rlib", "--crate-name", "tracked", "-o", join(dir, "libtracked.rlib"), join(dir, "lib.rs")]);
+  const source = "use std::cell::RefCell;\n\nfn main() {\n    let ints = [1, 2].into_iter();\n    println!(\"{:?}\", tracked::of_iterator(&ints).collect::<Vec<_>>());\n    let cell = RefCell::new(vec![1]);\n    println!(\"{}\", tracked::through_kept(&cell).borrow().len());\n    let writing = cell.borrow_mut();\n    let copy = tracked::through_kept(&cell);\n    println!(\"{:?} {}\", copy, writing.len());\n}\n";
+  const built = nativeBinary(source, dir, [...flags, "--extern", `tracked=${join(dir, "libtracked.rlib")}`, "-L", dir]);
+  if ("error" in built) throw new Error(built.error);
+  writeFileSync(join(dir, "main.rs"), source);
+  const bin = compileJsBinary(join(dir, "main.rs"), dir, "2024", ["--dependency", lib.manifest], ["--extern", `tracked=${lib.rmeta}`, "-L", dir]);
+  if (!("js" in bin)) throw new Error(bin.error);
+  expect(readFileSync(bin.js, "utf8")).toMatch(/function ofIterator\(i, IClone\) \{\n  return IClone\.clone\(i\);/);
+  installStd(dir);
+  // Each names a file by its own path; the line and column are what's held.
+  const named = (r: Ran) => ({ ...r, out: r.out.replace(/\S*\/(lib|main|native)\.rs:/g, "$1.rs:").replace("native.rs:", "main.rs:") });
+  const native = named(ran([built.binary], dir, true));
+  expect(native.out).toContain("panicked at lib.rs:14:7:");
+  expect(named(ran(["node", bin.js], dir))).toEqual(native);
+}, 300_000);
+
 test("what stdout holds of a line is written as a panic ends a binary", () => {
   same("partial", 'fn main() {\n    print!("partial");\n    panic!("then");\n}\n');
 }, 300_000);
@@ -189,6 +262,12 @@ test("a panic std's impl raises at its caller, through a dictionary, names gener
     "fn within<T: Ord>(x: T, low: T, high: T) -> T {\n    x.clamp(low, high)\n}\n\nfn main() {\n    println!(\"{}\", within('m', 'a', 'z'));\n    println!(\"{}\", within('m', std::hint::black_box('z'), 'a'));\n}\n",
     "fn within<T: Ord>(x: T, low: T, high: T) -> T {\n    x.clamp(low, high)\n}\n\nfn main() {\n    let (a, z) = (String::from(\"a\"), String::from(\"z\"));\n    println!(\"{}\", within(String::from(\"m\"), a.clone(), z.clone()));\n    println!(\"{}\", within(String::from(\"m\"), z, a));\n}\n",
     "fn main() {\n    let (a, z) = (String::from(\"a\"), String::from(\"z\"));\n    println!(\"{}\", String::from(\"m\").clamp(std::hint::black_box(z), a));\n}\n",
+    // Of a function that tracks its caller itself, its own caller's: where
+    // it was called, which it gives the generic `/` (#2457).
+    "#[track_caller]\nfn halved<T: std::ops::Div<Output = T>>(a: T, b: T) -> T {\n    a / b\n}\n\nfn main() {\n    println!(\"{}\", halved(6u32, 2));\n    println!(\"{}\", halved(1u32, std::hint::black_box(0)));\n}\n",
+    // Of a type that drops, std's default, whose drop of what it doesn't
+    // give back is given after the location's place (#2457).
+    "#[derive(PartialEq, Eq, PartialOrd, Ord)]\nstruct Loud(u8);\n\nimpl Drop for Loud {\n    fn drop(&mut self) {\n        println!(\"drop {}\", self.0);\n    }\n}\n\nfn within<T: Ord>(x: T, low: T, high: T) -> T {\n    x.clamp(low, high)\n}\n\nfn main() {\n    let _ = within(Loud(5), Loud(1), Loud(9));\n    let _ = within(Loud(5), Loud(9), Loud(1));\n}\n",
     // A generic `SliceIndex`'s, an item's and a range's.
     "fn get<I: std::slice::SliceIndex<[u32]>>(v: &[u32], i: I) -> &I::Output {\n    &v[i]\n}\n\nfn main() {\n    let v = [1, 2, 3];\n    println!(\"{} {:?}\", get(&v, 1), get(&v, 1..2));\n    println!(\"{}\", get(&v, std::hint::black_box(7)));\n}\n",
     "fn get<I: std::slice::SliceIndex<[u32]>>(v: &[u32], i: I) -> &I::Output {\n    &v[i]\n}\n\nfn main() {\n    let v = [1, 2, 3];\n    println!(\"{:?}\", get(&v, 2..std::hint::black_box(9)));\n}\n",

@@ -43,6 +43,9 @@ pub struct Caches {
     pub impl_short_names: OnceMap<DefId, String>,
     /// `overridden_in_reach`'s, of each provided method asked (#2414).
     pub overridden: OnceMap<DefId, bool>,
+    /// `tracking_impls`'s, of each method whose model raises at its caller
+    /// asked (#2457).
+    pub tracking_impls: OnceMap<DefId, std::rc::Rc<Vec<DefId>>>,
     /// The std types whose bodies are compiled into `@rust-js/std`.
     pub compiled_types: OnceCell<IndexSet<DefId>>,
     /// std's bodies compiled into `@rust-js/std`, each found in std.
@@ -266,6 +269,7 @@ fn start_keyed(gcx: usize, flags: Flags, hooks: &'static dyn MirHooks) -> Sessio
             impl_names: OnceMap::default(),
             impl_short_names: OnceMap::default(),
             overridden: OnceMap::default(),
+            tracking_impls: OnceMap::default(),
             compiled_types: OnceCell::new(),
             compiled: OnceCell::new(),
             js_held: OnceCell::new(),

@@ -54,7 +54,7 @@ function wrapFront(TClone) {
   }));
 }
 function wrapFront_front(wrap, TClone) {
-  return $some(TClone.clone(wrap[0]));
+  return $some(TClone.clone(wrap[0], "test/corpus/trait_method_given_by_its_callers.rs:90:21"));
 }
 
 function held(h, x, HHold) {

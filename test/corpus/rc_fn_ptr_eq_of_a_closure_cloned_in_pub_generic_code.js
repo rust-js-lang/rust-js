@@ -7,11 +7,17 @@ export function entry() {
 }
 
 export function dup(x, TClone) {
-  return TClone.clone(x);
+  return TClone.clone(
+    x,
+    "test/corpus/rc_fn_ptr_eq_of_a_closure_cloned_in_pub_generic_code.rs:11:7",
+  );
 }
 
 export function twice(x, TClone) {
-  return [TClone.clone(x), x];
+  return [
+    TClone.clone(x, "test/corpus/rc_fn_ptr_eq_of_a_closure_cloned_in_pub_generic_code.rs:15:8"),
+    x,
+  ];
 }
 
 function cloned(count) {

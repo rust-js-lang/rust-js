@@ -29,6 +29,7 @@ pub struct CrateFacts<'a, 'tcx> {
     pub closure_facts: &'a analysis::ClosureFacts<'tcx>,
     /// The types the crate clones (ADR 0525).
     pub cloned: &'a analysis::Cloned<'tcx>,
+    pub located: &'a analysis::Located<'tcx>,
     /// The crate's iterator facts: the types it steps from their back (ADR
     /// 0545), and the `take(n)`s, `skip(n)`s and `step_by(n)`s generic code
     /// asks the hint of, made `$taking`, `$skipping` or `$stepBy` (#1236).
@@ -308,6 +309,7 @@ carried! {
     wholes => CrateOnly,
     closure_facts => By(&[F::LibraryMakesDroppingAnys, F::LibraryMakesDroppingErrors, F::LibraryMakesDroppingFnDyns, F::LibraryMakesDroppingIterators, F::LibraryClonedClosures]),
     cloned => CrateOnly,
+    located => CrateOnly,
     iterators => CrateOnly,
     chars_whole => CrateOnly,
     searches_whole => CrateOnly,
@@ -388,6 +390,6 @@ mod tests {
                 }
             }
         }
-        assert_eq!(CARRIED.len(), 67);
+        assert_eq!(CARRIED.len(), 68);
     }
 }

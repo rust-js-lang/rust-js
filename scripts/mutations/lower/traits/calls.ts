@@ -708,4 +708,20 @@ export const mutations: Mutation[] = [
     tests: ["test/iterator-forms.test.ts", "-t", "^zip_of_a_generic_range_is_stepped_by_its_steps"],
     env: { ITERATOR_FORMS: "corpus" },
   },
+  {
+    name: "dictionary-call-unlocated",
+    breaks: "a call through a dictionary of a method whose model raises at its caller gives no location, so generic code's `a / b` raises `<unknown>` (#2324, #2457)",
+    file: "crates/rust-js-lower/src/traits/calls.rs",
+    find: "            values.extend(self.model_location((id, generic_args), span));\n",
+    replace: "",
+    tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
+  },
+  {
+    name: "operator-entry-unlocated",
+    breaks: "an integer's `Div` entry takes no location, so generic code's `a / b` raises `<unknown>` (#2324, #2457)",
+    file: "crates/rust-js-lower/src/traits/calls.rs",
+    find: "        match self.entry_takes_location(method.def_id, tr.args) {\n",
+    replace: "        match false {\n",
+    tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
+  },
 ];

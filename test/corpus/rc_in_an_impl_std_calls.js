@@ -37,7 +37,11 @@ export function showDebug(TClone, dropT) {
 }
 function showDebug_fmt(show, TClone, dropT) {
   let f = "";
-  const first = { value: TClone.clone(show[0]), strong: 1, weak: 0 };
+  const first = {
+    value: TClone.clone(show[0], "test/corpus/rc_in_an_impl_std_calls.rs:28:36"),
+    strong: 1,
+    weak: 0,
+  };
   let other;
   try {
     other = $rcClone(first);
@@ -85,7 +89,11 @@ export function keyHash(TClone, dropT) {
   });
 }
 function keyHash_hash(key, state, TClone, HHasher, dropT, dropH) {
-  const held = { value: TClone.clone(key[1]), strong: 1, weak: 0 };
+  const held = {
+    value: TClone.clone(key[1], "test/corpus/rc_in_an_impl_std_calls.rs:42:35"),
+    strong: 1,
+    weak: 0,
+  };
   let again;
   try {
     again = $rcClone(held);

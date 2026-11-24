@@ -688,7 +688,7 @@ export const mutations: Mutation[] = [
     name: "generic-clamp-given-no-location",
     breaks: "generic code's `clamp` through its dictionary gives no location, so an integer's raises `<unknown>` (#2324)",
     file: "crates/rust-js-lower/src/ordering.rs",
-    find: "                args.push(self.caller_location(span));\n",
+    find: "            args.extend(self.model_location((id, tr.args), span));\n",
     replace: "",
     tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
   },

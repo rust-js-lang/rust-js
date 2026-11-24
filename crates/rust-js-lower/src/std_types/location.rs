@@ -10,7 +10,7 @@ use crate::recognition::{MethodOf, Std, StdPath, std_inherent_method};
 use crate::{FnCx, R};
 use rust_js_program::collections::IndexSet;
 use rust_js_program::js::{Expr, ExprKind, Op};
-use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 use rustc_span::{RemapPathScopeComponents, Span};
 
@@ -118,23 +118,19 @@ pub(crate) fn location_op(tcx: TyCtxt<'_>, id: DefId) -> Option<LocationOp> {
 
 /// Whether `id` takes its caller's location, the crate's, which
 /// `caller_locations` says (ADR 0427), or a library's, as its manifest
-/// does; or, in every crate alike, as one crate's generic call is given
-/// another's dictionary, a trait method of std's whose impls raise their
-/// panic at their caller, `Div::div`, `Ord::clamp`, `SliceIndex::index`
-/// (`std_raises_at_caller`, #2324), or one without a default whose
-/// declaration tracks its caller, `Index::index`, as rustc's every impl of
-/// it does (#2350): the one question its parameters, its calls and its
-/// declaration ask.
+/// does; or one without a default whose declaration tracks its caller,
+/// `Index::index`, as rustc's every impl of it does (#2350): the one
+/// question its parameters, its calls and its declaration ask. Not a std
+/// method whose model raises at its caller, `Div::div`, `Clone::clone`,
+/// whose entry takes it where its impl tracks it and generic code's call
+/// gives it where such an impl may reach (`gives_location`, #2457).
 pub(crate) fn takes_location(
     tcx: TyCtxt<'_>,
     caller_locations: &IndexSet<rustc_span::def_id::DefId>,
     foreign: &crate::library::Foreign<'_, '_>,
     id: rustc_span::def_id::DefId,
 ) -> bool {
-    caller_locations.contains(&id)
-        || foreign.takes_location(id)
-        || crate::recognition::std_raises_at_caller(tcx, id)
-        || tracked_without_default(tcx, id)
+    caller_locations.contains(&id) || foreign.takes_location(id) || tracked_without_default(tcx, id)
 }
 
 /// Whether `id` is a trait's method without a default whose declaration
@@ -172,6 +168,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     // helper: delegates to its owner's answer (#2172)
     pub(crate) fn takes_caller_location(&self, id: rustc_span::def_id::DefId) -> bool {
         takes_location(self.tcx, self.krate.caller_locations, self.krate.foreign, id)
+    }
+
+    /// The location generic code's call of `id`, a method whose model raises
+    /// at its caller, gives its entry, where an instance whose impl tracks
+    /// it may reach (`Located::gives_location`, #2457): its caller's, or
+    /// `None`; of one given more after it (`location_followed`), `undefined`
+    /// in its place.
+    pub(crate) fn model_location(&self, (id, args): (DefId, ty::GenericArgsRef<'tcx>), span: Span) -> Option<Expr> {
+        if self
+            .krate
+            .located
+            .gives_location(self.tcx, self.frame.owner, (id, args))
+        {
+            return Some(self.caller_location(span));
+        }
+        crate::recognition::location_followed(self.tcx, id).then(Expr::js_undefined)
+    }
+
+    /// Whether an entry of `id` given `args`, a method whose model raises at
+    /// its caller, takes its caller's location: where its impl tracks it, or
+    /// where the call gives more after it (`location_followed`, #2457).
+    pub(crate) fn entry_takes_location(&self, id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        crate::recognition::model_raises_at_caller(self.tcx, id)
+            && (crate::recognition::location_followed(self.tcx, id)
+                || crate::recognition::impl_raises_at_caller(self.tcx, self.typing_env, id, args))
     }
 
     /// The location a call at `span` gives, or `Location::caller()` there

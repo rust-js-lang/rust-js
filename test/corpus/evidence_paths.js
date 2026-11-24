@@ -61,12 +61,15 @@ function optionGetterT(TClone) {
     },
     twice(option) {
       const x = optionGetterT_get(option, TClone);
-      return [TClone.clone(x), x];
+      return [TClone.clone(x, "test/corpus/evidence_paths.rs:79:12"), x];
     },
   }));
 }
 function optionGetterT_get(option, TClone) {
-  return TClone.clone($someValue($unwrap(option, "test/corpus/evidence_paths.rs:85:23")));
+  return TClone.clone(
+    $someValue($unwrap(option, "test/corpus/evidence_paths.rs:85:23")),
+    "test/corpus/evidence_paths.rs:85:32",
+  );
 }
 
 const $iDigits = new WeakMap();
@@ -97,7 +100,7 @@ function pointPositionedS_setX(point, x, SClone) {
   point.x = x;
 }
 function pointPositionedS_x(point, SClone) {
-  return SClone.clone(point.x);
+  return SClone.clone(point.x, "test/corpus/evidence_paths.rs:130:16");
 }
 
 const $pointMovableS = new WeakMap();

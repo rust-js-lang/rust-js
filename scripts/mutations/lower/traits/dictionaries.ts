@@ -908,4 +908,12 @@ export const mutations: Mutation[] = [
     replace: "                    true => self.iterator_dictionary_of(of, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_iterator_through_a_reference_bound.rs$"],
   },
+  {
+    name: "located-entry-untaken",
+    breaks: "a `RefCell`'s `Clone` entry takes no location, so it raises where its dictionary was made, though generic code's call gives it its own line (#2457)",
+    file: "crates/rust-js-lower/src/traits/dictionaries.rs",
+    find: "        if !self.entry_takes_location(method, args) {\n",
+    replace: "        if true {\n",
+    tests: ["test/binaries.test.ts", "-t", "dictionary"],
+  },
 ];

@@ -858,7 +858,10 @@ test("std trait impls are direct calls, and a clone copies only what changes", a
   // Hand-written: called where the type is known, a dictionary for a generic.
   expect(js).toContain("const b = trackedClone_clone(a);");
   expect(js).toContain("const both = twice(copy.tracked, trackedClone);");
-  expect(js).toContain("export function twice(x, TClone) {\n  return [TClone.clone(x), TClone.clone(x)];");
+  // A `pub` function's `T: Clone` may be a `RefCell`, whose clone raises
+  // at its caller: each call gives it where it's made (#2457).
+  expect(js).toContain("export function twice(x, TClone) {\n  return [\n    TClone.clone(x, \"");
+  expect(js).toContain('std_traits.rs:93:12"),');
   // Derived: written in place, copying only the `Vec` that's pushed to.
   expect(js).toContain("  const t = { ...s, tags: s.tags.slice() };");
   expect(js).toContain("  const dot = \"Dot\";");

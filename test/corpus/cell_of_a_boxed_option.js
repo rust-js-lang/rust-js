@@ -16,7 +16,10 @@ export function formatClone(IClone) {
 function formatClone_clone(format, IClone) {
   const inner = format.inner;
   format.inner = undefined;
-  const copy = inner == null ? inner : $some(IClone.clone($someValue(inner)));
+  const copy =
+    inner == null
+      ? inner
+      : $some(IClone.clone($someValue(inner), "test/corpus/cell_of_a_boxed_option.rs:14:26"));
   format.inner = inner;
   return { inner: copy };
 }

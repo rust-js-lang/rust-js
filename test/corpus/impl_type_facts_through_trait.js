@@ -30,7 +30,9 @@ export function stackClone(TClone, TSize) {
 }
 function stackClone_clone(stack, TClone, TSize) {
   return stackFromIteratorT_fromIter(
-    stack.items.values().map((item) => TClone.clone(item)),
+    stack.items
+      .values()
+      .map((item) => TClone.clone(item, "test/corpus/impl_type_facts_through_trait.rs:40:27")),
     TSize,
   );
 }
@@ -61,7 +63,12 @@ function fill(stack, item, TSize) {
 
 function stackFromTSlice_from(items, TClone, TSize) {
   const sized = TSize === 0 ? 0 : items.length;
-  return { items: items.map((item) => TClone.clone(item)), sized };
+  return {
+    items: items.map((item) =>
+      TClone.clone(item, "test/corpus/impl_type_facts_through_trait.rs:70:30"),
+    ),
+    sized,
+  };
 }
 
 const $stackFromStr = new Map();

@@ -21,6 +21,9 @@ pub struct Ground<'a, 'tcx> {
     /// The types the crate clones (ADRs 0522, 0525), in place or in
     /// generic code.
     pub cloned: Cloned<'tcx>,
+    /// Which of generic code's calls through a dictionary give its entry
+    /// their location (#2457).
+    pub located: super::located_calls::Located<'tcx>,
     /// Whether the crate asks a `Vec`'s capacity, which is kept as std grows
     /// it (ADR 0419).
     pub(super) asks_capacity: bool,
@@ -130,6 +133,7 @@ pub fn of<'a, 'tcx>(
     // What each body names, of which the instances' callers are found.
     let names = crate::call_graph::Names::of(tcx, &all_bodies);
     let cloned = clones::cloned_types(tcx, (&all_bodies, &names), library);
+    let located = super::located_calls::Located::new(tcx, (&all_bodies, &names));
     let recognition = Recognition {
         tcx,
         typing_env: ty::TypingEnv::fully_monomorphized(),
@@ -147,6 +151,7 @@ pub fn of<'a, 'tcx>(
         foreign,
         trait_impls,
         cloned,
+        located,
         asks_capacity,
         names,
     }

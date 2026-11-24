@@ -182,7 +182,7 @@ function larger(a, b, TOrd) {
 }
 
 function clamped(x, low, high, TOrd) {
-  return TOrd.clamp(x, low, high, "test/corpus/generic_compare_by_impls.rs:146:7");
+  return TOrd.clamp(x, low, high);
 }
 
 function heaped(items, TOrd) {

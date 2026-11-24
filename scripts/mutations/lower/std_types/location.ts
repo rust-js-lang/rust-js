@@ -28,19 +28,11 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^track_caller.rs$"],
   },
   {
-    name: "std-tracked-method-untaken",
-    breaks: "a trait method std's impls of which raise their panic at their caller, `Div::div`, `Ord::clamp`, doesn't take the location, so generic code's `a / b` panics `<unknown>`, and a library's generic `clamp` given its app's dictionary loses its drop (#2324)",
-    file: "crates/rust-js-lower/src/std_types/location.rs",
-    find: " || crate::recognition::std_raises_at_caller(tcx, id)\n",
-    replace: "\n",
-    tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
-  },
-  {
     name: "tracked-declaration-untaken",
     breaks: "a trait's tracked method without a default takes the location only where the crate's own impls read it, so a library's impl that reads it, called through an app's generic code, is given none (#2350)",
     file: "crates/rust-js-lower/src/std_types/location.rs",
-    find: "        || tracked_without_default(tcx, id)\n",
-    replace: "",
+    find: "    caller_locations.contains(&id) || foreign.takes_location(id) || tracked_without_default(tcx, id)\n",
+    replace: "    caller_locations.contains(&id) || foreign.takes_location(id)\n",
     tests: ["test/crates.test.ts", "-t", "two crates: track_caller$"],
   },
   {

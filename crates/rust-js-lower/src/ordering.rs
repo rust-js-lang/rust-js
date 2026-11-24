@@ -946,9 +946,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Where its panic is raised, of a method whose impls track their
             // caller, `clamp`'s, after its arguments, before the drop (ADR
             // 0427, #2324).
-            if self.takes_caller_location(id) {
-                args.push(self.caller_location(span));
-            }
+            args.extend(self.model_location((id, tr.args), span));
             args.extend(self.std_drop_function(ty, span)?);
             return Ok(Some(Expr::call(Expr::member(dictionary, name), args)));
         }

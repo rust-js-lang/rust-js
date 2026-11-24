@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function helper(u, UClone, dropU) {
-  const _copy = UClone.clone(u);
+  const _copy = UClone.clone(u, "test/corpus/drop_impl_indirect.rs:13:19");
   dropU?.(_copy);
 }
 

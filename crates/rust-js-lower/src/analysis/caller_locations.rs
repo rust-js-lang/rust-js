@@ -84,6 +84,13 @@ pub(super) fn caller_location_fns<'tcx>(
             if tracks_caller(tcx, resolved) && !compiled.contains(&resolved) && foreign.item(resolved).is_none() {
                 taking.insert(owner);
             }
+            // A std method whose model raises at its caller, called through a
+            // dictionary, `a / b` of a `T: Div`, whose impl may track its
+            // caller: where this one was called, as rustc's instance of it
+            // does (#2457).
+            if crate::recognition::model_raises_at_caller(tcx, resolved) {
+                taking.insert(owner);
+            }
             calls.push((owner, resolved));
         }
     }

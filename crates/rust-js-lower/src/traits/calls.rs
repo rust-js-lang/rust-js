@@ -465,7 +465,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let method = (self.tcx.associated_items(tr.def_id).in_definition_order())
             .find(|item| item.is_fn())
             .expect("an operator trait has a method");
-        match self.takes_caller_location(method.def_id) {
+        match self.entry_takes_location(method.def_id, tr.args) {
             true => {
                 let location = self.fresh(Role::Location);
                 params.push(location.clone().into());
@@ -1024,7 +1024,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.check_drops_given(id, generic_args, span)?;
         let (mut values, mut drops) = (Vec::new(), Vec::new());
         let mut location = location;
-        for slot in self.own_slots_through(id, generic_args) {
+        let slots = self.own_slots_through(id, generic_args);
+        // Of a std method whose model raises at its caller, `Clone::clone`
+        // of a `RefCell`, the location its entry is given where an impl that
+        // tracks it may reach, first, its call's last: one given more after
+        // it must say so (`location_followed`), or an entry that takes none
+        // would read the rest out of place (#2457).
+        if crate::recognition::model_raises_at_caller(self.tcx, id) {
+            if !slots.is_empty() && !crate::recognition::location_followed(self.tcx, id) {
+                return Err(self.unsupported(
+                    span,
+                    "a std method whose model raises at its caller, given more after its location than `location_followed` names (#2457)",
+                ));
+            }
+            values.extend(self.model_location((id, generic_args), span));
+        }
+        for slot in slots {
             // One a library relayed past how deep a type may nest, which its
             // manifest can't say: refused, as a caller that would have to
             // give it is (ADR 0145, amended, #1713).

@@ -495,15 +495,17 @@ pub(crate) fn value_operator(tcx: TyCtxt<'_>, id: DefId) -> Option<Result<BinOp,
     .find_map(|(item, op)| tcx.is_lang_item(id, item).then_some(op))
 }
 
-/// Whether `id`, a trait method, is one whose std impls track their caller
-/// and whose model here raises a panic there, as rustc's monomorphized call
-/// of the impl does: integers' `Div::div` and `Rem::rem`, and their `/=`
-/// and `%=`, of a zero or `MIN / -1`; integers' `Ord::clamp`, of `min >
-/// max`; `SliceIndex::index` and `index_mut`, of an index out of bounds.
-/// Its dictionary's entries take the caller's location, and generic code's
-/// calls give it (ADR 0427, #2324); a method whose model raises nothing,
-/// `Add::add` that wraps, takes none.
-pub(crate) fn std_raises_at_caller(tcx: TyCtxt<'_>, id: DefId) -> bool {
+/// Whether `id`, a trait method, is one whose model here raises a panic at
+/// its caller where std's impl tracks it (`impl_raises_at_caller`): integers'
+/// `Div::div` and `Rem::rem`, and their `/=` and `%=`, of a zero or `MIN /
+/// -1`; integers' and a `char`'s `Ord::clamp`, of `min > max`; a `RefCell`'s
+/// `Clone::clone`, of a cell mutably borrowed, whose `clone_from` generic
+/// code runs as `*dest = source.clone()`, its clone's (#2457). rust-js's half of the
+/// rule, which of its models raise there; whether std's impl tracks its
+/// caller is rustc's, its attribute. A method whose model raises nothing,
+/// `Add::add`, which wraps as a release build does (ADR 0011), though std's
+/// impl tracks its caller, isn't one (ADR 0427, #2324).
+pub(crate) fn model_raises_at_caller(tcx: TyCtxt<'_>, id: DefId) -> bool {
     let Some(trait_) = tcx.trait_of_assoc(id) else {
         return false;
     };
@@ -513,7 +515,129 @@ pub(crate) fn std_raises_at_caller(tcx: TyCtxt<'_>, id: DefId) -> bool {
     }
     let name = tcx.item_name(id);
     (trait_ == std_item(tcx, StdItem::Ord) && name.as_str() == "clamp")
-        || (trait_ == std_item(tcx, StdItem::SliceIndex) && matches!(name.as_str(), "index" | "index_mut"))
+        || (tcx.is_lang_item(trait_, LangItem::Clone) && name.as_str() == "clone")
+}
+
+/// Whether generic code's call of `id`, a method whose model raises at its
+/// caller, gives more after the location: `Ord::clamp`'s drop of what it
+/// doesn't give back (#962). Each entry of one then takes the location's
+/// place, given `undefined` where no instance that tracks reaches; of
+/// another, the location is the call's last, which an entry that doesn't
+/// read it doesn't take (#2457). A model method given more after it that
+/// this doesn't name is refused where it's called, never given an argument
+/// in another's place.
+pub(crate) fn location_followed(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.trait_of_assoc(id) == Some(std_item(tcx, StdItem::Ord)) && tcx.item_name(id).as_str() == "clamp"
+}
+
+/// Whether the impl of `id`, a trait method whose model raises at its caller
+/// (`model_raises_at_caller`), that rustc resolves for `args` tracks its
+/// caller where `id`'s declaration doesn't, rustc's own attribute on it: a
+/// `RefCell`'s `clone`, an integer's `div`; never a `Vec`'s `clone`. Its
+/// entry takes its caller's location, and generic code's call gives it where
+/// such an instance may reach (`LocatedCalls`, #2457).
+pub(crate) fn impl_raises_at_caller<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> bool {
+    model_raises_at_caller(tcx, id)
+        && !super::tracks_caller(tcx, id)
+        && matches!(crate::traits::resolve(tcx, typing_env, id, args),
+            Ok(Some(instance)) if instance.def_id() != id && super::tracks_caller(tcx, instance.def_id()))
+}
+
+/// The std impls of `method`'s trait whose own `method` tracks its caller,
+/// rustc's attribute on each, where the declaration doesn't: `RefCell`'s
+/// `Clone`, the integers' `Div`; found once each (#2457).
+fn tracking_impls(tcx: TyCtxt<'_>, method: DefId) -> std::rc::Rc<Vec<DefId>> {
+    let caches = crate::session::caches(tcx);
+    if let Some(found) = caches.tracking_impls.get(&method) {
+        return found;
+    }
+    let found = match tcx.trait_of_assoc(method) {
+        Some(trait_) if !super::tracks_caller(tcx, method) => (tcx.all_impls(trait_))
+            .filter(|&imp| super::is_std_crate(tcx, imp))
+            .filter(|&imp| {
+                (tcx.impl_item_implementor_ids(imp).get(&method)).is_some_and(|&own| super::tracks_caller(tcx, own))
+            })
+            .collect(),
+        _ => Vec::new(),
+    };
+    caches.tracking_impls.keep(method, std::rc::Rc::new(found))
+}
+
+/// Whether a std impl of `callee` that tracks its caller (`tracking_impls`)
+/// may be the one `owner`'s call of it given `args` reaches, whatever its
+/// callers give: one whose type the call's `Self` may be, `owner`'s type
+/// parameters unknowns, where every bound `owner` declares may hold of
+/// them. So a `T: Iterator + Clone` is never a `RefCell`, which no
+/// `Iterator` impl makes one, and its clone gives no location, whoever
+/// calls it (#2457). Sound across crates: no crate downstream may write an
+/// impl of a trait for a `RefCell` of its own type, which isn't local to it,
+/// so `owner`'s environment sees every impl that may make one hold; but of
+/// a bound whose other arguments are unknowns too, `T: Into<U>`, one may,
+/// an impl of `Into` of its own type for a cell of a `u8`, so it may hold.
+pub(crate) fn tracking_impl_may_be<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    owner: DefId,
+    callee: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> bool {
+    use rustc_middle::ty::TypeVisitableExt;
+    use rustc_trait_selection::infer::DefineOpaqueTypes;
+    use rustc_trait_selection::infer::TyCtxtInferExt;
+    use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt;
+    let impls = tracking_impls(tcx, callee);
+    if impls.is_empty() {
+        return false;
+    }
+    let infcx = tcx.infer_ctxt().build(ty::TypingMode::non_body_analysis());
+    // Each of `owner`'s parameters an unknown, in its place by its index.
+    let unknowns = infcx.fresh_args_for_item(rustc_span::DUMMY_SP, owner);
+    let unknown = |of: ty::Ty<'tcx>| {
+        ty::EarlyBinder::bind(tcx, of)
+            .instantiate(tcx, unknowns)
+            .skip_normalization()
+    };
+    let called = unknown(args.type_at(0));
+    let bounds: Vec<ty::TraitRef<'tcx>> = (tcx.param_env(owner).caller_bounds())
+        .filter_map(|clause| clause.as_trait_clause()?.no_bound_vars())
+        .map(|bound| {
+            let tr = bound.trait_ref;
+            ty::TraitRef::new(
+                tcx,
+                tr.def_id,
+                tr.args.iter().map(|arg| match arg.as_type() {
+                    Some(of) => unknown(of).into(),
+                    None => arg,
+                }),
+            )
+        })
+        .collect();
+    let cause = rustc_trait_selection::traits::ObligationCause::dummy();
+    impls.iter().any(|&imp| {
+        infcx.probe(|_| {
+            let imp_args = infcx.fresh_args_for_item(rustc_span::DUMMY_SP, imp);
+            let own = tcx.type_of(imp).instantiate(tcx, imp_args).skip_normalization();
+            if (infcx.at(&cause, ty::ParamEnv::empty()))
+                .eq(DefineOpaqueTypes::No, called, own)
+                .is_err()
+            {
+                return false;
+            }
+            bounds.iter().all(|&bound| {
+                let open = bound.args.iter().skip(1).any(|arg| arg.has_infer());
+                open || infcx.predicate_may_hold(&rustc_trait_selection::traits::Obligation::new(
+                    tcx,
+                    cause.clone(),
+                    ty::ParamEnv::empty(),
+                    bound,
+                ))
+            })
+        })
+    })
 }
 
 pub(crate) fn implementable(tcx: TyCtxt<'_>, foreign: &crate::library::Foreign<'_, '_>, id: DefId) -> bool {

@@ -23,9 +23,9 @@ function wrapPeek(TClone, dropT) {
   }));
 }
 function wrapPeek_peek(wrap, TClone, dropT) {
-  const value = TClone.clone(wrap[0]);
+  const value = TClone.clone(wrap[0], "test/corpus/drop_impl_param_call.rs:14:21");
   dropT?.(value);
-  discard(TClone.clone(wrap[0]), dropT);
+  discard(TClone.clone(wrap[0], "test/corpus/drop_impl_param_call.rs:15:24"), dropT);
   return 1;
 }
 

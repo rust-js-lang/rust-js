@@ -475,10 +475,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // std's impls track their caller: where generic code indexes,
                 // its panic's place (ADR 0427, #2324).
                 let mut given = vec![index, items];
-                if crate::recognition::std_raises_at_caller(
-                    self.tcx,
-                    crate::recognition::trait_method(self.tcx, slice_index, method),
-                ) {
+                // Its declaration tracks its caller, as rustc's every impl of
+                // it does (`tracked_without_default`, #2350).
+                let index_fn = crate::recognition::trait_method(self.tcx, slice_index, method);
+                if self.takes_caller_location(index_fn) {
                     given.push(self.caller_location(span));
                 }
                 let method = crate::bindings::trait_method_name(self.tcx, slice_index, method);

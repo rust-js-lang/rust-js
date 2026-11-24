@@ -24,6 +24,32 @@ pub(super) fn always_given(tcx: TyCtxt<'_>, tr: ty::TraitRef<'_>) -> bool {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `entry`, a std dictionary's entry of `trait_id`'s method `name` given
+    /// `args`, made where its impl's model raises at its caller and the impl
+    /// tracks it (`entry_takes_location`): taking the caller's location
+    /// after its arguments, which it raises its panic at, as generic code's
+    /// call gives it (#2457); else as it's made.
+    fn located_entry<T: Into<Option<Expr>>>(
+        &mut self,
+        (trait_id, name, args): (DefId, &str, ty::GenericArgsRef<'tcx>),
+        entry: impl FnOnce(&mut Self) -> R<T>,
+    ) -> R<Option<Expr>> {
+        let method = crate::recognition::trait_method(self.tcx, trait_id, name);
+        if !self.entry_takes_location(method, args) {
+            return entry(self).map(Into::into);
+        }
+        let location = self.fresh(Role::Location);
+        let at = Expr::var(&location);
+        let made: Option<Expr> = Expr::raised_at(at.clone(), || self.with_given_location(at, entry))?.into();
+        Ok(made.map(|made| match made.kind {
+            js::ExprKind::Arrow(mut params, body) => {
+                params.push(location.into());
+                Expr::arrow(params, body)
+            }
+            _ => made,
+        }))
+    }
+
     /// A std collection's `Extend`, `{ extend(collection, items) }`, what
     /// generic code calls, `c.extend(items)` of a `C: Extend<A>` (ADR 0445):
     /// what a known one's call is, of its items as they're given, any
@@ -668,7 +694,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )]));
             }
             if clone {
-                let clone = self.clone_fn("value", ty, span)?;
+                // Each where its impl tracks its caller, a `RefCell`'s, given
+                // generic code's location after its arguments, where its
+                // panic is raised (`entry_takes_location`, #2457).
+                let clone = (self.located_entry((tr.def_id, "clone", tr.args), |cx| cx.clone_fn("value", ty, span))?)
+                    .expect("a clone's entry is made");
                 let mut props = vec![Prop::Field("clone".into(), clone)];
                 // And its `clone_from`, where std's is its own, which generic
                 // code asks first (#928).

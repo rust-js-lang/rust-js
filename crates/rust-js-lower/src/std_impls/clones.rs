@@ -203,7 +203,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_unknown(ty) {
             let tr = ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]);
             if let Some(dictionary) = self.evidence_for(tr) {
-                return Ok(Expr::call(Expr::member(dictionary, "clone"), vec![place]));
+                return Ok(self.clone_through(dictionary, place, tr, span));
             }
             // A `T: Copy` alone: its dictionary's supertrait `Clone`'s where
             // its caller gives it one, else its copy (ADR 0049; ADR 0623,
@@ -217,10 +217,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A bound on the type itself, `Peekable<I>: Clone`'s, whose dictionary
         // the caller gives (ADR 0049): its `clone`.
+        let tr = ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]);
         if ty.has_param()
-            && let Some(dictionary) = self.evidence_for(ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]))
+            && let Some(dictionary) = self.evidence_for(tr)
         {
-            return Ok(Expr::call(Expr::member(dictionary, "clone"), vec![place]));
+            return Ok(self.clone_through(dictionary, place, tr, span));
         }
         // A constant, like `"Dot"`, is a value no one else holds.
         if place.is_constant() {
@@ -819,6 +820,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `(base) => <clone of base>`, its parameter a name not spelled yet
     /// (`FnCx::unspelled`, #1681 change 3, M2).
+    /// A clone of `place` through `dictionary`, its `Clone`'s, `tr`: given
+    /// the caller's location after it where an impl whose clone raises at its
+    /// caller may reach, a `RefCell`'s (`model_location`, #2457).
+    fn clone_through(&mut self, dictionary: Expr, place: Expr, tr: ty::TraitRef<'tcx>, span: Span) -> Expr {
+        let clone = self.tcx.require_lang_item(LangItem::CloneFn, span);
+        let mut given = vec![place];
+        given.extend(self.model_location((clone, tr.args), span));
+        Expr::call(Expr::member(dictionary, "clone"), given)
+    }
+
     pub fn clone_fn(&mut self, base: &str, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let name = self.unspelled(base);
         // Its body's own names apart from its parameter's word, so the

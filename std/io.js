@@ -432,7 +432,13 @@ export function bytesIterator_next(bytes, RRead, dropR) {
 }
 
 export function cursorClone_clone(cursor, TClone, dropT) {
-  return { inner: TClone.clone(cursor.inner), pos: cursor.pos };
+  return {
+    inner: TClone.clone(
+      cursor.inner,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/io/cursor.rs:288:36",
+    ),
+    pos: cursor.pos,
+  };
 }
 
 export function cursorClone_cloneFrom(cursor, other, TClone, dropT) {
@@ -442,7 +448,10 @@ export function cursorClone_cloneFrom(cursor, other, TClone, dropT) {
     cursor.inner = to.value;
   } else {
     const old = $apart(cursor.inner);
-    cursor.inner = TClone.clone(other.inner);
+    cursor.inner = TClone.clone(
+      other.inner,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/io/cursor.rs:293:20",
+    );
     dropT?.(old);
   }
   cursor.pos = other.pos;

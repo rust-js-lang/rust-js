@@ -119,7 +119,10 @@ export const Cycle = {
   new(iter, IClone, dropI) {
     let orig;
     try {
-      orig = IClone.clone(iter);
+      orig = IClone.clone(
+        iter,
+        "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cycle.rs:23:28",
+      );
     } catch (error) {
       $cleanup(() => {
         dropI?.(iter);
@@ -2368,7 +2371,17 @@ export function fuseFuseImplIFusedIterator_nthBack(
 
 export function fuseClone_clone(fuse, IClone) {
   return $stdIterator(
-    { iter: fuse.iter == null ? undefined : $some(IClone.clone($someValue(fuse.iter))) },
+    {
+      iter:
+        fuse.iter == null
+          ? undefined
+          : $some(
+              IClone.clone(
+                $someValue(fuse.iter),
+                "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31",
+              ),
+            ),
+    },
     fuse.$steps,
     fuse.$knows,
   );
@@ -2655,7 +2668,16 @@ export function revExactSizeIterator_len(rev, IExactSizeIterator, dropI, dropIIt
 }
 
 export function revClone_clone(rev, TClone) {
-  return $stdIterator({ iter: TClone.clone(rev.iter) }, rev.$steps, rev.$knows);
+  return $stdIterator(
+    {
+      iter: TClone.clone(
+        rev.iter,
+        "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/rev.rs:12:10",
+      ),
+    },
+    rev.$steps,
+    rev.$knows,
+  );
 }
 
 export function revDebug_fmt(rev, options, TDebug) {
@@ -3024,7 +3046,13 @@ export function enumerateExactSizeIterator_len(enumerate, IExactSizeIterator, dr
 
 export function enumerateClone_clone(enumerate, IClone, dropI) {
   return $stdIterator(
-    { iter: IClone.clone(enumerate.iter), count$: enumerate.count$ },
+    {
+      iter: IClone.clone(
+        enumerate.iter,
+        "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/enumerate.rs:14:10",
+      ),
+      count$: enumerate.count$,
+    },
     enumerate.$steps,
     enumerate.$knows,
   );
@@ -3348,10 +3376,23 @@ export function mapExactSizeIterator_len(map, IExactSizeIterator, dropB, dropI, 
 }
 
 export function mapClone_clone(map, IClone, FClone, dropI, dropF) {
-  const value = IClone.clone(map.iter);
+  const value = IClone.clone(
+    map.iter,
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/map.rs:60:10",
+  );
   let result;
   try {
-    result = $stdIterator({ iter: value, f: FClone.clone(map.f) }, map.$steps, map.$knows);
+    result = $stdIterator(
+      {
+        iter: value,
+        f: FClone.clone(
+          map.f,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/map.rs:60:10",
+        ),
+      },
+      map.$steps,
+      map.$knows,
+    );
   } catch (error) {
     $cleanup(() => {
       dropI?.(value);
@@ -3738,11 +3779,20 @@ export function filterDoubleEndedIterator_tryRfold(
 }
 
 export function filterClone_clone(filter, IClone, PClone, dropI, dropP) {
-  const value = IClone.clone(filter.iter);
+  const value = IClone.clone(
+    filter.iter,
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/filter.rs:20:10",
+  );
   let result;
   try {
     result = $stdIterator(
-      { iter: value, predicate: PClone.clone(filter.predicate) },
+      {
+        iter: value,
+        predicate: PClone.clone(
+          filter.predicate,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/filter.rs:20:10",
+        ),
+      },
       filter.$steps,
       filter.$knows,
     );
@@ -4043,7 +4093,16 @@ export function copiedExactSizeIterator_len(copied, IExactSizeIterator, TCopy, d
 }
 
 export function copiedClone_clone(copied, IClone) {
-  return $stdIterator({ it: IClone.clone(copied.it) }, copied.$steps, copied.$knows);
+  return $stdIterator(
+    {
+      it: IClone.clone(
+        copied.it,
+        "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/copied.rs:18:10",
+      ),
+    },
+    copied.$steps,
+    copied.$knows,
+  );
 }
 
 export function copiedDebug_fmt(copied, options, IDebug) {
@@ -4070,7 +4129,12 @@ export function clonedIterator_next(cloned, IIterator = { next: $next }, TClone,
   if (value == null) {
     return;
   }
-  return $some(TClone.clone($someValue(value)));
+  return $some(
+    TClone.clone(
+      $someValue(value),
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5",
+    ),
+  );
 }
 
 export function clonedIterator___iteratorGetUnchecked(
@@ -4088,6 +4152,7 @@ export function clonedIterator___iteratorGetUnchecked(
       IIterator,
       dropI,
     ),
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:70:55",
   );
 }
 
@@ -4109,7 +4174,13 @@ export function clonedIterator_fold(
   let tmp$1 = true;
   let tmp;
   try {
-    tmp = iterator_map(cloned.it, (arg0) => TClone.clone(arg0), IIterator, dropI, dropT);
+    tmp = iterator_map(
+      cloned.it,
+      (arg0) => TClone.clone(arg0, "std/lib.rs:1:1"),
+      IIterator,
+      dropI,
+      dropT,
+    );
     tmp$1 = false;
   } catch (error) {
     $cleanup(() => {
@@ -4121,7 +4192,7 @@ export function clonedIterator_fold(
     throw error;
   }
   const iter = tmp.iter;
-  const captured = (arg0) => TClone.clone(arg0);
+  const captured = (arg0) => TClone.clone(arg0, "std/lib.rs:1:1");
   const value = $dropping(
     (acc, elt) => {
       let tmp = true;
@@ -4220,7 +4291,12 @@ export function clonedDoubleEndedIterator_nextBack(
   if (value == null) {
     return;
   }
-  return $some(TClone.clone($someValue(value)));
+  return $some(
+    TClone.clone(
+      $someValue(value),
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5",
+    ),
+  );
 }
 
 export function clonedDoubleEndedIterator_rfold(
@@ -4238,7 +4314,13 @@ export function clonedDoubleEndedIterator_rfold(
   let tmp$1 = true;
   let tmp;
   try {
-    tmp = iterator_map(cloned.it, (arg0) => TClone.clone(arg0), IIterator, dropI, dropT);
+    tmp = iterator_map(
+      cloned.it,
+      (arg0) => TClone.clone(arg0, "std/lib.rs:1:1"),
+      IIterator,
+      dropI,
+      dropT,
+    );
     tmp$1 = false;
   } catch (error) {
     $cleanup(() => {
@@ -4250,7 +4332,7 @@ export function clonedDoubleEndedIterator_rfold(
     throw error;
   }
   const iter = tmp.iter;
-  const captured = (arg0) => TClone.clone(arg0);
+  const captured = (arg0) => TClone.clone(arg0, "std/lib.rs:1:1");
   const value = $dropping(
     (acc, elt) => {
       let tmp = true;
@@ -4351,7 +4433,16 @@ export function clonedExactSizeIterator_len(cloned, IExactSizeIterator, TClone, 
 }
 
 export function clonedClone_clone(cloned, IClone) {
-  return $stdIterator({ it: IClone.clone(cloned.it) }, cloned.$steps, cloned.$knows);
+  return $stdIterator(
+    {
+      it: IClone.clone(
+        cloned.it,
+        "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:17:10",
+      ),
+    },
+    cloned.$steps,
+    cloned.$knows,
+  );
 }
 
 export function clonedDebug_fmt(cloned, options, IDebug) {
@@ -4666,11 +4757,20 @@ export function filterMapDoubleEndedIterator_tryRfold(
 }
 
 export function filterMapClone_clone(filterMap, IClone, FClone, dropI, dropF) {
-  const value = IClone.clone(filterMap.iter);
+  const value = IClone.clone(
+    filterMap.iter,
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/filter_map.rs:17:10",
+  );
   let result;
   try {
     result = $stdIterator(
-      { iter: value, f: FClone.clone(filterMap.f) },
+      {
+        iter: value,
+        f: FClone.clone(
+          filterMap.f,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/filter_map.rs:17:10",
+        ),
+      },
       filterMap.$steps,
       filterMap.$knows,
     );
@@ -4864,11 +4964,21 @@ export function takeWhileIterator_fold(
 }
 
 export function takeWhileClone_clone(takeWhile, IClone, PClone, dropI, dropP) {
-  const value = IClone.clone(takeWhile.iter);
+  const value = IClone.clone(
+    takeWhile.iter,
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/take_while.rs:16:10",
+  );
   let result;
   try {
     result = $stdIterator(
-      { iter: value, flag: takeWhile.flag, predicate: PClone.clone(takeWhile.predicate) },
+      {
+        iter: value,
+        flag: takeWhile.flag,
+        predicate: PClone.clone(
+          takeWhile.predicate,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/take_while.rs:16:10",
+        ),
+      },
       takeWhile.$steps,
       takeWhile.$knows,
     );
@@ -5145,11 +5255,21 @@ export function skipWhileIterator_tryFold(
 }
 
 export function skipWhileClone_clone(skipWhile, IClone, PClone, dropI, dropP) {
-  const value = IClone.clone(skipWhile.iter);
+  const value = IClone.clone(
+    skipWhile.iter,
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/skip_while.rs:16:10",
+  );
   let result;
   try {
     result = $stdIterator(
-      { iter: value, flag: skipWhile.flag, predicate: PClone.clone(skipWhile.predicate) },
+      {
+        iter: value,
+        flag: skipWhile.flag,
+        predicate: PClone.clone(
+          skipWhile.predicate,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/skip_while.rs:16:10",
+        ),
+      },
       skipWhile.$steps,
       skipWhile.$knows,
     );
@@ -5311,11 +5431,20 @@ export function mapWhileIterator_fold(
 }
 
 export function mapWhileClone_clone(mapWhile, IClone, PClone, dropI, dropP) {
-  const value = IClone.clone(mapWhile.iter);
+  const value = IClone.clone(
+    mapWhile.iter,
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/map_while.rs:16:10",
+  );
   let result;
   try {
     result = $stdIterator(
-      { iter: value, predicate: PClone.clone(mapWhile.predicate) },
+      {
+        iter: value,
+        predicate: PClone.clone(
+          mapWhile.predicate,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/map_while.rs:16:10",
+        ),
+      },
       mapWhile.$steps,
       mapWhile.$knows,
     );
@@ -5525,10 +5654,16 @@ export function scanIterator_fold(
 }
 
 export function scanClone_clone(scan, IClone, StClone, FClone, dropI, dropSt, dropF) {
-  const value = IClone.clone(scan.iter);
+  const value = IClone.clone(
+    scan.iter,
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/scan.rs:16:10",
+  );
   let tmp;
   try {
-    tmp = FClone.clone(scan.f);
+    tmp = FClone.clone(
+      scan.f,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/scan.rs:16:10",
+    );
   } catch (error) {
     $cleanup(() => {
       dropI?.(value);
@@ -5538,7 +5673,14 @@ export function scanClone_clone(scan, IClone, StClone, FClone, dropI, dropSt, dr
   let result;
   try {
     result = $stdIterator(
-      { iter: value, f: tmp, state: StClone.clone(scan.state) },
+      {
+        iter: value,
+        f: tmp,
+        state: StClone.clone(
+          scan.state,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/scan.rs:16:10",
+        ),
+      },
       scan.$steps,
       scan.$knows,
     );
@@ -5815,11 +5957,20 @@ export function inspectExactSizeIterator_len(inspect, IExactSizeIterator, dropI,
 }
 
 export function inspectClone_clone(inspect, IClone, FClone, dropI, dropF) {
-  const value = IClone.clone(inspect.iter);
+  const value = IClone.clone(
+    inspect.iter,
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/inspect.rs:17:10",
+  );
   let result;
   try {
     result = $stdIterator(
-      { iter: value, f: FClone.clone(inspect.f) },
+      {
+        iter: value,
+        f: FClone.clone(
+          inspect.f,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/inspect.rs:17:10",
+        ),
+      },
       inspect.$steps,
       inspect.$knows,
     );
@@ -7934,7 +8085,17 @@ export function skipDoubleEndedIterator_advanceBackBy(
 }
 
 export function skipClone_clone(skip, IClone, dropI) {
-  return $stdIterator({ iter: IClone.clone(skip.iter), n: skip.n }, skip.$steps, skip.$knows);
+  return $stdIterator(
+    {
+      iter: IClone.clone(
+        skip.iter,
+        "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/skip.rs:18:10",
+      ),
+      n: skip.n,
+    },
+    skip.$steps,
+    skip.$knows,
+  );
 }
 
 export function skipDebug_fmt(skip, options, IDebug) {
@@ -8141,7 +8302,12 @@ export function takeRepeatTDoubleEndedIterator_nextBack(take, TClone, dropT) {
     return;
   }
   take.n = (take.n - 1) >>> 0;
-  return $some(TClone.clone(take.iter.element));
+  return $some(
+    TClone.clone(
+      take.iter.element,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27",
+    ),
+  );
 }
 
 export function takeIDoubleEndedIterator_nthBack(
@@ -8531,7 +8697,17 @@ export function takeRepeatWithFExactSizeIterator_len(take, dropF, dropA) {
 }
 
 export function takeClone_clone(take, IClone, dropI) {
-  return $stdIterator({ iter: IClone.clone(take.iter), n: take.n }, take.$steps, take.$knows);
+  return $stdIterator(
+    {
+      iter: IClone.clone(
+        take.iter,
+        "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/take.rs:14:10",
+      ),
+      n: take.n,
+    },
+    take.$steps,
+    take.$knows,
+  );
 }
 
 export function takeIDebug_fmt(take, options, IDebug) {
@@ -8708,7 +8884,10 @@ export function stepByDoubleEndedIterator_tryRfold(
 export function stepByClone_clone(stepBy, IClone, dropI) {
   return $stdIterator(
     {
-      iter: IClone.clone(stepBy.iter),
+      iter: IClone.clone(
+        stepBy.iter,
+        "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/step_by.rs:16:10",
+      ),
       stepMinusOne: stepBy.stepMinusOne,
       firstTake: stepBy.firstTake,
     },
@@ -9517,13 +9696,26 @@ export function chainDoubleEndedIterator_advanceBackBy(
 }
 
 export function chainClone_clone(chain, AClone, BClone, dropA, dropB) {
-  const value = chain.a == null ? undefined : $some(AClone.clone($someValue(chain.a)));
+  const value =
+    chain.a == null
+      ? undefined
+      : $some(
+          AClone.clone(
+            $someValue(chain.a),
+            "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31",
+          ),
+        );
   let tmp;
   if (chain.b == null) {
     tmp = undefined;
   } else {
     try {
-      tmp = $some(BClone.clone($someValue(chain.b)));
+      tmp = $some(
+        BClone.clone(
+          $someValue(chain.b),
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31",
+        ),
+      );
     } catch (error) {
       $cleanup(() => {
         if (value !== undefined) {
@@ -9839,11 +10031,22 @@ export function zipIterator___iteratorGetUnchecked(
 }
 
 export function zipClone_clone(zip, AClone, BClone, dropA, dropB) {
-  const value = AClone.clone(zip.a);
+  const value = AClone.clone(
+    zip.a,
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/zip.rs:10:10",
+  );
   let result;
   try {
     result = $stdIterator(
-      { a: value, b: BClone.clone(zip.b), index: zip.index, len$: zip.len$ },
+      {
+        a: value,
+        b: BClone.clone(
+          zip.b,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/zip.rs:10:10",
+        ),
+        index: zip.index,
+        len$: zip.len$,
+      },
       zip.$steps,
       zip.$knows,
     );
@@ -9892,7 +10095,10 @@ export function repeatNIterator_next(repeatN, AClone, dropA) {
   const n = (count - 1) >>> 0;
   const decremented = n === 0 ? undefined : n;
   if (decremented != null) {
-    const tmp = AClone.clone(repeatN.inner.element);
+    const tmp = AClone.clone(
+      repeatN.inner.element,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37",
+    );
     repeatN.inner.count = decremented;
     return $some(tmp);
   }
@@ -10039,7 +10245,13 @@ export function repeatNClone_clone(repeatN, AClone) {
       inner:
         repeatN.inner == null
           ? undefined
-          : { count: repeatN.inner.count, element: AClone.clone(repeatN.inner.element) },
+          : {
+              count: repeatN.inner.count,
+              element: AClone.clone(
+                repeatN.inner.element,
+                "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:63:10",
+              ),
+            },
     },
     repeatN.$steps,
     repeatN.$knows,
@@ -10079,7 +10291,12 @@ export function repeatNDebug_fmt(repeatN, options, ADebug, dropA) {
 }
 
 export function repeatIterator_next(repeat, AClone, dropA) {
-  return $some(AClone.clone(repeat.element));
+  return $some(
+    AClone.clone(
+      repeat.element,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27",
+    ),
+  );
 }
 
 export function repeatIterator_sizeHint(repeat, AClone, dropA) {
@@ -10091,7 +10308,12 @@ export function repeatIterator_advanceBy(repeat, n, AClone, dropA) {
 }
 
 export function repeatIterator_nth(repeat, n, AClone, dropA) {
-  return $some(AClone.clone(repeat.element));
+  return $some(
+    AClone.clone(
+      repeat.element,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:101:27",
+    ),
+  );
 }
 
 export function repeatIterator_last(repeat, location, AClone, dropA) {
@@ -10117,7 +10339,12 @@ export function repeatIterator_count(repeat, location, AClone, dropA) {
 }
 
 export function repeatDoubleEndedIterator_nextBack(repeat, AClone, dropA) {
-  return $some(AClone.clone(repeat.element));
+  return $some(
+    AClone.clone(
+      repeat.element,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:129:27",
+    ),
+  );
 }
 
 export function repeatDoubleEndedIterator_advanceBackBy(repeat, n, AClone, dropA) {
@@ -10125,11 +10352,25 @@ export function repeatDoubleEndedIterator_advanceBackBy(repeat, n, AClone, dropA
 }
 
 export function repeatDoubleEndedIterator_nthBack(repeat, n, AClone, dropA) {
-  return $some(AClone.clone(repeat.element));
+  return $some(
+    AClone.clone(
+      repeat.element,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:142:27",
+    ),
+  );
 }
 
 export function repeatClone_clone(repeat, AClone) {
-  return $stdIterator({ element: AClone.clone(repeat.element) }, repeat.$steps, repeat.$knows);
+  return $stdIterator(
+    {
+      element: AClone.clone(
+        repeat.element,
+        "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:71:10",
+      ),
+    },
+    repeat.$steps,
+    repeat.$knows,
+  );
 }
 
 export function repeatADebug_fmt(repeat, options, ADebug) {
@@ -10433,11 +10674,20 @@ export function cycleIterator_advanceBy(
 }
 
 export function cycleClone_clone(cycle, IClone, dropI) {
-  const value = IClone.clone(cycle.orig);
+  const value = IClone.clone(
+    cycle.orig,
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cycle.rs:12:10",
+  );
   let result;
   try {
     result = $stdIterator(
-      { orig: value, iter: IClone.clone(cycle.iter) },
+      {
+        orig: value,
+        iter: IClone.clone(
+          cycle.iter,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cycle.rs:12:10",
+        ),
+      },
       cycle.$steps,
       cycle.$knows,
     );
@@ -10517,11 +10767,24 @@ export function successorsIterator_sizeHint(successors, dropT, dropF) {
 
 export function successorsClone_clone(successors, TClone, FClone, dropT, dropF) {
   const value =
-    successors.next$ == null ? undefined : $some(TClone.clone($someValue(successors.next$)));
+    successors.next$ == null
+      ? undefined
+      : $some(
+          TClone.clone(
+            $someValue(successors.next$),
+            "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31",
+          ),
+        );
   let result;
   try {
     result = $stdIterator(
-      { next$: value, succ: FClone.clone(successors.succ) },
+      {
+        next$: value,
+        succ: FClone.clone(
+          successors.succ,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/successors.rs:40:10",
+        ),
+      },
       successors.$steps,
       successors.$knows,
     );
