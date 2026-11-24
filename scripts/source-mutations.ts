@@ -4,7 +4,7 @@
 import {existsSync,mkdirSync,readFileSync,rmSync,symlinkSync,writeFileSync} from "node:fs";
 import {dirname,join,resolve} from "node:path";
 import {Worker} from "node:worker_threads";
-import {bytesOf} from "../tooling/bounded.js";
+import {bytesOf,freeBytes} from "../tooling/bounded.js";
 import { run, type Exit } from "../test/child";
 import type { Mutation } from "./mutations";
 import { underLoad } from "./timing";
@@ -19,10 +19,11 @@ const checkout = join(import.meta.dir, "..");
 const prepareTimeout = underLoad(1_000);
 
 /** Copy on a worker so one mutant's files cannot block another child's exit.
- * Existing build/test slots bound how many copies may be active. */
-export function makeSourceWorkspace(root: string, workspace: string, files: string[]): Promise<number> {
+ * Existing build/test slots bound how many copies may be active. `free`, the
+ * disk's free bytes it's made by, above the floor, a test's own (#2505). */
+export function makeSourceWorkspace(root: string, workspace: string, files: string[], free = freeBytes(root)): Promise<number> {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL("./source-workspace.ts", import.meta.url), {workerData:{root,workspace,files}});
+    const worker = new Worker(new URL("./source-workspace.ts", import.meta.url), {workerData:{root,workspace,files,free}});
     let bytes: number | undefined;
     worker.once("message", (value: number) => { bytes = value; });
     worker.once("error", reject);

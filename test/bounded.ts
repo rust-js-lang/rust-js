@@ -9,13 +9,44 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-
-/** The disk's floor of the loop's stores, DEVELOPMENT.md's: below it
- * they keep nothing. */
-export const floorBytes = 40 * 2 ** 30;
+import { volumeBytes } from "../tooling/bounded.js";
 
 /** The checkout this file is in. */
 export const checkout = resolve(import.meta.dir, "..");
+
+const GiB = 2 ** 30;
+
+/** What the loop keeps on a disk of `volume` bytes, sized by the disk as
+ * `machine()` sizes a run by its cores and memory (scripts/shard.ts), with
+ * no list of machines (#2505, #2483):
+ * - `floor`, below which the stores keep nothing: 8% of the volume, at
+ *   least 20 GiB, room for a check's own writes beside a build and macOS's
+ *   swap, and at most the 40 GiB it was on every disk, which no machine ran
+ *   out above. A fixed 40 GiB was 18% of a 256 GB Mac's 228 GiB volume, so
+ *   its stores kept nothing whenever it had under 40 free, their tests
+ *   failing on it (#2505);
+ * - `nativeCache`, what native programs' builds keep past their working set
+ *   (test/kept.ts), and `sccache`, sccache's cap (scripts/disk.ts): 4% of
+ *   the volume each, at least 8 GiB; the native builds' 10 GiB was the same
+ *   on a 228 GiB disk as on a 1 TB one, below the Mac mini's 11.5 GiB in
+ *   use (#2344);
+ * - `budget`, what the stores inside the checkouts keep together
+ *   (scripts/disk.ts): the native builds' cap and 30 GiB, the other stores'
+ *   caps and a build of the compiler with its fixtures, the 40 GiB it was
+ *   with the native builds at 10. */
+export function diskProfile(volume: number): { volume: number; floor: number; nativeCache: number; sccache: number; budget: number } {
+  const floor = Math.min(40 * GiB, Math.max(20 * GiB, 0.08 * volume));
+  const nativeCache = Math.max(8 * GiB, 0.04 * volume);
+  return { volume, floor, nativeCache, sccache: Math.max(8 * GiB, 0.04 * volume), budget: 30 * GiB + nativeCache };
+}
+
+/** This machine's: of the volume the checkout is on, where every store of
+ * the loop is, `.cache/`, the worktrees, the temp root and the tools'. */
+export const disk = diskProfile(volumeBytes(checkout));
+
+/** The disk's floor of the loop's stores, DEVELOPMENT.md's: below it
+ * they keep nothing (`diskProfile`). */
+export const floorBytes = disk.floor;
 
 /** The main checkout, whose `.git` is the common one: a worktree's own
  * `.git` is a file naming its directory there, whose `commondir` names the

@@ -170,6 +170,7 @@ export const osBranches: Record<string, string> = {
   "test/node-bindings.test.ts": "what the compiled program prints of its platform, as it runs",
   "scripts/strays.ts": "how processes left running are listed",
   "scripts/shard.ts": "how the machine's free memory is read",
+  "scripts/disk.ts": "where sccache keeps its cache and its config, which no compile reads",
   "scripts/package-compiler.ts": "the package's `os` and `cpu`",
   "scripts/package-distribution.ts": "the distribution's platform, a field of its manifest",
   "scripts/qualify.ts": "the host a qualification is of",

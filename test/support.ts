@@ -230,10 +230,10 @@ export function nativeKey(source: string, dir: string, flags: string[]): string 
  * built by rustc as a binary with `flags`, as a user builds it (#2447):
  * kept as `nativeBinary` keeps a program, by what it was built from, the
  * file's path and text among it. */
-export function nativeProgram(file: string, flags: string[], timeout = 120_000): NativeBuild {
+export function nativeProgram(file: string, flags: string[], timeout = 120_000, free?: () => number): NativeBuild {
   return keptNative(nativeProgramKey(file, flags), file, timeout, (into, depInfo) => [
     ["rustc", ...flags, file, "-o", join(into, "native"), ...(depInfo ? [`--emit=link,dep-info=${depInfo("native")}`] : [])],
-  ]);
+  ], free);
 }
 
 /** The key `nativeProgram` keeps the program `file` built with `flags` by. */
@@ -287,7 +287,7 @@ export type NativeBuild = { binary: string; built: boolean; kept: boolean } | { 
  * 290 compiles, 15–20 CPU-seconds of it (#882). A crate's `edition` is
  * its own, in place of `flags`' (#1681).
  */
-export function nativeCrates(crates: { name: string; file: string; uses: string[]; edition?: string }[], main: string, flags: string[], timeout = 120_000): NativeBuild {
+export function nativeCrates(crates: { name: string; file: string; uses: string[]; edition?: string }[], main: string, flags: string[], timeout = 120_000, free?: () => number): NativeBuild {
   const wrapper = join(contentDirectory("crates", main, ...crates.map((c) => c.file)), "main.rs");
   writeWhole(wrapper, main);
   const app = crates[crates.length - 1].name;
@@ -299,7 +299,7 @@ export function nativeCrates(crates: { name: string; file: string; uses: string[
     ]),
     ["rustc", ...flags, wrapper, "-o", join(into, "native"), "--extern", `${app}=${join(into, `lib${app}.rlib`)}`, "-L", `dependency=${into}`,
       ...(depInfo ? [`--emit=link,dep-info=${depInfo("native")}`] : [])],
-  ]);
+  ], free);
 }
 
 /** The key `nativeCrates` keeps a program of `crates` by, before what its
@@ -320,7 +320,7 @@ export function nativeCratesKey(crates: { name: string; file: string; uses: stri
  * read: a test file running beside this one never runs half of one. Below
  * the disk's floor, built in a fixture of the test's, used and not kept
  * (test/bounded.ts). */
-function keptNative(key: string, wrapper: string, timeout: number, steps: (into: string, depInfo?: (step: string) => string) => string[][]): NativeBuild {
+function keptNative(key: string, wrapper: string, timeout: number, steps: (into: string, depInfo?: (step: string) => string) => string[][], free?: () => number): NativeBuild {
   const program = join(nativeCache, key.slice(0, 32));
   mkdirSync(program, { recursive: true });
   for (const kept of readdirSync(program).filter((name) => !name.startsWith("."))) {
@@ -337,7 +337,7 @@ function keptNative(key: string, wrapper: string, timeout: number, steps: (into:
     }
     return undefined;
   };
-  if (!mayKeep(nativeCache)) {
+  if (!mayKeep(nativeCache, free)) {
     const unkept = fixture("native-unkept");
     const error = compile(unkept);
     return error === undefined ? { binary: join(unkept, "native"), built: true, kept: false } : { error };

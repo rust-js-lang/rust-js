@@ -8,6 +8,10 @@ import { join } from "node:path";
 import { fixture } from "./support";
 import { reached, shared } from "./verified-runs";
 
+// The disk a reach is kept on: room, whatever this one's, as what's kept is
+// the code's answer here, not the disk's (#2505).
+const roomy = () => Number.POSITIVE_INFINITY;
+
 const files = {
   "package.json": `{"name":"@rust-js/std","type":"module","sideEffects":false,"exports":{".":"./index.js"}}`,
   "index.js": `export * from "./a.js";\nexport * from "./b.js";\n`,
@@ -38,7 +42,7 @@ test("a std edit the JS can't run keeps its runs' key; one it can run, a module'
   const dir = fixture("std-reached");
   const entry = program(dir);
   const store = join(dir, "store");
-  const of = (edit?: (name: string, text: string) => string) => reached(entry, std(dir, edit), store);
+  const of = (edit?: (name: string, text: string) => string) => reached(entry, std(dir, edit), store, roomy);
   const base = await of();
   // Not run: a function nothing calls, and a comment.
   expect(await of((name, text) => (name === "a.js" ? text.replace("return 2;", "return 20;") : text))).toBe(base);
@@ -55,14 +59,14 @@ test("a kept reach is read again only while each file of the JS it bundled is as
   const entry = program(dir);
   const store = join(dir, "store");
   const given = std(dir);
-  const first = await reached(entry, given, store);
+  const first = await reached(entry, given, store, roomy);
   expect(readdirSync(store).filter((id) => existsSync(join(store, id, "reach.json"))).length).toBe(1);
-  expect(await reached(entry, given, store)).toBe(first);
+  expect(await reached(entry, given, store, roomy)).toBe(first);
   // The JS's other file changed, its entry the same: bundled again.
   writeFileSync(join(entry, "../more.js"), `export function more() {\n  return 50;\n}\n`);
-  const again = await reached(entry, given, store);
+  const again = await reached(entry, given, store, roomy);
   expect(again).not.toBe(first);
-  expect(again).toBe(await reached(entry, given, join(dir, "fresh")));
+  expect(again).toBe(await reached(entry, given, join(dir, "fresh"), roomy));
 });
 
 // The bundler keeps what code reaches by a name, a dictionary's or a

@@ -10,7 +10,7 @@ import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, renameSync,
 import { dirname, join } from "node:path";
 
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
-import { checkout, floorBytes, machineStore, retiredMachineStore } from "./bounded";
+import { checkout, disk, floorBytes, machineStore, retiredMachineStore } from "./bounded";
 import { checkoutTarget, target } from "./packages-of";
 
 const day = 24 * 60 * 60;
@@ -52,12 +52,13 @@ export const stdReach = target === checkoutTarget ? join(machineStore, "std-reac
  * programs, which a change to the compiler keeps, and the metamorphic
  * net's every rewrite of every case about 7 GB more, the machine's
  * (#1047), 11.5 GiB of them in use on the Mac mini, past the cap, which
- * evicted them for a 1,018 s re-warm (#2344); 8 MB of their wrappers, the
+ * evicted them for a 1,018 s re-warm (#2344), so their cap is the disk's
+ * (`diskProfile`: 4% of it, at least 8 GiB); 8 MB of their wrappers, the
  * checkout's whichever target the tests run in (#875); and the corpus's
  * verified runs, about 8 MB for each build of it, a week of builds about
  * 500 MB (#914), and the net's about 100 MB more. */
 export const keptStores = [
-  { dir: nativeCache, cap: 10 * 2 ** 30 },
+  { dir: nativeCache, cap: disk.nativeCache },
   { dir: join(checkoutTarget, "native-sources"), cap: 64 * 2 ** 20 },
   { dir: verifiedRuns, cap: 512 * 2 ** 20 },
   { dir: stdReach, cap: 64 * 2 ** 20 },

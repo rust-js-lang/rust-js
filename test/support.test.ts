@@ -7,9 +7,9 @@ import { expect, test } from "bun:test";
 import { existsSync, lutimesSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
 
-import { bytesOf } from "../tooling/bounded.js";
-import { floorBytes, mainCheckoutOf } from "./bounded";
-import { boundEntries, entriesOf, holdToBudget, overBudget, pinnedToolchains, unpinnedToolchains, type Store } from "../scripts/disk";
+import { bytesOf, volumeBytes } from "../tooling/bounded.js";
+import { disk, diskProfile, floorBytes, mainCheckoutOf } from "./bounded";
+import { boundEntries, budgetBytes, entriesOf, holdToBudget, overBudget, pinnedToolchains, sccacheConfigText, sccacheWritten, sizeSccache, unpinnedToolchains, type Store } from "../scripts/disk";
 import { adoptRetiredStores, keptAppsCap, keptStores, mayKeep, nativeCache, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, verifiedRuns, workingSetMs, workingSetSince } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
@@ -74,7 +74,7 @@ test("a native case reads the files beside it, as the JS one does", () => {
   writeFileSync(source, 'fn main() {\n    println!("{} {}", include!("value.rs"), include_str!("value.txt").trim());\n}\n');
   writeFileSync(join(dir, "value.rs"), "7\n");
   writeFileSync(join(dir, "value.txt"), "seven\n");
-  const native = runNative(source, fixture("native-beside-run"));
+  const native = runNative(source, fixture("native-beside-run"), "2024", "host", [], { free: () => floorBytes });
   if (typeof native === "string") throw new Error(native);
   expect(native.stdout).toBe("7 seven\n");
 });
@@ -290,7 +290,7 @@ test("a kept cache is held to its cap, the least recently used first, and to the
   expect([newer, newest].map(existsSync)).toEqual([false, true]);
   // Each store's cap.
   expect(keptStores.map(({ dir, cap }) => [basename(dir), cap / 2 ** 20])).toEqual([
-    ["native-cache", 10240],
+    ["native-cache", disk.nativeCache / 2 ** 20],
     ["native-sources", 64],
     [basename(verifiedRuns), 512],
     ["std-reach", 64],
@@ -784,4 +784,52 @@ test("a bless replaces a snapshot's generated files, keeping the folder's others
   }
   expect(readdirSync(snapshot).sort()).toEqual(["lib.js", "lib.rs"]);
   expect(readFileSync(join(snapshot, "lib.js"), "utf8")).toBe("new\n");
+});
+
+// The floor and the caps are the disk's, as a run's width is the cores'
+// (#2505): a fixed 40 GiB floor was 18% of a 256 GB Mac's 228 GiB volume,
+// so its stores kept nothing whenever it had under 40 free, and the native
+// builds' 10 GiB and sccache's were the same on it as on a 1 TB one. A 256
+// GB Mac keeps a working loop; a 1 TB one keeps more; none past the 40 GiB
+// floor that was enough everywhere.
+test("the disk's floor and its stores' caps are sized by the volume", () => {
+  const GiB = 2 ** 30;
+  const of = (gib: number) => {
+    const { floor, nativeCache, sccache, budget } = diskProfile(gib * GiB);
+    return [floor, nativeCache, sccache, budget].map((bytes) => Math.round((bytes / GiB) * 10) / 10);
+  };
+  // The 256 GB Macs, the 512 GB Mac mini, a 1 TB and a 2 TB one.
+  expect(of(228)).toEqual([20, 9.1, 9.1, 39.1]);
+  expect(of(460)).toEqual([36.8, 18.4, 18.4, 48.4]);
+  expect(of(931)).toEqual([40, 37.2, 37.2, 67.2]);
+  expect(of(1862)).toEqual([40, 74.5, 74.5, 104.5]);
+  // A small disk keeps its least.
+  expect(of(100)).toEqual([20, 8, 8, 38]);
+  // This machine's, of the volume the checkout is on, is what the stores use.
+  expect(disk).toEqual(diskProfile(volumeBytes(root)));
+  expect(floorBytes).toBe(disk.floor);
+  expect(keptStores.find((store) => store.dir === nativeCache)?.cap).toBe(disk.nativeCache);
+  expect(budgetBytes).toBe(disk.budget);
+});
+
+// sccache's cap is written to its config, which its server reads as it
+// starts: the one way to give it a cap of the disk's, its own default 10
+// GiB on every disk. A person's own config is theirs; one this wrote is
+// written again only where the cap moved; none where sccache isn't used.
+test("sccache's cap is the disk's, written to its config but never over a person's own", () => {
+  const dir = fixture("sccache-sized");
+  const cache = join(dir, "cache");
+  const config = join(dir, "config", "config");
+  expect(sizeSccache(9 * 2 ** 30, cache, config)).toBe("unused");
+  expect(existsSync(config)).toBe(false);
+  mkdirSync(cache, { recursive: true });
+  expect(sizeSccache(9 * 2 ** 30, cache, config)).toBe("written");
+  expect(readFileSync(config, "utf8")).toBe(`${sccacheWritten}\n[cache.disk]\nsize = ${9 * 2 ** 30}\n`);
+  expect(sizeSccache(9 * 2 ** 30, cache, config)).toBe("as it was");
+  expect(sizeSccache(18 * 2 ** 30, cache, config)).toBe("written");
+  expect(readFileSync(config, "utf8")).toContain(`size = ${18 * 2 ** 30}\n`);
+  writeFileSync(config, "[cache.disk]\nsize = 1\n");
+  expect(sizeSccache(18 * 2 ** 30, cache, config)).toBe("own");
+  expect(readFileSync(config, "utf8")).toBe("[cache.disk]\nsize = 1\n");
+  expect(sccacheConfigText(undefined, 1.5)).toEqual({ text: `${sccacheWritten}\n[cache.disk]\nsize = 1\n` });
 });

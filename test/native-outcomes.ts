@@ -47,11 +47,11 @@ export function keptRun(key: string, store = nativeOutcomes): Run | undefined {
 
 /** `run`, of the program `key` whose kept build is `build`, kept beside
  * what the build read: not one stopped by its time or memory, and not
- * below the disk's floor. Made whole, then moved in. */
-export function keepRun(key: string, build: string, run: Run, store = nativeOutcomes) {
+ * below the disk's floor, `free`'s answer. Made whole, then moved in. */
+export function keepRun(key: string, build: string, run: Run, store = nativeOutcomes, free?: () => number) {
   if (run.stopped || !existsSync(join(build, "inputs.json"))) return;
   mkdirSync(store, { recursive: true });
-  if (!mayKeep(store)) return;
+  if (!mayKeep(store, free)) return;
   const dir = join(store, key.slice(0, 32), build.split("/").at(-1)!);
   if (existsSync(join(dir, "run.json"))) return;
   // Made where a reader skips it, a name beginning with a dot (`keptRun`):

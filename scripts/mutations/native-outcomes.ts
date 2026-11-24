@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/native-outcomes.test.ts", "-t", "fails its recheck"],
   },
+  {
+    name: "keep-run-real-disk",
+    breaks: "a native run's keeping asks the real disk, not the `free` it's given (#2505)",
+    file: "test/native-outcomes.ts",
+    find: "  if (!mayKeep(store, free)) return;",
+    replace: "  if (!mayKeep(store)) return;",
+    tests: ["test/native-outcomes.test.ts", "-t", "a run stopped by its time or memory isn't kept"],
+  },
 ];

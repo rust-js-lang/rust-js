@@ -28,7 +28,7 @@ import { closeSync, existsSync, lstatSync, mkdirSync, openSync, readdirSync, rea
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
-import { cargoHome, checkout, floorBytes, machineStore, mainCheckoutOf, tempRoot } from "../test/bounded";
+import { cargoHome, checkout, disk, floorBytes, machineStore, mainCheckoutOf, tempRoot } from "../test/bounded";
 import { checkLogsCap, checkLogsStore } from "./checkLogs";
 import { leasedIn, lockState } from "./leases";
 import { worktreeRoots } from "./strays";
@@ -44,10 +44,11 @@ import { keptMaps, mapStore, pruneMaps } from "./testMap";
 const GiB = 2 ** 30;
 
 /** The most every store inside the checkouts keeps together, `.cache/`,
- * the worktrees' `target/`s and the temp root: their caps, 32 GiB, and a
- * build of the compiler and its tests' fixtures, about 6 GiB, with room for
- * a second worktree's (#1213). `check:fast` warns past 90% of it. */
-export const budgetBytes = 40 * GiB;
+ * the worktrees' `target/`s and the temp root: their caps and a build of
+ * the compiler and its tests' fixtures, about 6 GiB, with room for a second
+ * worktree's (#1213), sized by the disk as the native builds' cap is
+ * (`diskProfile`, #2505). `check:fast` warns past 90% of it. */
+export const budgetBytes = disk.budget;
 
 /** A store: where it is, the most it keeps (`undefined` of one that's a
  * build, which a build replaces, held only by the budget), and how it's held
@@ -174,6 +175,45 @@ export const tempCap = 2 * GiB;
 /** The mutations' worktree and its build. */
 export const mutantsCap = 4 * GiB;
 
+/** sccache's cache, every worktree's dependencies' builds (DEVELOPMENT.md,
+ * "A compile cache shared by the worktrees"), where it keeps it unless
+ * `SCCACHE_DIR` says, and its config, which its server reads as it starts,
+ * unless `SCCACHE_CONF` says. */
+const darwin = process.platform === "darwin";
+export const sccacheDir = process.env.SCCACHE_DIR ?? (darwin ? join(homedir(), "Library", "Caches", "Mozilla.sccache") : join(homedir(), ".cache", "sccache"));
+export const sccacheConfig = process.env.SCCACHE_CONF ?? (darwin ? join(homedir(), "Library", "Application Support", "Mozilla.sccache", "config") : join(homedir(), ".config", "sccache", "config"));
+
+/** The first line of an sccache config this writes, by which it knows one
+ * it wrote from one a person did. */
+export const sccacheWritten = "# Written by rust-js's `bun run disk --prune` (scripts/disk.ts): sccache's cap, sized by the disk (#2505).";
+
+/** sccache's config held to `cap`, of `had`, the config's text where there's
+ * one: `text` to write, where there's none or it's one this wrote with
+ * another cap; neither where it's as it should be; `own`, a person's
+ * config, which stays as they wrote it. sccache's own default is 10 GiB on
+ * any disk, more than a 256 GB Mac spares and less than a 1 TB one does. */
+export function sccacheConfigText(had: string | undefined, cap: number): { text?: string; own?: true } {
+  const size = `size = ${Math.floor(cap)}`;
+  if (had !== undefined && !had.startsWith(sccacheWritten)) return { own: true };
+  if (had !== undefined && had.split("\n").includes(size)) return {};
+  return { text: `${sccacheWritten}\n[cache.disk]\n${size}\n` };
+}
+
+/** sccache's cap, `disk.sccache`, written to its config where sccache is
+ * used here (its cache is there): its server takes it as it next starts,
+ * past its 10 idle minutes, and holds its cache to it then, the least
+ * recently used going first. `SCCACHE_CACHE_SIZE` in a server's
+ * environment wins over it. What it did. */
+export function sizeSccache(cap = disk.sccache, dir = sccacheDir, config = sccacheConfig): "unused" | "own" | "as it was" | "written" {
+  if (!existsSync(dir)) return "unused";
+  const { text, own } = sccacheConfigText(existsSync(config) ? readFileSync(config, "utf8") : undefined, cap);
+  if (own) return "own";
+  if (text === undefined) return "as it was";
+  mkdirSync(join(config, ".."), { recursive: true });
+  writeFileSync(config, text);
+  return "written";
+}
+
 /** Every store development keeps on this machine, the checkouts' and the
  * tools' own, each with its cap and how it's held to it. */
 export function stores(): Store[] {
@@ -245,6 +285,8 @@ export function stores(): Store[] {
     { name: "Bun's install cache", dir: bunCache, cap: bunCap, outside: true, bound: () => {
       if (bytesOf(bunCache) > bunCap) spawnSync("bun", ["pm", "cache", "rm"], { cwd: checkout, stdio: "inherit" });
     } },
+    // Held by its own server, to the cap `sizeSccache` writes it.
+    { name: "sccache's cache", dir: sccacheDir, cap: disk.sccache, outside: true },
     { name: "Playwright's browsers", dir: process.env.PLAYWRIGHT_BROWSERS_PATH ?? join(homedir(), "Library", "Caches", "ms-playwright"), outside: true },
     { name: "the React port's checkouts", dir: ports, cap: portsCap, outside: true, entries: (name) => name.startsWith("react-in-rust-"), bound: (free) => void boundPorts({ free }) },
   ];
@@ -318,6 +360,11 @@ if (import.meta.main) {
   if (prune) {
     pruneKeptStores();
     for (const store of all) store.bound?.(() => freeBytes(store.dir));
+    // sccache's cap, outside the checkouts, written however the prune is
+    // asked, check:fast's too, as it reads no store's entries.
+    const sized = sizeSccache();
+    if (sized === "written") console.log(`sccache's cap written, ${size(disk.sccache)}: its server takes it as it next starts`);
+    if (sized === "own" && !quiet) console.log(`sccache's config, ${sccacheConfig}, is a person's own: its cap left as it says, where ${size(disk.sccache)} is this disk's`);
   }
   if (quiet) {
     // The last measure, made apart, as it walks `target/` and may remove
@@ -347,6 +394,6 @@ if (import.meta.main) {
   const sized = all.map((store) => ({ store, bytes: bytesOfStore(store) }));
   const rows = sized.map(({ store, bytes }) => [store.name, size(bytes), store.cap === undefined ? (store.outside ? "-" : "a build") : size(store.cap), oldest(store), store.outside ? "outside" : ""]);
   for (const row of [["store", "size", "cap", "oldest", ""], ...rows]) console.log(row.map((cell, i) => (i ? cell.padStart(10) : cell.padEnd(32))).join(""));
-  console.log(`\ninside the checkouts: ${size(sized.filter(({ store }) => !store.outside).reduce((n, { bytes }) => n + bytes, 0))} of the ${size(budgetBytes)} budget; the disk has ${size(freeBytes(checkout))} free, its floor ${size(floorBytes)}`);
+  console.log(`\ninside the checkouts: ${size(sized.filter(({ store }) => !store.outside).reduce((n, { bytes }) => n + bytes, 0))} of the ${size(budgetBytes)} budget; the disk has ${size(freeBytes(checkout))} free, its floor ${size(floorBytes)}, of its ${size(disk.volume)}`);
   if (over !== undefined) console.log(over);
 }

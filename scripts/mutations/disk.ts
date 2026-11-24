@@ -47,4 +47,12 @@ export const mutations: Mutation[] = [
     replace: "  const prunable = bounded;\n",
     tests: ["test/leases.test.ts", "-t", "mutants store isn't pruned"],
   },
+  {
+    name: "sccache-config-overwritten",
+    breaks: "sccache's config a person wrote is written over with the disk's cap (#2505)",
+    file: "scripts/disk.ts",
+    find: "  if (had !== undefined && !had.startsWith(sccacheWritten)) return { own: true };\n",
+    replace: "",
+    tests: ["test/support.test.ts", "-t", "sccache's cap is the disk's"],
+  },
 ];

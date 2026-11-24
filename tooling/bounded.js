@@ -21,6 +21,19 @@ export function freeBytes(path) {
   }
 }
 
+/** The size of the volume `path` is on, its bytes, free or not; where it
+ * can't be asked, none.
+ * @param {string} path
+ * @returns {number} */
+export function volumeBytes(path) {
+  try {
+    const fs = statfsSync(path);
+    return fs.blocks * fs.bsize;
+  } catch {
+    return 0;
+  }
+}
+
 /** What `path` takes of the disk, a file or a directory's whole tree, by
  * the blocks each file holds: a directory of many small files takes more
  * than their bytes. A link is its own, not what it links to.

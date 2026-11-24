@@ -144,28 +144,29 @@ export function runNative(
   // metamorph_lib=<rlib>` (the metamorphic net's `library`).
   rustc: string[] = [],
   // `located`: where a panic was raised kept of a case `located-otherwise`
-  // says differs there, which the corpus checks it still does.
-  { of = file, fresh = false, located = false }: { of?: string; fresh?: boolean; located?: boolean } = {},
+  // says differs there, which the corpus checks it still does. `free`: the
+  // disk's free bytes its build and run are kept by, a test's own (#2505).
+  { of = file, fresh = false, located = false, free }: { of?: string; fresh?: boolean; located?: boolean; free?: () => number } = {},
 ): Run | string {
   if (target === "wasm32") return runWasm32(file, dir, edition, rustc);
-  const ran = runNativeLocated(file, dir, edition, rustc, { of, fresh });
+  const ran = runNativeLocated(file, dir, edition, rustc, { of, fresh, free });
   if (located || typeof ran === "string") return ran;
   // The case's directive, of a rewritten variant its case's (`of`).
   if (locatedOtherwise(readFileSync(of, "utf8")) === undefined) return ran;
   return unplaced(ran);
 }
 
-function runNativeLocated(file: string, dir: string, edition: string, rustc: string[], { of, fresh }: { of: string; fresh: boolean }): Run | string {
+function runNativeLocated(file: string, dir: string, edition: string, rustc: string[], { of, fresh, free }: { of: string; fresh: boolean; free?: () => number }): Run | string {
   const flags = [...nativeFlags(edition), ...rustc];
   const key = nativeRunKey(file, edition, rustc);
   const keeps = !fresh && keepsRun(of);
   const kept = keeps ? keptRun(key) : undefined;
   const ran = () => {
-    const built = nativeProgram(file, flags, compileTimeout);
+    const built = nativeProgram(file, flags, compileTimeout, free);
     if ("error" in built) return built.error;
     const at = join(dir, "runs", "native");
     const run = shippedRun(runProcess(nativeCommand(built.binary, at), at, built.built ? firstRunTimeout : timeout));
-    if (keeps && built.kept) keepRun(key, dirname(built.binary), run);
+    if (keeps && built.kept) keepRun(key, dirname(built.binary), run, undefined, free);
     return ranOnce(built, run);
   };
   if (kept === undefined) return ran();

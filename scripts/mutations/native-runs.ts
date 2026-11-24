@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     name: "native-outcome-of-ignored",
     breaks: "a rewrite of a case marked `nondeterministic` has its native run kept, as its own text has no mark",
     file: "test/programs.ts",
-    find: "  { of = file, fresh = false, located = false }: { of?: string; fresh?: boolean; located?: boolean } = {},",
-    replace: "  { fresh = false, located = false }: { of?: string; fresh?: boolean; located?: boolean } = {}, of = file,",
+    find: "  { of = file, fresh = false, located = false, free }: { of?: string; fresh?: boolean; located?: boolean; free?: () => number } = {},",
+    replace: "  { fresh = false, located = false, free }: { of?: string; fresh?: boolean; located?: boolean; free?: () => number } = {}, of = file,",
     tests: ["test/native-outcomes.test.ts", "-t", "reads the world isn't kept"],
   },
   {
@@ -91,5 +91,13 @@ export const mutations: Mutation[] = [
     find: "  return new RegExp(`panicked at [^\\\\n]*:\\\\n${escaped}\\\\n`).test(stderr);\n",
     replace: "  return true;\n",
     tests: ["test/programs.test.ts", "-t", "a hook says the message it was raised with"],
+  },
+  {
+    name: "native-run-kept-past-given-floor",
+    breaks: "a native run's build is kept by the real disk, not the one its caller gives, so a test of what's kept passes or fails by the machine's free space (#2505)",
+    file: "test/programs.ts",
+    find: "    const built = nativeProgram(file, flags, compileTimeout, free);",
+    replace: "    const built = nativeProgram(file, flags, compileTimeout);",
+    tests: ["test/native-outcomes.test.ts", "-t", "below the disk's floor it's given"],
   },
 ];

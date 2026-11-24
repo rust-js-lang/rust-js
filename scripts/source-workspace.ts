@@ -2,7 +2,7 @@
 import {constants,copyFileSync,existsSync,lstatSync,mkdirSync,readdirSync,readFileSync,statSync,symlinkSync} from "node:fs";
 import {dirname,join} from "node:path";
 import {parentPort,workerData} from "node:worker_threads";
-import {bytesOf,freeBytes} from "../tooling/bounded.js";
+import {bytesOf} from "../tooling/bounded.js";
 import {floorBytes} from "../test/bounded";
 
 /** An independently writable source tree, without generated stores. The
@@ -11,6 +11,7 @@ function copySourceWorkspace(
   root: string,
   workspace: string,
   files: string[],
+  free: number,
 ): number {
   const kept = files.filter(
     (file) =>
@@ -22,7 +23,7 @@ function copySourceWorkspace(
     (total, file) => total + lstatSync(join(root, file)).blocks * 512,
     0,
   );
-  if (freeBytes(root) - needed < floorBytes)
+  if (free - needed < floorBytes)
     throw new Error(
       "a source mutation workspace would cross the development disk floor",
     );
@@ -71,7 +72,7 @@ function copySourceWorkspace(
   return bytesOf(workspace);
 }
 
-type Workspace = {root:string; workspace:string; files:string[]};
+type Workspace = {root:string; workspace:string; files:string[]; free:number};
 const task = workerData as Workspace;
-parentPort!.postMessage(copySourceWorkspace(task.root,task.workspace,task.files));
+parentPort!.postMessage(copySourceWorkspace(task.root,task.workspace,task.files,task.free));
 parentPort!.close();

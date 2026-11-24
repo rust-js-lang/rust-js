@@ -184,8 +184,12 @@ and in `~/.cargo/config.toml`, the user's, not the repository's:
 rustc-wrapper = "/opt/homebrew/bin/sccache"   # `which sccache`
 ```
 
-`sccache --show-stats` says what it hit; its cache is 10 GB by default
-(`SCCACHE_CACHE_SIZE`), in `~/Library/Caches/Mozilla.sccache` on macOS.
+`sccache --show-stats` says what it hit; its cache is in
+`~/Library/Caches/Mozilla.sccache` on macOS, its cap the disk's, 4% of it
+and at least 8 GiB (`diskProfile`, test/bounded.ts, #2505), which `bun run
+disk --prune` and each `check:fast` write to its config,
+`~/Library/Application Support/Mozilla.sccache/config`, for its server to
+take as it next starts; a config you wrote yourself stays yours.
 
 What it can't share: a build whose target is `CARGO_TARGET_DIR` in the
 environment misses every crate, as sccache's key holds rustc's `CARGO_*`
@@ -242,7 +246,7 @@ hash>/<name>_<n>`), so the same test compiles the same thing there.
   use marks its entry; past the cap the least recently used go first,
   checked as a process's writes would pass it and as each `check:fast` or
   `bun run test` starts, which also drops every entry of another build,
-  never found again. Below the disk's 40 GB floor nothing's written, said
+  never found again. Below the disk's floor nothing's written, said
   once a process, and what's kept is pruned until the floor's back or
   it's empty. `cargo clean` removes it with the rest of `target/`; `rm -rf
   target/compile-cache` is always safe.
@@ -253,8 +257,14 @@ hash>/<name>_<n>`), so the same test compiles the same thing there.
 ### What the loop keeps on disk, each bounded
 
 Every cache is bounded: a cap, the least recently used going first past
-it, what's stale pruned, nothing kept below the disk's 40 GB floor, a test
-that holds it, and its cap here. `test/bounded.ts` is the loop's floor, and
+it, what's stale pruned, nothing kept below the disk's floor, a test
+that holds it, and its cap here. The floor and the caps that grow with
+the disk are the volume's, as a run's width is the cores' (`diskProfile`,
+#2505): the floor 8% of it, at least 20 GiB and at most 40 (20 on a 256 GB
+Mac's 228 GiB, 36.8 on the Mac mini's 460); the native builds' cap and
+sccache's 4%, at least 8 GiB (9.1 and 18.4); the checkouts' budget the
+native builds' cap and 30 GiB (39.1 and 48.4). `bun run disk` says them.
+`test/bounded.ts` is the loop's floor, and
 `tooling/bounded.js` the one way a store is held to its cap, an app's
 cache's too (#1057); each store says what its things are, and its floor.
 
@@ -274,7 +284,7 @@ Everything development writes has one known place (#1213, ADR 1118):
   they're held by their own commands instead.
 
 `bun run disk` lists every store, its size, cap and oldest entry, and the
-total inside the checkouts against its 40 GiB budget; `bun run disk
+total inside the checkouts against its budget; `bun run disk
 --prune` holds each to its cap, the tools' by `rustup toolchain uninstall`
 of an old pin, Cargo's GC and `bun pm cache rm`, and then the stores
 inside the checkouts to 90% of the budget together, the least recently
@@ -297,7 +307,7 @@ that no other script makes a path in the user's home.
 | What | Where | Bound | Held by |
 |---|---|---|---|
 | The tests' compiles to JS (above) | `target/compile-cache/` | 2 GB; another build's dropped as a run starts; nothing written below the floor | `test/compiles.test.ts` |
-| Native programs' builds | `.cache/native-cache/`, the machine's, every worktree's and whatever `RUST_JS_TARGET` a mutant's or the test map's tests run in (#875, #1047), keyed by what they're built from said from the checkout's root | 10 GB, the corpus's and the metamorphic net's about 8 GB, and a week unused; nothing kept below the floor, a build there used from a fixture; pruned as each `check:fast` (while the compiler builds) and `bun run test` starts, and below the floor until it's back | `test/support.test.ts` |
+| Native programs' builds | `.cache/native-cache/`, the machine's, every worktree's and whatever `RUST_JS_TARGET` a mutant's or the test map's tests run in (#875, #1047), keyed by what they're built from said from the checkout's root | The disk's (4%, at least 8 GiB), the corpus's and the metamorphic net's about 8 GB, and a week unused; nothing kept below the floor, a build there used from a fixture; pruned as each `check:fast` (while the compiler builds) and `bun run test` starts, and below the floor until it's back | `test/support.test.ts` |
 | Native programs' wrappers | `target/native-sources/`, the checkout's likewise | 64 MB, and a week unused, the same way: about 8 MB | `test/support.test.ts` |
 | A corpus case's and a metamorphic rewrite's verified runs (ADR 0567) | `.cache/verified-runs/`, the machine's (#1047); a mutant's tests', their target's `corpus-cache/` | 512 MB, a week unused, the same way: about 8 MB a build of the compiler of the corpus, 100 MB of the net | `test/support.test.ts` |
 | Native programs' runs, kept by what they were built from (ADR 0567, amended) | `.cache/native-outcomes/`, the machine's, keyed as their builds are; what CI's jobs restore and `main`'s save (`.github/actions/native-outcomes`) | 256 MB, a week unused, the same way: about 3 MB of a corpus part of 324 cases | `test/support.test.ts`, `test/native-outcomes.test.ts` |
@@ -661,7 +671,7 @@ symptom with this table. When you hit a new kind of stall, add a row.
 | New binaries start 300 ms late; corpus and native checks run 3–5× slow; `XprotectService` and `syspolicyd` are busy | macOS's scan is on for the app the commands run under, often after an update of that app | See [The Mac, with the scan off](#the-mac-with-the-scan-off): find the app just below `launchd`, add it, restart it, and time 20 first runs. |
 | Load 50–60 on 12 cores; every step 3–5× slower; timeouts and reruns | Too many agents on one machine (8 worktrees at once) | One agent per machine. |
 | Swap grows; builds slow; memory pressure warns; Claude Code stops a background command "for low memory" | Several builds of the compiler at once on 16 GB. Each peaks at 3.4 GB building the crate whole (a mutation target's first build, or a batch's of many files), 1.6 GB after one file's change, `cargo test`'s 2.0 and clippy's 1.8; a test file or a part of the corpus or of a net 0.1–0.3 GB (the largest 1.8), the crate corpus 2.1 GB, `check:fast --all` whole 5.0 GB (measured on 8 cores and 16 GB, 2026-11-09). Mutations' four builds at once beside a test on each core stopped a gate there (#1084) | Runs are sized to the memory as well as the cores by one owner, `scripts/shard.ts`'s `peakGB`, `memoryBudget` (the memory less 6 GB, and what's free as the run starts less 2 GB) and `compilerBuilds`: mutations' `--jobs` and check:fast's pool ask it. A runner of your own that builds the compiler more than once at a time asks `compilerBuilds` too. |
-| A command can't start: `ENOSPC`; agents stop mid-commit | The disk filled: worktrees' `target/` (10–20 GB each, `target/mutants` above all), a `--changed=main` mutation run of 1,337 files | Keep 40 GB free. Delete `target/mutants` after each run, run `cargo clean` when a task ends, and remove finished worktrees. Use `--changed=origin/main`. |
+| A command can't start: `ENOSPC`; agents stop mid-commit | The disk filled: worktrees' `target/` (10–20 GB each, `target/mutants` above all), a `--changed=main` mutation run of 1,337 files | Keep the disk above its floor (`bun run disk` says it). Delete `target/mutants` after each run, run `cargo clean` when a task ends, and remove finished worktrees. Use `--changed=origin/main`. |
 | A gate waits forever before it starts | A stopped run left its lock (the mutations lock) behind | Release locks on any exit with `trap`, and check for a stale lock before waiting on it. |
 | Load stays high with no agent working | Orphans: a finished or restarted session's `bun`, `node`, `rust-js` or `cargo` left running (`ppid` 1) | List them with `ps -Ao pid,ppid,etime,command \| awk '$2==1'`, check their worktree (`lsof -p <pid> -d cwd`), and kill only those of finished work. |
 | A `rust-js` (ppid 1) burns a core for hours after its task was stopped | A command `test/child.ts` ran leads a group of its own, so a SIGKILL of the runner (`timeout -s KILL`, a stopped task) never reached it (#1444) | Fixed: `guarded` runs each with a watcher that kills its group once the runner is gone; `test/child.test.ts` holds it. A runner of your own that spawns `detached` needs the same. |

@@ -39,11 +39,13 @@ test("source mutation workspaces isolate sources and workspace package aliases",
     join(source, "node_modules", "external", "index.js"),
     "export const value = 2;\n",
   );
+  // Room on the disk, whatever this one's: near its floor no workspace is
+  // made, the code's answer here not the disk's (#2505).
   await makeSourceWorkspace(source, workspace, [
     "package.json",
     "typescript/package.json",
     "typescript/index.js",
-  ]);
+  ], Number.POSITIVE_INFINITY);
   expect(
     realpathSync(join(workspace, "node_modules", "@rust-js", "typescript")),
   ).toBe(join(workspace, "typescript"));

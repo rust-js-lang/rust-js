@@ -131,7 +131,7 @@ const stdAt = "/@rust-js-std";
  * comments or spaces; all of std where it can't be bundled. Kept in
  * `store` by std and the JS's text, each other file the bundle read
  * checked when it's read again. */
-export async function reached(entry: string, std = stdDir, store = stdReach): Promise<string> {
+export async function reached(entry: string, std = stdDir, store = stdReach, free?: () => number): Promise<string> {
   const names = namedByHarness(std);
   const dir = dirname(entry);
   const id = runKey([whole(std), names.join(" "), readFileSync(entry, "utf8")]);
@@ -172,7 +172,7 @@ export async function reached(entry: string, std = stdDir, store = stdReach): Pr
     .map((input) => resolve(input))
     .filter((file) => existsSync(file));
   mkdirSync(store, { recursive: true });
-  if (mayKeep(store)) {
+  if (mayKeep(store, free)) {
     mkdirSync(dirname(kept), { recursive: true });
     writeFileSync(kept, JSON.stringify({ inputs: read.map((file) => [relative(dir, file), sha(readFileSync(file, "utf8"))]), reach }));
   }

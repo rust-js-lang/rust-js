@@ -7,12 +7,13 @@ import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "nod
 import { join } from "node:path";
 
 import { cases, corpus, directives } from "./corpus-cases";
-import { nativeOutcomes } from "./kept";
+import { floorBytes } from "./bounded";
+import { nativeCache, nativeOutcomes } from "./kept";
 import { keepRun, keptRun, recheck } from "./native-outcomes";
-import { nativeLimitKey, nativeRunKey, runNative, type Run } from "./programs";
+import { nativeFlags, nativeLimitKey, nativeRunKey, runNative, type Run } from "./programs";
 import { record, verified } from "./verified-runs";
 import { nativeCratesOutput } from "./crates";
-import { buildCompiler, fixture, nativeCratesKey, nativeKey, root } from "./support";
+import { buildCompiler, fixture, nativeCratesKey, nativeKey, nativeProgramKey, root } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -22,6 +23,11 @@ afterEach(() => {
   else process.env.RUST_JS_NATIVE_RECHECK = recheckWas;
   delete process.env.RUST_JS_OUTCOME_VALUE;
 });
+
+// The disk these tests keep runs on: room, whatever this one's, as what's
+// kept is the code's answer here, not the disk's; near its floor the stores
+// keep nothing, and these failed for it (#2505).
+const roomy = () => Number.POSITIVE_INFINITY;
 
 const ran = (r: Run | string): Run => {
   if (typeof r === "string") throw new Error(r);
@@ -55,7 +61,7 @@ function tampered(file: string, said: string) {
 test("a native run is kept by what it was built from, and given again", () => {
   const file = program("kept", 'fn main() {\n    println!("kept");\n}\n');
   expect(keptRun(nativeRunKey(file))).toBeUndefined();
-  const first = ran(runNative(file, join(file, "..")));
+  const first = ran(runNative(file, join(file, ".."), "2024", "host", [], { free: roomy }));
   expect(first.stdout).toBe("kept\n");
   const kept = keptRun(nativeRunKey(file));
   expect(kept?.stdout).toBe("kept\n");
@@ -63,24 +69,24 @@ test("a native run is kept by what it was built from, and given again", () => {
   expect(kept?.outcome).toEqual(first.outcome);
   // What's given is the kept run, not the program run again.
   tampered(file, "as kept\n");
-  expect(ran(runNative(file, join(file, ".."))).stdout).toBe("as kept\n");
+  expect(ran(runNative(file, join(file, ".."), "2024", "host", [], { free: roomy })).stdout).toBe("as kept\n");
   // And run afresh, the program's own.
-  expect(ran(runNative(file, join(file, ".."), "2024", "host", [], { fresh: true })).stdout).toBe("kept\n");
+  expect(ran(runNative(file, join(file, ".."), "2024", "host", [], { fresh: true, free: roomy })).stdout).toBe("kept\n");
 });
 
 test("a native run isn't given again once a file its build included changes", () => {
   const file = program("included", 'fn main() {\n    println!("{}", include!("value.rs"));\n}\n', { "value.rs": "1\n" });
-  expect(ran(runNative(file, join(file, ".."))).stdout).toBe("1\n");
+  expect(ran(runNative(file, join(file, ".."), "2024", "host", [], { free: roomy })).stdout).toBe("1\n");
   writeFileSync(join(file, "..", "value.rs"), "2\n");
-  expect(ran(runNative(file, join(file, ".."))).stdout).toBe("2\n");
+  expect(ran(runNative(file, join(file, ".."), "2024", "host", [], { free: roomy })).stdout).toBe("2\n");
 });
 
 test("a native run isn't given again once a variable its build read changes", () => {
   const file = program("env", 'fn main() {\n    println!("{}", env!("RUST_JS_OUTCOME_VALUE"));\n}\n');
   process.env.RUST_JS_OUTCOME_VALUE = "a";
-  expect(ran(runNative(file, join(file, ".."))).stdout).toBe("a\n");
+  expect(ran(runNative(file, join(file, ".."), "2024", "host", [], { free: roomy })).stdout).toBe("a\n");
   process.env.RUST_JS_OUTCOME_VALUE = "b";
-  expect(ran(runNative(file, join(file, ".."))).stdout).toBe("b\n");
+  expect(ran(runNative(file, join(file, ".."), "2024", "host", [], { free: roomy })).stdout).toBe("b\n");
 });
 
 // rustc's dep-info lists no rlib, so what a directory `-L dependency=`
@@ -100,12 +106,12 @@ test("a native program's key holds what its dependencies' directory holds", () =
 
 test("a case whose run reads the world isn't kept, nor a program made of it", () => {
   const marked = program("marked", 'fn main() {\n    println!("{}", std::env::args().count());\n}\n//@ nondeterministic: its run reads its arguments\n');
-  ran(runNative(marked, join(marked, "..")));
+  ran(runNative(marked, join(marked, ".."), "2024", "host", [], { free: roomy }));
   expect(keptRun(nativeRunKey(marked))).toBeUndefined();
   const rewrite = join(marked, "..", "rewrite.rs");
   writeFileSync(rewrite, 'fn main() {\n    println!("{}", std::env::args().count() + 0);\n}\n');
   rmSync(join(nativeOutcomes, nativeRunKey(rewrite).slice(0, 32)), { recursive: true, force: true });
-  ran(runNative(rewrite, join(marked, ".."), "2024", "host", [], { of: marked }));
+  ran(runNative(rewrite, join(marked, ".."), "2024", "host", [], { of: marked, free: roomy }));
   expect(keptRun(nativeRunKey(rewrite))).toBeUndefined();
 });
 
@@ -122,13 +128,13 @@ test("a chain of crates' native run is kept, but where a crate reads the world",
   const flags = ["--edition=2024"];
   const of = [{ name: "dep", file: dep, uses: [] }];
   rmSync(join(nativeOutcomes, nativeCratesKey(of, main, flags).slice(0, 32)), { recursive: true, force: true });
-  expect(nativeCratesOutput(of, main, flags)()).toBe("chained\n");
+  expect(nativeCratesOutput(of, main, flags, roomy)()).toBe("chained\n");
   expect(keptRun(nativeCratesKey(of, main, flags))?.stdout).toBe("chained\n");
   const marked = crate("marked", "pub fn main() {\n    println!(\"{}\", std::env::args().count());\n}\n//@ nondeterministic: its run reads its arguments\n");
   const ofMarked = [{ name: "marked", file: marked, uses: [] }];
   const markedMain = "fn main() {\n    marked::main();\n}\n";
   rmSync(join(nativeOutcomes, nativeCratesKey(ofMarked, markedMain, flags).slice(0, 32)), { recursive: true, force: true });
-  expect(nativeCratesOutput(ofMarked, markedMain, flags)()).toBe("1\n");
+  expect(nativeCratesOutput(ofMarked, markedMain, flags, roomy)()).toBe("1\n");
   expect(keptRun(nativeCratesKey(ofMarked, markedMain, flags))).toBeUndefined();
 });
 
@@ -144,24 +150,39 @@ test("a run stopped by its time or memory isn't kept", () => {
   const store = fixture("native-outcome-stopped-store");
   const build = fixture("native-outcome-stopped-build");
   writeFileSync(join(build, "inputs.json"), JSON.stringify({ files: [], env: [] }));
-  keepRun("0".repeat(64), build, stopped, store);
+  keepRun("0".repeat(64), build, stopped, store, roomy);
   expect(readdirSync(store)).toEqual([]);
   // The same run, ended, is kept.
-  keepRun("0".repeat(64), build, { ...stopped, stopped: undefined, outcome: { exit: 0 } }, store);
+  keepRun("0".repeat(64), build, { ...stopped, stopped: undefined, outcome: { exit: 0 } }, store, roomy);
   expect(keptRun("0".repeat(64), store)?.outcome).toEqual({ exit: 0 });
+  // Below the disk's floor, as its `free` says, nothing.
+  keepRun("1".repeat(64), build, { ...stopped, stopped: undefined, outcome: { exit: 0 } }, store, () => floorBytes - 1);
+  expect(keptRun("1".repeat(64), store)).toBeUndefined();
+});
+
+// The disk a run is kept by is the one its caller gives, a test's room
+// (#2505): below its floor neither the build nor the run is kept, and the
+// program runs all the same.
+test("a native run below the disk's floor it's given is run, not kept", () => {
+  const file = program("floored", 'fn main() {\n    println!("floored");\n}\n');
+  const builds = join(nativeCache, nativeProgramKey(file, nativeFlags("2024")).slice(0, 32));
+  rmSync(builds, { recursive: true, force: true });
+  expect(ran(runNative(file, join(file, ".."), "2024", "host", [], { free: () => floorBytes - 1 })).stdout).toBe("floored\n");
+  expect(keptRun(nativeRunKey(file))).toBeUndefined();
+  expect(readdirSync(builds).filter((build) => !build.startsWith("."))).toEqual([]);
 });
 
 // The nightly runs a share of the kept runs again (`RUST_JS_NATIVE_RECHECK`):
 // one that never says what was kept is a key missing an input, and fails.
 test("a kept run the program never says again fails its recheck", () => {
   const file = program("rechecked", 'fn main() {\n    println!("rechecked");\n}\n');
-  ran(runNative(file, join(file, "..")));
+  ran(runNative(file, join(file, ".."), "2024", "host", [], { free: roomy }));
   process.env.RUST_JS_NATIVE_RECHECK = "1";
-  expect(ran(runNative(file, join(file, ".."))).stdout).toBe("rechecked\n");
+  expect(ran(runNative(file, join(file, ".."), "2024", "host", [], { free: roomy })).stdout).toBe("rechecked\n");
   tampered(file, "stale\n");
-  expect(() => runNative(file, join(file, ".."))).toThrow("its key misses an input");
+  expect(() => runNative(file, join(file, ".."), "2024", "host", [], { free: roomy })).toThrow("its key misses an input");
   // One answer of a few a seed picks, said again once in its tries, passes.
-  const kept = ran(runNative(file, join(file, ".."), "2024", "host", [], { fresh: true }));
+  const kept = ran(runNative(file, join(file, ".."), "2024", "host", [], { fresh: true, free: roomy }));
   let n = 0;
   const other = { ...kept, stdout: "other\n", bytes: { ...kept.bytes, stdout: Buffer.from("other\n") } };
   expect(recheck(kept, () => (n++ < 3 ? other : kept))).toBeUndefined();
@@ -178,7 +199,7 @@ test("a kept run the program never says again fails its recheck", () => {
 // again, not taken as verified.
 test("a verified run is run again of the nightly's share", () => {
   const cache = fixture("native-outcome-verified");
-  record("k", "note", cache, () => Number.POSITIVE_INFINITY);
+  record("k", "note", cache, roomy);
   expect(verified("k", cache)).toBe(true);
   process.env.RUST_JS_NATIVE_RECHECK = "1";
   expect(verified("k", cache)).toBe(false);

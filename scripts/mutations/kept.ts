@@ -4,6 +4,7 @@
 import type { Mutation } from "../mutations";
 
 const working = ["test/support.test.ts", "-t", "a checkout past the budget keeps its working set"];
+const sized = ["test/support.test.ts", "-t", "the disk's floor and its stores' caps are sized by the volume"];
 
 export const mutations: Mutation[] = [
   {
@@ -69,5 +70,13 @@ export const mutations: Mutation[] = [
     find: "    if (takeOver(taking)) {\n",
     replace: "    if (true) {\n",
     tests: ["test/support.test.ts", "-t", "a claim whose process is gone is taken over by one of the processes racing for it"],
+  },
+  {
+    name: "disk-native-cap-fixed",
+    breaks: "the native builds' cap is 10 GiB on any disk, not the disk's (#2505)",
+    file: "test/kept.ts",
+    find: "  { dir: nativeCache, cap: disk.nativeCache },",
+    replace: "  { dir: nativeCache, cap: 10 * 2 ** 30 },",
+    tests: sized,
   },
 ];

@@ -187,3 +187,56 @@ its cap keeps its working set, and only stale builds go". Mutation
 `kept-cap-takes-working-set`; `disk-working-set-evicted`,
 `disk-last-check-unread` and `disk-floor-spares-working-set` moved with
 the code to scripts/mutations/kept.ts.
+
+## Amendment: the floor and the caps are the disk's (#2505, 2026-11-24)
+
+The floor was 40 GiB on every disk. On the 256 GB Macs, thor's Mac mini
+(a 228 GiB volume, 42 GiB free) and lisa's M1, that's 18% of the disk, so
+their stores kept nothing whenever a check's own writes took them under
+it, and the tests that ask a store to keep something failed for the disk,
+not the change (ioFH's push: 39.9 GB free, three files red). The native
+builds' cap, 10 GiB, and sccache's default, 10 GiB, were the same on a
+228 GiB disk as on a 1 TB one.
+
+Each is now sized by the volume the checkout is on, as `machine()` sizes a
+run by the cores and memory, with no list of machines (`diskProfile`,
+test/bounded.ts, the one owner):
+
+| | 228 GiB | 460 GiB (this Mac mini) | 931 GiB (1 TB) |
+|---|---|---|---|
+| Floor: 8%, at least 20 GiB, at most 40 | 20 | 36.8 | 40 |
+| Native builds' cap: 4%, at least 8 GiB | 9.1 | 18.4 | 37.2 |
+| sccache's cap: 4%, at least 8 GiB | 9.1 | 18.4 | 37.2 |
+| The checkouts' budget: the native cap and 30 GiB | 39.1 | 48.4 | 67.2 |
+
+- The floor's least, 20 GiB, is room for a check's own writes beside a
+  fresh build of the compiler and macOS's swap; its most, 40 GiB, is what
+  it was everywhere, which no machine ran out above.
+- The budget holds the other stores' caps and a build as it did; it grows
+  only by what the native builds may keep.
+- sccache's cap is written to its config (`sizeSccache`, scripts/disk.ts),
+  which its server reads as it starts, past its 10 idle minutes, and
+  holds its cache to, the least recently used first. A config a person
+  wrote stays theirs, said by `bun run disk --prune`; the one this writes
+  starts with a line saying so. `check:fast`'s prune writes it, so no
+  machine needs a step by hand.
+
+A smaller floor makes it rarer, not impossible, for a disk to sit at it, so
+the tests that ask whether something is kept no longer ask the real disk
+either. Each function that keeps a native run, a reach or a mutant's
+workspace takes the disk's free bytes from its caller, as the stores'
+prunes did (#1208): `runNative`'s `free`, which its build and its run are
+kept by, `nativeCratesOutput`'s, `keepRun`'s, `reached`'s and
+`makeSourceWorkspace`'s. Their tests give them room, so their answer is
+the code's, whatever the disk; test/disk-owners.test.ts' rule, which held
+the stores' own test files to it, holds test/native-outcomes.test.ts,
+test/verified-runs.test.ts and test/source-mutations.test.ts too, the
+three that failed at 39.9 GB free.
+
+Held by test/support.test.ts' "the disk's floor and its stores' caps are
+sized by the volume" and "sccache's cap is the disk's, written to its
+config but never over a person's own"; test/native-outcomes.test.ts' "a
+native run below the disk's floor it's given is run, not kept"; mutations
+`disk-floor-fixed`, `disk-floor-unbounded`, `disk-native-cap-fixed`,
+`sccache-config-overwritten`, `native-run-kept-past-given-floor`,
+`keep-run-real-disk`.

@@ -31,17 +31,17 @@ export const triples = join(root, "test", "crates", "triples");
  * its run kept by what it was built from, as a case's is
  * (test/native-outcomes.ts), so a chain unchanged since is neither built
  * nor run again; and of the nightly's share, run again too. */
-export function nativeCratesOutput(crates: { name: string; file: string; uses: string[]; edition?: string }[], main: string, flags: string[]): () => string {
+export function nativeCratesOutput(crates: { name: string; file: string; uses: string[]; edition?: string }[], main: string, flags: string[], free?: () => number): () => string {
   const key = nativeCratesKey(crates, main, flags);
   // Not of a chain one of whose crates reads the world (`nondeterministic`).
   const keeps = !crates.some(({ file }) => nondeterministic(readFileSync(file, "utf8")) !== undefined);
   let said: string | undefined;
   const fresh = (): Run => {
-    const built = nativeCrates(crates, main, flags);
+    const built = nativeCrates(crates, main, flags, undefined, free);
     if ("error" in built) throw new Error(built.error);
     const stdout = run([built.binary]);
     const ran: Run = { stdout, stderr: "", bytes: { stdout: Buffer.from(stdout), stderr: Buffer.from("") }, outcome: { exit: 0 } };
-    if (keeps && built.kept) keepRun(key, dirname(built.binary), ran);
+    if (keeps && built.kept) keepRun(key, dirname(built.binary), ran, undefined, free);
     return ran;
   };
   return () => {

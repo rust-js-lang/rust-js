@@ -248,7 +248,7 @@ let keptSince = 0;
 function room(bytes: number, freeNow: Free): boolean {
   const free = freeNow();
   if (free < floorBytes + bytes) {
-    if (!below) console.error(`compile cache: not kept, ${(free / 2 ** 30).toFixed(1)} GB free, under the ${floorBytes / 2 ** 30} GB floor`);
+    if (!below) console.error(`compile cache: not kept, ${(free / 2 ** 30).toFixed(1)} GB free, under the ${(floorBytes / 2 ** 30).toFixed(1)} GB floor`);
     below = true;
     return false;
   }
