@@ -877,8 +877,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(items);
         }
         if item.has_param() {
-            return Err(self.unsupported(
+            return Err(self.unconverted(
                 span,
+                crate::refusal::Crossing::HintArgument,
                 &format!("a bound's `extend` of a `{into}`, whose items' size std grows it by, a type parameter's, in a crate that reads a `Vec`'s capacity: call `extend` of the `Vec` itself"),
             ));
         }

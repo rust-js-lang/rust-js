@@ -44,8 +44,14 @@ pub enum Crossing {
     /// One also given as another iterator's items (#2534), or stepped as
     /// them through their own bound, `S::Item: Iterator` (#2541).
     PlacedItem,
+    /// One a bound's entry takes or gives inside another value, of a trait
+    /// not an iterator's, given by its dictionary.
+    PlacedDictionary,
     /// A `RefCell` guard's `&mut` given where generic code may write it whole.
     GuardArgument,
+    /// A `RefCell` of a `dyn` of the crate's trait, its `{ value, impl }`
+    /// pair, given where generic code holds a cell of a type parameter.
+    DynCellArgument,
     /// A `&mut` object inside the type a generic impl is for, given by its
     /// dictionary (#2532).
     BoxDictionary,
@@ -101,7 +107,9 @@ impl Crossing {
         match self {
             Crossing::PlacedArgument => 2549,
             Crossing::PlacedItem => 2535,
+            Crossing::PlacedDictionary => 2571,
             Crossing::GuardArgument => 2475,
+            Crossing::DynCellArgument => 2569,
             Crossing::BoxDictionary => 2550,
             Crossing::HeldBoxArgument => 1632,
             Crossing::NestedBox => 1421,

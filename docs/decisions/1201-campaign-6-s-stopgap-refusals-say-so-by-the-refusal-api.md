@@ -154,3 +154,35 @@ gives the entry's result as a value, as `entry_writes_tagged` gives
 
 It follows ADR 0262's last row too. There are now 20 cells and 47
 refusals.
+
+## Amended 2026-11-25: five refusals said outside the cells
+
+A scan of the refusals said by `unsupported` found five that are
+stopgaps, each a crossing that doesn't convert a form or a fact yet. Each
+is said through a cell now, its words unchanged:
+
+- `traits/calls.rs`' `evidence_args_given`: a `RefCell` of a `dyn` of the
+  crate's trait, its `{ value, impl }` pair (ADR 0397), given where
+  generic code holds a cell of a type parameter, which reads a cell of a
+  value (ADR 0451). A new cell, `Crossing::DynCellArgument`, lifted by
+  #2569.
+- `traits/calls.rs`' `provided_on_steps`: a fact an override of an
+  iterator's provided method asks that generic code's caller's dictionary
+  doesn't carry (#2442), `Crossing::FactDictionary` (#2555).
+- `traits/calls.rs`' `refuse_fact_untaken`: a fact a consumer's impl of a
+  library's trait asks that the library's contract doesn't give through a
+  dictionary (#2285), `Crossing::FactBoundary` (#2556).
+- `traits/dictionaries/placed.rs`' `placed_dictionary`: an entry of a bound
+  that isn't an iterator's, taking or giving a value generic code holds in
+  a place inside another value. A new cell, `Crossing::PlacedDictionary`,
+  lifted by #2571: #2255, the issue its words name, is closed with it in
+  place, and no two cells share an issue.
+- `iterators/hint_asks.rs`' `dictionary_grown`: a bound's `extend` of a
+  std collection whose items' size is a type parameter's, in a crate that
+  reads a capacity, `Crossing::HintArgument` (#2553).
+
+The scan's others aren't of the kind and stay as they are: what
+`traits/dictionaries.rs` and `std_types/io.rs` refuse of #1302, and what
+`iterators/mir_steps/closing.rs`, `iterators/stepping.rs` and
+`traits/impls/defaults.rs` refuse, none of which a crossing's conversion
+would lift. There are now 22 cells and 52 refusals.

@@ -175,7 +175,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.check_drops_given(id, args, span)?;
         if let Some(held) = self.dyn_in_generic_cell(id, args) {
             let what = format!("a cell of a `{held}` given to generic code as a cell of a type parameter");
-            return Err(self.unsupported(span, &what));
+            return Err(self.unconverted(span, crate::refusal::Crossing::DynCellArgument, &what));
         }
         // Each of `evidence_slots`', of what this call gives for it: its
         // location; a const's value; a bound's dictionary; a fact of the
@@ -878,7 +878,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         self.tcx.def_path_str(method),
                         self.tcx.item_name(id),
                     );
-                    return Err(self.unsupported(span, &what));
+                    return Err(self.unconverted(span, crate::refusal::Crossing::FactDictionary, &what));
                 }
             }
         }
@@ -1212,7 +1212,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             fact.described(),
             self.tcx.def_path_str(declared),
         );
-        Err(self.unsupported(span, &what))
+        Err(self.unconverted(span, crate::refusal::Crossing::FactBoundary, &what))
     }
 }
 

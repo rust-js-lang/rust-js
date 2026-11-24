@@ -69,7 +69,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some(EntryShapes { holder, entry }) = shapes else {
                 match iterator_trait {
                     true => continue,
-                    false => return Err(self.unsupported(span, &what())),
+                    false => return Err(self.unconverted(span, crate::refusal::Crossing::PlacedDictionary, &what())),
                 }
             };
             let name = bindings::trait_method_name(tcx, bound.def_id, tcx.item_name(method).as_str());

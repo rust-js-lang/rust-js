@@ -187,8 +187,8 @@ export const mutations: Mutation[] = [
     name: "dictionary-callers-items-unrefused",
     breaks: "a bound's `extend` of a `Vec<T>` of a type parameter's items, in a crate that reads a capacity, grows by no size, where its dictionary isn't given it (#1180)",
     file: "crates/rust-js-lower/src/iterators/hint_asks.rs",
-    find: "        if item.has_param() {\n            return Err(self.unsupported(\n",
-    replace: "        if false {\n            return Err(self.unsupported(\n",
+    find: "        if item.has_param() {\n            return Err(self.unconverted(\n",
+    replace: "        if false {\n            return Err(self.unconverted(\n",
     tests: ["test/diagnostics.test.ts", "-t", "a bound's extend of a Vec of a type parameter's items"],
   },
   {
