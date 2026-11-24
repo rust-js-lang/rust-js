@@ -44,7 +44,7 @@ const wrongs = {
 
 /** How a mutant's compiler differs from the compiler as it is. */
 type Edit =
-  /** The JS it writes, with `js` at its end: of one build alone, `alone`. */
+  /** The JS it writes, with `js` at its start: of one build alone, `alone`. */
   | { js: string; alone?: Alone }
   /** It crashes, or refuses, as a binary, or as one build alone. */
   | { exit: "crashes" | "refuses"; alone?: Alone }
@@ -173,7 +173,11 @@ function wrap(mutant: CorpusMutant, compiler: string, args: string[]): Wrapped {
   if (out !== undefined && "exit" in edit && edit.exit === "refuses-otherwise" && code !== 0) {
     return { code, stdout, stderr: stderr.replace(/^error(\[E\d+\])?:.*$/gm, "error: a mutant's other error") };
   }
-  if (out !== undefined && "js" in edit && ofIt && code === 0) writeFileSync(out, `${readFileSync(out, "utf8")}\n${edit.js}\n`);
+  // First in the module, run before anything of its own: a binary's JS
+  // calls `$main(main)` near its top, which ends the process at once where
+  // `main` fails or aborts, so an edit at its end never ran there (#2447's
+  // first CI run, m1-lisa's read).
+  if (out !== undefined && "js" in edit && ofIt && code === 0) writeFileSync(out, `${edit.js}\n${readFileSync(out, "utf8")}`);
   return { code, stdout, stderr };
 }
 
