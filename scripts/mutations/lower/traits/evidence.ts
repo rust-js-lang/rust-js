@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iterator_provided_methods_a_type_writes_are_its_own.rs$"],
     snapshots: true,
   },
+  {
+    name: "provided-entry-own-parameters-fact-unrefused",
+    breaks: "an override's own ask of a fact of the method's own type parameter, `size_of::<B>()` of an own `collect`, which the convention doesn't give, isn't refused where its entry is made, so it's asked of what the entry can't name and refused with no word of the override (#2449)",
+    file: "crates/rust-js-lower/src/traits/evidence.rs",
+    find: "            if of_own(of)\n",
+    replace: "            if false && of_own(of)\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_own_collect_asking_its_outputs_size_refused.rs$"],
+  },
 ];

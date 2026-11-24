@@ -2117,8 +2117,11 @@ What JS sees of a crate:
   `position`, `max`, rides on its value, `provided: { ownPosition }`, which
   its dictionary carries too: generic code's call of it is
   `$provided(it, "ownPosition", [f], () => $position($lent(it), f))`, std's
-  only where its impl writes none (#2421). Its own `collect` isn't yet:
-  generic code runs std's (#2430).
+  only where its impl writes none (#2421). Its own `collect` too, given
+  the `FromIterator` its caller's `B` is, `$provided(it, "ownCollect",
+  [{ fromIter: .. }], () => $collectVec(Iterator.from(it), 4,
+  IVecCollect))`; a `&mut` of it or a `map` of it runs std's, as std's
+  impls for those pass none on (#2430).
 - **A `dyn Debug` stored or passed is `{ value, impl }` too,** shown as
   `d.impl.fmt(d.value)`, or `d.impl.fmt(d.value, { alternate: true })` for
   `{:#?}`, so its `fmt` runs each time it's shown, as Rust's does. One

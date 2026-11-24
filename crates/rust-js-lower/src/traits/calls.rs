@@ -815,13 +815,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether generic code's call of `Iterator`'s provided method `id` of
-    /// `self_ty`, its `Self`, is Rust's dispatch on the steps it holds:
-    /// `Self` a type parameter, never a `&mut I` or a `Box<I>`, which pass
-    /// none on, as std's don't, where an impl not std's writes its own
-    /// (`dispatched_override`, #2414, #2421). The one question, of every
-    /// call MIR lowers (`mir_call_values_of`'s).
+    /// `self_ty` dispatches, of every call MIR lowers
+    /// (`mir_call_values_of`'s): recognition's `dispatched_call`.
     pub fn provided_dispatches(&self, id: DefId, self_ty: Ty<'tcx>) -> bool {
-        crate::generic_facts::is_type_parameter(self_ty) && crate::recognition::dispatched_override(self.tcx, id)
+        crate::recognition::dispatched_call(self.tcx, id, self_ty)
     }
 
     /// The steps generic code holds of `receiver`, of type `self_ty` (a type

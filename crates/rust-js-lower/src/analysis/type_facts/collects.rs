@@ -192,12 +192,18 @@ fn collects_run<'tcx>(
     let (tcx, foreign) = (recognition.tcx, recognition.foreign);
     let mut run = vec![((callee, args), typing_env, None)];
     // Only of a call lowered as one given its bounds' dictionaries, a crate's
-    // or a library's function's: std's own `collect()` or `from_iter` into
-    // one of its collections is lowered in place, of no dictionary, and asks
+    // or a library's function's, or std's provided method generic code
+    // dispatches, whose override's entry is given them (`dispatched_call`,
+    // #2430): std's own `collect()` or `from_iter` into one of its
+    // collections is otherwise lowered in place, of no dictionary, and asks
     // as a body's collect does. None of std's bodies compiled into
     // `@rust-js/std` takes a `FromIterator`'s; one that did would be refused
     // its items' layout, as before (#934), never given a wrong one.
-    if crate::recognition::is_std_crate(tcx, callee) {
+    let dispatched = args
+        .types()
+        .next()
+        .is_some_and(|this| crate::recognition::dispatched_call(tcx, callee, this));
+    if crate::recognition::is_std_crate(tcx, callee) && !dispatched {
         return run;
     }
     let from_iterator = std_item(tcx, StdItem::FromIterator);

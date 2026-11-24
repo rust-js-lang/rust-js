@@ -676,14 +676,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^provided_methods_a_type_writes_are_its_own.rs$"],
   },
   {
-    name: "provided-on-a-lent-value",
-    breaks: "a `&mut I` of the crate's iterator is asked for its own `position`, where std's `&mut I` passes none on, so generic code given a lend runs the crate's own (#2421)",
-    file: "crates/rust-js-lower/src/traits/calls.rs",
-    find: "        crate::generic_facts::is_type_parameter(self_ty) && crate::recognition::dispatched_override(self.tcx, id)\n",
-    replace: "        crate::generic_facts::is_type_parameter(self_ty.peel_refs()) && crate::recognition::dispatched_override(self.tcx, id)\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_overrides_std_lowers_itself.rs$"],
-  },
-  {
     name: "provided-dictionary-taken-for-the-value",
     breaks: "a type parameter given a dictionary is asked for its own provided method as the value itself, a struct, which carries none, never the JS iterator its dictionary steps, so std's `partition` runs (#2421)",
     file: "crates/rust-js-lower/src/traits/calls.rs",

@@ -260,3 +260,44 @@ methods dispatched today no override asks a fact the trait's own slots
 name, so the convention is empty for each and no mutation of it is caught
 by output yet; #2430's case will (a crate's own `collect` through generic
 code, `target/` until then).
+
+## Amended: an impl's own `collect` is dispatched (2026-11-24, #2430)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a crate's iterator
+that writes its own `collect` ran std's where generic code collected it,
+and printed what Rust's dispatch doesn't.
+
+With #2442 the entry of a std collection's `FromIterator` asks its caller
+what it collects by, so `collect` leaves `dispatched_override`'s
+exclusion: generic code's `it.collect()` of a type parameter is
+`$provided(it, "ownCollect", [BFromIterator], () => ..)`, std's collect in
+the thunk, the override given the call's own `B: FromIterator`
+dictionary. Whether a call dispatches is one answer,
+`recognition::dispatched_call` (`Self` a type parameter and
+`dispatched_override`), which the lowering's `provided_dispatches` and the
+facts analysis's `collects_run` both ask: a dispatched `collect()` gives
+its override's entry that dictionary, so what the dictionary's `fromIter`
+collects by is asked of the caller, where std's own collect, lowered in
+place, gives none. Without that, itertools' `collect_vec`, `fn
+collect_vec(self) -> Vec<Self::Item> { self.collect() }`, was refused its
+items' alignment, which the crate corpus caught.
+
+No program's JS but the new case's moved: the corpus, the crate corpus
+(itertools' rows too) and React's port are as they were, as none of them
+writes its own `collect`. Held by `iterator_own_collect_through_generic_code.rs`
+(a crate's own `collect` through generic code into a `Vec` and a
+`BTreeSet`, std's through a `&mut` of it and a `map` of it) and the
+mutations `entry-collects-of-a-dispatched-collect-unasked` and
+`provided-on-a-lent-value`, which moved with the rule to
+recognition/overrides.rs.
+
+An override's own ask of a fact of the method's own type parameters, an
+own `collect`'s `size_of::<B>()`, isn't in the convention, which holds
+only the fact slots the method itself has, std's `collect` none of `B`'s.
+Its entry can't be given it, so it's refused where it's made, naming the
+override and the fact (`provided_entry`), never asked of what the entry
+can't name: a refusal of valid Rust, never another program's output,
+until generic code's dispatch gives an override those too (#2449, the
+lead's decision). Held by
+`iterator_own_collect_asking_its_outputs_size_refused.rs` and the mutation
+`provided-entry-own-parameters-fact-unrefused`.

@@ -43,13 +43,19 @@ pub(crate) fn dispatched_override(tcx: TyCtxt<'_>, provided: DefId) -> bool {
         && tcx.defaultness(provided).has_value()
         && super::OwnStep::of_method(name.as_str()).is_none()
         && name.as_str() != "size_hint"
-        // Left as it was, undispatched, until generic code can name what its
-        // overrides' entries take: itertools' own `collect_vec` collects into
-        // a `Vec<Self::Item>`, whose `FromIterator` dictionary needs the
-        // item's layout, which generic code over `Self` doesn't carry
-        // (#2442, which blocks #2430).
-        && name.as_str() != "collect"
         && tcx
             .all_impls(iterator)
             .any(|imp| !super::is_std_crate(tcx, imp) && tcx.impl_item_implementor_ids(imp).contains_key(&provided))
+}
+
+/// Whether generic code's call of `Iterator`'s provided method `id` of
+/// `self_ty`, its `Self`, is Rust's dispatch on the steps it holds: `Self`
+/// a type parameter, never a `&mut I` or a `Box<I>`, which pass none on, as
+/// std's don't, where an impl not std's writes its own
+/// (`dispatched_override`, #2414, #2421). The one answer of the lowering's
+/// (`provided_dispatches`) and of the facts analysis's, which asks what the
+/// dispatched call's own bounds' dictionaries ask, a `collect()`'s
+/// `FromIterator` its override's entry is given (`collects_run`, #2430).
+pub(crate) fn dispatched_call<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, self_ty: rustc_middle::ty::Ty<'tcx>) -> bool {
+    crate::generic_facts::is_type_parameter(self_ty) && dispatched_override(tcx, id)
 }

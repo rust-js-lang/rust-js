@@ -162,6 +162,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             params.push(name);
         }
+        // An override's own ask of a fact of what only the call knows, a type
+        // parameter of the method's own, `size_of::<B>()` of an own
+        // `collect`, which the convention doesn't give it: refused here,
+        // naming it, never asked of what this entry can't name (#2449).
+        let normalized = |ty: Ty<'tcx>| {
+            let ty = tcx.erase_and_anonymize_regions(ty);
+            (tcx.try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))).unwrap_or(ty)
+        };
+        let of_own = |ty: Ty<'tcx>| {
+            (ty.walk()).any(|part| {
+                (part.as_type())
+                    .and_then(crate::generic_facts::type_parameter_of)
+                    .is_some_and(|index| index >= trait_parent)
+            })
+        };
+        for slot in self.evidence_slots(method, Scope::Whole) {
+            let Slot::Fact(index, fact) = slot else { continue };
+            let of = normalized(self.drop_slot_of(method, index, instance.args));
+            if of_own(of)
+                && !facts
+                    .iter()
+                    .any(|&(given, asked, _)| asked == fact && normalized(given) == of)
+            {
+                let what = format!(
+                    "`{}` of `{of}`, which `{}` asks of its own `{}` and generic code's dispatch doesn't give an override (#2449)",
+                    fact.described(),
+                    tcx.def_path_str(method),
+                    tcx.item_name(id),
+                );
+                return Err(self.unsupported(span, &what));
+            }
+        }
         let location = location.unwrap_or_else(|| self.location_at(tcx.def_span(method)));
         let given = GivenEvidence {
             bounds: &bounds,

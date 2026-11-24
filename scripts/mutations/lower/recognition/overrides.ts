@@ -19,4 +19,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^std_method_of_a_mut_to_a_held_mut.rs$"],
     snapshots: true,
   },
+  {
+    name: "provided-on-a-lent-value",
+    breaks: "a `&mut I` of the crate's iterator is asked for its own `position`, where std's `&mut I` passes none on, so generic code given a lend runs the crate's own (#2421)",
+    file: "crates/rust-js-lower/src/recognition/overrides.rs",
+    find: "    crate::generic_facts::is_type_parameter(self_ty) && dispatched_override(tcx, id)\n",
+    replace: "    crate::generic_facts::is_type_parameter(self_ty.peel_refs()) && dispatched_override(tcx, id)\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_overrides_std_lowers_itself.rs$"],
+  },
 ];

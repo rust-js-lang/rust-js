@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     name: "entry-collects-of-stds-own-collect",
     breaks: "a body's own `collect()` into a std collection, lowered in place, of no dictionary, is asked an entry's too, so a library's impl method is asked its items' layout no caller of its dictionary gives, and refused (#2442)",
     file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
-    find: "    if crate::recognition::is_std_crate(tcx, callee) {\n",
+    find: "    if crate::recognition::is_std_crate(tcx, callee) && !dispatched {\n",
     replace: "    if false {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_iterator_growing_by_its_parameters_take"],
   },
@@ -251,5 +251,13 @@ export const mutations: Mutation[] = [
     find: "        asked.extend(tree_built_asked((tcx, foreign), typing_env, owner, (callee, args)));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^collect_entry_of_generic_items.rs$"],
+  },
+  {
+    name: "entry-collects-of-a-dispatched-collect-unasked",
+    breaks: "a dispatched `collect()`, whose override's entry is given its `B: FromIterator`, is asked as std's own collect is, in place, so a `Vec<Self::Item>`'s entry's items' layout isn't asked and itertools' `collect_vec` is refused it (#2430)",
+    file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
+    find: "    if crate::recognition::is_std_crate(tcx, callee) && !dispatched {\n",
+    replace: "    if crate::recognition::is_std_crate(tcx, callee) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_own_collect_through_generic_code.rs$"],
   },
 ];
