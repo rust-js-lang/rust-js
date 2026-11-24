@@ -9,6 +9,9 @@ pub(crate) enum Command {
     RuntimeModule,
     /// `--std-declarations`: `@rust-js/std`'s types, `index.d.ts` (ADR 1149).
     StdDeclarations,
+    /// `--std-models`: which std function each of the runtime's models
+    /// stands for and its proof, the one catalog (ADR 1202), as JSON.
+    StdModels,
     /// `--version-json`: the compiler's identity, as a manifest records it.
     VersionJson,
     /// `--version`.
@@ -187,6 +190,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     match args.first().map(String::as_str) {
         Some("--runtime-module") if args.len() == 1 => return Ok(Command::RuntimeModule),
         Some("--std-declarations") if args.len() == 1 => return Ok(Command::StdDeclarations),
+        Some("--std-models") if args.len() == 1 => return Ok(Command::StdModels),
         Some("--version-json") if args.len() == 1 => return Ok(Command::VersionJson),
         Some("--version") if args.len() == 1 => return Ok(Command::Version),
         Some("--layout-identity") if args.len() == 1 => return Ok(Command::LayoutIdentity),

@@ -11,364 +11,65 @@
 //
 // A helper is pitted where a case's plain build imports it and its std
 // build doesn't: std's body ran in its place. Each other helper the plain
-// build imports, the std build imports too, so no case pits it: `shared`
-// says why, by its kind. A run fails on a gap alone, a helper neither
-// pitted nor listed, and of a whole run one `pitted` lists that no case
-// pits now, coverage lost; a list out of date with no gap is drift, which
-// `BLESS=1 bun test/twin-net.ts helpers` writes into the lists, and the
-// nightly offers as a patch, `bun run ci:bless nightly` (ADR 1122,
-// amended). `bun test/twin-net.ts helpers` asks it of the last run's.
+// build imports, the std build imports too, so no case pits it: the one
+// catalog of the runtime's models, models.rs, which the compiler prints,
+// says why, glue or an unproven model's reason (ADR 1202). A run fails on
+// a gap alone, a helper the catalog doesn't name, and of a whole run one
+// it says is `Pitted` that no case pits now, coverage lost; a catalog out
+// of date with no gap is drift, which `BLESS=1 bun test/twin-net.ts
+// helpers` writes into models.rs, and the nightly offers as a patch, `bun
+// run ci:bless nightly` (ADR 1122, amended). `bun test/twin-net.ts
+// helpers` asks it of the last run's.
 
+import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { twinHelpers } from "./iterator-matrix";
+import { compiler } from "./packages-of";
 
 /** The runtime's helpers a module of rust-js's imports, by name. */
 export function importedHelpers(js: string): string[] {
   return [...js.matchAll(/^import \{([^}]*)\} from "@rust-js\/std";$/gm)].flatMap((m) => m[1].split(",").map((name) => name.trim()).filter(Boolean));
 }
 
-/** Why std's build has no body of its own in place of each helper both
- * builds import. */
-const why = {
-  glue: "rust-js's own: how JS holds a value, a reference, a panic, a drop or a trait's dictionary, no copy of a std body",
-  consumers: "an `Iterator` method std provides, whose default body std's build lowers as the plain build does: it compiles std's adapter structs, not the consumers",
-  iterators: "a std iterator whose struct std's build doesn't compile, a slice's search",
-  "js-own": "a std iterator stepped as JS's own iteration by decision, an array's, a string's `Chars`, any JS iterator's step: its ADR beside it (#1458)",
-  memory: "a std method whose body reaches memory, which std's build can't compile (docs/std-coverage.txt): its ADR beside it",
-  ranges: "a range's `Iterator`, `Step`'s, which std's build doesn't compile: its literal panics, its specialized traits, its bound's comparisons, each integer's `Step` and a range's every form would need it (#1589)",
-  collections: "a method of `Vec`, `VecDeque`, a slice, `String`, `BinaryHeap` or a map or a set, whose body std's build doesn't compile: it compiles std's iterator structs alone",
-  sort: "a sort, which rust-js writes as its own in both builds",
-  format: "`Debug`, which std's build doesn't compile",
-  cells: "a `RefCell`'s borrows and its guards, a map of one too, which std's build doesn't compile",
-  numbers: "a number parsed from text, its `FromStr`, which std's build doesn't compile: the tables' `String` items' `v()` (#1681's step (a))",
-} as const;
+/** One helper of the runtime's as the one catalog says it
+ * (crates/rust-js-lower/src/recognition/models.rs, ADR 1202): glue, or a
+ * model of the std items it stands for, pitted or unproven for a reason. */
+export type Entry = { helper: string; kind: "glue" | "model"; pitted: boolean; why: string | null; standsFor: string[]; note: string };
 
-/** Each helper a whole run pits against std's body: a slice may see one
- * only where both builds import it. */
-export const pitted: string[] = [
-  "$clone",
-  "$collectDropping",
-  "$consume",
-  "$cycleOf",
-  "$enumerate",
-  "$exactLen",
-  "$filterDropping",
-  "$filterEnds",
-  "$findBack",
-  "$flatMap",
-  "$flattenEnds",
-  "$foldBack",
-  "$holding",
-  "$iterator",
-  "$knowing",
-  "$lazyChain",
-  "$lazyMapWhile",
-  "$lazyRange",
-  "$lazyScan",
-  "$lazySkipWhile",
-  "$lazyTakeWhile",
-  "$lazyZip",
-  "$lent",
-  "$mapEnds",
-  "$nextBack",
-  "$range",
-  "$rangeLen",
-  "$rangeNextBack",
-  "$repeating",
-  "$repeatingN",
-  "$rev",
-  "$skipping",
-  "$some",
-  "$someItems",
-  "$someValue",
-  "$somes",
-  "$stepBy",
-  "$stepByEnds",
-  "$taking",
-  "$trustedZip",
-  "$trustedZipEnds",
-  "$tryOf",
-  "$unfused",
-  "$unfusedUnless",
-  "$untracked",
-  "$zipEnds",
-];
+/** The catalog's file, which a whole run's drift is blessed into. */
+export const catalogFile = join(import.meta.dir, "..", "crates", "rust-js-lower", "src", "recognition", "models.rs");
+
+let read: { models: Entry[]; why: Record<string, string> } | undefined;
+
+/** The catalog as the compiler prints it, `rust-js --std-models`: no list of
+ * its own here (test/architecture-models.test.ts). */
+export function catalog(): { models: Entry[]; why: Record<string, string> } {
+  if (read !== undefined) return read;
+  const printed = spawnSync(compiler, ["--std-models"], { encoding: "utf8" });
+  if (printed.status !== 0) throw new Error(`\`${compiler} --std-models\` failed: ${printed.stderr}`);
+  read = JSON.parse(printed.stdout) as { models: Entry[]; why: Record<string, string> };
+  return read;
+}
+
+/** Each helper the catalog says the twin net pits against std's body. */
+export function pittedHelpers(): string[] {
+  return catalog().models.filter((entry) => entry.pitted).map((entry) => entry.helper);
+}
 
 /** Each helper both builds import, by why no case pits it against std's
- * body. */
-export const shared: Record<string, keyof typeof why> = {
-  "$add": "collections",
-  "$advanceSlice": "js-own", // ADRs 0422, 0465: an array's iterator an adapter holds, advanced by index
-  "$andModify": "collections",
-  "$append": "collections",
-  "$asChunksMut": "collections",
-  "$asciiCase": "collections",
-  "$assign": "glue",
-  "$at": "glue",
-  "$binarySearchBy": "collections",
-  "$borrow": "cells",
-  "$borrowMut": "cells",
-  "$BTreeMap": "collections",
-  "$BTreeSet": "collections",
-  "$btreeSet": "collections",
-  "$byteLen": "collections",
-  "$checkedSplitAtMut": "collections",
-  "$capacity": "collections",
-  "$reserve": "collections",
-  "$roomFor": "collections",
-  "$unwinds": "glue",
-  "$catchable": "glue",
-  "$catchUnwind": "glue",
-  "$chars": "js-own", // ADR 1117: a string's `Chars`, the runtime's lazy one
-  "$chunksExactMut": "collections",
-  "$chunksMut": "collections",
-  "$clampBy": "collections",
-  "$cleanup": "glue",
-  "$cloneFromSlice": "collections",
-  "$cloneIntoVec": "collections",
-  "$cmp": "glue",
-  "$cmpItems": "consumers",
-  "$collectOptions": "consumers",
-  "$collectResults": "consumers",
-  "$collectsInPlace": "consumers",
-  "$collectVec": "consumers",
-  "$copyFromSlice": "collections",
-  "$copyRange": "collections",
-  "$copyWithin": "collections",
-  "$count": "consumers",
-  "$closing": "glue",
-  "$debugDuration": "format",
-  "$debugParseError": "format",
-  "$debugF64": "format",
-  "$debugList": "format",
-  "$debugMap": "format",
-  "$debugSet": "format",
-  "$debugStr": "format",
-  "$decodeUtf16": "iterators", // ADR 0327, #1584: `char::decode_utf16`'s, whose error is its code, where std's body makes `DecodeUtf16Error { code }`
-  "$dedupBy": "collections",
-  "$disposeIterator": "js-own", // ADR 0140, ADR 1136: a `dyn Iterator`'s JS iterator, a binding's, closed as JS's own
-  "$droppingIterator": "js-own", // ADR 0140, ADR 1136: a `dyn Iterator`'s JS iterator stepped dropping what it gives, as JS's own
-  "$dedupByCells": "collections",
-  "$dequeInsert": "collections",
-  "$dequeSwapRemove": "collections",
-  "$dispose": "glue",
-  "$drain": "collections",
-  "$drainAll": "collections",
-  "$dropEach": "glue",
-  "$dropItems": "glue",
-  "$dropping": "glue",
-  "$endEntry": "collections",
-  "$entry": "collections",
-  "$entryGet": "collections",
-  "$entryInsert": "collections",
-  "$entryOrInsert": "collections",
-  "$entryOrInsertWith": "collections",
-  "$entryRemove": "collections",
-  "$eq": "glue",
-  "$exchange": "glue",
-  "$extend": "collections",
-  "$extendMap": "collections",
-  "$extendText": "collections",
-  "$extractIf": "collections",
-  "$fill": "collections",
-  "$fillWith": "collections",
-  "$findDropping": "consumers",
-  "$foldDropping": "consumers",
-  "$folded": "consumers",
-  "$foldOf": "consumers",
-  "$foldToArray": "consumers",
-  "$getDisjointMut": "collections",
-  "$given": "glue",
-  "$givenDrop": "glue",
-  "$grew": "collections",
-  "$grownBy": "collections",
-  "$grownVec": "collections",
-  "$guardFilterMap": "cells",
-  "$guardMap": "cells",
-  "$guardMapSplit": "cells",
-  "$hashedMap": "collections",
-  "$hashedSet": "collections",
-  "$hashSlice": "glue",
-  "$heapAppend": "collections",
-  "$heapExtend": "collections",
-  "$heapFrom": "collections",
-  "$heapPop": "collections",
-  "$heapPush": "collections",
-  "$heapRetain": "collections",
-  "$heapSorted": "collections",
-  "$held": "glue",
-  "$index": "glue",
-  "$inPlaceCapacityFrom": "collections", // #1428: a `Vec` collected in place, its capacity its source buffer's, walked from the iterator std's struct holds
-  "$insert": "collections",
-  "$insertAt": "collections",
-  "$insertMut": "collections",
-  "$insertStr": "collections",
-  "$intoIter": "js-own", // ADRs 0061, 0475: a generic `IntoIterator` of an array, its `$iter`
-  "$intsOrdered": "glue",
-  "$isSortedBy": "consumers",
-  "$isSortedByKey": "consumers",
-  "$iter": "js-own", // ADR 0071: an array's iterator, which knows where it is
-  "$iterCmp": "consumers",
-  "$iterEq": "consumers",
-  "$iterEqGiven": "consumers",
-  "$keepCapacity": "collections",
-  "$KeyMap": "collections",
-  "$KeySet": "collections",
-  "$last": "consumers",
-  "$lastDropping": "consumers",
-  "$live": "glue",
-  "$madeEach": "glue",
-  "$madeInTurn": "glue",
-  "$main": "glue", // ADR 1198: a binary's start, which every case's binary imports
-  "$makeMut": "glue",
-  "$mapExtractIf": "collections",
-  "$mapFrom": "collections",
-  "$mapGetDisjointMut": "collections",
-  "$max": "consumers",
-  "$maxBy": "consumers",
-  "$maxByKey": "consumers",
-  "$maxOf": "consumers",
-  "$min": "consumers",
-  "$minBy": "consumers",
-  "$minByKey": "consumers",
-  "$minOf": "consumers",
-  "$mutAt": "glue",
-  "$mutEntries": "collections",
-  "$mutGet": "collections",
-  "$mutValues": "collections",
-  "$newCyclic": "glue",
-  "$jsIterator": "js-own", // ADR 1136, amended: the dictionary of any JS iterator generic code is given, its steps `$next`'s
-  "$stepsOf": "js-own", // ADR 0570, amended (#2039): a type parameter's value std's compiled body is given, as it is, never armed to close at its end
-  "$jsIteratorSome": "js-own", // ADRs 1136, 0051: the same of items that may look like `None`, boxed
-  "$next": "js-own", // ADR 0140: the step of any JS iterator, its item or `undefined`
-  "$nextSome": "js-own", // ADRs 0140, 0051: the step of any JS iterator, its item boxed where it may look like `None`
-  "$nextBackSome": "js-own", // ADRs 0164, 0051: the step from its back of any JS iterator, its item boxed where it may look like `None`, of an `Option`'s items (#1826)
-  "$nth": "consumers",
-  "$nthBack": "consumers",
-  "$nthDropping": "consumers",
-  "$ord": "glue",
-  "$ordTreeMap": "collections",
-  "$ordTreeSet": "collections",
-  "$orInsert": "collections",
-  "$orInsertWith": "collections",
-  "$orInsertWithKey": "collections",
-  "$parseInt": "numbers",
-  "$partialEq": "glue",
-  "$partiallyOrdered": "glue",
-  "$partialOrd": "glue",
-  "$partition": "consumers",
-  "$partitionPoint": "collections",
-  "$pathJoin": "collections",
-  "$peek": "memory", // ADR 0561: `Peekable::peek`, whose body reaches memory
-  "$peekSome": "memory", // ADRs 0561, 0051: `$peek`'s of items that may look like `None`, each boxed, an `Option`'s items (#1826)
-  "$peekMut": "collections",
-  "$peekMutDrop": "collections",
-  "$peekMutTop": "collections",
-  "$pop": "collections",
-  "$popFrontIf": "collections",
-  "$popIf": "collections",
-  "$position": "consumers",
-  "$pushFrontMut": "collections",
-  "$pushMut": "collections",
-  "$rangeCountOut": "ranges",
-  "$rangeFirst": "ranges",
-  "$rangeLast": "ranges",
-  "$rangeLastOut": "ranges",
-  "$rangeNext": "ranges",
-  "$rangeNth": "ranges",
-  "$rangeNthBack": "ranges",
-  "$rcClone": "glue",
-  "$rcDrop": "glue",
-  "$rchunksMut": "collections",
-  "$reduce": "consumers",
-  "$remove": "collections",
-  "$removeOutOfBounds": "collections",
-  "$removeEntry": "collections",
-  "$removeItem": "collections",
-  "$removeOpt": "collections",
-  "$repeat": "collections", // `vec![item; count]`, `Vec::from_elem`
-  "$replaceRange": "collections",
-  "$replaceWith": "collections",
-  "$reserveHint": "collections",
-  "$resize": "collections",
-  "$resizeWith": "collections",
-  "$retain": "collections",
-  "$retainBack": "collections",
-  "$retainDeque": "collections",
-  "$retainMap": "collections",
-  "$retainMut": "collections",
-  "$retainSet": "collections",
-  "$retainText": "collections",
-  "$roomForCounted": "collections",
-  "$roomForHint": "collections",
-  "$rotateLeft": "collections",
-  "$rotateRight": "collections",
-  "$selectNthUnstable": "sort",
-  "$setReplace": "collections",
-  "$setTake": "collections",
-  "$shift": "collections",
-  "$formatting": "format",
-  "$out": "format",
-  "$showBorrowed": "format",
-  "$sink": "format",
-  "$sizeHint": "glue",
-  "$slice": "collections",
-  "$sliceSplitAt": "collections",
-  "$lazySliceSplitBy": "iterators",
-  "$lazySliceSplitByMut": "iterators",
-  "$lazyChunkBy": "iterators",
-  "$lazyChunkByMut": "iterators",
-  "$slicing": "glue",
-  "$someGet": "glue",
-  "$someMut": "glue",
-  "$sortByCachedKey": "sort",
-  "$sortedEntries": "collections",
-  "$sortedKeys": "collections",
-  "$sortStable": "sort",
-  "$sortUnstable": "sort",
-  "$splice": "collections",
-  "$splicing": "collections",
-  "$panic": "glue",
-  "$splitAtMut": "collections",
-  "$splitChunkMut": "collections",
-  "$splitEndMut": "collections",
-  "$splitOff": "collections",
-  "$strDrain": "collections",
-  "$strExtendWithin": "collections",
-  "$strPop": "collections",
-  "$strRemove": "collections",
-  "$strSplitOff": "collections",
-  "$strTruncate": "collections",
-  "$stringPanic": "glue",
-  "$stdSites": "glue",
-  "$swap": "collections",
-  "$swapRemove": "collections",
-  "$swapWithSlice": "collections",
-  "$take": "collections",
-  "$took": "glue",
-  "$traitImpl": "glue",
-  "$treeAppend": "collections",
-  "$treeEnd": "collections",
-  "$treeFrom": "collections",
-  "$treeFromSorted": "collections",
-  "$treeRange": "collections",
-  "$treeSplitOff": "collections",
-  "$truncate": "collections",
-  "$tryFoldOk": "consumers",
-  "$unborrow": "cells",
-  "$unwindsOn": "glue",
-  "$unwound": "glue",
-  "$unwrap": "glue",
-  "$unwrapOk": "glue",
-  "$unzip": "consumers",
-  "$upgrade": "glue",
-  "$view": "glue",
-  "$viewGet": "glue",
-  "$viewRange": "glue",
-  "$withCapacity": "collections",
-};
+ * body: glue's, or an unproven model's reason. */
+export function sharedHelpers(): Record<string, string> {
+  return Object.fromEntries(catalog().models.filter((entry) => !entry.pitted).map((entry) => [entry.helper, entry.why ?? "glue"]));
+}
+
+/** Each model that stands for no std item yet: #2513's measure of what's
+ * left to bind. */
+export function unboundModels(): string[] {
+  return catalog().models.filter((entry) => entry.kind === "model" && entry.standsFor.length === 0).map((entry) => entry.helper);
+}
+
 
 /** Of a run's `target/twin-net/*.json`, what each build of each batch
  * imported: the helpers some case pitted, and those the plain build
@@ -393,57 +94,78 @@ export function helpersOf(dir = twinHelpers): { pitted: Set<string>; unpitted: S
   return { pitted, unpitted: new Set([...used].filter((helper) => !pitted.has(helper))), judged, of };
 }
 
-/** What a run says of `pitted` and `shared` (ADR 1122, amended).
+/** What a run says of the catalog's pitted and unproven helpers (ADR
+ * 1122, amended; ADR 1202).
  * - `gaps`, which fail it: a helper both builds import that neither list
- *   names; and of a whole run, `whole`, one `pitted` lists that no case
+ *   names; and of a whole run, `whole`, one it says is pitted that no case
  *   pits now, coverage lost, which a slice can't say.
  * - `drift`, of a whole run alone: a list out of date that hides no gap,
- *   which fails nothing and `blessedLists` writes. Each helper a case pits
+ *   which fails nothing and `blessedCatalog` writes. Each helper a case pits
  *   that `pitted` doesn't list goes on it, `pit`; each `shared` lists that
  *   a case pits now, or that nothing imports, comes off it, `unshare`.
  *
  * The nightly's twin net was red four nights running to 2026-11-24 of
  * drift alone, each fixed by hand the next morning. */
 export function twinVerdict(run: { pitted: Set<string>; unpitted: Set<string> }, whole: boolean): { gaps: string[]; drift: string[]; pit: string[]; unshare: string[] } {
+  const pitted = pittedHelpers();
+  const shared = sharedHelpers();
   const listed = new Set(pitted);
   const gaps = [...run.unpitted]
     .filter((helper) => shared[helper] === undefined && !listed.has(helper))
-    .map((helper) => `${helper}: both builds import it and \`shared\` doesn't say why std's build has no body of its own in its place`);
+    .map((helper) => `${helper}: both builds import it and models.rs doesn't say why std's build has no body of its own in its place`);
   if (!whole) return { gaps: gaps.sort(), drift: [], pit: [], unshare: [] };
   for (const helper of pitted.filter((helper) => !run.pitted.has(helper))) {
     gaps.push(
       run.unpitted.has(helper)
-        ? `${helper}: \`pitted\` lists it and both builds import it now, so no case pits it against std's body: coverage lost: pit it again, or move it to \`shared\` saying why`
-        : `${helper}: \`pitted\` lists it and no case imports it now: coverage lost: give a table a case that reaches it, or take it off \`pitted\` where nothing makes it`,
+        ? `${helper}: models.rs says it's \`Pitted\` and both builds import it now, so no case pits it against std's body: coverage lost: pit it again, or make it \`Unproven\` saying why`
+        : `${helper}: models.rs says it's \`Pitted\` and no case imports it now: coverage lost: give a table a case that reaches it, or take it off models.rs where nothing makes it`,
     );
   }
   const pit = [...run.pitted].filter((helper) => !listed.has(helper)).sort();
   const unshare = Object.keys(shared).filter((helper) => run.pitted.has(helper) || !run.unpitted.has(helper)).sort();
   const drift = [
-    ...pit.map((helper) => (shared[helper] === undefined ? `${helper}: a case pits it against std's body: onto \`pitted\`` : `${helper}: a case pits it against std's body now: from \`shared\` to \`pitted\``)),
-    ...unshare.filter((helper) => !run.pitted.has(helper)).map((helper) => `${helper}: no case imports it now: off \`shared\``),
+    ...pit.map((helper) => (shared[helper] === undefined ? `${helper}: a case pits it against std's body: onto models.rs, \`Pitted\`` : `${helper}: a case pits it against std's body now: \`Pitted\` in models.rs`)),
+    ...unshare.filter((helper) => !run.pitted.has(helper)).map((helper) => `${helper}: no case imports it now: off models.rs`),
   ];
   return { gaps: gaps.sort(), drift: drift.sort(), pit, unshare };
 }
 
-/** This file's text, `source`, with a whole run's drift written into its
- * lists: `pitted` in its order, each of `pit` on it once, and each line of
- * `shared` that `unshare` names gone, every other line as it was. */
-export function blessedLists(source: string, { pit, unshare }: { pit: string[]; unshare: string[] }): string {
-  const head = "export const pitted: string[] = [\n";
-  const start = source.indexOf(head) + head.length;
-  const end = source.indexOf("];\n", start);
-  if (start < head.length || end < 0) throw new Error("test/twin-net.ts has no `pitted` list to bless");
-  const lines = new Set(source.slice(start, end).split("\n").filter(Boolean));
-  for (const helper of pit) lines.add(`  "${helper}",`);
-  const sorted = [...lines].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  const off = new Set(unshare.map((helper) => `  "${helper}": `));
-  const rest = source
-    .slice(end)
-    .split("\n")
-    .filter((line) => ![...off].some((prefix) => line.startsWith(prefix)))
-    .join("\n");
-  return `${source.slice(0, start)}${sorted.join("\n")}\n${rest}`;
+/** The catalog's text, `source`, models.rs', with a whole run's drift
+ * written into it: each of `pit` `Pitted`, its std items kept, a new one's
+ * line put in its place in order; each of `unshare` that no case pits taken
+ * off; every other line as it was. */
+export function blessedCatalog(source: string, { pit, unshare }: { pit: string[]; unshare: string[] }): string {
+  // Each line's helper, a bare name there, the export `$` and it.
+  const line = /^ {4}entry\("(\w+)", (Glue|Model\((?:Pitted|Unproven\(Why::\w+\)), (&\[[^\]]*\])\)), ("(?:[^"\\]|\\.)*")\),$/;
+  const lines = source.split("\n");
+  const at = new Map<string, number>();
+  lines.forEach((text, i) => {
+    const m = line.exec(text);
+    if (m) at.set(`$${m[1]}`, i);
+  });
+  if (at.size === 0) throw new Error(`${catalogFile} has no catalog's lines to bless`);
+  const pitted = new Set(pit);
+  for (const helper of pit) {
+    const i = at.get(helper);
+    if (i === undefined) continue;
+    const m = line.exec(lines[i])!;
+    lines[i] = `    entry("${helper.slice(1)}", Model(Pitted, ${m[3] ?? "&[]"}), ${m[4]}),`;
+  }
+  const off = new Set(unshare.filter((helper) => !pitted.has(helper)));
+  let kept = lines.filter((text) => {
+    const m = line.exec(text);
+    return !(m && off.has(`$${m[1]}`));
+  });
+  for (const helper of pit.filter((helper) => !at.has(helper))) {
+    const made = `    entry("${helper.slice(1)}", Model(Pitted, &[]), ""),`;
+    const after = kept.findIndex((text) => {
+      const m = line.exec(text);
+      return m !== null && `$${m[1]}` > helper;
+    });
+    const last = kept.findLastIndex((text) => line.test(text));
+    kept = [...kept.slice(0, after < 0 ? last + 1 : after), made, ...kept.slice(after < 0 ? last + 1 : after)];
+  }
+  return kept.join("\n");
 }
 
 /** Where a run of the twin net says what it ran (`scripts/iteratorSlice.ts`):
@@ -455,16 +177,16 @@ export const twinRun = join(dirname(twinHelpers), "twin-net-run.json");
 export function sayVerdict(verdict: { gaps: string[]; drift: string[] }): boolean {
   for (const gap of verdict.gaps) console.log(gap);
   if (verdict.drift.length > 0) {
-    console.log(`the twin net's lists drifted, no coverage lost: \`BLESS=1 bun test/twin-net.ts helpers\` writes them; the nightly's \`bless-twin-net\`, \`bun run ci:bless nightly\``);
+    console.log(`the catalog drifted, no coverage lost: \`BLESS=1 bun test/twin-net.ts helpers\` writes it, models.rs; the nightly's \`bless-twin-net\`, \`bun run ci:bless nightly\``);
     for (const drift of verdict.drift) console.log(`  ${drift}`);
   }
   return verdict.gaps.length === 0;
 }
 
 /** `bun test/twin-net.ts helpers`: the last run's verdict, said, and with
- * `bless`, `BLESS=1`, its drift written into `file`'s lists, of a whole
- * run that passed alone. Whether it has no gap. */
-export function helpersCommand({ dir = twinHelpers, ran = twinRun, file = join(import.meta.dir, "twin-net.ts"), bless = false } = {}): boolean {
+ * `bless`, `BLESS=1`, its drift written into the catalog, `file`, of a
+ * whole run that passed alone. Whether it has no gap. */
+export function helpersCommand({ dir = twinHelpers, ran = twinRun, file = catalogFile, bless = false } = {}): boolean {
   const helpers = helpersOf(dir);
   if (helpers.of === 0) throw new Error(`no run's helpers in ${dir}: run \`bun scripts/iteratorSlice.ts run twins\``);
   const { whole, passed }: { whole: boolean; passed: boolean } = existsSync(ran) ? JSON.parse(readFileSync(ran, "utf8")) : { whole: false, passed: false };
@@ -475,8 +197,8 @@ export function helpersCommand({ dir = twinHelpers, ran = twinRun, file = join(i
     // A slice's or a failed run's helpers aren't every case's: blessed,
     // they'd take off what the rest pit or import.
     if (!whole || !passed) throw new Error("only a whole run that passed is blessed: `bun scripts/iteratorSlice.ts run twinsAll`");
-    writeFileSync(file, blessedLists(readFileSync(file, "utf8"), verdict));
-    console.log(`blessed: ${verdict.drift.length} of the lists' lines, in ${file}`);
+    writeFileSync(file, blessedCatalog(readFileSync(file, "utf8"), verdict));
+    console.log(`blessed: ${verdict.drift.length} of the catalog's lines, in ${file}: rebuild the compiler, which prints it`);
   }
   return ok;
 }

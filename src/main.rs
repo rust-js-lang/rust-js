@@ -660,6 +660,10 @@ fn run() -> ExitCode {
             print!("{}", rust_js_lower::std_declarations());
             return ExitCode::SUCCESS;
         }
+        Ok(command::Command::StdModels) => {
+            println!("{}", rust_js_lower::std_models());
+            return ExitCode::SUCCESS;
+        }
         Ok(command::Command::VersionJson) => {
             println!(
                 "{}",

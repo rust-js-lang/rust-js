@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (Campaign 5 step 1, ADR 1202, ADR 1122 amended): test/architecture-models.test.ts, new, one test (no second list of the runtime's models); test/twin-net.test.ts reads the catalog `rust-js --std-models` prints, gains its measure (220 models stand for no std item yet, at most), and its bless tests write models.rs; five mutations.
+
 Changed on 2026-11-25 (#2561, ADR 0570 amended): corpus gains `generic_fallible_collect_drops_its_iterator_once`, generic code's `collect()` into an `Option` or a `Result` dropping the iterator it's given once; test/known/metamorphic/2564.txt lists its `loud-drop` rewrite under #2564.
 
 Changed on 2026-11-25 (#2490 phase 2, ADR 1199 amended): test/cell-form-shadow.test.ts gains two tests, eight in all: a binding run while a guard's held, passed by Tu's exceptions 39 and 44, each site named, or by what it's given (a builtin's `Map`); a `try_borrow` nothing can contest, another field's borrow, a type parameter's and an `Rc`'s drop, a thread-local's `with_borrow_mut` and a generic body's loud type; its whole-use test gains proofs A and B and the `momentary` verdict; 23 mutations of `cell_form.rs`, `cell_borrows.rs` and `cell_borrows/unproven.rs`.

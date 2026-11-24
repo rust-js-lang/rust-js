@@ -143,6 +143,7 @@ pub use declarations::std_types::module as std_declarations;
 /// a crate `--rustc` compiles for its metadata too (ADR 0811).
 pub use declarations::validate_types;
 pub use instances::{Instances, instance_bodies};
+pub use recognition::models::json as std_models;
 use rust_js_program::casing::{camel_case, unhyphenated};
 use rust_js_program::names::{fresh_in, js_ident};
 /// Whether each `From` into an untagged enum is the variant of its

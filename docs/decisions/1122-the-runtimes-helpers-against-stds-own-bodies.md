@@ -175,3 +175,14 @@ the nightly's row. A push's slice still fails on a gap it can see.
 Rejected: running the whole catalogue check in a push's check of the
 runtime and iterators' code, which would move the red from the night to
 each such push, 9 minutes of a machine each, for the same bookkeeping.
+
+## Amendment: the net reads the one catalog of the runtime's models (2026-11-25, ADR 1202)
+
+The net's three lists, `pitted`, `shared` and `why`, are gone from
+test/twin-net.ts. Their facts live in the one catalog of the runtime's
+models, models.rs (ADR 1202), each model also naming the std item it
+stands for, and the net reads it from `rust-js --std-models`. Its verdicts
+are the same, said of the catalog: a gap is a helper it doesn't name, or
+one it says is `Pitted` that no case pits now. A whole run's drift is
+blessed into models.rs (`blessedCatalog`), not into twin-net.ts.
+

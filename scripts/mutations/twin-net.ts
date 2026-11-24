@@ -1,7 +1,9 @@
-// The twin net's lists (test/twin-net.ts, ADR 1122, amended): a run fails
-// on a gap alone, a helper neither list names or one `pitted` names that no
-// case pits now, and its lists' drift is blessed, not failed: the nightly's
-// twin net was red four nights running to 2026-11-24 of drift alone.
+// The twin net's reading of the one catalog of the runtime's models
+// (test/twin-net.ts, models.rs; ADR 1122, amended; ADR 1202): a run fails
+// on a gap alone, a helper the catalog doesn't name or one it says is
+// pitted that no case pits now, and the catalog's drift is blessed, not
+// failed: the nightly's twin net was red four nights running to 2026-11-24
+// of drift alone.
 import type { Mutation } from "../mutations";
 
 const gaps = ["test/twin-net.test.ts", "-t", "a gap fails a run"];
@@ -43,10 +45,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "twin-bless-keeps-unshared",
-    breaks: "the bless adds what's pitted now but leaves `shared`'s line of it, and of what nothing imports, so the next night says the same drift again",
+    breaks: "the bless leaves the catalog's line of what nothing imports now, so the next night says the same drift again",
     file: "test/twin-net.ts",
-    find: "    .filter((line) => ![...off].some((prefix) => line.startsWith(prefix)))",
-    replace: "    .filter(() => true)",
+    find: "    return !(m && off.has(`$${m[1]}`));",
+    replace: "    return true;",
+    tests: drift,
+  },
+  {
+    name: "twin-bless-pit-unwritten",
+    breaks: "the bless leaves a helper a case pits now unproven in the catalog, so the next night says the same drift again",
+    file: "test/twin-net.ts",
+    find: "    lines[i] = `    entry(\"${helper.slice(1)}\", Model(Pitted, ${m[3] ?? \"&[]\"}), ${m[4]}),`;",
+    replace: "    lines[i] = lines[i];",
     tests: drift,
   },
   {

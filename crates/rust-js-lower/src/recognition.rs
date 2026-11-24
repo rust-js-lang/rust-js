@@ -47,6 +47,7 @@ pub(super) mod registry;
 mod serde;
 mod shipped;
 pub(crate) use shipped::registry_site;
+pub mod models;
 mod slice_steps;
 mod sorts;
 mod specialization;

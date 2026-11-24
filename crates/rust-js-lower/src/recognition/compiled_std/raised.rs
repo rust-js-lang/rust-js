@@ -1123,6 +1123,15 @@ fn nested_in(tcx: TyCtxt<'_>, inner: DefId, outer: DefId) -> bool {
 /// `library/..:line:column`; `Err` naming a function std hasn't, or of no
 /// site.
 pub(crate) fn raised_catalogue(tcx: TyCtxt<'_>) -> Result<String, String> {
+    // Each std item a model stands for names one of this toolchain's
+    // (`models::unresolved`, ADR 1202).
+    let unresolved = crate::recognition::models::unresolved(tcx);
+    if !unresolved.is_empty() {
+        return Err(format!(
+            "these models stand for no item of std's: {}",
+            unresolved.join(", ")
+        ));
+    }
     let mut kept: IndexMap<&str, ::serde_json::Value> = IndexMap::default();
     for &(name, tag, owner, function_name) in RAISED {
         let id =
