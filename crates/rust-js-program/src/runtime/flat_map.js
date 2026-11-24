@@ -18,8 +18,10 @@ function $unfusedUnless(fused) {
 // Std's `FlattenCompat::last` of `flat`: each inner iterator's own `last`,
 // by its source's fold, `$lastDropping`'s of what it holds (`inners`,
 // #645), a step (#2123).
+// Each inner's `last` at `FlattenCompat::last`'s line of it, a `Repeat`'s
+// panic's (#2488).
 function $flatLast(flat, drop, ends) {
-  const last = $lastDropping(flat, drop, true, ends);
+  const last = $infinitelyAt($stdSites.flattenLast[0], () => $lastDropping(flat, drop, true, ends));
   return last === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(last) };
 }
 
@@ -134,12 +136,14 @@ function $flatMap(it, f, fusing) {
     if (inner !== undefined) {
       const front = inner;
       inner = undefined;
-      counted = $count(front, drop);
+      counted = $count(front, drop, $stdSites.flattenCount[0]);
     }
     if (ended) return counted;
     ended = true;
     dropped = true;
-    const each = (n, x) => n + $count($stepsOf(f(x)), drop);
+    // Each inner's at `FlattenCompat::count`'s line of it, a `Repeat`'s
+    // panic's (#2488).
+    const each = (n, x) => n + $count($stepsOf(f(x)), drop, $stdSites.flattenCount[0]);
     return typeof it.fold === "function"
       ? it.fold(counted, each, undefined, ends)
       : $foldDropping(it, counted, each, undefined, ends);

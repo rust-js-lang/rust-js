@@ -65,8 +65,12 @@ function $lazyChain(a, b) {
   // `last(self)` drops what it holds as it unwinds (#647).
   const last = () =>
     $consumed(chained, () => {
+      // Each side's, at the `FnOnce` shim's line, as `Chain::last` gives
+      // `Iterator::last` to `Option::and_then` (#2488).
       const lastOf = (it) =>
-        it === undefined ? done : it.last !== undefined ? it.last() : $lent(it).last();
+        it === undefined
+          ? done
+          : $infinitelyAt($stdSites.fnOnceCall[0], () => (it.last !== undefined ? it.last() : $lent(it).last()));
       const a = lastOf(first);
       first = undefined;
       const b = lastOf(second);
@@ -117,10 +121,11 @@ function $lazyChain(a, b) {
     $consumed(chained, () => {
       let counted = 0;
       if (first !== undefined) {
-        counted = $count(first, drop);
+        counted = $count(first, drop, $stdSites.chainCount[0]);
         first = undefined;
       }
-      return second === undefined ? counted : counted + $count(second, drop);
+      // Each side's at `Chain::count`'s line of it (#2488).
+      return second === undefined ? counted : counted + $count(second, drop, $stdSites.chainCount[1]);
     });
   // Std's `Chain::advance_by`: `a`'s, then `b`'s of what's left, `a` let
   // go once it's run out (#250), each given the items' drop its caller

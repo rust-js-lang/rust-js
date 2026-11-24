@@ -240,6 +240,12 @@ impl Steps {
     }
 }
 
+/// The catalog's adapters and wrappers, each by its name, `Skip` or
+/// `Box<I>`.
+pub(crate) fn adapters() -> impl Iterator<Item = &'static str> {
+    catalog().keys().copied()
+}
+
 /// What `steps` of std's adapter `name`, a catalog name, ask of what it
 /// holds at `of`, `src` or `other`: each step any run of each asked of it,
 /// whether std's impls write the step or the trait's default asks it, as

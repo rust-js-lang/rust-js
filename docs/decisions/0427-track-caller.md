@@ -474,3 +474,40 @@ by the corpus cases `slice_repeat_past_usize_panics_at_its_checked_mul`
 and `collect_of_a_range_past_usize_panics_at_trusted_len`, and the
 mutations `slice-repeat-at-raw-vec`, `range-past-usize-at-raw-vec` and
 `slice-repeat-row-of-another`.
+
+## Amendment: a `Repeat`'s step reached through an adapter names the adapter's line (2026-11-24, #2488)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a panic named
+another line than Rust's.
+
+A `Repeat`'s own `count` and `last` panic, "iterator is infinite", naming
+their caller, as std's track it (#2324). Reached through an adapter, its
+caller is the adapter's method, which doesn't track its own, so Rust names
+the nearest frame that doesn't, the innermost adapter's call: `Skip::count`'s
+`skip.rs:78:19`, `Enumerate::count`'s, a chain's each side's, a flatten's
+inner's, `Copied`'s, a sized `Box`'s `last` (`boxed/iter.rs:57:17`), a
+chain's `last`, which gives `Iterator::last` to `Option::and_then`, the
+`FnOnce` shim's (`function.rs:250:5`). rust-js named the outermost call's.
+
+The runtime holds the caller's location while a `count` or `last` runs
+(`$infinitelyAt`, restored as it ends, however it ends); each runtime
+adapter that passes the step on gives its own row's site, `$count(src,
+drop, $stdSites.skipCount[0])`, so the innermost wins, as Rust's nearest
+frame, and a `peekable()`'s arm, known only as it runs, is its own. The
+rows are std's MIR's (`compiled_std/raised.rs`'s `HELD_STEPS`: an adapter
+method's calls of the same step of what it holds; `Owner::Resolved`, the
+impl rustc picks for a type over a `Repeat`, `Box`'s sized `BoxIter`,
+`FlattenCompat`'s general one), held to std's step catalog both ways by
+`bun run std` (`held_steps_checked`). A `fuse()`'s and a `peekable()`'s,
+std's compiled adapters, give std's own line already. Of a frame JS
+compiles away, a `Box`'s or a `copied()`'s, the call's location is the
+frame's row, chosen at its terminator (`repeat_frame_row`).
+
+What's left: such a frame below a runtime adapter, `repeat(&x).copied()
+.skip(1).count()`, names the adapter's line, as nothing of it stands
+between them in JS (filed apart, its cases `located-otherwise`). Once
+std's compiled adapters are the default (#1458), their bodies give these
+sites themselves, and the rows serve only the in-place forms; #1458 keeps
+them in step. Held by eighteen corpus cases, one per site, the nested one
+and one that an adapter's site never names a later panic, the unit test
+`held_steps_are_the_catalogs`, and the mutations of each row's use.

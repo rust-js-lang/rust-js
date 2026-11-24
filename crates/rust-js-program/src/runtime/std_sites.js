@@ -171,6 +171,9 @@ const $stdSites = {
   "tupleClone": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone.rs:236:5"
   ],
+  "fnOnceCall": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+  ],
   "fnMutCall": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
   ],
@@ -268,5 +271,33 @@ const $stdSites = {
   ],
   "saturatingOp": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/saturating.rs:551:1"
+  ],
+  "flattenCount": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/flatten.rs:610:24"
+  ],
+  "flattenLast": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/flatten.rs:620:18"
+  ],
+  "boxLast": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/boxed/iter.rs:57:17"
+  ],
+  "skipCount": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/skip.rs:78:19"
+  ],
+  "skipLast": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/skip.rs:87:19"
+  ],
+  "enumerateCount": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/enumerate.rs:102:19"
+  ],
+  "chainCount": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/chain.rs:89:26",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/chain.rs:93:26"
+  ],
+  "copiedCount": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/copied.rs:93:17"
+  ],
+  "copiedLast": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/copied.rs:89:17"
   ]
 };

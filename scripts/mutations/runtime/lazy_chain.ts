@@ -238,4 +238,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/iterator-steps.test.ts", "-t", "each form marks its own the count and last"],
   },
+  {
+    name: "chain-count-sides-swapped",
+    breaks: "a chain's `count` names its other side's line of a `repeat()`, `chain.rs:89:26` where native names `93:26` (#2488)",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
+    find: "      return second === undefined ? counted : counted + $count(second, drop, $stdSites.chainCount[1]);\n",
+    replace: "      return second === undefined ? counted : counted + $count(second, drop, $stdSites.chainCount[0]);\n",
+    tests: ["test/corpus.test.ts", "-t", "^(repeat_chain_second_count_panics_at_chains_line).rs$"],
+  },
+  {
+    name: "chain-last-at-its-caller",
+    breaks: "a chain's `last` of a `repeat()` names its caller's line, where native names the `FnOnce` shim's, `function.rs:250:5` (#2488)",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
+    find: "          : $infinitelyAt($stdSites.fnOnceCall[0], () => (it.last !== undefined ? it.last() : $lent(it).last()));\n",
+    replace: "          : ((() => (it.last !== undefined ? it.last() : $lent(it).last()))();\n",
+    tests: ["test/corpus.test.ts", "-t", "^(repeat_chain_last_panics_at_the_fn_once_shim).rs$"],
+  },
 ];

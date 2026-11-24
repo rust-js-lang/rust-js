@@ -152,6 +152,54 @@ fn own_source_steps(item: Option<StdPath>) -> Option<&'static [OwnStep]> {
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
+    /// Whether an iterator of type `ty` may be a `Repeat`, or reach one's
+    /// own `count` or `last`, which panic naming their caller, as std's
+    /// track it (#2324): one holding a `Repeat` anywhere in its type, or one
+    /// only a caller knows, a type parameter's, a projection's, an opaque
+    /// type's or a `dyn`'s. Its `$count` and `$last` are given where they're
+    /// called (`Expr::call_located`); a concrete other's never.
+    pub fn may_be_repeat(&self, ty: Ty<'tcx>) -> bool {
+        ty.walk()
+            .filter_map(|part| part.as_type())
+            .any(|part| match part.kind() {
+                ty::Adt(adt, _) => {
+                    std_item_in(self.tcx, adt.did(), StdPath::IterMod).is_some_and(|name| name.as_str() == "Repeat")
+                }
+                ty::Param(_) | ty::Alias(..) | ty::Dynamic(..) => true,
+                _ => false,
+            })
+    }
+
+    /// Of `step`, `count` or `last`, of `ty`, std's frame that the runtime
+    /// has none of, as JS holds it as what it holds: a sized `Box`'s `last`,
+    /// whose specialization calls its iterator's, and a `copied()`'s, whose
+    /// item is its source's; the `$stdSites` row of the innermost such
+    /// frame above what it holds, whose line a `Repeat`'s own step names, as
+    /// std's tracks its caller and that frame doesn't. An adapter the
+    /// runtime has below it gives its own as it runs, the nearest frame's,
+    /// as Rust's (#2488). `None` of another, whose caller's line it is.
+    pub fn repeat_frame_row(&self, ty: Ty<'tcx>, step: &str) -> Option<&'static str> {
+        // A sized box's, each box's the same line.
+        let unboxed = super::held::held_unboxed(ty);
+        if unboxed != ty {
+            return match step {
+                "last" => self.repeat_frame_row(unboxed, step).or(Some("boxLast")),
+                _ => None,
+            };
+        }
+        let ty::Adt(adt, args) = ty.kind() else {
+            return None;
+        };
+        if std_item_in(self.tcx, adt.did(), StdPath::IterMod).is_some_and(|name| name.as_str() == "Copied") {
+            let row = match step {
+                "count" => "copiedCount",
+                _ => "copiedLast",
+            };
+            return self.repeat_frame_row(args.type_at(0), step).or(Some(row));
+        }
+        None
+    }
+
     /// Whether std's `step` of a `ty`, an iterator, reaches the one the impl
     /// of a crate's iterator writes: of that iterator, and through a `&mut`
     /// of it, or a sized `Box` of it, where std's impl for it passes the

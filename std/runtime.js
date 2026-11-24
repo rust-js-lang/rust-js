@@ -5850,7 +5850,9 @@ export function $skipping(iter, n, drop) {
         return 0;
       }
     }
-    return $count(skipping.iter, dropItem);
+    // Its source's `count`, at `Skip::count`'s line of it, which a
+    // `Repeat`'s names, as std's tracks its caller (#2488).
+    return $count(skipping.iter, dropItem, $stdSites.skipCount[0]);
   };
   // Std's `Skip::fold` and `try_fold`: its source's `nth(n - 1)`, where
   // that drops what it passes over itself, then its source's; its `fold`,
@@ -5917,7 +5919,7 @@ export function $skipping(iter, n, drop) {
   // throws, a panic, or ends it, as `last(self)` drops it (#735).
   const last = () => {
     const source = $consumed(skipping, () => skipping.skipped());
-    if (source !== undefined) return source.last();
+    if (source !== undefined) return $infinitelyAt($stdSites.skipLast[0], () => source.last());
     skipping.return();
     return { done: true, value: undefined };
   };
@@ -6557,12 +6559,14 @@ export function $copied(it, f) {
   const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
   $forward(copied, it, {
     nth: it.nth === undefined ? undefined : (k) => mapped(it.nth(k)),
-    last: it.last === undefined ? undefined : () => mapped(it.last()),
+    // Its source's `last` and `count`, at `Copied`'s lines of them, a
+    // `Repeat`'s panic's (#2488).
+    last: it.last === undefined ? undefined : () => mapped($infinitelyAt($stdSites.copiedLast[0], () => it.last())),
     advanceBy: "advanceBy",
-    count: "count",
+    count: it.count === undefined ? undefined : (drop) => $infinitelyAt($stdSites.copiedCount[0], () => it.count(drop)),
     advanceBackBy: "advanceBackBy",
   });
-  return $ownsAs(copied, it, "nth", "last");
+  return $ownsAs(copied, it, "nth", "last", "count");
 }
 
 // Std's `Cloned` of what generic code was given, of items whose clone is
@@ -6882,7 +6886,8 @@ export function $enumerate(iter) {
   // name, `count` being std's field of how many it's given (ADR 0988); so
   // a reversed `Vec`'s take drops what it counts as one slice, front to
   // back (#493). Given a pair's drop, of the item it counts.
-  const countItems = (drop) => $count(enumerated.iter, drop && ((x) => drop([0, x])));
+  // At `Enumerate::count`'s line of it, a `Repeat`'s panic's (#2488).
+  const countItems = (drop) => $count(enumerated.iter, drop && ((x) => drop([0, x])), $stdSites.enumerateCount[0]);
   // Std's `fold` and `try_fold`: its source's, each item counted. Each of
   // its folds gives its source `unwind`, the drop of an accumulator a
   // step's panic strands, as std's passes its closure on (#423, rd767).
@@ -15265,6 +15270,9 @@ export const $stdSites = {
   "tupleClone": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone.rs:236:5"
   ],
+  "fnOnceCall": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+  ],
   "fnMutCall": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
   ],
@@ -15362,6 +15370,34 @@ export const $stdSites = {
   ],
   "saturatingOp": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/saturating.rs:551:1"
+  ],
+  "flattenCount": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/flatten.rs:610:24"
+  ],
+  "flattenLast": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/flatten.rs:620:18"
+  ],
+  "boxLast": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/boxed/iter.rs:57:17"
+  ],
+  "skipCount": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/skip.rs:78:19"
+  ],
+  "skipLast": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/skip.rs:87:19"
+  ],
+  "enumerateCount": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/enumerate.rs:102:19"
+  ],
+  "chainCount": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/chain.rs:89:26",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/chain.rs:93:26"
+  ],
+  "copiedCount": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/copied.rs:93:17"
+  ],
+  "copiedLast": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/copied.rs:89:17"
   ]
 };
 
@@ -22501,8 +22537,12 @@ export function $lazyChain(a, b) {
   // `last(self)` drops what it holds as it unwinds (#647).
   const last = () =>
     $consumed(chained, () => {
+      // Each side's, at the `FnOnce` shim's line, as `Chain::last` gives
+      // `Iterator::last` to `Option::and_then` (#2488).
       const lastOf = (it) =>
-        it === undefined ? done : it.last !== undefined ? it.last() : $lent(it).last();
+        it === undefined
+          ? done
+          : $infinitelyAt($stdSites.fnOnceCall[0], () => (it.last !== undefined ? it.last() : $lent(it).last()));
       const a = lastOf(first);
       first = undefined;
       const b = lastOf(second);
@@ -22553,10 +22593,11 @@ export function $lazyChain(a, b) {
     $consumed(chained, () => {
       let counted = 0;
       if (first !== undefined) {
-        counted = $count(first, drop);
+        counted = $count(first, drop, $stdSites.chainCount[0]);
         first = undefined;
       }
-      return second === undefined ? counted : counted + $count(second, drop);
+      // Each side's at `Chain::count`'s line of it (#2488).
+      return second === undefined ? counted : counted + $count(second, drop, $stdSites.chainCount[1]);
     });
   // Std's `Chain::advance_by`: `a`'s, then `b`'s of what's left, `a` let
   // go once it's run out (#250), each given the items' drop its caller
@@ -22857,8 +22898,10 @@ export function $unfusedUnless(fused) {
 // Std's `FlattenCompat::last` of `flat`: each inner iterator's own `last`,
 // by its source's fold, `$lastDropping`'s of what it holds (`inners`,
 // #645), a step (#2123).
+// Each inner's `last` at `FlattenCompat::last`'s line of it, a `Repeat`'s
+// panic's (#2488).
 export function $flatLast(flat, drop, ends) {
-  const last = $lastDropping(flat, drop, true, ends);
+  const last = $infinitelyAt($stdSites.flattenLast[0], () => $lastDropping(flat, drop, true, ends));
   return last === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(last) };
 }
 
@@ -22973,12 +23016,14 @@ export function $flatMap(it, f, fusing) {
     if (inner !== undefined) {
       const front = inner;
       inner = undefined;
-      counted = $count(front, drop);
+      counted = $count(front, drop, $stdSites.flattenCount[0]);
     }
     if (ended) return counted;
     ended = true;
     dropped = true;
-    const each = (n, x) => n + $count($stepsOf(f(x)), drop);
+    // Each inner's at `FlattenCompat::count`'s line of it, a `Repeat`'s
+    // panic's (#2488).
+    const each = (n, x) => n + $count($stepsOf(f(x)), drop, $stdSites.flattenCount[0]);
     return typeof it.fold === "function"
       ? it.fold(counted, each, undefined, ends)
       : $foldDropping(it, counted, each, undefined, ends);

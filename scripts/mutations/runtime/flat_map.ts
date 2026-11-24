@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     name: "flat-map-count-skips-front",
     breaks: "`$flatMap`'s `count` leaves out the inner iterator it's in, so what a `next()` before it left is never counted (#736)",
     file: "crates/rust-js-program/src/runtime/flat_map.js",
-    find: "      counted = $count(front, drop);\n",
+    find: "      counted = $count(front, drop, $stdSites.flattenCount[0]);\n",
     replace: "      front.return?.();\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
@@ -124,5 +124,13 @@ export const mutations: Mutation[] = [
     find: "    if (fusing === $unfused) flat.functionDrop?.();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_a_source_not_fused_drops_it_at_its_end.rs$"],
+  },
+  {
+    name: "flatten-last-at-its-caller",
+    breaks: "a `flat_map`'s `last` of an inner `repeat()` names its caller's line, where native names `FlattenCompat::last`'s (#2488)",
+    file: "crates/rust-js-program/src/runtime/flat_map.js",
+    find: "  const last = $infinitelyAt($stdSites.flattenLast[0], () => $lastDropping(flat, drop, true, ends));\n",
+    replace: "  const last = $lastDropping(flat, drop, true, ends);\n",
+    tests: ["test/corpus.test.ts", "-t", "^(repeat_flat_map_last_panics_at_flattens_line).rs$"],
   },
 ];

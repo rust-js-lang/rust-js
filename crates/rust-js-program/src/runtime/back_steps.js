@@ -158,12 +158,14 @@ function $copied(it, f) {
   const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
   $forward(copied, it, {
     nth: it.nth === undefined ? undefined : (k) => mapped(it.nth(k)),
-    last: it.last === undefined ? undefined : () => mapped(it.last()),
+    // Its source's `last` and `count`, at `Copied`'s lines of them, a
+    // `Repeat`'s panic's (#2488).
+    last: it.last === undefined ? undefined : () => mapped($infinitelyAt($stdSites.copiedLast[0], () => it.last())),
     advanceBy: "advanceBy",
-    count: "count",
+    count: it.count === undefined ? undefined : (drop) => $infinitelyAt($stdSites.copiedCount[0], () => it.count(drop)),
     advanceBackBy: "advanceBackBy",
   });
-  return $ownsAs(copied, it, "nth", "last");
+  return $ownsAs(copied, it, "nth", "last", "count");
 }
 
 // Std's `Cloned` of what generic code was given, of items whose clone is
@@ -483,7 +485,8 @@ function $enumerate(iter) {
   // name, `count` being std's field of how many it's given (ADR 0988); so
   // a reversed `Vec`'s take drops what it counts as one slice, front to
   // back (#493). Given a pair's drop, of the item it counts.
-  const countItems = (drop) => $count(enumerated.iter, drop && ((x) => drop([0, x])));
+  // At `Enumerate::count`'s line of it, a `Repeat`'s panic's (#2488).
+  const countItems = (drop) => $count(enumerated.iter, drop && ((x) => drop([0, x])), $stdSites.enumerateCount[0]);
   // Std's `fold` and `try_fold`: its source's, each item counted. Each of
   // its folds gives its source `unwind`, the drop of an accumulator a
   // step's panic strands, as std's passes its closure on (#423, rd767).

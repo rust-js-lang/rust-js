@@ -349,14 +349,29 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// Where a block goes, each helper call it makes that takes where a
     /// panic it raises was raised given its caller location, as rustc's
     /// codegen gives a call: its `fn_span`'s, the method's name; another
-    /// terminator's, an `Assert`'s, its span's (#2292).
+    /// terminator's, an `Assert`'s, its span's (#2292). A call of a step of
+    /// std's frame the runtime has none of, a `Box`'s `last`, a `copied()`'s
+    /// `count` or `last`, at that frame's line, which a `Repeat`'s panic
+    /// names, as std's tracks its caller and that frame doesn't
+    /// (`repeat_frame_row`, #2488).
     fn mir_terminator(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
         let terminator = state.body.basic_blocks[block].terminator();
         let span = match &terminator.kind {
             TerminatorKind::Call { fn_span, .. } => *fn_span,
             _ => terminator.source_info.span,
         };
-        let at = self.caller_location(span);
+        let frame = match &terminator.kind {
+            TerminatorKind::Call { func, .. } => func.const_fn_def().and_then(|(callee, args)| {
+                let step = (self.tcx.trait_of_assoc(callee) == Some(std_item(self.tcx, StdItem::Iterator)))
+                    .then(|| self.tcx.item_name(callee))?;
+                self.recognition().repeat_frame_row(args.type_at(0), step.as_str())
+            }),
+            _ => None,
+        };
+        let at = match frame {
+            Some(row) => Expr::std_site(row, 0),
+            None => self.caller_location(span),
+        };
         Expr::raised_at(at, || self.mir_terminator_at(state, block))
     }
 

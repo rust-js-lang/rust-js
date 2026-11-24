@@ -10,7 +10,7 @@
 // `impl Is<Box<I>>` gives, its `I` held as it is, by its dictionary's
 // steps a `Box` passes on alone (#1611).
 
-import { $given, $iterator, $last, $lent, $main, $max } from "@rust-js/std";
+import { $given, $iterator, $last, $lent, $main, $max, $stdSites } from "@rust-js/std";
 
 function upIterator_next(up) {
   if (up[0] < up[1]) {
@@ -56,7 +56,7 @@ function boxedCount(b) {
 }
 
 function boxedLast(b) {
-  return $last(Iterator.from(b), "test/corpus/boxed_iterator_steps_as_std_box_does.rs:61:7");
+  return $last(Iterator.from(b), $stdSites.boxLast[0]);
 }
 
 const tIsT = { is: tIsT_is };
@@ -74,10 +74,7 @@ function countedThrough(b, IIterator, IsBox) {
 }
 
 function lastThrough(b, IIterator, IsBox) {
-  return $last(
-    $given(IsBox.is(b), IIterator),
-    "test/corpus/boxed_iterator_steps_as_std_box_does.rs:79:12",
-  );
+  return $last($given(IsBox.is(b), IIterator), $stdSites.boxLast[0]);
 }
 
 $main(main);

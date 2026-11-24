@@ -82,11 +82,12 @@ crates/rust-js-lower/src/pointers.rs	2
 crates/rust-js-lower/src/pointers/casts.rs	3
 crates/rust-js-lower/src/recognition/calls.rs	1
 crates/rust-js-lower/src/recognition/fmt.rs	1
-# recognition/iterators.rs: one more, `may_be_repeat`'s, the owner of its catalogued fact (#2324).
-crates/rust-js-lower/src/recognition/iterators.rs	5
+crates/rust-js-lower/src/recognition/iterators.rs	4
 crates/rust-js-lower/src/recognition/lends.rs	1
 crates/rust-js-lower/src/recognition/lengths.rs	4
-crates/rust-js-lower/src/recognition/own_steps.rs	1
+# recognition/own_steps.rs: one more, `may_be_repeat`'s, the owner of its catalogued fact, moved from
+# recognition/iterators.rs with `repeat_frame_row` (#2324, #2488).
+crates/rust-js-lower/src/recognition/own_steps.rs	2
 crates/rust-js-lower/src/recognition/sorts.rs	2
 crates/rust-js-lower/src/recognition/specialization.rs	2
 crates/rust-js-lower/src/recognition/traits.rs	11

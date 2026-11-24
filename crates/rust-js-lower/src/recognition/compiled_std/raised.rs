@@ -69,6 +69,175 @@ enum Owner {
         &'static [&'static str],
         (StdCrate, &'static [&'static str], &'static str),
     ),
+    /// A trait's method, the trait at its path, as rustc resolves it for
+    /// the type the function makes, of a `Repeat`: of the impls std
+    /// specializes, the one that applies to it, `Box<Repeat<u8>>`'s sized
+    /// `BoxIter`, a flatten of `Repeat`s' general one, which isn't a
+    /// `OneShot`'s (#2488).
+    Resolved(
+        (StdCrate, &'static [&'static str]),
+        for<'tcx> fn(TyCtxt<'tcx>) -> Option<Ty<'tcx>>,
+    ),
+}
+
+/// `Repeat<u8>`, of which the types `Owner::Resolved` resolves for are made.
+fn a_repeat(tcx: TyCtxt<'_>) -> Option<Ty<'_>> {
+    let repeat = registry::by_path(tcx, StdCrate::Core, &["iter", "sources", "repeat", "Repeat"])?;
+    Some(Ty::new_adt(
+        tcx,
+        tcx.adt_def(repeat),
+        tcx.mk_args(&[tcx.types.u8.into()]),
+    ))
+}
+
+/// `Box<Repeat<u8>>`.
+fn box_of_a_repeat(tcx: TyCtxt<'_>) -> Option<Ty<'_>> {
+    Some(Ty::new_box(tcx, a_repeat(tcx)?))
+}
+
+/// A flatten's own, `FlattenCompat<Empty<Repeat<u8>>, Repeat<u8>>`.
+fn flatten_of_repeats(tcx: TyCtxt<'_>) -> Option<Ty<'_>> {
+    let repeat = a_repeat(tcx)?;
+    let empty = registry::by_path(tcx, StdCrate::Core, &["iter", "sources", "empty", "Empty"])?;
+    let flatten = registry::by_path(tcx, StdCrate::Core, &["iter", "adapters", "flatten", "FlattenCompat"])?;
+    let items = Ty::new_adt(tcx, tcx.adt_def(empty), tcx.mk_args(&[repeat.into()]));
+    Some(Ty::new_adt(
+        tcx,
+        tcx.adt_def(flatten),
+        tcx.mk_args(&[items.into(), repeat.into()]),
+    ))
+}
+
+/// Each std adapter's `count` or `last` that passes the step on to what it
+/// holds, by its name in `$stdSites`, whose sites are where it calls it:
+/// a `Repeat`'s own, which panics naming its caller, as std's tracks it,
+/// so names the adapter's line, the nearest frame that doesn't (#2488).
+/// Each names the adapters of std's step catalog (`std_steps`) it's of; and
+/// `bun run std` holds them to it both ways (`held_steps_checked`).
+const HELD_STEPS: &[(&str, &[&str], Owner, &str)] = &[
+    (
+        "flattenCount",
+        &["Flatten", "FlatMap"],
+        Owner::Resolved(
+            (StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
+            flatten_of_repeats,
+        ),
+        "count",
+    ),
+    (
+        "flattenLast",
+        &["Flatten", "FlatMap"],
+        Owner::Resolved(
+            (StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
+            flatten_of_repeats,
+        ),
+        "last",
+    ),
+    (
+        "boxLast",
+        &["Box<I>"],
+        Owner::Resolved((StdCrate::Alloc, &["boxed", "iter", "BoxIter"]), box_of_a_repeat),
+        "last",
+    ),
+    (
+        "skipCount",
+        &["Skip"],
+        Owner::Impl {
+            trait_: Trait::Path(StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
+            of: (StdCrate::Core, &["iter", "adapters", "skip", "Skip"]),
+        },
+        "count",
+    ),
+    (
+        "skipLast",
+        &["Skip"],
+        Owner::Impl {
+            trait_: Trait::Path(StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
+            of: (StdCrate::Core, &["iter", "adapters", "skip", "Skip"]),
+        },
+        "last",
+    ),
+    (
+        "enumerateCount",
+        &["Enumerate"],
+        Owner::Impl {
+            trait_: Trait::Path(StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
+            of: (StdCrate::Core, &["iter", "adapters", "enumerate", "Enumerate"]),
+        },
+        "count",
+    ),
+    (
+        "chainCount",
+        &["Chain"],
+        Owner::Impl {
+            trait_: Trait::Path(StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
+            of: (StdCrate::Core, &["iter", "adapters", "chain", "Chain"]),
+        },
+        "count",
+    ),
+    (
+        "copiedCount",
+        &["Copied"],
+        Owner::Impl {
+            trait_: Trait::Path(StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
+            of: (StdCrate::Core, &["iter", "adapters", "copied", "Copied"]),
+        },
+        "count",
+    ),
+    (
+        "copiedLast",
+        &["Copied"],
+        Owner::Impl {
+            trait_: Trait::Path(StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
+            of: (StdCrate::Core, &["iter", "adapters", "copied", "Copied"]),
+        },
+        "last",
+    ),
+];
+
+/// Of the catalog's adapters whose `count` or `last` asks the same step of
+/// what it holds, those no `HELD_STEPS` row is of, and why: a chain's
+/// `last`, which gives `Iterator::last` to `Option::and_then`, raised at
+/// the `FnOnce` shim's row, `fnOnceCall`; and a `fuse()`'s and a
+/// `peekable()`'s, made of std's compiled adapter, whose own body gives
+/// std's line (#2488).
+const HELD_STEPS_ELSEWHERE: &[(&str, &str)] = &[
+    ("Chain", "last"),
+    ("Fuse", "count"),
+    ("Fuse", "last"),
+    ("Peekable", "count"),
+    ("Peekable", "last"),
+];
+
+/// That `HELD_STEPS` is std's step catalog's, both ways: each row's
+/// adapters' step asks the same step of what they hold, and each of the
+/// catalog's that does is a row's or `HELD_STEPS_ELSEWHERE`'s, so a step a
+/// new toolchain's adapter passes on is said, never left naming its
+/// caller's line (#2488).
+fn held_steps_checked(rows: &[(&str, &[&str], Owner, &str)], elsewhere: &[(&str, &str)]) -> Result<(), String> {
+    use crate::recognition::std_steps;
+    let asks_the_same = |name: &str, step: &str| std_steps::asks(name, step).iter().any(|asked| asked.step == step);
+    for &(row, names, _, step) in rows {
+        if let Some(name) = names.iter().find(|name| !asks_the_same(name, step)) {
+            return Err(format!(
+                "`{row}`: std's catalog says `{name}`'s `{step}` asks no `{step}` of what it holds"
+            ));
+        }
+    }
+    for name in std_steps::adapters() {
+        for step in ["count", "last"] {
+            let named = rows
+                .iter()
+                .any(|&(_, names, _, of)| of == step && names.contains(&name))
+                || elsewhere.contains(&(name, step));
+            if asks_the_same(name, step) && !named {
+                return Err(format!(
+                    "std's catalog says `{name}`'s `{step}` asks `{step}` of what it holds, which no `HELD_STEPS` row is of"
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Each site of std's panics a helper raises, by its name in `$stdSites`,
@@ -431,6 +600,14 @@ const RAISED: &[(&str, Option<&str>, Owner, &str)] = &[
         Owner::Declared(StdCrate::Core, &["clone", "Clone"]),
         "clone",
     ),
+    // A shim's call of a function value given as an `FnOnce`, a chain's
+    // `last`'s `Iterator::last` given to `Option::and_then` (#2488).
+    (
+        "fnOnceCall",
+        None,
+        Owner::Declared(StdCrate::Core, &["ops", "function", "FnOnce"]),
+        "call_once",
+    ),
     (
         "fnMutCall",
         None,
@@ -716,6 +893,16 @@ fn function(tcx: TyCtxt<'_>, owner: Owner, name: &str) -> Option<DefId> {
                 .collect()
         }
         Owner::Free(krate, path) => return registry::by_path(tcx, krate, path),
+        Owner::Resolved((krate, path), made) => {
+            let trait_ = registry::by_path(tcx, krate, path)?;
+            let name = rustc_span::Symbol::intern(name);
+            let method = (tcx.associated_items(trait_).filter_by_name_unhygienic(name))
+                .next()?
+                .def_id;
+            let env = ty::TypingEnv::fully_monomorphized();
+            let instance = crate::traits::resolve(tcx, env, method, tcx.mk_args(&[made(tcx)?.into()])).ok()??;
+            return Some(instance.def_id());
+        }
         Owner::Default(krate, path) | Owner::Declared(krate, path) => vec![registry::by_path(tcx, krate, path)?],
         Owner::ForByteSlice(krate, path) => {
             let trait_ = registry::by_path(tcx, krate, path)?;
@@ -879,6 +1066,56 @@ fn sites(tcx: TyCtxt<'_>, root: DefId) -> Vec<(String, usize, usize)> {
     found
 }
 
+/// Where `root`, an adapter's `step`, `count` or `last`, calls the same step
+/// of what it holds, `Iterator::count` of a type it doesn't know: in its
+/// own body, a closure or a function nested in it that it gives on, a
+/// flatten's `fn count` given to its fold (#2488).
+fn held_step_sites(tcx: TyCtxt<'_>, root: DefId, step: &str) -> Vec<(String, usize, usize)> {
+    let iterator = std_item(tcx, StdItem::Iterator);
+    let mut found: Vec<(String, usize, usize)> = Vec::new();
+    let mut each = vec![root];
+    let mut seen = IndexSet::default();
+    while let Some(id) = each.pop() {
+        if !seen.insert(id) {
+            continue;
+        }
+        let body = tcx.optimized_mir(id);
+        for block in body.basic_blocks.iter() {
+            let terminator = block.terminator();
+            let mir::TerminatorKind::Call {
+                func, fn_span, args, ..
+            } = &terminator.kind
+            else {
+                continue;
+            };
+            for arg in args.iter() {
+                for part in (arg.node.ty(body, tcx).walk()).filter_map(|part| part.as_type()) {
+                    if let ty::Closure(nested, _) | ty::FnDef(nested, _) = *part.kind()
+                        && nested_in(tcx, nested, root)
+                    {
+                        each.push(nested);
+                    }
+                }
+            }
+            let Some((callee, _)) = func.const_fn_def() else {
+                continue;
+            };
+            if tcx.trait_of_assoc(callee) == Some(iterator) && tcx.item_name(callee).as_str() == step {
+                let info = mir::SourceInfo {
+                    span: *fn_span,
+                    ..terminator.source_info
+                };
+                found.extend(site(tcx, root, body, info));
+            } else if nested_in(tcx, callee, root) {
+                each.push(callee);
+            }
+        }
+    }
+    found.sort_by_key(|site| (site.1, site.2));
+    found.dedup();
+    found
+}
+
 /// Whether `inner` is an item nested in `outer`'s body.
 fn nested_in(tcx: TyCtxt<'_>, inner: DefId, outer: DefId) -> bool {
     let mut at = inner;
@@ -930,8 +1167,46 @@ pub(crate) fn raised_catalogue(tcx: TyCtxt<'_>) -> Result<String, String> {
             }
         }
     }
+    held_steps_checked(HELD_STEPS, HELD_STEPS_ELSEWHERE)?;
+    for &(name, _, owner, step) in HELD_STEPS {
+        let id = function(tcx, owner, step).ok_or_else(|| format!("std has no `{step}` of {owner:?}"))?;
+        let sites = held_step_sites(tcx, id, step);
+        if sites.is_empty() {
+            return Err(format!(
+                "`{step}` of {owner:?} asks no `{step}` of what it holds in its MIR"
+            ));
+        }
+        let sites = (sites.into_iter()).map(|(file, line, column)| format!("{file}:{line}:{column}"));
+        kept.insert(name, ::serde_json::Value::from(sites.collect::<Vec<_>>()));
+    }
     Ok(format!(
         "{}\n",
         ::serde_json::to_string_pretty(&kept).expect("the sites serialize")
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `HELD_STEPS` is std's step catalog's both ways: as written, and
+    /// refused of a row it lacks or a row the catalog doesn't ask (#2488).
+    #[test]
+    fn held_steps_are_the_catalogs() {
+        assert_eq!(held_steps_checked(HELD_STEPS, HELD_STEPS_ELSEWHERE), Ok(()));
+        let lacking: Vec<_> = (HELD_STEPS.iter().copied())
+            .filter(|&(row, ..)| row != "skipCount")
+            .collect();
+        let lacks = held_steps_checked(&lacking, HELD_STEPS_ELSEWHERE).unwrap_err();
+        assert!(lacks.contains("`Skip`'s `count`"), "{lacks}");
+        let stale_row = (
+            "mapCount",
+            &["Map"][..],
+            Owner::Free(StdCrate::Core, &["iter"]),
+            "count",
+        );
+        let stale: Vec<_> = (HELD_STEPS.iter().copied()).chain([stale_row]).collect();
+        let says = held_steps_checked(&stale, HELD_STEPS_ELSEWHERE).unwrap_err();
+        assert!(says.contains("`Map`'s `count` asks no `count`"), "{says}");
+    }
 }

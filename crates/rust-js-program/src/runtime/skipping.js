@@ -63,7 +63,9 @@ function $skipping(iter, n, drop) {
         return 0;
       }
     }
-    return $count(skipping.iter, dropItem);
+    // Its source's `count`, at `Skip::count`'s line of it, which a
+    // `Repeat`'s names, as std's tracks its caller (#2488).
+    return $count(skipping.iter, dropItem, $stdSites.skipCount[0]);
   };
   // Std's `Skip::fold` and `try_fold`: its source's `nth(n - 1)`, where
   // that drops what it passes over itself, then its source's; its `fold`,
@@ -130,7 +132,7 @@ function $skipping(iter, n, drop) {
   // throws, a panic, or ends it, as `last(self)` drops it (#735).
   const last = () => {
     const source = $consumed(skipping, () => skipping.skipped());
-    if (source !== undefined) return source.last();
+    if (source !== undefined) return $infinitelyAt($stdSites.skipLast[0], () => source.last());
     skipping.return();
     return { done: true, value: undefined };
   };

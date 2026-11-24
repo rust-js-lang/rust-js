@@ -289,4 +289,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/iterator-steps.test.ts", "-t", "each form marks its own the count and last"],
   },
+  {
+    name: "skip-count-at-its-caller",
+    breaks: "a `skip`'s `count` of a `repeat()` names its caller's line, where std's `Repeat::count` names `Skip::count`'s, `skip.rs:78:19` (#2488)",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
+    find: "    return $count(skipping.iter, dropItem, $stdSites.skipCount[0]);\n",
+    replace: "    return $count(skipping.iter, dropItem);\n",
+    tests: ["test/corpus.test.ts", "-t", "^(repeat_skip_count_panics_at_skips_line).rs$"],
+  },
+  {
+    name: "skip-last-at-its-caller",
+    breaks: "a `skip`'s `last` of a `repeat()` names its caller's line, where native names `Skip::last`'s, `skip.rs:87:19` (#2488)",
+    file: "crates/rust-js-program/src/runtime/skipping.js",
+    find: "    if (source !== undefined) return $infinitelyAt($stdSites.skipLast[0], () => source.last());\n",
+    replace: "    if (source !== undefined) return source.last();\n",
+    tests: ["test/corpus.test.ts", "-t", "^(repeat_skip_last_panics_at_skips_line).rs$"],
+  },
 ];

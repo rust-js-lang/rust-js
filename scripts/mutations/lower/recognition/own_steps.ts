@@ -261,4 +261,28 @@ export const mutations: Mutation[] = [
     replace: "            .any(|step| self.reaches_its_own(ty, step, Reach::Sure) && self.owns_its_step(ty, step))\n            || [OwnStep::Nth",
     tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_a_filters_count.rs$"],
   },
+  {
+    name: "type-parameter-never-a-repeat",
+    breaks: "a type parameter's iterator isn't one that may be a `Repeat`, so generic code's `count` of one is given no location (#2324)",
+    file: "crates/rust-js-lower/src/recognition/own_steps.rs",
+    find: "            ty::Param(_) | ty::Alias(..) | ty::Dynamic(..) => true,\n",
+    replace: "            ty::Alias(..) | ty::Dynamic(..) => true,\n",
+    tests: ["test/binaries.test.ts", "-t", "a `Repeat`'s `count` and `last` name where they're called"],
+  },
+  {
+    name: "box-frame-unseen",
+    breaks: "a `Box`'s `last` of a `repeat()` names its caller's line, where native names the box's specialization's, `boxed/iter.rs:57:17` (#2488)",
+    file: "crates/rust-js-lower/src/recognition/own_steps.rs",
+    find: "                \"last\" => self.repeat_frame_row(unboxed, step).or(Some(\"boxLast\")),\n",
+    replace: "                \"last\" => self.repeat_frame_row(unboxed, step),\n",
+    tests: ["test/corpus.test.ts", "-t", "^(repeat_boxed_last_panics_at_boxs_line).rs$"],
+  },
+  {
+    name: "copied-frame-unseen",
+    breaks: "a `copied()`'s `count` of a `repeat()` names its caller's line, where native names `Copied::count`'s, `copied.rs:93:17` (#2488)",
+    file: "crates/rust-js-lower/src/recognition/own_steps.rs",
+    find: "            return self.repeat_frame_row(args.type_at(0), step).or(Some(row));\n",
+    replace: "            return self.repeat_frame_row(args.type_at(0), step);\n",
+    tests: ["test/corpus.test.ts", "-t", "^(repeat_copied_count_panics_at_copieds_line|repeat_copied_last_panics_at_copieds_line).rs$"],
+  },
 ];

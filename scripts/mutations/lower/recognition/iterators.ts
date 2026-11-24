@@ -731,14 +731,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^debug_of_once_and_successors.rs$"],
   },
   {
-    name: "type-parameter-never-a-repeat",
-    breaks: "a type parameter's iterator isn't one that may be a `Repeat`, so generic code's `count` of one is given no location (#2324)",
-    file: "crates/rust-js-lower/src/recognition/iterators.rs",
-    find: "            ty::Param(_) | ty::Alias(..) | ty::Dynamic(..) => true,\n",
-    replace: "            ty::Alias(..) | ty::Dynamic(..) => true,\n",
-    tests: ["test/binaries.test.ts", "-t", "a `Repeat`'s `count` and `last` name where they're called"],
-  },
-  {
     name: "own-sum-unanswered",
     breaks:
       "`sum()` into the crate's own `Sum` isn't answered as calling it, so what it sums isn't seen given there (#2376)",
