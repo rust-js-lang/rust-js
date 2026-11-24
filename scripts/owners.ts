@@ -62,6 +62,15 @@ export function sourceTally(rows: readonly OwnerRow[]): number[] {
   return tally;
 }
 
+/** The weak rows, of classes 3 to 5, whose Source cell says no reason
+ * its source is enough, ` — ` and the reason (#2200's phase 3): each by its
+ * cell as written, its class and the weak answers it names. The ratchet's
+ * list, test/owners-unreasoned.txt, holds today's; a new weak row gives its
+ * reason, and one given its reason comes off. */
+export function unreasoned(rows: readonly OwnerRow[]): string[] {
+  return rows.filter((row) => row.source >= 3 && !row.sourceSaid.includes(" — ")).map((row) => `${row.source}: ${row.sourceSaid}`);
+}
+
 /** The tally said in a line, as check:fast prints it. */
 export const sourceLine = (rows: readonly OwnerRow[]): string => {
   return `owner rows by source (#2200): ${sourceTally(rows).map((n, i) => `${i + 1}: ${n}`).join(", ")}`;

@@ -7,6 +7,22 @@ const of = (name: string) => ["test/architecture-owners.test.ts", "-t", name];
 
 export const mutations: Mutation[] = [
   {
+    name: "owners-weak-row-reason-unread",
+    breaks: "a weak row's Source cell is taken as giving no reason whatever it says, so a row given its reason stays on the ratchet's list and the list never shrinks (#2200)",
+    file,
+    find: ' && !row.sourceSaid.includes(" — "))',
+    replace: ")",
+    tests: of("a weak owner row says why its source is enough"),
+  },
+  {
+    name: "owners-weak-rows-of-class-four-up",
+    breaks: "a crate-wide fact keyed by type, class 3, is no weak row, so one with no reason joins the table unseen (#2200)",
+    file,
+    find: "row.source >= 3 &&",
+    replace: "row.source >= 4 &&",
+    tests: of("a weak owner row says why its source is enough"),
+  },
+  {
     name: "owners-row-api-unread",
     breaks: "a row's API cell is read as empty, so an answer a row names is called unclassified, and the table names nothing",
     file,

@@ -5,6 +5,8 @@
 // `IntoIter`, while the table's check asked only that the APIs it named
 // were there. scripts/owners.ts holds the rules; these run them.
 import { expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { root } from "./support";
 import {
   answers,
@@ -22,6 +24,7 @@ import {
   returnType,
   rustCode,
   sourceTally,
+  unreasoned,
 } from "../scripts/owners";
 
 const state = ownersState(root);
@@ -82,6 +85,23 @@ test("a row is five cells, its owners and APIs the names it ticks, its source a 
   expect(() => ownerTable(page.replace("| `tcx.q` |", "|"))).toThrow("a row of 4 cells");
   expect(() => ownerTable(page.replace("`x.rs`; `y/`", "the lowering"))).toThrow("names no owner");
   expect(() => ownerTable("# A\n")).toThrow("no table of semantic owners");
+});
+
+// Campaign 3's ratchet (#2200, phase 3): a weak owner row, of a crate-wide
+// fact keyed by type, a fact riding a JS node or a guess from JS shape,
+// says why its source is enough, after ` — `, or is listed as still to do
+// in test/owners-unreasoned.txt, which only shrinks: a new weak row can't
+// join it, and a listed one given its reason, or moved to a stronger
+// source, comes off. 46 were listed when it began (2026-11-24).
+test("a weak owner row says why its source is enough, but those listed still to do, which only shrink", () => {
+  const listed = readFileSync(join(root, "test/owners-unreasoned.txt"), "utf8").split("\n").filter((line) => line !== "" && !line.startsWith("//"));
+  const now = unreasoned(state.rows);
+  // Say why its source is enough after ` — `, or move it to a stronger one.
+  expect(now.filter((row) => !listed.includes(row))).toEqual([]);
+  // Given its reason, or moved: take its line off test/owners-unreasoned.txt.
+  expect(listed.filter((row) => !now.includes(row))).toEqual([]);
+  const page = ["# A", "| Question | Owner | API | Primitive | Source |", "|---|---|---|---|---|", "| Is it? | `x.rs` | `f` | | 4: `f` (`Known::F`) |", "| Is it? | `x.rs` | `g` | | 5: `g` (a shape) — reads the tree it built |", "| Is it? | `x.rs` | `h` | | 2 |"].join("\n");
+  expect(unreasoned(ownerTable(page))).toEqual(["4: `f` (`Known::F`)"]);
 });
 
 test("an owner is its module, its submodules and its folder", () => {
