@@ -22,9 +22,12 @@
 //             CI's shards can't build, refused by name
 //   check     `check:fast`: the test files and cases the selector says the
 //             change can affect (scripts/select.ts, ADR 1101, amended); none
-//             with `--skip-check=<why>`, which a pusher sure the change can't
-//             move them gives, said with the selection on the push's line,
-//             CI's check of the push running every test,
+//             with `--skip-check=<why>`, allowed only (a) where the selector
+//             is known to over-select, a change to select.ts, the test map
+//             or CI config it can't judge, or (b) with Tu's or the lead's
+//             say-so for that push, the reason naming which; said with the
+//             selection on the push's line, CI's check of the push running
+//             every test, a red one fixed before anything else,
 //             everything where it can't say; none at all, of a change
 //             nothing reads that isn't code (a doc's), straight to the push.
 //             Past a rebase that brought commits, `sanity`, `check:fast
@@ -329,15 +332,17 @@ class Refused extends Error {}
 
 async function main() {
   const bless = process.argv.includes("--bless-readability");
-  // `--skip-check=<why>`: the check phase's tests not run, where the pusher
-  // is sure the change can't move what they test (a workflow's comment, a
-  // test's own wording); said, with what the selector would have run, on
-  // the push's line. Every other phase runs, and CI's check of the push
-  // runs every test whole (Tu's call, 2026-11-24).
+  // `--skip-check=<why>`: the check phase's tests not run, allowed only (a)
+  // where the selector is known to over-select, a change to select.ts, the
+  // test map or CI config it can't judge, or (b) with Tu's or the lead's
+  // say-so for that push, the reason naming which (DEVELOPMENT.md's
+  // "Pushing"); said, with what the selector would have run, on the push's
+  // line. Every other phase runs, and CI's check of the push runs every
+  // test whole, a red one fixed before anything else (Tu's rule, 2026-11-24).
   const skipArg = process.argv.find((arg) => arg.startsWith("--skip-check"));
   const skipCheck = skipArg?.startsWith("--skip-check=") ? skipArg.slice("--skip-check=".length).trim() : undefined;
   if (skipArg !== undefined && !skipCheck) {
-    console.error("push: --skip-check needs its reason, --skip-check=<why the selected tests can't be moved by the change>");
+    console.error("push: --skip-check needs its reason, naming which it is: --skip-check=\"(a) <the selector over-selects: select.ts, the test map or CI config>\" or --skip-check=\"(b) <Tu's or the lead's say-so for this push>\" (DEVELOPMENT.md's \"Pushing\")");
     process.exit(2);
   }
   const started = performance.now();

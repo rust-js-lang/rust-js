@@ -552,3 +552,16 @@ test("a push refuses to start with an untracked file its check would read", () =
   expect(push.indexOf("untrackedRefusal([...filesWritten(untrackedArgs).keys()])")).toBeLessThan(push.indexOf("const remade = [...new Set([...rebase(), ...carried])];"));
 });
 
+
+// `--skip-check` without its reason is refused before anything runs: the
+// rule (DEVELOPMENT.md's "Pushing") asks each skip to name whether the
+// selector over-selects or who said so for that push (Tu's rule, 2026-11-24).
+test("a push that skips its check is refused without its reason", () => {
+  for (const arg of ["--skip-check", "--skip-check=", "--skip-check=  "]) {
+    const p = Bun.spawnSync([process.execPath, join(root, "scripts/push.ts"), arg], { cwd: root, stdout: "pipe", stderr: "pipe", timeout: 30_000 });
+    expect([arg, p.exitCode]).toEqual([arg, 2]);
+    expect(p.stderr.toString()).toContain("--skip-check needs its reason, naming which it is");
+  }
+  const rule = readFileSync(join(root, "DEVELOPMENT.md"), "utf8");
+  expect(rule).toContain("`--skip-check=<why>` is allowed only (a) where the selector is known to");
+});

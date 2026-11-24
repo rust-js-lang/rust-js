@@ -861,11 +861,9 @@ checked:
   build", runs `check:fast`, which runs what the test selector says the change can
   affect (`scripts/select.ts`, ADR 1101, amended; everything where it
   can't say, none of a change nothing reads that isn't code, straight to
-  the push; none with `--skip-check=<why>`, given where the pusher is sure
-  the change can't move what the selected tests test, a workflow's comment
-  or a test's own wording, said with the selection on the push's line, CI's
-  check of the push running every test, which a red one asks fixed at
-  once), refuses where the React port differs at its pin, of a change
+  the push; none with `--skip-check=<why>`, said with the selection on the
+  push's line, CI's check of the push running every test), refuses where
+  the React port differs at its pin, of a change
   to what compiles it (a change the port takes moves
   `ports/react-in-rust.pin` in the same push), refuses where `git diff
   origin/main` holds a file no pushed commit changes, and pushes. It first
@@ -913,6 +911,13 @@ checked:
   machine's cores as it began and as it ended, `load 2.00/1.90/2.09, other
   runs 1/0`: one that shared them took twice its time, a corpus overlapped
   1,190 s where quiet it took 658 s.
+- **`--skip-check=<why>` is allowed only (a) where the selector is known to
+  over-select: a change to `scripts/select.ts`, the test map or CI config it
+  can't judge; or (b) with Tu's or the lead's say-so for that push.** The
+  reason names which, `--skip-check="(a) select.ts: its own select.test
+  ran"` or `--skip-check="(b) the lead, for #2480"`, and `bun run push`
+  refuses one without a reason. A red CI from a skipped push is fixed before
+  anything else (Tu's rule, 2026-11-24).
 - **A push that undoes a commit already on `main` is refused** by the
   pre-push hook `bun install` sets git to run (`.githooks/pre-push`,
   `scripts/push-guard.ts`): a commit made from an older tree, as `git
