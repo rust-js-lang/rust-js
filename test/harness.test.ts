@@ -5,7 +5,7 @@
 // Each must fail the run, or say it's incomplete, with what it saw.
 
 import { beforeAll, expect, test } from "bun:test";
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { ratchet, runTest, type Shard } from "../scripts/rustc-suite";
@@ -251,6 +251,32 @@ test("what's built from unchanged inputs isn't built again", () => {
   // Nothing of a build's own directory is left.
   expect(readdirSync(dir).filter((name) => name.startsWith(".building-"))).toEqual([]);
 });
+
+// What's built by the compiler is keyed by its build, not by where it is:
+// `check:fast` gives the tests a link of it of its own each run, so a stamp
+// that named its path built the node crate's metadata again in every
+// check, 2.4 s on the Mac mini, 4.2 s on the M1 (#2500). Another build, a
+// script standing in for it whose text changed here, builds it again.
+test("what the compiler builds is kept by its build, not its path", () => {
+  buildCompiler();
+  const dir = fixture("unless-unchanged-compiler");
+  const input = join(dir, "input"), output = join(dir, "output"), stamp = join(dir, "stamp");
+  writeFileSync(input, "a");
+  const [first, second] = ["first", "second"].map((name) => {
+    const link = join(dir, name);
+    linkSync(compiler, link);
+    return link;
+  });
+  let runs = 0;
+  const step = (by: string) => unlessUnchanged(stamp, [input], [output], (into) => { runs += 1; writeFileSync(join(into, "output"), "made"); }, by);
+  expect([step(first!), step(second!), runs]).toEqual([true, false, 1]);
+  const script = join(dir, "standing-in");
+  writeFileSync(script, "#!/bin/sh\necho one\n");
+  chmodSync(script, 0o755);
+  expect([step(script), step(script)]).toEqual([true, false]);
+  writeFileSync(script, "#!/bin/sh\necho two\n");
+  expect([step(script), runs]).toEqual([true, 3]);
+}, underLoad(120_000));
 
 // rust-js is built as a shell builds it, with `.cargo/config.toml`'s
 // `RUSTC_BOOTSTRAP`, not the one `.env.test` gives the tests' programs:

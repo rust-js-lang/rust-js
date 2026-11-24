@@ -247,3 +247,22 @@ Prettier lays out the app's JS" and "Cargo is told which Prettier plugins
 lay out the app's JS", as before. Mutations `cargo-layout-untracked`
 (`main.rs`), which replaces `cargo-version-without-prettier`, and
 `cargo-prettier-of-no-crate` (`cargo.rs`).
+
+## Amendment (2026-11-24, #2500): what the tests build with the compiler is kept by its build
+
+The tests build the node, react and react-native crates' metadata with
+`rust-js --rustc` once, and again only where what it's made of changed
+(`unlessUnchanged`, test/support.ts). The compiler was among its inputs by
+its path and its bytes: `check:fast` gives the tests a link of the
+compiler of its own each run (scripts/own-compiler.ts), a new path, so the
+stamp never matched, and the node crate's metadata was built again before
+every check's jobs, 2.4–3 s on the Mac mini, 4.2 s on the M1; and its
+100 MB were hashed each time.
+
+The compiler is now keyed by its build, `--version-json`'s, this
+decision's identity (`buildOf`, `compilerKey`): the same in every link or
+copy of one build, another in a build of other sources, a mutant's among
+them. A script standing in for the compiler, which isn't run to ask, is
+keyed by its text. The compile cache's `buildIdentity` (test/compiles.ts)
+asks the same `buildOf`, one reader of the identity.
+

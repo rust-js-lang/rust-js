@@ -26,14 +26,14 @@
 // down to give it back.
 
 import { createHash } from "node:crypto";
-import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 
 import { bytesOf, evict, freeBytes } from "../tooling/bounded.js";
 import { floorBytes } from "./bounded";
 import type { Exit } from "./child";
 import { target } from "./packages-of";
-import { compiler as testsCompiler } from "./support";
+import { buildOf, compiler as testsCompiler } from "./support";
 
 /** Where compiles are kept, and the layout's version, which a change to
  * the layout or the key bumps. */
@@ -92,17 +92,8 @@ function buildIdentity(program: string): { identity: string; file: Stat } | unde
   if (!ours || !given || ours.dev !== given.dev || ours.ino !== given.ino) return undefined;
   const file = `${given.dev}:${given.ino}:${given.size}:${given.mtimeMs}`;
   if (!identities.has(file)) {
-    let identity: string | undefined;
-    try {
-      const head = Buffer.alloc(2);
-      const fd = openSync(program, "r");
-      readSync(fd, head, 0, 2, 0);
-      closeSync(fd);
-      const p = head.toString() === "#!" ? undefined : Bun.spawnSync([program, "--version-json"], { stdout: "pipe", stderr: "pipe" });
-      const json = p?.exitCode === 0 ? p.stdout.toString() : "";
-      if (/"build": *"[0-9a-f]+"/.test(json)) identity = sha(json);
-    } catch {}
-    identities.set(file, identity);
+    const json = buildOf(program);
+    identities.set(file, json === undefined ? undefined : sha(json));
   }
   const identity = identities.get(file);
   return identity === undefined ? undefined : { identity, file: given };

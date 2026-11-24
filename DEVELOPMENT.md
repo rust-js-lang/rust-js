@@ -452,6 +452,9 @@ What keeps them there:
   first test that asked, under the corpus's load, it outran bun's 5 s
   test timeout, was killed, and failed every test waiting on it, nearly
   every run. Tests that run `cargo` themselves declare a timeout that fits.
+  The stamp keys the compiler by its build (`compilerKey`, ADR 1003), not
+  its path: `check:fast`'s own link of it is a new path each run, and the
+  node crate's metadata was built again in every check, 2.4–4.2 s (#2500).
 - **The snapshot tests declare 60 s**: `inbox`'s compile, a crate of
   serde's, outran bun's 5 s under load, nearly every loaded run, and in
   CI's `wasm` job twice running (2026-10-27).

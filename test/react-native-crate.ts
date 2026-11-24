@@ -16,13 +16,11 @@ export function buildReactNative(): string {
   const dir = join(target, "react-native");
   if (reactNative === undefined) {
     buildCompiler();
-    const inputs = ["react-native/src", "react-native/build.sh", "builtins/src", "builtins/build.sh", "rust-toolchain.toml"]
-      .map((path) => join(root, path))
-      .concat(compiler);
+    const inputs = ["react-native/src", "react-native/build.sh", "builtins/src", "builtins/build.sh", "rust-toolchain.toml"].map((path) => join(root, path));
     const outputs = ["react_native", "js"].map((lib) => join(dir, `lib${lib}.rmeta`));
     once(join(target, "tests-react-native", thisRun()), () =>
       unlessUnchanged(join(dir, "libreact_native.stamp"), inputs, outputs, (into) =>
-        run(["react-native/build.sh", "-o", join(into, "libreact_native.rmeta")]),
+        run(["react-native/build.sh", "-o", join(into, "libreact_native.rmeta")]), compiler,
       ),
     );
     reactNative = dir;

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { closeSync, cpSync, existsSync, mkdirSync, mkdtempSync, openSync, readdirSync, readFileSync, readlinkSync, readSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
 import { cargoHome, tempRoot } from "./bounded";
@@ -926,6 +926,42 @@ export function rustJsUnits(profile: string): string[] {
   return existsSync(dir) ? readdirSync(dir).map((unit) => join(dir, unit)) : [];
 }
 
+/** What a build of rust-js says of itself, `--version-json` (ADR 1003),
+ * where it says its build: a hash of what it's made of, its sources and
+ * toolchain, the same in every link or copy of that build, as `check:fast`'s
+ * own link of it each run is (scripts/own-compiler.ts). None of a script
+ * standing in for the compiler, which isn't run to ask, nor of a program
+ * that says no build. Asked once a process of each file. */
+const builds = new Map<string, string | undefined>();
+export function buildOf(program: string): string | undefined {
+  const s = statSync(program, { throwIfNoEntry: false });
+  if (s === undefined) return undefined;
+  const file = `${s.dev}:${s.ino}:${s.size}:${s.mtimeMs}`;
+  if (!builds.has(file)) {
+    let said: string | undefined;
+    try {
+      const head = Buffer.alloc(2);
+      const fd = openSync(program, "r");
+      readSync(fd, head, 0, 2, 0);
+      closeSync(fd);
+      const p = head.toString() === "#!" ? undefined : Bun.spawnSync([program, "--version-json"], { stdout: "pipe", stderr: "pipe" });
+      const json = p?.exitCode === 0 ? p.stdout.toString() : "";
+      if (/"build": *"[0-9a-f]+"/.test(json)) said = json;
+    } catch {}
+    builds.set(file, said);
+  }
+  return builds.get(file);
+}
+
+/** What a stamp keys the compiler `program` by: its build (`buildOf`),
+ * never its path, which `check:fast` links anew each run, so the node
+ * crate's metadata was built again in every check, 2.4–4.2 s (#2500); or,
+ * of a script standing in for it, its text. */
+export function compilerKey(program: string): string {
+  const build = buildOf(program);
+  return build === undefined ? `the file ${sha256(program)}` : `the build ${build}`;
+}
+
 /** Each file of `paths`, a file or a directory's, read whole: their digest. */
 function digest(paths: string[]): string {
   const hash = createHash("sha256");
@@ -942,15 +978,16 @@ function digest(paths: string[]): string {
 
 /** Run `work` unless what it made from `inputs` is still there: each of
  * `outputs`, files of one directory, and `stamp` saying it was made from
- * what `inputs` hold now. Whether it ran. `work` writes them into a
+ * what `inputs` hold now, and by the `compiler` given, its build
+ * (`compilerKey`). Whether it ran. `work` writes them into a
  * directory of its own, `into`, and each is moved into place by a rename,
  * so another test run reading them as this one builds them reads each
  * whole, the one before or this one, never one gone or half written: CI's
  * suite and its corpus parts are test runs of their own, each building the
  * react crate's metadata once, and a JSX test of the one found
  * `target/libreact.rmeta` gone as another wrote it (check 44024336584). */
-export function unlessUnchanged(stamp: string, inputs: string[], outputs: string[], work: (into: string) => unknown): boolean {
-  const now = digest(inputs);
+export function unlessUnchanged(stamp: string, inputs: string[], outputs: string[], work: (into: string) => unknown, compiler?: string): boolean {
+  const now = compiler === undefined ? digest(inputs) : createHash("sha256").update(digest(inputs)).update("\0").update(compilerKey(compiler)).digest("hex");
   if (outputs.every((output) => existsSync(output)) && readIfThere(stamp) === now) return false;
   rmSync(stamp, { force: true });
   const dir = dirname(outputs[0]!);
@@ -979,10 +1016,10 @@ export function buildReact() {
     const inputs = [
       "react/src", "react/build.sh", "react/cfg.js", "react/versions.json",
       "webapi/src", "webapi/build.sh", "builtins/src", "builtins/build.sh", "rust-toolchain.toml",
-    ].map((path) => join(root, path)).concat(compiler);
+    ].map((path) => join(root, path));
     const outputs = reactLibs.map((lib) => join(target, `lib${lib}.rmeta`));
     once(join(target, "tests-react", thisRun()), () =>
-      unlessUnchanged(join(target, "libreact.stamp"), inputs, outputs, (into) => run(["react/build.sh", "-o", join(into, "libreact.rmeta")])),
+      unlessUnchanged(join(target, "libreact.stamp"), inputs, outputs, (into) => run(["react/build.sh", "-o", join(into, "libreact.rmeta")]), compiler),
     );
     react = true;
   }

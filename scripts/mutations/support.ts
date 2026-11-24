@@ -12,6 +12,22 @@ export const mutations: Mutation[] = [
     tests: ["test/native-outcomes.test.ts", "-t", "dependencies' directory"],
   },
   {
+    name: "compiler-keyed-by-its-path",
+    breaks: "what the compiler builds is kept by where the compiler is, so `check:fast`'s own link of it each run built the node crate's metadata again before every check's jobs, 2.4-4.2 s (#2500)",
+    file: "test/support.ts",
+    find: "  return build === undefined ? `the file ${sha256(program)}` : `the build ${build}`;\n",
+    replace: "  return build === undefined ? `the file ${sha256(program)}` : `the build ${build} at ${program}`;\n",
+    tests: ["test/harness.test.ts", "-t", "what the compiler builds is kept by its build, not its path"],
+  },
+  {
+    name: "compiler-left-out-of-the-key",
+    breaks: "what the compiler builds is kept whatever compiler built it, so metadata another build of rust-js wrote is read as this one's (#2500, ADR 1003)",
+    file: "test/support.ts",
+    find: "  const now = compiler === undefined ? digest(inputs) :",
+    replace: "  const now = compiler !== null ? digest(inputs) :",
+    tests: ["test/harness.test.ts", "-t", "what the compiler builds is kept by its build, not its path"],
+  },
+  {
     name: "unchanged-build-written-in-place",
     breaks: "what's built from changed inputs is written where another test run reads it, so a JSX test found `target/libreact.rmeta` gone as a corpus part's run wrote it (check 44024336584)",
     file: "test/support.ts",

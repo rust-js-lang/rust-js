@@ -18,12 +18,10 @@ export function buildNode(): string {
   const dir = join(target, "node");
   if (node === undefined) {
     buildCompiler();
-    const inputs = ["node/src", "node/build.sh", "webapi/src", "webapi/build.sh", "builtins/src", "builtins/build.sh", "rust-toolchain.toml"]
-      .map((path) => join(root, path))
-      .concat(compiler);
+    const inputs = ["node/src", "node/build.sh", "webapi/src", "webapi/build.sh", "builtins/src", "builtins/build.sh", "rust-toolchain.toml"].map((path) => join(root, path));
     const outputs = ["node", "webapi", "js"].map((lib) => join(dir, `lib${lib}.rmeta`));
     once(join(target, "tests-node", thisRun()), () =>
-      unlessUnchanged(join(dir, "libnode.stamp"), inputs, outputs, (into) => run(["node/build.sh", "-o", join(into, "libnode.rmeta")])),
+      unlessUnchanged(join(dir, "libnode.stamp"), inputs, outputs, (into) => run(["node/build.sh", "-o", join(into, "libnode.rmeta")]), compiler),
     );
     node = dir;
   }
