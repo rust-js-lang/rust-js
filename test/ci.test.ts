@@ -91,7 +91,7 @@ const ranHere = checkJobs.jobs;
 // readability-passes.yml's paths, the one list (the user, #998).
 test("the readability passes run where readability-passes.yml's paths say, of --all too", () => {
   const paths = readabilityPaths();
-  expect(paths).toEqual(expect.arrayContaining(["crates/rust-js-program/src/prepare/**", "crates/rust-js-mir/src/tidy/**", "test/getter-reads/**", ".github/workflows/readability-passes.yml"]));
+  expect(paths).toEqual(expect.arrayContaining(["crates/rust-js-program/src/prepare/**", "crates/rust-js-mir/src/tidy/**", "crates/rust-js-lower/src/mut_refs/**", "crates/rust-js-lower/src/noted/**", "test/getter-reads/**", ".github/workflows/readability-passes.yml"]));
   const named = (scope: { all: boolean; changed: string[]; branch: string[] }) =>
     jobs({ ...scope, added: [], extra: [], cores: 12 }).jobs.some((job) => job.name === "readability passes");
   expect(named({ all: true, changed: ["crates/rust-js-lower/src/copies.rs"], branch: [] })).toBe(false);

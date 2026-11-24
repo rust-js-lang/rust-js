@@ -1,7 +1,8 @@
 name: Readability passes
 
 # The readability passes' oracles (ADRs 0659, 1087), of a push to `main`
-# that changes tidy or preparation, or the oracles themselves: a few corpus
+# that changes tidy or preparation, the handles' makers and their record,
+# whose reads the read cases log (#2467), or the oracles themselves: a few corpus
 # cases and generated programs after each of tidy's stages and without each
 # of preparation's rewrites that changed them, against native Rust, and the
 # read cases' logs of what JS made, each the same however the JS is made
@@ -16,6 +17,12 @@ on:
       - 'crates/rust-js-program/src/prepare/**'
       - 'crates/rust-js-mir/src/tidy.rs'
       - 'crates/rust-js-mir/src/tidy/**'
+      - 'crates/rust-js-mir/src/temporaries.rs'
+      - 'crates/rust-js-lower/src/mut_refs.rs'
+      - 'crates/rust-js-lower/src/mut_refs/**'
+      - 'crates/rust-js-lower/src/noted.rs'
+      - 'crates/rust-js-lower/src/noted/**'
+      - 'crates/rust-js-program/src/js/writes.rs'
       - 'test/tidy-stages.test.ts'
       - 'test/getter-reads.test.ts'
       - 'test/getter-reads-run.ts'

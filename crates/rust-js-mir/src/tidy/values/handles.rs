@@ -195,7 +195,7 @@ pub(in crate::tidy) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: 
     }
     handles
         .retain(|(name, _, _, storage)| !(matches!(storage, js::Storage::InPlace(..)) && written_whole.contains(name)));
-    handles.retain_mut(|(name, place, at_once, storage)| {
+    handles.retain_mut(|(name, place, at_once, _)| {
         // Each use of it one of its `value`: none left once those are.
         let mut rest = body.clone();
         js::each_expr_mut(&mut rest, &mut |e| {
@@ -220,9 +220,13 @@ pub(in crate::tidy) fn read_handles(body: &mut Vec<Stmt>, in_place: bool, lets: 
         if *at_once && rereads && !written && js::mentions_of(body, name) == 1 {
             *at_once = false;
         }
-        // A `&mut`'s handle on a nullable place nothing reads, its place
-        // written as a path where it's used (`nulled::unhandled`, #541): none.
-        if matches!(storage, js::Storage::NullForNone) && js::mentions_of(body, name) == 0 {
+        // A handle nothing reads, its place read and written as a path
+        // where it's used (`unhandled`, a nullable place's `nulled`, #541):
+        // never read at once, as making it reads nothing, where a `const`
+        // of its place read a JS-made field's getter the program never
+        // read, `mem::replace` of a `RefCell` field's `borrow_mut()` reading
+        // it twice (#2467).
+        if js::mentions_of(body, name) == 0 {
             *at_once = false;
         }
         js::mentions_of(&rest, name) == 0 && (*at_once || rereads)

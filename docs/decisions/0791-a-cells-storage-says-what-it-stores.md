@@ -332,3 +332,29 @@ corpus cases gave the same JS, every snapshot byte for byte. The probes
 #2433 names, and a nullable `RefCell` and `Cell` field lent five ways,
 agree with native Rust. Case ([0262](0262-when-rust-and-js-disagree.md)):
 none, no output moved.
+
+## Amendment: a handle nothing reads is never read (2026-11-24, #2467)
+
+The #2433 amendment's second removal exposed a rule tidy kept for one
+storage only. `Handled::of` now records a handle stored as it's given.
+So `std::mem::replace(&mut *holder.slot.borrow_mut(), next)` is lowered
+through the record's place, `holder.slot`, and leaves its handle `_11`
+read by nothing. Tidy's `read_handles` took a handle no later statement
+mentions to be "read at once" (`read_at_once`'s answer with nothing to
+look at). It made the dead handle a `const` of its place,
+`const slot = holder.slot;`: a read of a JS-made field's getter that the
+program never made, two reads where Rust's one. `getter-reads.test.ts`'s
+`getter_closures` found it; the corpus can't see a getter's reads.
+
+`read_handles` already said so of a handle on a nullable place (#541's
+"nothing reads: none"). That was one instance of the general rule: making
+a handle reads nothing, so a handle nothing reads is never read at once,
+whatever its storage. The #2433 removal stands: nothing tells the
+`AsGiven` check apart again.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): the third, a getter's
+reads, which Rust's are. No corpus snapshot moved over its 2,966 cases.
+Held by `getter_closures` and the mutation `dead-handle-read-at-once`.
+`readability-passes.yml`'s paths now include the handles' makers and
+their record (`mut_refs`, `noted`, `js/writes.rs`, MIR's
+`temporaries.rs`), so a change to them runs the read cases too.

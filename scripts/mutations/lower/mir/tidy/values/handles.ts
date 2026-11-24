@@ -126,6 +126,15 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "dead-handle-read-at-once",
+    breaks:
+      "a handle nothing reads is read at once, `const slot = holder.slot;`, a JS-made field's getter read where Rust never reads it (#2467)",
+    file: "crates/rust-js-mir/src/tidy/values/handles.rs",
+    find: "        if js::mentions_of(body, name) == 0 {\n",
+    replace: "        if false && js::mentions_of(body, name) == 0 {\n",
+    tests: ["test/getter-reads.test.ts", "-t", "^getter_closures's reads"],
+  },
+  {
     name: "handle-of-an-item-not-reread",
     breaks:
       "a handle on an item, `fiber.lanes[0]`, isn't read again where it's used, so it's kept, `const place = { get value() { return fiber.lanes[0]; } .. }` (#541)",
