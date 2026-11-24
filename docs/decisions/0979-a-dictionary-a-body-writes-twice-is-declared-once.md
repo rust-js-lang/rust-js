@@ -190,3 +190,24 @@ snapshot, with three more cases' moves (`back_predicate_unwinds`,
 `flatten_folds_reach_its_sources_own`, `flatten_from_both_ends_drops_its_inners`),
 and the mutation `nested-alias-kept`.
 
+## Amendment (2026-11-24, #1301): std's readers' dictionaries are named one way
+
+A `Cursor`'s dictionary is one object of every trait it's asked,
+`$cursorReader(TAsRef)` for its `Read`, `BufRead` and `Seek` alike. Named by
+its type's and the trait's, it was `cursorRead`; and where one literal served
+several traits, by the trait's alone, `read` in one function and `seek` in
+another, though it's the same object. It's named by what makes it,
+`cursorReader`. A `BufReader`'s, a runtime factory's call per trait,
+`$bufReader(RRead)` and `$bufReader(RSeek)`, was named as a bound's,
+`BufReaderRead`, as the program's generic impls are; it's named as any other
+type's, `bufReaderRead` and `bufReaderSeek`. The program's generic impls,
+and a runtime helper wrapping one, `$readerDefaults(takeRead(..), ..)`, keep
+the bound's form. Mutations `cursor-dictionary-named-by-trait`,
+`buf-reader-dictionary-bound-style` and `reader-defaults-named-as-a-factory`.
+
+A body with two cursors of two types, a `Cursor<&[u8]>` and a
+`Cursor<String>` (io_cursor.rs), named them `read` and `cursorRead`, apart
+only by the trait word one fell back to; they're `cursorReader` and
+`cursorReader$1` now, so docs/readability.txt's renamed `x$1` share grows by
+one name, 425 to 425.2 in 10,000 lines: an honest `$1` in place of a name
+that said a `Read` of an object every trait reads.

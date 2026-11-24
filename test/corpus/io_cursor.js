@@ -35,15 +35,15 @@ $main(main);
 
 function main() {
   const clone = { clone: (value) => value };
-  const read = $cursorReader({ asRef: (value) => value });
-  const cursorRead = $cursorReader({ asRef: (value) => $utf8Bytes(value) });
+  const cursorReader$1 = $cursorReader({ asRef: (value) => value });
+  const cursorReader = $cursorReader({ asRef: (value) => $utf8Bytes(value) });
   const debug = {
     fmt: (value, options) =>
       options?.alternate ? $pretty("[", value, "]") : `[${value.join(", ")}]`,
   };
   const c = { inner: [10, 20, 30, 40], pos: 0n };
   const three = [0, 0, 0];
-  const result = $writeTry(() => read.readExact({ value: c }, three));
+  const result = $writeTry(() => cursorReader$1.readExact({ value: c }, three));
   $writeExpect(
     result,
     "called `Result::unwrap()` on an `Err` value",
@@ -51,7 +51,7 @@ function main() {
   );
   console.log(`[${three.join(", ")}] ${c.pos}`);
   let e = $writeExpectErr(
-    $writeTry(() => read.readExact({ value: c }, three)),
+    $writeTry(() => cursorReader$1.readExact({ value: c }, three)),
     "called `Result::unwrap_err()` on an `Ok` value",
     "test/corpus/io_cursor.rs:14:38",
   );
@@ -59,12 +59,12 @@ function main() {
   c.pos = 1n;
   const rest = [];
   console.log(
-    `${$unwrapOk(read.readToEnd({ value: c }, rest), "test/corpus/io_cursor.rs:18:59", undefined, $ioErrorDebug)} [${rest.join(", ")}] ${c.pos}`,
+    `${$unwrapOk(cursorReader$1.readToEnd({ value: c }, rest), "test/corpus/io_cursor.rs:18:59", undefined, $ioErrorDebug)} [${rest.join(", ")}] ${c.pos}`,
   );
 
   console.log(
     `${$unwrapOk(
-      read.seek({ value: c }, { TAG: "Start", _0: 2n }),
+      cursorReader$1.seek({ value: c }, { TAG: "Start", _0: 2n }),
       "test/corpus/io_cursor.rs:20:49",
       undefined,
       $ioErrorDebug,
@@ -72,7 +72,7 @@ function main() {
   );
   console.log(
     `${$unwrapOk(
-      read.seek({ value: c }, { TAG: "Current", _0: -1n }),
+      cursorReader$1.seek({ value: c }, { TAG: "Current", _0: -1n }),
       "test/corpus/io_cursor.rs:21:52",
       undefined,
       $ioErrorDebug,
@@ -80,20 +80,20 @@ function main() {
   );
   console.log(
     `${$unwrapOk(
-      read.seek({ value: c }, { TAG: "End", _0: -3n }),
+      cursorReader$1.seek({ value: c }, { TAG: "End", _0: -3n }),
       "test/corpus/io_cursor.rs:22:48",
       undefined,
       $ioErrorDebug,
     )}`,
   );
   e = $unwrapErr(
-    read.seek({ value: c }, { TAG: "End", _0: -5n }),
+    cursorReader$1.seek({ value: c }, { TAG: "End", _0: -5n }),
     "test/corpus/io_cursor.rs:23:39",
   );
   console.log(`${e.kind} ${$ioErrorDebug(e)} ${c.pos}`);
   console.log(
     `${$unwrapOk(
-      read.seek({ value: c }, { TAG: "End", _0: 6n }),
+      cursorReader$1.seek({ value: c }, { TAG: "End", _0: 6n }),
       "test/corpus/io_cursor.rs:25:47",
       undefined,
       $ioErrorDebug,
@@ -101,12 +101,12 @@ function main() {
   );
   const b = [9, 9];
   console.log(
-    `${$unwrapOk(read.read({ value: c }, b), "test/corpus/io_cursor.rs:27:46", undefined, $ioErrorDebug)} [${b.join(", ")}] ${c.pos}`,
+    `${$unwrapOk(cursorReader$1.read({ value: c }, b), "test/corpus/io_cursor.rs:27:46", undefined, $ioErrorDebug)} [${b.join(", ")}] ${c.pos}`,
   );
   let s = "";
   console.log(
     `${$unwrapOk(
-      read.readToString(
+      cursorReader$1.readToString(
         { value: c },
         {
           get value() {
@@ -123,38 +123,38 @@ function main() {
       $ioErrorDebug,
     )} ${$debugStr(s)}`,
   );
-  const result$1 = $writeTry(() => seek_rewind($cellOf(c), read));
+  const result$1 = $writeTry(() => seek_rewind($cellOf(c), cursorReader$1));
   $writeExpect(
     result$1,
     "called `Result::unwrap()` on an `Err` value",
     "test/corpus/io_cursor.rs:30:16",
   );
-  const result$2 = $writeTry(() => read.seekRelative({ value: c }, 3n));
+  const result$2 = $writeTry(() => cursorReader$1.seekRelative({ value: c }, 3n));
   $writeExpect(
     result$2,
     "called `Result::unwrap()` on an `Err` value",
     "test/corpus/io_cursor.rs:31:24",
   );
   console.log(
-    `${$unwrapOk(read.streamPosition({ value: c }), "test/corpus/io_cursor.rs:32:47", undefined, $ioErrorDebug)} [${$unwrapOk(read.fillBuf({ value: c }), "test/corpus/io_cursor.rs:32:70", undefined, $ioErrorDebug).join(", ")}]`,
+    `${$unwrapOk(cursorReader$1.streamPosition({ value: c }), "test/corpus/io_cursor.rs:32:47", undefined, $ioErrorDebug)} [${$unwrapOk(cursorReader$1.fillBuf({ value: c }), "test/corpus/io_cursor.rs:32:70", undefined, $ioErrorDebug).join(", ")}]`,
   );
   $unwrapOk(
-    read.seek({ value: c }, { TAG: "Start", _0: 18446744073709551615n }),
+    cursorReader$1.seek({ value: c }, { TAG: "Start", _0: 18446744073709551615n }),
     "test/corpus/io_cursor.rs:33:39",
     undefined,
     $ioErrorDebug,
   );
-  read.consume({ value: c }, 2);
+  cursorReader$1.consume({ value: c }, 2);
   console.log(
     `${c.pos} ${
-      read.seek({ value: c }, { TAG: "Current", _0: 9223372036854775807n }).TAG === "Err"
+      cursorReader$1.seek({ value: c }, { TAG: "Current", _0: 9223372036854775807n }).TAG === "Err"
     }`,
   );
 
   const text = { inner: "héllo\n", pos: 0n };
   let word = "";
   $unwrapOk(
-    cursorRead.readToString(
+    cursorReader.readToString(
       { value: text },
       {
         get value() {
@@ -174,7 +174,7 @@ function main() {
   const owned = "xy";
   const byRef = { inner: owned, pos: 0n };
   const two = [0, 0];
-  const result$3 = $writeTry(() => cursorRead.readExact({ value: byRef }, two));
+  const result$3 = $writeTry(() => cursorReader.readExact({ value: byRef }, two));
   $writeExpect(
     result$3,
     "called `Result::unwrap()` on an `Err` value",
@@ -183,14 +183,14 @@ function main() {
   console.log(`[${two.join(", ")}] ${byRef.inner}`);
   const array = { inner: [5, 5, 5], pos: 0n };
   console.log(
-    `${$unwrapOk(read.read({ value: array }, new Array(8).fill(0)), "test/corpus/io_cursor.rs:47:48", undefined, $ioErrorDebug)}`,
+    `${$unwrapOk(cursorReader$1.read({ value: array }, new Array(8).fill(0)), "test/corpus/io_cursor.rs:47:48", undefined, $ioErrorDebug)}`,
   );
   const boxed = { inner: [1], pos: 0n };
-  const result$4 = $writeTry(() => read.readExact({ value: boxed }, two));
+  const result$4 = $writeTry(() => cursorReader$1.readExact({ value: boxed }, two));
   console.log(`${result$4 !== undefined}`);
   const v = [7, 8, 9];
   const through = { inner: v, pos: 0n };
-  const result$5 = $writeTry(() => read.readExact({ value: through }, two));
+  const result$5 = $writeTry(() => cursorReader$1.readExact({ value: through }, two));
   $writeExpect(
     result$5,
     "called `Result::unwrap()` on an `Err` value",
@@ -200,7 +200,7 @@ function main() {
   const bytes = [97, 98];
   const ofSlice = { inner: bytes, pos: 0n };
   console.log(
-    `${$unwrapOk(read.read({ value: ofSlice }, [0]), "test/corpus/io_cursor.rs:56:51", undefined, $ioErrorDebug)}`,
+    `${$unwrapOk(cursorReader$1.read({ value: ofSlice }, [0]), "test/corpus/io_cursor.rs:56:51", undefined, $ioErrorDebug)}`,
   );
 
   const d = cursorClone_clone(ofSlice, clone);

@@ -169,7 +169,7 @@ function main() {
   const borrow$1 = { borrow: (value) => value };
   const asMut = { asMut: (cell) => cell.value };
   const borrow = { borrow: (value) => value.value };
-  const cursorRead = $cursorReader(asRef);
+  const cursorReader = $cursorReader(asRef);
   const vecDebug = { fmt: (value) => `[${value.join(", ")}]` };
   const borrowMut = { borrowMut: (value) => value.value, Borrow: () => borrow };
   const parser = { depth: 0 };
@@ -242,9 +242,9 @@ function main() {
   );
   const bytes = [7, 8, 9];
   console.log(
-    `[${readTwo({ inner: bytes, pos: 0n }, cursorRead).join(", ")}] [${readTwo(
+    `[${readTwo({ inner: bytes, pos: 0n }, cursorReader).join(", ")}] [${readTwo(
       $cellOf({ inner: bytes, pos: 0n }),
-      $mutReader(cursorRead),
+      $mutReader(cursorReader),
     ).join(", ")}]`,
   );
 

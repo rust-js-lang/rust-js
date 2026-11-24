@@ -29,7 +29,7 @@ function generic(r, v, RRead) {
 $main(main);
 
 function main() {
-  const cursorRead = $cursorReader({ asRef: (value) => value });
+  const cursorReader = $cursorReader({ asRef: (value) => value });
   let v = [];
   let tmp = [97, 98];
   $unwrapOk(
@@ -111,7 +111,7 @@ function main() {
 
   v = [];
   $unwrapOk(
-    cursorRead.readToEnd({ value: { inner: [1, 2, 3], pos: 0n } }, v),
+    cursorReader.readToEnd({ value: { inner: [1, 2, 3], pos: 0n } }, v),
     "test/corpus/io_read_to_end_capacity.rs:29:54",
     undefined,
     $ioErrorDebug,
@@ -121,7 +121,7 @@ function main() {
   c.pos = 15n;
   v = new Array(4).fill(0);
   $unwrapOk(
-    cursorRead.readToEnd({ value: c }, v),
+    cursorReader.readToEnd({ value: c }, v),
     "test/corpus/io_read_to_end_capacity.rs:34:27",
     undefined,
     $ioErrorDebug,
@@ -149,7 +149,7 @@ function main() {
 
   const value = generic([97, 98, 99], [], $sliceReader);
   console.log(`(${value[0]}, ${value[1]})`);
-  const value$1 = generic({ inner: new Array(40).fill(5), pos: 0n }, [9], cursorRead);
+  const value$1 = generic({ inner: new Array(40).fill(5), pos: 0n }, [9], cursorReader);
   console.log(`(${value$1[0]}, ${value$1[1]})`);
   const value$2 = generic([7, 7, 7, 7, 7], $withCapacity(6), $sliceReader);
   console.log(`(${value$2[0]}, ${value$2[1]})`);

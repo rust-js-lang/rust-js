@@ -105,15 +105,15 @@ function fill(r, RRead) {
 }
 
 function tell(r, RSeek) {
-  const BufReaderSeek = $bufReader(RSeek);
-  const result = $writeTry(() => BufReaderSeek.seekRelative({ value: r }, 1n));
+  const bufReaderSeek = $bufReader(RSeek);
+  const result = $writeTry(() => bufReaderSeek.seekRelative({ value: r }, 1n));
   $writeExpect(
     result,
     "called `Result::unwrap()` on an `Err` value",
     "test/corpus/io_buf_reader.rs:42:24",
   );
   return $unwrapOk(
-    BufReaderSeek.streamPosition({ value: r }),
+    bufReaderSeek.streamPosition({ value: r }),
     "test/corpus/io_buf_reader.rs:43:25",
     undefined,
     $ioErrorDebug,
@@ -121,7 +121,7 @@ function tell(r, RSeek) {
 }
 
 function readAndSeek(r, RRead, RSeek) {
-  const BufReaderSeek = $bufReader(RSeek);
+  const bufReaderSeek = $bufReader(RSeek);
   const two = [0, 0];
   const result = $writeTry(() => $bufReader(RRead).readExact({ value: r }, two));
   $writeExpect(
@@ -130,7 +130,7 @@ function readAndSeek(r, RRead, RSeek) {
     "test/corpus/io_buf_reader.rs:48:28",
   );
   $unwrapOk(
-    BufReaderSeek.seek({ value: r }, { TAG: "Current", _0: -1n }),
+    bufReaderSeek.seek({ value: r }, { TAG: "Current", _0: -1n }),
     "test/corpus/io_buf_reader.rs:49:35",
     undefined,
     $ioErrorDebug,
@@ -138,7 +138,7 @@ function readAndSeek(r, RRead, RSeek) {
   return [
     two.slice(),
     $unwrapOk(
-      BufReaderSeek.streamPosition({ value: r }),
+      bufReaderSeek.streamPosition({ value: r }),
       "test/corpus/io_buf_reader.rs:50:40",
       undefined,
       $ioErrorDebug,
@@ -147,7 +147,7 @@ function readAndSeek(r, RRead, RSeek) {
 }
 
 function reads() {
-  const BufReaderRead = $bufReader($cursorReader({ asRef: (value) => value }));
+  const bufReaderRead = $bufReader($cursorReader({ asRef: (value) => value }));
   let r = {
     inner: cursor([97, 98, 99, 100, 101, 102, 103, 104, 105, 106]),
     buf: new Array(4).fill(0),
@@ -156,23 +156,23 @@ function reads() {
   };
   console.log(`${r.buf.length} [${$part(r.buf, r.pos, r.filled).join(", ")}] ${pos(r)}`);
   console.log(
-    `[${$unwrapOk(BufReaderRead.fillBuf({ value: r }), "test/corpus/io_buf_reader.rs:56:35", undefined, $ioErrorDebug).join(", ")}]`,
+    `[${$unwrapOk(bufReaderRead.fillBuf({ value: r }), "test/corpus/io_buf_reader.rs:56:35", undefined, $ioErrorDebug).join(", ")}]`,
   );
   console.log(`[${$part(r.buf, r.pos, r.filled).join(", ")}] ${pos(r)}`);
-  BufReaderRead.consume({ value: r }, 1);
+  bufReaderRead.consume({ value: r }, 1);
   console.log(`[${$part(r.buf, r.pos, r.filled).join(", ")}] ${pos(r)}`);
   // What's buffered answers a small read: nothing more is read from the
   // inner.
   const two = [0, 0];
   console.log(
-    `${$unwrapOk(BufReaderRead.read({ value: r }, two), "test/corpus/io_buf_reader.rs:63:45", undefined, $ioErrorDebug)} [${two.join(", ")}]`,
+    `${$unwrapOk(bufReaderRead.read({ value: r }, two), "test/corpus/io_buf_reader.rs:63:45", undefined, $ioErrorDebug)} [${two.join(", ")}]`,
   );
   const buffer = $part(r.buf, r.pos, r.filled);
   const value = pos(r);
   console.log(`[${buffer.join(", ")}] [${two.join(", ")}] ${value}`);
   const one = [0];
   const value$1 = $unwrapOk(
-    BufReaderRead.read({ value: r }, one),
+    bufReaderRead.read({ value: r }, one),
     "test/corpus/io_buf_reader.rs:66:53",
     undefined,
     $ioErrorDebug,
@@ -184,7 +184,7 @@ function reads() {
   // past it.
   const four = [0, 0, 0, 0];
   const value$4 = $unwrapOk(
-    BufReaderRead.read({ value: r }, four),
+    bufReaderRead.read({ value: r }, four),
     "test/corpus/io_buf_reader.rs:70:55",
     undefined,
     $ioErrorDebug,
@@ -194,15 +194,15 @@ function reads() {
   console.log(`${value$4} [${four.join(", ")}] [${value$5.join(", ")}] ${value$6}`);
   // A consume past what's buffered stops at it.
   console.log(
-    `[${$unwrapOk(BufReaderRead.fillBuf({ value: r }), "test/corpus/io_buf_reader.rs:72:35", undefined, $ioErrorDebug).join(", ")}]`,
+    `[${$unwrapOk(bufReaderRead.fillBuf({ value: r }), "test/corpus/io_buf_reader.rs:72:35", undefined, $ioErrorDebug).join(", ")}]`,
   );
-  BufReaderRead.consume({ value: r }, 10);
+  bufReaderRead.consume({ value: r }, 10);
   console.log(`[${$part(r.buf, r.pos, r.filled).join(", ")}] ${pos(r)}`);
   console.log(
-    `${$unwrapOk(BufReaderRead.streamPosition({ value: r }), "test/corpus/io_buf_reader.rs:75:40", undefined, $ioErrorDebug)}`,
+    `${$unwrapOk(bufReaderRead.streamPosition({ value: r }), "test/corpus/io_buf_reader.rs:75:40", undefined, $ioErrorDebug)}`,
   );
   console.log(
-    `[${$unwrapOk(BufReaderRead.fillBuf({ value: r }), "test/corpus/io_buf_reader.rs:76:35", undefined, $ioErrorDebug).join(", ")}]`,
+    `[${$unwrapOk(bufReaderRead.fillBuf({ value: r }), "test/corpus/io_buf_reader.rs:76:35", undefined, $ioErrorDebug).join(", ")}]`,
   );
   console.log(`[${$part(r.buf, r.pos, r.filled).join(", ")}]`);
   const inner = r.inner;
@@ -216,7 +216,7 @@ function reads() {
   );
   const big = new Array(8).fill(0);
   const value$7 = $unwrapOk(
-    BufReaderRead.read({ value: r }, big),
+    bufReaderRead.read({ value: r }, big),
     "test/corpus/io_buf_reader.rs:84:50",
     undefined,
     $ioErrorDebug,
@@ -224,23 +224,23 @@ function reads() {
   const value$8 = $part(r.buf, r.pos, r.filled);
   console.log(`${value$7} [${big.join(", ")}] [${value$8.join(", ")}]`);
   console.log(
-    `${$unwrapOk(BufReaderRead.read({ value: r }, big), "test/corpus/io_buf_reader.rs:85:37", undefined, $ioErrorDebug)}`,
+    `${$unwrapOk(bufReaderRead.read({ value: r }, big), "test/corpus/io_buf_reader.rs:85:37", undefined, $ioErrorDebug)}`,
   );
 
   // A buffer of no room reads from the inner each time.
   const none = { inner: cursor([120, 121, 122]), buf: new Array(0).fill(0), pos: 0, filled: 0 };
   console.log(
-    `[${$unwrapOk(BufReaderRead.fillBuf({ value: none }), "test/corpus/io_buf_reader.rs:89:38", undefined, $ioErrorDebug).join(", ")}]`,
+    `[${$unwrapOk(bufReaderRead.fillBuf({ value: none }), "test/corpus/io_buf_reader.rs:89:38", undefined, $ioErrorDebug).join(", ")}]`,
   );
   console.log(
-    `${$unwrapOk(BufReaderRead.read({ value: none }, one), "test/corpus/io_buf_reader.rs:90:40", undefined, $ioErrorDebug)}`,
+    `${$unwrapOk(bufReaderRead.read({ value: none }, one), "test/corpus/io_buf_reader.rs:90:40", undefined, $ioErrorDebug)}`,
   );
   const arg = pos(none);
   console.log(`[${one.join(", ")}] ${arg}`);
 }
 
 function exactAndAll() {
-  const BufReaderRead = $bufReader($cursorReader({ asRef: (value) => value }));
+  const bufReaderRead = $bufReader($cursorReader({ asRef: (value) => value }));
   const r = {
     inner: cursor([97, 98, 99, 100, 101, 102, 103, 104, 105, 106]),
     buf: new Array(4).fill(0),
@@ -248,7 +248,7 @@ function exactAndAll() {
     filled: 0,
   };
   const three = [0, 0, 0];
-  const result = $writeTry(() => BufReaderRead.readExact({ value: r }, three));
+  const result = $writeTry(() => bufReaderRead.readExact({ value: r }, three));
   $writeExpect(
     result,
     "called `Result::unwrap()` on an `Err` value",
@@ -258,13 +258,13 @@ function exactAndAll() {
   const arg = pos(r);
   console.log(`[${three.join(", ")}] [${buffer.join(", ")}] ${arg}`);
   $unwrapOk(
-    BufReaderRead.fillBuf({ value: r }),
+    bufReaderRead.fillBuf({ value: r }),
     "test/corpus/io_buf_reader.rs:99:18",
     undefined,
     $ioErrorDebug,
   );
   const result$1 = $writeTry(() =>
-    BufReaderRead.readExact(
+    bufReaderRead.readExact(
       { value: r },
       $view(three, 0, "test/corpus/io_buf_reader.rs:100:28", 1),
     ),
@@ -278,7 +278,7 @@ function exactAndAll() {
   const arg$1 = pos(r);
   console.log(`[${three.join(", ")}] [${value.join(", ")}] ${arg$1}`);
   const six = new Array(6).fill(0);
-  const result$2 = $writeTry(() => BufReaderRead.readExact({ value: r }, six));
+  const result$2 = $writeTry(() => bufReaderRead.readExact({ value: r }, six));
   $writeExpect(
     result$2,
     "called `Result::unwrap()` on an `Err` value",
@@ -289,7 +289,7 @@ function exactAndAll() {
   console.log(`[${six.join(", ")}] [${value$1.join(", ")}] ${arg$2}`);
   const more = [0, 0, 0];
   let e = $writeExpectErr(
-    $writeTry(() => BufReaderRead.readExact({ value: r }, more)),
+    $writeTry(() => bufReaderRead.readExact({ value: r }, more)),
     "called `Result::unwrap_err()` on an `Ok` value",
     "test/corpus/io_buf_reader.rs:106:37",
   );
@@ -306,15 +306,15 @@ function exactAndAll() {
     filled: 0,
   };
   $unwrapOk(
-    BufReaderRead.fillBuf({ value: r$1 }),
+    bufReaderRead.fillBuf({ value: r$1 }),
     "test/corpus/io_buf_reader.rs:110:18",
     undefined,
     $ioErrorDebug,
   );
-  BufReaderRead.consume({ value: r$1 }, 1);
+  bufReaderRead.consume({ value: r$1 }, 1);
   const v = [120];
   const value$3 = $unwrapOk(
-    BufReaderRead.readToEnd({ value: r$1 }, v),
+    bufReaderRead.readToEnd({ value: r$1 }, v),
     "test/corpus/io_buf_reader.rs:113:56",
     undefined,
     $ioErrorDebug,
@@ -324,12 +324,12 @@ function exactAndAll() {
   console.log(`${value$3} [${v.join(", ")}] [${value$4.join(", ")}] ${value$5}`);
   console.log(`${$capacity(v, 1)}`);
   console.log(
-    `${$unwrapOk(BufReaderRead.readToEnd({ value: r$1 }, v), "test/corpus/io_buf_reader.rs:115:42", undefined, $ioErrorDebug)}`,
+    `${$unwrapOk(bufReaderRead.readToEnd({ value: r$1 }, v), "test/corpus/io_buf_reader.rs:115:42", undefined, $ioErrorDebug)}`,
   );
 
   r$1 = { inner: cursor($utf8Bytes("héllo wörld")), buf: new Array(3).fill(0), pos: 0, filled: 0 };
   $unwrapOk(
-    BufReaderRead.fillBuf({ value: r$1 }),
+    bufReaderRead.fillBuf({ value: r$1 }),
     "test/corpus/io_buf_reader.rs:118:18",
     undefined,
     $ioErrorDebug,
@@ -337,7 +337,7 @@ function exactAndAll() {
   let s = "";
   console.log(
     `${$unwrapOk(
-      BufReaderRead.readToString(
+      bufReaderRead.readToString(
         { value: r$1 },
         {
           get value() {
@@ -356,7 +356,7 @@ function exactAndAll() {
   );
   r$1 = { inner: cursor($utf8Bytes("héllo wörld")), buf: new Array(3).fill(0), pos: 0, filled: 0 };
   $unwrapOk(
-    BufReaderRead.fillBuf({ value: r$1 }),
+    bufReaderRead.fillBuf({ value: r$1 }),
     "test/corpus/io_buf_reader.rs:122:18",
     undefined,
     $ioErrorDebug,
@@ -364,7 +364,7 @@ function exactAndAll() {
   let s$1 = ">> ";
   console.log(
     `${$unwrapOk(
-      BufReaderRead.readToString(
+      bufReaderRead.readToString(
         { value: r$1 },
         {
           get value() {
@@ -381,7 +381,7 @@ function exactAndAll() {
     )} ${$debugStr(s$1)}`,
   );
   const value$6 = $unwrapOk(
-    BufReaderRead.readToString(
+    bufReaderRead.readToString(
       { value: r$1 },
       {
         get value() {
@@ -402,7 +402,7 @@ function exactAndAll() {
   r$1 = { inner: cursor([97, 255, 98]), buf: new Array(3).fill(0), pos: 0, filled: 0 };
   let s$2 = "";
   e = $unwrapErr(
-    BufReaderRead.readToString(
+    bufReaderRead.readToString(
       { value: r$1 },
       {
         get value() {
@@ -421,7 +421,7 @@ function exactAndAll() {
   r$1 = { inner: cursor([97, 255, 98]), buf: new Array(3).fill(0), pos: 0, filled: 0 };
   let s$3 = "k";
   e = $unwrapErr(
-    BufReaderRead.readToString(
+    bufReaderRead.readToString(
       { value: r$1 },
       {
         get value() {
@@ -439,19 +439,19 @@ function exactAndAll() {
 }
 
 function linesAndMore() {
-  const BufReaderRead = $bufReader($cursorReader({ asRef: (value) => value }));
+  const bufReaderRead = $bufReader($cursorReader({ asRef: (value) => value }));
   let r = {
     inner: cursor([111, 110, 101, 10, 116, 119, 111, 13, 10, 116, 104, 114, 101, 101]),
     buf: new Array(4).fill(0),
     pos: 0,
     filled: 0,
   };
-  console.log(`${$debugStr(firstLine($cellOf(r), BufReaderRead))}`);
+  console.log(`${$debugStr(firstLine($cellOf(r), bufReaderRead))}`);
   console.log(`[${$part(r.buf, r.pos, r.filled).join(", ")}] ${pos(r)}`);
   const rest = $grownVec(
     $roomForHint(
-      $iterator(bufRead_lines(r, BufReaderRead, BufReaderRead), (iterator) =>
-        linesIterator_next(iterator, BufReaderRead),
+      $iterator(bufRead_lines(r, bufReaderRead, bufReaderRead), (iterator) =>
+        linesIterator_next(iterator, bufReaderRead),
       ).map((l) => $unwrapOk(l, "test/corpus/io_buf_reader.rs:141:49", undefined, $ioErrorDebug)),
       12,
       false,
@@ -463,15 +463,15 @@ function linesAndMore() {
   r = { inner: cursor([97, 44, 98, 98, 44, 44, 99]), buf: new Array(2).fill(0), pos: 0, filled: 0 };
   const part = [];
   console.log(
-    `${$unwrapOk(bufRead_readUntil($cellOf(r), 44, part, BufReaderRead, BufReaderRead), "test/corpus/io_buf_reader.rs:146:55", undefined, $ioErrorDebug)} [${part.join(", ")}]`,
+    `${$unwrapOk(bufRead_readUntil($cellOf(r), 44, part, bufReaderRead, bufReaderRead), "test/corpus/io_buf_reader.rs:146:55", undefined, $ioErrorDebug)} [${part.join(", ")}]`,
   );
   console.log(
-    `${$unwrapOk(bufRead_skipUntil($cellOf(r), 44, BufReaderRead, BufReaderRead), "test/corpus/io_buf_reader.rs:147:39", undefined, $ioErrorDebug)}`,
+    `${$unwrapOk(bufRead_skipUntil($cellOf(r), 44, bufReaderRead, bufReaderRead), "test/corpus/io_buf_reader.rs:147:39", undefined, $ioErrorDebug)}`,
   );
   const parts = $grownVec(
     $roomForHint(
-      $iterator(bufRead_split(r, 44, BufReaderRead, BufReaderRead), (iterator) =>
-        splitIterator_next(iterator, BufReaderRead),
+      $iterator(bufRead_split(r, 44, bufReaderRead, bufReaderRead), (iterator) =>
+        splitIterator_next(iterator, bufReaderRead),
       ).map((p) => $unwrapOk(p, "test/corpus/io_buf_reader.rs:148:55", undefined, $ioErrorDebug)),
       12,
       false,
@@ -490,9 +490,9 @@ function linesAndMore() {
             pos: 0,
             filled: 0,
           },
-          BufReaderRead,
+          bufReaderRead,
         ),
-        (iterator) => bytesIterator_next(iterator, BufReaderRead),
+        (iterator) => bytesIterator_next(iterator, bufReaderRead),
       ).map((b) => $unwrapOk(b, "test/corpus/io_buf_reader.rs:151:90", undefined, $ioErrorDebug)),
       1,
       false,
@@ -513,7 +513,7 @@ function shown(r) {
 }
 
 function seeks() {
-  const BufReaderBufRead = $bufReader($cursorReader({ asRef: (value) => value }));
+  const bufReaderBufRead = $bufReader($cursorReader({ asRef: (value) => value }));
   const r = {
     inner: cursor([48, 49, 50, 51, 52, 53, 54, 55, 56, 57]),
     buf: new Array(4).fill(0),
@@ -521,18 +521,18 @@ function seeks() {
     filled: 0,
   };
   $unwrapOk(
-    BufReaderBufRead.fillBuf({ value: r }),
+    bufReaderBufRead.fillBuf({ value: r }),
     "test/corpus/io_buf_reader.rs:162:18",
     undefined,
     $ioErrorDebug,
   );
-  BufReaderBufRead.consume({ value: r }, 1);
+  bufReaderBufRead.consume({ value: r }, 1);
   console.log(
-    `${$unwrapOk(BufReaderBufRead.streamPosition({ value: r }), "test/corpus/io_buf_reader.rs:164:45", undefined, $ioErrorDebug)} [${$part(r.buf, r.pos, r.filled).join(", ")}]`,
+    `${$unwrapOk(bufReaderBufRead.streamPosition({ value: r }), "test/corpus/io_buf_reader.rs:164:45", undefined, $ioErrorDebug)} [${$part(r.buf, r.pos, r.filled).join(", ")}]`,
   );
   console.log(
     `${$unwrapOk(
-      BufReaderBufRead.seek({ value: r }, { TAG: "Current", _0: 1n }),
+      bufReaderBufRead.seek({ value: r }, { TAG: "Current", _0: 1n }),
       "test/corpus/io_buf_reader.rs:165:49",
       undefined,
       $ioErrorDebug,
@@ -541,21 +541,21 @@ function seeks() {
   console.log(`[${$part(r.buf, r.pos, r.filled).join(", ")}] ${pos(r)}`);
   console.log(
     `${$unwrapOk(
-      BufReaderBufRead.seek({ value: r }, { TAG: "Start", _0: 6n }),
+      bufReaderBufRead.seek({ value: r }, { TAG: "Start", _0: 6n }),
       "test/corpus/io_buf_reader.rs:167:47",
       undefined,
       $ioErrorDebug,
     )}`,
   );
   const two = [0, 0];
-  const result = $writeTry(() => BufReaderBufRead.readExact({ value: r }, two));
+  const result = $writeTry(() => bufReaderBufRead.readExact({ value: r }, two));
   $writeExpect(
     result,
     "called `Result::unwrap()` on an `Err` value",
     "test/corpus/io_buf_reader.rs:169:28",
   );
   const value = $unwrapOk(
-    BufReaderBufRead.streamPosition({ value: r }),
+    bufReaderBufRead.streamPosition({ value: r }),
     "test/corpus/io_buf_reader.rs:170:51",
     undefined,
     $ioErrorDebug,
@@ -564,27 +564,27 @@ function seeks() {
   console.log(`[${two.join(", ")}] ${value} ${arg}`);
   console.log(
     `${$unwrapOk(
-      BufReaderBufRead.seek({ value: r }, { TAG: "End", _0: -3n }),
+      bufReaderBufRead.seek({ value: r }, { TAG: "End", _0: -3n }),
       "test/corpus/io_buf_reader.rs:171:46",
       undefined,
       $ioErrorDebug,
     )}`,
   );
   let e = $unwrapErr(
-    BufReaderBufRead.seek({ value: r }, { TAG: "End", _0: -30n }),
+    bufReaderBufRead.seek({ value: r }, { TAG: "End", _0: -30n }),
     "test/corpus/io_buf_reader.rs:172:40",
   );
   console.log(`${e.kind} ${$ioErrorDisplay(e)}`);
   console.log(
-    `${$unwrapOk(BufReaderBufRead.streamPosition({ value: r }), "test/corpus/io_buf_reader.rs:174:45", undefined, $ioErrorDebug)} [${$part(r.buf, r.pos, r.filled).join(", ")}]`,
+    `${$unwrapOk(bufReaderBufRead.streamPosition({ value: r }), "test/corpus/io_buf_reader.rs:174:45", undefined, $ioErrorDebug)} [${$part(r.buf, r.pos, r.filled).join(", ")}]`,
   );
-  const result$1 = $writeTry(() => seek_rewind($cellOf(r), BufReaderBufRead));
+  const result$1 = $writeTry(() => seek_rewind($cellOf(r), bufReaderBufRead));
   $writeExpect(
     result$1,
     "called `Result::unwrap()` on an `Err` value",
     "test/corpus/io_buf_reader.rs:175:16",
   );
-  console.log(`${at($cellOf(r), BufReaderBufRead)}`);
+  console.log(`${at($cellOf(r), bufReaderBufRead)}`);
 
   // `seek_relative` stays inside what's buffered where it can.
   const r$1 = {
@@ -594,27 +594,27 @@ function seeks() {
     filled: 0,
   };
   $unwrapOk(
-    BufReaderBufRead.fillBuf({ value: r$1 }),
+    bufReaderBufRead.fillBuf({ value: r$1 }),
     "test/corpus/io_buf_reader.rs:180:18",
     undefined,
     $ioErrorDebug,
   );
-  BufReaderBufRead.consume({ value: r$1 }, 2);
-  const result$2 = $writeTry(() => BufReaderBufRead.seekRelative({ value: r$1 }, 2n));
+  bufReaderBufRead.consume({ value: r$1 }, 2);
+  const result$2 = $writeTry(() => bufReaderBufRead.seekRelative({ value: r$1 }, 2n));
   $writeExpect(
     result$2,
     "called `Result::unwrap()` on an `Err` value",
     "test/corpus/io_buf_reader.rs:182:24",
   );
   shown(r$1);
-  const result$3 = $writeTry(() => BufReaderBufRead.seekRelative({ value: r$1 }, -3n));
+  const result$3 = $writeTry(() => bufReaderBufRead.seekRelative({ value: r$1 }, -3n));
   $writeExpect(
     result$3,
     "called `Result::unwrap()` on an `Err` value",
     "test/corpus/io_buf_reader.rs:184:25",
   );
   shown(r$1);
-  const result$4 = $writeTry(() => BufReaderBufRead.seekRelative({ value: r$1 }, -1n));
+  const result$4 = $writeTry(() => bufReaderBufRead.seekRelative({ value: r$1 }, -1n));
   $writeExpect(
     result$4,
     "called `Result::unwrap()` on an `Err` value",
@@ -622,20 +622,20 @@ function seeks() {
   );
   shown(r$1);
   e = $writeExpectErr(
-    $writeTry(() => BufReaderBufRead.seekRelative({ value: r$1 }, -3n)),
+    $writeTry(() => bufReaderBufRead.seekRelative({ value: r$1 }, -3n)),
     "called `Result::unwrap_err()` on an `Ok` value",
     "test/corpus/io_buf_reader.rs:188:33",
   );
   console.log(`${e.kind}`);
   shown(r$1);
-  const result$5 = $writeTry(() => BufReaderBufRead.seekRelative({ value: r$1 }, 10n));
+  const result$5 = $writeTry(() => bufReaderBufRead.seekRelative({ value: r$1 }, 10n));
   $writeExpect(
     result$5,
     "called `Result::unwrap()` on an `Err` value",
     "test/corpus/io_buf_reader.rs:191:25",
   );
   shown(r$1);
-  const result$6 = $writeTry(() => BufReaderBufRead.seekRelative({ value: r$1 }, -1n));
+  const result$6 = $writeTry(() => bufReaderBufRead.seekRelative({ value: r$1 }, -1n));
   $writeExpect(
     result$6,
     "called `Result::unwrap()` on an `Err` value",
@@ -643,7 +643,7 @@ function seeks() {
   );
   shown(r$1);
   e = $writeExpectErr(
-    $writeTry(() => BufReaderBufRead.seekRelative({ value: r$1 }, -100n)),
+    $writeTry(() => bufReaderBufRead.seekRelative({ value: r$1 }, -100n)),
     "called `Result::unwrap_err()` on an `Ok` value",
     "test/corpus/io_buf_reader.rs:195:35",
   );
@@ -657,12 +657,12 @@ function seeks() {
     filled: 0,
   };
   $unwrapOk(
-    BufReaderBufRead.fillBuf({ value: r$2 }),
+    bufReaderBufRead.fillBuf({ value: r$2 }),
     "test/corpus/io_buf_reader.rs:200:18",
     undefined,
     $ioErrorDebug,
   );
-  const result$7 = $writeTry(() => BufReaderBufRead.seekRelative({ value: r$2 }, 5n));
+  const result$7 = $writeTry(() => bufReaderBufRead.seekRelative({ value: r$2 }, 5n));
   $writeExpect(
     result$7,
     "called `Result::unwrap()` on an `Err` value",
@@ -670,20 +670,20 @@ function seeks() {
   );
   shown(r$2);
   $unwrapOk(
-    BufReaderBufRead.fillBuf({ value: r$2 }),
+    bufReaderBufRead.fillBuf({ value: r$2 }),
     "test/corpus/io_buf_reader.rs:203:18",
     undefined,
     $ioErrorDebug,
   );
   e = $unwrapErr(
-    BufReaderBufRead.seek({ value: r$2 }, { TAG: "Current", _0: -9223372036854775808n }),
+    bufReaderBufRead.seek({ value: r$2 }, { TAG: "Current", _0: -9223372036854775808n }),
     "test/corpus/io_buf_reader.rs:204:49",
   );
   const value$1 = pos(r$2);
   const arg$1 = $part(r$2.buf, r$2.pos, r$2.filled);
   console.log(`${e.kind} ${value$1} [${arg$1.join(", ")}]`);
   $unwrapOk(
-    BufReaderBufRead.fillBuf({ value: r$2 }),
+    bufReaderBufRead.fillBuf({ value: r$2 }),
     "test/corpus/io_buf_reader.rs:206:18",
     undefined,
     $ioErrorDebug,
@@ -691,15 +691,15 @@ function seeks() {
   // What's buffered is more than where its inner says it is: std's
   // `expect` fails.
   r$2.inner.pos = 1n;
-  const failed = $catchUnwind(() => BufReaderBufRead.streamPosition({ value: r$2 }));
+  const failed = $catchUnwind(() => bufReaderBufRead.streamPosition({ value: r$2 }));
   console.log(`${failed.TAG === "Err"}`);
 }
 
 function throughOthers() {
-  const BufReaderRead$2 = $bufReader($sliceReader);
-  const BufReaderRead$1 = $bufReader(BufReaderRead$2);
-  const BufReaderRefMutRead = $mutReader(BufReaderRead$2);
-  const BufReaderRead = $bufReader(
+  const bufReaderRead$2 = $bufReader($sliceReader);
+  const bufReaderRead$1 = $bufReader(bufReaderRead$2);
+  const BufReaderRefMutRead = $mutReader(bufReaderRead$2);
+  const bufReaderRead = $bufReader(
     $readerDefaults(
       chainRead($sliceReader, $sliceReader),
       $followedReadBuf($sliceReader, $sliceReader),
@@ -708,11 +708,11 @@ function throughOthers() {
   const c = read_chain([97, 98], [99, 100], $sliceReader, $sliceReader);
   let r = { inner: c, buf: new Array(8192).fill(0), pos: 0, filled: 0 };
   console.log(
-    `[${$unwrapOk(BufReaderRead.fillBuf({ value: r }), "test/corpus/io_buf_reader.rs:217:35", undefined, $ioErrorDebug).join(", ")}]`,
+    `[${$unwrapOk(bufReaderRead.fillBuf({ value: r }), "test/corpus/io_buf_reader.rs:217:35", undefined, $ioErrorDebug).join(", ")}]`,
   );
   let s = "";
   $unwrapOk(
-    BufReaderRead.readToString(
+    bufReaderRead.readToString(
       { value: r },
       {
         get value() {
@@ -749,9 +749,9 @@ function throughOthers() {
     filled: 0,
   };
   console.log(
-    `[${$unwrapOk(BufReaderRead$2.fillBuf({ value: fromSlice }), "test/corpus/io_buf_reader.rs:228:44", undefined, $ioErrorDebug).join(", ")}]`,
+    `[${$unwrapOk(bufReaderRead$2.fillBuf({ value: fromSlice }), "test/corpus/io_buf_reader.rs:228:44", undefined, $ioErrorDebug).join(", ")}]`,
   );
-  BufReaderRead$2.consume({ value: fromSlice }, 1);
+  bufReaderRead$2.consume({ value: fromSlice }, 1);
   console.log(`${total($cellOf(fromSlice), BufReaderRefMutRead)} [${fromSlice.inner.join(", ")}]`);
 
   const nested = {
@@ -766,12 +766,12 @@ function throughOthers() {
     filled: 0,
   };
   console.log(
-    `[${$unwrapOk(BufReaderRead$1.fillBuf({ value: nested }), "test/corpus/io_buf_reader.rs:233:40", undefined, $ioErrorDebug).join(", ")}]`,
+    `[${$unwrapOk(bufReaderRead$1.fillBuf({ value: nested }), "test/corpus/io_buf_reader.rs:233:40", undefined, $ioErrorDebug).join(", ")}]`,
   );
   console.log(`[${$part(nested.inner.buf, nested.inner.pos, nested.inner.filled).join(", ")}]`);
   let s$1 = "";
   $unwrapOk(
-    BufReaderRead$1.readToString(
+    bufReaderRead$1.readToString(
       { value: nested },
       {
         get value() {
@@ -797,10 +797,10 @@ function throughOthers() {
 }
 
 function throughGenerics() {
-  const BufReaderRead$1 = $bufReader($sliceReader);
-  const BufReaderRead = $bufReader($cursorReader({ asRef: (value) => value }));
+  const bufReaderRead$1 = $bufReader($sliceReader);
+  const bufReaderRead = $bufReader($cursorReader({ asRef: (value) => value }));
   const r = { inner: [120, 10, 121, 10, 122], buf: new Array(3).fill(0), pos: 0, filled: 0 };
-  const byRef = { value: r, impl: BufReaderRead$1 };
+  const byRef = { value: r, impl: bufReaderRead$1 };
   console.log(`${$debugStr(firstLine($cellOf(byRef), $dynReader))}`);
   let boxed = {
     value: {
@@ -809,7 +809,7 @@ function throughGenerics() {
       pos: 0,
       filled: 0,
     },
-    impl: BufReaderRead$1,
+    impl: bufReaderRead$1,
   };
   const r$1 = { value: boxed };
   const value = firstLine(r$1, $dynReader);
@@ -836,7 +836,7 @@ function throughGenerics() {
       pos: 0,
       filled: 0,
     },
-    impl: BufReaderRead$1,
+    impl: bufReaderRead$1,
   };
   const r$2 = { value: dynamic };
   const value$1 = total(r$2, $mutReader($dynReader));
@@ -849,7 +849,7 @@ function throughGenerics() {
       pos: 0,
       filled: 0,
     },
-    impl: BufReaderRead,
+    impl: bufReaderRead,
   };
   const s = { value: seekable };
   const value$2 = at(s, $dynReader);
@@ -858,7 +858,7 @@ function throughGenerics() {
   console.log(
     `${total(
       { inner: [99, 111, 117, 110, 116], buf: new Array(2).fill(0), pos: 0, filled: 0 },
-      BufReaderRead$1,
+      bufReaderRead$1,
     )}`,
   );
   console.log(
@@ -869,25 +869,25 @@ function throughGenerics() {
         pos: 0,
         filled: 0,
       },
-      BufReaderRead,
+      bufReaderRead,
     )}`,
   );
 }
 
 function genericReaders() {
-  const seek = $cursorReader({ asRef: (value) => value });
+  const cursorReader = $cursorReader({ asRef: (value) => value });
   const r = {
     inner: cursor([97, 98, 99, 100, 101, 102, 103]),
     buf: new Array(3).fill(0),
     pos: 0,
     filled: 0,
   };
-  console.log(`[${fill(r, seek).join(", ")}] ${tell(r, seek)}`);
-  console.log(`[${fill(r, seek).join(", ")}] ${tell(r, seek)}`);
+  console.log(`[${fill(r, cursorReader).join(", ")}] ${tell(r, cursorReader)}`);
+  console.log(`[${fill(r, cursorReader).join(", ")}] ${tell(r, cursorReader)}`);
   const value = readAndSeek(
     { inner: cursor([119, 120, 121, 122]), buf: new Array(4).fill(0), pos: 0, filled: 0 },
-    seek,
-    seek,
+    cursorReader,
+    cursorReader,
   );
   console.log(`([${value[0].join(", ")}], ${value[1]})`);
   console.log(
@@ -933,10 +933,10 @@ function tooLarge() {
 }
 
 function twice(a, b) {
-  const BufReaderRead = $bufReader($sliceReader);
+  const bufReaderRead = $bufReader($sliceReader);
   let one = "";
   $unwrapOk(
-    BufReaderRead.readToString(
+    bufReaderRead.readToString(
       { value: { inner: a, buf: new Array(8192).fill(0), pos: 0, filled: 0 } },
       {
         get value() {
@@ -954,7 +954,7 @@ function twice(a, b) {
   );
   let two = "";
   $unwrapOk(
-    BufReaderRead.readToString(
+    bufReaderRead.readToString(
       { value: { inner: b, buf: new Array(8192).fill(0), pos: 0, filled: 0 } },
       {
         get value() {

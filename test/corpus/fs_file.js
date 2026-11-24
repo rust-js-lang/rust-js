@@ -89,7 +89,7 @@ function main() {
 }
 
 function run() {
-  const BufReaderBufRead = $bufReader($fileReader);
+  const bufReaderBufRead = $bufReader($fileReader);
   const result = $currentDir();
   if (result.TAG === "Err") {
     return $ioThrow(result._0);
@@ -116,10 +116,10 @@ function run() {
             $iterator(
               bufRead_lines(
                 { inner: result._0, buf: new Array(8192).fill(0), pos: 0, filled: 0 },
-                BufReaderBufRead,
-                BufReaderBufRead,
+                bufReaderBufRead,
+                bufReaderBufRead,
               ),
-              (iterator) => linesIterator_next(iterator, BufReaderBufRead),
+              (iterator) => linesIterator_next(iterator, bufReaderBufRead),
             ),
           );
           if (result$1.TAG !== "Err") {

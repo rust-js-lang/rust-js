@@ -24,15 +24,15 @@ import {
 $main(main);
 
 function main() {
-  const cursorRead$1 = $cursorReader({ asRef: (value) => value });
-  const BufReaderRead$1 = $bufReader(cursorRead$1);
-  const cursorRead = $cursorReader({ asRef: (value) => $utf8Bytes(value) });
-  const BufReaderRead = $bufReader($mutReader(cursorRead));
+  const cursorReader$1 = $cursorReader({ asRef: (value) => value });
+  const bufReaderRead$1 = $bufReader(cursorReader$1);
+  const cursorReader = $cursorReader({ asRef: (value) => $utf8Bytes(value) });
+  const bufReaderRead = $bufReader($mutReader(cursorReader));
   const inner = { inner: [1, 2, 3, 4, 5], pos: 0n };
   const byRef = { inner: $cellOf(inner), buf: new Array(2).fill(0), pos: 0, filled: 0 };
   const b = [0];
   const result = $writeTry(() =>
-    $bufReader($mutReader(cursorRead$1)).readExact({ value: byRef }, b),
+    $bufReader($mutReader(cursorReader$1)).readExact({ value: byRef }, b),
   );
   $writeExpect(
     result,
@@ -45,7 +45,7 @@ function main() {
 
   const rest = [];
   $unwrapOk(
-    cursorRead$1.readToEnd({ value: inner }, rest),
+    cursorReader$1.readToEnd({ value: inner }, rest),
     "test/corpus/buf_reader_of_a_borrowed_reader.rs:18:34",
     undefined,
     $ioErrorDebug,
@@ -57,7 +57,7 @@ function main() {
   let line = "";
   const arg = $cellOf(lines);
   const buf = { value: line };
-  const readLine = bufRead_readLine(arg, buf, BufReaderRead, BufReaderRead);
+  const readLine = bufRead_readLine(arg, buf, bufReaderRead, bufReaderRead);
   line = buf.value;
   $unwrapOk(
     readLine,
@@ -70,7 +70,7 @@ function main() {
   back.pos = 4n;
   let tail = "";
   $unwrapOk(
-    cursorRead.readToString(
+    cursorReader.readToString(
       { value: text },
       {
         get value() {
@@ -97,7 +97,7 @@ function main() {
   const first = [0, 0];
   const nested = { inner: $cellOf(outer), buf: new Array(1).fill(0), pos: 0, filled: 0 };
   const result$1 = $writeTry(() =>
-    $bufReader($mutReader(BufReaderRead$1)).readExact({ value: nested }, first),
+    $bufReader($mutReader(bufReaderRead$1)).readExact({ value: nested }, first),
   );
   $writeExpect(
     result$1,
@@ -106,7 +106,7 @@ function main() {
   );
   let after = "";
   $unwrapOk(
-    BufReaderRead$1.readToString(
+    bufReaderRead$1.readToString(
       { value: outer },
       {
         get value() {
@@ -128,7 +128,7 @@ function main() {
   const bytes = [7, 8, 9];
   const over = { inner: bytes, pos: 0n };
   const one = [0];
-  const result$2 = $writeTry(() => cursorRead$1.readExact({ value: over }, one));
+  const result$2 = $writeTry(() => cursorReader$1.readExact({ value: over }, one));
   $writeExpect(
     result$2,
     "called `Result::unwrap()` on an `Err` value",

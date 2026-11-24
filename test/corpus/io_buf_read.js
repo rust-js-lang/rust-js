@@ -74,15 +74,15 @@ function fields(r, RBufRead) {
 $main(main);
 
 function main() {
-  const bufRead$1 = $cursorReader({ asRef: (value) => value });
-  const bufRead = $cursorReader({ asRef: (value) => $utf8Bytes(value) });
-  const mutCursorBufRead = $mutReader(bufRead);
+  const cursorReader$1 = $cursorReader({ asRef: (value) => value });
+  const cursorReader = $cursorReader({ asRef: (value) => $utf8Bytes(value) });
+  const mutCursorBufRead = $mutReader(cursorReader);
   const text = { inner: "a\nbb\r\n\nccc", pos: 0n };
   let line = "";
   while (true) {
     const arg = $cellOf(text);
     const buf = { value: line };
-    const readLine = bufRead_readLine(arg, buf, bufRead, bufRead);
+    const readLine = bufRead_readLine(arg, buf, cursorReader, cursorReader);
     line = buf.value;
     if (!($unwrapOk(readLine, "test/corpus/io_buf_read.rs:32:37", undefined, $ioErrorDebug) > 0)) {
       break;
@@ -90,9 +90,9 @@ function main() {
     console.log(`${$debugStr(line)}`);
     line = "";
   }
-  const iter = bufRead_lines({ inner: "one\r\ntwo\n\nthree", pos: 0n }, bufRead, bufRead);
+  const iter = bufRead_lines({ inner: "one\r\ntwo\n\nthree", pos: 0n }, cursorReader, cursorReader);
   let line$1;
-  while ((line$1 = linesIterator_next(iter, bufRead)) != null) {
+  while ((line$1 = linesIterator_next(iter, cursorReader)) != null) {
     console.log(
       `${$debugStr($unwrapOk(line$1, "test/corpus/io_buf_read.rs:37:31", undefined, $ioErrorDebug))}`,
     );
@@ -109,7 +109,9 @@ function main() {
   console.log(`${countLines($cellOf(c), mutCursorBufRead)} ${c.pos}`);
   console.log(`${countLines($cellOf(c), mutCursorBufRead)}`);
   const bytes = [102, 105, 114, 115, 116, 10, 115, 101, 99, 111, 110, 100];
-  console.log(`${$debugStr(firstLine({ value: { inner: bytes, pos: 0n }, impl: bufRead$1 }))}`);
+  console.log(
+    `${$debugStr(firstLine({ value: { inner: bytes, pos: 0n }, impl: cursorReader$1 }))}`,
+  );
   let slice = [111, 110, 108, 121];
   console.log(
     `${$debugStr(
@@ -187,8 +189,8 @@ function main() {
   console.log(`${$ioErrorDisplay(e)} ${$debugStr(kept)} [${bad.join(", ")}]`);
   const lines = Array.from(
     $iterator(
-      bufRead_lines({ inner: [97, 10, 0xc3, 10, 98], pos: 0n }, bufRead$1, bufRead$1),
-      (iterator) => linesIterator_next(iterator, bufRead$1),
+      bufRead_lines({ inner: [97, 10, 0xc3, 10, 98], pos: 0n }, cursorReader$1, cursorReader$1),
+      (iterator) => linesIterator_next(iterator, cursorReader$1),
     ).map((line) => (line.TAG === "Ok" ? line._0 : $ioErrorDisplay(line._0))),
   );
   console.log(`[${lines.map((item) => $debugStr(item)).join(", ")}]`);

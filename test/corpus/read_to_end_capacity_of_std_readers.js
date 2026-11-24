@@ -42,8 +42,8 @@ function show(label, n, v, cap, read) {
 $main(main);
 
 function main() {
-  const BufReaderRead = $bufReader($sliceReader);
-  const cursorRead = $cursorReader({ asRef: (value) => value });
+  const bufReaderRead = $bufReader($sliceReader);
+  const cursorReader = $cursorReader({ asRef: (value) => value });
   const TakeRead = $readerDefaults(takeRead($sliceReader), $takeReadBuf($sliceReader));
   const ChainRead = $readerDefaults(
     chainRead($sliceReader, $sliceReader),
@@ -71,17 +71,20 @@ function main() {
     show("slice into room", n, v, $capacity(v, 1), read);
 
     v = [];
-    const value = read_take({ inner: data, pos: 0n }, BigInt(n), cursorRead);
-    read = $readerDefaults(takeRead(cursorRead), $takeReadBuf(cursorRead)).readToEnd({ value }, v);
+    const value = read_take({ inner: data, pos: 0n }, BigInt(n), cursorReader);
+    read = $readerDefaults(takeRead(cursorReader), $takeReadBuf(cursorReader)).readToEnd(
+      { value },
+      v,
+    );
     show("cursor", n, v, $capacity(v, 1), read);
 
     v = [];
     const value$1 = read_take(
       { inner: data, buf: new Array(8192).fill(0), pos: 0, filled: 0 },
       BigInt(n),
-      BufReaderRead,
+      bufReaderRead,
     );
-    read = $readerDefaults(takeRead(BufReaderRead), $takeReadBuf(BufReaderRead)).readToEnd(
+    read = $readerDefaults(takeRead(bufReaderRead), $takeReadBuf(bufReaderRead)).readToEnd(
       { value: value$1 },
       v,
     );

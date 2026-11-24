@@ -82,8 +82,8 @@ function textOf(r, RRead) {
 $main(main);
 
 function main() {
-  const cursorRead$1 = $cursorReader({ asRef: (value) => value });
-  const cursorRead = $cursorReader({ asRef: (value) => $utf8Bytes(value) });
+  const cursorReader$1 = $cursorReader({ asRef: (value) => value });
+  const cursorReader = $cursorReader({ asRef: (value) => $utf8Bytes(value) });
   const data = [7, 8];
   let s = data;
   const r = { value: s };
@@ -127,15 +127,15 @@ function main() {
     )} [${s.join(", ")}]`,
   );
   const c = { inner: [1, 2], pos: 0n };
-  const value = first($cellOf(c), cursorRead$1);
-  const value$1 = first($cellOf(c), cursorRead$1);
-  const isErr = first($cellOf(c), cursorRead$1).TAG === "Err";
+  const value = first($cellOf(c), cursorReader$1);
+  const value$1 = first($cellOf(c), cursorReader$1);
+  const isErr = first($cellOf(c), cursorReader$1).TAG === "Err";
   console.log(
     `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$ioErrorDebug(value._0)})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$ioErrorDebug(value$1._0)})`} ${isErr} ${c.pos}`,
   );
   c.pos = 0n;
-  console.log(`${$debugStr(textOf($cellOf(c), $mutReader(cursorRead$1)))}`);
-  const result = pair($cellOf({ inner: "hi", pos: 0n }), cursorRead);
+  console.log(`${$debugStr(textOf($cellOf(c), $mutReader(cursorReader$1)))}`);
+  const result = pair($cellOf({ inner: "hi", pos: 0n }), cursorReader);
   const map = (e) => $fmtOrPanic(() => e.impl.Display().fmt(e.value), "toString");
   const value$2 = result.TAG === "Err" ? { TAG: "Err", _0: map(result._0) } : result;
   console.log(
@@ -160,11 +160,11 @@ function main() {
   );
   const d = { inner: new Array(7).fill(5), pos: 0n };
   d.pos = 3n;
-  const value$4 = total({ value: d, impl: cursorRead$1 });
+  const value$4 = total({ value: d, impl: cursorReader$1 });
   console.log(
     `${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${$ioErrorDebug(value$4._0)})`}`,
   );
-  let boxed = { value: { inner: [1, 1, 1], pos: 0n }, impl: cursorRead$1 };
+  let boxed = { value: { inner: [1, 1, 1], pos: 0n }, impl: cursorReader$1 };
   const value$5 = total({
     impl: $dynReader,
     get value() {
@@ -208,6 +208,6 @@ function main() {
     }
   }
   console.log(`${tmp$6 !== undefined} [${three.join(", ")}]`);
-  console.log(`${$debugStr(textOf({ inner: "owned", pos: 0n }, cursorRead))}`);
+  console.log(`${$debugStr(textOf({ inner: "owned", pos: 0n }, cursorReader))}`);
 }
 //# sourceMappingURL=case.js.map

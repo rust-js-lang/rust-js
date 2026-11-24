@@ -193,7 +193,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// once for every call that gives it, `const rangeIntoIterator = ..`,
     /// where it reads only what's there; else as it is.
     pub(super) fn kept(&mut self, tr: ty::TraitRef<'tcx>, made: Expr) -> Expr {
-        let named = if is_impl_call(&made) {
+        let named = if let Some(word) = made_whole_by(&made) {
+            // One object of every trait of its type, named by what makes it,
+            // `cursorReader`, not by the trait that asked first, `read` here
+            // and `seek` there (#1301).
+            Some((word.to_string(), word.to_string()))
+        } else if is_impl_call(&made) && made_by_a_helper(&made) {
+            // Of a runtime factory per trait, `$bufReader(RRead)`: as any
+            // other type's, `bufReaderRead`, not a bound's `BufReaderRead`
+            // (#1301).
+            let name = self.dictionary_name(tr);
+            Some((name.clone(), name))
+        } else if is_impl_call(&made) {
             let word = bound_word(self.tcx, tr);
             Some((word.clone(), word))
         } else if !rustc_middle::ty::TypeVisitableExt::has_non_region_param(&tr)
@@ -214,7 +225,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `io::Read`'s, `BufRead`'s or `Seek`'s of one of std's byte sources
-    /// (#1156).
+    /// (#1156). A `Cursor`'s is one object of every trait, `$cursorReader(..)`,
+    /// named by it (`made_whole_by`, #1301).
     fn byte_source_dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
         use crate::recognition::ByteSource;
         // A `&mut` to a reader taken by value, `R = &mut c`, std's `impl
@@ -1289,4 +1301,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect()
     }
+}
+
+/// The word a dictionary is named by where one object made by a runtime
+/// factory is its type's of every trait it's asked, a `Cursor`'s
+/// `$cursorReader(TAsRef)`, its `Read`, `BufRead` and `Seek` alike:
+/// `cursorReader` (#1301).
+fn made_whole_by(made: &Expr) -> Option<&'static str> {
+    made.helper_call_of("$cursorReader").map(|_| "cursorReader")
+}
+
+/// Whether `made` is a runtime factory's call of a dictionary per trait,
+/// `$bufReader(RRead)`: not the program's generic impl's, `holderTouch(TTouch)`,
+/// nor a helper wrapping such a call, `$readerDefaults(chainRead(..), ..)`,
+/// which is that call's.
+fn made_by_a_helper(made: &Expr) -> bool {
+    made.helper_call_of("$bufReader").is_some()
 }

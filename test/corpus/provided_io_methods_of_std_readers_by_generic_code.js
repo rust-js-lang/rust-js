@@ -62,7 +62,7 @@ function reset(s, SSeek) {
 $main(main);
 
 function main() {
-  const seek = $cursorReader({ asRef: (value) => value });
+  const cursorReader = $cursorReader({ asRef: (value) => value });
   let slice = [111, 110, 101, 10, 116, 119, 111, 10];
   const r = { value: slice };
   let tmp;
@@ -84,8 +84,8 @@ function main() {
   };
   $print(firstLine($cellOf(reader), $bufReader($sliceReader)));
   const cursor = { inner: [102, 105, 118, 101, 10, 115, 105, 120, 10], pos: 0n };
-  $print(firstLine($cellOf(cursor), seek));
-  $print(`${reset($cellOf(cursor), seek)}\n`);
+  $print(firstLine($cellOf(cursor), cursorReader));
+  $print(`${reset($cellOf(cursor), cursorReader)}\n`);
   const chained = read_chain([120], [121, 10, 122], $sliceReader, $sliceReader);
   const buffered = { inner: $cellOf(chained), buf: new Array(8192).fill(0), pos: 0, filled: 0 };
   $print(

@@ -1452,9 +1452,10 @@ export function magic(bytes) {
 }
 
 export function lineCount(text) {
-  const bufRead = $cursorReader({ asRef: (value) => $utf8Bytes(value) });
-  return $iterator(bufRead_lines({ inner: text, pos: 0n }, bufRead, bufRead), (iterator) =>
-    linesIterator_next(iterator, bufRead),
+  const cursorReader = $cursorReader({ asRef: (value) => $utf8Bytes(value) });
+  return $iterator(
+    bufRead_lines({ inner: text, pos: 0n }, cursorReader, cursorReader),
+    (iterator) => linesIterator_next(iterator, cursorReader),
   ).reduce((n) => n + 1, 0);
 }
 ```
