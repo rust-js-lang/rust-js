@@ -36,6 +36,35 @@ test("JSX formatter aligns nested props and callbacks and is idempotent", () => 
   expect(format(expected).stdout.toString()).toBe(expected);
 });
 
+// A `jsx!` in the Rust of a child's braces, a closure's body a `map` gives
+// it, laid out from where it starts, as the playground's are. Of one with
+// a comment between its props, which keeps its lines, its indentation is
+// this pass's alone (#1979).
+test("JSX formatter lays out a jsx! in a child's Rust", () => {
+  const expected = `fn view(items: Vec<u32>) {
+    jsx! {
+        <ul>
+            // each item's
+            {items.iter().map(|&item| {
+                jsx! {
+                    <li
+                        // its key
+                        key={item}
+                        title={item}
+                    />
+                }
+            })}
+        </ul>
+    }
+}
+`;
+  // A comment's line is no token's, as it's written: its indent kept.
+  const result = format(expected.replace(/^ +(?=[^ /])/gm, " ").replace(" jsx! {\n <ul>", "    jsx! {\n <ul>"));
+  expect(result.exitCode, result.stderr.toString()).toBe(0);
+  expect(result.stdout.toString()).toBe(expected);
+  expect(format(expected).stdout.toString()).toBe(expected);
+});
+
 // A statement's line that continues it, a let chain's `&&`, a method
 // chain's `.` or what `=` gives, is 4 in from it, as rustfmt lays it out;
 // a block that opens a line, after a condition of several, is at its

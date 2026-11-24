@@ -132,7 +132,9 @@ pub(super) fn turned_continue(stmts: &mut Vec<Stmt>, continues: &[(js::Span, js:
 /// `then`'s or the `else`'s, `Written::continues` or `else_continues`),
 /// where it's of `kept`; at that jump's place, which its comment is before.
 /// Only of a branch of nothing written after the jump, so not the other of
-/// an `if` tidy turned, `std_enumerate.rs`'s `return;`, React's
+/// an `if` tidy turned, nor a match's arm whose `break`, MIR's `return;`,
+/// is written after another's, `None => { // At the end. break; }` beside
+/// `Some(0) => break` (lowering-comments-jumps.test.ts), React's
 /// findAllNodes' `if (!isHiddenSubtree(node)) { .. }`.
 fn kept_in_branch(branch: &mut Vec<Stmt>, span: js::Span, (continues, breaks): BranchJumps, kept: Kept<'_>, end: bool) {
     let tested = |written: &[(js::Span, js::Span)]| jump_tested(written, span).map(|k| written[k].1);

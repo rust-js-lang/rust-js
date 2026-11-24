@@ -105,12 +105,11 @@ export const mutations: Mutation[] = [
   {
     name: "kept-break-of-a-turned-if",
     breaks:
-      "a written `break` is given to the branch of an `if` tidy turned whose statements are written after it",
+      "a written `break` is given to a branch whose statements are written after it: `walked`'s `None => { // At the end. break; }` arm, MIR's `return;`, takes the `Some(0) => break` before it, so its comment leaves the loop (#1979)",
     file: "crates/rust-js-mir/src/tidy/jumps/kept.rs",
     find: "                && let Some(at) = tested(breaks).or_else(|| tested(arms))\n                && !after(at)\n",
     replace: "                && let Some(at) = tested(breaks).or_else(|| tested(arms))\n",
-    tests: ["test/corpus.test.ts", "-t", "^std_enumerate.rs$"],
-    snapshots: true,
+    tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment before a match arm's break MIR made a return is in its branch"],
   },
   {
     name: "kept-turned-continue-unturned",

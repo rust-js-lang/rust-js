@@ -97,6 +97,14 @@ test("a use that names them is predicted, and compiled once", () => {
   expect(replayed).toEqual([]);
 });
 
+// Named by their crate's path, no `use` of them: predicted by the crate
+// the build is given, so compiled once (#1979).
+test("a path of their crate that names them is predicted, and compiled once", () => {
+  const { jsx, replayed } = compiled("jsx-props-pathed", wrapper("use ui::Picture;").replace("props: PictureProps<'_>", "props: ui::PictureProps<'_>"));
+  expect(jsx).toContain('<Framed alt="Example" fetchPriority="low" />');
+  expect(replayed).toEqual([]);
+});
+
 test("a replayed compile's warnings are said once", () => {
   const { stderr, replayed } = compiled("jsx-props-warned", `${wrapper("use ui::*;")}
 pub fn spare() -> u32 {

@@ -148,11 +148,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "extern-crate-props-literal",
-    breaks: "another crate's props, which rust-js compiled with their companion, are built as a struct literal, their flattened attributes refused (#1794)",
+    breaks: "another crate's props named by its path, `ui::PictureProps`, are predicted a struct literal, so the crate is compiled again to build them by their companion (#1794, #1979)",
     file: "crates/rust-js-jsx/src/props.rs",
     find: "                || self.externs.contains(first)\n",
     replace: "",
-    tests: ["test/jsx-imported-props.test.ts", "-t", "another crate's props"],
+    tests: ["test/jsx-props-resolved.test.ts", "-t", "a path of their crate that names them is predicted"],
   },
   {
     name: "companion-unmarked",

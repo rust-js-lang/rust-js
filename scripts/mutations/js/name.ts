@@ -58,11 +58,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "suffix-root-keeps-a-kept-words-dollar",
-    breaks: "a drop flag of a word JS keeps, `new`, is `new$$$0$live`, its suffix taken from the `$` of `new$`",
+    breaks: "a drop flag of a word JS keeps, `new`, is `new$$live`, its suffix taken from the `$` of `new$`",
     file: "crates/rust-js-program/src/js/name.rs",
     find: "        base.strip_suffix('$').unwrap_or(base)\n",
     replace: "        base\n",
-    tests: ["test/corpus.test.ts", "-t", "^arm_temporaries.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(arm_temporaries|drop_flags_of_kept_words).rs$"],
     snapshots: true,
   },
   {

@@ -12,11 +12,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "format-nested-jsx-unformatted",
-    breaks: "a `jsx!` in a prop's Rust, `editor={jsx! { <Editor .. /> }}`, isn't laid out, and keeps whatever indentation it had",
+    breaks: "a `jsx!` in a child's Rust, a `map`'s closure's `jsx! { <li .. /> }`, with a comment between its props, which `wrap.rs` leaves, isn't laid out, and keeps whatever indentation it had (#1979)",
     file: "crates/rust-js-jsx/src/formatting.rs",
     find: "                        parser::formatted(sess, inner.clone(), t.span.to(span.close), at + 4, self)?;\n",
     replace: "",
-    tests: ["test/format.test.ts", "-t", "JSX formatter aligns nested props and callbacks and is idempotent"],
+    tests: ["test/format.test.ts", "-t", "JSX formatter lays out a jsx! in a child's Rust"],
   },
   {
     name: "format-skip-ignored",
