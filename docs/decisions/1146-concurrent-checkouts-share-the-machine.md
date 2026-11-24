@@ -82,3 +82,13 @@ Where agents share a machine, as the Mac mini's and the M5 Pro's coordinators ea
 - **What a run starts inherits its lease,** `RUST_JS_LEASED` naming the holder's process, which `sharers` doesn't count again.
 
 The fair share stays for what still overlaps: a run beside a lane, or a lane beside a lane.
+
+Measured on the M5 Pro, 18 cores, quiet and warm (2026-11-24). Each medium loop was a `cargo build` after one file's change plus two single test files, about 17 s:
+
+| Run | Wall time |
+|---|---|
+| `check:fast --all` alone | 180.4 s and 189.9 s (mean 185.2 s) |
+| Beside a loop of medium work at `nice -n 10` | 191.3 s (+3.3%), 11 loops done beside it |
+| At cores − 2, beside the same loop | 204.7 s (+10.5%), 13 loops |
+
+So the heavy run keeps the machine's whole width, and what runs beside it runs niced. Leaving cores spare costs the heavy run more than it gives the work beside it.
