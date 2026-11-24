@@ -45,7 +45,7 @@ function main() {
     item: $withBorrow(
       $fieldCell(holder$1, "item"),
       (value) => itemClone_clone(value),
-      "test/corpus/refcell_field_derive_meets.rs:50:27",
+      "test/corpus/refcell_field_derive_meets.rs:13:10",
     ),
   };
   console.log(`${count(first)}`);
@@ -55,7 +55,7 @@ function main() {
     item: $withBorrow(
       $fieldCell(holder$1, "item"),
       (value) => itemClone_clone(value),
-      "test/corpus/refcell_field_derive_meets.rs:53:28",
+      "test/corpus/refcell_field_derive_meets.rs:13:10",
     ),
   };
   console.log(`${count(second)}`);

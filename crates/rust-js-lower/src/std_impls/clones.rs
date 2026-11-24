@@ -401,8 +401,56 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// `clone_value` of a `ty` that needs a copy, part by part.
+    /// `clone_value` of a `ty` that needs a copy, part by part: each part's
+    /// clone raising its panic where `ty`'s own clone clones it, as rustc's
+    /// does of a `RefCell`'s clone, which tracks its caller (`clone_site`,
+    /// #2471).
     fn clone_parts(&mut self, place: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        match self.clone_site(ty, None) {
+            Some(at) => Expr::raised_at(at, || self.clone_parts_of(place, ty, span, out)),
+            None => self.clone_parts_of(place, ty, span, out),
+        }
+    }
+
+    /// Where `ty`'s own clone, std's impl or a derive, clones its items, the
+    /// caller a `RefCell`'s clone of one raises its panic at, as rustc's
+    /// does (#2471): of std's containers, the line of std's own each one's
+    /// clone runs, `$stdSites`', from std's MIR (`compiled_std/raised.rs`):
+    /// an `Option`'s derive's, a `Result`'s of `variant`, its `Ok`'s or its
+    /// `Err`'s; a slice's `to_vec`, a `Vec`'s, a `BinaryHeap`'s, a `Box<[T]>`'s;
+    /// a `VecDeque`'s and a `LinkedList`'s `iter().cloned()`, rustc's `FnMut`
+    /// shim's; a `Box`'s; an array's; a tuple's, rustc's `Clone` shim's; and
+    /// of the crate's own derived `Clone`, its derive's.
+    fn clone_site(&self, ty: Ty<'tcx>, variant: Option<usize>) -> Option<Expr> {
+        let std = |item: StdItem| self.is_std_type(ty, item);
+        let site = match ty.kind() {
+            ty::Tuple(parts) if !parts.is_empty() => ("tupleClone", 0),
+            ty::Array(..) => ("arrayClone", 0),
+            ty::Slice(..) => ("sliceToVec", 1),
+            ty::Adt(..) if self.is_lang_adt(ty, LangItem::Option) => ("optionClone", 0),
+            ty::Adt(..) if std(StdItem::Result) => ("resultClone", variant?),
+            ty::Adt(..) if std(StdItem::Vec) || std(StdItem::BinaryHeap) => ("sliceToVec", 1),
+            ty::Adt(..) if std(StdItem::VecDeque) || std(StdItem::LinkedList) => ("fnMutCall", 0),
+            ty::Adt(_, args) if ty.is_box() => match args.type_at(0).kind() {
+                ty::Slice(..) => ("sliceToVec", 1),
+                _ => ("boxClone", 0),
+            },
+            // The crate's own derive, which rustc resolves its `clone` to.
+            ty::Adt(..) => {
+                let clone = self.tcx.require_lang_item(LangItem::CloneFn, rustc_span::DUMMY_SP);
+                let args = self.tcx.mk_args(&[ty.into()]);
+                let instance = crate::traits::resolve(self.tcx, self.typing_env, clone, args).ok()??;
+                let derived = (self.tcx.impl_of_assoc(instance.def_id()))
+                    .filter(|&imp| self.tcx.is_automatically_derived(imp))?;
+                return Some(self.location_at(self.tcx.def_span(derived)));
+            }
+            _ => return None,
+        };
+        Some(Expr::std_site(site.0, site.1))
+    }
+
+    /// `clone_value` of a `ty` that needs a copy, part by part.
+    fn clone_parts_of(&mut self, place: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let std = |item: StdItem| self.is_std_type(ty, item);
         // Each read once.
         match ty.kind() {
@@ -636,10 +684,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     fields,
                 } in groups.copied
                 {
-                    copies.push((
-                        indices,
-                        self.clone_fields(place.clone(), (ty, Some(variant)), fields, span, out)?,
-                    ));
+                    // Of a `Result`, each variant's where its clone clones it.
+                    let at = adt.variants().iter().position(|each| each.def_id == variant.def_id);
+                    let copy = match at.and_then(|at| self.clone_site(ty, Some(at))) {
+                        Some(at) if self.is_std_type(ty, StdItem::Result) => Expr::raised_at(at, || {
+                            self.clone_fields(place.clone(), (ty, Some(variant)), fields, span, out)
+                        })?,
+                        _ => self.clone_fields(place.clone(), (ty, Some(variant)), fields, span, out)?,
+                    };
+                    copies.push((indices, copy));
                 }
                 Ok(self.variants_tested((place.clone(), place), (ty, *adt), copies, &groups.others))
             }
@@ -746,10 +799,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (None, Some(variant)) => variant.fields.get(rustc_abi::FieldIdx::from_usize(i)),
             (None, None) => cx.struct_field_def(ty, i),
         };
+        // A `RefCell` field that holds its value, some borrow of which is
+        // counted (`quiet_field`): cloned as std's `RefCell::clone` does,
+        // borrowed while what it holds is cloned, so a clone of one mutably
+        // borrowed panics, never copied by the spread (#2479).
+        let checked: Vec<bool> = (fields.iter().enumerate())
+            .map(|(i, &(_, t))| {
+                self.is_std_type(t, StdItem::RefCell)
+                    && self.property_cell(def(self, i), t).is_some()
+                    && def(self, i).is_some_and(|field| !self.quiet_field(field.did))
+            })
+            .collect();
         let needs: Vec<bool> = (fields.iter().enumerate())
             .map(|(i, &(_, t))| {
-                self.property_cell(def(self, i), t)
-                    .map_or(self.needs_clone(t), |item| self.needs_clone(item))
+                checked[i]
+                    || self
+                        .property_cell(def(self, i), t)
+                        .map_or(self.needs_clone(t), |item| self.needs_clone(item))
             })
             .collect();
         let parts: Vec<_> = (fields.iter().zip(&needs))
@@ -764,14 +830,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let def = def(self, i);
             let read = self.held(Expr::member(place.clone(), name.clone()), def, t);
-            let mut field = match needs[i] {
-                true => self.clone_value(read, t, span, out)?,
-                false => read,
+            let mut field = match (needs[i], checked[i]) {
+                // Of what needs no clone, a `Copy` number, a check alone, as
+                // nothing runs while it's borrowed: `$borrow(cell).value`.
+                (true, true)
+                    if !self.needs_clone(self.property_cell(def, t).expect("a field's cell holds its value")) =>
+                {
+                    Expr::held(Expr::call_helper("$borrow", vec![read]))
+                }
+                (true, true) => {
+                    let item = self.property_cell(def, t).expect("a field's cell holds its value");
+                    let param = self.fresh(Role::Value);
+                    let mut body = Vec::new();
+                    let value = self.clone_value(Expr::var(&param), item, span, &mut body)?;
+                    body.push(StmtKind::Return(Some(value)).at(js::Span::NONE));
+                    Expr::call_helper("$withBorrow", vec![read, Expr::arrow(vec![param.into()], body)])
+                }
+                (true, false) => self.clone_value(read, t, span, out)?,
+                (false, _) => read,
             };
             if let (Some(made), true) = (&made, held[i]) {
                 field = self.made_part(made, field, t, span)?;
             }
-            props.push(Prop::Field(name, self.holding(field, def, t)));
+            // A checked cell's clone is what the field holds already.
+            let held = match checked[i] {
+                true => field,
+                false => self.holding(field, def, t),
+            };
+            props.push(Prop::Field(name, held));
         }
         Ok(Self::in_turn(Expr::object(props), made))
     }

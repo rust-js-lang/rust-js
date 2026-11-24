@@ -406,3 +406,36 @@ impl and whose `I: Iterator + Clone` gives none, and the mutations
 `dictionary-call-unlocated`,
 `operator-entry-unlocated`, `tracked-fn-dividing-generically-untaken` and
 `gives-location-never`, with #2324's retargeted.
+
+## Amendment: a container's clone raises its item's panic where its clone clones it (2026-11-24, #2471)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a panic named another
+line than Rust's.
+
+A container whose clone clones a `RefCell`, a `RefCell`'s clone tracking its
+caller, raises its panic where the container's own clone impl clones the
+item: std's line of std's containers, `option.rs:2280:31` of `Option`'s
+derive, `result.rs:1898:27` of `Ok`'s and `1899:29` of `Err`'s,
+`slice.rs:432:38` of a slice's `to_vec` (a `Vec`'s, a `BinaryHeap`'s, a
+`Box<[T]>`'s), `clone/uninit.rs:20:33` of a `Box`'s, `array/mod.rs:494:21`
+of an array's, and of rustc's shims, `clone.rs:236:5` of a tuple's
+`Clone::clone` and `ops/function.rs:166:5` of `FnMut::call_mut`, a
+`VecDeque`'s and a `LinkedList`'s `iter().cloned()`; and the derive of a
+crate's own struct or enum. rust-js named the line the clone was called at.
+
+Each of std's is read from std's MIR by `bun run std`, as `$stdSites`
+(`compiled_std/raised.rs`): its walk counts a call of a method whose model
+raises at its caller, a derive's `x.clone()`; follows a closure held in
+another it gives, an array's in `try_from_fn`'s `wrap_mut_1`, and a trait
+declared in a function, `to_vec_in`'s `ConvertVec`, to its impls; takes a
+shim's site where its method is declared (`Owner::Declared`). The lowering clones each container's items under
+its site (`clone_site`), a `Result`'s each variant's, a crate's derive its
+impl's span; one inside another raises at the innermost's, as Rust's does.
+
+Held by test/binaries.test.ts's rows against native (each container, a
+`Result`'s `Err`, `Option<Vec<RefCell>>` nested, a crate's derive alone and
+in `Some`), test/std-sites.test.ts, and the mutations
+`raised-model-calls-unread`, `raised-declared-walked`,
+`raised-nested-trait-unresolved`, `raised-held-closures-unfollowed`,
+`container-clone-unsited`,
+`result-variant-unsited` and `derive-unsited`.

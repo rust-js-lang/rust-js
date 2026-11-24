@@ -42,7 +42,7 @@ test("the compiler's maps and sets are walked in an order the program decides", 
 test("only a B-tree's clone makes one of sorted entries, `ofSorted`", () => {
   const makers = sources.filter((file) => /"ofSorted"/.test(read(file)));
   expect(makers).toEqual(["crates/rust-js-lower/src/std_impls/clones.rs"]);
-  const arm = read("crates/rust-js-lower/src/std_impls/clones.rs").match(/\/\/\/ `clone_value` of a `ty` that needs a copy, part by part\.\n    fn clone_parts[\s\S]*?\n    }\n/)?.[0] ?? "";
+  const arm = read("crates/rust-js-lower/src/std_impls/clones.rs").match(/\/\/\/ `clone_value` of a `ty` that needs a copy, part by part\.\n    fn clone_parts_of[\s\S]*?\n    }\n/)?.[0] ?? "";
   expect(arm.match(/"ofSorted"/g)?.length).toBe(1);
   expect(read("crates/rust-js-lower/src/std_impls/clones.rs").match(/"ofSorted"/g)?.length).toBe(1);
   // The runtime defines it and never calls it.

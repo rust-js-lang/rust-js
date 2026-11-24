@@ -4,7 +4,16 @@
 // in another `RefCell`, borrowed while it's made: the parts copied, each
 // named apart from the borrowed value it's read of (#200).
 
-import { $borrow, $debugStr, $eq, $index, $main, $showBorrowed, $withBorrow } from "@rust-js/std";
+import {
+  $borrow,
+  $debugStr,
+  $eq,
+  $index,
+  $main,
+  $showBorrowed,
+  $stdSites,
+  $withBorrow,
+} from "@rust-js/std";
 
 $main(main);
 
@@ -30,7 +39,7 @@ function main() {
     pairs,
     (value) =>
       value.map((item) => {
-        const value = $borrow(item, "test/corpus/refcell_clone_nested_parts.rs:13:24").value;
+        const value = $borrow(item, $stdSites.sliceToVec[1]).value;
         return { value: [value[0], value[1]] };
       }),
     "test/corpus/refcell_clone_nested_parts.rs:13:24",

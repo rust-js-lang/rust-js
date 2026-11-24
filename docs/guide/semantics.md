@@ -1962,7 +1962,10 @@ Differences:
   allow, so a `T: Iterator + Clone`, never a `RefCell`, gives none; and an
   entry takes it only where its impl tracks, `{ clone: (value, location) =>
   $borrow(value, location).slice() }`
-  ([0427](../decisions/0427-track-caller.md), amended, #2324, #2457); or a
+  ([0427](../decisions/0427-track-caller.md), amended, #2324, #2457); of a
+  container's clone of a `RefCell`, where its clone clones it: std's line of
+  std's, `option.rs:2280:31` of `Option`'s, a crate's derive's of its own
+  (#2471); or a
   line of std's own, `VecDeque::swap`'s assertion's, a constant of the
   toolchain the runtime keeps, `$stdSites`. A library's panic writes
   nothing, its host's to catch: a JS stack trace and exit code 1 where it

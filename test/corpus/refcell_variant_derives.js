@@ -105,7 +105,7 @@ function main() {
                   },
                 },
                 (value) => (value == null ? value : [value[0]]),
-                "test/corpus/refcell_variant_derives.rs:55:15",
+                "test/corpus/refcell_variant_derives.rs:19:10",
               ),
             }
           : a;
@@ -180,7 +180,7 @@ function main() {
                   },
                 },
                 (value) => (value == null ? value : [value[0]]),
-                "test/corpus/refcell_variant_derives.rs:61:15",
+                "test/corpus/refcell_variant_derives.rs:19:10",
               ),
             }
           : p;
@@ -248,7 +248,7 @@ function main() {
                   },
                 },
                 (value) => (value == null ? value : [value[0]]),
-                "test/corpus/refcell_variant_derives.rs:74:23",
+                "test/corpus/refcell_variant_derives.rs:19:10",
               ),
             }
           : ranked;

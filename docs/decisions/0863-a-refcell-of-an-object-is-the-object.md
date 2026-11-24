@@ -1654,3 +1654,23 @@ seen borrows too (`seen_asks`), which it surely makes. Held by
 `refcell_try_borrow_in_a_closure_while_held.rs` and the two corpus cases,
 each run as a binary against native (test/binaries.test.ts), and the
 mutation `runs-anything-loses-own-borrows`.
+
+## Amended: a field cell's clone checks its borrow (2026-11-24, #2479)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a clone that panics in
+Rust ran in JS.
+
+A derived clone of a struct or a variant whose `RefCell` field holds its
+value copied the field by the object's spread, `{ ...h }`, with no check of
+its borrow: cloned while the field was mutably borrowed, it cloned, where
+std's `RefCell::clone` borrows it and panics, "RefCell already mutably
+borrowed"; and `let _ = h.clone()`, a clone with no effect, was dropped.
+Now a field some borrow of which is counted (not `quiet_field`) is cloned
+as std's is (`clone_fields`): of what needs no clone, a `Copy` number, its
+borrow checked where it's read, `c: $borrow($fieldCell(h, "c"), at).value`;
+of another, borrowed while it's cloned, `$withBorrow($fieldCell(h, "c"),
+(value) => ..)`, so its clone may ask of it. A quiet field keeps the
+spread. Held by `refcell_field_cloned_while_borrowed.rs` (a struct and a
+variant, used and not, shared and free), test/binaries.test.ts's derive
+rows, and the mutations `field-cell-clone-unchecked` and
+`field-cell-copy-held`.

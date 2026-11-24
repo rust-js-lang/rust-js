@@ -142,6 +142,29 @@ const $stdSites = {
   "ordClamp": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cmp.rs:1166:9"
   ],
+  "optionClone": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
+  ],
+  "resultClone": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1898:27",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1899:29"
+  ],
+  "sliceToVec": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:21",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38"
+  ],
+  "boxClone": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone/uninit.rs:20:33"
+  ],
+  "arrayClone": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/array/mod.rs:494:21"
+  ],
+  "tupleClone": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone.rs:236:5"
+  ],
+  "fnMutCall": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
+  ],
   "refCellEq": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell.rs:1482:15",
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell.rs:1482:34"
@@ -178,7 +201,8 @@ const $stdSites = {
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1230:9",
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1236:23",
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1242:13",
-    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1242:34"
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1242:34",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1242:41"
   ],
   "writeCopyOfSlice": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1170:14"
@@ -224,7 +248,8 @@ const $stdSites = {
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/vec_deque/mod.rs:1845:36"
   ],
   "vecDequeSplitOff": [
-    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/vec_deque/mod.rs:2724:9"
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/vec_deque/mod.rs:2724:9",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/vec_deque/mod.rs:2727:80"
   ],
   "byteSliceConsume": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/io/impls.rs:389:22"

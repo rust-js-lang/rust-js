@@ -51,6 +51,11 @@ enum Owner {
     Free(StdCrate, &'static [&'static str]),
     /// A trait's own default of a method, the trait at its path.
     Default(StdCrate, &'static [&'static str]),
+    /// A trait's declared method, the trait at its path, of which rustc's
+    /// shim is made, `Clone::clone`'s of a tuple, `FnMut::call_mut`'s of a
+    /// function given as a closure: its site is where it's declared, as
+    /// rustc places a shim's calls (#2471).
+    Declared(StdCrate, &'static [&'static str]),
     /// A trait's impl for any type, `impl<T: Display> SpecToString for T`,
     /// the trait at its path.
     Blanket(StdCrate, &'static [&'static str]),
@@ -365,6 +370,55 @@ const RAISED: &[(&str, Option<&str>, Owner, &str)] = &[
         Owner::Default(StdCrate::Core, &["cmp", "Ord"]),
         "clamp",
     ),
+    // Where a container's clone clones its items, which a `RefCell`'s
+    // clone, tracking its caller, raises its panic at (#2471): a derive's,
+    // `Option`'s and `Result`'s; a slice's `to_vec`, a `Vec`'s; `Box`'s, by
+    // its `CloneToUninit`; an array's; and of rustc's shims, a tuple's
+    // `Clone::clone` and a function's `FnMut::call_mut`, a `VecDeque`'s
+    // `iter().cloned()`.
+    (
+        "optionClone",
+        None,
+        Owner::Impl {
+            trait_: Trait::Lang(LangItem::Clone),
+            of: (StdCrate::Core, &["option", "Option"]),
+        },
+        "clone",
+    ),
+    (
+        "resultClone",
+        None,
+        Owner::Impl {
+            trait_: Trait::Lang(LangItem::Clone),
+            of: (StdCrate::Core, &["result", "Result"]),
+        },
+        "clone",
+    ),
+    ("sliceToVec", None, Owner::Primitive(SimplifiedType::Slice), "to_vec_in"),
+    (
+        "boxClone",
+        None,
+        Owner::Blanket(StdCrate::Core, &["clone", "uninit", "CopySpec"]),
+        "clone_one",
+    ),
+    (
+        "arrayClone",
+        None,
+        Owner::Blanket(StdCrate::Core, &["array", "SpecArrayClone"]),
+        "clone",
+    ),
+    (
+        "tupleClone",
+        None,
+        Owner::Declared(StdCrate::Core, &["clone", "Clone"]),
+        "clone",
+    ),
+    (
+        "fnMutCall",
+        None,
+        Owner::Declared(StdCrate::Core, &["ops", "function", "FnMut"]),
+        "call_mut",
+    ),
     (
         "refCellEq",
         None,
@@ -644,7 +698,7 @@ fn function(tcx: TyCtxt<'_>, owner: Owner, name: &str) -> Option<DefId> {
                 .collect()
         }
         Owner::Free(krate, path) => return registry::by_path(tcx, krate, path),
-        Owner::Default(krate, path) => vec![registry::by_path(tcx, krate, path)?],
+        Owner::Default(krate, path) | Owner::Declared(krate, path) => vec![registry::by_path(tcx, krate, path)?],
         Owner::ForByteSlice(krate, path) => {
             let trait_ = registry::by_path(tcx, krate, path)?;
             (tcx.all_impls(trait_))
@@ -706,6 +760,12 @@ fn site(tcx: TyCtxt<'_>, root: DefId, body: &mir::Body<'_>, info: mir::SourceInf
             None => break,
         }
     }
+    Some(located(tcx, span))
+}
+
+/// `span`'s site, `library/..`, line and column: at its outermost macro's
+/// call, as rustc's `caller_location` places it.
+fn located(tcx: TyCtxt<'_>, span: rustc_span::Span) -> (String, usize, usize) {
     let topmost = span.ctxt().outer_expn().expansion_cause().unwrap_or(span);
     let at = tcx.sess.source_map().lookup_char_pos(topmost.lo());
     let file = at
@@ -728,7 +788,7 @@ fn site(tcx: TyCtxt<'_>, root: DefId, body: &mir::Body<'_>, info: mir::SourceInf
             .find("/library/")
             .map_or(file.clone(), |at| file[at + 1..].to_string()),
     };
-    Some((file, at.line, at.col_display + 1))
+    (file, at.line, at.col_display + 1)
 }
 
 /// Each site of `id`'s panics, in the order they're written: each call of
@@ -754,17 +814,24 @@ fn sites(tcx: TyCtxt<'_>, root: DefId) -> Vec<(String, usize, usize)> {
                     // `with_borrow`'s `|cell| f(&cell.borrow())` that `with`
                     // calls, or `set`'s, of nothing captured, a constant, to
                     // `initialize_with`.
+                    // Or held in another's it's given, an array's clone's
+                    // closure in `try_from_fn`'s `wrap_mut_1` (#2471).
                     for arg in args.iter() {
-                        if let ty::Closure(closure, _) = arg.node.ty(body, tcx).kind()
-                            && nested_in(tcx, *closure, root)
-                        {
-                            each.push(*closure);
+                        let held = (arg.node.ty(body, tcx).walk()).filter_map(|part| part.as_type());
+                        for part in held {
+                            if let ty::Closure(closure, _) = part.kind()
+                                && nested_in(tcx, *closure, root)
+                            {
+                                each.push(*closure);
+                            }
                         }
                     }
                     let Some((callee, _)) = func.const_fn_def() else {
                         continue;
                     };
-                    if tracks_caller(tcx, callee) {
+                    // Or a call of a method whose model raises at its caller,
+                    // a derive's `x.clone()` of a `RefCell` (#2471).
+                    if tracks_caller(tcx, callee) || crate::recognition::model_raises_at_caller(tcx, callee) {
                         // Codegen places a call by its `fn_span`, a method's
                         // name to its end, `expect(..)`.
                         let info = mir::SourceInfo {
@@ -773,7 +840,15 @@ fn sites(tcx: TyCtxt<'_>, root: DefId) -> Vec<(String, usize, usize)> {
                         };
                         found.extend(site(tcx, root, body, info));
                     } else if nested_in(tcx, callee, root) {
-                        each.push(callee);
+                        // A trait's method declared in it, `to_vec_in`'s own
+                        // `ConvertVec`, of which each impl in it is followed.
+                        match tcx.trait_of_assoc(callee) {
+                            Some(trait_) => each.extend(
+                                (tcx.all_impls(trait_))
+                                    .filter_map(|imp| tcx.impl_item_implementor_ids(imp).get(&callee).copied()),
+                            ),
+                            None => each.push(callee),
+                        }
                     }
                 }
                 mir::TerminatorKind::Assert { .. } => found.extend(site(tcx, root, body, terminator.source_info)),
@@ -806,7 +881,11 @@ pub(crate) fn raised_catalogue(tcx: TyCtxt<'_>) -> Result<String, String> {
     for &(name, tag, owner, function_name) in RAISED {
         let id =
             function(tcx, owner, function_name).ok_or_else(|| format!("std has no `{function_name}` of {owner:?}"))?;
-        let sites = sites(tcx, id);
+        // A declared method's, a shim's, is where it's declared.
+        let sites = match owner {
+            Owner::Declared(..) => vec![located(tcx, tcx.def_span(id))],
+            _ => sites(tcx, id),
+        };
         if sites.is_empty() {
             return Err(format!("`{function_name}` of {owner:?} raises no panic in its MIR"));
         }

@@ -66,7 +66,7 @@ function main() {
           item: $withBorrow(
             $fieldCell(holder$1, "item"),
             (value) => itemClone_clone(value),
-            "test/corpus/refcell_variant_derive_meets.rs:56:27",
+            "test/corpus/refcell_variant_derive_meets.rs:13:10",
           ),
         }
       : holder$1;
@@ -79,7 +79,7 @@ function main() {
           item: $withBorrow(
             $fieldCell(holder$1, "item"),
             (value) => itemClone_clone(value),
-            "test/corpus/refcell_variant_derive_meets.rs:59:28",
+            "test/corpus/refcell_variant_derive_meets.rs:13:10",
           ),
         }
       : holder$1;

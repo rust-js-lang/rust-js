@@ -192,6 +192,31 @@ test("a library's generic clone names its own line where its bounds let a `RefCe
   expect(named(ran(["node", bin.js], dir))).toEqual(native);
 }, 300_000);
 
+// A container's clone of a `RefCell` its cell borrowed raises the panic
+// where its own clone impl clones the item, as rustc's does: std's line of
+// std's containers, `option.rs:2280:31` of an `Option`'s derive, and the
+// derive of a crate's own struct; of one inside another, the innermost's
+// (#2471).
+test("a container's clone of a borrowed `RefCell` names where its clone impl clones it", () => {
+  const made = [
+    ["Some(RefCell::new(1))", "o.as_ref().unwrap()"],
+    ["Ok::<RefCell<i32>, ()>(RefCell::new(1))", "o.as_ref().unwrap()"],
+    ["Err::<(), RefCell<i32>>(RefCell::new(1))", "o.as_ref().unwrap_err()"],
+    ["vec![RefCell::new(1)]", "&o[0]"],
+    ["std::collections::VecDeque::from([RefCell::new(1)])", "&o[0]"],
+    ["Box::new(RefCell::new(1))", "&*o"],
+    ["(RefCell::new(1), 2)", "&o.0"],
+    ["[RefCell::new(1)]", "&o[0]"],
+    ["S { c: RefCell::new(1) }", "&o.c"],
+    ["Some(vec![RefCell::new(1)])", "&o.as_ref().unwrap()[0]"],
+    ["Some(S { c: RefCell::new(1) })", "&o.as_ref().unwrap().c"],
+  ];
+  made.forEach(([value, cell], i) => {
+    const source = `use std::cell::RefCell;\n#[derive(Clone, Debug)]\nstruct S {\n    c: RefCell<i32>,\n}\nfn main() {\n    let o = ${value};\n    let cell: &RefCell<i32> = ${cell};\n    let _g = cell.borrow_mut();\n    let _ = o.clone();\n}\n`;
+    expect(same(`container-clone${i}`, source).status).toBe(101);
+  });
+}, 300_000);
+
 test("what stdout holds of a line is written as a panic ends a binary", () => {
   same("partial", 'fn main() {\n    print!("partial");\n    panic!("then");\n}\n');
 }, 300_000);
