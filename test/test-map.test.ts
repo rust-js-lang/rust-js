@@ -837,4 +837,51 @@ test("an item outside any function selects the functions that name it; a short o
   // Named by most of its crate's counted functions, 4 of its 7: everything.
   const common = pick(map, [variant], files, cases, sources("Common", [15, 31, 4, 11, 13].map((line, i) => ({ file: i < 2 ? "src/a.rs" : "src/c.rs", line }))));
   expect([common.kind, common.kind === "all" && /`Common`, is named by \d+ of its crate's \d+ counted functions/.test(common.why)]).toEqual(["all", true]);
+  // A new inherent `impl`'s method goes before a trait's of its name: each
+  // function that names `len`, function 0's `s.len()`, calls it now.
+  const shadowing: Change = { file: "src/a.rs", hunks: [[26, 0, ["impl Fresh {", "    fn len(&self) -> usize { 0 }", "}"], []]] };
+  const lenNamed: Sources = { text: (file) => (file === "src/a.rs" ? text.join("\n") : undefined), naming: (word) => (word === "len" ? [{ file: "src/a.rs", line: 15 }] : []) };
+  expect(pick(map, [shadowing], files, cases, lenNamed)).toEqual({ ...asFunction, why: expect.any(String) } as never);
+  // Nothing names it: no test file of its own.
+  expect(pick(map, [shadowing], files, cases, { ...lenNamed, naming: () => [] })).toMatchObject({ kind: "picked", files: ["test/reads.test.ts"] });
+});
+
+// m1-lisa's probe of #2288's rule (comment 7127339825): changes outside any
+// function that change what code does. A new free item shadows a glob's of
+// its name; a macro's body changes each expansion; an attribute decides of
+// the item below it; a trait's new impl is reached by what's bound by the
+// trait; a `mod` beside `use`s is the `use`s'.
+test("a new item, a macro's body, an attribute and a trait's new impl select their namers; a mod beside uses, the uses'", () => {
+  // src/a.rs: function 0 at 10-20 names `helper`, `carried`, `Shown`
+  // and `Item`, and is bound by `Shows`; a macro at 41-44, an attribute at 46 over a struct at 47.
+  const text = Array.from({ length: 50 }, (_, i) => `// line ${i + 1}`);
+  text[14] = "    helper(); carried!(x); let s = Shown; let t: &dyn Shows = &Item;";
+  text[40] = "macro_rules! carried {";
+  text[41] = "    ($f:ident) => {";
+  text[42] = "        let _ = $f;";
+  text[43] = "    };";
+  text[44] = "}";
+  text[45] = "#[derive(Debug)]";
+  text[46] = "pub struct Shown;";
+  const at15 = [{ file: "src/a.rs", line: 15 }];
+  const sources: Sources = {
+    text: (file) => (file === "src/a.rs" ? text.join("\n") : undefined),
+    naming: (word) => (["helper", "carried", "Shown", "Shows"].includes(word) ? at15 : []),
+  };
+  const asFunction = pick(map, [{ file: "src/a.rs", hunks: [[15, 1]] }], files, cases);
+  const of = (hunk: Change["hunks"]) => pick(map, [{ file: "src/a.rs", hunks: hunk }], files, cases, sources);
+  // A new free `fn helper`, which a glob's `helper` named before: its namers.
+  expect(of([[26, 0, ["fn helper() {}"], []]])).toEqual({ ...asFunction, why: expect.any(String) } as never);
+  // A line of a macro's body: the macro's namers.
+  expect(of([[43, 1, ["        let _ = &$f;"], ["        let _ = $f;"]]])).toEqual({ ...asFunction, why: expect.any(String) } as never);
+  // An attribute's line alone: the item's below it, `Shown`'s.
+  expect(of([[46, 1, ["#[derive(Debug, Clone)]"], ["#[derive(Debug)]"]]])).toEqual({ ...asFunction, why: expect.any(String) } as never);
+  // A new `impl Shows for Item`, where nothing names `Item` but function 0
+  // is bound by `Shows`: what names `Shows` too.
+  expect(of([[26, 0, ["impl Shows for Item {}"], []]])).toEqual({ ...asFunction, why: expect.any(String) } as never);
+  // A name nothing uses is still nothing.
+  expect(of([[26, 0, ["fn unused_helper() {}"], []]])).toMatchObject({ kind: "picked", files: ["test/reads.test.ts"] });
+  // A new module beside the `use` of what it moved there: the `use`'s answer,
+  // not everything.
+  expect(of([[26, 0, ["mod moved;", "use moved::unused_helper;"], []]]).kind).toBe("picked");
 });

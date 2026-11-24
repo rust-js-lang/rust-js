@@ -1060,3 +1060,29 @@ name and a common one select everything; a constant's type changed
 selects its namers). Mutations: `test-map-item-selects-everything`,
 `-short-name-searched`, `-common-name-searched`,
 `-item-named-by-another-unseen`.
+
+Amended again (2026-11-24, the lead's and m1-lisa's probe of the rule,
+#2288 comment 7127339825): what changes what code does with no function
+changed.
+
+- **A new inherent `impl`'s methods,** each by its name, as a method of
+  an inherent `impl` goes before a trait's of its name: a new `len`
+  changes what each `x.len()` calls.
+- **A new free item** (`fn`, `const`, `struct`, `type`) that some
+  function names selects its namers, as it may shadow a glob import's
+  item of its name, or make a `match` arm's binding a constant's pattern;
+  one nothing names is still nothing.
+- **A `macro_rules!` line:** the macro's namers, besides its own line's
+  item's, as every expansion changes.
+- **An outer attribute's line alone** (`#[cfg]`, `#[derive]`, `#[serde]`):
+  the item below it, and of a `mod x;` below it, that module's functions.
+- **A new `impl Tr for X`:** what names `X`, and what names `Tr`, as code
+  bound by `Tr` reaches the new impl without naming `X`.
+- **A `mod x;` beside `use`s** in one hunk: the `use`s' answer
+  (`useChanged`, `useNamed`), the `mod` lines set aside.
+
+Each holds by a row of test-map.test.ts and a mutation: `test-map-inherent-methods-unsearched`,
+`-new-item-unsearched`, `-macro-body-unseen`, `-attribute-above-unread`,
+`-trait-impl-trait-unsearched`, `-mod-beside-use-everything`. Left as they are:
+variants reordered and a default type parameter, which still select
+everything (over-selecting).

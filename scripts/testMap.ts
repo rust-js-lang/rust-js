@@ -643,9 +643,84 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
   // to search, or one more than 60% of its crate's counted functions name,
   // everything, said by name.
   const crateDirOf = (at: string) => at.match(/^crates\/[^/]+\//)?.[0] ?? at.split("/")[0]!;
-  const byName = (file: string, line: number): number[] | string => {
-    const name = itemOf(file, line);
-    if (name === undefined) return "its item isn't found";
+  // The names the lines `added` define: each item's, and of an inherent
+  // `impl`, its type's and each method's, as a method of an inherent `impl`
+  // goes before a trait's of its name, so a new `len` changes what each
+  // `foo.len()` calls with no function changed.
+  // A free item's too, which shadows a glob import's of its name (`use
+  // super::*;`'s `helper` for a new `fn helper`), or makes a `match` arm's
+  // binding a constant's pattern; and of `impl Tr for X`, both `X` and
+  // `Tr`, as generic code bound by `Tr` reaches the new impl without naming
+  // `X` (m1-lisa's probe, #2288).
+  const traitImpl = /^\s*(?:unsafe\s+)?impl\b(?:\s*<[^>]*>)?\s+(?:[\w]+::)*([A-Za-z_]\w*)(?:<[^>]*>)?\s+for\s+&?(?:mut\s+)?(?:[\w]+::)*([A-Za-z_]\w*)/;
+  const definedIn = (added: string[]) => {
+    const names: string[] = [];
+    let methods = true;
+    for (const text of added) {
+      const impl = /^\s*(?:unsafe\s+)?impl\b/.test(text);
+      const ofTrait = impl ? traitImpl.exec(text) : null;
+      if (impl) methods = ofTrait === null;
+      if (ofTrait !== null) names.push(ofTrait[1]!, ofTrait[2]!);
+      const macro = /^\s*macro_rules!\s*([A-Za-z_]\w*)/.exec(text)?.[1];
+      if (macro !== undefined) names.push(macro);
+      const item = itemHeader.exec(text)?.[2] ?? (impl && ofTrait === null ? implHeader.exec(text)?.[2] : undefined);
+      if (item !== undefined && (!/^\s*(?:pub(?:\([^)]*\))?\s+)?(?:(?:unsafe|async|const)\s+)*fn\b/.test(text) || methods)) names.push(item);
+    }
+    return names;
+  };
+  // The item below an attribute `line` of `file`, past other attributes and
+  // comments: its name, or of a `mod x;`, the module.
+  const itemBelow = (file: string, line: number): { name: string; module?: string } | undefined => {
+    const lines = linesOf(file);
+    for (let at = line + 1; at <= lines.length; at++) {
+      const text = lines[at - 1] ?? "";
+      if (text.trim() === "" || commentOnly(text) || /^\s*#\[/.test(text)) continue;
+      const module = /^\s*(?:pub(?:\([^)]*\))?\s+)?mod\s+([A-Za-z_]\w*)\s*;/.exec(text)?.[1];
+      if (module !== undefined) return { name: module, module };
+      const name = itemHeader.exec(text)?.[2] ?? traitImpl.exec(text)?.[2] ?? implHeader.exec(text)?.[2] ?? /^\s*macro_rules!\s*([A-Za-z_]\w*)/.exec(text)?.[1];
+      return name === undefined ? undefined : { name };
+    }
+    return undefined;
+  };
+  // Each counted function of module `name`, declared by `mod name;` in
+  // `file`: of `x.rs` or of `x/`, beside it.
+  const moduleFunctions = (file: string, name: string): number[] => {
+    const base = /\/(?:mod|lib|main)\.rs$/.test(file) || !file.includes("/") ? `${file.replace(/\/[^/]*$/, "")}/${name}` : `${file.replace(/\.rs$/, "")}/${name}`;
+    return map.functions.flatMap(({ file: at }, f) => (at === `${base}.rs` || at.startsWith(`${base}/`) ? [f] : []));
+  };
+  // The `macro_rules!` `line` of `file` is in, whose every expansion it
+  // changes, none a counted function's line.
+  const macroOf = (file: string, line: number): string | undefined => {
+    const lines = linesOf(file);
+    const indent = (text: string) => text.match(/^\s*/)![0].length;
+    const own = lines[line - 1] ?? "";
+    for (let at = line; at >= 1; at--) {
+      const text = lines[at - 1] ?? "";
+      const name = /^\s*macro_rules!\s*([A-Za-z_]\w*)/.exec(text)?.[1];
+      if (name !== undefined && (at === line || indent(text) < indent(own))) return name;
+    }
+    return undefined;
+  };
+  const byName = (file: string, line: number, added: string[] = []): number[] | string => {
+    if (sources.text(file) === undefined) return "its source isn't read";
+    // An attribute's line, `#[cfg]`, `#[derive]`: the item below it.
+    if (/^\s*#\[/.test(linesOf(file)[line - 1] ?? "")) {
+      const below = itemBelow(file, line);
+      if (below === undefined) return "the item below its attribute isn't found";
+      if (below.module !== undefined) return moduleFunctions(file, below.module);
+      return byOneName(file, below.name);
+    }
+    const names = [...new Set([itemOf(file, line), macroOf(file, line), ...definedIn(added)].filter((name): name is string => name !== undefined))];
+    if (names.length === 0) return "its item isn't found";
+    const found = new Set<number>();
+    for (const name of names) {
+      const named = byOneName(file, name);
+      if (typeof named === "string") return named;
+      for (const f of named) found.add(f);
+    }
+    return [...found];
+  };
+  const byOneName = (file: string, name: string): number[] | string => {
     if (name.length < 3) return `its item, \`${name}\`, is too short a name to search`;
     const found = new Set<number>();
     for (const site of sources.naming(name)) {
@@ -838,7 +913,17 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
       // A pure addition of items nothing referred to before, a `mod`, a
       // `fn` or a type, outside any function's code: nothing until a
       // function is changed to use it, whose own hunk selects its tests.
-      if (count === 0 && removed !== undefined && unreferencedOnly(added) && !insideAt(file, from)) continue;
+      if (count === 0 && removed !== undefined && unreferencedOnly(added) && !insideAt(file, from)) {
+        // Of a name some function names, a glob's item it may shadow: its
+        // namers (#2288).
+        const names = sources.text(file) === undefined ? [] : definedIn(added).filter((name) => sources.naming(name).some((site) => holding(site.file, site.line).length > 0));
+        for (const name of names) {
+          const named = byOneName(file, name);
+          if (typeof named === "string") return { kind: "all", why: `${file}'s new item at line ${from}: ${named}` };
+          for (const f of named) touched.add(f);
+        }
+        continue;
+      }
       // A function's signature line whose change is only its visibility,
       // or its docs, `pub(super) fn f(` for `fn f(`: that function's change.
       // Of a function whose name nothing else in the sources declares,
@@ -895,7 +980,18 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
         // `use`s and `mod x;` lines, and the crate's unit tests, select no
         // test file; an item, the functions that name it (#2288).
         if (useOrMod([...added, ...(removed ?? [])]) || (map.items !== undefined && inUnitTests(map.items, file, from))) continue;
-        const named = byName(file, from);
+        // A `mod x;` beside `use`s: the `use`s' answer, the `mod` lines
+        // set aside (#2288).
+        const notMod = (line: string) => !modLine.test(line);
+        const lines = [...added, ...(removed ?? [])].filter((line) => !commentOnly(line));
+        if (lines.some((line) => modLine.test(line)) && lines.every((line) => modLine.test(line) || /^\s*(?:pub(?:\([^)]*\))?\s+)?use\s/.test(line))) {
+          const uses = useChanged(file, from, count, added.filter(notMod), removed?.filter(notMod)) ?? useNamed(file, from, count, added.filter(notMod), removed?.filter(notMod));
+          if (uses !== undefined) {
+            for (const f of uses) touched.add(f);
+            continue;
+          }
+        }
+        const named = byName(file, from, added);
         if (typeof named === "string") return { kind: "all", why: `${file}'s change at line ${from} writes an item, \`${item.trim()}\`: ${named}` };
         for (const f of named) touched.add(f);
         continue;
@@ -927,7 +1023,7 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
             continue;
           }
           if (useOrMod(added) || (map.items !== undefined && inUnitTests(map.items, file, from))) continue;
-          const named = byName(file, from);
+          const named = byName(file, from, added);
           if (typeof named === "string") return { kind: "all", why: `${file}'s change between lines ${from} and ${from + 1} is outside any function's counted code: ${named}` };
           for (const f of named) touched.add(f);
           continue;
@@ -941,7 +1037,9 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
           // A doc comment or an attribute reads nothing; a signature line
           // is of the function it opens (#2288).
           const at = linesOf(file)[line - 1] ?? "";
-          if (commentOnly(at) || /^\s*#!?\[/.test(at)) continue;
+          // A comment, or an inner attribute, reads nothing; an outer one
+          // is its item's, below it (`byName`, #2288).
+          if (commentOnly(at) || /^\s*#!\[/.test(at)) continue;
           const opened = inSignature(linesOf(file), line) ? following(file, line) : undefined;
           if (opened !== undefined) {
             touched.add(opened);
@@ -961,7 +1059,7 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
           }
           const at = linesOf(file)[line - 1] ?? "";
           if (useOrMod([at, ...added]) || (map.items !== undefined && inUnitTests(map.items, file, line))) continue;
-          const named = byName(file, line);
+          const named = byName(file, line, added);
           if (typeof named === "string") return { kind: "all", why: `${file}'s change at line ${line} is outside any function's counted code: ${named}` };
           for (const f of named) touched.add(f);
           continue;
