@@ -743,8 +743,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Index<usize>` dictionary reads `items[i]` unchecked, so an index past the end gives `undefined` where Rust panics, \"index out of bounds: the len is 3 but the index is 5\" (#1420)",
     file: "crates/rust-js-lower/src/traits/dictionaries.rs",
-    find: "            let item = self.index_checked(Expr::var(&made_items), Expr::var(&made_i), ty);\n",
-    replace: "            let item = Expr::index(Expr::var(&made_items), Expr::var(&made_i));\n",
+    find: "                self.index_checked(Expr::var(&made_items), Expr::var(&made_i), ty)\n",
+    replace: "                Expr::index(Expr::var(&made_items), Expr::var(&made_i))\n",
     tests: ["test/corpus.test.ts", "-t", "^index_through_a_generic_bound.rs$"],
   },
   {
@@ -915,5 +915,13 @@ export const mutations: Mutation[] = [
     find: "        if !self.entry_takes_location(method, args) {\n",
     replace: "        if true {\n",
     tests: ["test/binaries.test.ts", "-t", "dictionary"],
+  },
+  {
+    name: "std-index-entry-located-elsewhere",
+    breaks: "std's `Index` entry of a slice, an array or a `Vec` raises its panic at another place than the one generic code's `slice[i]` gives it, as `Index::index` tracks its caller (#2488)",
+    file: "crates/rust-js-lower/src/traits/dictionaries.rs",
+    find: "            let item = Expr::raised_at(Expr::var(&location), || {\n",
+    replace: "            let item = Expr::raised_at(Expr::var(&made_i), || {\n",
+    tests: ["test/corpus.test.ts", "-t", "^index_in_generic_code_names_the_body.rs$"],
   },
 ];

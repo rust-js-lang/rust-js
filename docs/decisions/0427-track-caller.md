@@ -439,3 +439,21 @@ in `Some`), test/std-sites.test.ts, and the mutations
 `raised-nested-trait-unresolved`, `raised-held-closures-unfollowed`,
 `container-clone-unsited`,
 `result-variant-unsited` and `derive-unsited`.
+
+## Amendment: std's `Index` entry raises where generic code indexes (2026-11-24, #2488)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a panic named
+another line than Rust's.
+
+`Index::index` and `IndexMut::index_mut` are `#[track_caller]` where the
+trait declares them, so every impl's panic is raised at its caller: of
+`&items[i]` in generic code over an `S: Index<usize>`, the generic body's
+own index. Generic code's call already gave its site, but std's entries of
+a slice, an array, a `Vec` and a `VecDeque` were arrows made where the
+dictionary was, `(items, i) => $index(items, i, "<there>")`, which named
+the caller's line. Each now takes the location it's given,
+`(items, i, location) => $index(items, i, location)`, the check made under
+`Expr::raised_at(location)`. Its entries the same wherever they're made,
+a body's dictionary of one is named once and given on. Held by the corpus
+case `index_in_generic_code_names_the_body` and the mutation
+`std-index-entry-located-elsewhere`.
