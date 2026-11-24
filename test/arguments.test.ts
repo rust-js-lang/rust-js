@@ -11,6 +11,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -131,7 +132,7 @@ test("a function that reads arguments names its parameters and is given each", a
   const dir = fixture("arguments");
   writeFileSync(join(dir, "lib.rs"), fill);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(out).toContain("const slice = Array.prototype.slice;\n\nexport class LinearGradient {\n  constructor(stops, x1, y1, x2, y2) {\n    this.args = slice.call(arguments);\n  }\n");
   expect(out).toContain("node.fillLinear.apply(node, this.args);");
   expect(out).toContain("return new LinearGradient(undefined, undefined, undefined, undefined, undefined);");
@@ -179,7 +180,7 @@ test("a library's function that reads arguments is given each by its consumer", 
   writeFileSync(join(dir, "app", "lib.rs"), "use js::Unknown;\n\npub fn counted() -> Option<&'static Unknown> {\n    dep::given(None, None)\n}\n\npub fn passing() -> Box<dyn Fn(Option<&Unknown>, Option<&Unknown>) -> Option<&'static Unknown>> {\n    Box::new(|first, second| dep::given(first, second))\n}\n");
   run([compiler, join(dir, "app", "lib.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
     "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js]);
-  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(dir, "app", "lib.js"), "utf8"));
   expect(app).toContain("(undefined, undefined)");
   const lib = await import(join(dir, "app", "lib.js"));
   expect([lib.counted(), lib.passing()(1, 2, 3)]).toEqual([2, 2]);
@@ -251,7 +252,7 @@ pub fn other(f: &dyn Fn(Option<&'static Unknown>) -> Option<&'static Unknown>) -
     "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js]);
   const manifest = JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8"));
   expect(manifest.library.with_this_arguments).toHaveLength(1);
-  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(dir, "app", "lib.js"), "utf8"));
   expect(app).toContain("return Dep.counter()(undefined, undefined);");
   expect(app).toContain('return f("a", undefined);');
   expect(app).toContain("return f();");
@@ -305,7 +306,7 @@ pub fn pair(a: Option<u32>, b: Option<bool>) -> u32 {
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const emitted = readFileSync(join(dir, "lib.js"), "utf8");
+  const emitted = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Decided from the Rust, the parameter's first act (\`literal_defaults\`,
   // #2081): the default is JS's own, and the body's \`unwrap_or\` is gone.
   expect(emitted).toContain("export function padded(count, width = 4) {\n  return width * count;\n}");

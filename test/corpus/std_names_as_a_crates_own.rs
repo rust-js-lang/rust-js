@@ -1,3 +1,4 @@
+//@ library-differs
 // A crate's own items named as std's are, `Sized` and `Box`, as
 // a UI kit's `Sized` of a flattened range is (#1820): a program that names
 // them means its own, and code written beside it names std's by their

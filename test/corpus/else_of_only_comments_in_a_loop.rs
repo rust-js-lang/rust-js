@@ -1,3 +1,4 @@
+//@ library-differs
 // An `else` of only comments after an `else if`, in a loop that goes on
 // past it, keeps the `else if` as written and its `else` of only comments,
 // as React's scheduleContextWorkOnParentPath has them: not the `else if`'s

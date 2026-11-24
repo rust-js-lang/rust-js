@@ -1,3 +1,4 @@
+//@ library-differs
 // A guard of a `|` pattern binding a name at another place in each
 // alternative is tried with each in turn: `(3, 42)` takes the arm, `a` 42
 // (rustc's issue-70413).

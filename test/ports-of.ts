@@ -7,6 +7,7 @@ import { join } from "node:path";
 
 import { buildNode } from "./node-crate";
 import { compiler, fixture, root, run } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 const portsJs = new Map<string, string>();
 /** A port in `test/ports/<port>` (React's, as react-in-rust ports it, copied
@@ -24,10 +25,15 @@ export function portedDir(port: string): string {
   return portsJs.get(port)!;
 }
 
-/** A port's JS (`portedDir`), of each of its modules, by file. */
+/** A port's JS (`portedDir`), of each of its modules, by file: as it reads
+ * without the boundary of what JS gives Rust, as a test of another feature
+ * reads it (#2403); a `.d.ts` as it is. */
 export function ported(port: string): (file: string) => string {
   const dir = portedDir(port);
-  return (file) => readFileSync(join(dir, file), "utf8");
+  return (file) => {
+    const text = readFileSync(join(dir, file), "utf8");
+    return file.endsWith(".js") ? withoutBoundary(text) : text;
+  };
 }
 
 /** React's shared/ReactPerformanceTrackProperties, as react-in-rust ports

@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { exportsDeclared } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 
@@ -434,12 +435,26 @@ pub fn total() -> u32 {
   expect([p.code, p.stderr]).toEqual([0, ""]);
   // Of types alone, `shapes`'s file is its declarations'.
   expect(readFileSync(join(dir, "dep", "shapes.d.ts"), "utf8")).toContain("export type Seed = number;");
-  expect(readFileSync(join(dir, "app", "lib.d.ts"), "utf8")).toContain('export * as rng from "../dep/rng.js";\n');
+  // A library's root, every function of which its own JS checks, as JS may
+  // call it there: its namespace, its file's, as rand_chacha's `pub use
+  // rand_core;`. A module of functions its own JS doesn't check, as no JS of
+  // the library may call them: a module of the app's in its place, beside
+  // it, which re-exports the library's every name and checks each such
+  // function itself, by its name, shadowing the star's (#2403 (Y), #2536).
+  expect(readFileSync(join(dir, "app", "lib.d.ts"), "utf8")).toContain('export * as rng from "./rng.js";\n');
+  expect(readFileSync(join(dir, "app", "rng.d.ts"), "utf8")).toContain('export * from "../dep/rng.js";\n');
   const lib = readFileSync(join(dir, "app", "lib.js"), "utf8");
   expect(lib).toContain('export * as dep from "../dep/lib.js";\n');
-  expect(lib).toContain('export * as rng from "../dep/rng.js";\n');
-  expect(lib).toContain('export * as inner from "../dep/outer/inner.js";\n');
+  expect(lib).toContain('export * as rng from "./rng.js";\n');
+  expect(lib).toContain('export * as inner from "./inner.js";\n');
   expect(lib).not.toContain("shapes");
+  const rng = readFileSync(join(dir, "app", "rng.js"), "utf8");
+  expect(rng).toContain('export * from "../dep/rng.js";\n');
+  expect(rng).toContain('export function next(n) {\n  $checkU32(n, "next(n)");\n  return Rng.next(n);\n}');
   const app = await import(join(dir, "app", "lib.js"));
   expect([app.total(), app.dep.seed(), app.rng.next(2), app.inner.twice(4)]).toEqual([18, 5, 7, 8]);
+  expect(() => app.rng.next(-1)).toThrow("next(n): expected a u32, got -1");
+  expect(() => app.inner.twice(1.5)).toThrow("twice(n): expected a u32, got 1.5");
+  // What each module's JS exports, its `.d.ts` declares.
+  for (const module of ["app/lib.js", "app/rng.js", "app/inner.js"]) expect(await exportsDeclared(dir, module)).toEqual([]);
 });

@@ -16,7 +16,8 @@ import { isIdentifierText } from "typescript/ast/scanner";
  * @typedef {{ declarations: Declaration[], header?: string }} Module
  *
  * An `export` from a module whose one name is `["*", ns]` is `export * as
- * ns from`, its namespace by a name.
+ * ns from`, its namespace by a name; `["*", "*"]`, `export * from`, its every
+ * name (a module rust-js writes in a library's namespace's place, #2536).
  *
  * @typedef {{ kind: "import", from: string, names: string[], default?: string, namespace?: string, typeOnly: boolean }
  *   | { kind: "interface", name: string, exported: boolean, declare: boolean, typeParameters: TypeParameter[], extends: Type[], members: Member[], docs?: string }
@@ -712,6 +713,14 @@ function statement(declaration) {
         id(declaration.name),
       );
     case "export":
+      if (
+        declaration.from !== undefined &&
+        declaration.names.length === 1 &&
+        declaration.names[0][0] === "*" &&
+        declaration.names[0][1] === "*"
+      ) {
+        return f.createExportDeclaration(undefined, false, undefined, string(declaration.from));
+      }
       if (
         declaration.from !== undefined &&
         declaration.names.length === 1 &&

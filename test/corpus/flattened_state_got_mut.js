@@ -5,7 +5,7 @@
 // with `mem::replace`, and lent to a function that writes it whole (#687,
 // ADR 1044); the class's other keys kept.
 
-import { $debugStr, $main } from "@rust-js/std";
+import { $checkStr, $debugStr, $main } from "@rust-js/std";
 
 function statusDebug_fmt(status) {
   if (status.status === "pending") {
@@ -19,6 +19,7 @@ function statusDebug_fmt(status) {
 
 export class Task {
   constructor(status, tries, value, name) {
+    $checkStr(name, "Task.new(name)");
     this.status = status;
     this.tries = tries;
     this.value = value;

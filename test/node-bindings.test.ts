@@ -10,6 +10,7 @@ import { cargoApp } from "./cargo-app";
 import { buildNode } from "./node-crate";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -55,7 +56,7 @@ pub fn shouted(path: &str) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('import { readFileSync } from "fs";');
   // A `match` of what it threw is JS's `try`, as the page has it (ADR 0035).
   expect(js).toContain('export function read(path) {\n  try {\n    return readFileSync(path, "utf8");\n  } catch {\n    return "missing";\n  }\n}');
@@ -92,7 +93,7 @@ pub async fn listed(dir: String) -> Vec<String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('import { promisify } from "util";');
   expect(js).toContain("promisify(readdir)");
   expect(js).toContain("promisify(stat)");
@@ -209,7 +210,7 @@ pub fn spread(parts: &[&str]) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('join("a", "b", "../c")');
   // A `None` of an optional parameter is left out, a `Some` given (ADR 0443).
   expect(js).toContain('basename("/a/b.txt"),\n    basename("/a/b.txt", ".txt"),');
@@ -290,7 +291,7 @@ pub fn all() -> Vec<String> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
   // Each optional argument a `None` is left out, as a person writes the
   // call; a union's `Some(&value)` is the value (ADR 0443).
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('String(typeof Buffer === "function" && typeof Buffer.from === "function")');
   for (const call of ['Buffer.from("héllo")', 'Buffer.alloc(4)', 'Buffer.alloc(5, "ab")', "filled.fill(0, 3)", "numbers.writeDoubleBE(1.5, 4)", "numbers.readInt32LE()", 'hex.toString("base64")', "hi.subarray(0, 1).toString()"]) {
     expect(js).toContain(call);
@@ -374,7 +375,7 @@ pub fn uncaught(error: &'static JsError) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('emitter.emit("ping", 1, "a")');
   // What a `None` leaves out isn't written (ADR 0443).
   for (const call of ["new EventEmitter()", 'emitter.listenerCount("ping")', 'once(emitter, "ping")']) {
@@ -531,7 +532,7 @@ pub fn all() -> Vec<String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('from "querystring";');
   expect(js).toContain('stringify(input),\n    stringify(input, ";"),\n    stringify(input, ";", ":"),');
   const lib = await import(join(dir, "lib.js"));
@@ -581,7 +582,7 @@ pub fn all() -> Vec<String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('from "url";');
   const lib = await import(join(dir, "lib.js"));
   const url = await import("node:url");
@@ -695,7 +696,7 @@ pub fn handle(req: &IncomingMessage, res: &ServerResponse) {
 }
 `.replace("let seen = req.has_header_named(\"x-seen\");", "let seen = req.raw_headers().iter().any(|h| h == \"x-seen\");"));
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("res.statusCode = 201;");
   expect(js).toContain('res.setHeader("x-many", ["a", "b"]);');
   const { handle } = await import(join(dir, "lib.js"));
@@ -802,7 +803,7 @@ pub fn has_function(error: &JsError) -> bool {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
   // Each as React writes it: the hook a property of `Error`, read and
   // written, `undefined` too; the default a value of its own.
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function formatOwnerStack(error) {
   const prevPrepareStackTrace = Error.prepareStackTrace;
   Error.prepareStackTrace = DEFAULT_PREPARE_STACK_TRACE;
@@ -815,8 +816,8 @@ pub fn has_function(error: &JsError) -> bool {
   expect(js).toContain("  Error.captureStackTrace(target);\n");
   expect(js).toContain("  Error.captureStackTrace(target, above);\n");
   expect(js).toContain(".getFunction()");
-  expect(readFileSync(join(dir, "default_prepare_stack_trace.js"), "utf8")).toContain("\nexport default undefined;\n");
-  const v8 = readFileSync(join(dir, "default_prepare_stack_trace_v8.js"), "utf8");
+  expect(withoutBoundary(readFileSync(join(dir, "default_prepare_stack_trace.js"), "utf8"))).toContain("\nexport default undefined;\n");
+  const v8 = withoutBoundary(readFileSync(join(dir, "default_prepare_stack_trace_v8.js"), "utf8"));
   expect(v8).toContain('    stack += "\\n    at " + callSite.toString();\n');
   expect(v8).toContain("export function install() {\n  Error.prepareStackTrace = prepareStackTrace;\n}");
   expect(v8).toContain("export default prepareStackTrace;");
@@ -952,7 +953,7 @@ thread_local! {
 js::export_default!(REPORT_GLOBAL_ERROR);
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "--extern", `webapi=${join(node, "libwebapi.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`const reportGlobalError =
   typeof reportError !== "undefined"
     ? // In modern browsers, reportError will dispatch an error event,
@@ -1039,7 +1040,7 @@ js::export_default! {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "--extern", `webapi=${join(node, "libwebapi.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const nodeRequire = module[requireString];");
   expect(js).toContain("const requireString = `require${Math.random()}`.slice(0, 7);");
   expect(js).toContain('const timers = nodeRequire.call(module, "timers");\n      enqueueTaskImpl = timers.setImmediate;\n    } catch (_err) {');
@@ -1107,7 +1108,7 @@ js::export_default! {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('import Module from "module";');
   expect(js).toContain("const prototype = Module.prototype;");
   expect(js).toContain("return original.apply(this, arguments);");
@@ -1159,7 +1160,7 @@ pub fn is_writable(destination: Option<&Writable>) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function writable(destination) {\n  return destination;\n}");
   expect(js).toContain("export function duplex(both) {\n  return both;\n}");
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
@@ -1203,7 +1204,7 @@ pub fn missing() -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('const CLIENT_FILE_NAME = require.resolve("./client.js");');
   expect(js).toContain("  const paths = [directory];\n  return require.resolve(request, { paths });");
   expect(js).toContain('return require.resolve("./missing.js");');

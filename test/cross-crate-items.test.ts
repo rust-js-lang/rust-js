@@ -7,6 +7,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiled, js } from "./crates";
 import { buildReact, compiler, fixture, run } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -85,7 +86,7 @@ pub mod report {
   expect(app).toContain("return Dep.started(status) && status === Resolved;");
   // Of the variants a `match` tests, those whose test it writes: its last
   // arm's, the rest, is no import.
-  const report = readFileSync(join(dir, "app", "report.js"), "utf8");
+  const report = withoutBoundary(readFileSync(join(dir, "app", "report.js"), "utf8"));
   expect(report).toContain('import { Uninitialized } from "../dep/lib.js";\n');
   const { next, settled } = await import(join(dir, "app", "lib.js"));
   expect([next(-1), next(0), next(1), settled(1), settled(0)]).toEqual([0, 1, 1, true, false]);
@@ -296,7 +297,7 @@ pub fn local() -> f64 {
     dep::scheduler::get_current_time() + dep::scheduler::unstable_now() + dep::scheduler::MAX
 }
 `);
-  const scheduler = readFileSync(join(dir, "dep", "scheduler.js"), "utf8");
+  const scheduler = withoutBoundary(readFileSync(join(dir, "dep", "scheduler.js"), "utf8"));
   expect(scheduler).toContain("\nconst LIMIT = 100;\n\nfunction getCurrentTime() {\n  return 6;\n}\n\nexport { getCurrentTime as unstable_now, LIMIT as MAX };\n");
   // Called through its module, by what it exports it as there (ADR 1018).
   expect(dep).toContain('import * as Scheduler from "./scheduler.js";\n');
@@ -355,7 +356,7 @@ pub use dep::version::REACT_VERSION as VERSION;
 pub use dep::shapes::Circle;
 pub use dep::assign::assign;
 `);
-  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(dir, "app", "lib.js"), "utf8"));
   expect(app).toContain('export { LIMIT, helper as renamed } from "../dep/lib.js";\n');
   expect(app).toContain('export { default as version } from "../dep/version.js";\n');
   expect(app).toContain('export { Circle } from "../dep/shapes.js";\nexport { default as assign } from "../dep/assign.js";\n');
@@ -414,7 +415,7 @@ pub fn persists(_: Option<ChildSet>) -> bool {
     SUPPORTS_PERSISTENCE
 }
 `);
-  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(dir, "app", "lib.js"), "utf8"));
   expect(app).toContain('export * from "../dep/no_persistence.js";\n');
   expect(app).toContain('export { helper } from "./own.js";\n');
   const module = await import(join(dir, "app", "lib.js"));

@@ -21,7 +21,7 @@ import {
   NormalPriority,
   UserBlockingPriority,
 } from "../SchedulerPriorities.js";
-import { $cleanup, $live, $unwindsOn } from "@rust-js/std";
+import { $brand, $cleanup, $live, $unwindsOn } from "@rust-js/std";
 
 let getCurrentTime;
 if (typeof performance !== "undefined" && typeof performance.now !== "undefined") {
@@ -288,14 +288,14 @@ export function unstable_scheduleCallback(priorityLevel, callback, options) {
   const expirationTime = startTime + timeout;
 
   const id = taskIdCounter++;
-  const newTask = {
+  const newTask = $brand("lib#1d8b1139c2e1b8f8::scheduler::Task", {
     id,
     callback,
     priorityLevel,
     startTime,
     expirationTime,
     sortIndex: -1,
-  };
+  });
 
   if (startTime > currentTime) {
     // This is a delayed task.

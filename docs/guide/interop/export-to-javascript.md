@@ -54,23 +54,28 @@ fn shout(name: &str) -> String {
 ```
 
 ```js
-import { $find, $toUppercase } from "@rust-js/std";
+import { $checkStr, $checkU64, $find, $toUppercase } from "@rust-js/std";
 
 export const MAX_RESULTS = 10;
 
 export function firstWord(text) {
+  $checkStr(text, "firstWord(text)");
   return text.split(" ")[0] ?? "";
 }
 
 export function greet(name, greeting) {
+  $checkStr(name, "greet(name)");
+  $checkStr(greeting, "greet(greeting)", "nullish");
   return `${greeting ?? "Hello"}, ${shout(name)}!`;
 }
 
 function delete$(id) {
+  $checkU64(id, "delete(id)");
   return id > 0n;
 }
 
 export function parseURL(url) {
+  $checkStr(url, "parseURL(url)");
   return $find(url, ":");
 }
 
@@ -274,29 +279,50 @@ pub async fn fetch_count() -> u32 {
 ```
 
 ```js
-import { $parseInt } from "@rust-js/std";
+import {
+  $checkArray,
+  $checkCallback,
+  $checkCell,
+  $checkF64,
+  $checkShape,
+  $checkStr,
+  $checkU32,
+  $checks,
+  $parseInt,
+} from "@rust-js/std";
+
+const checkPoint = /* @__PURE__ */ $checkShape(() => ({ x: $checkF64, y: $checkF64 }));
 
 export function total(prices) {
+  $checks("total(prices)", prices, (value, where, none) =>
+    $checkArray(value, where, none, $checkF64),
+  );
   return prices.reduce((a, b) => a + b, -0);
 }
 
 export function pair(id, name) {
+  $checks("pair(id, name)", id, $checkU32, name, $checkStr);
   return [id, name];
 }
 
 export function shift(point, by) {
+  $checks("shift(point, by)", point, checkPoint, by, $checkF64);
   point.x += by;
 }
 
 export function bump(count) {
+  $checks("bump(count)", count, (value, where, none) => $checkCell(value, where, none, $checkU32));
   count.value = (count.value + 1) >>> 0;
 }
 
 export function apply(f, n) {
+  f = $checkCallback(f, "apply(f)", $checkU32);
+  $checkU32(n, "apply(n)");
   return f(n);
 }
 
 export function parsePort(text) {
+  $checkStr(text, "parsePort(text)");
   const result = $parseInt(text, 0, 65535);
   return result.TAG === "Err" ? { TAG: "Err", _0: `not a port: ${text}` } : result;
 }
@@ -398,9 +424,18 @@ pub fn total<I: Iterator<Item = u32>>(items: I) -> u32 {
 ```
 
 ```js
-import { $iter, $iterator, $nextBack, $rangeLen, $rangeNext, $rangeNextBack } from "@rust-js/std";
+import {
+  $checkU32,
+  $iter,
+  $iterator,
+  $nextBack,
+  $rangeLen,
+  $rangeNext,
+  $rangeNextBack,
+} from "@rust-js/std";
 
 export function upto(n) {
+  $checkU32(n, "upto(n)");
   return $iterator({ start: 0, end: n }, $rangeNext, false, $rangeNextBack, $rangeLen);
 }
 
@@ -533,7 +568,7 @@ pub fn order(prices: &[f64]) -> f64 {
 ```
 
 ```js
-import { $displayF64 } from "@rust-js/std";
+import { $checkArray, $checkF64, $checks, $displayF64 } from "@rust-js/std";
 
 export default function formatProdErrorMessage(code, ...args) {
   let url = `https://react.dev/errors/${$displayF64(code)}`;
@@ -549,6 +584,9 @@ export function total(...prices) {
 }
 
 export function order(prices) {
+  $checks("order(prices)", prices, (value, where, none) =>
+    $checkArray(value, where, none, $checkF64),
+  );
   return total(1.5, 2) + total(...prices);
 }
 ```
@@ -638,6 +676,8 @@ pub fn named(names: &[&str]) -> (String, String) {
 ```
 
 ```js
+import { $checkArray, $checkStr, $checks } from "@rust-js/std";
+
 export function logged(fn) {
   return (...args) => {
     for (let i = 0; i < args.length; i++) {
@@ -653,6 +693,9 @@ export function joined() {
 }
 
 export function named(names) {
+  $checks("named(names)", names, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   const join = joined();
   return [join("a", "b"), join(...names)];
 }
@@ -819,8 +862,19 @@ pub fn label(status: &Status) -> String {
 ```
 
 ```js
+import {
+  $checkField,
+  $checkShape,
+  $checkStr,
+  $checkTag,
+  $checkU32,
+  $checkU8,
+  $checks,
+} from "@rust-js/std";
+
 export const Counter = {
   new(stepSize) {
+    $checkU32(stepSize, "Counter.new(stepSize)");
     return {
       count: 0,
       stepSize,
@@ -828,11 +882,25 @@ export const Counter = {
   },
 
   tick(counter) {
+    $checks("Counter.tick(counter)", counter, checkCounter);
     counter.count = (counter.count + counter.stepSize) >>> 0;
   },
 };
 
+const checkCounter = /* @__PURE__ */ $checkShape(() => ({ count: $checkU32, stepSize: $checkU32 }));
+
+function checkStatus(value) {
+  const tag = $checkTag(value, "TAG", ["Loading", "Failed"], ["Idle"]);
+  if (tag === "Loading") {
+    $checkField(value, "percent", $checkU8);
+  }
+  if (tag === "Failed") {
+    $checkField(value, "_0", $checkStr);
+  }
+}
+
 export function label(status) {
+  $checks("label(status)", status, checkStatus);
   if (status === "Idle") {
     return "idle";
   }
@@ -984,12 +1052,15 @@ js::export_default!(Plugin);
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 /** A webpack plugin, as upstream writes it. */
 export default class Plugin {
   chunkName;
   applied;
 
   constructor(chunkName) {
+    $checkStr(chunkName, "Plugin.new(chunkName)");
     this.chunkName = chunkName;
     this.applied = 0;
   }
@@ -1097,11 +1168,14 @@ pub fn mounted(props: Option<&'static Unknown>) -> Component {
 ```
 
 ```js
+import { $checkShape, $checkWhole } from "@rust-js/std";
+
 export const NOOP = { enqueueForceUpdate() {} };
 
 /** Base class helpers for the updating state of a component. */
 export class Component {
   constructor(props, updater) {
+    $checkWhole(checkUpdater, updater, "Component.new(updater)", "nullish");
     this.props = props;
     this.updater = updater ?? NOOP;
   }
@@ -1118,9 +1192,12 @@ export class Component {
 function ComponentDummy() {}
 
 export function PureComponent(props, updater) {
+  $checkWhole(checkUpdater, updater, "PureComponent.new(updater)", "nullish");
   this.props = props;
   this.updater = updater ?? NOOP;
 }
+
+const checkUpdater = /* @__PURE__ */ $checkShape(() => ({}));
 
 ComponentDummy.prototype = Component.prototype;
 const pureComponentPrototype = new ComponentDummy();
@@ -1235,10 +1312,13 @@ pub fn create_fiber(tag: u8, dev: bool) -> Fiber {
 ```
 
 ```js
+import { $checkBool, $checkU8, $checks } from "@rust-js/std";
+
 const enableProfilerTimer = true;
 
 export class FiberNode {
   constructor(tag, dev) {
+    $checks("Fiber.new(tag, dev)", tag, $checkU8, dev, $checkBool);
     this.tag = tag;
     this.memoizedState = null;
     if (enableProfilerTimer) {
@@ -1252,6 +1332,7 @@ export class FiberNode {
 }
 
 export function createFiber(tag, dev) {
+  $checks("createFiber(tag, dev)", tag, $checkU8, dev, $checkBool);
   return new FiberNode(tag, dev);
 }
 ```
@@ -1316,6 +1397,8 @@ pub fn create_request(tasks: u32) -> Rc<Request> {
 ```
 
 ```js
+import { $checkU32 } from "@rust-js/std";
+
 class RequestInstance {
   constructor(
     tasks, // DEV-only
@@ -1329,6 +1412,7 @@ class RequestInstance {
 }
 
 export function createRequest(tasks) {
+  $checkU32(tasks, "createRequest(tasks)");
   return new RequestInstance(tasks);
 }
 ```
@@ -1566,7 +1650,10 @@ js::on_load! {
 ```
 
 ```js
+import { $checkCallback, $checkF64, $checkStr, $checks } from "@rust-js/std";
+
 export function ReactPromise(status, value) {
+  $checks("ReactPromise.new(status, value)", status, $checkStr, value, $checkF64);
   this.status = status;
   this.value = value;
 }
@@ -1579,6 +1666,7 @@ Object.defineProperty(ReactPromise.prototype, "then", {
   enumerable: true,
   configurable: true,
   value: function (resolve) {
+    $checkCallback(resolve, "ReactPromise.then(resolve)");
     if (this.status === "fulfilled") {
       resolve(this.value);
     }
@@ -1691,6 +1779,8 @@ pub fn reset(chunk: &ReactPromise) -> ChunkState {
 ```
 
 ```js
+import { $checkShape, $checkStr, $checks } from "@rust-js/std";
+
 export class ReactPromise {
   constructor(status, value) {
     this.status = status;
@@ -1698,11 +1788,14 @@ export class ReactPromise {
   }
 }
 
+const checkReactPromise = /* @__PURE__ */ $checkShape(() => ({}));
+
 export function createPendingChunk() {
   return new ReactPromise("pending", null);
 }
 
 export function resolve(chunk, value) {
+  $checks("resolve(chunk, value)", chunk, checkReactPromise, value, $checkStr);
   let listeners;
   if (chunk.status === "pending") {
     const old = chunk.value;
@@ -1716,6 +1809,7 @@ export function resolve(chunk, value) {
 }
 
 export function settle(chunk, value) {
+  $checks("settle(chunk, value)", chunk, checkReactPromise, value, $checkStr);
   if (chunk.status === "pending") {
     chunk.status = "fulfilled";
     chunk.value = value;
@@ -1725,6 +1819,7 @@ export function settle(chunk, value) {
 }
 
 export function reset(chunk) {
+  $checks("reset(chunk)", chunk, checkReactPromise);
   const old = { status: chunk.status, value: chunk.value };
   chunk.status = "pending";
   chunk.value = null;
@@ -1806,7 +1901,10 @@ pub fn into_signal(node: &mut Node<Kind>) {
 ```
 
 ```js
+import { $checkCallback, $checkF64, $checkObject, $checkTag, $checks } from "@rust-js/std";
+
 export function computed(getter) {
+  getter = $checkCallback(getter, "computed(getter)", $checkF64);
   return {
     flags: 0,
     value: undefined,
@@ -1814,7 +1912,16 @@ export function computed(getter) {
   };
 }
 
+function checkNode(value, K) {
+  $checkObject(value);
+}
+
+function checkKind(value) {
+  const tag = $checkTag(value, "TAG", ["Signal", "Computed"], ["Scope"]);
+}
+
 export function read(node) {
+  $checks("read(node)", node, (value) => checkNode(value, checkKind));
   if ("current" in node) {
     return node.current ?? undefined;
   }
@@ -1825,6 +1932,7 @@ export function read(node) {
 }
 
 export function intoSignal(node) {
+  $checks("intoSignal(node)", node, (value) => checkNode(value, checkKind));
   delete node.value;
   delete node.getter;
   node.current = undefined;
@@ -1889,8 +1997,14 @@ pub fn contains(scope: &ScopeInstance, fiber: &Fiber) -> bool {
 ```
 
 ```js
+import { $checkShape, $checkWhole, $checks } from "@rust-js/std";
+
+const checkScopeInstance = /* @__PURE__ */ $checkShape(() => ({}));
+const checkFiber = /* @__PURE__ */ $checkShape(() => ({ return: [checkFiber, "nullish"] }));
+
 /** Whether `fiber` is in this scope. */
 function containsNode(fiber) {
+  $checkWhole(checkFiber, fiber, "ScopeInstance.containsNode(fiber)", "nullish");
   while (fiber != null) {
     if (fiber.stateNode === this) {
       return true;
@@ -1901,6 +2015,7 @@ function containsNode(fiber) {
 }
 
 function DO_NOT_USE_queryFirstNode(fiber) {
+  $checks("ScopeInstance.DO_NOT_USE_queryFirstNode(fiber)", fiber, checkFiber);
   this.queries = (this.queries + 1) >>> 0;
   return fiber.stateNode;
 }
@@ -1914,6 +2029,7 @@ export function createScopeInstance() {
 }
 
 export function contains(scope, fiber) {
+  $checks("contains(scope, fiber)", scope, checkScopeInstance, fiber, checkFiber);
   return scope.containsNode(fiber);
 }
 ```
@@ -2393,9 +2509,12 @@ pub fn watched(flags: i32) -> bool {
 ```
 
 ```js
+import { $checkI32 } from "@rust-js/std";
+
 export const ReactiveFlags = { Mutable: 1, Watching: 2 };
 
 export function watched(flags) {
+  $checkI32(flags, "watched(flags)");
   return (flags & (1 | 2)) !== 0;
 }
 ```
@@ -2441,7 +2560,10 @@ export { firstWord } from "./text.js";
 
 ```js
 // src/text.js
+import { $checkStr } from "@rust-js/std";
+
 export function firstWord(text) {
+  $checkStr(text, "firstWord(text)");
   return text.split(" ")[0] ?? "";
 }
 ```
@@ -2483,7 +2605,21 @@ pub fn decode_action(body: &str, server_manifest: &ServerManifest) -> usize {
 
 ```js
 // src/lib.js
-export { decode as decodeAction } from "./action.js";
+import * as Action from "./action.js";
+import { $checkShape, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
+const checkServerManifest = /* @__PURE__ */ $checkShape(() => ({ id: $checkU32 }));
+
+export function decodeAction(body, serverManifest) {
+  $checks(
+    "decodeAction(body, serverManifest)",
+    body,
+    $checkStr,
+    serverManifest,
+    checkServerManifest,
+  );
+  return Action.decode$(body, serverManifest);
+}
 ```
 
 ```ts
@@ -2655,9 +2791,10 @@ pub fn zeros<const N: usize>() -> [u8; N] {
 ```
 
 ```js
-import { $stringPanic } from "@rust-js/std";
+import { $checkU32, $stringPanic } from "@rust-js/std";
 
 export function checked(n, location) {
+  $checkU32(n, "checked(n)");
   if (n === 0) {
     throw $stringPanic(`zero at ${location}`, location);
   }
@@ -2867,6 +3004,10 @@ pub fn read(details: &Details) -> bool {
 ```
 
 ```js
+import { $checkShape, $checks } from "@rust-js/std";
+
+const checkDetails = /* @__PURE__ */ $checkShape(() => ({}));
+
 export function details() {
   let canceled = false;
   return {
@@ -2880,6 +3021,7 @@ export function details() {
 }
 
 export function read(details) {
+  $checks("read(details)", details, checkDetails);
   return details.canceled;
 }
 ```
@@ -2918,7 +3060,10 @@ pub fn committed<G>(given: &'static G, source: &'static str) -> Committed<G> {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function committed(given, source) {
+  $checkStr(source, "committed(source)");
   return {
     ...given,
     source,
@@ -2992,7 +3137,12 @@ pub fn checkout(cart: Vec<String>) -> Order {
 ```
 
 ```js
+import { $checkArray, $checkStr, $checks } from "@rust-js/std";
+
 export function checkout(cart) {
+  $checks("checkout(cart)", cart, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   const count = cart.length;
   return { items: cart, count };
 }

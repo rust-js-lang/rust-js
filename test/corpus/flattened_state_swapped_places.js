@@ -6,7 +6,7 @@
 // flattened state's a copy of its variant's keys, and written on the
 // object as its keys, the class's `name` kept (#659, ADR 1044).
 
-import { $debugStr, $index, $main } from "@rust-js/std";
+import { $checkStr, $debugStr, $index, $main } from "@rust-js/std";
 
 function statusDebug_fmt(status) {
   if (status.status === "pending") {
@@ -20,6 +20,7 @@ function statusDebug_fmt(status) {
 
 export class Task {
   constructor(status, tries, value, name) {
+    $checkStr(name, "Task.new(name)");
     this.status = status;
     this.tries = tries;
     this.value = value;

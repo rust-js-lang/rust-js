@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildNode } from "./node-crate";
 import { buildReact, compiler, fixture, installStd, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -27,7 +28,7 @@ test("a loop over a string's characters is over the string", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  for (const char of text) {");
   expect((await import(join(dir, "lib.js"))).braces("{a}{😀}")).toBe(2);
 });
@@ -60,7 +61,7 @@ test("a string written across lines keeps its lines", async () => {
     "",
   ].join("\n"));
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  return `<div>\n  \\`\\${x}\\` \\\\ \"q\"\n</div>`;");
   expect(js).toContain("  return `a\nb`;");
   expect(js).toContain('  return "a\\nb";');
@@ -97,7 +98,7 @@ pub fn line(indent: usize, key: &str) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('export const UNCHANGED = "\\u2007\\xa0";');
   expect(js).toContain('export const MARKS = "a\\u200bb\\ufeffc�d\\xad";');
   expect(js).toContain('export const FAMILY = "👨‍👩 ❤️";');
@@ -138,7 +139,7 @@ pub fn page() -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const PAGE = `<main>\n  <h1>Hi</h1>\n</main>`;");
   expect(js).toContain('const PAIR = "a\\nb";');
   const { page } = await import(join(dir, "lib.js"));
@@ -206,7 +207,7 @@ of lines",
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // rustc writes the literal in the template: its placeholder isn't one.
   expect(js).toContain('of lines ${n > 1 ? "the plural and a great many more words" : "the single one"} of a sentence');
   expect(js).toContain(
@@ -262,7 +263,7 @@ pub fn by(s: &str, p: &str, t: &str) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('return s.replaceAll("a", () => t);');
   expect(js).toContain('return s.replaceAll("a", "$$&!");');
   expect(js).toContain('return s.replaceAll("a", "b");');
@@ -322,7 +323,7 @@ pub fn plain() -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("return `<p>\n${code}\n</p>`;");
   expect(js).toContain("return `<p>\\n${code}\\n</p>`;");
   expect(js).toContain('return `<a href="x">\n${code}\n</a>`;');
@@ -371,7 +372,7 @@ pub fn attribute_name(start: &str, text: &str) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('text.replace(/%s/g, "_")');
   expect(js).toContain('text.replace(/a\\/b|[/]/g, "-")');
   expect(js).toContain('text.replace(/(?:)/, "^")');
@@ -429,7 +430,7 @@ pub fn borrowed(name: &String) -> &'static Dict<u8> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('return { "/index.html": code, main: "m" };');
   expect(js).toContain('return Object.fromEntries([\n    ["a", code],\n    ["a", "again"],\n  ]);');
   expect(js).toContain('return Object.fromEntries([["__proto__", code]]);');
@@ -454,7 +455,7 @@ test("a leaked String is the string", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return `item-${n}`;");
   const { named } = await import(join(dir, "lib.js"));
   expect(named(3)).toBe("item-3");
@@ -472,7 +473,7 @@ test("a string's part changed in place gives the string its text", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('name = $asciiCaseRange(name, true, 2, "lib.rs:2:9", 4);');
   expect(js).toContain("name = $asciiCase(name, false);");
   expect(js).toContain('name = $asciiCaseRange(name, true, 2, "lib.rs:4:9");');
@@ -527,7 +528,7 @@ pub fn shown(p: &Point, s: &Shape, l: &List) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("function pointDebug_fmt(point) {\n  return `Point { x: ${point.x}, y: ${point.y} }`;\n}");
   // Its `match`'s last arm the `else` (ADR 0237, amended).
   expect(js).toContain('function shapeDisplay_fmt(shape) {\n  if (shape === "Dot") {\n    return "a dot";\n  } else {\n    return `a line of ${shape._0}`;\n  }\n}');
@@ -562,7 +563,7 @@ pub fn shown(p: &Point, n: &Name) -> String {
 
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("function pointDebug_fmt(point, options) {\n  const shown = $formatted(String(point.x), options, true);");
   expect(js).toContain("function nameDisplay_fmt(name, options) {\n  return $formatted(name[0], options);\n}");
   const lib = await import(join(dir, "lib.js"));
@@ -596,7 +597,7 @@ pub fn shown(s: &Size) -> String {
 
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  if (options?.alternate === true) {\n    return `${size[0]} bytes`;\n  } else {\n    const w = options?.width;");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.shown([5])).toBe("5B 5 bytes 5B/7");
@@ -658,7 +659,7 @@ pub fn shown(p: &P, b: &Bag, m: &Mark) -> String {
 
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("function pDebug_fmt(p) {\n  return `P { x: ${p.x} }`;\n}");
   expect(js).toContain('return `[${["0"].concat(Array.from(bag[0], (entry) => String(entry))).join(", ")}]`;');
   expect(js).toContain('  if (mark[0]) {\n    return shown;\n  } else {\n    return "-";\n  }\n}');
@@ -687,7 +688,7 @@ test("a `format!`'s arguments read out of order, and a string's `chars()` iterat
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  for (const c of code) {\n");
   expect(js).toContain('      const arg = lineOutput.join("");\n      finalOutput.push(`${current}:${arg}`);\n');
   const lib = await import(join(dir, "mir.js"));
@@ -735,7 +736,7 @@ pub fn whole(w: &str) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("$restStr(c)");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.cap("hello"), lib.cap(""), lib.cap("é!")]).toEqual(["Hello", "", "É!"]);
@@ -760,7 +761,7 @@ pub fn main() {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('const value = parse("x");');
   expect(js).not.toContain("((result) =>");
 });
@@ -838,7 +839,7 @@ pub fn paired(x: &str) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`  let stack = name + ": " + message;
   for (let i = 0; i < structuredStackTrace.length; i++) {
     const callSite = structuredStackTrace[i];
@@ -922,7 +923,7 @@ pub fn pairs(s: &str) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function units(s) {\n  return s.length;\n}");
   // Counted as JS counts a string's code points (#1186, the user's decision).
   expect(js).toContain("export function points(s) {\n  return Array.from(s).length;\n}");
@@ -975,7 +976,7 @@ pub fn room(n: usize) -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  return prefix + $repeatText("\\xa0\\xa0", indent) + name;\n');
   expect(js).toContain("  return $byteLen($repeatText(`${text}!`, start));\n");
   expect(js).toContain('"ab".repeat(3)');
@@ -1010,7 +1011,7 @@ pub fn wide(n: i64) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  return "  " + $repeatText("  ", indent);\n');
   expect(js).toContain("  return $repeatText(text, n >>> 0);\n");
   installStd(dir);
@@ -1048,7 +1049,7 @@ fn last_unit(a: EncodeUtf16, b: EncodeUtf16) -> Ordering {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  words.sort();\n");
   expect(js.match(/words\.sort\(\);/g)).toHaveLength(1);
   installStd(dir);
@@ -1099,7 +1100,7 @@ pub fn at(text: &str, index: f64) -> Option<&'static str> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("if (startValue[startLength - end] != endValue[endLength - end]) {");
   expect(js).toContain("export function at(text, index) {\n  return text[index] ?? undefined;\n}");
   const lib = await import(join(dir, "lib.js"));
@@ -1125,7 +1126,7 @@ test("each one thing more asked of a chars() makes it the runtime's", async () =
     const dir = fixture(`chars-whole-${name.replace(/\W+/g, "-")}`);
     writeFileSync(join(dir, "lib.rs"), `${source}\n`);
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-    const js = readFileSync(join(dir, "lib.js"), "utf8");
+    const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
     expect([name, js.includes("$chars(") || js.includes("$charIndices(")]).toEqual([name, true]);
     expect([name, (await import(join(dir, "lib.js"))).f("héllo")]).toEqual([name, want]);
   }

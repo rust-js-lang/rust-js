@@ -15,6 +15,9 @@ import {
   $add,
   $btreeSet,
   $cellOf,
+  $checkF64,
+  $checkShape,
+  $checks,
   $cmp,
   $debugF64,
   $debugStr,
@@ -28,11 +31,22 @@ import {
   $thenCmp,
 } from "@rust-js/std";
 
+const checkStepRange = /* @__PURE__ */ $checkShape(() => ({
+  min: $checkF64,
+  max: $checkF64,
+  step: $checkF64,
+}));
+
 function stepRangeDebug_fmt(stepRange) {
   return `StepRange { min: ${$debugF64(stepRange.min)}, max: ${$debugF64(stepRange.max)}, step: ${$debugF64(stepRange.step)} }`;
 }
 
 export function maxOnGrid(range) {
+  $checks("maxOnGrid(range)", range, checkStepRange);
+  return maxOnGrid$(range);
+}
+
+function maxOnGrid$(range) {
   return range.max - ((range.max - range.min) % range.step);
 }
 
@@ -94,7 +108,7 @@ function main() {
     largeStep: 5,
     smallStep: undefined,
   };
-  console.log(`${$displayF64(maxOnGrid(range))}`);
+  console.log(`${$displayF64(maxOnGrid$(range))}`);
   const copy = copied(range);
   const clone = { min: range.min, max: range.max, step: range.step };
   const arg = same(copy, plain);
@@ -120,7 +134,7 @@ function main() {
     smallStep: range.smallStep,
   };
   console.log(
-    `${$displayF64(maxOnGrid(fine))} ${fine.largeStep == null ? "None" : `Some(${$debugF64(fine.largeStep)})`} ${fine.smallStep == null ? "None" : `Some(${$debugF64(fine.smallStep)})`}`,
+    `${$displayF64(maxOnGrid$(fine))} ${fine.largeStep == null ? "None" : `Some(${$debugF64(fine.largeStep)})`} ${fine.smallStep == null ? "None" : `Some(${$debugF64(fine.smallStep)})`}`,
   );
   const ranges = [
     { min: range.min, max: range.max, step: range.step },

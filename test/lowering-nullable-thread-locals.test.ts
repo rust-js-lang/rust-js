@@ -6,6 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -167,7 +168,7 @@ pub fn give(value: Option<&'static Unknown>) {
 `);
   writeFileSync(join(dir, "seen.js"), "export const given = [];\nexport const seen = (value) => given.push(value);\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function setRefreshHandler(handler) {\n  resolveFamily = handler;\n}");
   expect(js).toContain("export function resetRefreshHandler() {\n  resolveFamily = null;\n}");
   expect(js).toContain("  resolveFamily = handler != null && !debug ? handler : null;\n  resolveFamily = previous;\n");
@@ -236,7 +237,7 @@ pub fn stringify(request: &Rc<Request>, dev: bool, debug: bool) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  importStringRequest = dev && debug ? null : request;\n");
   expect(js).toContain("debug ? undefined : request");
   const lib = await import(join(dir, "lib.js"));

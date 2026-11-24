@@ -5,7 +5,7 @@
 // on the instance's field, named outside the handle's accessors, whose
 // `this` is the handle. What Rust does with it is what it does natively.
 
-import { $main } from "@rust-js/std";
+import { $checkI32, $checkU32, $main } from "@rust-js/std";
 
 function bump(count) {
   count.value = (count.value + 1) >>> 0;
@@ -13,6 +13,7 @@ function bump(count) {
 
 export class Counted {
   constructor(row) {
+    $checkI32(row, "Counted.new(row)");
     this.row = row;
     this.reads = 0;
     this.last = undefined;
@@ -26,6 +27,7 @@ export class Counted {
 
   rowBumped(times) {
     const counted = this;
+    $checkU32(times, "Counted.rowBumped(times)");
     for (let i = 0; i < times; i++) {
       bump({
         get value() {

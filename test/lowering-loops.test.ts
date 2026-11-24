@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -31,7 +32,7 @@ test("a loop after a loop is after it", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  for (let i = 0; i < $byteLen(text); i++) {\n");
   expect(js).toContain("  }\n  for (let j = 0; j < n; j++) {\n");
   expect(js).not.toContain("while (true)");
@@ -92,7 +93,7 @@ pub fn stops(items: &[u32]) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  for (let i = 0; i < items.length; i++) {\n    const x = items[i];\n    if (x > 2) {\n      n = ");
   expect(js).toContain("  for (let i = 0; i < items.length; i++) {\n    const x = items[i];\n    if (x > 2) {\n      return x;\n");
   expect(js).toContain("  for (let i = 0; i < items.length; i++) {\n    const [a, b] = items[i];\n");
@@ -238,7 +239,7 @@ pub fn chained(nodes: &[Node]) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain(`  for (let i = 0; i < routes.length; i++) {
     const route = routes[i];
     if (route.title != null && route.routes != null && route.routes.length !== 0) {
@@ -323,7 +324,7 @@ pub fn zero(a: u64, b: u64) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  const moved = { a: 5, c: 6 };\n");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.moved(), lib.second("ab"), lib.firstOf([4, 5]), lib.zero(5n, 5n), lib.zero(4n, 5n)]).toEqual([12, 98, 4, true, false]);
@@ -353,7 +354,7 @@ pub fn decorate(lines: &[D], inline: &[D]) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain(`export function decorate(lines, inline) {
   const highlighted = new Map();
   for (let i = 0; i < lines.length; i++) {
@@ -398,7 +399,7 @@ pub fn joined(args: &[String], mut formatted: String) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('  if (message === "warn") {\n    return "warning";\n  }\n  return "error";\n');
   expect(js).toContain("    for (let i = 0; i < args.length; i++) {\n      formatted += ` ${args[i]}`;\n");
   const lib = await import(join(dir, "mir.js"));
@@ -532,7 +533,7 @@ pub fn twice() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return !escaped;");
   expect(js).toContain("for (let i = 0; i < args.length; i++) {\n    formatted += ` ${args[i]}`;");
   // Changed before the loop only, by a closure even, as Rust's borrows
@@ -636,7 +637,7 @@ pub fn scan(v: &[u32]) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   const numbers = js.slice(0, js.indexOf("function tokens"));
   // What the program wrote first, first.
   const tokens = js.slice(js.indexOf("function tokens"), js.indexOf("function scan"));
@@ -668,7 +669,7 @@ test("an unread count of a range is i", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("for (let i = 0; i < times; i++) {");
+  expect(withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"))).toContain("for (let i = 0; i < times; i++) {");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.repeat("ab", 3), lib.repeat("x", 0)]).toEqual(["ababab", ""]);
 });
@@ -693,7 +694,7 @@ test("a tail loop's break with a value returns it", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("    if (i === n) {\n      return a;\n    }");
+  expect(withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"))).toContain("    if (i === n) {\n      return a;\n    }");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.fibLoop(0), lib.fibLoop(10)]).toEqual([0, 55]);
 });
@@ -716,7 +717,7 @@ test("a value returned after a loop, the function returning early before it, is 
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain(`export function parse(search) {
   if (search === "") {
     return [];
@@ -755,7 +756,7 @@ pub fn sliced(code: &str) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  const end = $byteLen(code);\n  for (let i = 0; i < end; i++) {\n");
   expect(js).toContain('    if ($strSlice(code, i, "lib.rs:13:17", i + 1) === "a") {\n');
   const lib = await import(join(dir, "mir.js"));
@@ -822,7 +823,7 @@ pub fn spun(mut n: u32) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  while (messages.length > max) {\n    messages.shift();\n  }\n  return messages;\n");
   expect(js).toContain("  while (n > 1) {\n    n = (n / 2) >>> 0;\n    steps = (steps + 1) >>> 0;\n  }\n  return steps;\n");
   expect(js).toContain("  while (n > 1) {\n");
@@ -856,7 +857,7 @@ pub fn pages(routes: &[Route], out: &mut Vec<String>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain(`  for (let i = 0; i < routes.length; i++) {
     const route = routes[i];
     if (route.header) {
@@ -916,7 +917,7 @@ pub fn root(n: u32) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("    if (i > 7) {\n      break;\n    }\n");
   expect(js).toContain("  }\n  return out;\n}\nexport function drained");
   expect(js).toMatch(/\n  }\n  return out;\n}\nexport function early/);
@@ -968,7 +969,7 @@ pub fn first(grid: &[Vec<u32>]) -> Option<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  for (const [r, row] of grid.entries()) {\n    for (const [c, v] of row.entries()) {\n");
   expect(js).toContain("  rows: for (let i = 0; i < grid.length; i++) {\n    const row = grid[i];\n    for (let j = 0; j < row.length; j++) {\n      const v = row[j];\n");
   expect(js).toContain("        continue rows;");
@@ -1012,7 +1013,7 @@ pub fn run() -> Vec<u32> {
 `);
   // Incremental, as an app's build is: spans of a closure's body hold it.
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "-C", `incremental=${join(dir, "incremental")}`]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("    while (messages.length > keep) {\n      messages.shift();\n    }\n    return messages;\n");
   const lib = await import(join(dir, "mir.js"));
   expect(lib.run()).toEqual([3, 4]);
@@ -1036,7 +1037,7 @@ test("a while that ends an if's branch keeps its test", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("    while (rest > 0) {\n");
   expect(js).not.toContain("while (true)");
   // The block MIR made around the loop, `break`s of which are the `return`
@@ -1083,7 +1084,7 @@ test("continues a loop's ifs end with are kept", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('      depth = (depth + 1) | 0;\n      continue;\n    }\n    if (c === "}") {');
   expect(js).toContain("    if (depth > 0) {\n      continue;\n    }");
   expect(js).not.toContain("else");
@@ -1124,7 +1125,7 @@ pub fn sections(items: &[u32]) -> Vec<Section> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("    if (current == null) {\n      continue;\n    }\n    if (item > 10) {\n");
+  expect(withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"))).toContain("    if (current == null) {\n      continue;\n    }\n    if (item > 10) {\n");
   expect((await import(join(dir, "mir.js"))).sections([5, 0, 30, 2, 0, 7])).toEqual([{ pages: [3, 2] }, { pages: [7] }]);
 });
 
@@ -1154,7 +1155,7 @@ test("a match arm that ends in a loop leaves it with the loop's break", async ()
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/\bbb\d+\b/);
   expect(js).toContain(`    if (c >= "a" && c <= "z") {\n      let w = "";`);
   expect(js).toContain(`        w += c;\n      }\n      out.push(w);\n    } else {\n`);
@@ -1195,7 +1196,7 @@ test("counted loops in a loop's branches stay where they're written", async () =
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("$rangeNext");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.scaled([1, 5, 10, 13])).toEqual([8, 0.25, 20, -10, 104]);
@@ -1233,7 +1234,7 @@ pub fn joined(items: &[Option<&Unknown>], expanded: Option<&str>) -> (String, Op
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('    if (i > 0) {\n      str += ", ";\n    }\n    const substr = value != null && typeof value === "object" ? "{...}" : String(value);\n');
   expect(js).not.toContain("  let substr;\n  for");
   const lib = await import(join(dir, "lib.js"));

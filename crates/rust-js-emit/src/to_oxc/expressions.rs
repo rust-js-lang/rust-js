@@ -317,8 +317,9 @@ impl<'a> Cx<'a> {
             ExprKind::RaisedAt(at) => self.expr(at),
             ExprKind::Spread(_) => unreachable!("`...items` is an array's item or a call's argument, which they write"),
             ExprKind::Call(callee, args) => {
-                let args = args.iter().map(argument);
-                Expression::new_call_expression(sp, self.expr(callee), None, ArenaVec::from_iter_in(args, b), false, b)
+                let args = ArenaVec::from_iter_in(args.iter().map(argument), b);
+                let pure = e.facts.has(js::Known::PureCall);
+                Expression::new_call_expression_with_pure(sp, self.expr(callee), None, args, false, pure, b)
             }
             ExprKind::New(callee, args) if let Some(literal) = regex_literal(callee, args) => {
                 Expression::new_identifier(sp, self.name(&literal), b)

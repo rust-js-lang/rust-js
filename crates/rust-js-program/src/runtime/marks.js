@@ -64,3 +64,9 @@ const $hookKey = Symbol.for("rust-js: a binary's panic hook");
 // Where a `count` or `last` that may reach a `Repeat`'s own was called, a
 // slot of `globalThis` while it runs (count.js's `$infinitelyAt`, #2324).
 const $infiniteAtKey = Symbol.for("rust-js: where a count or last that may reach a Repeat's own was called");
+
+// The brand sets of the types no other crate can make, by each type's
+// stable path, kept where every copy of the runtime finds them,
+// `globalThis` (boundary_checks.js' `$brandOf`, #2403): a bundled library's
+// copy brands what its maker makes, its app's copy checks it.
+const $brandsKey = Symbol.for("rust-js: the brand sets of the types no other crate can make");

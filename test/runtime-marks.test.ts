@@ -33,7 +33,7 @@ test("the runtime's marks are registry symbols, declared in marks.js alone", () 
   }
   expect(made).toEqual([]);
   expect(registered.sort()).toEqual(
-    ["$arrayIterKey", "$cloneKey", "$countedKey", "$hookKey", "$infiniteAtKey", "$itemArray", "$itemIndex", "$partsOf", "$placeOfPart", "$raisedAt", "$slicedKey", "$stdoutKey", "$stringPayload"].map((name) => `marks.js ${name} named`),
+    ["$arrayIterKey", "$brandsKey", "$cloneKey", "$countedKey", "$hookKey", "$infiniteAtKey", "$itemArray", "$itemIndex", "$partsOf", "$placeOfPart", "$raisedAt", "$slicedKey", "$stdoutKey", "$stringPayload"].map((name) => `marks.js ${name} named`),
   );
 });
 

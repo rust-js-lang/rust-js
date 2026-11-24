@@ -1,3 +1,4 @@
+//@ library-differs
 // A public thread-local's `with_borrow_mut` closure, applied where it's
 // called, is given a handle on the thread-local's place; the closure's
 // shadow of its parameter, `let current = current.get_or_insert_with(..)`,

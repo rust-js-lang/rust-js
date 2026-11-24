@@ -220,4 +220,12 @@ export const mutations: Mutation[] = [
     replace: "    let all = None::<Expr>?;\n",
     tests: ["test/forwarding-each-count.test.ts", "-t", "crate's own functions is that field"],
   },
+  {
+    name: "aliased-value-taken-apart",
+    breaks: "a value the module exports by another name, a library's state by its internal one, `$$early`, is taken apart where it's made, so its export names nothing (#2017, #2403)",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
+    find: "            .filter(|_| !module.aliases.iter().any(|(local, _)| value.is(local)));\n",
+    replace: "            .filter(|_| true);\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_field_forwarders\\.rs$"],
+  },
 ];

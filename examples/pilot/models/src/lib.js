@@ -5,7 +5,17 @@
  * rules a contact must keep, checked on both sides.
  */
 
-import { $debugStr, $json, $splitOnce, $toLowercase, $trim } from "@rust-js/std";
+import {
+  $checkShape,
+  $checkStr,
+  $checkU32,
+  $checks,
+  $debugStr,
+  $json,
+  $splitOnce,
+  $toLowercase,
+  $trim,
+} from "@rust-js/std";
 
 /** A contact the server has stored. */
 export function contactSerialize_serialize(contact, json) {
@@ -107,6 +117,10 @@ export function problemDeserialize_deserialize(json) {
 
 export const Problem = {
   new(message) {
+    $checkStr(message, "Problem.new(message)");
+    return Problem.new$(message);
+  },
+  new$(message) {
     return {
       message,
       errors: [],
@@ -116,11 +130,29 @@ export const Problem = {
 
 export const MAX_NAME = 40;
 
+const checkNewContact = /* @__PURE__ */ $checkShape(() => ({
+  name: $checkStr,
+  email: $checkStr,
+  age: $checkU32,
+}));
+
+const checkContact = /* @__PURE__ */ $checkShape(() => ({
+  id: $checkU32,
+  name: $checkStr,
+  email: $checkStr,
+  age: $checkU32,
+}));
+
 /**
  * Each rule `contact` breaks, in the form's order. The server keeps them
  * as the client does, so a request made without the form is held to them.
  */
 export function validate(contact) {
+  $checks("validate(contact)", contact, checkNewContact);
+  return validate$(contact);
+}
+
+export function validate$(contact) {
   const errors = [];
   function fail(field, message) {
     errors.push({
@@ -134,7 +166,7 @@ export function validate(contact) {
   } else if (Array.from(name).length > MAX_NAME) {
     fail("name", `a name is at most ${MAX_NAME} characters`);
   }
-  if (!isEmail(contact.email)) {
+  if (!isEmail$(contact.email)) {
     fail("email", `${$debugStr(contact.email)} isn't an email address`);
   }
   if (contact.age < 13 || contact.age > 130) {
@@ -145,6 +177,11 @@ export function validate(contact) {
 
 /** Text, an `@`, and a domain with a dot that neither starts nor ends it. */
 export function isEmail(text) {
+  $checkStr(text, "isEmail(text)");
+  return isEmail$(text);
+}
+
+export function isEmail$(text) {
   const splitOnce = $splitOnce(text, "@");
   if (splitOnce != null) {
     const user = splitOnce[0];
@@ -163,6 +200,11 @@ export function isEmail(text) {
 
 /** Does `contact` match a search: its name or email, ignoring case. */
 export function matches(contact, query) {
+  $checks("matches(contact, query)", contact, checkContact, query, $checkStr);
+  return matches$(contact, query);
+}
+
+export function matches$(contact, query) {
   query = $toLowercase($trim(query));
   return (
     query === "" ||

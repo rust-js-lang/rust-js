@@ -8,6 +8,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, fixture, run } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 // ADR 0996: React's prepareFreshStack writes `if (cancelPendingCommit !==
 // null) { root.cancelPendingCommit = null; cancelPendingCommit(); }`. A take
@@ -61,7 +62,7 @@ pub fn emptied(root: &mut Root) -> Option<Vec<u32>> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function prepare(root) {\n  if (root.cancel != null) {\n    const cancel = root.cancel;\n    root.cancel = undefined;\n    return cancel();\n  }\n  return 0;\n}");
   expect(js).toContain("  if (root.pending != null) {\n    const pending = root.pending;\n    root.pending = null;\n    return pending.length;\n  } else {\n");
   expect(js).toContain("  const cancel = root.cancel;\n  root.cancel = undefined;\n  if (cancel != null) {\n");
@@ -111,7 +112,7 @@ pub fn dropped(callback: &mut Option<fn() -> u32>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function cleared(slot) {\n  slot.callback = undefined;\n}");
   expect(js).toContain("export function renamed(slot, label) {\n  slot.label = label;\n}");
   expect(js).toContain('export function emptied(slot) {\n  slot.label = "";\n}');
@@ -128,10 +129,13 @@ pub fn dropped(callback: &mut Option<fn() -> u32>) {
   lib.emptied(slot);
   const held = { value: f };
   lib.dropped(held);
-  expect([cleared, renamed, slot]).toEqual([
+  // What `set` stores is `f` wrapped, its `u32` checked where a call gives
+  // it, another function (#2403, ADR 1195): it's `f` as it's called.
+  const called = (slot: Record<string, unknown>) => ({ ...slot, callback: (slot.callback as (() => number) | undefined)?.() });
+  expect([cleared, renamed, slot].map(called) as unknown[]).toEqual([
     { callback: undefined, label: "a", n: 1 },
-    { callback: f, label: "b", n: 7 },
-    { callback: f, label: "", n: 7 },
+    { callback: 1, label: "b", n: 7 },
+    { callback: 1, label: "", n: 7 },
   ]);
   expect(held.value).toBeUndefined();
 });

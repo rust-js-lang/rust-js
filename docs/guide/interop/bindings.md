@@ -88,14 +88,20 @@ pub fn first(text: &str) -> String {
 ```
 
 ```js
+import { $checkArray, $checkStr, $checks } from "@rust-js/std";
+
 // Captured, in case a polyfill overrides it.
 const localEncode = encodeURIComponent;
 
 export function encoded(texts) {
+  $checks("encoded(texts)", texts, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   return texts.map((text) => encodeURIComponent(text));
 }
 
 export function first(text) {
+  $checkStr(text, "first(text)");
   return localEncode(text);
 }
 ```
@@ -320,10 +326,11 @@ pub fn flushed() -> f64 {
 ```js
 import * as Scheduler from "scheduler";
 import * as ReactDOM from "react-dom";
+import { $checkF64, $checkResult } from "@rust-js/std";
 
 export function flushed() {
   ReactDOM.flushSync(() => {});
-  return Scheduler.unstable_now();
+  return $checkResult(Scheduler.unstable_now(), "scheduler#*.unstable_now", $checkF64);
 }
 ```
 
@@ -573,6 +580,7 @@ pub fn draw() -> f64 {
 
 ```js
 import { Chart } from "chart.js";
+import { $checkF64, $checkResult } from "@rust-js/std";
 
 export function draw() {
   Chart.register("legend");
@@ -581,7 +589,7 @@ export function draw() {
   chart.update("none");
   chart.width = 400;
   console.log(`${Chart.version}`);
-  return chart.width;
+  return $checkResult(chart.width, "get width", $checkF64);
 }
 ```
 
@@ -894,6 +902,8 @@ pub fn node_require(module: Option<&'static Unknown>, key: &str) -> Option<&'sta
 ```
 
 ```js
+import { $checkF64, $checkStr } from "@rust-js/std";
+
 export function draw(meta) {
   if ("scale" in meta) {
     meta.drawn = true;
@@ -903,6 +913,7 @@ export function draw(meta) {
 }
 
 export function width(n) {
+  $checkF64(n, "width(n)");
   return n + "px";
 }
 
@@ -928,6 +939,7 @@ export function requireString() {
 }
 
 export function nodeRequire(module, key) {
+  $checkStr(key, "nodeRequire(key)");
   return module && module[key];
 }
 ```
@@ -967,17 +979,20 @@ pub fn year_width(year: f64) -> usize {
 ```
 
 ```js
-import { $byteLen, $shown } from "@rust-js/std";
+import { $byteLen, $checkF64, $checkU32, $shown } from "@rust-js/std";
 
 export function key(msg, index) {
+  $checkU32(index, "key(index)");
   return `${$shown(msg)}-${index}`;
 }
 
 export function year(year) {
+  $checkF64(year, "year(year)");
   return `${year}`;
 }
 
 export function yearWidth(year) {
+  $checkF64(year, "yearWidth(year)");
   return $byteLen(`${year}`);
 }
 ```
@@ -1078,7 +1093,7 @@ pub async fn open(other: &Unknown) -> Result<(), &'static JsError> {
 
 ```js
 import { Editor, find, load, onChange, parse, select } from "my-editor";
-import { $try } from "@rust-js/std";
+import { $checkResult, $checkU32, $try } from "@rust-js/std";
 
 export async function open(other) {
   const editor = new Editor({
@@ -1094,7 +1109,7 @@ export async function open(other) {
     return result;
   }
   const tree = result._0;
-  const at = find(editor, "fn");
+  const at = $checkResult(find(editor, "fn"), "my-editor#find", $checkU32, "null");
   if (at !== null) {
     select(editor, [at, (at + 2) >>> 0]);
   } else {
@@ -1330,7 +1345,10 @@ pub fn digits_none() -> String {
 ```
 
 ```js
+import { $checkF64 } from "@rust-js/std";
+
 export function digits(value) {
+  $checkF64(value, "digits(value)", "nullish");
   return value != null ? (1.25).toPrecision(value) : (1.25).toPrecision();
 }
 

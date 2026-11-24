@@ -8,7 +8,7 @@
 import { useState } from "react";
 
 import { toast } from "sonner";
-import { validate } from "../../models/src/lib.js";
+import { validate$ as validate } from "../../models/src/lib.js";
 
 import { Failure } from "./api.js";
 import * as Api from "./api.js";

@@ -70,9 +70,10 @@ pub fn tally(words: &[&str]) -> usize {
 ```
 
 ```js
-import { $byteLen } from "@rust-js/std";
+import { $byteLen, $checkArray, $checkCallback, $checkI32, $checkStr, $checks } from "@rust-js/std";
 
 export function makeAdder(n) {
+  $checkI32(n, "makeAdder(n)");
   return (x) => (x + n) | 0;
 }
 
@@ -86,10 +87,13 @@ export function makeCounter() {
 }
 
 export function apply(f, x) {
+  f = $checkCallback(f, "apply(f)", $checkI32);
+  $checkI32(x, "apply(x)");
   return f(x);
 }
 
 export function runAll(callbacks, msg) {
+  $checkStr(msg, "runAll(msg)");
   for (let i = 0; i < callbacks.length; i++) {
     const cb = callbacks[i];
     cb(msg);
@@ -97,6 +101,9 @@ export function runAll(callbacks, msg) {
 }
 
 export function tally(words) {
+  $checks("tally(words)", words, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   let total = 0;
   words.forEach((w) => {
     total = (total + $byteLen(w)) >>> 0;
@@ -156,15 +163,21 @@ pub fn later(queue: Rc<Queue>) -> Rc<dyn Fn()> {
 ```
 
 ```js
+import { $checkShape, $checkStr, $checks } from "@rust-js/std";
+
+const checkQueue = /* @__PURE__ */ $checkShape(() => ({ name: $checkStr }));
+
 function dispatch(queue, eager, action) {
   console.log(`${queue.name} ${eager} ${action}`);
 }
 
 export function dispatcher(queue) {
+  $checks("dispatcher(queue)", queue, checkQueue);
   return dispatch.bind(null, queue, true);
 }
 
 export function later(queue) {
+  $checks("later(queue)", queue, checkQueue);
   return dispatch.bind(null, queue, false, 0);
 }
 ```
@@ -209,7 +222,10 @@ pub fn countdown(step: u32) -> Rc<Countdown> {
 ```
 
 ```js
+import { $checkU32 } from "@rust-js/std";
+
 export function countdown(step) {
+  $checkU32(step, "countdown(step)");
   const countdown = (n) => {
     if (n < step) {
       return n;
@@ -281,24 +297,40 @@ pub fn render(name: &str) -> Rc<Request> {
 ```
 
 ```js
+import { $brand, $checkCallback, $checkShape, $checkStr, $checks } from "@rust-js/std";
+
+const checkRequest = /* @__PURE__ */ $checkShape(
+  () => ({ name: $checkStr }),
+  "example#7ebd57e3c80d9be4::Request",
+  "a Request",
+);
+
 export function createRequest(name, onAllReady) {
-  return {
+  $checkStr(name, "createRequest(name)");
+  $checkCallback(onAllReady, "createRequest(onAllReady)");
+  return createRequest$(name, onAllReady);
+}
+
+function createRequest$(name, onAllReady) {
+  return $brand("example#7ebd57e3c80d9be4::Request", {
     name,
     onAllReady,
-  };
+  });
 }
 
 export function completeAll(request) {
+  $checks("completeAll(request)", request, checkRequest);
   const onAllReady = request.onAllReady;
   onAllReady();
 }
 
 export function render(name) {
+  $checkStr(name, "render(name)");
   let request;
   const onAllReady = () => {
     console.log(`${request.name} is ready`);
   };
-  request = createRequest(name, onAllReady);
+  request = createRequest$(name, onAllReady);
   return request;
 }
 ```
@@ -362,34 +394,55 @@ pub fn demo() -> u32 {
 ```
 
 ```js
+import { $brand, $checkShape, $checkU32, $checks } from "@rust-js/std";
+
 export const Counter = {
   new(step) {
-    return { count: 0, step };
+    $checkU32(step, "Counter.new(step)");
+    return Counter.new$(step);
+  },
+  new$(step) {
+    return $brand("example#7ebd57e3c80d9be4::Counter", { count: 0, step });
   },
 
   increment(counter) {
+    $checks("Counter.increment(counter)", counter, checkCounter);
+    return Counter.increment$(counter);
+  },
+  increment$(counter) {
     counter.count = (counter.count + counter.step) >>> 0;
   },
 
   count(counter) {
+    $checks("Counter.count(counter)", counter, checkCounter);
+    return Counter.count$(counter);
+  },
+  count$(counter) {
     return counter.count;
   },
 
   reset(counter) {
+    $checks("Counter.reset(counter)", counter, checkCounter);
     counter.count = 0;
   },
 };
 
+const checkCounter = /* @__PURE__ */ $checkShape(
+  () => ({ count: $checkU32, step: $checkU32 }),
+  "example#7ebd57e3c80d9be4::Counter",
+  "a Counter",
+);
+
 export const counterDefault = { default: counterDefault_default };
 function counterDefault_default() {
-  return Counter.new(1);
+  return Counter.new$(1);
 }
 
 export function demo() {
-  const c = Counter.new(2);
-  Counter.increment(c);
-  Counter.increment(c);
-  return Counter.count(c);
+  const c = Counter.new$(2);
+  Counter.increment$(c);
+  Counter.increment$(c);
+  return Counter.count$(c);
 }
 ```
 
@@ -607,9 +660,11 @@ pub fn demo() -> String {
 ```
 
 ```js
+import { $brand, $checkArray, $checkBrand, $checkField, $checkObject } from "@rust-js/std";
+
 export const Stack = {
   new() {
-    return { items: [] };
+    return $brand("example#7ebd57e3c80d9be4::Stack", { items: [] });
   },
 
   push(stack, item) {
@@ -628,6 +683,12 @@ function stackDefault_default() {
 
 export function list(items, TDisplay) {
   return items.map((item) => TDisplay.fmt(item)).join(", ");
+}
+
+function checkStack(value, T) {
+  $checkBrand(value, undefined, undefined, "example#7ebd57e3c80d9be4::Stack", "a Stack");
+  $checkObject(value);
+  $checkField(value, "items", (value, where, none) => $checkArray(value, where, none, T));
 }
 
 export function demo() {
@@ -734,6 +795,9 @@ pub fn ratio(a: u32, b: u32) -> u32 {
 
 ```js
 import {
+  $checkStr,
+  $checkU32,
+  $checks,
   $debugParseError,
   $debugStr,
   $div,
@@ -777,6 +841,11 @@ function configErrorFromParseIntError_from(e) {
 }
 
 export function port(line) {
+  $checkStr(line, "port(line)");
+  return port$(line);
+}
+
+function port$(line) {
   const stripPrefix = $stripPrefix(line, "port=");
   const result =
     stripPrefix != null
@@ -795,7 +864,8 @@ export function port(line) {
 }
 
 export function portOrDefault(line) {
-  const value = port(line);
+  $checkStr(line, "portOrDefault(line)");
+  const value = port$(line);
   if (value.TAG === "Ok") {
     return value._0;
   } else {
@@ -805,10 +875,12 @@ export function portOrDefault(line) {
 }
 
 export function mustPort(line) {
-  return $unwrapOk(port(line), "lib.rs:46:16", "a valid port line", configErrorDebug_fmt);
+  $checkStr(line, "mustPort(line)");
+  return $unwrapOk(port$(line), "lib.rs:46:16", "a valid port line", configErrorDebug_fmt);
 }
 
 export function ratio(a, b) {
+  $checks("ratio(a, b)", a, $checkU32, b, $checkU32);
   if (b === 0) {
     throw $stringPanic(`ratio of ${a} to nothing`, "lib.rs:51:9");
   }
@@ -876,14 +948,20 @@ pub fn on_click(url: &'static str) {
 ```
 
 ```js
-import { $settle } from "@rust-js/std";
+import { $checkStr, $settle } from "@rust-js/std";
 
 export async function fetchText(url) {
+  $checkStr(url, "fetchText(url)");
+  return fetchText$(url);
+}
+
+async function fetchText$(url) {
   const response = await window.fetch(url);
   return await response.text();
 }
 
 export async function tryFetch(url) {
+  $checkStr(url, "tryFetch(url)");
   const result = await $settle(window.fetch(url));
   const result$1 = result.TAG === "Err" ? { TAG: "Err", _0: result._0.message } : result;
   if (result$1.TAG === "Err") {
@@ -897,8 +975,9 @@ export async function tryFetch(url) {
 }
 
 export function onClick(url) {
+  $checkStr(url, "onClick(url)");
   (async () => {
-    const text = await fetchText(url);
+    const text = await fetchText$(url);
     console.log(`${text}`);
   })();
 }
@@ -933,13 +1012,23 @@ pub async fn fetch_all(urls: &[&str]) -> Vec<String> {
 ```
 
 ```js
+import { $checkArray, $checkStr, $checks } from "@rust-js/std";
+
 export async function fetchText(url) {
+  $checkStr(url, "fetchText(url)");
+  return fetchText$(url);
+}
+
+async function fetchText$(url) {
   const response = await window.fetch(url);
   return await response.text();
 }
 
 export async function fetchAll(urls) {
-  const pending = urls.map((url) => fetchText(url));
+  $checks("fetchAll(urls)", urls, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
+  const pending = urls.map((url) => fetchText$(url));
   return await Promise.all(pending);
 }
 ```
@@ -981,7 +1070,9 @@ pub fn grow(s: &mut Settings) {
 ```
 
 ```js
-import { $byteLen } from "@rust-js/std";
+import { $byteLen, $checkShape, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
+const checkSettings = /* @__PURE__ */ $checkShape(() => ({ theme: $checkStr, size: $checkU32 }));
 
 export function copies() {
   const a = {
@@ -994,10 +1085,12 @@ export function copies() {
 }
 
 export function borrowed(s) {
+  $checks("borrowed(s)", s, checkSettings);
   return $byteLen(s.theme);
 }
 
 export function grow(s) {
+  $checks("grow(s)", s, checkSettings);
   s.size = (s.size + 1) >>> 0;
 }
 ```
@@ -1027,14 +1120,21 @@ pub fn use_bump() -> u32 {
 ```
 
 ```js
+import { $checkCell, $checkU32, $checks } from "@rust-js/std";
+
 export function bump(n) {
+  $checks("bump(n)", n, (value, where, none) => $checkCell(value, where, none, $checkU32));
+  return bump$(n);
+}
+
+function bump$(n) {
   n.value = (n.value + 1) >>> 0;
 }
 
 export function useBump() {
   let n = 1;
   const n$1 = { value: n };
-  bump(n$1);
+  bump$(n$1);
   n = n$1.value;
   return n;
 }
@@ -1086,18 +1186,30 @@ pub fn two_loggers() -> usize {
 ```
 
 ```js
+import { $brand, $checkArray, $checkShape, $checkStr, $checks } from "@rust-js/std";
+
 export const Logger = {
   log(logger, line) {
+    $checks("Logger.log(logger, line)", logger, checkLogger, line, $checkStr);
+    return Logger.log$(logger, line);
+  },
+  log$(logger, line) {
     logger.lines.push(line);
   },
 };
 
+const checkLogger = /* @__PURE__ */ $checkShape(
+  () => ({ lines: (value, where, none) => $checkArray(value, where, none, $checkStr) }),
+  "example#7ebd57e3c80d9be4::Logger",
+  "a Logger",
+);
+
 export function twoLoggers() {
   const lines = [];
-  const a = { lines };
-  const b = { lines };
-  Logger.log(a, "from a");
-  Logger.log(b, "from b");
+  const a = $brand("example#7ebd57e3c80d9be4::Logger", { lines });
+  const b = $brand("example#7ebd57e3c80d9be4::Logger", { lines });
+  Logger.log$(a, "from a");
+  Logger.log$(b, "from b");
   return lines.length;
 }
 ```
@@ -1146,9 +1258,14 @@ pub fn entangle(root: &Root, index: usize, lane: u32) {
 ```
 
 ```js
-import { $at } from "@rust-js/std";
+import { $at, $checkArray, $checkShape, $checkU32, $checks } from "@rust-js/std";
+
+const checkRoot = /* @__PURE__ */ $checkShape(() => ({
+  lanes: (value, where, none) => $checkArray(value, where, none, $checkU32),
+}));
 
 export function entangle(root, index, lane) {
+  $checks("entangle(root, index, lane)", root, checkRoot, index, $checkU32, lane, $checkU32);
   root.lanes[$at(root.lanes, index, "lib.rs:8:28")] = (root.lanes[index] | lane) >>> 0;
 }
 ```
@@ -1174,9 +1291,10 @@ pub fn emptied(v: &mut Vec<u32>) -> Vec<u32> {
 ```
 
 ```js
-import { $apart, $cellOf } from "@rust-js/std";
+import { $apart, $cellOf, $checkArray, $checkU32, $checks } from "@rust-js/std";
 
 export function emptied(v) {
+  $checks("emptied(v)", v, (value, where, none) => $checkArray(value, where, none, $checkU32));
   const item = $cellOf(v);
   const old = $apart(item.value);
   item.value = [];
@@ -1251,7 +1369,15 @@ pub fn evens(limit: u32) -> impl Iterator<Item = u32> {
 ```
 
 ```js
-import { $fromFn, $rangeNext, $roomForHint, iterator_filter, iterator_take } from "@rust-js/std";
+import {
+  $brand,
+  $checkU32,
+  $fromFn,
+  $rangeNext,
+  $roomForHint,
+  iterator_filter,
+  iterator_take,
+} from "@rust-js/std";
 
 function fibonacciIterator_next(fibonacci) {
   const value = fibonacci.current;
@@ -1261,19 +1387,21 @@ function fibonacciIterator_next(fibonacci) {
 }
 
 export function fibonacci() {
-  return {
+  return $brand("example#7ebd57e3c80d9be4::Fibonacci", {
     current: 0n,
     next: 1n,
-  };
+  });
 }
 
 export function firstFibs(n) {
+  $checkU32(n, "firstFibs(n)");
   return Array.from(
     $roomForHint(iterator_take(fibonacci(), n, { next: fibonacciIterator_next }), 8, false),
   );
 }
 
 export function countdown(from) {
+  $checkU32(from, "countdown(from)");
   const n = from;
   let n$1 = n;
   return Iterator.from(
@@ -1287,6 +1415,7 @@ export function countdown(from) {
 }
 
 export function evens(limit) {
+  $checkU32(limit, "evens(limit)");
   return iterator_filter({ start: 0, end: limit }, (n) => n % 2 === 0, { next: $rangeNext });
 }
 ```

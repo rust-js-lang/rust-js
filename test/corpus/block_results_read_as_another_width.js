@@ -9,6 +9,12 @@
 // wasm32's, where native Rust runs it.
 
 import {
+  $brand,
+  $checkBool,
+  $checkBrand,
+  $checkField,
+  $checkObject,
+  $checkU32,
   $fromBytes,
   $index,
   $live,
@@ -24,12 +30,12 @@ import {
 export const BlockRng64 = {
   new(core, RBlockRngCore) {
     const resultsEmpty = RBlockRngCore.ResultsDefault().default();
-    return {
+    return $brand("block_results_read_as_another_width#7d7964476ded7fc6::BlockRng64", {
       core,
       index: RBlockRngCore.ResultsAsRefSelfItemSlice().asRef(resultsEmpty).length,
       halfUsed: false,
       results: resultsEmpty,
-    };
+    });
   },
   // rand_core 0.5.1's block.rs:353.
   nextU32(blockRng64, RBlockRngCore, RResultsAsRefU64Slice, RResultsAsMutU64Slice) {
@@ -116,6 +122,20 @@ function counterBlockRngCore_generate(counter, results) {
 }
 
 $main(main);
+
+function checkBlockRng64(value, R) {
+  $checkBrand(
+    value,
+    undefined,
+    undefined,
+    "block_results_read_as_another_width#7d7964476ded7fc6::BlockRng64",
+    "a BlockRng64",
+  );
+  $checkObject(value);
+  $checkField(value, "index", $checkU32);
+  $checkField(value, "halfUsed", $checkBool);
+  $checkField(value, "core", R);
+}
 
 function main() {
   const asMut = { asMut: (cell) => cell };

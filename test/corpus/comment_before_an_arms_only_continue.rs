@@ -1,3 +1,4 @@
+//@ library-differs
 // A comment before the `continue` an arm is, `1 => { // Skipped.
 // continue; }`, is before that `continue`, in its `case` or its `if`
 // (#574): MIR's test of the arm's pattern goes to the loop's start itself,

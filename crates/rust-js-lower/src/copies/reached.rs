@@ -27,9 +27,18 @@ use rustc_span::def_id::DefId;
 use crate::Body;
 use crate::recognition::StdItem;
 
-/// Each function's types whose clones it copies, as JS may change them: by
-/// the function's typeck root, as its closures are lowered with it.
-pub type JsCopies<'tcx> = IndexMap<DefId, IndexSet<Ty<'tcx>>>;
+/// What reaches JS of each function, by its typeck root, as its closures
+/// are lowered with it.
+#[derive(Default)]
+pub struct JsCopies<'tcx> {
+    /// The types whose clones it copies, as JS may change them.
+    pub copied: IndexMap<DefId, IndexSet<Ty<'tcx>>>,
+    /// The structs a value of which it makes may reach JS, each a type
+    /// another crate can't make, branded where it's made, so JS's own
+    /// object of its shape is told from Rust's (#2403, ADR 1196). One no
+    /// value of which leaves Rust, a guard holding a borrow, isn't.
+    pub branded: IndexMap<DefId, IndexSet<DefId>>,
+}
 
 /// What reaches JS of the crate's bodies, as `JsCopies`.
 pub fn js_copies<'tcx>(
@@ -46,7 +55,7 @@ pub fn js_copies<'tcx>(
     loop {
         let mut changed = false;
         for (&id, body) in &bodies {
-            let flow = Flow::of(tcx, body, &summaries, true, false);
+            let flow = Flow::of(tcx, body, &summaries, true, (false, false));
             let params: IndexSet<usize> = (1..=body.arg_count)
                 .filter(|&at| flow.tainted(mir::Local::from_usize(at)))
                 .map(|at| at - 1)
@@ -66,15 +75,53 @@ pub fn js_copies<'tcx>(
     let mut reaching: IndexSet<DefId> = (bodies.keys().copied())
         .filter(|&id| crate::analysis::js_facing(tcx, foreign, id))
         .collect();
-    let mut found: JsCopies<'tcx> = IndexMap::default();
+    let mut found: JsCopies<'tcx>;
     loop {
         let before = reaching.len();
-        found.clear();
+        found = JsCopies::default();
         for (&id, body) in &bodies {
-            let flow = Flow::of(tcx, body, &summaries, reaching.contains(&id), true);
+            let flow = Flow::of(tcx, body, &summaries, reaching.contains(&id), (true, false));
             reaching.extend(flow.reaching.iter().copied());
+            let root = tcx.typeck_root_def_id(id);
             if !flow.copied.is_empty() {
-                (found.entry(tcx.typeck_root_def_id(id)).or_default()).extend(flow.copied.iter().copied());
+                (found.copied.entry(root).or_default()).extend(flow.copied.iter().copied());
+            }
+            // Each struct in a value that may reach JS: its local's type's,
+            // its body's result taken to reach JS whoever calls it, as a
+            // value branded nowhere is one a check refuses, of a caller this
+            // can't follow, a library's, serde_json's visitor's, too: only one
+            // that stays in its body, a guard holding a borrow, isn't.
+            let kept = Flow::of(tcx, body, &summaries, true, (true, true));
+            // And each constant a call gives a function outside std, whose
+            // entry may check it: a copy of it is made where it's given,
+            // `Code.raw([Code.UNKNOWN[0]])`, of no local the flow follows.
+            let given_constants = (body.basic_blocks.iter()).flat_map(|data| match &data.terminator().kind {
+                mir::TerminatorKind::Call { func, args, .. }
+                    if !func
+                        .const_fn_def()
+                        .is_some_and(|(id, _)| crate::recognition::is_std_crate(tcx, id)) =>
+                {
+                    (args.iter())
+                        .filter_map(|arg| arg.node.constant().map(|c| c.ty()))
+                        .collect::<Vec<_>>()
+                }
+                _ => Vec::new(),
+            });
+            let branded: IndexSet<DefId> = (body.local_decls.indices())
+                .filter(|&local| kept.tainted(local))
+                .map(|local| body.local_decls[local].ty)
+                .chain(given_constants)
+                .flat_map(|ty| ty.walk())
+                .filter_map(|part| match part.kind() {
+                    ty::GenericArgKind::Type(part) => match part.kind() {
+                        ty::Adt(adt, _) if adt.is_struct() => Some(adt.did()),
+                        _ => None,
+                    },
+                    _ => None,
+                })
+                .collect();
+            if !branded.is_empty() {
+                (found.branded.entry(root).or_default()).extend(branded);
             }
         }
         if reaching.len() == before {
@@ -95,6 +142,11 @@ struct Flow<'tcx> {
     reaching: IndexSet<DefId>,
     /// The types this body's clones copy.
     copied: IndexSet<Ty<'tcx>>,
+    /// Whether what a call gives a function whose JS entry may check it, a
+    /// `pub` one of the crate's or a library's, reaches JS: of the brands'
+    /// flow, as an unsplit entry, a class's member or one a re-exported path
+    /// names, checks a Rust caller's value too (ADR 1193).
+    checks: bool,
 }
 
 impl<'tcx> Flow<'tcx> {
@@ -103,13 +155,14 @@ impl<'tcx> Flow<'tcx> {
         body: &mir::Body<'tcx>,
         summaries: &IndexMap<DefId, IndexSet<usize>>,
         result_reaches: bool,
-        sinks: bool,
+        (sinks, checks): (bool, bool),
     ) -> Flow<'tcx> {
         let mut flow = Flow {
             class: (0..body.local_decls.len()).collect(),
             tainted: IndexSet::default(),
             reaching: IndexSet::default(),
             copied: IndexSet::default(),
+            checks,
         };
         flow.alias(tcx, body);
         if result_reaches {
@@ -277,8 +330,13 @@ impl<'tcx> Flow<'tcx> {
                 .filter(|(_, arg)| arg.node.place().is_some())
                 .map(|(at, _)| at)
                 .collect();
+            let checked = self.checks
+                && callee.is_some_and(|(id, _)| {
+                    !crate::recognition::is_std_crate(tcx, id) && crate::analysis::exported_function(tcx, id)
+                });
             let flows: Vec<bool> = match (callee, callable) {
                 _ if to_js => given.iter().map(|&at| !read_as_dictionary(at)).collect(),
+                _ if checked => vec![true; arg_places.len()],
                 // The crate's closure, called: its result reaches JS where the
                 // call's does, and what it's given may be in it.
                 (_, Some(Some(closure))) => {

@@ -237,7 +237,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             }
                         })
                         .collect();
-                    Self::in_turn(self.flattened_object(Expr::object(props), ty), made)
+                    // Of a type no other crate can make, branded (ADR 1196).
+                    let object = self.flattened_object(Expr::object(props), ty);
+                    Self::in_turn(self.branded(ty, object), made)
                 }
                 Shape::Array(tys) => {
                     let parts: Vec<_> = (tys.iter()).map(|&t| (t, self.default_may_panic(t))).collect();
@@ -245,7 +247,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let part = cx.default_value(parts[i].0, span)?;
                         Ok(cx.holding_part(part, ty, i, parts[i].0))
                     })?;
-                    Self::in_turn(Expr::array(items), made)
+                    Self::in_turn(self.branded(ty, Expr::array(items)), made)
                 }
                 Shape::Other => return Err(self.unsupported(span, &format!("`Default` of `{ty}`"))),
             },

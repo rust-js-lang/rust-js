@@ -8,6 +8,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { oneLine, withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -17,7 +18,7 @@ async function compiled(name: string, rust: string): Promise<{ js: string; lib: 
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")) };
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), lib: await import(join(dir, "lib.js")) };
 }
 
 // React's describeObjectForErrorMessage (shared/ReactSerializationErrors.js):
@@ -396,9 +397,9 @@ pub fn parts(v: Option<&Unknown>, n: u32) -> u32 {
   // A `match`'s, its last arm the `else`, as an `if`'s (ADR 0237, amended):
   // `o == null`, not the array.
   expect(js).toContain("return o == null ? f() : true;");
-  expect(js).toContain('return !v && n ? globalThis.supportsIt("d") : true;');
+  expect(oneLine(js)).toContain('return !v && n ? globalThis.supportsIt("d") : true;');
   // A chain's part by part, `!!v || n === 0`, not `!!(v || n === 0)`.
-  expect(js).toContain('return !!v || n === 0 || globalThis.supportsIt("d");');
+  expect(oneLine(js)).toContain('!!v || n === 0 || globalThis.supportsIt("d")');
   // A test reads each part by its truth, `v`, not `!!v`.
   expect(js).toContain("return n && v ? 1 : 2;");
   const globals = globalThis as typeof globalThis & { supportsIt?: (what: string) => boolean };
@@ -790,7 +791,7 @@ pub fn probed(fiber: Option<&Fiber>, callback: impl Fn(u32) -> u32) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  if (fiber !== null && fiber._debugTask != null) {\n    return fiber._debugTask.run(() => callback(arg0));\n  }\n");
   expect(js.match(/const debugTask = fiber\._debugTask;/g)).toHaveLength(4);
   expect(js).toContain("    const debugTask = fiber._debugTask;\n    fiber._debugTask = null;\n    return debugTask.run(");
@@ -1015,10 +1016,10 @@ pub fn pop(tag: u8, r#type: &str, out: &mut Vec<String>) {
 `,
   );
   expect(js).not.toMatch(/\bbb\d+/);
-  expect(js).toContain(
-    '  if (\n    tag !== 3 &&\n    tag !== 27 &&\n    !(tag === 5 && (!rustJsShouldDelete(type) || rustJsShouldSetText(type)))\n  ) {\n    out.push("first");\n  }\n',
+  expect(oneLine(js)).toContain(
+    'if (tag !== 3 && tag !== 27 && !(tag === 5 && (!rustJsShouldDelete(type) || rustJsShouldSetText(type)))) {out.push("first");}',
   );
-  expect(js).toContain('  if (tag !== 3 && (tag !== 5 || (rustJsShouldDelete(type) && !rustJsShouldSetText(type)))) {\n    out.push("second");\n  }\n');
+  expect(oneLine(js)).toContain('if (tag !== 3 && (tag !== 5 || (rustJsShouldDelete(type) && !rustJsShouldSetText(type)))) {out.push("second");}');
   const global = globalThis as Record<string, unknown>;
   for (const tag of [3, 27, 5, 1]) {
     for (const del of [false, true]) {

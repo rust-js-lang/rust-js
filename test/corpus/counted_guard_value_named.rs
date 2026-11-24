@@ -1,3 +1,4 @@
+//@ library-differs
 // A temporary a `const` takes apart, the value read out of a run-time
 // tracked cell's guard, `const { value: _4 } = $borrow($fieldCell(..))`,
 // is named after the variable the program gives it, `let Some(chunk) =

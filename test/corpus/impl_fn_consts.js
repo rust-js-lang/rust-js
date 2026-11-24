@@ -5,7 +5,7 @@
 // value tree can't say, is lowered as code: its type's object's, `S.ID`,
 // or a trait impl's, a constant of its module (ADR 0410).
 
-import { $main, $traitImpl } from "@rust-js/std";
+import { $checkTuple, $main, $traitImpl } from "@rust-js/std";
 
 const ASSOC = (x) => (x + 1) >>> 0;
 
@@ -43,6 +43,11 @@ function wrapTrait(TDefault, TIntoU32) {
 function apply(n, XTrait) {
   return (XTrait.ASSOC(n) + XTrait.LIMIT) >>> 0;
 }
+
+function checkS(value, T) {
+  $checkTuple(value, undefined, undefined, [T]);
+}
+
 $main(main);
 
 function main() {

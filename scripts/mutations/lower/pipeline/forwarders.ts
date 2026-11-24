@@ -70,8 +70,24 @@ export const mutations: Mutation[] = [
     breaks:
       "a function re-exported in its JS is re-exported in its declarations too, of the function's own type parameters, not declared at its instantiation (rd575)",
     file: "src/pipeline/forwarders.rs",
-    find: "        declared: rust_js_lower::reexports::assembled(found.clone(), sources, foreign),\n",
-    replace: "        declared: rust_js_lower::reexports::assembled(found.iter().cloned().chain(named.iter().cloned()).collect(), sources, foreign),\n",
+    find: "        declared: rust_js_lower::reexports::assembled(declared, sources, foreign),\n",
+    replace: "        declared: rust_js_lower::reexports::assembled(declared.into_iter().chain(named.iter().cloned()).collect(), sources, foreign),\n",
     tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+  },
+  {
+    name: "forwarded-reexport-undeclared",
+    breaks: "a library's function a checked forwarder takes the place of in its module's JS is gone from its `.d.ts` too, so TypeScript can't import what the JS exports, react-dom's `useFormState` (#2403 (Y))",
+    file: "src/pipeline/forwarders.rs",
+    find: "found.iter().cloned().chain(declared_too).collect();\n",
+    replace: "found.iter().cloned().chain(declared_too.into_iter().take(0)).collect();\n",
+    tests: ["test/boundary-reach.test.ts", "-t", "re-exports by name is its own checked forwarder"],
+  },
+  {
+    name: "forwarded-reexport-out-of-place",
+    breaks: "a forwarded re-export comes back to its `.d.ts` list last, not in its place as written, react-dom's `useFormState` after `useFormStatus` (#2403 (Y))",
+    file: "src/pipeline/forwarders.rs",
+    find: "        (at.lo(), written)\n",
+    replace: "        let _ = (at, written);\n        0\n",
+    tests: ["test/boundary-reach.test.ts", "-t", "of a list a consumer re-exports is declared in its place"],
   },
 ];

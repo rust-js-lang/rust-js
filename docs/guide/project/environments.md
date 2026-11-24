@@ -33,13 +33,21 @@ pub fn pick(items: &[String], index: usize) -> String {
 ```
 
 ```js
-import { $index } from "@rust-js/std";
+import { $checkArray, $checkStr, $checkU32, $checks, $index } from "@rust-js/std";
 
 export function label(count) {
+  $checkU32(count, "label(count)");
   return `${count} items`;
 }
 
 export function pick(items, index) {
+  $checks(
+    "pick(items, index)",
+    items,
+    (value, where, none) => $checkArray(value, where, none, $checkStr),
+    index,
+    $checkU32,
+  );
   return $index(items, index, "lib.rs:6:5");
 }
 ```

@@ -1,3 +1,4 @@
+//@ library-differs
 // A scope struct may be of type parameters (ADR 1043, amended, #500): each
 // call of its function makes its one value, of its own types, so its methods
 // are functions declared in the function, as of a struct of none, each the

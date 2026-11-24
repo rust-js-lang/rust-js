@@ -1,3 +1,4 @@
+//@ library-differs
 // `next()` of an iterator in a struct's field, through a `&mut` to the
 // struct: each call steps the field on, past its end too.
 pub struct L<'a> { c: std::str::Chars<'a> }

@@ -7,6 +7,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -56,7 +57,7 @@ pub fn wraps(ty: &Unknown) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('export const REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");\n');
   expect(js).toContain(
     'export function name(ty) {\n  switch (ty) {\n    case REACT_FRAGMENT_TYPE:\n      return "Fragment";\n    case REACT_PROFILER_TYPE:\n      return "Profiler";\n',
@@ -129,7 +130,7 @@ pub fn named(value: Option<&Unknown>) -> &'static str {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function made(key) {\n  return Symbol.for(key);\n}");
   expect(js).toContain("export function key(symbol) {\n  return Symbol.keyFor(symbol);\n}");
   expect(js).toContain("export function same(a, b) {\n  return a === b;\n}");
@@ -200,7 +201,7 @@ pub fn tagged(x: Option<&Unknown>) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // A `let` of the read that's only compared, React's mountLazyComponent's
   // `$$typeof`: the value, as of the read in place (ADR 0771, amended).
   const tagged = js.slice(js.indexOf("export function tagged"));
@@ -248,7 +249,7 @@ pub fn name(ty: Option<&Unknown>, flag: bool) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("keyFor");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.name(Symbol.for("a"), false), lib.name(Symbol.for("b"), true), lib.name(Symbol.for("b"), false), lib.name(1, true)]).toEqual([1, 2, 3, 3]);
@@ -289,7 +290,7 @@ pub fn counted(n: u32) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const $$typeof = component.$$typeof;\n  return $$typeof === REACT_MEMO_TYPE ? 1 : 2;\n");
   expect(js).toContain("  const $count = (n + 1) >>> 0;\n  const twice = () => ($count * 2) >>> 0;\n");
   const lib = await import(join(dir, "lib.js"));

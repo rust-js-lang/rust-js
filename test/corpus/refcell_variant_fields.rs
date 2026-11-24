@@ -1,3 +1,4 @@
+//@ library-differs
 // An enum variant's `RefCell` field holds its value by its declaration, as
 // a struct's does (ADR 0863, amended, #503): alien-signals' effect node,
 // `Effect { cleanup }`, flattened into its parent and told by its keys

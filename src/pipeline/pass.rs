@@ -20,6 +20,13 @@ pub(super) struct Pass {
     pub(super) entry: Option<(LocalModId, Vec<js::Stmt>)>,
     /// `thread_local!`s' values, made from their lowered `init`s.
     pub(super) local_consts: IndexMap<LocalModId, Vec<js::Const>>,
+    /// Each library function's checked forwarder a module names apart from
+    /// its import of it, by the name it exports it as, `(f$1, f)` (#2403 (Y)).
+    pub(super) forwarder_aliases: IndexMap<LocalModId, Vec<(String, String)>>,
+    /// Each re-export a checked forwarder of a library's function takes the
+    /// place of in its module's JS, which its `.d.ts` re-exports still, as
+    /// the forwarder is the function's own signature (#2403 (Y)).
+    pub(super) forwarded_declared: IndexMap<LocalModId, Vec<rust_js_lower::reexports::Named>>,
     /// Each dictionary that's its module's `const`, or whose cache is, by
     /// its impl (ADR 0592), that the crate's own code reaches; and the
     /// names of the `const`s each dictionary makes.
@@ -38,6 +45,7 @@ pub(super) struct Pass {
     /// Each copy of a function another module calls, by its index (ADR
     /// 0051, amended).
     pub(super) copy_references: IndexSet<(LocalModId, DefId, usize)>,
+    pub(super) unchecked_references: IndexSet<(LocalModId, DefId)>,
     /// Each method a class takes of a trait of classes' default, its
     /// prototype's, by the class (rd283).
     pub(super) class_defaults: Vec<(DefId, js::Function)>,

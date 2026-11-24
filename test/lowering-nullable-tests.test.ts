@@ -11,6 +11,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -22,7 +23,7 @@ const compile = (name: string, source: string) => {
   writeFileSync(join(dir, "lib.rs"), source);
   const counts = join(dir, "decisions.tsv");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--edition=2024", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 120_000, { RUST_JS_DECISIONS: counts });
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   const fn = (name: string) => js.slice(js.indexOf(`export function ${name}(`), js.indexOf("\n}\n", js.indexOf(`export function ${name}(`)) + 2);
   const tidied = readFileSync(counts, "utf8")
     .split("\n")
@@ -222,7 +223,7 @@ pub fn read(x: &'static Unknown) -> bool {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-name", "read", "--crate-type=lib", "--edition=2024", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("x !== null ? x.a : undefined");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.read({ a: 1 }), lib.read(null)]).toEqual([true, false]);
@@ -517,7 +518,7 @@ pub fn run() -> Vec<u32> {
 `,
   );
   expect(own.tidied).toEqual([]);
-  const js = readFileSync(join(own.dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(own.dir, "lib.js"), "utf8"));
   const body = (name: string) => js.slice(js.indexOf(`function ${name}(`), js.indexOf("\n}\n", js.indexOf(`function ${name}(`)));
   expect(body("called")).toContain('$unwrap(node.sibling, "lib.rs:');
   expect(body("rebound")).toContain('$unwrap(node.sibling, "lib.rs:');
@@ -683,6 +684,7 @@ pub fn defer_or(items: Vec<u32>, chunk: &Chunk) {
   expect(fn("restore")).toContain("?? null");
   let reads = 0;
   const to: { pending: unknown } = { pending: 1 };
+  // Its check leaves an accessor's value to the body (ADR 1194, amended).
   lib.restore({ blocked: true, get pending() { reads += 1; return reads === 1 ? 7 : undefined; } }, to);
   expect(to.pending).toBe(null);
 });

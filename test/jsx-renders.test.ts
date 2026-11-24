@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { createElement, Fragment } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { buildReact, compiler, fixture, root, run, target, bunTest } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -201,7 +202,7 @@ pub fn Moved(props: DotProps) -> Vec<JSX::Element> {
 }
 `);
   run([compiler, ...flags(dir)]);
-  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(js).toContain("export function Moved(props) {\n  const at = { ...props.at };\n  at.x++;\n");
   writeFileSync(join(dir, "driver.test.jsx"), `import { expect, test } from "bun:test";
 import { StrictMode, createElement } from "react";

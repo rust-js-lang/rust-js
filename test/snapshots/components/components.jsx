@@ -14,8 +14,10 @@ import {
   useRef,
   useState,
 } from "react";
+import { $checkStr } from "@rust-js/std";
 
 export function Card({ title, children }) {
+  $checkStr(title, "Card(props.title)");
   return (
     <div className="card">
       <h2>{title}</h2>
@@ -120,6 +122,7 @@ const BADGE = memo(Badge);
 const LooseBadge = memo(Badge, (a, b) => (a.label === "") === (b.label === ""));
 
 export function Badge({ label }) {
+  $checkStr(label, "Badge(props.label)");
   globalThis.rendered(label);
   const theme = useContext(Theme);
   return <span className={`badge ${theme}`}>{label}</span>;

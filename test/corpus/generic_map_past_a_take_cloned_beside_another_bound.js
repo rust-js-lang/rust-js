@@ -13,6 +13,8 @@
 // this one the hand-written form, cloned apart as before (#1780).
 
 import {
+  $checkCallback,
+  $checkI32,
   $clone,
   $cloning,
   $collectDropping,
@@ -27,6 +29,7 @@ import {
 } from "@rust-js/std";
 
 export function cycled(items, f, label, IIterator, IClone, FClone, LDisplay, IFused) {
+  f = $checkCallback(f, "cycled(f)", $checkI32);
   console.log(`${LDisplay.fmt(label)}`);
   const makeMap = (it, f) =>
     $cloning(

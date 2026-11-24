@@ -8,10 +8,26 @@
 
 import { wrapped, wrappedUnboxed } from "./helpers.js";
 import * as Helpers from "./helpers.js";
-import { $debugStr, $main, $pop, $someValue } from "@rust-js/std";
+import {
+  $brand,
+  $checkArray,
+  $checkBrand,
+  $checkField,
+  $checkObject,
+  $debugStr,
+  $main,
+  $pop,
+  $someValue,
+} from "@rust-js/std";
 
 export function pass(x) {
   return Helpers.same(x);
+}
+
+function checkStack(value, T) {
+  $checkBrand(value, undefined, undefined, "js_given_copies#5e8f304261e618ca::Stack", "a Stack");
+  $checkObject(value);
+  $checkField(value, "items", (value, where, none) => $checkArray(value, where, none, T));
 }
 
 export function relay(x) {
@@ -47,7 +63,7 @@ function countSomeBoxed(xs) {
 
 export const Stack = {
   new() {
-    return { items: [] };
+    return $brand("js_given_copies#5e8f304261e618ca::Stack", { items: [] });
   },
 
   push(stack, x) {

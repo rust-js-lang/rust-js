@@ -8,10 +8,11 @@
 // argument's call ran first, and a minifier, which takes a `toString` to run
 // nothing, moved a held argument past it (#1664).
 
-import { $main, $out, $printing, $sink } from "@rust-js/std";
+import { $checkI32, $main, $out, $printing, $sink } from "@rust-js/std";
 
 export class Position {
   constructor(row) {
+    $checkI32(row, "Position.new(row)");
     this.row = row;
   }
   toString(options) {

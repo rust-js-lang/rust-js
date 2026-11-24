@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { chromium } from "playwright";
 import { buildReact, compiler, fixture, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -79,7 +80,7 @@ const compile = () => {
   const dir = fixture("forwarding-each-count");
   writeFileSync(join(dir, "lib.rs"), program);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags]);
-  compiled = readFileSync(join(dir, "lib.js"), "utf8");
+  compiled = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   return compiled;
 };
 

@@ -1,3 +1,4 @@
+//@ library-differs
 // An `Option`'s `iter().count()` is how many it holds, `o == null ? 0 :
 // 1`, reading the `Option` once, so a tuple of it keeps its elements in
 // place, `[f() != null, g() != null, h() == null ? 0 : 1]`, not held in

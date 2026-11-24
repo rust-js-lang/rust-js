@@ -1,0 +1,95 @@
+// Mutations of crates/rust-js-program/src/runtime/boundary_checks.js (ADR 1192).
+import type { Mutation } from "../../mutations";
+
+const file = "crates/rust-js-program/src/runtime/boundary_checks.js";
+
+export const mutations: Mutation[] = [
+  {
+    name: "int-check-unbounded-above",
+    breaks: "an integer's check has no upper bound, so `double(2 ** 32)` runs on a `u32` past its range (#2403)",
+    file,
+    find: "  if (!Number.isInteger(value) || value < min || value > max) $checkFailed(RangeError, where, expected, value);",
+    replace: "  if (!Number.isInteger(value) || value < min) $checkFailed(RangeError, where, expected, value);",
+    tests: ["test/boundary-checks.test.ts", "-t", "an integer of 32 bits"],
+  },
+  {
+    name: "big-check-unbounded",
+    breaks: "a bigint's width isn't checked, so a `u64` of 2^64 reaches Rust (#2403)",
+    file,
+    find: "  if ((signed ? BigInt.asIntN(bits, value) : BigInt.asUintN(bits, value)) !== value) {",
+    replace: "  if (false) {",
+    tests: ["test/boundary-checks.test.ts", "-t", "a 64- or 128-bit integer"],
+  },
+  {
+    name: "f32-unrounded",
+    breaks: "an `f32` takes any number, so 0.1 reaches Rust unrounded (#2403)",
+    file,
+    find: '  if (Math.fround(value) !== value && value === value) $checkFailed(RangeError, where, "an f32", value);',
+    replace: "",
+    tests: ["test/boundary-checks.test.ts", "-t", "a 64- or 128-bit integer"],
+  },
+  {
+    name: "str-ill-formed",
+    breaks: "a string isn't checked well-formed, so a lone surrogate is a Rust `String` (#2403)",
+    file,
+    find: '  if (typeof value !== "string" || !value.isWellFormed()) $checkFailed(TypeError, where, "a String", value);',
+    replace: '  if (typeof value !== "string") $checkFailed(TypeError, where, "a String", value);',
+    tests: ["test/boundary-checks.test.ts", "-t", "a string is well-formed"],
+  },
+  {
+    name: "bool-truthy",
+    breaks: "a `bool` takes any value, so `1` is a `bool` to Rust (#2403)",
+    file,
+    find: '  if (typeof value !== "boolean") $checkFailed(TypeError, where, "a bool", value);',
+    replace: "",
+    tests: ["test/boundary-checks.test.ts", "-t", "a string is well-formed"],
+  },
+  {
+    name: "check-path-unnamed",
+    breaks: "a failure inside a value doesn't name where it is, \`count(order)\` where it's \`count(order.items[1].qty)\` (#2403)",
+    file,
+    find: "  if (failure instanceof $CheckFailure) failure.path = $checkPlace(at) + failure.path;",
+    replace: "",
+    tests: ["test/boundary-deep.test.ts", "-t", "a failure names where"],
+  },
+  {
+    name: "int-array-unbounded-below",
+    breaks: "an array of integers takes one below its kind's range, \`totals([[3, -4]])\` summing -4 as a \`u32\` (#2403)",
+    file,
+    find: "      if (!(typeof item === \"number\" && Number.isInteger(item) && item >= min && item <= max)) $checkItem(inner, item, i);",
+    replace: "      if (!(typeof item === \"number\" && Number.isInteger(item) && item <= max)) $checkItem(inner, item, i);",
+    tests: ["test/boundary-deep.test.ts", "-t", "arrays of arrays"],
+  },
+  {
+    name: "brands-per-copy",
+    breaks: "each copy of the runtime keeps brand sets of its own, so a library's entry refuses a sealed value its app's copy cloned (#2403, #2333)",
+    file,
+    find: "  const brands = (globalThis[$brandsKey] ??= new Map());",
+    replace: "  const brands = ($brandOf.own ??= new Map());",
+    tests: ["test/boundary-brands.test.ts", "-t", "a library's sealed type its consumer clones"],
+  },
+  {
+    name: "wrapped-callback-renamed",
+    breaks: "a callback wrapped where its result is checked is named for its wrapper, so Rust's `js::function::name` of a bound function misses its `bound ` (#2403, ADR 1195)",
+    file,
+    find: `  Object.defineProperty(checked, "name", { value: f.name });\n`,
+    replace: "",
+    tests: ["test/lowering-passed-on.test.ts", "-t", "a move closure of no parameters"],
+  },
+  {
+    name: "checks-name-the-first-parameter",
+    breaks: "a failure of `$checks` names its first parameter whichever failed, `label(name)` for `owned` (#2403, the lead's (A))",
+    file,
+    find: "      const param = place.slice(open + 1, -1).split(\", \")[(i - 1) / 2];",
+    replace: "      const param = place.slice(open + 1, -1).split(\", \")[0];",
+    tests: ["test/boundary-checks.test.ts", "-t", "a string is well-formed, a char one code point"],
+  },
+  {
+    name: "shape-brand-unchecked",
+    breaks: "a struct's table checker of a sealed type checks no brand, so JS's own `{ celsius: -500 }` is taken as one Rust made (#2403, the lead's (B))",
+    file,
+    find: "    if (key !== undefined) $checkBrand(value, undefined, undefined, key, name);",
+    replace: "",
+    tests: ["test/boundary-brands.test.ts", "-t", "JS's own object of a sealed type's shape is refused"],
+  },
+];

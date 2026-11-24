@@ -6,6 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -38,7 +39,7 @@ pub fn listed() -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('const separator = require("node:path").sep;');
   expect(js).toContain('import { delimiter } from "node:path";');
   expect(js).not.toContain("import { sep");
@@ -100,7 +101,7 @@ pub fn titled() -> String {
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('const ReactFiberErrorDialogWWW = require("ReactFiberErrorDialog");');
   expect(js).toContain('return require("ReactFiberErrorDialog").options.title;');
   expect(js).not.toContain('["*"]');
@@ -148,7 +149,7 @@ pub fn doubled(n: f64) -> f64 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  expect(readFileSync(join(dir, "outer", "inner.js"), "utf8")).toContain('return require("../helper.cjs").twice(n);');
+  expect(withoutBoundary(readFileSync(join(dir, "outer", "inner.js"), "utf8"))).toContain('return require("../helper.cjs").twice(n);');
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
   // A CommonJS module's own `require`, of the module's file.
   writeFileSync(join(dir, "run.js"), `import { createRequire } from "node:module";

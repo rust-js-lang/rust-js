@@ -8,11 +8,19 @@
 // in a function generic over the value. The binding's native body keeps
 // its keys and values in order, as JS's `Map` does.
 
-import { $debugStr, $main, $some, $someGet, $someValue } from "@rust-js/std";
+import {
+  $checkBool,
+  $checkResult,
+  $debugStr,
+  $main,
+  $some,
+  $someGet,
+  $someValue,
+} from "@rust-js/std";
 
 function show(map, key) {
   const get = $someGet(map, key);
-  const arg = map.has(key);
+  const arg = $checkResult(map.has(key), "has", $checkBool);
   console.log(
     `${key}: ${get == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(get))})`} ${arg}`,
   );
@@ -43,7 +51,7 @@ function main() {
   }
   counts.set("one", undefined);
   show(counts, "one");
-  console.log(`deleted ${counts.delete("none")}`);
+  console.log(`deleted ${$checkResult(counts.delete("none"), "delete", $checkBool)}`);
   show(counts, "none");
   counts.forEach((value, key) => {
     console.log(`${key} = ${value == null ? "None" : `Some(${value})`}`);

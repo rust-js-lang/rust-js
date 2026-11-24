@@ -6,6 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -89,7 +90,7 @@ pub fn named(n: usize) -> String {
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Each variant its module's `const`, read by its name (ADR 0722, amended).
   expect(js).toContain("export const Empty = 0;\nexport const Complex = 1;\nexport const Primitive = 2;\nexport const Entries = 3;\n");
   expect(js).toContain("export const Low = -1;\nexport const High = 10;\n");
@@ -222,7 +223,7 @@ pub fn pace(fast: bool) -> &'static str {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const Uninitialized = -1;\nconst Pending = 0;\nconst Resolved = 1;\nconst Rejected = 2;\n");
   expect(js).toContain("const Pending$1 = 5;\nconst Done = 6;\n");
   expect(js).toContain('import { Dark, Light } from "./theme.js";');
@@ -235,13 +236,13 @@ pub fn pace(fast: bool) -> &'static str {
   expect(js).toContain("[Pending$1, undefined]");
   expect(js).toContain("const request = done ? Done : Pending$1;");
   expect(js).toContain("return dark ? Dark : Light;");
-  expect(readFileSync(join(dir, "theme.js"), "utf8")).toContain("export const Light = 1;\nexport const Dark = 2;\n");
+  expect(withoutBoundary(readFileSync(join(dir, "theme.js"), "utf8"))).toContain("export const Light = 1;\nexport const Dark = 2;\n");
   // Another module's not `pub`, exported as it's read there; the last
   // arm's, whose test an exhaustive `match` needn't write, not imported.
   // Its function called through its module, its namespace's (ADR 1018).
   expect(js).toContain('import { Slow } from "./motion.js";\nimport * as Motion from "./motion.js";');
   expect(js).toContain('  return Motion.speed(fast) === Slow ? "slow" : "fast";\n');
-  expect(readFileSync(join(dir, "motion.js"), "utf8")).toContain("export const Slow = 1;\nexport const Fast = 2;\n");
+  expect(withoutBoundary(readFileSync(join(dir, "motion.js"), "utf8"))).toContain("export const Slow = 1;\nexport const Fast = 2;\n");
   const lib = await import(join(dir, "lib.js"));
   const [first, second] = [lib.lazy(), lib.lazy()];
   expect([lib.describe(first), lib.settle(first, true), lib.describe(first)]).toEqual(["uninitialized", 1, "resolved"]);

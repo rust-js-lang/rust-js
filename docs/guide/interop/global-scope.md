@@ -34,7 +34,10 @@ pub fn sharp(size: f64) -> f64 {
 ```
 
 ```js
+import { $checkF64 } from "@rust-js/std";
+
 export function sharp(size) {
+  $checkF64(size, "sharp(size)");
   return size * devicePixelRatio;
 }
 ```
@@ -237,13 +240,17 @@ pub fn later(task: Box<dyn FnOnce()>) {
 ```
 
 ```js
+import { $checkCallback, $checkStr } from "@rust-js/std";
+
 export function report(event) {
+  $checkStr(event, "report(event)");
   if (typeof gtag !== "undefined") {
     gtag("event", event);
   }
 }
 
 export function later(task) {
+  $checkCallback(task, "later(task)");
   if (typeof setImmediate !== "undefined") {
     setImmediate(task);
   } else {
@@ -484,7 +491,10 @@ pub fn run(callback: Option<Callback>, did_timeout: bool) -> Option<f64> {
 ```
 
 ```js
+import { $checkBool } from "@rust-js/std";
+
 export function run(callback, didTimeout) {
+  $checkBool(didTimeout, "run(didTimeout)");
   if (typeof callback === "function") {
     return callback(didTimeout) ?? undefined;
   }
@@ -543,12 +553,16 @@ pub fn render_in(task: Option<&ConsoleTask>, render: impl FnOnce() -> u32) -> u3
 ```
 
 ```js
+import { $checkCallback, $checkStr, $checkU32 } from "@rust-js/std";
+
 export function debugTask(name) {
+  $checkStr(name, "debugTask(name)");
   const createTask = console.createTask;
   return (createTask !== undefined ? createTask(name) : undefined) ?? undefined;
 }
 
 export function renderIn(task, render) {
+  render = $checkCallback(render, "renderIn(render)", $checkU32);
   return task != null ? task.run(render) : render();
 }
 ```
@@ -579,11 +593,15 @@ pub fn task_maker(name: &str) -> &'static dyn Fn() -> &'static ConsoleTask {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function rootTask(name) {
+  $checkStr(name, "rootTask(name)");
   return console.createTask(name);
 }
 
 export function taskMaker(name) {
+  $checkStr(name, "taskMaker(name)");
   return console.createTask.bind(console, name);
 }
 ```
@@ -609,7 +627,10 @@ pub fn log_render(name: &str, start: f64, end: f64) {
 ```
 
 ```js
+import { $checkF64, $checkStr, $checks } from "@rust-js/std";
+
 export function logRender(name, start, end) {
+  $checks("logRender(name, start, end)", name, $checkStr, start, $checkF64, end, $checkF64);
   if (typeof console !== "undefined" && typeof console.timeStamp === "function") {
     console.timeStamp(name, start, end, "Components", undefined, "primary");
   }
@@ -650,7 +671,10 @@ pub fn report(message: &str) -> bool {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function report(message) {
+  $checkStr(message, "report(message)");
   if (typeof window !== "undefined" && typeof window.ErrorEvent !== "undefined") {
     const event = new window.ErrorEvent("error", {
       cancelable: true,
@@ -937,9 +961,12 @@ pub fn captured(value: Option<&'static Unknown>, stack: &str) -> Option<String> 
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 const CapturedStacks = new WeakMap();
 
 export function captured(value, stack) {
+  $checkStr(stack, "captured(stack)");
   if (typeof value === "object" && value !== null) {
     const existing = CapturedStacks.get(value);
     if (existing != null) {
@@ -986,12 +1013,15 @@ pub fn last() -> Option<String> {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 let clickCount = 0;
 const recent = [];
 
 const MAX_RECENT = 10;
 
 export function click(label) {
+  $checkStr(label, "click(label)");
   clickCount = (clickCount + 1) >>> 0;
   if (recent.length < MAX_RECENT) {
     recent.push(label);
@@ -1102,6 +1132,8 @@ pub fn render(set_dispatcher: &dyn Fn(Option<&Dispatcher>)) {
 ```
 
 ```js
+import { $checkCallback } from "@rust-js/std";
+
 let HooksDispatcherOnMountInDEV = null;
 
 if (__DEV__) {
@@ -1109,6 +1141,7 @@ if (__DEV__) {
 }
 
 export function render(setDispatcher) {
+  $checkCallback(setDispatcher, "render(setDispatcher)");
   HooksDispatcherOnMountInDEV != null
     ? setDispatcher(HooksDispatcherOnMountInDEV)
     : setDispatcher();
@@ -1341,7 +1374,14 @@ pub fn run(dep: u32) -> Option<u32> {
 ```
 
 ```js
+import { $checkU32 } from "@rust-js/std";
+
 export function createReactiveSystem(base) {
+  $checkU32(base, "createReactiveSystem(base)");
+  return createReactiveSystem$(base);
+}
+
+function createReactiveSystem$(base) {
   return {
     link(dep, sub) {
       console.log(`${(((base + dep) >>> 0) + sub) >>> 0}`);
@@ -1352,9 +1392,10 @@ export function createReactiveSystem(base) {
   };
 }
 
-const { link, unlink } = createReactiveSystem(0);
+const { link, unlink } = createReactiveSystem$(0);
 
 export function run(dep) {
+  $checkU32(dep, "run(dep)");
   link(dep, 1);
   return unlink(dep) ?? undefined;
 }
@@ -1395,7 +1436,10 @@ pub fn checked(tag: &str) -> Option<String> {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function jsxDevChecked(tag) {
+  $checkStr(tag, "jsxDevChecked(tag)");
   return tag;
 }
 
@@ -1403,6 +1447,7 @@ export const jsxDev = __DEV__ ? jsxDevChecked : undefined;
 const checkTag = __DEV__ ? jsxDevChecked : undefined;
 
 export function checked(tag) {
+  $checkStr(tag, "checked(tag)");
   return checkTag != null ? checkTag(tag) : undefined;
 }
 ```
@@ -1440,6 +1485,8 @@ pub fn task(name: &str) -> Option<&'static ConsoleTask> {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 const DEV = true;
 
 function noTask(name) {
@@ -1452,6 +1499,7 @@ const createTask = (() => {
 })();
 
 export function task(name) {
+  $checkStr(name, "task(name)");
   return createTask(name) ?? undefined;
 }
 ```

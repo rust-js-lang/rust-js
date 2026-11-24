@@ -237,7 +237,10 @@ pub(super) fn fields(module: &mut js::Module) {
         let at = module
             .items
             .iter()
-            .position(|item| matches!(item, js::Item::Const(c) if c.name == value && !c.export && c.fields.is_empty()));
+            // Not one the module exports by another name, a library's state by
+            // its internal one, `$$early`, which a consumer's compile reads (#2017).
+            .position(|item| matches!(item, js::Item::Const(c) if c.name == value && !c.export && c.fields.is_empty()))
+            .filter(|_| !module.aliases.iter().any(|(local, _)| value.is(local)));
         // Read by none but those functions, each once by its call, of all of
         // a call of each count too, whose every count reads it (#1890).
         let mut reads = 0;

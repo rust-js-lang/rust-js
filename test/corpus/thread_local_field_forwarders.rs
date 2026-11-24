@@ -1,3 +1,4 @@
+//@ library-differs
 // A private function only called, that only passes its parameters on to a
 // function a thread-local's value holds, read through `with`, is that
 // function, as one of a thread-local's function is the variable (ADR 0610,

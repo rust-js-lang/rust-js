@@ -9,6 +9,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -43,7 +44,7 @@ test("an optional call is upstream's, its method read once of its this", async (
   writeFileSync(join(dir, "lib.rs"), program);
   const built = Bun.spawnSync([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags], { cwd: root, stderr: "pipe" });
   expect([built.exitCode, built.stderr.toString()]).toEqual([0, ""]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function closestOf(hop, selector) {\n  return hop.closest?.(selector) ?? undefined;\n}");
   expect(js).toContain("$someDefined(hop.closest?.(selector))");
   // The receiver, then the argument, each run as Rust runs them.
@@ -118,7 +119,7 @@ pub unsafe fn found(hop: &Node, selector: &str) -> u32 {
 `);
   const built = Bun.spawnSync([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags], {cwd:root, stderr:"pipe", timeout:60_000});
   expect([built.exitCode, built.stderr.toString()]).toEqual([0, ""]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return hop.closest?.(selector) ?? undefined;");
   expect(js).not.toContain("instanceof");
   expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("closestOf(hop: Node, selector: string): Element | null | undefined;");

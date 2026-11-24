@@ -68,6 +68,7 @@ pub mod binding_calls;
 pub mod bindings;
 mod bodies;
 pub mod body_queries;
+pub mod boundary;
 pub mod call_graph;
 pub mod calls;
 pub mod classes;
@@ -354,6 +355,17 @@ pub struct Dependencies {
     /// Each copy of a function another module's calls name, by its index
     /// (ADR 0051, amended).
     pub copy_references: IndexSet<(LocalModId, DefId, usize)>,
+    /// Each split function's body another module's calls name, `f$` (#2403
+    /// step 2b(a), ADR 1193).
+    pub unchecked_references: IndexSet<(LocalModId, DefId)>,
+    /// The checkers of the crate's structs a function's checks of what JS
+    /// gives it call, each its module's, by its name: `None` while it's
+    /// being made, as a struct that holds itself checks by its own (#2403
+    /// step 2b(b), ADR 1194).
+    pub checkers: IndexMap<DefId, Option<Checker>>,
+    /// While a generic type's checker is made, its type parameters' checkers
+    /// it's given, by each parameter's index, innermost last (ADR 1194).
+    pub checker_params: Vec<Vec<(u32, rust_js_program::js::Name)>>,
     /// Each call of a namespace's method through a value whose call needs a
     /// copy of it, which calls the value's function, the module's own JS:
     /// refused where that copy isn't alike it (rd311, ADRs 0051, 1037).
@@ -466,6 +478,11 @@ pub struct FnCx<'a, 'tcx> {
     /// While one of them is lowered, the name of the variable it closes
     /// over, its `self`'s.
     pub scope_self: Option<js::Name>,
+    /// Once a function's body is lowered from its MIR, each parameter its JS
+    /// takes, in order, by its Rust parameter's index, `None` of one Rust
+    /// has none of, a `Formatter`'s options: where the checks of what JS
+    /// gives it each place theirs (#2403, ADR 1192, amended).
+    pub param_origins: Vec<Option<usize>>,
     /// Once a function's body is lowered, the variable of each of its
     /// scope structs' values, by the function, whose fields are then its
     /// variables (ADR 1043, amended).
@@ -1262,4 +1279,13 @@ pub fn compiled_std_catalogue(tcx: TyCtxt<'_>) -> String {
 /// `Err` naming one whose sites aren't there.
 pub fn std_raised(tcx: TyCtxt<'_>) -> Result<String, String> {
     recognition::raised_catalogue(tcx)
+}
+
+/// A checker of the crate's type a check calls (#2403, ADRs 1194, 1196): a
+/// function of its module, or, of a struct's fields alone, its table's
+/// constant, `const checkPoint = /* @__PURE__ */ $checkShape(..)`.
+#[derive(Clone)]
+pub enum Checker {
+    Function(rust_js_program::js::Function),
+    Shape(rust_js_program::js::Const),
 }

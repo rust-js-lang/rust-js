@@ -8,6 +8,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -64,7 +65,7 @@ pub fn counted(kind: u32, on: bool, log: &mut Vec<u32>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // The last case that goes on ends with `break;`, as upstream's do (ADR
   // 0629, amended 2026-11-03, the user's decision).
   expect(js).toContain('    case VIEW:\n      if (ENABLE_VIEW) {\n        return "ViewTransition";\n      }\n      break;\n  }\n');
@@ -158,7 +159,7 @@ pub fn scanned(value: Option<&Unknown>, log: &mut Vec<String>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Its match of two arms, an `if` and its `else`, as upstream's (ADR 0745).
   expect(js).toContain('        if (typeof name === "string" && name !== "") {\n          desc = name + "() {}";\n        } else {\n          desc = "() => {}";\n        }\n        break;\n');
   expect(js.slice(0, js.indexOf("function scanned"))).not.toMatch(/\bbb\d+/);
@@ -192,7 +193,7 @@ test("a default after a guarded case ends with one break", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("    case 3:\n      break;\n    default:\n      level = 0;\n      break;\n  }\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.guarded(1, true), lib.guarded(1, false), lib.guarded(3, true), lib.guarded(9, true)]).toEqual([102, 2, 4, 1]);
@@ -250,7 +251,7 @@ pub fn labeled(rows: &[Vec<u8>]) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("loop:");
   expect(js).toContain("    if (codes[i] === 46 || codes[i] === 33) {\n      break;\n    }\n");
   expect(js).toContain(
@@ -285,7 +286,7 @@ test("guarded arms that fall through and break their loop are an if chain", asyn
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("loop:");
   expect(js).toContain(
     "    if (tag === 1) {\n      total = (total + 1) >>> 0;\n    } else if ((tag === 2 || tag === 3) && total > limit) {\n      break;\n    } else if (tag === 2 || tag === 3 || tag === 4) {\n",
@@ -326,7 +327,7 @@ pub fn count(codes: Vec<u32>, limit: u32) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("loop:");
   expect(js).toContain(
     "    const nextCode = Codes.nextCode(c);\n    if (nextCode === 0) {\n      break;\n    }\n    if (nextCode === 1 && n > limit) {\n      break;\n    }\n    if (nextCode === 1 || nextCode === 2) {\n",
@@ -354,7 +355,7 @@ test("an empty arm of guarded arms that fall through is the next link's test", a
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("loop:");
   expect(js).not.toContain("{\n    }");
   expect(js).toContain("    if (t !== 1 && t !== 2) {\n      n = (n + 10) >>> 0;\n    }\n");
@@ -414,7 +415,7 @@ pub fn last(n: u32) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`    case 1:
       if (SEEN === 0) {
         break;
@@ -470,7 +471,7 @@ pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   // Of three cases or more, a `switch`, a `Some`'s constants its cases
   // (ADRs 0629, 0634).
   expect(js).toContain(`export function flagged(flag, arg) {

@@ -9,13 +9,31 @@
 // as Rust's does, where an unchecked index would read `undefined`. So
 // `redo`'s index and the wraps of `index` stay checked.
 
-import { $at, $catchable, $index, $main, $truncate, $unwound } from "@rust-js/std";
+import {
+  $at,
+  $catchable,
+  $checkField,
+  $checkShape,
+  $checkTag,
+  $checkWhole,
+  $index,
+  $main,
+  $truncate,
+  $unwound,
+} from "@rust-js/std";
+
+const checkUndoStackOptions = /* @__PURE__ */ $checkShape(() => ({}));
 
 /**
  * State snapshots are shared: undo and redo return the exact recorded state.
  * A settings getter is read on every edit, so later changes apply.
  */
 export function createUndoStack(initial, options) {
+  $checkWhole(checkUndoStackSettings, options, "createUndoStack(options)", "nullish");
+  return createUndoStack$(initial, options);
+}
+
+function createUndoStack$(initial, options) {
   const history = {
     entries: [initial],
     index: 0,
@@ -141,12 +159,19 @@ function edit(stack, value, group, time) {
 
 $main(main);
 
+function checkUndoStackSettings(value) {
+  const tag = $checkTag(value, "TAG", ["Options", "Getter"], []);
+  if (tag === "Options") {
+    $checkField(value, "_0", checkUndoStackOptions);
+  }
+}
+
 function main() {
   const boolDebug = { fmt: (value) => String(value) };
   const optionDebug = { fmt: (value) => (value == null ? "None" : `Some(${value})`) };
   const options = {};
   options.limit = 2;
-  const stack = createUndoStack(0, { TAG: "Options", _0: options });
+  const stack = createUndoStack$(0, { TAG: "Options", _0: options });
   edit(stack, 1, "insert", 0);
   edit(stack, 2, "insert", 100);
   stack.seal();
@@ -155,7 +180,7 @@ function main() {
   check("undo", () => stack.undo(), optionDebug);
   check("can redo", () => stack.canRedo(), boolDebug);
   check("redo", () => stack.redo(), optionDebug);
-  const stack$1 = createUndoStack(0, { TAG: "Getter", _0: () => undefined });
+  const stack$1 = createUndoStack$(0, { TAG: "Getter", _0: () => undefined });
   stack$1.map((state) => {
     stack$1.record(1);
     return (state + 10) | 0;

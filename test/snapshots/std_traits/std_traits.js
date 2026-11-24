@@ -9,6 +9,7 @@
 // `{:?}` shows a value by its type.
 
 import {
+  $checkU32,
   $cmp,
   $cmpIn,
   $cmpItems,
@@ -174,6 +175,7 @@ function evenTryFromU32_tryFrom(n) {
 }
 
 export function fallibleConversions(n) {
+  $checkU32(n, "fallibleConversions(n)");
   const value = evenTryFromU32_tryFrom(n);
   const direct = value.TAG === "Ok" ? `even ${value._0[0]}` : value._0;
   const inferred = evenTryFromU32_tryFrom((n + 1) >>> 0);
@@ -563,6 +565,7 @@ export function debugged(x, TDebug) {
 }
 
 export function debugs(n) {
+  $checkU32(n, "debugs(n)");
   const p = { x: n, y: -2.5 };
   const r = n > 1 ? { TAG: "Ok", _0: n } : { TAG: "Err", _0: "small" };
   const value$2 = posDebug_fmt(p);
@@ -603,10 +606,20 @@ export function debugs(n) {
  * `Iterator.from`, and one of the crate's own is given as a JS iterator.
  */
 export function evensBelow(n) {
+  $checkU32(n, "evensBelow(n)");
+  return evensBelow$(n);
+}
+
+function evensBelow$(n) {
   return iterator_filter({ start: 0, end: n }, (x) => x % 2 === 0, { next: $rangeNext });
 }
 
 export function countdown(n) {
+  $checkU32(n, "countdown(n)");
+  return countdown$(n);
+}
+
+function countdown$(n) {
   return $iterator({ n }, countdownIterator_next);
 }
 
@@ -619,6 +632,11 @@ export function total(items) {
 }
 
 export function middle(items, k) {
+  $checkU32(k, "middle(k)");
+  return middle$(items, k);
+}
+
+function middle$(items, k) {
   return $collectDropping(
     $roomForHint(
       iterator_take(iterator_skip($stepsOf(items), 1, $jsIterator), k, $jsIterator),
@@ -637,10 +655,11 @@ export function looped(items) {
 }
 
 export function genericIterators(n) {
+  $checkU32(n, "genericIterators(n)");
   return [
-    total(evensBelow(n)),
-    middle($iterator(countdownRevealed(n), countdownIterator_next), 2),
-    middle(evensBelow((n * 2) >>> 0), 3),
+    total(evensBelow$(n)),
+    middle$($iterator(countdownRevealed(n), countdownIterator_next), 2),
+    middle$(evensBelow$((n * 2) >>> 0), 3),
     looped([n, 2, 3]),
     total($iterator({ n }, countdownIterator_next)),
     iterator_map(countdownRevealed(n), (x) => (x + 1) >>> 0, {

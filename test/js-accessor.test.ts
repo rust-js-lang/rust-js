@@ -11,6 +11,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -45,7 +46,7 @@ test("an accessor field is a live own getter, read by its get", () => {
   const dir = fixture("js-accessor");
   writeFileSync(join(dir, "lib.rs"), program);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("    get canceled() {\n      return canceled;\n    },\n");
   expect(js).toContain("export function read(details) {\n  return details.canceled;\n}");
   expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("    readonly canceled: boolean;");

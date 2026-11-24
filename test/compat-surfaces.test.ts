@@ -11,6 +11,7 @@ import { compatCrates, writePatch } from "../tooling/patch.js";
 import { node } from "./programs";
 import { buildCompiler, compiler, fixture } from "./support";
 import { answer, app, build, cli, config, git, gitCrate, usesWasmBindgen } from "./compat";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -66,7 +67,7 @@ test("a dependency's inline JS imports are rust-js bindings: a slice JS fills, o
   const built = build(at);
   expect(built.stderr).toBe("");
   expect(built.code).toBe(0);
-  const js = readFileSync(join(at, "rust-js", "crates", "uuid-1.18.1", "src", "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(at, "rust-js", "crates", "uuid-1.18.1", "src", "lib.js"), "utf8"));
   // One copy each way: a `Uint8Array` made, given, and read back once.
   expect(js).toContain("function getRandomValues(buf) {\n  const uint8Array = new Uint8Array(buf.length);\n  const value$1 = $try(() => globalThis.crypto.getRandomValues(uint8Array));");
   expect(js).toContain("function sumBytes(buf) {\n  return globalThis.sumBytes(Uint8Array.from(buf));\n}");
@@ -199,7 +200,7 @@ test("getrandom 0.1's backend, in a stand-in for chrono: imported types, methods
   const built = build(at);
   expect(built.stderr).toBe("");
   expect(built.code).toBe(0);
-  const js = readFileSync(join(at, "rust-js", "crates", "chrono-0.4.42", "src", "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(at, "rust-js", "crates", "chrono-0.4.42", "src", "lib.js"), "utf8"));
   // The browser's \`self\` read where it's asked, as upstream's \`catch\`.
   expect(js).toContain("return $try(() => self.self);");
   const run = (prelude: string) => {
@@ -261,7 +262,7 @@ test("chrono's wasmbind surface is js::Date's, its offsets native Rust's in a zo
   expect(built.stderr).toBe("");
   expect(built.code).toBe(0);
   expect(config(at)).toContain("js-sys = { path");
-  const js = readFileSync(join(at, "rust-js", "crates", "chrono-0.4.45", "src", "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(at, "rust-js", "crates", "chrono-0.4.45", "src", "lib.js"), "utf8"));
   expect(js).toContain("export function offsetOfLocal(year, month0) {\n  const jsDate = new Date(year >>> 0, month0, 15, 12, 0, 0);\n  return jsDate.getTimezoneOffset();\n}");
   const program = `const app = await import(${JSON.stringify(join(at, "src", "lib.js"))});
 console.log(JSON.stringify([Math.abs(app.now() - Date.now()) < 1000, app.offsetOfUtc(Date.UTC(2024, 0, 15, 12)), app.offsetOfUtc(Date.UTC(2024, 6, 15, 12)), app.offsetOfLocal(2024, 0), app.offsetOfLocal(2024, 6)]));`;

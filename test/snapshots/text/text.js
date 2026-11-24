@@ -6,6 +6,11 @@
 // expression of the Unicode property Rust uses.
 
 import {
+  $checkArray,
+  $checkChar,
+  $checkStr,
+  $checkU32,
+  $checks,
   $copyOf,
   $debugF64,
   $debugStr,
@@ -26,6 +31,11 @@ import {
 } from "@rust-js/std";
 
 export function chars(c) {
+  $checkChar(c, "chars(c)");
+  return chars$(c);
+}
+
+function chars$(c) {
   return [
     $isWhitespace(c),
     $isAlphabetic(c),
@@ -38,6 +48,11 @@ export function chars(c) {
   ];
 }
 export function ascii(c) {
+  $checkChar(c, "ascii(c)");
+  return ascii$(c);
+}
+
+function ascii$(c) {
   return [
     /^[0-9]$/.test(c),
     /^[0-9A-Fa-f]$/.test(c),
@@ -50,6 +65,11 @@ export function ascii(c) {
   ];
 }
 export function casts(c) {
+  $checkChar(c, "casts(c)");
+  return casts$(c);
+}
+
+function casts$(c) {
   const code = c.codePointAt(0);
   const x = 7;
   return [
@@ -61,6 +81,11 @@ export function casts(c) {
   ];
 }
 export function parses(s) {
+  $checkStr(s, "parses(s)");
+  return parses$(s);
+}
+
+function parses$(s) {
   const n = $parseInt(s, 0, 4294967295);
   const i = $parseInt(s, -128, 127);
   const f = $parseF64(s);
@@ -86,6 +111,11 @@ function sum(text) {
   return { TAG: "Ok", _0: total };
 }
 export function words(text) {
+  $checkStr(text, "words(text)");
+  return words$(text);
+}
+
+function words$(text) {
   const words = $splitWhitespace(text);
   const lines = $lines(text);
   const value = sum(text);
@@ -95,6 +125,11 @@ export function words(text) {
   return [words, lines, total, pieces, Array.from(text).some((c) => $isUppercase(c))];
 }
 export function slices(v) {
+  $checks("slices(v)", v, (value, where, none) => $checkArray(value, where, none, $checkU32));
+  return slices$(v);
+}
+
+function slices$(v) {
   const a = [10, 20, 30];
   const tail = a.slice(1).reduce((a, b) => (a + b) >>> 0, 0);
   return [
@@ -106,6 +141,7 @@ export function slices(v) {
   ];
 }
 export function slicePanics(start, end) {
+  $checks("slicePanics(start, end)", start, $checkU32, end, $checkU32);
   const v = [1, 2, 3];
   return $copyOf(v, start, "examples/text.rs:73:6", end);
 }
@@ -114,15 +150,20 @@ export function escapes() {
 }
 // A template literal's own characters, in the text around the values.
 export function templates(n) {
+  $checkU32(n, "templates(n)");
+  return templates$(n);
+}
+
+function templates$(n) {
   return `\`${n}\` costs \${n} \\ ${(n + 1) >>> 0}\t\u2028|\x01|`;
 }
 
 export function report() {
   let out = "";
   for (const c of ["a", "Z", "7", " ", "\n", "\u3000", "é", "ß", "٣", "Ⅻ", "!", "\ufeff", "\x7f"]) {
-    const value = chars(c);
-    const value$1 = ascii(c);
-    const arg = casts(c);
+    const value = chars$(c);
+    const value$1 = ascii$(c);
+    const arg = casts$(c);
     out += `${$debugStr(c, "'")} (${value[0]}, ${value[1]}, ${value[2]}, ${value[3]}, ${value[4]}, ${value[5]}, ${value[6]}, ${value[7]}) (${value$1[0]}, ${value$1[1]}, ${value$1[2]}, ${value$1[3]}, ${$debugStr(value$1[4], "'")}, ${$debugStr(value$1[5], "'")}, ${value$1[6] == null ? "None" : `Some(${value$1[6]})`}, ${value$1[7]}) (${arg[0]}, ${arg[1]}, ${$debugStr(arg[2], "'")}, ${$debugStr(arg[3], "'")}, ${arg[4]})\n`;
   }
   for (const s of [
@@ -141,11 +182,11 @@ export function report() {
     ".5",
     " 1",
   ]) {
-    const arg = parses(s);
+    const arg = parses$(s);
     out += `${$debugStr(s)} ${arg}\n`;
   }
   for (const s of ["true", "false", "True", "x", "é", "ab"]) {
-    const arg = parses(s);
+    const arg = parses$(s);
     out += `${$debugStr(s)} ${arg}\n`;
   }
   for (const text of [
@@ -159,12 +200,12 @@ export function report() {
     "\n",
     "\r",
   ]) {
-    const value = words(text);
+    const value = words$(text);
     out += `([${value[0].map((item) => $debugStr(item)).join(", ")}], [${value[1].map((item) => $debugStr(item)).join(", ")}], ${$debugStr(value[2])}, [${value[3].map((item) => $debugStr(item)).join(", ")}], ${value[4]})\n`;
   }
-  const value = slices([1, 2, 3, 4]);
+  const value = slices$([1, 2, 3, 4]);
   out += `([${value[0].join(", ")}], [${value[1].join(", ")}], [${value[2].join(", ")}], [${value[3].join(", ")}], ${value[4]})\n${escapes()}\n`;
-  out += `${$debugStr(templates(7))}\n`;
+  out += `${$debugStr(templates$(7))}\n`;
   return out;
 }
 //# sourceMappingURL=text.js.map

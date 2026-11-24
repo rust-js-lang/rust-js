@@ -104,7 +104,14 @@ pub fn Basics(ListProps { items }: ListProps) -> JSX::Element {
 ```
 
 ```jsx
+import { $checkArray, $checkShape, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
+const checkItem = /* @__PURE__ */ $checkShape(() => ({ id: $checkU32, name: $checkStr }));
+
 export function Basics({ items }) {
+  $checks("Basics(props.items)", items, (value, where, none) =>
+    $checkArray(value, where, none, checkItem),
+  );
   const count = items.length;
   const first = items[0]?.name;
   return (
@@ -391,7 +398,10 @@ pub fn Title() -> JSX::Element {
 ```
 
 ```jsx
+import { $checkOneOf } from "@rust-js/std";
+
 export function Heading({ level: Comp, children }) {
+  $checkOneOf(Comp, ["h1", "h2"], "Heading(props.level)");
   return <Comp className="heading">{children}</Comp>;
 }
 
@@ -421,7 +431,11 @@ pub fn Panel(PanelProps { wide, title }: PanelProps) -> JSX::Element {
 ```
 
 ```jsx
+import { $checkBool, $checkStr } from "@rust-js/std";
+
 export function Panel({ wide, title }) {
+  $checkBool(wide, "Panel(props.wide)");
+  $checkStr(title, "Panel(props.title)", "nullish");
   const Tag = wide ? "section" : "div";
   return <Tag accessKey="p" draggable title={title} />;
 }
@@ -520,8 +534,14 @@ pub fn Keyed(ListProps { items }: ListProps) -> JSX::Element {
 
 ```jsx
 import { Fragment } from "react";
+import { $checkArray, $checkShape, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
+const checkItem = /* @__PURE__ */ $checkShape(() => ({ id: $checkU32, name: $checkStr }));
 
 export function Keyed({ items }) {
+  $checks("Keyed(props.items)", items, (value, where, none) =>
+    $checkArray(value, where, none, checkItem),
+  );
   return (
     <dl>
       {items.map((item) => (

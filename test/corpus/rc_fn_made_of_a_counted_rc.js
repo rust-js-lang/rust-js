@@ -8,7 +8,19 @@
 // `make`'s `impl Fn`, which it holds none of: neither build does now
 // (rd597).
 
-import { $cleanup, $index, $live, $main, $rcClone, $rcDrop, $unwindsOn } from "@rust-js/std";
+import {
+  $brand,
+  $checkCallback,
+  $checkShape,
+  $checks,
+  $cleanup,
+  $index,
+  $live,
+  $main,
+  $rcClone,
+  $rcDrop,
+  $unwindsOn,
+} from "@rust-js/std";
 
 function make(run) {
   const made = [];
@@ -31,6 +43,11 @@ function make(run) {
 
 export const Chunk = {
   watch(chunk, run) {
+    $checks("Chunk.watch(chunk)", chunk, checkChunk);
+    $checkCallback(run, "Chunk.watch(run)");
+    return Chunk.watch$(chunk, run);
+  },
+  watch$(chunk, run) {
     const made = [];
     try {
       run((prefix) => {
@@ -55,6 +72,12 @@ export const Chunk = {
   },
 };
 
+const checkChunk = /* @__PURE__ */ $checkShape(
+  () => ({}),
+  "rc_fn_made_of_a_counted_rc#93d7f3570aeaddbc::Chunk",
+  "a Chunk",
+);
+
 $main(main);
 
 function main() {
@@ -68,11 +91,11 @@ function main() {
     while ((callback = iter.next().value) != null) {
       console.log(`${callback.value("x")}`);
     }
-    const chunk = {
+    const chunk = $brand("rc_fn_made_of_a_counted_rc#93d7f3570aeaddbc::Chunk", {
       info: "i",
       seen: 0,
-    };
-    const made$1 = Chunk.watch(chunk, (f) => {
+    });
+    const made$1 = Chunk.watch$(chunk, (f) => {
       f("c");
     });
     try {

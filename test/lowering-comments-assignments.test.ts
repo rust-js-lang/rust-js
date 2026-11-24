@@ -7,17 +7,19 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { decodeMappings } from "./sourcemap";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
 /** `rust` compiled in a fixture of `name`, against the js crate: its JS,
  * its module, and its source map. */
-async function compiled(name: string, rust: string): Promise<{ js: string; lib: Record<string, (...args: never[]) => unknown>; map: { mappings: string } }> {
+async function compiled(name: string, rust: string): Promise<{ js: string; raw: string; lib: Record<string, (...args: never[]) => unknown>; map: { mappings: string } }> {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  return { js, lib: await import(join(dir, "lib.js")), map: JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8")) };
+  // `raw`, the file as it is, whose lines its map counts, its checks too.
+  const raw = readFileSync(join(dir, "lib.js"), "utf8");
+  return { js: withoutBoundary(raw), raw, lib: await import(join(dir, "lib.js")), map: JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8")) };
 }
 
 // React's ReactTypeOfMode and ReactFiberFlags: `export const NoMode = /*
@@ -59,7 +61,7 @@ pub fn flags() -> u32 {
     FLAGS + COUNT.with(Cell::get) + NO_MODE + REMOVED
 }
 `;
-  const { js, lib, map } = await compiled("comment-before-a-value", rust);
+  const { js, lib, map, raw } = await compiled("comment-before-a-value", rust);
   expect(js).toContain("\nexport const NoMode = /*                         */ 0b0000000;\n");
   expect(js).toContain(
     "// TODO: Remove ConcurrentMode by reading from the root tag instead\nexport const ConcurrentMode = /*                 */ 0b0000001;\n",
@@ -81,7 +83,7 @@ pub fn flags() -> u32 {
     return [line, lines[line].indexOf(code)];
   };
   const mapped = (code: string) => {
-    const [line, column] = place(js, code);
+    const [line, column] = place(raw, code);
     const segment = segments.find(s => s.jsLine === line && s.jsCol === column);
     return [segment?.srcLine, segment?.srcCol];
   };

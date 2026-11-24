@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -19,7 +20,7 @@ function compiled(name: string, rust: string): { js: string; ts: string; dir: st
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, ...flags(dir)]);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), ts: readFileSync(join(dir, "lib.d.ts"), "utf8"), dir };
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), ts: readFileSync(join(dir, "lib.d.ts"), "utf8"), dir };
 }
 
 /** What the compiler says of `rust`, which it refuses. */
@@ -113,7 +114,7 @@ pub mod fiber {
 }
 `);
   run([compiler, ...flags(dir)]);
-  const js = readFileSync(join(dir, "fiber.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "fiber.js"), "utf8"));
   const ts = readFileSync(join(dir, "fiber.d.ts"), "utf8");
   expect(js).toContain(`/** A fiber. */
 export class FiberNode {

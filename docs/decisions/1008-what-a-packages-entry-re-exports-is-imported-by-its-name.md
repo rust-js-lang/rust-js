@@ -235,3 +235,32 @@ re-export" test (one hop and two, no `kids/src/lib.js`, native Rust's
 answer, a root's list) and mutations `package-entry-through-unread`,
 `package-entry-through-any-name`, `package-entry-through-one-hop`
 (`packages.rs`) and `reexports-alone-list-stem-own` (`lower/reexports.rs`).
+
+## Amendment: a module the crate writes in a library namespace's place
+
+#2536, in #2403's (Y) (2026-11-25, the lead's design). Case: none; JS
+reads the namespace's members, each the library's or a forwarder by the
+same name.
+
+A library's function its own JS doesn't check, as no JS of the library
+may call it (`Item::checked`, ADR 1193), is checked by a consumer that
+gives JS it. By name or by a glob, a forwarder of the module's own; a
+`pub use dep::m as ns` gave JS `export * as ns from "../dep/m.js"`, each
+member unchecked, and was refused. **Where a module JS may call
+re-exports a library's module as a namespace, and that module has such a
+function, the crate writes a module of its own in its place**, beside the
+module, by the `use`'s name, `ns.js` (`pipeline/contexts.rs`'
+`library_namespaces`): `export * from` the library's file, and a checked
+forwarder of each such function by its own name, which a module's own
+export shadows the star's of; the module's re-export is `export * as ns
+from "./ns.js"`, its `.d.ts`'s `export * from` the library's. It's one
+more of the program's lowered modules, which the output plan writes as
+it writes each, through the one owner, by its path, a module's that
+Rust has none of. A bundler drops what nothing reads of it, as of the
+library's file. Where the library's module has no such function, the
+namespace is the library's file, as before. Held by
+`test/boundary-reach.test.ts`' namespace test, `test/glob-reexports.test.ts`'
+(rand_chacha's `pub use rand_core;` shape, a library's root, checked
+already, and two modules that aren't), the tree-shaking net's namespace
+case under Vite and Bun, and mutation `unchecked-namespace-unrecorded`
+(`lower/reexports.rs`).

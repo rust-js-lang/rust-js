@@ -7,6 +7,7 @@
 
 /** Resolves with `value` after `ms` milliseconds. */
 import { setTimeout } from "node:timers/promises";
+import { $checkI32, $checkResult, $checkStr, $checkU32, $checks } from "@rust-js/std";
 
 async function double(x) {
   return ((await setTimeout(1, x)) * 2) >>> 0;
@@ -14,17 +15,20 @@ async function double(x) {
 
 /** `.await` in the middle of an expression, in Rust's order. */
 export async function sum(a, b) {
+  $checks("sum(a, b)", a, $checkU32, b, $checkU32);
   return ((await double(a)) + (await double(b))) >>> 0;
 }
 
 /** What an `.await` gives, given back. */
 export async function twice(n) {
+  $checkU32(n, "twice(n)");
   const d = await double(n);
   return await double(d);
 }
 
 /** A parameter that changes, and one taken apart. */
 export async function countdown(n) {
+  $checkU32(n, "countdown(n)");
   let steps = 0;
   while (n > 0) {
     n = await setTimeout(0, n - 1);
@@ -34,6 +38,7 @@ export async function countdown(n) {
 }
 
 export async function swap([a, b]) {
+  $checks("swap(__arg0[0], __arg0[1])", a, $checkU32, b, $checkU32);
   return [await setTimeout(0, b), a];
 }
 
@@ -42,11 +47,13 @@ export async function swap([a, b]) {
  * takes its context.
  */
 export async function given({ params }) {
+  $checkU32(params, "given(__arg0.params)", "nullish");
   return ((await setTimeout(0, params ?? 0)) + 1) >>> 0;
 }
 
 /** An `async` block, and an `async` closure. */
 export async function blocks(x) {
+  $checkU32(x, "blocks(x)");
   const block = (async () => ((await double(x)) + 1) >>> 0)();
   const add = async (y) => ((await setTimeout(0, y)) + x) >>> 0;
   return ((await block) + (await add(10))) >>> 0;
@@ -68,6 +75,7 @@ export async function held() {
  * `pin!`ned, awaited as it is or through `as_mut()`, the promise it pins.
  */
 export async function pinned(x) {
+  $checkU32(x, "pinned(x)");
   const done = Promise.resolve(x);
   const block = (async () => await double(x))();
   return ((await done) + (await block)) >>> 0;
@@ -79,6 +87,7 @@ function doubledIntoFuture_intoFuture(doubled) {
 
 /** `.await` of an `IntoFuture` of the crate's: its `into_future` awaited. */
 export async function doubled(x) {
+  $checkU32(x, "doubled(x)");
   return ((await doubledIntoFuture_intoFuture([x])) + 1) >>> 0;
 }
 
@@ -115,6 +124,7 @@ export function started() {
 
 /** `fetch`, from the webapi crate: its promises, awaited one after the other. */
 export async function load(url) {
+  $checkStr(url, "load(url)");
   const response = await window.fetch(url);
   const body = await response.text();
   return [response.status, response.ok, body];
@@ -125,6 +135,7 @@ export async function load(url) {
  * rest `..Default::default()`, which JS reads as not given.
  */
 export async function post(url, body) {
+  $checks("post(url, body)", url, $checkStr, body, $checkStr);
   const init = { method: "POST", body };
   return await (await window.fetch(url, init)).text();
 }
@@ -150,6 +161,7 @@ export function listenUntilAborted() {
 
 /** Binary data: `bytes()`, `arrayBuffer()`, and a view of a buffer. */
 export async function loadBytes(url) {
+  $checkStr(url, "loadBytes(url)");
   const response = await window.fetch(url);
   const copy = response.clone();
   const bytes = await response.bytes();
@@ -163,16 +175,20 @@ export async function loadBytes(url) {
  * (a struct, which is a JS object), and call its export, which calls back.
  */
 export async function runWasm(bytes, a, b) {
+  $checks("runWasm(a, b)", a, $checkI32, b, $checkI32);
   const module = await WebAssembly.compile(bytes);
   const imports = { env: { double: (x) => (x * 2) | 0 } };
   const instance = await WebAssembly.instantiate(module, imports);
-  return instance.exports.add(a, b);
+  return $checkResult(instance.exports.add(a, b), "add", $checkI32);
 }
 
 /** The other `instantiate`: from bytes, to a `{ module, instance }` dictionary. */
 export async function instantiateBytes(bytes) {
   const imports = { env: { double: (x) => x } };
   const source = await WebAssembly.instantiate(bytes.buffer, imports);
-  return WebAssembly.validate(bytes) && source.instance.exports.add(1, 2) === 3;
+  return (
+    WebAssembly.validate(bytes) &&
+    $checkResult(source.instance.exports.add(1, 2), "add", $checkI32) === 3
+  );
 }
 //# sourceMappingURL=async.js.map

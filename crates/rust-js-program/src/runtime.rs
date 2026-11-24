@@ -22,6 +22,7 @@ macro_rules! helpers {
 
 helpers! {
     TraitImpl,
+    BoundaryChecks,
     Bytes,
     Index,
     At,
@@ -421,6 +422,10 @@ const PURE: &[&str] = &[
     // An `Option`'s `Some` of what looks like `None`, a box made of it
     // (ADR 0051), which reads nothing else and does nothing (#841).
     "$some",
+    // A value Rust made of a type no other crate can make, marked in a set
+    // nothing but the checks reads, given back (#2403, ADR 1196): moved or
+    // dropped as the value it marks is.
+    "$brand",
     // What drops each item of what it's given, made of an item's drop: a
     // function, which runs nothing until it's called, as a dictionary's
     // `$drop` of a `Vec<Point>` is (#1578).
@@ -662,6 +667,7 @@ impl Helper {
     pub fn source(self) -> &'static str {
         match self {
             Helper::Index => include_str!("runtime/checked_index.js"),
+            Helper::BoundaryChecks => include_str!("runtime/boundary_checks.js"),
             // `v[i] = x`: `v[$at(v, i)] = x`, since JS would make the array longer.
             Helper::At => include_str!("runtime/at.js"),
             Helper::Bytes => include_str!("runtime/bytes.js"),

@@ -444,4 +444,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^format_argument_read_before_its_variable_moves.rs$"],
   },
+  {
+    name: "sealed-zero-sized-unmade",
+    breaks: "a value of no size of a type no other crate can make, itertools' `DedupPred2CoalescePred(DedupEq)` in optimized MIR, has no JS: rust-js refuses it, `this constant, from its MIR` (#2403, ADR 1196)",
+    file: "crates/rust-js-mir/src/operands.rs",
+    find: "            && self.brand_key(ty).is_some()\n",
+    replace: "            && self.brand_key(ty).is_some() && false\n",
+    tests: ["test/crates-pairs-1.test.ts", "-t", "^two crates: coalesce_of_a_library_as_itertools_writes_it$"],
+  },
 ];

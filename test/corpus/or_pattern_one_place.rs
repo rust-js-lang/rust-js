@@ -1,3 +1,4 @@
+//@ library-differs
 // An or-pattern whose alternatives bind fields at one JS place (rd430):
 // a tagged enum's `Circle { r } | Square { r }`, each `shape.r`, and a
 // flattened state's `Pending { value } | Blocked { value }`, each

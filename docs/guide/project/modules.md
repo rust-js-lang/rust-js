@@ -92,18 +92,24 @@ pub fn page() -> String {
 
 ```js
 // src/lib.js
-import { hello } from "./greet.js";
+import { hello$ as hello } from "./greet.js";
 import * as Format from "./format.js";
-export { hello };
+import { $checkStr } from "@rust-js/std";
+export { hello } from "./greet.js";
 
 export function welcome(name) {
+  $checkStr(name, "welcome(name)");
+  return welcome$(name);
+}
+
+export function welcome$(name) {
   return Format.shout(hello(name));
 }
 ```
 
 ```js
 // src/routes/[slug].js
-import { welcome } from "../lib.js";
+import { welcome$ as welcome } from "../lib.js";
 
 export function page() {
   return welcome("slug");
@@ -229,8 +235,10 @@ pub fn shout(text: &str) -> String {
 ```js
 // src/lib.js
 import { shout as loud } from "./format.js";
+import { $checkStr } from "@rust-js/std";
 
 export function welcome(name) {
+  $checkStr(name, "welcome(name)");
   return loud(`welcome, ${name}`);
 }
 ```
@@ -260,8 +268,10 @@ pub(crate) fn shout(text: &str) -> String {
 ```js
 // src/lib.js
 import * as Format from "./format.js";
+import { $checkStr } from "@rust-js/std";
 
 export function welcome(name) {
+  $checkStr(name, "welcome(name)");
   return Format.shout(greeting(name));
 }
 
@@ -379,10 +389,14 @@ pub mod units {
 
 ```js
 export { px as pixels, BASE } from "./format/units.js";
-import { hello } from "./greet.js";
-export { hello };
+import { hello$ as hello } from "./greet.js";
+import { $checkArray, $checkStr, $checks } from "@rust-js/std";
+export { hello } from "./greet.js";
 
 function greetAll(names) {
+  $checks("greetAll(names)", names, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   return names.map(hello);
 }
 
@@ -515,7 +529,7 @@ export {
   cache, // DEV-only
 } from "./server.js";
 
-import { jsxDev as _jsxDEV } from "./runtime.js";
+import { jsxDev$ as _jsxDEV } from "./runtime.js";
 
 export function element() {
   return _jsxDEV(1);
@@ -883,8 +897,10 @@ pub fn card_classes(wide: bool) -> String {
 ```js
 // src/lib.js
 import STYLES from "./site.module.css";
+import { $checkBool } from "@rust-js/std";
 
 export function cardClasses(wide) {
+  $checkBool(wide, "cardClasses(wide)");
   return wide ? `${STYLES["card-title"]} ${STYLES.codeBlock}` : STYLES["card-title"];
 }
 ```
@@ -944,7 +960,10 @@ pub fn long_lines(text: &str) -> usize {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export async function longLines(text) {
+  $checkStr(text, "longLines(text)");
   const { longLines: count } = await import("./lint.js");
   return count(text);
 }
@@ -1002,10 +1021,12 @@ pub fn hello(name: &str) -> String {
 
 ```js
 import { nanoid } from "nanoid";
+import { $checkStr } from "@rust-js/std";
 
 console.log("greet loaded");
 
 export function hello(name) {
+  $checkStr(name, "hello(name)");
   const arg = nanoid();
   return `Hello, ${name} #${arg}`;
 }
@@ -1030,7 +1051,10 @@ pub fn label(likes: u32) -> String {
 ```js
 "use client";
 
+import { $checkU32 } from "@rust-js/std";
+
 export function label(likes) {
+  $checkU32(likes, "label(likes)");
   return `Likes: ${likes}`;
 }
 ```
@@ -1046,8 +1070,11 @@ pub async fn cached(n: u32) -> u32 {
 ```
 
 ```js
+import { $checkU32 } from "@rust-js/std";
+
 export async function cached(n) {
   "use cache";
+  $checkU32(n, "cached(n)");
   return (n + 1) >>> 0;
 }
 ```
@@ -1167,8 +1194,11 @@ pub fn resolved(dispatcher: Option<u32>) -> u32 {
 ```
 
 ```js
+import { $checkU32 } from "@rust-js/std";
+
 export function resolved(dispatcher) {
   // Will result in a null access error if accessed outside render phase.
+  $checkU32(dispatcher, "resolved(dispatcher)", "nullish");
   return dispatcher;
 }
 ```
@@ -1270,6 +1300,8 @@ pub fn first(values: &[f64]) -> f64 {
 ```
 
 ```js
+import { $checkArray, $checkF64, $checks } from "@rust-js/std";
+
 export function createCacheNode() {
   return {
     status: 0, // whether it returned or threw
@@ -1280,6 +1312,9 @@ export function createCacheNode() {
 
 export function first(values) {
   // Every caller gives one.
+  $checks("first(values)", values, (value, where, none) =>
+    $checkArray(value, where, none, $checkF64),
+  );
   return values[0];
 }
 ```
@@ -1344,7 +1379,10 @@ pub fn limit(fast: bool) -> u32 {
 ```
 
 ```js
+import { $checkBool } from "@rust-js/std";
+
 export function limit(fast) {
+  $checkBool(fast, "limit(fast)");
   return fast
     ? // What a fast host can take.
       64
@@ -1368,7 +1406,10 @@ pub fn phase(entered: bool, now: u8) -> u8 {
 ```
 
 ```js
+import { $checkBool, $checkU8, $checks } from "@rust-js/std";
+
 export function phase(entered, now) {
+  $checks("phase(entered, now)", entered, $checkBool, now, $checkU8);
   return entered
     ? 2 // TODO: Mark the name and find a pair.
     : now;
@@ -1396,11 +1437,14 @@ pub fn area(width: f64, height: f64) -> f64 {
 ```
 
 ```js
+import { $checkF64, $checks } from "@rust-js/std";
+
 function atLeast(value, low) {
   return value < low ? low : value;
 }
 
 export function area(width, height) {
+  $checks("area(width, height)", width, $checkF64, height, $checkF64);
   return atLeast(
     width * height,
     // Never below zero.
@@ -1489,7 +1533,10 @@ pub fn warn(message: &str) {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function warn(message) {
+  $checkStr(message, "warn(message)");
   console.warn(
     "%s\n",
     message,
@@ -1522,10 +1569,13 @@ pub fn track(
 ```
 
 ```js
+import { $checkF64, $checkStr, $checks } from "@rust-js/std";
+
 export function track(
   name,
   start, // DEV-only
 ) {
+  $checks("track(name, start)", name, $checkStr, start, $checkF64);
   return {
     name,
     start,
@@ -1551,7 +1601,10 @@ pub fn now() -> f64 /* Milliseconds. */ {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function encode(value) /* Not yet one. */ {
+  $checkStr(value, "encode(value)", "nullish");
   return value ?? undefined;
 }
 
@@ -1577,7 +1630,10 @@ pub fn total(price: f64, count: f64, shipping: f64) -> f64 {
 ```
 
 ```js
+import { $checkF64, $checks } from "@rust-js/std";
+
 export function total(price, count, shipping) {
+  $checks("total(price, count, shipping)", price, $checkF64, count, $checkF64, shipping, $checkF64);
   return (
     price * count +
     // Once an order, not an item.
@@ -1620,7 +1676,7 @@ pub fn unknown_owner() -> &'static js::Error {
 ```
 
 ```js
-import { $displayF64 } from "@rust-js/std";
+import { $checkF64, $displayF64 } from "@rust-js/std";
 
 /** @noinline */
 function testStringCoercion(value) {
@@ -1632,6 +1688,7 @@ function testStringCoercion(value) {
  * @noinline
  */
 export function coerced(value) {
+  $checkF64(value, "coerced(value)");
   return testStringCoercion(value);
 }
 

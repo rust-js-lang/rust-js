@@ -143,6 +143,8 @@ pub enum Role {
     Taken,
     Test,
     Tuple,
+    /// A tagged enum's tag a check reads (#2403).
+    Tag,
     Text,
     Then,
     To,
@@ -156,6 +158,8 @@ pub enum Role {
     Values,
     Variant,
     Visitor,
+    /// Where a check is, its function and parameter (#2403).
+    Where,
     Wrapping,
     Word,
     X,
@@ -297,6 +301,7 @@ impl Role {
             Role::Taken => "taken",
             Role::Test => "test",
             Role::Tuple => "tuple",
+            Role::Tag => "tag",
             Role::Text => "text",
             Role::Then => "then",
             Role::To => "to",
@@ -308,6 +313,7 @@ impl Role {
             Role::Values => "values",
             Role::Variant => "variant",
             Role::Visitor => "visitor",
+            Role::Where => "where",
             Role::Wrapping => "wrapping",
             Role::Word => "word",
             Role::X => "x",

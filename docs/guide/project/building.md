@@ -154,9 +154,13 @@ pub fn area(radius: f64) -> f64 {
 ```js
 // src/lib.js
 import { area } from "./shapes.js";
+import { $checkArray, $checkF64, $checks } from "@rust-js/std";
 export { area };
 
 export function totalArea(radii) {
+  $checks("totalArea(radii)", radii, (value, where, none) =>
+    $checkArray(value, where, none, $checkF64),
+  );
   return radii.map(area).reduce((a, b) => a + b, -0);
 }
 ```

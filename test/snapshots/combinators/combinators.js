@@ -5,6 +5,14 @@
 // written in place: `h.unwrap_or_else(|| 99)` is `h ?? 99`.
 
 import {
+  $checkArray,
+  $checkBool,
+  $checkChar,
+  $checkShape,
+  $checkStr,
+  $checkU32,
+  $checkWhole,
+  $checks,
   $chunks,
   $cmp,
   $debugStr,
@@ -24,6 +32,11 @@ import {
   $windows,
 } from "@rust-js/std";
 
+const checkNamed = /* @__PURE__ */ $checkShape(() => ({
+  name: [$checkStr, "nullish"],
+  label: $checkStr,
+}));
+
 function half(n) {
   if (n % 2 === 0) {
     return (n / 2) >>> 0;
@@ -39,6 +52,11 @@ function parse(c) {
   }
 }
 export function options(n) {
+  $checkU32(n, "options(n)");
+  return options$(n);
+}
+
+function options$(n) {
   const h = half(n);
   return [
     h ?? 99,
@@ -50,6 +68,11 @@ export function options(n) {
   ];
 }
 export function moreOptions(n) {
+  $checkU32(n, "moreOptions(n)");
+  return moreOptions$(n);
+}
+
+function moreOptions$(n) {
   const h = half(n);
   const r = h != null ? { TAG: "Ok", _0: h } : { TAG: "Err", _0: "odd" };
   const s = h != null ? { TAG: "Ok", _0: h } : { TAG: "Err", _0: `odd ${n}` };
@@ -62,6 +85,11 @@ export function moreOptions(n) {
   ];
 }
 export function results(c) {
+  $checkChar(c, "results(c)");
+  return results$(c);
+}
+
+function results$(c) {
   const r = parse(c);
   const value = r.TAG === "Ok" ? { TAG: "Ok", _0: (r._0 * 10) >>> 0 } : r;
   return [
@@ -79,6 +107,11 @@ export function results(c) {
   ];
 }
 export function iters(n) {
+  $checkU32(n, "iters(n)");
+  return iters$(n);
+}
+
+function iters$(n) {
   const v = $range(0, n, 4);
   return [
     v.map(half).filter((item) => item != null),
@@ -90,6 +123,11 @@ export function iters(n) {
   ];
 }
 export function consumers(n) {
+  $checkU32(n, "consumers(n)");
+  return consumers$(n);
+}
+
+function consumers$(n) {
   const v = $range(1, (n + 1) >>> 0, 4);
   return [
     $maxByKey(
@@ -111,6 +149,11 @@ export function consumers(n) {
   ];
 }
 export function vecs(n) {
+  $checkU32(n, "vecs(n)");
+  return vecs$(n);
+}
+
+function vecs$(n) {
   const v = [1, 1, 2, 3, 3, 3, 4];
   const has = v.includes(n);
   $dedup(v);
@@ -130,6 +173,7 @@ export function vecs(n) {
   return [has, v, removed, w, c, [[1, 2], [3]].flat()];
 }
 export function panics(i) {
+  $checkU32(i, "panics(i)");
   const v = [1, 2];
   if (i >= v.length) {
     $removeOutOfBounds(v, i, "examples/combinators.rs:99:7");
@@ -139,62 +183,109 @@ export function panics(i) {
 // A slice's `concat` of parts written out is an array of them, spread, as
 // JS writes it: `[...path, last]`.
 export function joined(path, last) {
+  $checks(
+    "joined(path, last)",
+    path,
+    (value, where, none) => $checkArray(value, where, none, $checkU32),
+    last,
+    $checkU32,
+  );
+  return joined$(path, last);
+}
+
+function joined$(path, last) {
   return [...path, last];
 }
 // `then` of a closure that only returns is its value in place, closures in
 // it too: `ok ? items.map((n) => n + 1) : undefined`.
 export function bumped(ok, items) {
+  $checks("bumped(ok, items)", ok, $checkBool, items, (value, where, none) =>
+    $checkArray(value, where, none, $checkU32),
+  );
+  return bumped$(ok, items);
+}
+
+function bumped$(ok, items) {
   return ok ? items.map((n) => (n + 1) >>> 0) : undefined;
 }
 // One whose callback reads the value it's given, put in place: its
 // callback reads `by`, which nothing sets, whenever it runs (ADR 0705).
 export function shifted(by, items) {
+  $checkU32(by, "shifted(by)", "nullish");
+  $checks("shifted(items)", items, (value, where, none) =>
+    $checkArray(value, where, none, $checkU32),
+  );
+  return shifted$(by, items);
+}
+
+function shifted$(by, items) {
   return by != null ? items.map((n) => (n + by) >>> 0) : undefined;
 }
 // A field of what's there, or nothing: `named?.name`, as a person writes it.
 export function nameOf(named) {
+  $checkWhole(checkNamed, named, "nameOf(named)", "nullish");
+  return nameOf$(named);
+}
+
+function nameOf$(named) {
   return named?.name ?? undefined;
 }
 // Not of another's, nor where nothing isn't `undefined`.
 export function otherName(flag, named) {
+  $checkU32(flag, "otherName(flag)", "nullish");
+  $checks("otherName(named)", named, checkNamed);
+  return otherName$(flag, named);
+}
+
+function otherName$(flag, named) {
   return (flag != null ? named.name : undefined) ?? undefined;
 }
 export function labelOf(named) {
+  $checkWhole(checkNamed, named, "labelOf(named)", "nullish");
+  return labelOf$(named);
+}
+
+function labelOf$(named) {
   return named?.label ?? "none";
 }
 // Not where the fallback is a value: `?.` would give `undefined`.
 export function labelOrElse(named) {
+  $checkWhole(checkNamed, named, "labelOrElse(named)", "nullish");
+  return labelOrElse$(named);
+}
+
+function labelOrElse$(named) {
   return named != null ? named.label : "none";
 }
 export function report() {
   let out = "";
   for (const n of [0, 4, 5, 8]) {
-    const value = options(n);
-    const value$1 = moreOptions(n);
+    const value = options$(n);
+    const value$1 = moreOptions$(n);
     out += `(${value[0]}, ${value[1]}, ${value[2]}, ${value[3] == null ? "None" : `Some(${value[3]})`}, ${value[4] == null ? "None" : `Some(${value[4]})`}, ${value[5]}) (${$debugStr(value$1[0])}, ${$debugStr(value$1[1])}, ${value$1[2] == null ? "None" : `Some(${value$1[2]})`}, ${value$1[3]}, ${value$1[4]})\n`;
   }
   for (const c of ["1", "2", "x"]) {
-    const value = results(c);
+    const value = results$(c);
     out += `(${$debugStr(value[0])}, ${$debugStr(value[1])}, ${value[2]}, ${value[3]}, ${value[4] == null ? "None" : `Some(${$debugStr(value[4])})`}, ${value[5]})\n`;
   }
   for (const n of [0, 5]) {
-    const value = iters(n);
-    const value$1 = consumers(n);
-    out += `([${value[0].join(", ")}], [${value[1].join(", ")}], [${value[2].map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}], [${value[3].join(", ")}], [${value[4].join(", ")}], [${value[5].join(", ")}]) (${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}, ${value$1[2]}, ${value$1[3] == null ? "None" : `Some(${value$1[3]})`}, ${value$1[4] == null ? "None" : `Some(${value$1[4]})`}, ([${value$1[5][0].join(", ")}], [${value$1[5][1].join(", ")}])) ${((tuple) => `(${tuple[0]}, [${tuple[1].join(", ")}], ${tuple[2]}, [${tuple[3].map((item) => `[${item.join(", ")}]`).join(", ")}], [${tuple[4].map((item) => `[${item.join(", ")}]`).join(", ")}], [${tuple[5].join(", ")}])`)(vecs(n))}\n`;
-    out += `[${joined([1, n], (n + 1) >>> 0).join(", ")}]\n`;
-    const value$2 = bumped(n > 0, [1, n]);
+    const value = iters$(n);
+    const value$1 = consumers$(n);
+    out += `([${value[0].join(", ")}], [${value[1].join(", ")}], [${value[2].map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}], [${value[3].join(", ")}], [${value[4].join(", ")}], [${value[5].join(", ")}]) (${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}, ${value$1[2]}, ${value$1[3] == null ? "None" : `Some(${value$1[3]})`}, ${value$1[4] == null ? "None" : `Some(${value$1[4]})`}, ([${value$1[5][0].join(", ")}], [${value$1[5][1].join(", ")}])) ${((tuple) => `(${tuple[0]}, [${tuple[1].join(", ")}], ${tuple[2]}, [${tuple[3].map((item) => `[${item.join(", ")}]`).join(", ")}], [${tuple[4].map((item) => `[${item.join(", ")}]`).join(", ")}], [${tuple[5].join(", ")}])`)(vecs$(n))}\n`;
+    out += `[${joined$([1, n], (n + 1) >>> 0).join(", ")}]\n`;
+    const value$2 = bumped$(n > 0, [1, n]);
     out += `${value$2 == null ? "None" : `Some([${value$2.join(", ")}])`}\n`;
-    const value$3 = shifted(n, [1, n]);
+    const value$3 = shifted$(n, [1, n]);
     out += `${value$3 == null ? "None" : `Some([${value$3.join(", ")}])`}\n`;
     const named = { name: n > 0 ? String(n) : undefined, label: `#${n}` };
-    const value$4 = nameOf(named);
-    const value$5 = nameOf();
+    const value$4 = nameOf$(named);
+    const value$5 = nameOf$();
     out += `${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}\n`;
-    const value$6 = otherName(undefined, named);
-    const value$7 = otherName(n, named);
+    const value$6 = otherName$(undefined, named);
+    const value$7 = otherName$(n, named);
     out += `${value$6 == null ? "None" : `Some(${$debugStr(value$6)})`} ${value$7 == null ? "None" : `Some(${$debugStr(value$7)})`}\n`;
-    out += `${$debugStr(labelOf(named))} ${$debugStr(labelOf())}\n`;
-    out += `${$debugStr(labelOrElse(named))} ${$debugStr(labelOrElse())}\n`;
+    out += `${$debugStr(labelOf$(named))} ${$debugStr(labelOf$())}\n`;
+    out += `${$debugStr(labelOrElse$(named))} ${$debugStr(labelOrElse$())}\n`;
   }
   return out;
 }

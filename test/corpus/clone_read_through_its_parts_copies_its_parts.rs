@@ -1,3 +1,4 @@
+//@ library-differs
 // A clone read only through its fields is never a value JS gets whole
 // (#2408, ADR 1197): `let (node, depth) = stack[at].clone()` of an
 // `(Rc<Node>, usize)`, whose `Rc` reaches JS in the `Vec` returned, copies

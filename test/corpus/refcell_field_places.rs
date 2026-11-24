@@ -1,4 +1,5 @@
 //@ run-pass
+//@ library-differs
 // A struct's `RefCell` field holds its value by its declaration, as JS
 // that makes the object writes it, whatever else has its type (ADR 0863,
 // amended): a generic struct's `RefCell<T>`, borrowed while code that may

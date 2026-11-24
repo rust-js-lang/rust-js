@@ -11,6 +11,7 @@ import { dirname, join } from "node:path";
 import { runSync } from "./child";
 import { compileJs, compileJsLibrary, node, runJs } from "./programs";
 import { buildCompiler, compiler, fixture, root, run, stdDir } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -80,17 +81,17 @@ test("a rust-js app compiles a library from npm into its package, and imports it
   const at = join(dir, "node_modules", "@acme", "greet");
   packed(lib, at, cpSync);
   // Built by another rust-js than the app's, its JS isn't what the app's writes.
-  writeFileSync(join(at, "src", "lib.js"), `${readFileSync(join(at, "src", "lib.js"), "utf8")}// an older rust-js's\n`);
+  writeFileSync(join(at, "src", "lib.js"), `${withoutBoundary(readFileSync(join(at, "src", "lib.js"), "utf8"))}// an older rust-js's\n`);
   const built = build(dir);
   expect(built.stderr).toBe("");
   expect(built.code).toBe(0);
-  const js = readFileSync(join(dir, "src", "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "src", "lib.js"), "utf8"));
   expect(js).toContain('import { Greeting } from "@acme/greet";\nimport * as Greet from "@acme/greet";\n');
   expect(js).not.toContain("node_modules");
-  expect(readFileSync(join(at, "src", "lib.js"), "utf8")).toBe(readFileSync(join(lib, "src", "lib.js"), "utf8"));
+  expect(withoutBoundary(readFileSync(join(at, "src", "lib.js"), "utf8"))).toBe(withoutBoundary(readFileSync(join(lib, "src", "lib.js"), "utf8")));
   expect(welcome(dir)).toBe("Hello, Ada!");
   // What's in `node_modules` isn't the app's to commit: `--check` is of its own.
-  writeFileSync(join(at, "src", "lib.js"), `${readFileSync(join(at, "src", "lib.js"), "utf8")}// an older rust-js's\n`);
+  writeFileSync(join(at, "src", "lib.js"), `${withoutBoundary(readFileSync(join(at, "src", "lib.js"), "utf8"))}// an older rust-js's\n`);
   const checked = build(dir, "--check");
   expect(checked.stderr).toBe("");
   expect(checked.code).toBe(0);
@@ -103,8 +104,8 @@ test("a library from pnpm's store is compiled into its package without changing 
   const dir = app("library-pnpm");
   const store = join(fixture("library-store"), "greet");
   packed(lib, store, cpSync);
-  writeFileSync(join(store, "src", "lib.js"), `${readFileSync(join(store, "src", "lib.js"), "utf8")}// an older rust-js's\n`);
-  const shipped = readFileSync(join(store, "src", "lib.js"), "utf8");
+  writeFileSync(join(store, "src", "lib.js"), `${withoutBoundary(readFileSync(join(store, "src", "lib.js"), "utf8"))}// an older rust-js's\n`);
+  const shipped = withoutBoundary(readFileSync(join(store, "src", "lib.js"), "utf8"));
   const at = join(dir, "node_modules", ".pnpm", "@acme+greet@1.0.0", "node_modules", "@acme", "greet");
   packed(store, at, linkSync);
   mkdirSync(join(dir, "node_modules", "@acme"));
@@ -112,13 +113,13 @@ test("a library from pnpm's store is compiled into its package without changing 
   const built = build(dir);
   expect(built.stderr).toBe("");
   expect(built.code).toBe(0);
-  const js = readFileSync(join(dir, "src", "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "src", "lib.js"), "utf8"));
   expect(js).toContain('import { Greeting } from "@acme/greet";\nimport * as Greet from "@acme/greet";\n');
   expect(js).not.toContain(".pnpm");
   expect(welcome(dir)).toBe("Hello, Ada!");
   // The store's file is as it was: the package's was replaced, not written through.
-  expect(readFileSync(join(store, "src", "lib.js"), "utf8")).toBe(shipped);
-  expect(readFileSync(join(at, "src", "lib.js"), "utf8")).toBe(readFileSync(join(lib, "src", "lib.js"), "utf8"));
+  expect(withoutBoundary(readFileSync(join(store, "src", "lib.js"), "utf8"))).toBe(shipped);
+  expect(withoutBoundary(readFileSync(join(at, "src", "lib.js"), "utf8"))).toBe(withoutBoundary(readFileSync(join(lib, "src", "lib.js"), "utf8")));
 }, 600_000);
 
 // A JS app has no Rust: it imports the JS the author built, as it is.
@@ -148,7 +149,7 @@ test("a library whose exports hide its JS is refused, and one exporting it is im
     const built = build(dir);
     if (ok) {
       expect(built.stderr).toBe("");
-      const js = readFileSync(join(dir, "src", "lib.js"), "utf8");
+      const js = withoutBoundary(readFileSync(join(dir, "src", "lib.js"), "utf8"));
       expect(js).toContain('import { Greeting } from "@acme/greet";\nimport * as Greet from "@acme/greet";\n');
       expect(js).toContain('import * as Loud from "@acme/greet/src/loud.js";\n');
       expect(welcome(dir)).toBe("Hello, ADA!");
@@ -178,7 +179,7 @@ test("a failed build says the app's errors, not what a library's crate warns of"
 // workspace of its is the app's.
 test("a library packed by npm is built into an app by each package manager's install", () => {
   const lib = library();
-  writeFileSync(join(lib, "src", "lib.js"), `${readFileSync(join(lib, "src", "lib.js"), "utf8")}// an older rust-js's\n`);
+  writeFileSync(join(lib, "src", "lib.js"), `${withoutBoundary(readFileSync(join(lib, "src", "lib.js"), "utf8"))}// an older rust-js's\n`);
   const work = realpathSync(mkdtempSync(join(tmpdir(), "rust-js libraries ")));
   const packedBy = runSync(["npm", "pack", "--pack-destination", work], lib, 120_000);
   expect(packedBy.stderr).not.toContain("ERR");
@@ -257,7 +258,7 @@ pub fn count() -> u32 {
   symlinkSync(kids, join(dir, "node_modules", "@acme", "kids"), "dir");
   mkdirSync(join(dir, "node_modules", "@rust-js"));
   symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"), "dir");
-  const js = () => readFileSync(join(dir, "dom", "src", "lib.js"), "utf8");
+  const js = () => withoutBoundary(readFileSync(join(dir, "dom", "src", "lib.js"), "utf8"));
   const ran = () => run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(join(dir, "dom", "src", "lib.js"))})).run());`]).trim();
   const built = () => build(join(dir, "dom"));
   // What native Rust prints of the two crates.
@@ -275,7 +276,7 @@ pub fn count() -> u32 {
   expect(js()).toContain('import * as Hooks from "../../kids/src/hooks.js";\n');
   // Each module as its own `use` names it: this one by the module's path,
   // each of its items, not by the package's name the root's names it by.
-  const byModule = readFileSync(join(dir, "dom", "src", "by_module.js"), "utf8");
+  const byModule = withoutBoundary(readFileSync(join(dir, "dom", "src", "by_module.js"), "utf8"));
   expect(byModule).toContain('import * as Client from "../../kids/src/client.js";\n');
   expect(byModule).toContain("  Client.bump();\n  return Client.count();\n");
   expect(byModule).not.toContain("@acme/kids");
@@ -366,12 +367,12 @@ test("an item a package's entry re-exports through its module's re-export is imp
   expect(nativeRun).toBe("15");
   const built = build(join(dir, "dom"));
   expect(built.stderr).toBe("");
-  const js = readFileSync(join(dir, "dom", "src", "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "dom", "src", "lib.js"), "utf8"));
   // By the package's name, through the root; by its module's file, in a
   // module whose Rust names it through that module.
   expect(js).toContain('import { halve, made, twice } from "@acme/kids";\n');
   expect(js).not.toContain("inner.js");
-  const byModule = readFileSync(join(dir, "dom", "src", "by_module.js"), "utf8");
+  const byModule = withoutBoundary(readFileSync(join(dir, "dom", "src", "by_module.js"), "utf8"));
   expect(byModule).toContain('import { made } from "../../kids/src/mid.js";\n');
   expect(existsSync(join(kids, "src", "lib.js"))).toBe(false);
   const ran = run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(join(dir, "dom", "src", "lib.js"))})).run());`]).trim();
@@ -409,7 +410,7 @@ pub fn run() -> String {
   mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
   symlinkSync(shared, join(dir, "node_modules", "shared"), "dir");
   symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"), "dir");
-  const js = () => readFileSync(join(dir, "dom", "src", "lib.js"), "utf8");
+  const js = () => withoutBoundary(readFileSync(join(dir, "dom", "src", "lib.js"), "utf8"));
   const ran = () => run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(join(dir, "dom", "src", "lib.js"))})).run());`]).trim();
   const built = () => build(join(dir, "dom"));
   const native = join(dir, "native");
@@ -542,7 +543,7 @@ fn a() -> u32 {
   writeFileSync(join(dir, "a.js"), "export function a() {\n  return 1;\n}\n");
   mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
   symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"), "dir");
-  const js = () => readFileSync(join(dir, "dom", "src", "lib.js"), "utf8");
+  const js = () => withoutBoundary(readFileSync(join(dir, "dom", "src", "lib.js"), "utf8"));
   const imported = () => [...js().matchAll(/^import .* from "(.*)";$/gm)].map((line) => line[1]);
   const ran = () => run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(join(dir, "dom", "src", "lib.js"))})).run());`]).trim();
   const built = () => build(join(dir, "dom"));
@@ -572,7 +573,7 @@ fn a() -> u32 {
   expect(imported()).toEqual(["shared/fragment", "./zeta.js", "../../a.js"]);
   const types = readFileSync(join(dir, "dom", "src", "lib.d.ts"), "utf8");
   expect(types).toContain('from "shared/fragment";\n');
-  expect(readFileSync(join(dir, "shared", "fragment.js"), "utf8")).toContain('from "../dom/src/level.js";\n');
+  expect(withoutBoundary(readFileSync(join(dir, "shared", "fragment.js"), "utf8"))).toContain('from "../dom/src/level.js";\n');
   expect(ran()).toBe(nativeRun);
   // `dom` exporting its modules too: the module in `shared` imports
   // `dom`'s by `dom`'s subpath, and `dom`'s own modules each other's by
@@ -581,7 +582,7 @@ fn a() -> u32 {
   symlinkSync(join(dir, "dom"), join(dir, "node_modules", "dom"), "dir");
   expect(built().stderr).toBe("");
   expect(imported()).toEqual(["shared/fragment", "./zeta.js", "../../a.js"]);
-  expect(readFileSync(join(dir, "shared", "fragment.js"), "utf8")).toContain('from "dom/src/level";\n');
+  expect(withoutBoundary(readFileSync(join(dir, "shared", "fragment.js"), "utf8"))).toContain('from "dom/src/level";\n');
   expect(ran()).toBe(nativeRun);
   // A pattern that keeps the subpath's extension, react-markup's
   // `"./src/*": "./src/*"`: by its subpath with the extension,
@@ -630,7 +631,7 @@ test("imports are in the order of the uses that make them, a binding's and a lib
   for (const name of ["server", "config"]) symlinkSync(join(dir, name), join(dir, "node_modules", name), "dir");
   symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"), "dir");
   const lib = join(dir, "dom", "src", "lib.js");
-  const imported = () => [...readFileSync(lib, "utf8").matchAll(/^import .* from "(.*)";$/gm)].map((line) => line[1]);
+  const imported = () => [...withoutBoundary(readFileSync(lib, "utf8")).matchAll(/^import .* from "(.*)";$/gm)].map((line) => line[1]);
   const loaded = () =>
     run([node ?? "node", "--input-type=module", "--eval", `const dom = await import(${JSON.stringify(lib)}); console.log(dom.run(), globalThis.loaded.join());`]).trim();
   writeFileSync(join(dir, "own.js"), noted("own", 3));
@@ -737,8 +738,8 @@ pub fn run() {
   // And whether it's `TrustedLen`, of which the impl's entry makes how std
   // collects it, where it knows its items (#1239).
   const fact = /TFromIteratorD\.fromIter\(\s*\$closing\(\$iter\(v\)[\s\S]*?\),\s*true,\s*\[4, 4\],/;
-  expect(readFileSync(join(dir, "items", "src", "lib.js"), "utf8")).toMatch(fact);
-  const app = readFileSync(join(dir, "app", "src", "lib.js"), "utf8");
+  expect(withoutBoundary(readFileSync(join(dir, "items", "src", "lib.js"), "utf8"))).toMatch(fact);
+  const app = withoutBoundary(readFileSync(join(dir, "app", "src", "lib.js"), "utf8"));
   expect(app).toContain("fromIter(\n      iter,\n      true,\n      [4, 4],");
   expect(app).toContain("function reqFromIteratorD_fromIter(iter, IIntoIterVecCollect,");
   const ran = runSync([node ?? "node", "--input-type=module", "--eval", `(await import(${JSON.stringify(join(dir, "app", "src", "lib.js"))})).run();`], dir, 30_000);

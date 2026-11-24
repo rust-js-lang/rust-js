@@ -7,6 +7,7 @@
 // up fails part way, what came before it kept (#1652, ADR 1135).
 
 import {
+  $brand,
   $byteLen,
   $debugStr,
   $encodeUtf8,
@@ -26,7 +27,7 @@ import {
 
 export const Small = {
   new(CAP) {
-    return { text: "" };
+    return $brand("writer_sink_const_generic#00ffc3cbd4e228f7::Small", { text: "" });
   },
 };
 

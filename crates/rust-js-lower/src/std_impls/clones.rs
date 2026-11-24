@@ -246,12 +246,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let name = self.recursive_fn(
                 (Kind::Clone, ty, &base),
                 &[Base::Named(&param)],
-                |cx, params, body| cx.clone_parts(params[0].clone(), ty, span, body),
+                |cx, params, body| cx.branded_clone_parts(params[0].clone(), ty, span, body),
                 out,
             )?;
             return Ok(Expr::call(Expr::var(&name), vec![place]));
         }
-        self.clone_parts(place, ty, span, out)
+        self.branded_clone_parts(place, ty, span, out)
     }
 
     /// How each entry of the map or set `ty` is cloned, of std's `(K, V)`,
@@ -399,6 +399,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             seen.push(part);
             self.holds(part, target, seen)
         })
+    }
+
+    /// `clone_parts`, of a type no other crate can make a value Rust made,
+    /// branded (#2403 2c, ADR 1196).
+    fn branded_clone_parts(&mut self, place: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let made = self.clone_parts(place, ty, span, out)?;
+        Ok(self.branded(ty, made))
     }
 
     /// `clone_value` of a `ty` that needs a copy, part by part: each part's

@@ -247,12 +247,26 @@ pub fn TodoList(TodoListProps { todos, tab }: TodoListProps) -> JSX::Element {
 
 ```jsx
 import { useCallback, useMemo, useState } from "react";
+import {
+  $checkArray,
+  $checkBool,
+  $checkOneOf,
+  $checkShape,
+  $checkStr,
+  $checks,
+} from "@rust-js/std";
+
+const checkTodo = /* @__PURE__ */ $checkShape(() => ({ text: $checkStr, done: $checkBool }));
 
 function filterTodos(todos, tab) {
   return todos.filter((todo) => tab === "All" || !todo.done);
 }
 
 export function TodoList({ todos, tab }) {
+  $checks("TodoList(props.todos)", todos, (value, where, none) =>
+    $checkArray(value, where, none, checkTodo),
+  );
+  $checkOneOf(tab, ["All", "Active"], "TodoList(props.tab)");
   const visible = useMemo(() => filterTodos(todos, tab), [todos, tab]);
   const [picked, setPicked] = useState(0);
   const pick = useCallback((n) => setPicked(n), []);
@@ -367,14 +381,20 @@ pub fn Lamp() -> JSX::Element {
 
 ```jsx
 import { useState } from "react";
+import { $checkBool } from "@rust-js/std";
 
 export function useToggle(initial) {
+  $checkBool(initial, "useToggle(initial)");
+  return useToggle$(initial);
+}
+
+function useToggle$(initial) {
   const [on, setOn] = useState(initial);
   return [on, () => setOn((on) => !on)];
 }
 
 export function Lamp() {
-  const [on, toggle] = useToggle(false);
+  const [on, toggle] = useToggle$(false);
   return <button onClick={toggle}>{on ? "On" : "Off"}</button>;
 }
 ```

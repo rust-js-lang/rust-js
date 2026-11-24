@@ -121,10 +121,12 @@ pub fn const_object(tcx: ty::TyCtxt<'_>, def_id: rustc_span::def_id::LocalDefId,
         && let Some(body) = tcx.hir_maybe_body_owned_by(def_id)
         && let rustc_hir::ExprKind::Struct(..) = body.value.kind
     {
-        // Its kept keys, a keyed enum's (#504), as they are.
-        let kept = std::mem::take(&mut layout.kept);
+        // Its kept keys, a keyed enum's (#504), and its brand, a sealed
+        // type's (#2403), as they are.
+        let (kept, brand) = (std::mem::take(&mut layout.kept), layout.brand.take());
         *layout = js::ObjectLayout {
             kept,
+            brand,
             ..literal_layout(tcx, body.value.span)
         };
     }
@@ -333,6 +335,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`written_order`), or as declared where it's `None`. Each field is
     /// `given` what MIR tells of its value, nothing where it's left out.
     pub fn adt_value(
+        &mut self,
+        ty: Ty<'tcx>,
+        variant_index: VariantIdx,
+        fields: Vec<Expr>,
+        given: &[Given],
+        order: Option<&[usize]>,
+        span: Span,
+    ) -> R<Expr> {
+        // A type no other crate can make, branded as Rust makes it (#2403
+        // step 2c, ADR 1196).
+        let made = self.made_adt_value(ty, variant_index, fields, given, order, span)?;
+        Ok(self.branded(ty, made))
+    }
+
+    /// `adt_value`'s value, before its brand.
+    fn made_adt_value(
         &mut self,
         ty: Ty<'tcx>,
         variant_index: VariantIdx,
@@ -767,7 +785,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => Shape::Object(Self::variant_keys(self.variant_fields(variant, adt_args))),
                 false => self.shape(ty),
             };
-            self.assembled(shape, tag, items)
+            // Of a type no other crate can make, branded (ADR 1196).
+            let made = self.assembled(shape, tag, items);
+            self.branded(ty, made)
         };
         Ok(Expr::arrow(
             params.into_iter().map(Into::into).collect(),

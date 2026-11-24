@@ -8,6 +8,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -60,7 +61,7 @@ pub fn logged(s: &str) -> Vec<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/\bbb\d+:/);
   expect(js).toContain(`  if (s.TAG === "Circle" || s.TAG === "Sphere") {`);
   expect(js).toContain(`  if (s.TAG === "Rect" || s.TAG === "Line") {`);
@@ -136,7 +137,7 @@ pub fn read_first(n: i32) -> (i32, Vec<i32>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   const chained = js.slice(js.indexOf("export function chained"), js.indexOf("export function run"));
   expect(chained).not.toMatch(/\bbb\d+:/);
   expect(chained).toContain("  let v = 0;\n");
@@ -170,7 +171,7 @@ pub fn grown() -> Vec<f64> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js.match(/r\.value \*= 10;/g)).toHaveLength(1);
   expect((await import(join(dir, "lib.js"))).grown()).toEqual([10, 2, 30]);
 });
@@ -202,7 +203,7 @@ pub fn sums() -> Vec<f64> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/\bbb\d+:/);
   expect((await import(join(dir, "lib.js"))).sums()).toEqual([3, 7, 7]);
 });
@@ -345,7 +346,7 @@ pub fn specifier(code: u8, log: &mut Vec<u8>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Of one arm of three constants and a `_`, a case of each.
   expect(js).toContain("  switch (code) {\n    case 79:\n    case 99:\n    case 100:\n      log.push(code);\n");
   expect(js).toContain(

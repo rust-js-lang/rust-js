@@ -6,10 +6,11 @@
 // `Display::fmt`, which a format before it runs. The later argument ran
 // after it, `${loud(5)} ${q.toString()} ${loud(6)}` (#1676).
 
-import { $main, $out, $printing, $sink } from "@rust-js/std";
+import { $checkI32, $main, $out, $printing, $sink } from "@rust-js/std";
 
 export class Position {
   constructor(row) {
+    $checkI32(row, "Position.new(row)");
     this.row = row;
   }
   toString() {

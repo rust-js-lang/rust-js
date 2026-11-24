@@ -10,6 +10,7 @@
 
 mod applied;
 mod borrow_checks;
+pub mod brands;
 mod expr_walk;
 mod helper_call;
 pub use helper_call::{HelperCall, HelperCallMut};
@@ -788,6 +789,11 @@ pub struct ObjectLayout {
     /// What its literal writes of each field, where it does: boxed, as
     /// few objects are a literal's, so an expression is no larger.
     pub fields: Option<Box<WrittenFields>>,
+    /// The brand's key of the value it makes, a type no other crate can
+    /// make (#2403, ADR 1196): a mark every pass reads past, printed as the
+    /// call that brands it, `$brand(key, { .. })`, only once the module is
+    /// prepared (`brands::printed`).
+    pub brand: Option<String>,
 }
 
 impl ObjectLayout {
@@ -820,6 +826,8 @@ pub struct ArrayLayout {
     /// is made, by index: what a `Drop` guard's inlined body reads of each
     /// (`drops::inlined`, ADR 0841's reader 8).
     pub nulled: Vec<usize>,
+    /// `ObjectLayout::brand`'s, of a tuple struct's literal.
+    pub brand: Option<String>,
 }
 
 /// What a struct literal writes of its fields (`ObjectLayout::fields`).

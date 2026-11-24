@@ -48,8 +48,8 @@ export const mutations: Mutation[] = [
     name: "storage-helper-unasked",
     breaks: "the helper a pair's storage writes with, `$assign`, isn't asked for where the pair is, so the compile refuses JS that reads an undeclared `$assign` (#968)",
     file: "crates/rust-js-program/src/link.rs",
-    find: "                for name in e.helper_name().into_iter().chain(stored) {\n",
-    replace: "                for name in e.helper_name().into_iter().chain(stored.filter(|_| false)) {\n",
+    find: "                for name in e.helper_name().into_iter().chain(stored).chain(branded) {\n",
+    replace: "                for name in e.helper_name().into_iter().chain(stored.filter(|_| false)).chain(branded) {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
   },
   {

@@ -9,6 +9,8 @@
 // #1109).
 
 import {
+  $checkCallback,
+  $checkI32,
   $collectDropping,
   $foldOf,
   $iter,
@@ -23,6 +25,7 @@ import {
 } from "@rust-js/std";
 
 export function cycled(items, f, label, IIterator, IClone, FClone, LDisplay) {
+  f = $checkCallback(f, "cycled(f)", $checkI32);
   console.log(`${LDisplay.fmt(label)}`);
   return $collectDropping(
     $roomForHint(

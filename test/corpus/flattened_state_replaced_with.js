@@ -8,7 +8,15 @@
 // another cell held across a `replace_with` whose function borrows that
 // cell, which `try_borrow_mut` sees, as Rust's does.
 
-import { $borrow, $debugStr, $main, $replaceWith, $tryBorrow, $unborrow } from "@rust-js/std";
+import {
+  $borrow,
+  $checkStr,
+  $debugStr,
+  $main,
+  $replaceWith,
+  $tryBorrow,
+  $unborrow,
+} from "@rust-js/std";
 
 function statusDebug_fmt(status) {
   if (status.status === "pending") {
@@ -22,6 +30,7 @@ function statusDebug_fmt(status) {
 
 export class Task {
   constructor(status, tries, value, name) {
+    $checkStr(name, "Task.new(name)");
     this.status = status;
     this.tries = tries;
     this.value = value;

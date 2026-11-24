@@ -12,6 +12,8 @@
 import {
   $catchUnwind,
   $catchable,
+  $checkBool,
+  $checkResult,
   $cleanup,
   $debugStr,
   $dispose,
@@ -211,17 +213,21 @@ function main() {
     },
   );
   try {
-    Reflect.set(
-      {
-        get value() {
-          return slot;
+    $checkResult(
+      Reflect.set(
+        {
+          get value() {
+            return slot;
+          },
+          set value(value) {
+            slot = value;
+          },
         },
-        set value(value) {
-          slot = value;
-        },
-      },
-      "value",
-      value,
+        "value",
+        value,
+      ),
+      "Reflect.set",
+      $checkBool,
     );
   } catch (error) {
     $cleanup(() => {

@@ -13,6 +13,7 @@ import { join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
 import { buildReact, compiler, fixture, root, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -24,7 +25,7 @@ async function compiled(name: string, source: string): Promise<{ js: string; lib
   writeFileSync(join(dir, "lib.rs"), source);
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")), dir };
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), lib: await import(join(dir, "lib.js")), dir };
 }
 
 // ReactFlightClient's parseModelString: `$D` is a date, `$n` a bigint, each
@@ -245,7 +246,7 @@ pub fn quiet(p: Promise<Option<u32>>) -> Promise<Option<u32>> {
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
   expect(built.stderr).not.toContain("warning");
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("    if (step.done === true) {\n      return;\n    }\n");
   expect(js).toContain("    return reader\n      .read()\n      .then((step) => Reader.progress(reader, step))\n      .catch((e) => Reader.error(reader, e));\n");
   writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
@@ -295,7 +296,7 @@ pub fn rethrow(value: Option<&Unknown>) {
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
   expect(built.stderr).not.toContain("warning");
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  if (typeof iterator.throw === "function") {\n    iterator.throw(reason).then(noop, noop);\n    return true;\n  }\n');
   expect(js).toContain("iterator.throw().then(");
   expect(js).toContain("  throw value;\n");
@@ -359,7 +360,7 @@ pub fn collect(iterable: &AsyncIterable<f64>) -> Promise<Vec<f64>> {
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
   expect(built.stderr).not.toContain("warning");
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const iterator = iterable[Symbol.asyncIterator]();\n");
   writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
 async function* counted() {

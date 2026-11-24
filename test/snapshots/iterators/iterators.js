@@ -6,6 +6,11 @@
 
 import {
   $byteLen,
+  $checkArray,
+  $checkI32,
+  $checkStr,
+  $checkU32,
+  $checks,
   $cmp,
   $lazyRange,
   $max,
@@ -17,15 +22,18 @@ import {
 } from "@rust-js/std";
 
 export function squares(n) {
+  $checkU32(n, "squares(n)");
   $roomFor(n, 4);
   return Array.from({ length: n }, (_, i) => Math.imul(i, i) >>> 0);
 }
 
 export function evens(v) {
+  $checks("evens(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   return v.filter((x) => x % 2 === 0);
 }
 
 export function stats(v) {
+  $checks("stats(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   const positive = v.filter((x) => x > 0).length;
   const sum = v.reduce((a, b) => (a + b) | 0, 0);
   const anyNegative = v.some((x) => x < 0);
@@ -36,16 +44,23 @@ export function stats(v) {
 }
 
 export function extremes(v) {
+  $checks("extremes(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   return [$max(v), $min(v)];
 }
 
 export function indexed(words) {
+  $checks("indexed(words)", words, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   return words.map((w, i) => `${i}:${w}`);
 }
 
 // Whether a word is as long as where it is, and the first long one's
 // place: a `find` keeps its pairs, which its `map` takes apart.
 export function placed(words) {
+  $checks("placed(words)", words, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   const fits = words.some((w, i) => $byteLen(w) === i);
   const find = words.map((x, i) => [i, x]).find(([i, w]) => $byteLen(w) > (2 + i) >>> 0);
   const long = find?.[0];
@@ -53,35 +68,46 @@ export function placed(words) {
 }
 
 export function middle(v) {
+  $checks("middle(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   return v.slice(1).slice(0, 2).toReversed();
 }
 
 export function nonEmpty(words) {
+  $checks("nonEmpty(words)", words, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   return words.reduce((count, w) => (w === "" ? count : (count + 1) >>> 0), 0);
 }
 
 export function shouted(words) {
+  $checks("shouted(words)", words, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   return words.map((w) => $toUppercase(w)).join("-");
 }
 
 export function backwards(s) {
+  $checkStr(s, "backwards(s)");
   return Array.from(s).toReversed().join("");
 }
 
 /** `collect` makes a new `Vec`: sorting it leaves the original as it was. */
 export function sortedCopy(v) {
+  $checks("sortedCopy(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   const copy = v.slice();
   copy.sort((a, b) => a - b);
   return [v, copy];
 }
 
 export function sorted(v) {
+  $checks("sorted(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   const w = v.slice();
   w.sort((a, b) => a - b);
   return w;
 }
 
 export function descending(v) {
+  $checks("descending(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   const w = v.slice();
   w.sort((a, b) => $cmp(b, a));
   return w;
@@ -89,6 +115,7 @@ export function descending(v) {
 
 /** By the last digit; stable, so ties keep their order, as in Rust. */
 export function byLastDigit(v) {
+  $checks("byLastDigit(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   const w = v.slice();
   const key = (x) => (x % 10) | 0;
   w.sort((a, b) => $cmp(key(a), key(b)));
@@ -96,6 +123,9 @@ export function byLastDigit(v) {
 }
 
 export function sortedWords(words) {
+  $checks("sortedWords(words)", words, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   const w = words.slice();
   w.sort($cmp);
   w.reverse();
@@ -104,12 +134,16 @@ export function sortedWords(words) {
 
 /** Two keys: `then_with`. */
 export function byLengthThenName(words) {
+  $checks("byLengthThenName(words)", words, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   const w = words.slice();
   w.sort((a, b) => $cmp(a === "", b === "") || $cmp(a, b));
   return w;
 }
 
 export function compare(a, b) {
+  $checks("compare(a, b)", a, $checkI32, b, $checkI32);
   switch ($cmp(a, b)) {
     case -1:
       return -1;
@@ -121,6 +155,7 @@ export function compare(a, b) {
 }
 
 export function bigger(a, b) {
+  $checks("bigger(a, b)", a, $checkU32, b, $checkU32);
   return [Math.max(a, b), Math.min(a, b)];
 }
 
@@ -129,6 +164,7 @@ export function bigger(a, b) {
  * and `Not::not`: in JS, the operators.
  */
 export function negated(v) {
+  $checks("negated(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   const positive = v.map((x) => x > 0);
   return [v.map((x) => -x | 0), positive.map((p) => !p)];
 }
@@ -138,6 +174,7 @@ export function negated(v) {
  * iterator.
  */
 export function inclusive(n) {
+  $checkU32(n, "inclusive(n)");
   let total = 0;
   for (let i = 1; i <= n; i++) {
     total = (total + i) >>> 0;
@@ -154,6 +191,7 @@ export function inclusive(n) {
 
 /** An `Ordering` is -1, 0 or 1 already, so `as` changes nothing. */
 export function orderNumber(a, b) {
+  $checks("orderNumber(a, b)", a, $checkI32, b, $checkI32);
   return [$cmp(a, b), $cmp(a, b) & 255];
 }
 //# sourceMappingURL=iterators.js.map

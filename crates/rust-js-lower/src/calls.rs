@@ -612,10 +612,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // that name, that function's anywhere, by the name a module imports
         // it by, `closeFlight` (#566).
         let def_id = self.forwarded_fn(def_id);
+        // A split function's body, which a Rust call calls past the checks
+        // its JS entry makes (#2403 step 2b(a), ADR 1193).
+        // Not in a function that only passes its parameters on to it, which
+        // its module re-exports in its place (rd575, ADR 1064): its call is
+        // the entry's, the one the re-export names.
+        let forwarder = self.forwards_to_a_checked_function(self.item, self.frame.thir);
+        // Through its module's namespace where the path names it so,
+        // `People.fullName$`, as its entry is read (rd114); else by its name.
+        let unchecked = (copy.is_none() && !forwarder)
+            .then(|| {
+                (named.and_then(|named| self.unchecked_named(def_id, named))).or_else(|| self.unchecked_ref(def_id))
+            })
+            .flatten();
         let callee = match (copy, named) {
+            _ if let Some(unchecked) = unchecked => unchecked,
             (_, Some(named)) => self.named_fn_ref(def_id, copy, named),
             (Some(_), None) => self.own_fn_ref(def_id, copy),
             (None, None) => self.fn_ref(def_id),
+        };
+        // A split namespace's method's body, `Perms.fromBitsRetain$` (#2403).
+        let callee = match copy.is_none() && !forwarder {
+            true => self.namespaced(def_id, callee),
+            false => callee,
         };
         match (crate::classes::member(self.tcx, def_id), callee.kind) {
             (Some(crate::classes::Member::Constructor), js::ExprKind::Member(class, _)) => {

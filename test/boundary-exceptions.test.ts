@@ -11,6 +11,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -21,7 +22,8 @@ async function compiled(name: string, source: string): Promise<{ js: string; lib
   const dir = fixture(`boundary-${name}`);
   writeFileSync(join(dir, "lib.rs"), source);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")) };
+  // Its JS as a test of how its calls throw reads it, without the checks of what JS gives it (#2403).
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), lib: await import(join(dir, "lib.js")) };
 }
 
 const g = globalThis as Record<string, unknown>;

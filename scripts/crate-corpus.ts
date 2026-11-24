@@ -298,10 +298,15 @@ export function declarationOf(text: string, name: string): string | undefined {
 }
 
 /** What a snapshot of `crate`'s `file`, the functions `names`, says: a
- * header naming them and how it's written, then each, cut from `text`. */
+ * header naming them and how it's written, then each, cut from `text`, a
+ * brand's key of no crate hash. */
 function snapshotOf(crate: string, file: string, names: string[], text: string): { snapshot: string; missing: string[] } {
   const missing: string[] = [];
-  const cut = names.map((name) => declarationOf(text, name) ?? (missing.push(name), ""));
+  // A brand's key without its crate's hash, `"itertools#<hash>::adaptors::PutBack"`:
+  // the hash is Cargo's build metadata's, which each compiler moves, never
+  // the code's (#2403, ADR 1196).
+  const unhashed = (js: string) => js.replace(/("[\w-]+)#[0-9a-f]{8,}(::)/g, "$1#<hash>$2");
+  const cut = names.map((name) => unhashed(declarationOf(text, name) ?? (missing.push(name), "")));
   const header = `// ${crate}'s ${file}: ${names.join(", ")}, as scripts/crate-corpus.ts's \`snapshotted\` lists them.\n// \`BLESS=1 bun scripts/crate-corpus.ts --check ${crate.split("@")[0]}\` writes it.\n`;
   return { snapshot: `${header}\n${cut.join("\n\n")}\n`, missing };
 }

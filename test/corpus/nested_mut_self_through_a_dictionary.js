@@ -9,7 +9,16 @@
 // is (#686). Of an object's impl, a number's, a generic impl's and a
 // generic impl's own bound. (A default method's call of one is #690's.)
 
-import { $assign, $cellOf, $live, $main, $traitImpl, $unwindsOn } from "@rust-js/std";
+import {
+  $assign,
+  $brand,
+  $cellOf,
+  $checkBool,
+  $live,
+  $main,
+  $traitImpl,
+  $unwindsOn,
+} from "@rust-js/std";
 
 export const clicksDebug = { fmt: clicksDebug_fmt };
 
@@ -333,6 +342,11 @@ export function bothOf(p, q, PPick) {
 }
 
 export function firstOf(p, q, mine, PPick) {
+  $checkBool(mine, "firstOf(mine)");
+  return firstOf$(p, q, mine, PPick);
+}
+
+function firstOf$(p, q, mine, PPick) {
   const r = PPick.first(p, q, mine);
   return r != null && PPick.pick(r);
 }
@@ -341,10 +355,11 @@ $main(main);
 
 function main() {
   const u32Debug = { fmt: (value) => String(value) };
-  const clone = { clone: (value) => ({ ...value }) };
-  const a = { n: 1 };
-  const b = { n: 2 };
-  console.log(`${go($cellOf(a), $cellOf(b), clicksPick, clone, clicksDebug)}`);
+  const a = $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", { n: 1 });
+  const b = $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", { n: 2 });
+  console.log(
+    `${go($cellOf(a), $cellOf(b), clicksPick, { clone: (value) => $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", { ...value }) }, clicksDebug)}`,
+  );
   console.log(`${clicksDebug_fmt(a)} ${clicksDebug_fmt(b)}`);
   let x = 5;
   let y = 7;
@@ -355,26 +370,35 @@ function main() {
   y = q.value;
   console.log(`${value}`);
   console.log(`${x} ${y}`);
-  let h = { t: { n: 3 } };
-  let k = { t: { n: 4 } };
+  let h = { t: $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", { n: 3 }) };
+  let k = { t: $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", { n: 4 }) };
   console.log(
     `${go(
       $cellOf(h),
       $cellOf(k),
       holderPick(clicksPick),
-      { clone: (value) => ({ ...value, t: { ...value.t } }) },
+      {
+        clone: (value) => ({
+          ...value,
+          t: $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", {
+            ...value.t,
+          }),
+        }),
+      },
       holderDebug(clicksDebug),
     )}`,
   );
   console.log(`${holderDebug_fmt(h, clicksDebug)} ${holderDebug_fmt(k, clicksDebug)}`);
   h = { t: 3 };
   k = { t: 4 };
-  console.log(`${go($cellOf(h), $cellOf(k), holderPick(u32Pick), clone, holderDebug(u32Debug))}`);
-  console.log(`${holderDebug_fmt(h, u32Debug)} ${holderDebug_fmt(k, u32Debug)}`);
-  const c = { n: 1 };
-  const d = { n: 0 };
   console.log(
-    `${picked($cellOf(c), $cellOf(d), clicksPick)} ${bothOf(c, $cellOf(d), clicksPick)} ${firstOf($cellOf(c), $cellOf(d), false, clicksPick)} ${clicksDebug_fmt(c)} ${clicksDebug_fmt(d)}`,
+    `${go($cellOf(h), $cellOf(k), holderPick(u32Pick), { clone: (value) => ({ ...value }) }, holderDebug(u32Debug))}`,
+  );
+  console.log(`${holderDebug_fmt(h, u32Debug)} ${holderDebug_fmt(k, u32Debug)}`);
+  const c = $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", { n: 1 });
+  const d = $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", { n: 0 });
+  console.log(
+    `${picked($cellOf(c), $cellOf(d), clicksPick)} ${bothOf(c, $cellOf(d), clicksPick)} ${firstOf$($cellOf(c), $cellOf(d), false, clicksPick)} ${clicksDebug_fmt(c)} ${clicksDebug_fmt(d)}`,
   );
 }
 //# sourceMappingURL=case.js.map

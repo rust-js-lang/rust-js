@@ -1,3 +1,4 @@
+//@ library-differs
 // A guarded arm whose body is only an `if let`, `4 if ready => { if let
 // Some(i) = x { .. } }`, breaks once, after its `if`, as a person writes
 // it: `if (x != null) { log.push(x); } break;`, not a `break;` in the `if`

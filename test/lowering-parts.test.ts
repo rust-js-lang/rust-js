@@ -8,6 +8,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -89,7 +90,7 @@ pub fn matched(point: &Labeled) -> f64 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function resolved(children) {
   const lazy = children;
   const payload = lazy._payload;
@@ -156,7 +157,7 @@ pub fn is_hidden(node: &Node) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const instance = node.stateNode;\n  if (instance != null && !(instance._visibility & 1)) {\n");
   const lib = await import(join(dir, "lib.js"));
   const hidden = [{ stateNode: null }, { stateNode: { _visibility: 1 } }, { stateNode: { _visibility: 2 } }];
@@ -201,7 +202,7 @@ pub fn next(child: u32) -> [bool; 3] {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("function findNextSibling(child) {\n");
   expect(js).toContain("function namedToo(child, a) {\n");
   expect(js).toContain("export function exported(child, _, _$1) {\n");
@@ -256,7 +257,7 @@ pub fn first_of_pair(n: f64) -> f64 {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(
     "  if (completedSegments.borrows < 0) {\n    $alreadyMutablyBorrowed(\"lib.rs:13:57\");\n  }\n  const contentSegment = completedSegments[0];\n  return contentSegment;\n",
   );

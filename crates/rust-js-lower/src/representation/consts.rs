@@ -429,7 +429,16 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
                 None => fields_of(&children()?)?,
                 _ => all(&children()?)?,
             };
-            match variant.ctor_kind() {
+            // A type no other crate can make, whose JS is its own object:
+            // rustc's value of it, branded as where Rust makes it, never its
+            // initializer, which a use in another module would read the
+            // private items of, or a namespace's own constant its namespace
+            // before it's made (#2403 step 2c, ADR 1196).
+            let brand = (!adt.repr().transparent()
+                && !crate::recognition::is_std_crate(tcx, adt.did())
+                && crate::declarations::contract::sealed(tcx, adt.did()))
+            .then(|| crate::boundary::brands::brand_key_of(tcx, adt.did()));
+            let made = match variant.ctor_kind() {
                 Some(CtorKind::Const) => Some(
                     crate::bindings::unit_value(tcx, adt.did())
                         .map_or_else(Expr::js_undefined, crate::bindings::UnitValue::expr),
@@ -455,7 +464,15 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
                         })
                         .collect(),
                 )),
-            }
+            };
+            made.map(|mut made| {
+                match &mut made.kind {
+                    js::ExprKind::Object(_, layout) => layout.brand = brand,
+                    js::ExprKind::Array(_, layout) => layout.brand = brand,
+                    _ => {}
+                }
+                made
+            })
         }
         _ => None,
     }

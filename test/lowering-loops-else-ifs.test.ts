@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -132,7 +133,7 @@ pub fn extractSectionedRoutes(routes: &[RouteItem], baseUrl: &str) -> Vec<Sectio
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   // Its comment before the `else`, as upstream has it (ADR 0444, amended).
   expect(js).toContain("      }\n    }\n    // Single page without children\n    else if (route.title != null && route.path != null) {\n");
   // Nor a \`continue\` where the body ends anyway.
@@ -152,11 +153,12 @@ pub fn extractSectionedRoutes(routes: &[RouteItem], baseUrl: &str) -> Vec<Sectio
 test("react.dev's llms.txt groups its routes with an else-if at the loop's end", async () => {
   const dir = fixture("mir-grouped-routes");
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case, dead_code)]
+// Data JS gives, its fields its own: no type only Rust makes (ADR 1196).
 pub struct RouteItem {
-    title: Option<String>,
-    path: Option<String>,
-    routes: Option<Vec<RouteItem>>,
-    has_section_header: Option<bool>,
+    pub title: Option<String>,
+    pub path: Option<String>,
+    pub routes: Option<Vec<RouteItem>>,
+    pub has_section_header: Option<bool>,
 }
 
 pub struct Page {
@@ -236,7 +238,7 @@ pub fn extractGroupedRoutes(routes: &[RouteItem], baseUrl: &str) -> Vec<SubGroup
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("        groups.push({\n          heading: route.title,\n          pages,\n        });\n      }\n    }\n    // Single page without children - group under its own heading\n    else if (route.title != null && route.path != null) {\n");
   expect(js).not.toContain("\n    if (route.title != null && route.path != null) {");
   const lib = await import(join(dir, "mir.js"));
@@ -291,7 +293,7 @@ pub fn ends(lines: &[&str], inline_decorators: Vec<InlineDecorator>) -> Vec<(u32
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("    decoratorEnds.set(decoratorEnd, decorator.className);\n  }\n");
   expect(js).not.toContain("continue;");
   const lib = await import(join(dir, "mir.js"));

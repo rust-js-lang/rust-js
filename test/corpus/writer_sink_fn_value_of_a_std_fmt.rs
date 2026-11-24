@@ -1,3 +1,4 @@
+//@ library-differs
 // A writer function given a `fn` pointer of a writer, its `Formatter`
 // given on to it, `self.format(f, fmt::Display::fmt)`: a std formatting
 // trait's `fmt` taken as a pointer, where a writer is shown into a writer,

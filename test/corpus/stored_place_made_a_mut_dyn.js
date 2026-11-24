@@ -7,7 +7,7 @@
 // 1044); a pair that assigned the place as it's given left `undefined` in
 // the field, and replaced the variable that holds the object.
 
-import { $debugStr, $live, $main, $traitImpl, $unwindsOn } from "@rust-js/std";
+import { $checkStr, $debugStr, $live, $main, $traitImpl, $unwindsOn } from "@rust-js/std";
 
 function statusDebug_fmt(status) {
   if (status.status === "pending") {
@@ -18,6 +18,7 @@ function statusDebug_fmt(status) {
 
 export class Task {
   constructor(status, tries, value, name) {
+    $checkStr(name, "Task.new(name)");
     this.status = status;
     this.tries = tries;
     this.value = value;

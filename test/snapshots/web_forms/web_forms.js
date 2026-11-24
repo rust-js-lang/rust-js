@@ -5,7 +5,7 @@
  * check in the generated JS.
  */
 
-import { $byteLen, $next, $unwrap } from "@rust-js/std";
+import { $byteLen, $checkStr, $next, $unwrap } from "@rust-js/std";
 
 export function forms() {
   const input = document.createElement("input");
@@ -28,6 +28,7 @@ export function forms() {
  * member as it is (ADR 0229): `decode(Some(&bytes), None)` is `d.decode(bytes)`.
  */
 export function roundTrip(text) {
+  $checkStr(text, "roundTrip(text)");
   const bytes = new TextEncoder().encode(text);
   const back = new TextDecoder("utf-8").decode(bytes);
   return [bytes.length, back];
@@ -38,6 +39,7 @@ export function roundTrip(text) {
  * itself, as TypeScript's union takes it.
  */
 export function bodies(url) {
+  $checkStr(url, "bodies(url)");
   const blob = new Blob();
   const response = new Response(blob);
   return [response, window.fetch(url)];
@@ -49,6 +51,7 @@ export function bodies(url) {
  * Blob([text, "!"])` and `navigator.clipboard.write(items)`.
  */
 export function copied(text, items) {
+  $checkStr(text, "copied(text)");
   const blob = new Blob([text, "!"]);
   return [blob, navigator.clipboard.write(items)];
 }
@@ -112,6 +115,7 @@ export function handlers(button) {
 
 /** A constructor of a class from a spec the crate didn't read before. */
 export function socket(url) {
+  $checkStr(url, "socket(url)");
   return new WebSocket(url);
 }
 

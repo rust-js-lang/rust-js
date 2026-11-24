@@ -6,7 +6,7 @@
 // tested, written in a field and whole; beside a plain cell of the state
 // whose borrows are counted.
 
-import { $borrow, $debugStr, $main, $tryBorrow, $unborrow } from "@rust-js/std";
+import { $borrow, $checkStr, $debugStr, $main, $tryBorrow, $unborrow } from "@rust-js/std";
 
 function statusDebug_fmt(status) {
   if (status.status === "pending") {
@@ -17,6 +17,7 @@ function statusDebug_fmt(status) {
 
 export class Task {
   constructor(status, tries, value, name) {
+    $checkStr(name, "Task.new(name)");
     this.status = status;
     this.tries = tries;
     this.value = value;

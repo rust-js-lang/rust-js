@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -30,7 +31,7 @@ pub async fn passed(text: &str) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return same(await setTimeout(0, text));");
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain("return same(await setTimeout(0, text));");
   expect(await (await import(join(dir, "lib.js"))).passed("text")).toBe("text");
 });
 
@@ -53,7 +54,7 @@ pub fn handler() -> Box<dyn Fn()> {
 `);
   const { copied } = await import(join(dir, "copy.js"));
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).not.toContain("return async () =>");
   const lib = await import(join(dir, "mir.js"));
   copied.length = 0;
@@ -76,7 +77,7 @@ pub async fn made() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("run(async () => 1)");
   const lib = await import(join(dir, "mir.js"));
   expect(await lib.made()).toBe(3);
@@ -158,7 +159,7 @@ pub async fn report() -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("await plain()}");
   expect(js).toContain("$unsettled(await make(5))");
   // One adopted never resolves: a second on, it's taken for hung.
@@ -177,7 +178,7 @@ test("an async fn's pattern parameter after another is taken apart where it's gi
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("export async function total(n, [a, b]) {\n");
   const lib = await import(join(dir, "mir.js"));
   expect(await lib.total(1, [2, 3])).toBe(6);
@@ -195,7 +196,7 @@ test("an async fn's parameter its body sets is the parameter, not a copy", async
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export async function later(n) {\n  n = (n + 1) >>> 0;\n  return n;\n}");
   expect(await (await import(join(dir, "lib.js"))).later(4)).toBe(5);
 });

@@ -278,4 +278,12 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
   },
+  {
+    name: "sealed-const-from-value-tree",
+    breaks: "a sealed struct's `const` is rustc's value unbranded, its literal no brand's mark, so Rust refuses its own `P::I` where a body reads it (#2403 step 2c)",
+    file: "crates/rust-js-lower/src/representation/consts.rs",
+    find: "                && crate::declarations::contract::sealed(tcx, adt.did()))\n",
+    replace: "                && false)\n",
+    tests: ["test/boundary-brands.test.ts", "-t", "a copy's and a const's"],
+  },
 ];

@@ -679,6 +679,23 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 .adt_value(ty, VariantIdx::ZERO, Vec::new(), &[], None, span)
                 .map(Some);
         }
+        // A type no other crate can make, of fields of no size,
+        // `DedupPred2CoalescePred(DedupEq)`: made of each one's value, so it's
+        // branded as Rust makes it, as rustc's value of it would make one
+        // unbranded (#2403, ADR 1196).
+        if let ty::Adt(adt, args) = ty.kind()
+            && adt.is_struct()
+            && self.brand_key(ty).is_some()
+        {
+            let mut fields = Vec::new();
+            for field in adt.non_enum_variant().fields.iter() {
+                let Some(value) = self.zero_sized_value(field.ty(self.tcx, args).skip_normalization(), span)? else {
+                    return Ok(None);
+                };
+                fields.push(value);
+            }
+            return self.adt_value(ty, VariantIdx::ZERO, fields, &[], None, span).map(Some);
+        }
         Ok(rust_js_lower::representation::zero_sized_js(
             self.tcx,
             &self.krate.flattened.keyed,

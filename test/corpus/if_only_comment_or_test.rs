@@ -1,3 +1,4 @@
+//@ library-differs
 // An `if` whose test is `a || b || c || (d && e)` and whose then-block is
 // only a comment keeps its test as written, one `if` with the comment and
 // an `else`, as React's clearHead writes it: not `if (a || b || c) { //

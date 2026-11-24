@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, installStd, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -61,7 +62,7 @@ pub fn has(context: &Context) -> bool {
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("    value,\n    // These are circular\n    renderer: null,\n    // Not yet named\n    label: null,\n");
   expect(js).toContain("export function reset(context) {\n  context.renderer = null;\n}");
   expect(js).toContain("export function set(context, renderer) {\n  context.renderer = renderer;\n}");
@@ -122,7 +123,7 @@ pub fn clear(transition: &Transition) -> bool {
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const current = {};\n  current.types = prev?.types ?? null;\n  return current;\n");
   expect(js).toContain("    transition.types = [ty];\n");
   expect(js).toContain("  transition.types = null;\n");
@@ -156,7 +157,7 @@ pub fn clear(slot: &Slot) {
   // One lent is the field's one cell, its `value` the property, its `None`
   // written `null`, whoever made the object (ADR 0863, amended).
   run([compiler, join(cell, "lib.rs"), "-o", join(cell, "lib.js")]);
-  expect(readFileSync(join(cell, "lib.js"), "utf8")).toContain('  return $fieldCell(slot, "held", true);\n');
+  expect(withoutBoundary(readFileSync(join(cell, "lib.js"), "utf8"))).toContain('  return $fieldCell(slot, "held", true);\n');
   const slots = await import(join(cell, "lib.js"));
   const slot = { held: 3 };
   const lent = slots.lent(slot);
@@ -191,7 +192,7 @@ pub fn drained(internal: &Internal, n: usize) -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("    internal.queue = null;\n");
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain("    internal.queue = null;\n");
   const lib = await import(join(dir, "lib.js"));
   const internal = { queue: [1] };
   expect([lib.drained(internal, 2), internal.queue]).toEqual([2, null]);
@@ -246,7 +247,7 @@ pub fn take_hidden(root: &mut FiberRoot, index: usize) -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("    transitionLanes: createLaneMap(null),\n");
   expect(js).toContain("] = null;\n");
   expect(js).not.toContain("= undefined;");
@@ -293,7 +294,7 @@ pub fn leaf(tag: u8) -> Fiber {
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  return {\n    tag,\n    child: null,\n    sibling: undefined,\n  };\n");
   const types = readFileSync(join(dir, "lib.d.ts"), "utf8");
   // Nullable, so there, whoever makes it (ADR 1072, amended); a plain
@@ -317,7 +318,7 @@ pub fn during(items: &RefCell<Vec<u32>>, f: &dyn Fn()) -> usize {
 }
 `);
   run([compiler, join(held, "lib.rs"), "-o", join(held, "lib.js")]);
-  expect(readFileSync(join(held, "lib.js"), "utf8")).toContain("$borrowMut(items");
+  expect(withoutBoundary(readFileSync(join(held, "lib.js"), "utf8"))).toContain("$borrowMut(items");
 });
 
 // React's lazy(): `const owner = null; .. owner: owner`. A `None` bound to a
@@ -375,7 +376,7 @@ pub fn copied() -> (Info, Option<&'static Unknown>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function leaked() {
   const owner = null;
   const info = {
@@ -435,7 +436,7 @@ pub fn reset_later(context: &Context) -> impl Fn() + '_ {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("    context.renderer = null;\n    context.previous = null;\n    context.plain = undefined;\n");
   const lib = await import(join(dir, "lib.js"));
   const context = lib.make();
@@ -538,7 +539,7 @@ pub fn copied_reset(context: &Context) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // The handle on the nullable field stores as the field does; the plain one as it's given.
   expect(js).toContain("      set value(value) {\n        context.renderer = value ?? null;\n      },");
   expect(js).toContain("      set value(value) {\n        context.plain = value;\n      },");
@@ -707,7 +708,7 @@ pub fn label(context: &mut Context, label: &'static str) {
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const context = {\n    value,\n    provider: null,\n  };\n  if (dev) {\n    context.renderer = null;\n  }");
   // Given an \`Option\` that may be \`None\`, it's stored as a nullable field's is, \`null\` for
   // \`None\`: there, as the literal writes it, never \`undefined\` (ADR 0810, amended).
@@ -827,7 +828,7 @@ pub fn lazy(n: Option<f64>) -> Lazy {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Across lines, as its literal is, and React's (ADR 0835).
   expect(js).toContain("  context.Provider = context;\n  context.Consumer = {\n    $$typeof: REACT_CONSUMER_TYPE,\n    _context: context,\n  };\n");
   expect(js).toContain("  context.Consumer = consumerOf(context);\n");
@@ -983,7 +984,7 @@ pub fn peeked_queue(internals: &Internals, queue: &Queue) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  internals.T = next;\n  internals.T = prevTransition;\n");
   expect(js).toContain("  const again = prevTransition;\n  internals.T = again;\n");
   expect(js).toContain("    prevTransition = other;\n  }\n  internals.T = prevTransition ?? null;\n}");
@@ -1082,7 +1083,7 @@ pub fn info(owner: Option<&js::Unknown>) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const option = info.source;\n  name = option != null ? nameOf(option) : null;");
   expect(js).toContain("  name = (option != null ? maybe(option) : undefined) ?? null;");
   expect(js).toContain("  const ownerName = owner ? nameOfOwner(owner) : null;\n");

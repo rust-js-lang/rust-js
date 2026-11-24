@@ -27,6 +27,7 @@ import {
   useSyncExternalStore,
   useTransition,
 } from "react";
+import { $checkI32, $checkResult } from "@rust-js/std";
 
 /** `use` a promise: Suspense shows the fallback until it resolves. */
 export function Greeting() {
@@ -46,7 +47,7 @@ export function Suspended() {
 export function Store() {
   const value = useSyncExternalStore(
     (notify) => globalThis.store.subscribe(notify),
-    () => globalThis.store.get(),
+    () => $checkResult(globalThis.store.get(), "globalThis.store.get", $checkI32),
   );
   const [pending, start] = useTransition();
   const [filter, setFilter] = useState(0);

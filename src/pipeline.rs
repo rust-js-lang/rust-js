@@ -10,6 +10,7 @@ mod crate_imports;
 mod field_reads;
 mod forwarders;
 mod holes;
+mod js_callable;
 mod load_cycles;
 mod packages;
 mod pass;
@@ -293,13 +294,16 @@ pub fn lower_crate<'tcx>(
     // What each module re-exports, decided once, before any is lowered: what
     // its JS writes, `export { one } from "./z.js"`, and its imports in the
     // load-order graph (`module_imports`, #295).
+    // And what each gives JS of the crate's, which what JS may call is of.
+    let mut reached_by: IndexMap<LocalModId, reexports::JsReached> = IndexMap::default();
     let mut reexported: IndexMap<LocalModId, _> = (modules.iter())
         .map(|&module| {
             let module_held = held.modules.get(&module).map_or(&[][..], Vec::as_slice);
             let default = default_exports::module_default(tcx, module, &fns, module_held);
             let from = (default.from, module_held);
             let made = (&fns, &foreign, &forwarded);
-            let reexports = reexports::reexports(tcx, module, made, &paths, from);
+            let reached = reached_by.entry(module).or_default();
+            let reexports = reexports::reexports(tcx, module, made, &paths, from, reached);
             (module, (default, reexports))
         })
         .collect();
@@ -318,8 +322,14 @@ pub fn lower_crate<'tcx>(
     // What each function's lowering found of drops, gathered in the order
     // they're lowered, lowered or not, then resolved (ADRs 0190, 0300).
     let mut drops_observed = drops::DropsObserved::default();
-    let ref_cells = crate_facts::Lazy::default();
+    let (ref_cells, split, checker_names) = (
+        crate_facts::Lazy::default(),
+        crate_facts::Lazy::default(),
+        Default::default(),
+    );
     let no_callbacks = IndexSet::default();
+    // What JS may call (#2403 lever (3), Tu's decision).
+    let js_reached = js_callable::js_reached(tcx, &places, js_modules, (&reached_by, &forwarders));
     // What runs where its module loads, which reads another module's
     // `const`s as their values where that module may load after its own
     // (`load_cycles`). A thread-local made where it's first used runs
@@ -412,6 +422,9 @@ pub fn lower_crate<'tcx>(
         named_expressions: &named_expressions,
         local_functions: &local_functions,
         forwarded: &forwarded,
+        split: &split,
+        checker_names: &checker_names,
+        js_reached: &js_reached,
         local_consts: &local_consts,
         struct_literals: &struct_literals,
         constructed: &constructed,
@@ -956,6 +969,17 @@ pub fn lower_crate<'tcx>(
     // A copy of a function another module calls, exported by its name (ADR
     // 0051, amended).
     copies::export(&js_given, &fns, &pass.copy_references, &mut pass.functions);
+    // Each checked function Rust calls, its JS entry and its body (#2403, ADR 1193).
+    let split = contexts::split_written(
+        &shared,
+        (&split, &bodies),
+        (&fns, &pass.unchecked_references),
+        (&mut pass.functions, &mut pass.namespaces),
+    );
+    // Each library function a module JS may call re-exports, unchecked by
+    // its own JS: that module's checked forwarder in its place (#2403 (Y)).
+    contexts::library_forwarders(&shared, &js_reached, &mut reexported, &mut pass);
+    let namespaced = contexts::library_namespaces(&shared, &js_reached, &mut reexported, &paths);
     let copy_edges: Vec<(LocalModId, DefId)> = (pass.copy_references.iter()).map(|&(from, id, _)| (from, id)).collect();
     let edges = (
         pass.references.iter().chain(copy_edges.iter()),
@@ -970,7 +994,13 @@ pub fn lower_crate<'tcx>(
     // (rd650).
     let through = reexports::imported_through(tcx, (&fns, &foreign));
     let imported_through = load_cycles::taken_through(through, &paths, &mut imports);
-    let copies = copies::imported(&js_given, &fns, &pass.copy_references);
+    let mut copies = copies::imported(&js_given, &fns, &pass.copy_references);
+    copies.extend(rust_js_lower::boundary::split::imported(
+        tcx,
+        split,
+        &fns,
+        &pass.unchecked_references,
+    ));
     let mut targets = crate_imports::of_crate(tcx, (&pass, &fns), copies, &imported_through);
     // What another module than its own calls, which stays a function.
     let called_elsewhere: IndexSet<DefId> = (pass.references.iter())
@@ -1036,7 +1066,11 @@ pub fn lower_crate<'tcx>(
                 (&fns, &foreign, &paths),
                 default_export,
                 &aliased_items,
-                (reexports, &sources),
+                (
+                    reexports,
+                    pass.forwarded_declared.swap_remove(&module).unwrap_or_default(),
+                    &sources,
+                ),
             );
             // A binding it holds, its `const` of what the binding reads (ADRs
             // 0622, 0633); not one it re-exports from another that holds it.
@@ -1078,7 +1112,9 @@ pub fn lower_crate<'tcx>(
             }
             let no_ref_cells = drops::RefCells::default();
             let ref_cells = ref_cells.get().unwrap_or(&no_ref_cells);
-            let aliases: Vec<(String, String)> = aliased_items.iter().map(|(_, names)| names.clone()).collect();
+            let aliases: Vec<(String, String)> = (aliased_items.iter().map(|(_, names)| names.clone()))
+                .chain(pass.forwarder_aliases.swap_remove(&module).unwrap_or_default())
+                .collect();
             let mut lowered = LoweredModule {
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),
@@ -1211,6 +1247,8 @@ pub fn lower_crate<'tcx>(
             }
         })
         .collect();
+    // Each module the crate writes in place of a library's namespace (#2536).
+    lowered.extend(namespaced);
     // What each module reads of another's variables (ADR 0270, amended).
     std_types::cell::crate_imported_variables(tcx, &fns, &variables, &mut lowered);
     // A library's trait method without a default given its caller's
@@ -1235,6 +1273,8 @@ pub fn lower_crate<'tcx>(
                     tcx,
                     (&fns, &exported, &internal_exports),
                     &library::Contracts {
+                        split,
+                        js_reached: &js_reached,
                         drop_params: &kept_drop_params,
                         elided: &library::elided_through_calls(tcx, all_bodies),
                         shown_params: &shown_params.params,

@@ -4,7 +4,16 @@
 // could itself look like `None`: with `T = ()` or `T = Option<i32>`, a
 // `Some(x)` is a box, so it's still `Some`.
 
-import { $pop, $some, $someAt, $someValue, $sortStable, $unwrap } from "@rust-js/std";
+import {
+  $checkBool,
+  $checkCallback,
+  $pop,
+  $some,
+  $someAt,
+  $someValue,
+  $sortStable,
+  $unwrap,
+} from "@rust-js/std";
 
 /** `Some` of each element, counted: with `T = ()`, `Some(())` must be `Some`. */
 export function countSome(xs) {
@@ -31,6 +40,11 @@ function countSomeBoxed(xs) {
 }
 
 export function pick(x, keep) {
+  $checkBool(keep, "pick(keep)");
+  return pick$(x, keep);
+}
+
+function pick$(x, keep) {
   if (keep) {
     return x;
   }
@@ -47,7 +61,7 @@ export function kept(xs) {
   let n = 0;
   for (let i = 0; i < xs.length; i++) {
     const x = xs[i];
-    if (pick(x, true) != null) {
+    if (pick$(x, true) != null) {
       n = (n + 1) >>> 0;
     }
   }
@@ -67,7 +81,12 @@ function keptBoxed(xs) {
 
 /** The value inside, taken out again: `unwrap_or`, `unwrap` and `map`. */
 export function innerOr(x, keep, fallback) {
-  return pick(x, keep) ?? fallback;
+  $checkBool(keep, "innerOr(keep)");
+  return innerOr$(x, keep, fallback);
+}
+
+function innerOr$(x, keep, fallback) {
+  return pick$(x, keep) ?? fallback;
 }
 
 function innerOrBoxed(x, keep, fallback) {
@@ -75,7 +94,7 @@ function innerOrBoxed(x, keep, fallback) {
 }
 
 export function unwrapped(x) {
-  return $unwrap(pick(x, true), "examples/generic_options.rs:39:19");
+  return $unwrap(pick$(x, true), "examples/generic_options.rs:39:19");
 }
 
 function unwrappedBoxed(x) {
@@ -83,7 +102,8 @@ function unwrappedBoxed(x) {
 }
 
 export function mapped(x, f) {
-  const option = pick(x, true);
+  $checkCallback(f, "mapped(f)");
+  const option = pick$(x, true);
   return option != null ? f(option) : undefined;
 }
 
@@ -94,7 +114,12 @@ function mappedBoxed(x, f) {
 
 /** `?` on an `Option<T>`. */
 export function tried(x, keep) {
-  const v = pick(x, keep);
+  $checkBool(keep, "tried(keep)");
+  return tried$(x, keep);
+}
+
+function tried$(x, keep) {
+  const v = pick$(x, keep);
   if (v == null) {
     return;
   }
@@ -164,6 +189,7 @@ function wrappedUnboxed(x) {
  * `undefined`.
  */
 export function sortWith(xs, compare, TSize, TStableSort) {
+  $checkCallback(compare, "sortWith(compare)");
   $sortStable(xs, (a, b) => compare(a, b) < 0, TStableSort, TSize);
   return xs;
 }
@@ -175,7 +201,12 @@ export function relayedUnit() {
 // A concrete `Option<Option<i32>>` is still an error (ADR 0030), so these
 // ask about the generic ones without making one.
 export function triedSome(x, keep) {
-  return tried(x, keep) != null;
+  $checkBool(keep, "triedSome(keep)");
+  return triedSome$(x, keep);
+}
+
+function triedSome$(x, keep) {
+  return tried$(x, keep) != null;
 }
 
 function triedSomeBoxed(x, keep) {
@@ -215,7 +246,7 @@ export function innerValues() {
   const a = innerOrBoxed(undefined, true, 7);
   const b = innerOrBoxed(3, false, 7);
   const c = unwrappedBoxed(undefined);
-  return [a, b, c, innerOr(5, true, 9)];
+  return [a, b, c, innerOr$(5, true, 9)];
 }
 
 export function mappedValues() {

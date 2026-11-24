@@ -122,6 +122,15 @@ react.dev's TopNav passes the same closure instead.
   (`semantics.md`, 65); held by the corpus case
   `btree_map_clone_of_an_inner_entry_names_the_leaf_line`; revisited if
   Campaign 5 compiles std's `BTreeMap` (#2513).
+- **A check of what JS gives Rust reads no getter**, the second case's, the
+  user's decision of #1908 and the lead's of 2026-11-24 (#2403): a check
+  reads an object's fields by their descriptors, so an accessor's value,
+  a class's `get` or `Object.defineProperty`'s, is left unchecked and read
+  once by the body, as Rust reads it; a `Proxy` is checked by what its
+  target holds. Results stay Rust's, read as often as Rust reads (ADR 1022);
+  only a value an accessor gives isn't checked. Listed in the guide's
+  differences (`semantics.md`, 66)
+  ([1194](1194-a-value-that-holds-others-is-checked-whole.md), amended).
 - **Each decision says which case it's in**, on a `Case:` line under its
   status, every case its parts are in, the first the main one; N where it
   decides no disagreement, tooling, bindings' shape or the output's

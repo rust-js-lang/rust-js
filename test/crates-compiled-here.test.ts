@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { buildCompiler, compiler, fixture, root, run } from "./support";
 import { chain, contract, counting, pairs, printed } from "./crates";
 import { node } from "./programs";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -20,7 +21,7 @@ beforeAll(buildCompiler, 600_000);
 // consumer changes, and isn't compiled again.
 test("a consumer that grows a library's boxed tree calls the library's method", () => {
   const out = chain(pairs, "tree", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain('import { Tree } from "../dep/lib.js";\nimport * as Dep from "../dep/lib.js";\n');
   // A read through a `Box` of what the library never changes copies none.
   expect(app).toContain("Dep.potSize(planter)");
@@ -32,8 +33,9 @@ test("a consumer that grows a library's boxed tree calls the library's method", 
 // armed for it, as it's framed (#1652).
 test("a library's writer given as a value is its import", () => {
   const out = chain(pairs, "library_writers_given_options", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
-  expect(app).toContain("  $writingInto(f, Joined.format, joined, quoted, options);\n");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
+  // The body of `quoted`, split (#2403, ADR 1193), by its own name, beside the local `quoted`.
+  expect(app).toContain("  $writingInto(f, Joined.format, joined, quoted$, options);\n");
 }, 300_000);
 
 // #1029: a closure a library's instance makes of a function rustc inlined
@@ -44,7 +46,7 @@ test("a library's writer given as a value is its import", () => {
 // them, is compiled here too, its closure carrying their drop.
 test("a closure an instance makes of an inlined function is placed where the instance is", () => {
   const out = chain(pairs, "closure_made_by_an_inlined_function", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain("function foldWith(it, f, init, g, dropF, dropG) {\n  const value$1 = joined(f, g, dropF, dropG);\n");
   expect(app).toContain("function joined(f, g, dropFnMut, dropFnMut$1) {\n  return $dropping(\n");
 }, 300_000);
@@ -58,13 +60,13 @@ test("a closure an instance makes of an inlined function is placed where the ins
 // one that compares none imports them.
 test("a library's functions that may merge what its consumer compares are compiled by that consumer", () => {
   const out = chain(pairs, "library_identities_kept_apart", ["dep", "app"]);
-  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  const dep = withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"));
   expect(dep).toContain("  const read = () => count.value;\n  const first = read;\n  const second = read;\n");
   expect(dep).toContain("  return { compute: (previous) => (previous != null ? getter(previous) : getter()) };\n");
   expect(dep).toContain("  const first = bump;\n  const second = bump;\n");
   expect(dep).toContain("  return [ping, ping];\n");
   expect(contract(out).merges_identities).toHaveLength(8);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain("  const first = { value: read, strong: 1, weak: 0 };\n  const second = { value: read, strong: 1, weak: 0 };\n");
   expect(app).toContain("\nfunction computed(getter) {\n  return { compute: (previous) => getter(previous) };\n}\n");
   expect(app).toContain("\nfunction doubled() {\n");
@@ -72,7 +74,7 @@ test("a library's functions that may merge what its consumer compares are compil
   expect(app).toContain("  const first = (by) => Counter.bump(counter, by);\n  const second = (by) => Counter.bump(counter, by);\n");
   expect(app).toContain('import { double, rcStableDeref, total } from "../dep/lib.js";');
   counting(out, "pub fn main() {\n    println!(\"{}\", (dep::doubled().compute)(Some(std::rc::Rc::new(2))));\n}\n");
-  const imports = readFileSync(join(out, "counting", "lib.js"), "utf8");
+  const imports = withoutBoundary(readFileSync(join(out, "counting", "lib.js"), "utf8"));
   expect(imports).toContain("  const node = Dep.doubled();\n");
   expect(imports).not.toContain("function doubled");
   // One that reads its library's private state is refused, saying why it's
@@ -90,8 +92,8 @@ test("a library's functions that may merge what its consumer compares are compil
 // the value it's given (ADR 0584, amended, rd62).
 test("a library's From impl nothing of its own calls is a consumer's to compile", () => {
   const out = chain(pairs, "from_impl_unused", ["dep", "app"]);
-  expect(readFileSync(join(out, "dep", "lib.js"), "utf8")).not.toContain("_from");
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"))).not.toContain("_from");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain("  const priority = 8;\n  const into = 32;\n");
   expect(app).not.toContain("_from");
 }, 300_000);
@@ -120,11 +122,11 @@ test("a library's function a consumer compiles is written where the consumer's c
 // copy where it gives one, and none of a number, its own copy.
 test("a library's Copy bound takes a copy only where one is given, and JS calls it as declared", () => {
   const out = chain(pairs, "copy_given", ["dep", "app"]);
-  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  const dep = withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"));
   expect(dep).toContain("export function createContext(defaultValue) {\n");
   expect(dep).toContain("    currentValue: defaultValue,\n");
   expect(dep).not.toContain("TCopy");
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain("\nfunction createContext(defaultValue, TCopy) {\n");
   expect(app).not.toMatch(/import \{[^}]*createContext/);
   // The copy it gives twice is one const at its top (ADR 0979).
@@ -158,15 +160,15 @@ test("a library's generic function is its program's, alone or a dependency, and 
   const out = chain(pairs, "program_form", ["dep", "app"]);
   const alone = fixture("program-form-alone");
   run([compiler, join(pairs, "program_form", "dep.rs"), "-o", join(alone, "lib.js"), "--", "--crate-name", "dep", "--crate-type=lib"]);
-  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  const dep = withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"));
   // The same but for its formatted types, which a library publishes, as a
   // consumer may write one into a writer a piece at a time, and a program
   // alone doesn't (ADR 1135).
   expect(dep).toContain("fmtInto: (f, value) => $writingInto(f, hourDisplay_fmt, value)");
-  expect(readFileSync(join(alone, "lib.js"), "utf8")).not.toContain("fmtInto");
+  expect(withoutBoundary(readFileSync(join(alone, "lib.js"), "utf8"))).not.toContain("fmtInto");
   expect(dep).toContain("export function createContext(defaultValue) {\n  return {\n    currentValue: defaultValue,\n");
   expect(dep).toContain("export function useState(initialState, dispatcher) {\n  dispatcher = resolveDispatcher(dispatcher);\n");
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain("\nfunction createContext(defaultValue, TCopy) {\n");
   expect(app).toContain("\nfunction useState(initialState, dispatcher, dropS) {\n");
   expect(app).toContain("\nfunction resolveDispatcher(dispatcher) {\n");
@@ -295,11 +297,11 @@ test("a library's function its consumer compiles is refused where it reads its l
 // method's is the library's own JS, the one a JS caller calls.
 test("a library's write through a dyn may fail, and one through a type parameter is its consumer's", () => {
   const out = chain(pairs, "library_dyn_writer_given_a_failing_one", ["dep", "app"]);
-  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  const dep = withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"));
   expect(dep).toContain("  const result = $writeTry(() => out.impl.writeAll(out, [120]));\n");
   expect(dep).toContain("export function joined(items, TDisplay) {\n  return items.map((item) => TDisplay.fmt(item)).join(\",\");\n}\n");
   const traits = chain(pairs, "library_trait_method_writer_given_a_failing_one", ["dep", "app"]);
-  expect(readFileSync(join(traits, "dep", "lib.js"), "utf8")).toContain(
+  expect(withoutBoundary(readFileSync(join(traits, "dep", "lib.js"), "utf8"))).toContain(
     "function dashRender_render(dash, out, WWrite, dropW) {\n  const written = $writeTry(() => WWrite.writeAll(out, [45]));\n",
   );
 }, 300_000);
@@ -312,7 +314,9 @@ test("a library's write through a dyn may fail, and one through a type parameter
 // knowing its hint.
 test("a library's generic sum given impls its export answers is imported, and given one that asks is compiled", () => {
   const out = chain(pairs, "library_generic_sum_given_impls_its_export_answers", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  // As it reads without the boundary: Rust's call is the split body's,
+  // `Dep.totalForAnyone$(..)` (#2403, ADR 1193).
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).not.toContain("function totalForAnyone(");
   expect(app).toContain("Dep.totalForAnyone([4, 5, 6], countSumU32)");
   expect(app).toContain("Dep.totalForAnyone([4, 5, 6], tallySumU32)");
@@ -330,7 +334,7 @@ test("a library's generic sum given impls its export answers is imported, and gi
 // #1180, and the program still compiles.
 test("a library that keeps no capacity has its functions compiled by a consumer that reads one", () => {
   const out = chain(pairs, "library_vecs_grown_where_no_capacity_is_kept", ["dep", "app"]);
-  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("function squaresTwice(n) {");
+  expect(withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"))).toContain("function squaresTwice(n) {");
   const thrown = join(root, "test", "crates", "thrown");
   expect(chain(thrown, "capacity_unknown_of_what_a_library_gives_back", ["dep", "app"], undefined, "(#1180)")).toBe("5\n8\n");
   expect(chain(thrown, "capacity_unknown_of_what_a_library_is_lent", ["dep", "app"], undefined, "(#1180)")).toBe("6\n8\n");

@@ -2,6 +2,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildCompiler, buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -28,10 +29,11 @@ test("late import aliases avoid locals, nested parameters and generated bindings
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = await import(join(dir, "app.js"));
   expect([String(js.run()), js.text()]).toEqual(run([join(dir, "native")]).trim().split("\n"));
-  const code = readFileSync(join(dir, "app.js"), "utf8");
-  expect(code).toContain('import { add as add$1 } from "./lib.js";');
+  const code = withoutBoundary(readFileSync(join(dir, "app.js"), "utf8"));
+  // The body of `add`, split (#2403, ADR 1193), by its own name, as the locals take `add`.
+  expect(code).toContain('import { add$ } from "./lib.js";');
   expect(code).toContain('import * as Util from "./util.js";');
-  expect(code).toContain("const f = (add) => (Util.add(add) + add$1(value)) | 0;");
+  expect(code).toContain("const f = (add) => (Util.add(add) + add$(value)) | 0;");
   expect(code).not.toContain("\0");
 });
 
@@ -44,7 +46,7 @@ test("a sparse cyclic graph emits only each module's actual imports", async () =
   const first = await import(join(dir, "m0.js"));
   expect(first.f(47)).toBe(15);
   for (const file of readdirSync(dir).filter(name => /^m\d+\.js$/.test(name))) {
-    const code = readFileSync(join(dir, file), "utf8");
+    const code = withoutBoundary(readFileSync(join(dir, file), "utf8"));
     expect(code.match(/^import /gm)?.length).toBe(1);
     expect(code).not.toContain("\0");
   }
@@ -63,7 +65,7 @@ test("derived Debug dependencies are retained transitively without unused implem
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const generated = await import(join(dir, "lib.js"));
   expect(generated.report()).toBe(run([join(dir, "native")]).trim());
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).not.toContain("Unused");
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).not.toContain("Unused");
 });
 
 // Each module imports its own operations from @rust-js/std (ADR 0103);
@@ -113,7 +115,7 @@ test("a string that spells a helper's name doesn't import it", () => {
     }
   `);
   run([compiler, join(dir, "main.rs"), "-o", join(dir, "main.js")]);
-  const code = readFileSync(join(dir, "main.js"), "utf8");
+  const code = withoutBoundary(readFileSync(join(dir, "main.js"), "utf8"));
   expect(code).toContain(`import { $bigLeadingZeros } from "@rust-js/std";`);
   expect(code).toContain(`"$bigTrailingZeros and $bigCountOnes"`);
   expect(code).toContain(`console.log("$bigCountOnes")`);
@@ -151,9 +153,10 @@ test("module-load statements resolve imports around their local bindings", async
   `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"),
     "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const code = readFileSync(join(dir, "load.js"), "utf8");
-  expect(code).toContain('import { value as value$1 } from "./mir.js";');
-  expect(code).toContain("const read = (value) => value$1(value);");
+  const code = withoutBoundary(readFileSync(join(dir, "load.js"), "utf8"));
+  // The body of `value`, split (#2403, ADR 1193), by its own name, as the locals take `value`.
+  expect(code).toContain('import { value$ } from "./mir.js";');
+  expect(code).toContain("const read = (value) => value$(value);");
   // Not a name of the module's, which a closure keeps apart.
   expect(code).toContain("const next = (ready) => (ready + 1) >>> 0;");
   expect(code).not.toContain("\0");
@@ -193,7 +196,7 @@ pub fn both() -> f64 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`import { f } from "./a.js";\nimport { f as f$1 } from "./b.js";`);
   expect(js).toContain("return f() * 10 + f$1();");
   const lib = await import(join(dir, "lib.js"));

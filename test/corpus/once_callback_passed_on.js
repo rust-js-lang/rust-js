@@ -10,7 +10,7 @@
 // given, as JS may keep and compare it and give it more; one that ignores
 // what it's given is the function it calls (ADR 0605, amended).
 
-import { $main } from "@rust-js/std";
+import { $checkResult, $checkU32, $main } from "@rust-js/std";
 
 function count() {
   console.log("count");
@@ -28,13 +28,13 @@ function many(...xs) {
 $main(main);
 
 function main() {
-  console.log(`${count.call(undefined, 5)}`);
-  console.log(`${shown.call(undefined, 5)}`);
-  console.log(`${shown.call(undefined, 5, 6)}`);
-  console.log(`${((x) => many(x)).call(undefined, 5, 6)}`);
-  console.log(`${count.call()}`);
-  console.log(`${count.call(undefined, 5)}`);
-  console.log(`${((x) => shown(x)).call(undefined, 5)}`);
+  console.log(`${$checkResult(count.call(undefined, 5), "call", $checkU32)}`);
+  console.log(`${$checkResult(shown.call(undefined, 5), "call", $checkU32)}`);
+  console.log(`${$checkResult(shown.call(undefined, 5, 6), "call", $checkU32)}`);
+  console.log(`${$checkResult(((x) => many(x)).call(undefined, 5, 6), "call", $checkU32)}`);
+  console.log(`${$checkResult(count.call(), "call", $checkU32)}`);
+  console.log(`${$checkResult(count.call(undefined, 5), "call", $checkU32)}`);
+  console.log(`${$checkResult(((x) => shown(x)).call(undefined, 5), "call", $checkU32)}`);
   const mapped = [4, 5].map((x) => many(x));
   console.log(`[${mapped.join(", ")}]`);
 }

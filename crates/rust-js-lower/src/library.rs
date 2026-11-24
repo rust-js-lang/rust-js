@@ -156,6 +156,12 @@ pub fn seen_outside(tcx: TyCtxt<'_>, library: bool, id: DefId) -> bool {
 /// (ADR 0187), the drops it takes none of (ADR 0190), and what it asks of
 /// its type parameters (ADR 0145).
 pub struct Contracts<'a, 'tcx> {
+    /// The functions split into their JS entry and their body, each by its
+    /// body's name, which a consumer's direct call calls (#2403, ADR 1193).
+    pub split: &'a crate::boundary::split::Split,
+    /// What JS may call of the crate's, whose functions' own JS checks what
+    /// it gives them (#2403 lever (3), (Y)).
+    pub js_reached: &'a crate::reexports::JsReached,
     pub drop_params: &'a IndexMap<DefId, Vec<u32>>,
     /// Each function's elided copies, its own and its callees' (#2112's
     /// change D): `elided_through_calls`'.
@@ -548,7 +554,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// What the library JS file `from` exports but `default`, by the
     /// specifier the crate imports it by, as its library's manifest says
     /// (#629): of none of a library's, none.
-    pub(super) fn file_exports(&self, from: &str) -> Option<&'a std::collections::BTreeSet<String>> {
+    pub fn file_exports(&self, from: &str) -> Option<&'a std::collections::BTreeSet<String>> {
         (self.dependencies.libraries.values()).find_map(|library| library.files.get(from))
     }
 
@@ -1162,6 +1168,13 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     }
 
     /// Every item the dependencies export, as the imports they'd be.
+    /// Of a library's split function, its body past its checks, by the
+    /// file that exports it and its name there, `f$` (#2403, ADR 1193).
+    pub fn unchecked(&self, id: DefId) -> Option<(String, String)> {
+        let item = self.item(id)?;
+        Some((item.from.clone(), item.unchecked.clone()?))
+    }
+
     pub fn all(&self) -> impl Iterator<Item = &'a Imported> {
         self.dependencies
             .libraries

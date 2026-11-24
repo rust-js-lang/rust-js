@@ -1,3 +1,4 @@
+//@ library-differs
 // A comment above a last `_ => {}` changes neither the `switch` nor where
 // what follows the `match` is: each case's `break;`, one `return
 // finish(log)` after the `switch`, as React's

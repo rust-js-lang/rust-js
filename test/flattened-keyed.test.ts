@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { compiler, fixture, root } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 /** What the compiler says of `rust`, which it refuses. */
 function refused(name: string, rust: string): string {
@@ -92,7 +93,7 @@ pub fn idle() -> Node<Mode> {
     since: number;
 };`);
   expect(declarations).not.toContain("TAG");
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return { flags: 1 };");
   expect(js).toContain("return { id: 2, current: undefined };");
   expect(js).toContain('return "getter" in own;');
@@ -286,7 +287,7 @@ pub fn run() -> String {
     600_000,
   );
   expect(app.code, app.stderr).toBe(0);
-  const js = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "app", "lib.js"), "utf8"));
   expect(js).not.toContain("TAG");
   expect(js).toContain('"getter" in');
   expect((await import(join(dir, "app", "lib.js"))).run()).toBe("scope signal computed None 9");

@@ -47,13 +47,14 @@ pub fn zeros(n: usize) -> Vec<f64> {
 ```
 
 ```js
-import { $roomFor } from "@rust-js/std";
+import { $checkU32, $roomFor } from "@rust-js/std";
 
 export function primes() {
   return [2, 3, 5, 7];
 }
 
 export function zeros(n) {
+  $checkU32(n, "zeros(n)");
   $roomFor(n, 8);
   return new Array(n).fill(0);
 }
@@ -97,14 +98,18 @@ pub fn first(keys: &[String]) -> String {
 ```
 
 ```js
-import { $index } from "@rust-js/std";
+import { $checkArray, $checkStr, $checks, $index } from "@rust-js/std";
 
 export function onlyChildren(keys) {
+  $checks("onlyChildren(keys)", keys, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   const length = keys.length;
   return length === 1 && keys[0] === "children";
 }
 
 export function first(keys) {
+  $checks("first(keys)", keys, (value, where, none) => $checkArray(value, where, none, $checkStr));
   return $index(keys, 0, "lib.rs:7:5");
 }
 ```
@@ -180,29 +185,74 @@ pub fn has_float(xs: &[f64], x: f64) -> bool {
 ```
 
 ```js
-import { $position } from "@rust-js/std";
+import {
+  $checkArray,
+  $checkBool,
+  $checkF64,
+  $checkI32,
+  $checkShape,
+  $checkStr,
+  $checks,
+  $position,
+} from "@rust-js/std";
+
+const checkItem = /* @__PURE__ */ $checkShape(() => ({
+  name: $checkStr,
+  price: $checkF64,
+  inStock: $checkBool,
+}));
 
 export function names(items) {
+  $checks("names(items)", items, (value, where, none) =>
+    $checkArray(value, where, none, checkItem),
+  );
   return items.map((item) => item.name);
 }
 
 export function available(items) {
+  $checks("available(items)", items, (value, where, none) =>
+    $checkArray(value, where, none, checkItem),
+  );
   return items.filter((item) => item.inStock);
 }
 
 export function total(items) {
+  $checks("total(items)", items, (value, where, none) =>
+    $checkArray(value, where, none, checkItem),
+  );
   return items.reduce((sum, item) => sum + item.price, 0);
 }
 
 export function findNamed(items, name) {
+  $checks(
+    "findNamed(items, name)",
+    items,
+    (value, where, none) => $checkArray(value, where, none, checkItem),
+    name,
+    $checkStr,
+  );
   return items.find((item) => item.name === name);
 }
 
 export function position(items, name) {
+  $checks(
+    "position(items, name)",
+    items,
+    (value, where, none) => $checkArray(value, where, none, checkItem),
+    name,
+    $checkStr,
+  );
   return $position(items, (item) => item.name === name);
 }
 
 export function removeNamed(items, name) {
+  $checks(
+    "removeNamed(items, name)",
+    items,
+    (value, where, none) => $checkArray(value, where, none, checkItem),
+    name,
+    $checkStr,
+  );
   const index = items.findIndex((item) => item.name === name);
   if (index !== -1) {
     items.splice(index, 1);
@@ -210,6 +260,13 @@ export function removeNamed(items, name) {
 }
 
 export function moveToEnd(xs, x) {
+  $checks(
+    "moveToEnd(xs, x)",
+    xs,
+    (value, where, none) => $checkArray(value, where, none, $checkI32),
+    x,
+    $checkI32,
+  );
   const index = xs.indexOf(x);
   if (index !== -1) {
     xs.splice(index, 1);
@@ -218,18 +275,38 @@ export function moveToEnd(xs, x) {
 }
 
 export function anyCheap(items) {
+  $checks("anyCheap(items)", items, (value, where, none) =>
+    $checkArray(value, where, none, checkItem),
+  );
   return items.some((item) => item.price < 1);
 }
 
 export function allStocked(items) {
+  $checks("allStocked(items)", items, (value, where, none) =>
+    $checkArray(value, where, none, checkItem),
+  );
   return items.every((item) => item.inStock);
 }
 
 export function hasNumber(xs, x) {
+  $checks(
+    "hasNumber(xs, x)",
+    xs,
+    (value, where, none) => $checkArray(value, where, none, $checkI32),
+    x,
+    $checkI32,
+  );
   return xs.includes(x);
 }
 
 export function hasFloat(xs, x) {
+  $checks(
+    "hasFloat(xs, x)",
+    xs,
+    (value, where, none) => $checkArray(value, where, none, $checkF64),
+    x,
+    $checkF64,
+  );
   return xs.indexOf(x) >= 0;
 }
 ```
@@ -321,6 +398,11 @@ pub fn at(v: &[i32], i: usize) -> i32 {
 
 ```js
 import {
+  $checkArray,
+  $checkCallback,
+  $checkI32,
+  $checkU32,
+  $checks,
   $drain,
   $index,
   $removeOutOfBounds,
@@ -346,41 +428,75 @@ export function stack() {
 }
 
 export function splice(v) {
+  $checks("splice(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   return Array.from($splice(v, 1, 3, [10, 20, 30], $stdSites.vecDrain[0]));
 }
 
 export function drainFront(v) {
+  $checks("drainFront(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   return $drain(v, 0, $stdSites.vecDrain[0], 2);
 }
 
 export function concat(a, b) {
+  $checks(
+    "concat(a, b)",
+    a,
+    (value, where, none) => $checkArray(value, where, none, $checkI32),
+    b,
+    (value, where, none) => $checkArray(value, where, none, $checkI32),
+  );
   return [...a, ...b];
 }
 
 export function spread(a, extra) {
+  $checks(
+    "spread(a, extra)",
+    a,
+    (value, where, none) => $checkArray(value, where, none, $checkI32),
+    extra,
+    $checkI32,
+  );
   const v = a.slice();
   v.push(extra);
   return v;
 }
 
 export function middle(v) {
+  $checks("middle(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   return $slice(v, 1, "lib.rs:32:7", (v.length - 1) >>> 0);
 }
 
 export function rest(v, skipped) {
+  $checks("rest(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
+  skipped = $checkCallback(skipped, "rest(skipped)", $checkU32);
   return $slice(v, skipped(), "lib.rs:36:7");
 }
 
 export function head(v) {
+  $checks("head(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   const truncated = v.length > 3;
   return truncated ? v.slice(0, 3) : v;
 }
 
 export function get(v, i) {
+  $checks(
+    "get(v, i)",
+    v,
+    (value, where, none) => $checkArray(value, where, none, $checkI32),
+    i,
+    $checkU32,
+  );
   return v[i];
 }
 
 export function at(v, i) {
+  $checks(
+    "at(v, i)",
+    v,
+    (value, where, none) => $checkArray(value, where, none, $checkI32),
+    i,
+    $checkU32,
+  );
   return $index(v, i, "lib.rs:49:5");
 }
 ```
@@ -457,19 +573,32 @@ pub fn add(into: &mut [i32], from: &[i32]) {
 ```
 
 ```js
+import { $checkArray, $checkI32, $checkU32, $checks } from "@rust-js/std";
+
 export function bump(scores) {
+  $checks("bump(scores)", scores, (value, where, none) =>
+    $checkArray(value, where, none, $checkU32),
+  );
   for (let i = 0; i < scores.length; i++) {
     scores[i] = (scores[i] + 1) >>> 0;
   }
 }
 
 export function numbered(row) {
+  $checks("numbered(row)", row, (value, where, none) => $checkArray(value, where, none, $checkU32));
   for (let i = 0; i < row.length; i++) {
     row[i] = i;
   }
 }
 
 export function add(into, from) {
+  $checks(
+    "add(into, from)",
+    into,
+    (value, where, none) => $checkArray(value, where, none, $checkI32),
+    from,
+    (value, where, none) => $checkArray(value, where, none, $checkI32),
+  );
   const n = Math.min(into.length, from.length);
   for (let i = 0; i < n; i++) {
     const b = from[i];
@@ -498,13 +627,23 @@ pub fn sort_tail(v: &mut [i32]) {
 ```
 
 ```js
-import { $reverseRange, $view } from "@rust-js/std";
+import { $checkArray, $checkI32, $checkU32, $checks, $reverseRange, $view } from "@rust-js/std";
 
 export function flip(queued, first, end) {
+  $checks(
+    "flip(queued, first, end)",
+    queued,
+    (value, where, none) => $checkArray(value, where, none, $checkU32),
+    first,
+    $checkU32,
+    end,
+    $checkU32,
+  );
   $reverseRange(queued, first, "lib.rs:2:11", end);
 }
 
 export function sortTail(v) {
+  $checks("sortTail(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   $view(v, 1, "lib.rs:6:6").sort((a, b) => a - b);
 }
 ```
@@ -558,17 +697,36 @@ pub fn dedup(v: &mut Vec<i32>) {
 ```
 
 ```js
-import { $cmp, $dedup, $maxByKey, $totalCmp } from "@rust-js/std";
+import {
+  $checkArray,
+  $checkF64,
+  $checkI32,
+  $checkShape,
+  $checkStr,
+  $checkU32,
+  $checks,
+  $cmp,
+  $dedup,
+  $maxByKey,
+  $totalCmp,
+} from "@rust-js/std";
+
+const checkPlayer = /* @__PURE__ */ $checkShape(() => ({ name: $checkStr, score: $checkU32 }));
 
 export function sortNumbers(v) {
+  $checks("sortNumbers(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   v.sort((a, b) => a - b);
 }
 
 export function sortFloats(v) {
+  $checks("sortFloats(v)", v, (value, where, none) => $checkArray(value, where, none, $checkF64));
   v.sort((a, b) => $totalCmp(a, b));
 }
 
 export function byScore(players) {
+  $checks("byScore(players)", players, (value, where, none) =>
+    $checkArray(value, where, none, checkPlayer),
+  );
   const key = (p) => [p.score];
   players.sort((a, b) => {
     const left = key(a);
@@ -578,14 +736,21 @@ export function byScore(players) {
 }
 
 export function byName(players) {
+  $checks("byName(players)", players, (value, where, none) =>
+    $checkArray(value, where, none, checkPlayer),
+  );
   players.sort((a, b) => $cmp(a.name, b.name));
 }
 
 export function top(players) {
+  $checks("top(players)", players, (value, where, none) =>
+    $checkArray(value, where, none, checkPlayer),
+  );
   return $maxByKey(players, (p) => p.score, $cmp);
 }
 
 export function dedup(v) {
+  $checks("dedup(v)", v, (value, where, none) => $checkArray(value, where, none, $checkI32));
   v.sort((a, b) => a - b);
   $dedup(v);
 }
@@ -620,9 +785,27 @@ pub fn by_hits(entries: &mut [Entry], asked: &mut u32) {
 ```
 
 ```js
-import { $cmp, $sortStable } from "@rust-js/std";
+import {
+  $checkArray,
+  $checkCell,
+  $checkShape,
+  $checkStr,
+  $checkU32,
+  $checks,
+  $cmp,
+  $sortStable,
+} from "@rust-js/std";
+
+const checkEntry = /* @__PURE__ */ $checkShape(() => ({ name: $checkStr, hits: $checkU32 }));
 
 export function byHits(entries, asked) {
+  $checks(
+    "byHits(entries, asked)",
+    entries,
+    (value, where, none) => $checkArray(value, where, none, checkEntry),
+    asked,
+    (value, where, none) => $checkCell(value, where, none, $checkU32),
+  );
   function compare(a, b) {
     asked.value = (asked.value + 1) >>> 0;
     return $cmp(b.hits, a.hits);
@@ -646,7 +829,12 @@ pub fn sorted(mut names: Vec<&str>) -> String {
 ```
 
 ```js
+import { $checkArray, $checkStr, $checks } from "@rust-js/std";
+
 export function sorted(names) {
+  $checks("sorted(names)", names, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   names.sort();
   return names.join(", ");
 }
@@ -714,7 +902,17 @@ pub fn first(a: Ticket, b: Ticket) -> u32 {
 ```
 
 ```js
-import { $cmp, $eq, $minOf, $ord, $partialEq, $partialOrd } from "@rust-js/std";
+import {
+  $checkTuple,
+  $checkU32,
+  $checks,
+  $cmp,
+  $eq,
+  $minOf,
+  $ord,
+  $partialEq,
+  $partialOrd,
+} from "@rust-js/std";
 
 export const rankPartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),
@@ -752,15 +950,26 @@ export const ticketOrd = $ord({
   cmp: ticketOrd_cmp,
   $drop: ticketDrop_drop,
 });
+
+function checkRank(value) {
+  $checkTuple(value, undefined, undefined, [$checkU32]);
+}
+
 function ticketOrd_cmp(ticket, other) {
   return rankOrd_cmp(ticket[0], other[0]);
 }
 
 export function higher(a, b) {
+  $checks("higher(a, b)", a, checkRank, b, checkRank);
   return (rankOrd_cmp(b, a) < 0 ? a : b)[0];
 }
 
+function checkTicket(value) {
+  $checkTuple(value, undefined, undefined, [checkRank]);
+}
+
 export function first(a, b) {
+  $checks("first(a, b)", a, checkTicket, b, checkTicket);
   const min = $minOf(a, b, ticketPartialOrd, ticketDrop_drop);
   const result = min[0][0];
   ticketDrop_drop(min);
@@ -797,19 +1006,33 @@ pub fn first_three(xs: &[i32]) -> Vec<i32> {
 ```
 
 ```js
+import { $checkArray, $checkI32, $checkStr, $checks } from "@rust-js/std";
+
 export function squaresOfEvens(xs) {
+  $checks("squaresOfEvens(xs)", xs, (value, where, none) =>
+    $checkArray(value, where, none, $checkI32),
+  );
   return xs.filter((x) => x % 2 === 0).map((x) => Math.imul(x, x));
 }
 
 export function indexed(words) {
+  $checks("indexed(words)", words, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   return words.map((w, i) => `${i}. ${w}`);
 }
 
 export function flat(groups) {
+  $checks("flat(groups)", groups, (value, where, none) =>
+    $checkArray(value, where, none, (value, where, none) =>
+      $checkArray(value, where, none, $checkI32),
+    ),
+  );
   return groups.flat();
 }
 
 export function firstThree(xs) {
+  $checks("firstThree(xs)", xs, (value, where, none) => $checkArray(value, where, none, $checkI32));
   return xs.slice(0, 3);
 }
 ```
@@ -836,9 +1059,12 @@ pub fn logged_first(xs: &[i32]) -> Option<i32> {
 ```
 
 ```js
-import { $lent } from "@rust-js/std";
+import { $checkArray, $checkI32, $checks, $lent } from "@rust-js/std";
 
 export function loggedFirst(xs) {
+  $checks("loggedFirst(xs)", xs, (value, where, none) =>
+    $checkArray(value, where, none, $checkI32),
+  );
   return $lent(
     xs.values().map((x) => {
       console.log(`checking ${x}`);
@@ -865,7 +1091,12 @@ pub fn attributes(descriptor: &[String]) -> Vec<(String, String)> {
 ```
 
 ```js
+import { $checkArray, $checkStr, $checks } from "@rust-js/std";
+
 export function attributes(descriptor) {
+  $checks("attributes(descriptor)", descriptor, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   const parts = descriptor.values();
   const pairs = [];
   let name;
@@ -895,17 +1126,35 @@ pub fn pairs(a: &[i32], b: &[&str]) -> Vec<String> {
 ```
 
 ```js
-import { $iter, $lazyRange, $lazyZip } from "@rust-js/std";
+import {
+  $checkArray,
+  $checkI32,
+  $checkStr,
+  $checkU32,
+  $checks,
+  $iter,
+  $lazyRange,
+  $lazyZip,
+} from "@rust-js/std";
 
 export function rangeSum(n) {
+  $checkU32(n, "rangeSum(n)");
   return $lazyRange(1, n + 1).reduce((a, b) => (a + b) >>> 0, 0);
 }
 
 export function evens(n) {
+  $checkU32(n, "evens(n)");
   return Array.from($lazyRange(0, n).filter((i) => i % 2 === 0));
 }
 
 export function pairs(a, b) {
+  $checks(
+    "pairs(a, b)",
+    a,
+    (value, where, none) => $checkArray(value, where, none, $checkI32),
+    b,
+    (value, where, none) => $checkArray(value, where, none, $checkStr),
+  );
   return Array.from($lazyZip($iter(a), b).map(([n, s]) => String(n) + s));
 }
 ```
@@ -1023,9 +1272,22 @@ pub fn common(a: &HashSet<i32>, b: &HashSet<i32>) -> Vec<i32> {
 ```
 
 ```js
-import { $add, $orInsert, $setAlgebra, $splitWhitespace } from "@rust-js/std";
+import {
+  $add,
+  $checkArray,
+  $checkI32,
+  $checkMap,
+  $checkSet,
+  $checkStr,
+  $checkU32,
+  $checks,
+  $orInsert,
+  $setAlgebra,
+  $splitWhitespace,
+} from "@rust-js/std";
 
 export function wordCounts(text) {
+  $checkStr(text, "wordCounts(text)");
   const counts = new Map();
   for (const word of $splitWhitespace(text)) {
     const current = $orInsert(counts, word, 0);
@@ -1035,10 +1297,20 @@ export function wordCounts(text) {
 }
 
 export function lookup(ages, name) {
+  $checks(
+    "lookup(ages, name)",
+    ages,
+    (value, where, none) => $checkMap(value, where, none, $checkStr, $checkU32),
+    name,
+    $checkStr,
+  );
   return ages.get(name) ?? 0;
 }
 
 export function edit(ages) {
+  $checks("edit(ages)", ages, (value, where, none) =>
+    $checkMap(value, where, none, $checkStr, $checkU32),
+  );
   ages.set("ada", 36);
   ages.delete("bob");
   if (ages.has("cy")) {
@@ -1048,21 +1320,41 @@ export function edit(ages) {
 }
 
 export function printAll(ages) {
+  $checks("printAll(ages)", ages, (value, where, none) =>
+    $checkMap(value, where, none, $checkStr, $checkU32),
+  );
   for (const [name, age] of ages) {
     console.log(`${name}: ${age}`);
   }
 }
 
 export function unique(words) {
+  $checks("unique(words)", words, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   const set = new Set(words);
   return set.size;
 }
 
 export function seen(tags, tag) {
+  $checks(
+    "seen(tags, tag)",
+    tags,
+    (value, where, none) => $checkSet(value, where, none, $checkStr),
+    tag,
+    $checkStr,
+  );
   return !$add(tags, tag);
 }
 
 export function common(a, b) {
+  $checks(
+    "common(a, b)",
+    a,
+    (value, where, none) => $checkSet(value, where, none, $checkI32),
+    b,
+    (value, where, none) => $checkSet(value, where, none, $checkI32),
+  );
   return $setAlgebra(a, b, "intersection");
 }
 ```
@@ -1110,9 +1402,19 @@ pub fn removed(counts: &mut HashMap<String, u32>, key: &str) -> u32 {
 ```
 
 ```js
-import { $unwrap } from "@rust-js/std";
+import { $checkMap, $checkOption, $checkStr, $checkU32, $checks, $unwrap } from "@rust-js/std";
 
 export function stashed(errors, id) {
+  $checks(
+    "stashed(errors, id)",
+    errors,
+    (value, where, none) =>
+      $checkMap(value, where, none, $checkStr, (value, where) =>
+        $checkOption(value, where, $checkU32),
+      ),
+    id,
+    $checkStr,
+  );
   let error;
   if (errors.has(id)) {
     error = errors.get(id);
@@ -1121,6 +1423,13 @@ export function stashed(errors, id) {
 }
 
 export function removed(counts, key) {
+  $checks(
+    "removed(counts, key)",
+    counts,
+    (value, where, none) => $checkMap(value, where, none, $checkStr, $checkU32),
+    key,
+    $checkStr,
+  );
   if (counts.has(key)) {
     counts.delete(key);
     return $unwrap(counts.get(key), "lib.rs:15:22", "no entry found for key");
@@ -1154,7 +1463,7 @@ pub fn at(b: &HashMap<Cell, char>, row: i32, col: i32) -> Option<char> {
 ```
 
 ```js
-import { $KeyMap } from "@rust-js/std";
+import { $KeyMap, $checkI32, $checks } from "@rust-js/std";
 
 export function board() {
   const b = new $KeyMap();
@@ -1163,6 +1472,7 @@ export function board() {
 }
 
 export function at(b, row, col) {
+  $checks("at(row, col)", row, $checkI32, col, $checkI32);
   return b.get({ row, col });
 }
 ```
@@ -1208,7 +1518,15 @@ pub fn tagged(tags: &HashSet<Tag>, name: &str) -> bool {
 ```
 
 ```js
-import { $asciiCase, $hashSlice, $hashedSet, $partialEq } from "@rust-js/std";
+import {
+  $asciiCase,
+  $checkArray,
+  $checkStr,
+  $checks,
+  $hashSlice,
+  $hashedSet,
+  $partialEq,
+} from "@rust-js/std";
 
 export const tagPartialEq = $partialEq({ eq: tagPartialEq_eq });
 function tagPartialEq_eq(tag, other) {
@@ -1221,10 +1539,12 @@ function tagHash_hash(tag, state, HHasher) {
 }
 
 export function tags(names) {
+  $checks("tags(names)", names, (value, where, none) => $checkArray(value, where, none, $checkStr));
   return new ($hashedSet(tagHash, tagPartialEq_eq))(names.values().map((name) => [name]));
 }
 
 export function tagged(tags, name) {
+  $checkStr(name, "tagged(name)");
   return tags.has([name]);
 }
 ```
@@ -1297,7 +1617,19 @@ pub fn same_listener(a: &Listener, b: &Listener) -> bool {
 ```
 
 ```js
+import { $checkArray, $checkShape, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
+const checkFiber = /* @__PURE__ */ $checkShape(() => ({ lanes: $checkU32 }));
+
+const checkListener = /* @__PURE__ */ $checkShape(() => ({
+  instance: [checkFiber, "nullish"],
+  name: $checkStr,
+}));
+
 export function updated(fibers) {
+  $checks("updated(fibers)", fibers, (value, where, none) =>
+    $checkArray(value, where, none, checkFiber),
+  );
   const updated = new Set();
   for (let i = 0; i < fibers.length; i++) {
     const fiber = fibers[i];
@@ -1309,10 +1641,12 @@ export function updated(fibers) {
 }
 
 export function same(a, b) {
+  $checks("same(a, b)", a, checkFiber, b, checkFiber);
   return a === b;
 }
 
 export function sameListener(a, b) {
+  $checks("sameListener(a, b)", a, checkListener, b, checkListener);
   return a.instance == b.instance && a.name === b.name;
 }
 ```
@@ -1364,9 +1698,21 @@ pub fn pending(keys: Vec<Key>) -> usize {
 ```
 
 ```js
-import { $id, $keyMap, $orInsert } from "@rust-js/std";
+import {
+  $checkArray,
+  $checkShape,
+  $checkU32,
+  $checks,
+  $id,
+  $keyMap,
+  $orInsert,
+} from "@rust-js/std";
+
+const checkFiber = /* @__PURE__ */ $checkShape(() => ({ lanes: $checkU32 }));
+const checkKey = /* @__PURE__ */ $checkShape(() => ({ fiber: checkFiber, lane: $checkU32 }));
 
 export function pending(keys) {
+  $checks("pending(keys)", keys, (value, where, none) => $checkArray(value, where, none, checkKey));
   const pending = new ($keyMap((key) => ({ ...key, fiber: $id(key.fiber) })))();
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
@@ -1452,7 +1798,7 @@ pub fn releases() -> BTreeSet<Release> {
 ```
 
 ```js
-import { $cmp, $ord, $ordSet, $partialEq, $partialOrd, $storedKey } from "@rust-js/std";
+import { $checkU32, $cmp, $ord, $ordSet, $partialEq, $partialOrd, $storedKey } from "@rust-js/std";
 
 export const releasePartialEq = $partialEq({ eq: releasePartialEq_eq });
 function releasePartialEq_eq(release, other) {
@@ -1473,6 +1819,7 @@ function releaseOrd_cmp(release, other) {
 }
 
 export function named(releases, major) {
+  $checkU32(major, "named(major)");
   const probe = { major, name: "" };
   return $storedKey(releases, probe)?.name;
 }
@@ -1523,6 +1870,10 @@ pub fn indexed(words: Vec<Logged>) -> BTreeMap<Logged, usize> {
 
 ```js
 import {
+  $checkArray,
+  $checkTuple,
+  $checkU32,
+  $checks,
   $cmp,
   $entry,
   $entryOrInsert,
@@ -1547,12 +1898,20 @@ function loggedPartialOrd_partialCmp(logged, other) {
 }
 
 export const loggedOrd = $ord({ PartialOrd: () => loggedPartialOrd, cmp: loggedOrd_cmp });
+
+function checkLogged(value) {
+  $checkTuple(value, undefined, undefined, [$checkU32]);
+}
+
 function loggedOrd_cmp(logged, other) {
   console.log(`compare ${logged[0]} ${other[0]}`);
   return $cmp(logged[0], other[0]);
 }
 
 export function tally(words) {
+  $checks("tally(words)", words, (value, where, none) =>
+    $checkArray(value, where, none, checkLogged),
+  );
   const counts = new ($ordTreeMap(loggedOrd_cmp))();
   for (let i = 0; i < words.length; i++) {
     const word = words[i];
@@ -1563,6 +1922,9 @@ export function tally(words) {
 }
 
 export function indexed(words) {
+  $checks("indexed(words)", words, (value, where, none) =>
+    $checkArray(value, where, none, checkLogged),
+  );
   return $treeFromSorted(
     new ($ordTreeMap(loggedOrd_cmp))(),
     $lazyZip($iter(words), $iterator({ start: 0 }, $rangeFromStep(0, 4294967295))),
@@ -1599,7 +1961,10 @@ pub fn header(headers: &Dict<String>, name: &str) -> Option<String> {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function headers(token) {
+  $checkStr(token, "headers(token)");
   const headers = {};
   headers.Authorization = `Bearer ${token}`;
   headers.Accept = "application/json";
@@ -1607,6 +1972,7 @@ export function headers(token) {
 }
 
 export function header(headers, name) {
+  $checkStr(name, "header(name)");
   return headers[name] ?? undefined;
 }
 ```
@@ -1701,6 +2067,9 @@ pub fn to_number(s: &str) -> Option<f64> {
 import {
   $byteLen,
   $chars,
+  $checkArray,
+  $checkStr,
+  $checks,
   $find,
   $next,
   $parseF64,
@@ -1712,42 +2081,54 @@ import {
 } from "@rust-js/std";
 
 export function lengths(s) {
+  $checkStr(s, "lengths(s)");
   return [$byteLen(s), Array.from(s).length, s.length];
 }
 
 export function words(line) {
+  $checkStr(line, "words(line)");
   return line.split(",").map((s) => $trim(s));
 }
 
 export function tidy(s) {
+  $checkStr(s, "tidy(s)");
   return $toLowercase($trim(s).replaceAll("  ", " "));
 }
 
 export function firstChar(s) {
+  $checkStr(s, "firstChar(s)");
   return $next($chars(s));
 }
 
 export function reversed(s) {
+  $checkStr(s, "reversed(s)");
   return Array.from(s).toReversed().join("");
 }
 
 export function isCommand(s) {
+  $checkStr(s, "isCommand(s)");
   return s.startsWith("/") && !s.endsWith(" ");
 }
 
 export function keyValue(s) {
+  $checkStr(s, "keyValue(s)");
   return $splitOnce(s, "=");
 }
 
 export function prefix(s) {
+  $checkStr(s, "prefix(s)");
   return $strSlice(s, 0, "lib.rs:30:7", 3);
 }
 
 export function safePrefix(s) {
+  $checkStr(s, "safePrefix(s)");
   return $strGet(s, 0, 3);
 }
 
 export function build(names) {
+  $checks("build(names)", names, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   let out = "";
   for (let i = 0; i < names.length; i++) {
     const name = names[i];
@@ -1757,20 +2138,24 @@ export function build(names) {
 }
 
 export function indexOf(s, needle) {
+  $checks("indexOf(s, needle)", s, $checkStr, needle, $checkStr);
   return $find(s, needle);
 }
 
 export function firstWord(s) {
+  $checkStr(s, "firstWord(s)");
   const at = s.indexOf(" ");
   return at !== -1 ? s.slice(0, at) : s;
 }
 
 export function after(s, key) {
+  $checks("after(s, key)", s, $checkStr, key, $checkStr);
   const at = s.indexOf(key);
   return at !== -1 ? s.slice(at + key.length) : "";
 }
 
 export function withoutScheme(url) {
+  $checkStr(url, "withoutScheme(url)");
   if (url.startsWith("https://")) {
     return url.slice(8);
   }
@@ -1778,6 +2163,7 @@ export function withoutScheme(url) {
 }
 
 export function toNumber(s) {
+  $checkStr(s, "toNumber(s)");
   const result = $parseF64(s);
   return result.TAG === "Ok" ? result._0 : undefined;
 }
@@ -1859,6 +2245,12 @@ pub fn title_of(text: &str) -> Option<String> {
 
 ```js
 import {
+  $checkArray,
+  $checkBool,
+  $checkShape,
+  $checkStr,
+  $checkU32,
+  $checks,
   $debugJsonError,
   $fromJson,
   $json,
@@ -1867,6 +2259,13 @@ import {
   $toJson,
   $unwrapOk,
 } from "@rust-js/std";
+
+const checkTodo = /* @__PURE__ */ $checkShape(() => ({
+  id: $checkU32,
+  title: $checkStr,
+  isDone: $checkBool,
+  tags: (value, where, none) => $checkArray(value, where, none, $checkStr),
+}));
 
 function todoSerialize_serialize(todo, json) {
   json.beginObject();
@@ -1900,6 +2299,7 @@ function todoDeserialize_deserialize(json) {
 }
 
 export function toJson(todo) {
+  $checks("toJson(todo)", todo, checkTodo);
   return $unwrapOk(
     $toJson(todo, todoSerialize_serialize, false),
     "lib.rs:14:33",
@@ -1909,10 +2309,12 @@ export function toJson(todo) {
 }
 
 export function fromJson(text) {
+  $checkStr(text, "fromJson(text)");
   return $fromJson(text, todoDeserialize_deserialize);
 }
 
 export function titleOf(text) {
+  $checkStr(text, "titleOf(text)");
   const result = $fromJson(text, $json.value);
   const value = result.TAG === "Ok" ? result._0 : undefined;
   if (value == null) {

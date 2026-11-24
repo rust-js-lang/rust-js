@@ -6,6 +6,15 @@
 
 import {
   $BTreeMap,
+  $checkArray,
+  $checkBool,
+  $checkF64,
+  $checkField,
+  $checkMap,
+  $checkStr,
+  $checkTag,
+  $checkU32,
+  $checks,
   $cmp,
   $debugF64,
   $debugStr,
@@ -21,26 +30,46 @@ import {
 
 export const Value = {
   get(value, key) {
+    $checks("Value.get(value, key)", value, checkValue, key, $checkStr);
+    return Value.get$(value, key);
+  },
+  get$(value, key) {
     if (value.TAG === "Obj") {
       return value._0.get(key) ?? undefined;
     }
   },
   at(value, i) {
+    $checks("Value.at(value, i)", value, checkValue, i, $checkU32);
+    return Value.at$(value, i);
+  },
+  at$(value, i) {
     if (value.TAG === "List") {
       return value._0[i] ?? undefined;
     }
   },
   asNum(value) {
+    $checks("Value.asNum(value)", value, checkValue);
+    return Value.asNum$(value);
+  },
+  asNum$(value) {
     if (value.TAG === "Num") {
       return value._0;
     }
   },
   asStr(value) {
+    $checks("Value.asStr(value)", value, checkValue);
+    return Value.asStr$(value);
+  },
+  asStr$(value) {
     if (value.TAG === "Str") {
       return value._0;
     }
   },
   isNull(value) {
+    $checks("Value.isNull(value)", value, checkValue);
+    return Value.isNull$(value);
+  },
+  isNull$(value) {
     return value === "Null";
   },
   depth(value) {
@@ -98,6 +127,28 @@ export const Value = {
 };
 
 export const valueDisplay = { fmt: valueDisplay_fmt };
+
+function checkValue(value) {
+  const tag = $checkTag(value, "TAG", ["Bool", "Num", "Str", "List", "Obj"], ["Null"]);
+  if (tag === "Bool") {
+    $checkField(value, "_0", $checkBool);
+  }
+  if (tag === "Num") {
+    $checkField(value, "_0", $checkF64);
+  }
+  if (tag === "Str") {
+    $checkField(value, "_0", $checkStr);
+  }
+  if (tag === "List") {
+    $checkField(value, "_0", (value, where, none) => $checkArray(value, where, none, checkValue));
+  }
+  if (tag === "Obj") {
+    $checkField(value, "_0", (value, where, none) =>
+      $checkMap(value, where, none, $checkStr, checkValue),
+    );
+  }
+}
+
 function valueDisplay_fmt(value) {
   let f = "";
   if (value === "Null") {
@@ -140,23 +191,23 @@ function valueDisplay_fmt(value) {
 }
 
 function price(v) {
-  const value = Value.get(v, "items");
+  const value = Value.get$(v, "items");
   if (value == null) {
     return;
   }
-  const item = Value.at(value, 1);
+  const item = Value.at$(value, 1);
   if (item == null) {
     return;
   }
-  const value$1 = Value.get(item, "price");
+  const value$1 = Value.get$(item, "price");
   if (value$1 == null) {
     return;
   }
-  const p = Value.asNum(value$1);
+  const p = Value.asNum$(value$1);
   if (p == null) {
     return;
   }
-  const get = Value.get(v, "qty");
+  const get = Value.get$(v, "qty");
   return p * ((get != null ? Value.asNum(get) : undefined) ?? 1);
 }
 
@@ -197,13 +248,13 @@ export function tree() {
   Value.pretty(v, 0, out$1);
   p = out$1.value;
   out += `${p}\n`;
-  const get = Value.get(v, "name");
-  const s = get != null ? Value.asStr(get) : undefined;
+  const get = Value.get$(v, "name");
+  const s = get != null ? Value.asStr$(get) : undefined;
   const name = s != null ? $toUppercase(s) : undefined;
   const value = price(v);
   const depth = Value.depth(v);
-  const get$1 = Value.get(v, "missing");
-  out += `${value == null ? "None" : `Some(${$debugF64(value)})`} ${name == null ? "None" : `Some(${$debugStr(name)})`} ${depth} ${get$1 == null || Value.isNull(get$1)}\n`;
+  const get$1 = Value.get$(v, "missing");
+  out += `${value == null ? "None" : `Some(${$debugF64(value)})`} ${name == null ? "None" : `Some(${$debugStr(name)})`} ${depth} ${get$1 == null || Value.isNull$(get$1)}\n`;
   const copy = cloneValue(v);
   out += `${$eq(copy, v)} ${$eq({ TAG: "Num", _0: 1 }, { TAG: "Num", _0: 1 })}\n`;
   return out;

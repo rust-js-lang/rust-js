@@ -1,3 +1,4 @@
+//@ library-differs
 // What each exported function takes and gives, as its declaration says it
 // (ADR 1091): a `&mut` of a number, a `String`, an `Option` and a `Vec`, a
 // struct and a `&mut` of one, a slice, a trailing `Option`, a tuple, an

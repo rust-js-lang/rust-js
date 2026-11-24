@@ -1,3 +1,4 @@
+//@ library-differs
 // A match of three or more values whose or-pattern names one each,
 // `(1, _, _) | (_, 1, _) | (_, _, 1)`, is the chain as written (#673): a
 // path whose test's failing says another path of its arm, `a !== 2 && b

@@ -8,17 +8,19 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { decodeMappings } from "./sourcemap";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
 /** `rust` compiled in a fixture of `name`, against the js crate: its JS,
  * its module, and its source map. */
-async function compiled(name: string, rust: string): Promise<{ js: string; lib: Record<string, (...args: never[]) => unknown>; map: { mappings: string } }> {
+async function compiled(name: string, rust: string): Promise<{ js: string; raw: string; lib: Record<string, (...args: never[]) => unknown>; map: { mappings: string } }> {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  return { js, lib: await import(join(dir, "lib.js")), map: JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8")) };
+  // `raw`, the file as it is, whose lines its map counts, its checks too.
+  const raw = readFileSync(join(dir, "lib.js"), "utf8");
+  return { js: withoutBoundary(raw), raw, lib: await import(join(dir, "lib.js")), map: JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8")) };
 }
 
 // React's addValueToProperties: `desc = '…'; // ellipsis`, and
@@ -684,11 +686,11 @@ pub fn checked(value: Option<&'static Unknown>) -> u32 {
     n
 }
 `;
-  const { js, lib, map } = await compiled("if-let-chain-apart", rust);
+  const { js, lib, map, raw } = await compiled("if-let-chain-apart", rust);
   expect(js).toContain("  let n = 0;\n  if (value != null && value.$$typeof === MEMO) {\n");
   expect(js).toContain("    n += 2;\n  }\n\n  if (value != null && value.b != null) {\n");
   // Each `if` maps to its own `if let`'s pattern.
-  const lines = js.split("\n");
+  const lines = raw.split("\n");
   const rs = rust.split("\n");
   const ifs = lines.flatMap((line, i) => (line.startsWith("  if (") ? [i] : []));
   const mapped = ifs.map((i) => decodeMappings(map.mappings).find((s) => s.jsLine === i && s.jsCol === 2)?.srcLine);
@@ -741,11 +743,11 @@ test("an if a decision tree makes is where its first if is", async () => {
     n
 }
 `;
-  const { js, lib, map } = await compiled("decision-if-placed", rust);
+  const { js, lib, map, raw } = await compiled("decision-if-placed", rust);
   expect(js).toContain("    // Neither was found, so count\n    // down from the bottom.\n    if (s === 3 || c === 4) {\n");
   expect(js).toContain("      // Not on the first line.\n      if (s !== 1 || c !== 1) {\n");
   // Each `if` maps to its first test.
-  const lines = js.split("\n");
+  const lines = raw.split("\n");
   const rs = rust.split("\n");
   const mapped = ["if (s === 3", "if (s !== 1"].map((start) => {
     const at = lines.findIndex((line) => line.trimStart().startsWith(start));
@@ -1132,7 +1134,7 @@ pub fn whiled(n: u32, c: bool) -> u32 {
 // line each, as upstream's is; the first's after the `(` (ADR 0708,
 // amended). Each parameter maps where it's written.
 test("a comment before a parameter is before it", async () => {
-  const { js, lib, map } = await compiled("comment-before-a-parameter", `pub fn create_portal(
+  const { js, lib, map, raw } = await compiled("comment-before-a-parameter", `pub fn create_portal(
     children: u32,
     container_info: u32,
     // TODO: figure out the API for cross-renderer implementation.
@@ -1155,7 +1157,7 @@ pub fn first(
   expect(js).toContain("export function first(\n  // The first one.\n  a,\n  b,\n) {\n");
   expect([lib.createPortal(1 as never, 2 as never, 3 as never), lib.first(2 as never, 3 as never)]).toEqual([6, 6]);
   // `implementation`, on its line of the JS, maps to its line of the Rust.
-  const line = js.split("\n").findIndex((l) => l === "  implementation,");
+  const line = raw.split("\n").findIndex((l) => l === "  implementation,");
   expect(decodeMappings(map.mappings).some((s) => s.jsLine === line && s.srcLine === 4)).toBe(true);
 });
 
@@ -1243,7 +1245,7 @@ pub fn nested(name: &str, message: &str) -> u32 {
 `);
   writeFileSync(join(dir, "log.js"), "export function log(a, b) { return a.length + b.length; }\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(
     '  const errorBoundaryMessage = "Consider adding an error boundary.";\n\n  console.warn(\n    "%s\\n\\n%s\\n",\n    componentNameMessage,\n    errorBoundaryMessage,\n    // We let our console.error wrapper add the component stack to the end.\n  );\n',
   );

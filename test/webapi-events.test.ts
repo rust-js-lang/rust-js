@@ -4,14 +4,30 @@ import { join } from "node:path";
 import { chromium } from "playwright";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 300_000);
 const flags = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
 
-function compileEvents(): string {
+/** The program compiled, where it is. */
+function compiledEvents(): string {
   const out = join(fixture("webapi-events"), "events.js");
   run([compiler, "test/webapi-events.rs", "-o", out, ...flags]);
-  return readFileSync(out, "utf8");
+  return out;
+}
+
+/** Its JS as it reads without the boundary of what JS gives Rust, as a
+ * test of its events reads it (#2403). */
+function compileEvents(): string {
+  return withoutBoundary(readFileSync(compiledEvents(), "utf8"));
+}
+
+/** Its JS bundled with what it imports, `@rust-js/std`'s checks among
+ * them, as a page loads one module (#2403). */
+async function bundledEvents(): Promise<string> {
+  const bundled = await Bun.build({ entrypoints: [compiledEvents()], target: "browser", format: "esm" });
+  expect(bundled.success).toBe(true);
+  return bundled.outputs[0]!.text();
 }
 
 test("event methods and reusable listeners emit direct JavaScript", () => {
@@ -127,7 +143,7 @@ pub fn wire(button: &HTMLButtonElement) { ${body} }
 }, underLoad(60_000));
 
 test("event listeners dispatch and remove by identity in Chromium", async () => {
-  const js = compileEvents();
+  const js = await bundledEvents();
   const browser = await chromium.launch({ headless: true });
   try {
     for (const [name, expected] of Object.entries({ methods: [17, 17, 5], mutable: [1, 2], sharedMutable: [1, 2], removed: [], duplicate: [17, 17], different: [17, 17], once: [17], aborted: [], capture: [17, 17], captureRemoved: [], named: [1, 1], namedOnce: [1], namedRemoved: [], namedFnRemoved: [], namedCaptureRemoved: [], onAdded: [17, 17], onRemoved: [] })) {
@@ -163,8 +179,8 @@ test("event listeners dispatch and remove by identity in Chromium", async () => 
 // doesn't bubble, on its way down; its `ontoggle` a details' toggle, a
 // `ToggleEvent` as every spec that fires one says.
 test("a document's capturing listeners catch an image's error and a details' toggle in Chromium", async () => {
-  const js = compileEvents();
-  expect(js).toContain('export function resourceErrors() {\n  document.addEventListener(\n    "error",\n    () => {\n      globalThis.record(7);\n    },\n    true,\n  );\n}');
+  expect(compileEvents()).toContain('export function resourceErrors() {\n  document.addEventListener(\n    "error",\n    () => {\n      globalThis.record(7);\n    },\n    true,\n  );\n}');
+  const js = await bundledEvents();
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage();
@@ -199,7 +215,7 @@ test("a document's capturing listeners catch an image's error and a details' tog
 }, underLoad(60_000));
 
 test("a listener JS gave, a function or a handleEvent object, is added and removed as it is in Chromium", async () => {
-  const js = compileEvents();
+  const js = await bundledEvents();
   const browser = await chromium.launch({ headless: true });
   try {
     for (const [name, expected] of Object.entries({ given: [1, 2, 1, 2], givenRemoved: [], givenWrapped: [10, 1, 10, 2, 10, 1, 10, 2], passive: [1, 1] })) {

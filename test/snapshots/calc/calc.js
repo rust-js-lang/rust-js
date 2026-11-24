@@ -8,6 +8,14 @@
 import {
   $add,
   $chars,
+  $checkArray,
+  $checkChar,
+  $checkF64,
+  $checkField,
+  $checkStr,
+  $checkTag,
+  $checkU8,
+  $checks,
   $cmp,
   $copyOf,
   $debugF64,
@@ -25,6 +33,11 @@ import {
 } from "@rust-js/std";
 
 export function tokenize(src) {
+  $checkStr(src, "tokenize(src)");
+  return tokenize$(src);
+}
+
+function tokenize$(src) {
   const chars = Array.from(src);
   const out = [];
   let i = 0;
@@ -73,7 +86,24 @@ function prec(op) {
   return op === "+" || op === "-" ? 1 : 2;
 }
 
+function checkToken(value) {
+  const tag = $checkTag(value, "TAG", ["Num", "Op"], ["LParen", "RParen"]);
+  if (tag === "Num") {
+    $checkField(value, "_0", $checkF64);
+  }
+  if (tag === "Op") {
+    $checkField(value, "_0", $checkChar);
+  }
+}
+
 export function toRpn(tokens) {
+  $checks("toRpn(tokens)", tokens, (value, where, none) =>
+    $checkArray(value, where, none, checkToken),
+  );
+  return toRpn$(tokens);
+}
+
+function toRpn$(tokens) {
   const out = [];
   const stack = [];
   for (let i = 0; i < tokens.length; i++) {
@@ -109,11 +139,16 @@ export function toRpn(tokens) {
 }
 
 function eval$(src) {
-  const result = tokenize(src);
+  $checkStr(src, "eval(src)");
+  return eval$$(src);
+}
+
+function eval$$(src) {
+  const result = tokenize$(src);
   if (result.TAG === "Err") {
     return result;
   }
-  const rpn = toRpn(result._0);
+  const rpn = toRpn$(result._0);
   const st = [];
   for (let i = 0; i < rpn.length; i++) {
     const t = rpn[i];
@@ -156,6 +191,11 @@ function eval$(src) {
 }
 
 export function wordFreq(text) {
+  $checkStr(text, "wordFreq(text)");
+  return wordFreq$(text);
+}
+
+function wordFreq$(text) {
   const m = new Map();
   for (const w of $lazySplitBy(text, (c) => !$isAlphanumeric(c)).filter((w) => w !== "")) {
     const key = $toLowercase(w);
@@ -168,6 +208,11 @@ export function wordFreq(text) {
 }
 
 export function caesar(s, k) {
+  $checks("caesar(s, k)", s, $checkStr, k, $checkU8);
+  return caesar$(s, k);
+}
+
+function caesar$(s, k) {
   return Array.from(
     $mapEnds($chars(s), (c) => {
       if (/^[a-z]$/.test(c)) {
@@ -186,6 +231,11 @@ export function caesar(s, k) {
 }
 
 export function firstDup(s) {
+  $checkStr(s, "firstDup(s)");
+  return firstDup$(s);
+}
+
+function firstDup$(s) {
   const seen = new Set();
   for (const [i, c] of $chars(s).map((x, i) => [i, x])) {
     if (!$add(seen, c)) {
@@ -197,15 +247,15 @@ export function firstDup(s) {
 export function report() {
   let out = "";
   for (const e of ["1 + 2 * 3", "(1 + 2) * 3", "10 / 4 - 1", "2 * (3 + 4) * 5", "1 +", "3 $ 4"]) {
-    const arg = eval$(e);
+    const arg = eval$$(e);
     out += `${e} = ${arg.TAG === "Ok" ? `Ok(${$debugF64(arg._0)})` : `Err(${$debugStr(arg._0)})`}\n`;
   }
-  out += `[${wordFreq("The cat and the hat. THE end, and fin")
+  out += `[${wordFreq$("The cat and the hat. THE end, and fin")
     .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
     .join(", ")}]\n`;
-  out += `${caesar("Hello, World!", 3)} ${caesar(caesar("abcxyz", 13), 13)}\n`;
-  const value = firstDup("abcdbe");
-  const value$1 = firstDup("xyz");
+  out += `${caesar$("Hello, World!", 3)} ${caesar$(caesar$("abcxyz", 13), 13)}\n`;
+  const value = firstDup$("abcdbe");
+  const value$1 = firstDup$("xyz");
   out += `${value == null ? "None" : `Some((${value[0]}, ${$debugStr(value[1], "'")}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${$debugStr(value$1[1], "'")}))`}\n`;
   const s = "hello world";
   const length = s.split("o").length;

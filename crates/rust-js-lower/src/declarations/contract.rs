@@ -295,3 +295,10 @@ impl<'tcx> Contract<'tcx> {
         Contract::Local(did, args)
     }
 }
+
+/// Whether another crate can name `did`, a struct, but not make it, the one
+/// answer the declarations brand by and the checks brand by (ADR 1187,
+/// #2403 2c): `structures`' `sealed`.
+pub(crate) fn sealed(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    super::structures::sealed(tcx, did)
+}

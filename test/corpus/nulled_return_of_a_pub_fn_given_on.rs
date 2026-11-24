@@ -1,3 +1,4 @@
+//@ library-differs
 // #2055 (ADR 0861, amended): a `pub` function JS or a consumer calls gives
 // its `None` back as `undefined`, Rust's, at its exit (`returns_one_none`),
 // though each of its returns is `null` or a value, a nullable function's
