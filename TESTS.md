@@ -266,6 +266,14 @@ That regression remains failing; no waiver or known-failure entry is added.
 The first full gate also requires the new facts total (67) and the full new
 module path in the architecture. Exact results are retained by the port.
 
+Split on 2026-11-24 (#2465, B.4): `test/compat-surfaces.test.ts` holds what
+rust-js's own wasm-bindgen, js-sys and web-sys serve of each crate that uses
+them (inline JS imports, getrandom's backends, chrono's `wasmbind`,
+`#[wasm_bindgen_test]`s, the patch of a build's features, `unwrap_throw`: 6
+tests), moved from `test/compat.test.ts`, which keeps the graphs and locks (5
+tests); what both share is `test/compat.ts`. On the M5 Pro, quiet: one file
+of 11 tests, 63.6 s, before; the two side by side, 43.9 s and 30.1 s, after.
+
 Split on 2026-11-22: `test/crates-refused.test.ts` holds the pairs of crates
 under test/crates/refused/, a consumer refused for what a library can't give
 it, moved from `test/crates.test.ts`, which neared its 1,350-line cap (#1334).
