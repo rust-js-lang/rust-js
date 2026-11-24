@@ -794,3 +794,23 @@ fn main() {
   if (!("js" in js)) throw new Error(js.error);
   expect(runJs([node ?? "node"], js.js, dir, "main").bytes.stdout.toString()).toBe(expected);
 });
+
+// A `RefCell` guard's `&mut` given to a library's generic code that may
+// write it whole, `*slot = v`: Rust's write drops the guard and makes the
+// variable another's, where the JS of a guard is the cell's own object,
+// which the library's box writes in place, so it's refused where the
+// consumer gives it, as a call of its own crate's is (#2475).
+test("a RefCell guard's `&mut` given to a library's generic `&mut T` is refused", () => {
+  const dir = fixture("library-guard-put");
+  const lib = join(dir, "lib.rs");
+  writeFileSync(lib, "pub fn put<T>(slot: &mut T, v: T) {\n    *slot = v;\n}\n");
+  const main = join(dir, "main.rs");
+  writeFileSync(
+    main,
+    "use std::cell::RefCell;\n\nfn main() {\n    let x = RefCell::new(vec![1]);\n    let y = RefCell::new(vec![2]);\n    let mut g = x.borrow_mut();\n    put::put(&mut g, y.borrow_mut());\n    g.push(5);\n}\n",
+  );
+  const built = compileJsLibrary(lib, dir, "2024", "put");
+  if (!("rmeta" in built)) throw new Error(built.error);
+  const js = compileJs(main, dir, "2024", "binary", {}, ["--dependency", built.manifest], ["--extern", `put=${built.rmeta}`, "-L", dir]);
+  expect("js" in js ? "" : js.error).toContain("a `RefCell` guard's `&mut`, `&mut std::cell::RefMut<'_, std::vec::Vec<i32>>`, given to generic code's `&mut T`, which may write the guard whole");
+});

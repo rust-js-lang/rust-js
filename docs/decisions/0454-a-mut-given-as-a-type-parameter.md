@@ -1021,3 +1021,32 @@ mutations fn-only-called-given-its-box, fn-given-back-taken-as-only-called,
 fn-held-mut-not-read-through and fn-box-called-and-given-back-allowed new,
 caught; parameter-read-as-a-function-boxed and
 collection-for-an-into-iterator-unboxed moved with the rule, caught.
+
+## Amendment: a `RefCell` guard's `&mut` written whole is refused (2026-11-24, #2475)
+
+Generic code's box of an object's `&mut` writes the caller's referent in
+place (#1665). That's wrong for a `RefCell` guard. A guard's JS is its
+cell's own object, not a value of its own, so `fn put<T>(slot: &mut T, v:
+T) { *slot = v }` given `&mut g` and another cell's guard `h` wrote `h`'s
+contents into `g`'s cell and never gave `h`'s borrow back. Rust's write
+drops `g` and makes the variable `h`'s guard.
+
+`crossing_into`, the one owner every route of a call asks, now refuses it
+(`refuse_guard_written_whole`): a guard's `&mut`, `Ref` or `RefMut`, given
+where generic code declares a `&mut T` (`writes_through_its_box`), and
+another of the call's inputs holds a guard of its type, which is the only
+way generic code can get one to write. Generic code given the guard alone,
+`fn bump<P: DerefMut<Target = u32>>(p: &mut P)`, writes only what the
+guard guards, and compiles as before.
+
+A form that rebinds the caller's variable would let it compile. Until
+then the refusal holds, and #2444's `may_replace_whole` takes this route's
+answer from here.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): the fourth, compile
+error. Held by corpus cases `refcell_guard_given_to_generic_put_refused`
+and `refcell_field_guard_given_to_generic_put_refused`, libraries.test's
+library `put`, and generic_deref_mut (given alone, compiles). Mutations
+guard-given-to-a-whole-write-unrefused,
+guard-given-to-a-library-whole-write-unrefused and
+guard-given-alone-refused.

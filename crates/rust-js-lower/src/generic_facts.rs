@@ -280,6 +280,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .iter()
             .map(|&declared| self.instantiated(declared, args))
             .collect();
+        for (at, (&declared, &caller)) in sig.inputs().iter().zip(&instantiated).enumerate() {
+            let others = (instantiated.iter().enumerate())
+                .filter(|&(other, _)| other != at)
+                .map(|(_, &ty)| ty);
+            self.refuse_guard_written_whole((declared, caller), others, span)?;
+        }
         let given = match arguments {
             Arguments::Raw => {
                 for ((value, &declared), &caller) in values.iter_mut().zip(sig.inputs()).zip(&instantiated) {
@@ -526,6 +532,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             todo.extend(parts(d, i, held));
         }
         None
+    }
+
+    /// A `RefCell` guard's `&mut`, the caller's `instantiated`, refused where
+    /// generic code's `declared` `&mut T` may write it whole, `*slot = v`
+    /// (`writes_through_its_box`), given another guard of its type to write,
+    /// one of the call's `others` holding one, `put(&mut g, h)`'s `h`: Rust's
+    /// write drops the guard and makes the variable another's, where the JS
+    /// of a guard, the cell's own object, is written in place, its cell given
+    /// another's contents and the other's borrow never given back (#2475),
+    /// until a form that rebinds the caller's variable exists. Generic code
+    /// given no other, `fn bump<P: DerefMut>(p: &mut P)`, writes only what
+    /// the guard guards.
+    fn refuse_guard_written_whole(
+        &self,
+        (declared, instantiated): (Ty<'tcx>, Ty<'tcx>),
+        mut others: impl Iterator<Item = Ty<'tcx>>,
+        span: Span,
+    ) -> R<()> {
+        if let ty::Ref(_, _, Mutability::Mut) = *declared.kind()
+            && writes_through_its_box(declared)
+            && let ty::Ref(_, guard, Mutability::Mut) = *instantiated.kind()
+            && crate::recognition::is_cell_guard(self.tcx, guard)
+            && let guard = self.tcx.erase_and_anonymize_regions(guard)
+            && others.any(|other| {
+                (self.tcx.erase_and_anonymize_regions(other).walk()).any(|part| part.as_type() == Some(guard))
+            })
+        {
+            return Err(self.unsupported(
+                span,
+                &format!("a `RefCell` guard's `&mut`, `&mut {guard}`, given to generic code's `{declared}`, which may write the guard whole, giving its variable another cell's (#2475)"),
+            ));
+        }
+        Ok(())
     }
 
     /// A call of generic code `id`, its instance of `args`, refused where

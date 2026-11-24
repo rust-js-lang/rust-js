@@ -395,4 +395,28 @@ export const mutations: Mutation[] = [
     replace: "if param.index < parents)",
     tests: ["test/lowering-generic-iterators.test.ts", "-t", "unanswered"],
   },
+  {
+    name: "guard-given-to-a-whole-write-unrefused",
+    breaks: "a `RefCell` guard's `&mut` given to generic code's `&mut T`, which may write it whole, isn't refused: `put(&mut g, h)` writes `h`'s cell's contents into `g`'s, in place, and never gives `h`'s borrow back (#2475)",
+    file: "crates/rust-js-lower/src/generic_facts.rs",
+    find: "            self.refuse_guard_written_whole((declared, caller), others, span)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_(field_)?guard_given_to_generic_put_refused.rs$"],
+  },
+  {
+    name: "guard-given-to-a-library-whole-write-unrefused",
+    breaks: "a `RefCell` guard's `&mut` given to a library's generic `&mut T` isn't refused where it's a guard: the guard is taken for any value (#2475)",
+    file: "crates/rust-js-lower/src/generic_facts.rs",
+    find: "            && crate::recognition::is_cell_guard(self.tcx, guard)\n",
+    replace: "            && false\n",
+    tests: ["test/libraries.test.ts", "-t", "RefCell guard's `&mut` given to a library"],
+  },
+  {
+    name: "guard-given-alone-refused",
+    breaks: "a `RefCell` guard's `&mut` given to generic code given no other guard to write it with is refused, `bump(&mut cell.borrow_mut())` of `fn bump<P: DerefMut>(p: &mut P)`, which writes only what it guards (#2475)",
+    file: "crates/rust-js-lower/src/generic_facts.rs",
+    find: ".filter(|&(other, _)| other != at)",
+    replace: ".filter(|&(other, _)| other != at || other == at)",
+    tests: ["test/corpus.test.ts", "-t", "^generic_deref_mut.rs$"],
+  },
 ];
