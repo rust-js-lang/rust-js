@@ -5,15 +5,14 @@ import {
   $collectDropping,
   $downgrade,
   $live,
+  $main,
   $rcClone,
   $rcDrop,
   $unwindsOn,
   $weakDrop,
 } from "@rust-js/std";
 
-export function entry() {
-  main();
-}
+$main(main);
 
 function main() {
   const names = [{ value: "a", strong: 1, weak: 0 }];

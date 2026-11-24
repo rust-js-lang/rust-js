@@ -9,13 +9,10 @@ import {
   $foldDropping,
   $iter,
   $live,
+  $main,
   $panic,
   $unwindsOn,
 } from "@rust-js/std";
-
-export function entry() {
-  main();
-}
 
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
@@ -56,6 +53,8 @@ function boxed(items) {
     it.return();
   });
 }
+
+$main(main);
 
 function main() {
   const caught = $catchUnwind(() => {

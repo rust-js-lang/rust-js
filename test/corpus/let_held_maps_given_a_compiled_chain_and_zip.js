@@ -8,6 +8,7 @@ import {
   $iterator,
   $lazyChain,
   $lazyZip,
+  $main,
   $mapEnds,
   $next,
   $rangeLen,
@@ -19,13 +20,11 @@ import {
   iterator_map,
 } from "@rust-js/std";
 
-export function entry() {
-  main();
-}
-
 function plus(g, x) {
   return (g[0] + x) >>> 0;
 }
+$main(main);
+
 function main() {
   const v = [1, 2, 3];
   let ga$live = true;

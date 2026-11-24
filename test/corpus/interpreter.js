@@ -12,6 +12,7 @@ import {
   $isWhitespace,
   $iter,
   $lazyZip,
+  $main,
   $next,
   $parseF64,
   $peek,
@@ -19,10 +20,6 @@ import {
   $unwrapOk,
   iterator_peekable,
 } from "@rust-js/std";
-
-export function entry() {
-  main();
-}
 
 function tokenDebug_fmt(token) {
   if (token.TAG === "Num") {
@@ -602,6 +599,8 @@ function run(src) {
   out.push(`calls=${calls} depth=${depth}`);
   return { TAG: "Ok", _0: out };
 }
+
+$main(main);
 
 function main() {
   const programs = [

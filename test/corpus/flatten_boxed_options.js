@@ -4,15 +4,14 @@ import {
   $BTreeMap,
   $cmp,
   $extend,
+  $main,
   $nextSome,
   $some,
   $someValue,
   $sortedEntries,
 } from "@rust-js/std";
 
-export function entry() {
-  main();
-}
+$main(main);
 
 function main() {
   const v = [$some(undefined), undefined, 1];
