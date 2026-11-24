@@ -18,7 +18,8 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/impls.rs",
     find: "                    .then(|| self.made_iterator_dictionary(bound.def_id, ty))\n",
     replace: "                    .then(|| None)\n",
-    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_given_as_it_is.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^trait_method_impl_double_ended_result.rs$"],
+    snapshots: true,
   },
   {
     name: "made-item-iterator-param-as-it-is",

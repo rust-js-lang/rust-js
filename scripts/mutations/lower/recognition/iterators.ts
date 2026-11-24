@@ -231,7 +231,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/corpus.test.ts",
       "-t",
-      "^(generic_method_drops|std_projection_drops|into_iter_of_ref_param).rs$",
+      "^(generic_method_drops|std_projection_drops|into_iter_of_ref_param|adapter_drops).rs$",
     ],
   },
   {
