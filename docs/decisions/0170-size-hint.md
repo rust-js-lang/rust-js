@@ -563,3 +563,60 @@ called by name, by `collect()` and by `sum()`, and the metamorphic net's
 off its known list; mutations `library-impl-given-unmarked` and
 `library-impl-by-collect-unseen`.
 
+
+## Amendment: what generic code gives an impl its callers choose (2026-11-24, #2512)
+
+Generic code's `collect()` into a `B: FromIterator`, `sum()` into an `S:
+Sum` or `product()` into a `P: Product`, or `B::from_iter(it)`,
+`S::sum(it)`, `P::product(it)` or `into.extend(it)` of a type parameter,
+reaches an impl its callers choose, which the crate can't name where the
+call is: `crate_impl_called_by` resolves none. Where a caller gives the
+crate's own impl, which asks `size_hint()` of what it's given, an
+iterator generic code makes itself, `v.into_iter().skip(1)`, was JS's own
+`values().drop(1)`, `(0, None)` where std's `Skip` gives `(2, Some(2))`;
+and as the call's own code is std's, `may_leave` took the value to stay
+in the function, so no mark of its type reached its maker.
+
+So `recognition::impl_called_unresolved`, beside `crate_impl_called_by`
+in `recognition/consumer_impls.rs`, answers which trait method and
+arguments such a call reaches where its impl is unknown, and the hint
+analysis asks the callers' instances of the impl's type, each resolved:
+where one gives the crate's own impl whose body asks `size_hint()` of
+what it's given itself (`ask_the_hint_themselves`; one that gives it on
+to its own function that asks is the callers' carrier's, as before), or
+a library's impl, whose body the crate can't see, what generic code makes and gives it is made knowing its
+hint where it's made, as if it asks (`mark_given`). Not where every
+caller gives std's, `Vec`'s, nor the crate's own impl that only gives
+what it's given on to std's, `Vec::from_iter(iter)`: std asks a hint
+there for a capacity, which a program may never read, #2468's question,
+as any `collect()` asks it, so `from_iter_entry_drops_its_items.rs`,
+whose `from_iter` does just that and reads no capacity, keeps JS's own
+`map`. `may_leave` counts the call as one that runs what isn't std's own
+code. An iterator of generic code's own type parameters is each instance
+its callers give, which the impl each reaches asks itself through the
+callers' carrier, as before. Always correct, as a form that knows its
+hint is right wherever it's made; its cost is readability where an impl
+asks it on a path the program never takes. Not `partition()`'s or
+`unzip()`'s `extend`, which steps a `Some` of one item, whose hint std's
+`Option` knows.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's.
+
+Held by `test/corpus/hint_asked_by_an_own_impl_generic_code_collects_into.rs`
+against native Rust (`collect`, `sum` and `product` into the crate's own
+impls, by a std consumer and by name, an `extend` by name, an impl that
+asks through its own function, a `pub` function whose callers a library
+can't see, and generic code given an iterator of its parameters), and
+mutations
+`unresolved-impl-made-unknowing`, `unresolved-impl-stays-in-its-function`,
+`unresolved-by-name-unseen`, `unresolved-consumer-unseen`,
+`unresolved-of-stds-made-knowing`, `unresolved-own-impl-taken-to-ask`
+(`from_iter_entry_drops_its_items.rs`' snapshot) and
+`unresolved-own-ask-unseen`. A library's `pub` function, of callers it
+can't see, marks where the library's own impl of the trait asks, which
+a consumer may give it (the metamorphic net's `library` rewrite of the
+case); a consumer's own impl given there is #2518's, whose compile stops
+in the debug build's check of what std reaches, left as main has it, as
+test/libraries.test.ts' library `gather` of
+`from_iter_entry_drops_its_items.rs`'s shape holds.

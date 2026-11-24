@@ -20,7 +20,7 @@ mod held;
 mod iterators;
 pub(crate) use iterators::{ShownLeft, SliceShown};
 mod consumer_impls;
-pub(crate) use consumer_impls::{crate_impl_called_by, fallible_collect, values_from_iter};
+pub(crate) use consumer_impls::{crate_impl_called_by, fallible_collect, impl_called_unresolved, values_from_iter};
 pub(crate) use json::is_json_error_def;
 pub(crate) use methods::side_filled_by_helper;
 mod js_items;

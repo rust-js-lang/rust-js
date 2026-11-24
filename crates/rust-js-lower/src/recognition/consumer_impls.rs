@@ -90,61 +90,108 @@ pub(crate) fn crate_impl_called_by<'tcx>(
     callee: DefId,
     args: ty::GenericArgsRef<'tcx>,
 ) -> Vec<(DefId, ty::GenericArgsRef<'tcx>)> {
-    let called = || -> Option<Vec<(DefId, ty::GenericArgsRef<'tcx>)>> {
-        if !is_std_def(tcx, tcx.trait_of_assoc(callee)?, StdItem::Iterator) {
-            return None;
+    (consumer_calls(tcx, typing_env, callee, args)
+        .unwrap_or_default()
+        .into_iter())
+    .filter(|&(id, args)| {
+        crate::traits::resolve(tcx, typing_env, id, args)
+            .ok()
+            .flatten()
+            .is_some_and(|resolved| !is_std_crate(tcx, resolved.def_id()))
+    })
+    .collect()
+}
+
+/// What a call gives an impl that isn't known where it's made, an impl of a
+/// type parameter, which generic code's callers choose: of std's
+/// consumer's call, `collect()` into a `B: FromIterator`, `sum()` into an
+/// `S: Sum` or `product()` (`consumer_calls`), or a call by name of
+/// `FromIterator::from_iter`, `Sum::sum`, `Product::product` or
+/// `Extend::extend`. Any impl, the crate's own that asks the hint of what
+/// it's given among them (#2512). The trait's method and its arguments, as
+/// a call of it names them, `crate_impl_called_by`'s form, what it steps
+/// the `IntoIterator` its third type is; none of another call, nor where
+/// the impl is known.
+pub(crate) fn impl_called_unresolved<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    callee: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Vec<(DefId, ty::GenericArgsRef<'tcx>)> {
+    let by_name = tcx.trait_of_assoc(callee).is_some_and(|tr| {
+        tcx.is_diagnostic_item(sym::FromIterator, tr)
+            || accumulation(tcx, tr).is_some()
+            || super::registry::by_path(tcx, StdCrate::Core, &["iter", "Extend"]) == Some(tr)
+                && tcx.item_name(callee).as_str() == "extend"
+    });
+    let called = match by_name {
+        true => vec![(callee, args)],
+        // Not `partition()`'s or `unzip()`'s, whose `extend` steps a `Some`
+        // of one item, whose hint std's `Option` knows.
+        false if matches!(tcx.item_name(callee).as_str(), "collect" | "sum" | "product") => {
+            consumer_calls(tcx, typing_env, callee, args).unwrap_or_default()
         }
-        let (iter, output) = (args.types().next()?, args.types().nth(1)?);
-        let item = specialization::iterator_item_of(tcx, typing_env, iter)?;
-        Some(match tcx.item_name(callee).as_str() {
-            // Into an `Option` or a `Result` of what the crate collects: its
-            // `from_iter` of what each `Some` or `Ok` holds.
-            "collect" => vec![match fallible_collect(tcx, (iter, item), output) {
-                Some((collection, value, shunt)) => values_from_iter(tcx, collection, value, Some(shunt))?,
-                None => values_from_iter(tcx, output, item, Some(iter))?,
-            }],
-            name @ ("sum" | "product") => {
-                let accumulation = accumulation_of(tcx, callee)?;
-                let method = trait_method(tcx, accumulation, name);
-                vec![(method, tcx.mk_args(&[output.into(), item.into(), iter.into()]))]
-            }
-            // Each side's `extend_one` of each item, std's default of it its
-            // `extend` of a `Some` of it, `B`'s, as std's compiled body calls
-            // it (#2387, #2378).
-            "partition" => {
-                let extend = super::registry::by_path(tcx, StdCrate::Core, &["iter", "Extend"])?;
-                let option = tcx.adt_def(tcx.get_diagnostic_item(sym::Option)?);
-                let some = Ty::new_adt(tcx, option, tcx.mk_args(&[item.into()]));
-                vec![(
-                    trait_method(tcx, extend, "extend"),
-                    tcx.mk_args(&[output.into(), item.into(), some.into()]),
-                )]
-            }
-            // Each side's `extend_one`, its `extend` of a `Some` of its part
-            // of each pair, `FromA`'s and `FromB`'s, as std's compiled body,
-            // the pair's `default_extend`, calls it (#2395).
-            "unzip" => {
-                let extend = super::registry::by_path(tcx, StdCrate::Core, &["iter", "Extend"])?;
-                let option = tcx.adt_def(tcx.get_diagnostic_item(sym::Option)?);
-                let side = |part: Ty<'tcx>, side: Ty<'tcx>| {
-                    let some = Ty::new_adt(tcx, option, tcx.mk_args(&[part.into()]));
-                    (
-                        trait_method(tcx, extend, "extend"),
-                        tcx.mk_args(&[side.into(), part.into(), some.into()]),
-                    )
-                };
-                let [a, b, from_a, from_b] = [1, 2, 3, 4].map(|at| args.types().nth(at));
-                vec![side(a?, from_a?), side(b?, from_b?)]
-            }
-            _ => return None,
-        })
+        false => Vec::new(),
     };
-    (called().unwrap_or_default().into_iter())
-        .filter(|&(id, args)| {
-            crate::traits::resolve(tcx, typing_env, id, args)
-                .ok()
-                .flatten()
-                .is_some_and(|resolved| !is_std_crate(tcx, resolved.def_id()))
-        })
+    (called.into_iter())
+        .filter(|&(id, args)| matches!(crate::traits::resolve(tcx, typing_env, id, args), Ok(None)))
         .collect()
+}
+
+/// What a call of std's consumer `callee`, given `args`, calls of a trait
+/// a collection or a sum may implement, whoever's impl it is: the trait's
+/// method and its arguments (`crate_impl_called_by`). None of another call.
+fn consumer_calls<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    callee: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<Vec<(DefId, ty::GenericArgsRef<'tcx>)>> {
+    if !is_std_def(tcx, tcx.trait_of_assoc(callee)?, StdItem::Iterator) {
+        return None;
+    }
+    let (iter, output) = (args.types().next()?, args.types().nth(1)?);
+    let item = specialization::iterator_item_of(tcx, typing_env, iter)?;
+    Some(match tcx.item_name(callee).as_str() {
+        // Into an `Option` or a `Result` of what the crate collects: its
+        // `from_iter` of what each `Some` or `Ok` holds.
+        "collect" => vec![match fallible_collect(tcx, (iter, item), output) {
+            Some((collection, value, shunt)) => values_from_iter(tcx, collection, value, Some(shunt))?,
+            None => values_from_iter(tcx, output, item, Some(iter))?,
+        }],
+        name @ ("sum" | "product") => {
+            let accumulation = accumulation_of(tcx, callee)?;
+            let method = trait_method(tcx, accumulation, name);
+            vec![(method, tcx.mk_args(&[output.into(), item.into(), iter.into()]))]
+        }
+        // Each side's `extend_one` of each item, std's default of it its
+        // `extend` of a `Some` of it, `B`'s, as std's compiled body calls
+        // it (#2387, #2378).
+        "partition" => {
+            let extend = super::registry::by_path(tcx, StdCrate::Core, &["iter", "Extend"])?;
+            let option = tcx.adt_def(tcx.get_diagnostic_item(sym::Option)?);
+            let some = Ty::new_adt(tcx, option, tcx.mk_args(&[item.into()]));
+            vec![(
+                trait_method(tcx, extend, "extend"),
+                tcx.mk_args(&[output.into(), item.into(), some.into()]),
+            )]
+        }
+        // Each side's `extend_one`, its `extend` of a `Some` of its part
+        // of each pair, `FromA`'s and `FromB`'s, as std's compiled body,
+        // the pair's `default_extend`, calls it (#2395).
+        "unzip" => {
+            let extend = super::registry::by_path(tcx, StdCrate::Core, &["iter", "Extend"])?;
+            let option = tcx.adt_def(tcx.get_diagnostic_item(sym::Option)?);
+            let side = |part: Ty<'tcx>, side: Ty<'tcx>| {
+                let some = Ty::new_adt(tcx, option, tcx.mk_args(&[part.into()]));
+                (
+                    trait_method(tcx, extend, "extend"),
+                    tcx.mk_args(&[side.into(), part.into(), some.into()]),
+                )
+            };
+            let [a, b, from_a, from_b] = [1, 2, 3, 4].map(|at| args.types().nth(at));
+            vec![side(a?, from_a?), side(b?, from_b?)]
+        }
+        _ => return None,
+    })
 }

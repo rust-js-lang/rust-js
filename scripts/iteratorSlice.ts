@@ -87,6 +87,7 @@ export const iteratorPaths = [
   "crates/rust-js-lower/src/recognition/adapter_types.rs",
   "crates/rust-js-lower/src/recognition/held.rs",
   "crates/rust-js-lower/src/recognition/iterators.rs",
+  "crates/rust-js-lower/src/recognition/consumer_impls.rs",
   "crates/rust-js-lower/src/recognition/array_iters.rs",
   "crates/rust-js-lower/src/recognition/lengths.rs",
   "crates/rust-js-lower/src/recognition/own_steps.rs",

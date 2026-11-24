@@ -42,16 +42,34 @@ export const mutations: Mutation[] = [
     breaks:
       "a `partition`'s side's `extend`, which std's compiled body calls of the crate's impl, isn't answered, so the callers' carrier misses what it's given and the debug build's check stops a compile that succeeds (#2387)",
     file: "crates/rust-js-lower/src/recognition/consumer_impls.rs",
-    find: "            \"partition\" => {\n",
-    replace: "            \"partition\" if false => {\n",
+    find: "        \"partition\" => {\n",
+    replace: "        \"partition\" if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^partition_fills_each_side_as_std_does.rs$"],
   },
   {
     name: "unzip-crate-extend-unnamed",
     breaks: "`unzip()`'s sides' `Extend::extend` isn't named as what std's compiled body calls of the crate's, so the crate's `extend` is never compiled as it's called (#2395)",
     file: "crates/rust-js-lower/src/recognition/consumer_impls.rs",
-    find: "                vec![side(a?, from_a?), side(b?, from_b?)]\n",
-    replace: "                vec![]\n",
+    find: "            vec![side(a?, from_a?), side(b?, from_b?)]\n",
+    replace: "            vec![]\n",
     tests: ["test/corpus.test.ts", "-t", "^unzip_fills_each_side_as_std_extends_it.rs$"],
+  },
+  {
+    name: "unresolved-by-name-unseen",
+    breaks:
+      "a call by name of an impl its callers choose, `S::sum(it)` or `into.extend(it)` of a type parameter, isn't one whose impl is unknown, so what generic code gives it stays JS's own adapter, and the crate's own impl that asks its hint gets `(0, None)` (#2512)",
+    file: "crates/rust-js-lower/src/recognition/consumer_impls.rs",
+    find: "        true => vec![(callee, args)],\n",
+    replace: "        true => Vec::new(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_an_own_impl_generic_code_collects_into.rs$"],
+  },
+  {
+    name: "unresolved-consumer-unseen",
+    breaks:
+      "a std consumer's call into an impl its callers choose, `collect::<B>()` or `product::<P>()` of a type parameter, isn't one whose impl is unknown, so what generic code gives it stays JS's own adapter, `(0, None)` (#2512)",
+    file: "crates/rust-js-lower/src/recognition/consumer_impls.rs",
+    find: "        false if matches!(tcx.item_name(callee).as_str(), \"collect\" | \"sum\" | \"product\") => {\n",
+    replace: "        false if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_an_own_impl_generic_code_collects_into.rs$"],
   },
 ];

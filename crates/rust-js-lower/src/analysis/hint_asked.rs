@@ -110,6 +110,10 @@ pub(super) fn of_crate<'tcx>(
     let asks = AsksHint::of(tcx);
     let mut of_params: Vec<(DefId, Ty<'tcx>)> = Vec::new();
     let mut grown: Vec<(DefId, Ty<'tcx>)> = Vec::new();
+    // What generic code gives an impl its callers choose: its body, the
+    // trait's method and its arguments, and what it steps
+    // (`impl_called_unresolved`, #2512).
+    let mut unresolved: Vec<(DefId, (DefId, ty::GenericArgsRef<'tcx>), Ty<'tcx>)> = Vec::new();
     let iterator = crate::recognition::std_item(tcx, crate::recognition::StdItem::Iterator);
     let size_hint = crate::recognition::trait_method(tcx, iterator, "size_hint");
     for body in all_bodies {
@@ -121,6 +125,15 @@ pub(super) fn of_crate<'tcx>(
             let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
             for given in given_a_library_unseen(tcx, typing_env, (callee, args)) {
                 _ = mark_given(tcx, recognition, (body.def_id, given), keeps_capacity, &mut asked);
+            }
+            // What generic code makes and gives an impl its callers choose, of
+            // a type parameter, `collect()` into a `B: FromIterator` or
+            // `S::sum(..)` (`impl_called_unresolved`), asked below of the
+            // impls its callers give (#2512).
+            for (method, given) in crate::recognition::impl_called_unresolved(tcx, typing_env, callee, args) {
+                let iter = crate::recognition::iterator_type_of(tcx, typing_env, given.type_at(2));
+                let iter = tcx.erase_and_anonymize_regions(iter.peel_refs());
+                unresolved.push((body.def_id, (method, tcx.erase_and_anonymize_regions(given)), iter));
             }
             // A `dyn Iterator`'s hint asked, and one given back by what the
             // crate can't see make it (#1476).
@@ -222,8 +235,73 @@ pub(super) fn of_crate<'tcx>(
             }
         }
     }
-    let callers =
-        (!of_params.is_empty() || !grown.is_empty()).then(|| crate::instances::callers_of(tcx, names, all_bodies));
+    let callers = (!of_params.is_empty() || !grown.is_empty() || !unresolved.is_empty())
+        .then(|| crate::instances::callers_of(tcx, names, all_bodies));
+    // What generic code gives an impl its callers choose, where one of them
+    // gives the crate's own impl whose body asks `size_hint()` of what it's
+    // given itself (`ask_the_hint_themselves`), or a library's, whose body
+    // it can't see: made knowing its hint where it's made, as if it asks
+    // (#2512). Not where the impl only gives it to
+    // std's, `Vec::from_iter`'s, which asks a hint for a capacity a program
+    // may never read, as any `collect()` does (#2468). What it's given of
+    // its own type parameters is each instance its callers give, which the
+    // impl each reaches asks itself.
+    let themselves = match unresolved.is_empty() {
+        true => IndexSet::default(),
+        false => ask_the_hint_themselves(tcx, all_bodies, size_hint),
+    };
+    for (made_in, (method, given), iter) in unresolved {
+        use crate::instances::Seen;
+        let typing_env = ty::TypingEnv::post_analysis(tcx, made_in);
+        let of = given.type_at(0);
+        let asks = |instance: Ty<'tcx>| {
+            // Of std's types alone, std's impl, which asks nothing a program
+            // reads but its capacities.
+            let crates = (instance.walk().filter_map(|part| part.as_type())).any(
+                |part| matches!(part.kind(), ty::Adt(adt, _) if !crate::recognition::is_std_crate(tcx, adt.did())),
+            );
+            if !crates {
+                return false;
+            }
+            // The call as it is of this instance, `Sum<T>` of `T: Sum` too.
+            let args = rustc_middle::ty::TypeFoldable::fold_with(
+                given,
+                &mut ty::BottomUpFolder {
+                    tcx,
+                    ty_op: |t: Ty<'tcx>| if t == of { instance } else { t },
+                    lt_op: |r| r,
+                    ct_op: |c| c,
+                },
+            );
+            match crate::traits::resolve(tcx, typing_env, method, args) {
+                Ok(Some(called)) if called.def_id().is_local() => {
+                    themselves.contains(&tcx.typeck_root_def_id(called.def_id()))
+                }
+                Ok(Some(called)) => !crate::recognition::is_std_crate(tcx, called.def_id()),
+                _ => true,
+            }
+        };
+        let owner = tcx.typeck_root_def_id(made_in);
+        let any = match callers
+            .as_ref()
+            .map(|callers| crate::instances::instances_of(tcx, (callers, crate::instances::Fact::Shared), of, owner))
+        {
+            Some(Seen::These(instances)) => instances.into_iter().any(asks),
+            // Past what it can list, any of them may. Of callers it can't see,
+            // a library's `pub` function's, its own impl of the trait that
+            // asks, which a consumer may give it; a consumer's own impl given
+            // there is #2518's, as main has it.
+            Some(Seen::Many) | None => true,
+            Some(Seen::Unseen) => tcx.trait_of_assoc(method).is_some_and(|tr| {
+                (tcx.all_impls(tr).filter(|imp| imp.is_local()))
+                    .filter_map(|imp| tcx.impl_item_implementor_ids(imp).get(&method).copied())
+                    .any(|own| themselves.contains(&own))
+            }),
+        };
+        if any {
+            _ = mark_given(tcx, recognition, (made_in, iter), keeps_capacity, &mut asked);
+        }
+    }
     // Each `Vec` generic code grows by what one of its callers gives whose
     // JS hint's lower bound isn't std's (#1180's (3)). Where callers can't
     // be seen, a library's `pub` function's, asked of each value its
@@ -336,6 +414,26 @@ pub(super) fn of_crate<'tcx>(
     asked.hinted
 }
 
+/// Each function of the crate's that asks `size_hint()` of what it's
+/// given itself: not one that only gives it to std's, `Vec`'s `from_iter`,
+/// which asks it for a capacity a program may never read (#2468). One that
+/// gives it on to the crate's own function that asks is the callers'
+/// carrier's, which marks what reaches that function. Of what generic code
+/// gives an impl its callers choose (#2512).
+fn ask_the_hint_themselves<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], size_hint: DefId) -> IndexSet<DefId> {
+    (all_bodies.iter())
+        .filter(|body| {
+            calls_of(tcx, body).into_iter().any(|(callee, args)| {
+                callee == size_hint
+                    && args
+                        .types()
+                        .any(|given| rustc_middle::ty::TypeVisitableExt::has_param(&given))
+            })
+        })
+        .map(|body| tcx.typeck_root_def_id(body.def_id))
+        .collect()
+}
+
 /// Whether a value of type `ty` made in `body` may leave it for another
 /// function: `ty` held in what it returns, what it's given or captures
 /// (`holds`), in an argument of a call that runs what isn't std's own code,
@@ -372,13 +470,15 @@ fn may_leave<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, ty: Ty<'tcx>) -> bool {
     thir.exprs.iter().any(|expr| match &expr.kind {
         // Of std's own code alone: not a std trait's method the crate's impl
         // answers, nor a std consumer that gives what it steps on to one,
-        // `collect()`'s `from_iter` (#2376).
+        // `collect()`'s `from_iter` (#2376), nor one that gives it on to an
+        // impl its callers choose, `collect()` into a `B: FromIterator` (#2512).
         ExprKind::Call { fun, args, .. } => {
             let std = fn_def(thir[*fun].ty).is_some_and(|(callee, given)| {
                 let runs = (crate::traits::resolve(tcx, typing_env, callee, given).ok().flatten())
                     .map_or(callee, |instance| instance.def_id());
                 crate::recognition::is_std_crate(tcx, runs)
                     && crate::recognition::crate_impl_called_by(tcx, typing_env, callee, given).is_empty()
+                    && crate::recognition::impl_called_unresolved(tcx, typing_env, callee, given).is_empty()
             });
             !std && args.iter().any(|&arg| holds(thir[arg].ty))
         }

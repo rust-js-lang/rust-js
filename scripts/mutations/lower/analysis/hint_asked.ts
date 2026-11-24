@@ -326,4 +326,51 @@ export const mutations: Mutation[] = [
     replace: "                (Seen::Many, made) => match (Seen::Unseen, made) {\n",
     tests: ["test/corpus.test.ts", "-t", "^hint_asked_of_more_instances_than_listed.rs$"],
   },
+  {
+    name: "unresolved-impl-made-unknowing",
+    breaks:
+      "what generic code makes and gives an impl its callers choose, `v.into_iter().take(2).collect::<B>()` of a `B: FromIterator`, isn't made knowing its hint, so the crate's own `from_iter` that asks it gets JS's own `values().take(2)`, `(0, None)` where std's `Take` gives `(2, Some(2))` (#2512)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "            _ = mark_given(tcx, recognition, (made_in, iter), keeps_capacity, &mut asked);\n",
+    replace: "            let _ = (made_in, iter);\n",
+    tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_an_own_impl_generic_code_collects_into.rs$"],
+  },
+  {
+    name: "unresolved-impl-stays-in-its-function",
+    breaks:
+      "a value generic code gives an impl its callers choose, `S::sum(it)` of an `S: Sum`, is taken to stay in the function that makes it, as std's own code steps it, so it's JS's own adapter there and the crate's own `sum` that asks its hint gets `(0, None)` (#2512)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "                    && crate::recognition::impl_called_unresolved(tcx, typing_env, callee, given).is_empty()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_an_own_impl_generic_code_collects_into.rs$"],
+  },
+  {
+    name: "unresolved-of-stds-made-knowing",
+    breaks:
+      "what generic code collects into a `B: FromIterator` whose every caller gives std's, `Vec`'s, is made knowing its hint too, as if the crate's own impl may ask it: `$mapEnds` where JS's own `map` was, a change of form where nothing asks (#2512)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "            if !crates {\n                return false;\n            }\n",
+    replace: "            if !crates {\n                return true;\n            }\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "unresolved-own-impl-taken-to-ask",
+    breaks:
+      "what generic code collects into a `T: FromIterator<D>` whose caller gives the crate's own `from_iter`, which gives it on to std's `Vec::from_iter` alone, is taken to ask its hint, so it's `$mapEnds` where JS's own `map` was, a hint std asks for a capacity nothing reads (#2512, #2468)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "                    themselves.contains(&tcx.typeck_root_def_id(called.def_id()))\n",
+    replace: "                    true\n",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_entry_drops_its_items.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "unresolved-own-ask-unseen",
+    breaks:
+      "the crate's own `from_iter` or `sum` that asks `size_hint()` of what generic code gives it isn't seen to, so what's given is JS's own `values().take(2)`, `(0, None)` where std's `Take` gives `(2, Some(2))` (#2512)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "                    themselves.contains(&tcx.typeck_root_def_id(called.def_id()))\n",
+    replace: "                    false\n",
+    tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_an_own_impl_generic_code_collects_into.rs$"],
+  },
 ];
