@@ -590,6 +590,19 @@ impl<'tcx> Declarations<'_, 'tcx> {
         self.erased = self.erased(def_id);
     }
 
+    /// `declare`, of `def_id` entered (`enter`), the item before it entered
+    /// again after: a private type declared where an item names it, its
+    /// fields' forms asked of its own context (#2533).
+    fn within<T>(&mut self, def_id: DefId, declare: impl FnOnce(&mut Self) -> T) -> T {
+        let owner = self.owner;
+        let erased = std::mem::take(&mut self.erased);
+        self.enter(def_id);
+        let declared = declare(self);
+        self.owner = owner;
+        self.erased = erased;
+        declared
+    }
+
     /// An item's type parameters that are a type of TypeScript's, by index,
     /// as the trait each is bound by says (`#[rust_js::types]`): `C: ReactNode`
     /// is a `ReactNode`, as a person writes `children: ReactNode`.
@@ -1203,14 +1216,13 @@ impl<'tcx> Declarations<'_, 'tcx> {
             let name = type_name(tcx, did);
             if !self.unexported.contains_key(&name) {
                 self.unexported.insert(name.clone(), None);
-                let inner = self.erased(did);
-                let outer = std::mem::replace(&mut self.erased, inner);
-                let declared = match tcx.def_kind(did) {
-                    DefKind::Struct => self.struct_declaration(did),
-                    DefKind::Union => Some(self.union_type(did)),
-                    _ => Some(self.enumeration(did)),
-                };
-                self.erased = outer;
+                // In its own context, not the item's that named it: a field's
+                // `Option` asks it, which of a module's is a rustc ICE (#2533).
+                let declared = self.within(did, |out| match tcx.def_kind(did) {
+                    DefKind::Struct => out.struct_declaration(did),
+                    DefKind::Union => Some(out.union_type(did)),
+                    _ => Some(out.enumeration(did)),
+                });
                 let Some(mut declared) = declared else {
                     self.unexported.remove(&name);
                     return keyword("any");

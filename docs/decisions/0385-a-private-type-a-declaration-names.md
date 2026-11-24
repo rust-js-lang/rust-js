@@ -33,3 +33,16 @@ interface: `interface DiagramGroupProps { .. }`, then
   declare, and its own module doesn't export it.
 - Another crate's untagged enum a declaration names, declared here the same
   way (ADR 0225), is before what names it too.
+
+## Amendment (2026-11-25, #2533): declared in its own context
+
+A private type declared where an item names it is declared in its own
+context, the type entered (`Declarations::within`) as an item of the
+module is, then the item that named it entered again. It was declared in
+the namer's, its type parameters' erasures swapped in but not its owner,
+so a field's `Option` asked how it holds its payload of the module's
+context, the crate root's, which is no item's: a rustc ICE, `generics_of:
+unexpected node kind Crate`, of a 17-line program whose private struct of
+an `Option` field an impl of another module's trait names first. Corpus
+`private_struct_of_an_option_declared_where_an_impl_names_it`; mutation
+`private-type-declared-in-the-namers-context`.

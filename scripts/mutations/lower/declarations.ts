@@ -831,4 +831,12 @@ export const mutations: Mutation[] = [
     replace: "                    referred[\"readonly\"] = json!(false);\n",
     tests: ["test/declarations-readonly.test.ts"],
   },
+  {
+    name: "private-type-declared-in-the-namers-context",
+    breaks: "a private struct declared where an impl names it asks its `Option` field's form in the module's context, the crate root's, a rustc ICE, `generics_of: unexpected node kind Crate` (#2533)",
+    file: "crates/rust-js-lower/src/declarations.rs",
+    find: "        self.enter(def_id);\n        let declared = declare(self);\n",
+    replace: "        let declared = declare(self);\n",
+    tests: ["test/corpus.test.ts", "-t", "^private_struct_of_an_option_declared_where_an_impl_names_it.rs$"],
+  },
 ];
