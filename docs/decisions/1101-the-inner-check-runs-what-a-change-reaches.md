@@ -1134,3 +1134,33 @@ a sanity pass" (B). Mutations `rebase-gate-never-run`,
 `rebase-gate-own-side-only`, `push-round-remade-compared`,
 `push-round-refused-whole`, `push-round-refused-reused` and
 `push-round-carry-unsaid`.
+
+## Amendment (2026-11-24, #2523): an item another item names is searched through it
+
+#2288's rule maps a line outside any function to the functions that name
+its item, a variant's line to its enum's namers. But where another item
+named it, a struct's field's type, a function's signature, a constant's
+initializer, the rule stopped: `named by another item`, everything. #890's
+naming relays each added a `Role` variant, and `fn declared(role: Role)`'s
+signature named `Role`, so each ran a whole check (665 and 883 s on the
+M1).
+
+Now a site of the name in another item is followed:
+
+- a function's signature: the function it opens, which compiles its
+  parameter;
+- another item, a field's struct, an alias, a constant whose initializer
+  names it: what names that item, searched in turn, each item once.
+
+A site whose item can't be named, a macro's invocation outside any
+function, is still everything. The short-name and common-name valves
+hold at each step. A line of a `use` written over several lines is a
+`use`'s, which reads nothing; and a name added to a `use` whose list
+rustfmt reflowed over more lines or fewer is the rule's for a name added
+to a `use` in place, its lines each of paths and names alone, no item's
+keyword (177cf3074's `Copied` ran its own push whole).
+
+Mutations `test-map-item-named-by-another-unseen` (rewritten),
+`test-map-signature-namer-unopened`, `test-map-other-item-everything`,
+`test-map-use-reflow-everything`, `test-map-use-list-takes-items`.
+

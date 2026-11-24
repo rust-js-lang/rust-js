@@ -127,15 +127,21 @@ test("a constant's value, an array's length with it, is the change of the functi
   text[24] = "];";
   text[26] = "/// `FLIPPED`'s adapters, a comment that names it.";
   text[44] = "const OTHER: usize = FLIPPED.len();";
-  const sources = (also: { file: string; line: number }[] = []): Sources => ({
+  const sources = (also: { file: string; line: number }[] = [], other: { file: string; line: number }[] = []): Sources => ({
     text: (file) => (file === "src/a.rs" ? text.join("\n") : undefined),
-    naming: (word) => (word === "FLIPPED" ? [{ file: "src/a.rs", line: 15 }, { file: "src/a.rs", line: 22 }, { file: "src/a.rs", line: 27 }, ...also] : []),
+    naming: (word) => (word === "FLIPPED" ? [{ file: "src/a.rs", line: 15 }, { file: "src/a.rs", line: 22 }, { file: "src/a.rs", line: 27 }, ...also] : word === "OTHER" ? other : []),
   });
   const grown: Change = { file: "src/a.rs", hunks: [[22, 1, ["pub(crate) const FLIPPED: [&str; 3] = ["], ["pub(crate) const FLIPPED: [&str; 2] = ["]], [24, 0, ['    "c",'], []]] };
   const asFunction = pick(map, [{ file: "src/a.rs", hunks: [[15, 1]] }], files, cases);
   expect(pick(map, [grown], files, cases, sources())).toEqual({ ...asFunction, why: expect.any(String) } as never);
-  // Read where no function is, another constant's initializer: everything.
-  expect(pick(map, [grown], files, cases, sources([{ file: "src/a.rs", line: 45 }])).kind).toBe("all");
+  // Read where no function is, another constant's initializer: what names
+  // that constant, searched in turn (#2523), function 1 here.
+  const both = pick(map, [{ file: "src/a.rs", hunks: [[15, 1], [31, 1]] }], files, cases);
+  expect(pick(map, [grown], files, cases, sources([{ file: "src/a.rs", line: 45 }], [{ file: "src/a.rs", line: 31 }]))).toEqual({ ...both, why: expect.any(String) } as never);
+  // Named where no item's name is found, a macro's invocation outside any
+  // function: everything.
+  text[45] = "inventory::submit! { FLIPPED }";
+  expect(pick(map, [grown], files, cases, sources([{ file: "src/a.rs", line: 46 }])).kind).toBe("all");
   // Its type changed past its length: the functions that name it, whose
   // code it compiles into, as an item's change is (#2288).
   const retyped: Change = { file: "src/a.rs", hunks: [[22, 1, ["pub(crate) const FLIPPED: [String; 2] = ["], ["pub(crate) const FLIPPED: [&str; 2] = ["]]] };
@@ -166,7 +172,7 @@ test("a name no item declared, added to a `use`, changes nothing but the code ch
   text[24] = "};";
   const sources = (declared: boolean): Sources => ({
     text: (file) => (file === "src/a.rs" ? text.join("\n") : file === "src/b.rs" ? "pub struct ImportNames;" : undefined),
-    naming: (word) => (word === "ImportNames" && declared ? [{ file: "src/b.rs", line: 1 }] : []),
+    naming: (word) => (word === "ImportNames" && declared ? [{ file: "src/b.rs", line: 1 }] : word === "helper" ? [{ file: "src/a.rs", line: 15 }] : []),
   });
   const added: Change = { file: "src/a.rs", hunks: [[23, 1, ["    imports::{Import, ImportNames, Package},"], ["    imports::{Import, Package},"]]] };
   expect(pick(map, [added], files, cases, sources(false))).toMatchObject({ kind: "picked", files: ["test/reads.test.ts"], cases: [] });
@@ -175,6 +181,15 @@ test("a name no item declared, added to a `use`, changes nothing but the code ch
   // A name taken out of a `use`: everything.
   const taken: Change = { file: "src/a.rs", hunks: [[23, 1, ["    imports::{Import},"], ["    imports::{Import, Package},"]]] };
   expect(pick(map, [taken], files, cases, sources(false)).kind).toBe("all");
+  // Its line reflowed over two by rustfmt as the name's added (177cf3074's
+  // `Copied`, #2523): the same.
+  const reflowed: Change = { file: "src/a.rs", hunks: [[23, 1, ["    imports::{", "        Import, ImportNames, Package,", "    },"], ["    imports::{Import, Package},"]]] };
+  expect(pick(map, [reflowed], files, cases, sources(false))).toMatchObject({ kind: "picked", files: ["test/reads.test.ts"], cases: [] });
+  // But a line that writes an item beside it isn't a `use`'s: a new `fn
+  // helper` a glob's `helper` named before is its namers', function 0's.
+  const beside: Change = { file: "src/a.rs", hunks: [[23, 1, ["    imports::{Import, ImportNames, Package},", "fn helper() {}"], ["    imports::{Import, Package},"]]] };
+  const besides = pick(map, [beside], files, cases, sources(false));
+  expect(besides.kind === "all" || besides.functions.includes(0)).toBe(true);
 });
 
 test("a test carried over keeps its functions by their symbols, and one new since isn't any carried test's", () => {
@@ -844,6 +859,36 @@ test("an item outside any function selects the functions that name it; a short o
   expect(pick(map, [shadowing], files, cases, lenNamed)).toEqual({ ...asFunction, why: expect.any(String) } as never);
   // Nothing names it: no test file of its own.
   expect(pick(map, [shadowing], files, cases, { ...lenNamed, naming: () => [] })).toMatchObject({ kind: "picked", files: ["test/reads.test.ts"] });
+});
+
+// A variant added to an enum another item names, a struct's field's type,
+// or a function's signature names: the function the signature opens, and
+// what names that item, searched in turn, not every test. #890's naming
+// relays each added a `Role` variant, which `fn declared(role: Role)`'s
+// signature named, and each ran a whole check (#2523).
+test("a variant of an enum a field or a signature names selects what names them", () => {
+  // src/a.rs: function 0 at 10-20 names `Holder` at 15; the enum at 22-25;
+  // a signature at 28 opening function 1 at 30; the struct at 42-44.
+  const text = Array.from({ length: 50 }, (_, i) => `// line ${i + 1}`);
+  text[14] = "    let held = Holder::default();";
+  text[21] = "pub enum Role {";
+  text[22] = "    Key,";
+  text[23] = "    Word,";
+  text[24] = "}";
+  text[27] = "fn declared(role: Role) -> Name {";
+  text[41] = "pub struct Holder {";
+  text[42] = "    role: Role,";
+  text[43] = "}";
+  const sites: Record<string, number[]> = { Role: [22, 28, 43], Holder: [15, 42] };
+  const sources: Sources = {
+    text: (file) => (file === "src/a.rs" ? text.join("\n") : undefined),
+    naming: (word) => (sites[word] ?? []).map((line) => ({ file: "src/a.rs", line })),
+  };
+  const variant: Change = { file: "src/a.rs", hunks: [[24, 0, ["    Letter,"], []]] };
+  const both = pick(map, [{ file: "src/a.rs", hunks: [[15, 1], [31, 1]] }], files, cases);
+  // The same picks, whatever the order its functions were found in.
+  const sorted = (picked: ReturnType<typeof pick>) => (picked.kind === "picked" ? { ...picked, functions: [...picked.functions].sort(), why: "" } : picked);
+  expect(sorted(pick(map, [variant], files, cases, sources))).toEqual(sorted(both));
 });
 
 // lisa agent's probe of #2288's rule (comment 7127339825): changes outside any

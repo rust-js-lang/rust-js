@@ -577,8 +577,13 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
   // `imports::{Import}`, of what no item at the map's commit declared: a
   // name that didn't exist shadows none a glob gave, so it changes nothing
   // but the code changed to use it (4ba38fa64's crates/rust-js-program/src/js.rs:43).
+  // Its lines each a `use`'s, of paths and names alone, as rustfmt lays out
+  // a list it reflowed over more lines or fewer, 177cf3074's `Copied, ..`
+  // (#2523): no item's keyword, no expression.
+  const useListLine = (line: string) =>
+    commentOnly(line) || (/^\s*(?:pub(?:\([^)]*\))?\s+)?(?:use\s+)?[\w:{},*\s]*;?\s*$/.test(line) && !/\b(?:struct|enum|union|trait|type|fn|const|static|mod|impl|let|macro_rules)\b/.test(line));
   const newNamesUsed = (file: string, from: number, count: number, added: string[], removed: string[] | undefined): boolean => {
-    if (removed === undefined || count === 0 || removed.length !== added.length) return false;
+    if (removed === undefined || count === 0 || !added.every(useListLine)) return false;
     const text = sources.text(file);
     if (text === undefined || constHolding(text.split("\n"), from, from + count - 1, useItem) === undefined) return false;
     const words = (lines: string[]) => new Set(lines.join(" ").replace(/\/\/.*$/gm, "").match(/\b[A-Za-z_]\w*\b/g) ?? []);
@@ -720,18 +725,38 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     }
     return [...found];
   };
-  const byOneName = (file: string, name: string): number[] | string => {
+  const byOneName = (file: string, name: string, searched = new Set<string>()): number[] | string => {
     if (name.length < 3) return `its item, \`${name}\`, is too short a name to search`;
+    searched.add(name);
     const found = new Set<number>();
     for (const site of sources.naming(name)) {
       const held = holding(site.file, site.line);
+      const lines = linesOf(site.file);
+      const text = lines[site.line - 1] ?? "";
+      // A line of a `use` written over several, `pub use m::{\n  A, B,\n};`'s
+      // second: a `use`'s, which reads nothing.
+      if (held.length === 0 && constHolding(lines, site.line, site.line, useItem) !== undefined) continue;
       // Named by another item, a constant's or a static's initializer,
-      // even one inside a function, or a type's field outside any: what
-      // names that item isn't searched.
-      const text = linesOf(site.file)[site.line - 1] ?? "";
+      // even one inside a function, a type's field outside any, a
+      // function's signature: the function the signature opens; of another
+      // item, what names that item, searched in turn, so a variant added to
+      // an enum a struct's field names selects what names the struct, not
+      // every test (#2523). One searched already is its own search's.
       const initializer = /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:const|static)\s+(?:mut\s+)?([A-Za-z_]\w*)/.exec(text)?.[1];
       const other = initializer !== undefined ? initializer !== name : held.length === 0 && !commentOnly(text) && !useLine.test(text) && itemOf(site.file, site.line) !== name;
-      if (other) return `\`${name}\` is named by another item, at ${site.file}:${site.line}`;
+      if (other) {
+        const opened = initializer === undefined && inSignature(lines, site.line) ? following(site.file, site.line) : undefined;
+        if (opened !== undefined) {
+          found.add(opened);
+          continue;
+        }
+        const outer = initializer ?? itemOf(site.file, site.line);
+        if (outer === undefined) return `\`${name}\` is named by another item, at ${site.file}:${site.line}`;
+        if (searched.has(outer)) continue;
+        const through = byOneName(site.file, outer, searched);
+        if (typeof through === "string") return through;
+        for (const f of through) found.add(f);
+      }
       for (const f of held) found.add(f);
     }
     const crate = crateDirOf(file);
