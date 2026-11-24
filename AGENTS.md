@@ -185,6 +185,7 @@ CONTRIBUTING.md.
 |---|---|---|
 | Test | `bun test test/<file>.test.ts -t <name>` | `bun run test` |
 | Check and push | `bun run push` | each push's check, `check.yml` |
+| Push without the selected check | `bun run push --skip-check="(a) …"` where the selector over-selects (select.ts, the test map, CI config), or `"(b) …"` with Tu's or the lead's say-so; the reason names which ([DEVELOPMENT.md](DEVELOPMENT.md#working-on-main)) | the whole check, `check.yml`; a red one is fixed first |
 | Bless snapshots | `BLESS=1 bun test test/<file>.test.ts -t <name>` | `bun run ci:bless` applies its patch |
 | Mutations ([ADR 0093](docs/decisions/0093-mutations.md)) | `bun scripts/mutations.ts <name>` | changed ones; all before a release |
 | rustc tests ([ADR 0089](docs/decisions/0089-rustc-tests.md)) | `bun run test:rustc drop/ closures/` | all; bless lists with `bun run ci:bless` |
