@@ -635,6 +635,7 @@ export const nightly = [
   "harness",
   "history",
   "crate-snapshots",
+  "tooling-tree-shaking",
 ].map((name) => `test/${name}.test.ts`);
 
 /** The push suite's test files of `names`, the test folder's entries,
