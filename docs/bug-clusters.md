@@ -225,7 +225,7 @@ didn't stop their clusters.
 ## The decisions amended most
 
 As of 2026-11-12: 2,617 amendments of 591 of the 1,039 decisions; 12 are
-amended 25 times or more (13 since 0419's #1792, 2026-11-14, 14 since 0093's dev-loop change 3, 2026-11-15, 15 since 0145's #2318, 2026-11-22), 57 more 10 to 24 times. What each of the 12's
+amended 25 times or more (13 since 0419's #1792, 2026-11-14, 14 since 0093's dev-loop change 3, 2026-11-15, 15 since 0145's #2318, 2026-11-22, 16 since 0099's #2191, 2026-11-24), 57 more 10 to 24 times. What each of the 12's
 amendments are, and what would end them:
 
 | ADR | Amendments | What each amendment is | The refactor, or why none |
@@ -238,6 +238,7 @@ amendments are, and what would end them:
 | 0444 | 33 | One construct and one place a comment or a blank line is in it | #888, a comment carried from lowering, is not planned (the user's triage, 2026-11-11): placement works, a misplacement is its own bug; reopened if they recur in numbers |
 | 0364 | 32 | The root decision, bodies from MIR: where each later decision of a `match`'s arms, defaults and labels was recorded | Its control-flow amendments are #1461's; the rest are the record of what moved from THIR to MIR, no rule of its own |
 | 0098 | 25 | One value, container, derive or adapter whose drop runs earlier, later or not at all than Rust's, often on a panic's unwind: a partly made value, a derive's field made first, a closure's capture | Most follow from deciding drops by hand per construct where MIR already says them: a library body's are its MIR's cleanup edges, which #1517's derive rule now reads for the drops it's given; #1458's tables find the rest |
+| 0099 | 25 | One more way a `&mut` is made, reached or given on: through a call's result, a field, a cell a place holds, a `Box`, a method std's `&mut W` impl only forwards, and `max`/`min`/`clamp` of `&mut`s giving one of them back (#2188, #2191) | As 0454's: a `&mut`'s form is decided per construct where it's made and given; #1459, a form that's a type whose change only its owner makes, ends the kind |
 | 0454 | 32 | One boundary where generic code's box of a `&mut` meets its caller's form | ADR 1115's one boundary, `generic_facts.rs`, for those between a function and its callers; #1459 for the rest: a form that's a type, its change a node only its owner makes |
 | 0863 | 29 | One place a `RefCell`'s borrow comes from, or one way a cell is reached | `analysis/cell_flow.rs`, the cells' value flow (#445), ended the reaching; what's left is #1459's, as 0454's |
 | 0562 | 28 | One more operation on a pointer or on plain data's bytes that's lowered, where it was refused | None: addressable memory grows one refusal lifted at a time, which is the safe order; its wrong answers (#1081, #1113) are judged in the audit's `mut-refs` row |
