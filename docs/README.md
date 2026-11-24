@@ -65,3 +65,4 @@ Explorations that aren't decisions yet:
 
 - [An in-browser rust-js playground](research/in-browser-playground.md): run rustc's front end + rust-js as WebAssembly
 - [Type foundations](research/type-foundations.md): how TypeScript, Scala.js, ReScript and rust-js type JS from the language up to React, and what on par takes
+- [Boundary checks](research/js-boundary-checks.md): what Scala.js, wasm-bindgen, ReScript, Kotlin/JS, Elm and others check of a value JS hands typed code, and the options for #2403
