@@ -372,7 +372,7 @@ the slice's 24 seeds in both (1, 7, 11, 12, 14, 15, 16 and 20), first by
 
 **Custom MIR's local used before it's written whole is refused**
 (2026-11-11, #1382). Rustlantis's programs, run through rust-js against
-native wasm32 (max agent's experiment), write a part of a local nothing
+native wasm32 (katniss agent's experiment), write a part of a local nothing
 wrote whole, `_5.1 = ..` before any `_5 = ..`, take a pointer to one,
 `&raw mut _1`, and read one past its storage's end, none of which Rust
 writes (rustc refuses each, E0381): a local is declared where it's

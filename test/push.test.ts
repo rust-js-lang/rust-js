@@ -11,7 +11,7 @@ import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
 // again from the rebased tree (`bun run push`, scripts/push.ts), where it
-// stopped the second of two pushes that each blessed one (2 of max agent's 5
+// stopped the second of two pushes that each blessed one (2 of katniss agent's 5
 // failed pushes of 2026-11-17); one in hand-written code still stops it.
 // The baselines are those .gitattributes merges as `merge=binary`, each
 // with the test whose bless makes it.
@@ -53,7 +53,7 @@ test("a rebase's conflict in a ratchet is resolved by the lower count, anything 
   for (const file of ratchets) expect([file, existsSync(join(root, file))]).toEqual([file, true]);
 });
 
-// Two pushes amending one ADR at once each append to its end: max agent's
+// Two pushes amending one ADR at once each append to its end: katniss agent's
 // stopped twice on ADR 1150 (2026-11-18). Both kept, main's first, each
 // whole; a change to the text they share still stops.
 test("a rebase's conflict in an ADR both sides only appended to keeps both amendments, any other stops", () => {

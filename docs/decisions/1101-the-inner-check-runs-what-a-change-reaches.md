@@ -364,7 +364,7 @@ the fetch and the cache's pruning), `test/ci.test.ts`, and the mutations of
 Past a rebase that brought commits, `bun run push` checked again by the
 same selection: the map's diff to the new tree, which holds others'
 commits. Their non-function lines made it select everything, so a sanity
-pass took longer than the check: max agent's took 594 s and 516 s after a
+pass took longer than the check: katniss agent's took 594 s and 516 s after a
 491 s check, and lisa agent's 1,228 s. Her push gave up after main moved
 three times (3,847 s, not pushed). Tu's rule: quick, then push; CI's full
 check covers the combination.
@@ -612,7 +612,7 @@ micro-benchmark past 1.5 times"; mutations `attribute-slice-*`,
 
 ### Amended: a constant's value is its readers' change (2026-11-17)
 
-max agent's adapter-family flips each grew `HELD_FLIPPED: [&str; N]` by one
+katniss agent's adapter-family flips each grew `HELD_FLIPPED: [&str; N]` by one
 entry, and each selected everything: the declaration's line is outside any
 function's code, and its type changed, its length. A constant's value is
 inlined where it's named, so its change is read only by the functions that

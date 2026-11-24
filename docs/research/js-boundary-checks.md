@@ -48,7 +48,7 @@ rust-js does neither today. It doesn't check, and it doesn't coerce: a
 none of the checking languages lets in, and its results are wrong answers,
 not just odd values (#2391).
 
-The measured costs (max agent, below) are small: about 2 ns a scalar, under
+The measured costs (katniss agent, below) are small: about 2 ns a scalar, under
 1 ns an element. The value is shown by the bugs checks found elsewhere,
 mostly in hand-written bindings. The recommendation is #2403's design
 with three changes; see [Options for rust-js](#options-for-rust-js).
@@ -351,7 +351,7 @@ the types. The difference is what breaking the promise does:
 | ReScript, Kotlin/JS, js_of_ocaml, Fable, PureScript, Gleam | Nothing | | Impossible values, wrong branches | No |
 | rust-js today | Nothing | | Impossible values (`u32` of `-1`) and wrong answers (#2391) | No |
 
-## rust-js's own data (max agent, #2403's step 2)
+## rust-js's own data (katniss agent, #2403's step 2)
 
 Cost:
 
@@ -443,7 +443,7 @@ Each option is costed with the numbers above.
     returns.
   - rust-js's webapi and react crates are hand-written the same way.
   - Exports, by contrast, found nothing in the port.
-- **Treat a false refusal as a compiler bug, like the ~20 max agent found.**
+- **Treat a false refusal as a compiler bug, like the ~20 katniss agent found.**
   Every refusal in the corpus, the port and the crate corpus is either a
   wrong contract to fix or a test input outside the contract to change,
   before the checks ship.

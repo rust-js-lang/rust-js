@@ -97,7 +97,7 @@ export type Phase = (typeof phases)[number];
 /** Whether a round's React gate runs: of a change that touches the port's
  * compile inputs (`touchesPort`), unless an earlier round's passed and the
  * commits the rebase brought since, `incoming`, touch none of them, so the
- * port compiles as it did then: max agent's long pushes ran it, 54 s, at
+ * port compiles as it did then: katniss agent's long pushes ran it, 54 s, at
  * each of two or three rounds (2026-11-17). */
 export function reactGate(changed: string[], incoming: string[] | undefined): "run" | "reused" | "none" {
   if (!touchesPort(changed)) return "none";
@@ -841,7 +841,7 @@ const decision = (file: string) => /^docs\/decisions\/\d+-[^/]+\.md$/.test(file)
 /** An ADR both sides only appended to, each its amendment at the end of
  * `base`, the text they shared: `base`, then `ours`' amendment, the commit
  * the rebase is onto, then `theirs`, the one replayed, each whole, as two
- * pushes amending ADR 1150 at once stopped max agent's twice (2026-11-18).
+ * pushes amending ADR 1150 at once stopped katniss agent's twice (2026-11-18).
  * Undefined where either side changed `base` itself, which stays the
  * change's author's to merge. */
 export function appendedBoth(base: string, ours: string, theirs: string): string | undefined {
@@ -854,7 +854,7 @@ export function appendedBoth(base: string, ours: string, theirs: string): string
 
 /** Onto origin/main. A conflict in a blessed baseline alone (`regenerated`)
  * is resolved as main's, and made again from the rebased tree: two pushes
- * that each blessed one stopped the second's rebase (2 of max agent's 5
+ * that each blessed one stopped the second's rebase (2 of katniss agent's 5
  * failed pushes of 2026-11-17). Any other conflict aborts it, hand-written
  * code's too. The baselines it resolved so. */
 export function rebase(): string[] {

@@ -493,7 +493,7 @@ third area, which ioCJ takes in parallel (the lead's split).
 ## Names are ids, step 1's third part: lowering's own names, first batch (2026-11-16)
 
 Of lowering's modules that are mine in the lead's split (ioCJ takes drops,
-classes, `std_types`, display, combinators and `std_impls`; max agent tidy):
+classes, `std_types`, display, combinators and `std_impls`; katniss agent tidy):
 
 - A module's own functions and constants are the module's names: a
   `const` at the module's top (`pipeline/consts.rs`, `pipeline.rs`) and
@@ -564,7 +564,7 @@ lowering's are none now: a format's stand-ins (`_$argumentN`), lowering's
 placeholders for no name, a dictionary's and a variant tag's module
 `const`s, a namespace's, the sentinels a pass substitutes (`SUBJECT`,
 `HELD_SOME`, `value`), and parameters a pass spells itself (`it`, `lazy`,
-`cycle`, `location`). Tidy's and preparation's are max agent's and ioCK's,
+`cycle`, `location`). Tidy's and preparation's are katniss agent's and ioCK's,
 the labels the program writes taking the form approved for them.
 
 ## Names are ids, step 1 at creation across the whole check (2026-11-16)
@@ -604,7 +604,7 @@ port and alien-signals (the lead's run), and run over the corpus before
 anything else changed, 1,460 cases' JS
 differed, then 485 once block labels were by their word; among them a
 wrong answer, `flag_of_a_guarded_match`, whose cause, a name tidy made of
-a word mid-pass, step 1's measure at creation found and max agent's tidy
+a word mid-pass, step 1's measure at creation found and katniss agent's tidy
 commit removed. Every other difference was readability, the old JS right,
 and each was prevented, none accepted (the lead's rule):
 
@@ -1452,7 +1452,7 @@ corpus, the tests or React's port had it; lowering-unwind-arms pins it);
 ## Amendment: the word walks' last callers outside tidy's temporaries (#1681 change 3, its last step)
 
 Each caller of a walk that asked a variable by its word, in `js/*` and
-lowering outside the temporaries max agent's step 2 moves, asks one of
+lowering outside the temporaries katniss agent's step 2 moves, asks one of
 three things now:
 
 - **A variable, by its `Name`.** `mentions_of`, `visit_names`,
