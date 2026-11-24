@@ -3,24 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "placed-item-unrefused",
-    breaks:
-      "a type parameter generic code holds in a place of its own, also given as another iterator's items, `S: Iterator<Item = I>`, compiles: the items come bare and its `next` reads `.value` of a string, `Some(-1)` (#2534)",
-    file: "crates/rust-js-lower/src/generic_facts.rs",
-    find: "        self.refuse_placed_item((id, args), span)\n",
-    replace: "        Ok(())\n",
-    tests: ["test/corpus.test.ts", "-t", "^placed_iterator_also_another_iterators_item\\.rs$"],
-  },
-  {
-    name: "placed-item-refused-unplaced",
-    breaks:
-      "a call whose type parameter is another iterator's items, `fn gather<T, I: Iterator<Item = T>>`, is refused whatever it's given, held in a place or not (#2534)",
-    file: "crates/rust-js-lower/src/generic_facts.rs",
-    find: "                if self.holds_in_place((id, param, instantiated)) {\n",
-    replace: "                if true || self.holds_in_place((id, param, instantiated)) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_code_right_for_every_instance\\.rs$"],
-  },
-  {
     name: "fn-bound-least-taken",
     breaks: "of a parameter's `Fn` bounds, `F: Fn`'s with its supertraits, the least is taken, `FnOnce`, so a function value it calls through `Fn::call` names `call_once`'s line (#2335)",
     file: "crates/rust-js-lower/src/generic_facts.rs",
@@ -351,15 +333,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
   },
   {
-    name: "placed-within-unrefused",
-    breaks:
-      "a fieldless enum's iterator inside a `Vec<I>` generic code makes, held in a place there, is given its caller in that place where it reads the bare value (#2255)",
-    file: "crates/rust-js-lower/src/generic_facts.rs",
-    find: "            if let Some(placed) = self.placed_within(id, declared, self.instantiated(declared, args)) {\n",
-    replace: "            if let Some(placed) = self.placed_within(id, declared, self.instantiated(declared, args)).filter(|_| false) {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "naming #2255"],
-  },
-  {
     name: "reified-pointer-params-unnamed",
     breaks: "a generic function's `fn` pointer names its parameters `arg0`, not as the function does, `(n) => bumpedPoint($cellOf(n))` (#1328)",
     file: "crates/rust-js-lower/src/generic_facts.rs",
@@ -420,14 +393,6 @@ export const mutations: Mutation[] = [
     find: "            self.refuse_guard_written_whole((declared, caller), others, span)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^refcell_(field_)?guard_given_to_generic_put_refused.rs$"],
-  },
-  {
-    name: "guard-given-to-a-library-whole-write-unrefused",
-    breaks: "a `RefCell` guard's `&mut` given to a library's generic `&mut T` isn't refused where it's a guard: the guard is taken for any value (#2475)",
-    file: "crates/rust-js-lower/src/generic_facts.rs",
-    find: "            && crate::recognition::is_cell_guard(self.tcx, guard)\n",
-    replace: "            && false\n",
-    tests: ["test/libraries.test.ts", "-t", "RefCell guard's `&mut` given to a library"],
   },
   {
     name: "guard-given-alone-refused",

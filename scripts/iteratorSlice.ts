@@ -80,6 +80,7 @@ export const iteratorPaths = [
   // A boxed iterator's steps a caller gives generic code, `boxed_steps_given` (the owner table's row, #2162).
   "crates/rust-js-lower/src/generic_facts.rs",
   "crates/rust-js-lower/src/generic_facts/caller_facts.rs",
+  "crates/rust-js-lower/src/generic_facts/refusals.rs",
   // How the runtime steps a range, and an inclusive range an iterator's lent (the owner table's row, #2162).
   "crates/rust-js-lower/src/std_types/range.rs",
   // A library's contract of what its functions step and the iterators it makes (the owner table's rows, #2162).
