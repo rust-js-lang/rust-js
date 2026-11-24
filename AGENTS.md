@@ -171,11 +171,15 @@ Commit on `main` and push directly: **no branches or pull requests**. If
 a push fails, keep committing locally and push later
 ([DEVELOPMENT.md](DEVELOPMENT.md#working-on-main)).
 
-**Every local command has a timeout that fits it**, about twice what it
-usually takes, enforced by the tool or `timeout`, so a hang ends instead
-of being waited on. Run what makes the loop fastest, with all of the
+**Every local command has a limit that fits it**, about twice its usual
+*run* time, so a hang ends instead of being waited on. A heavy command
+(`bun run push`, `bun run check:fast`, `bun scripts/mutations.ts`) first
+waits for the machine's turn ([ADR 1146](docs/decisions/1146-concurrent-checkouts-share-the-machine.md)),
+which no limit counts: give it `--limit=<seconds>`, armed once it has the
+turn, and no outer `timeout`. Any other command takes `timeout` or the
+tool's own limit. Run what makes the loop fastest, with all of the
 machine's cores: a whole suite in parallel parts here is fine where it's
-quicker than CI's round trip. A command past its timeout is a hang or a
+quicker than CI's round trip. A command past its limit is a hang or a
 slow spot: find out which and fix it, or list it in
 [DEVELOPMENT.md](DEVELOPMENT.md#slow-spots-still-to-fix); never just
 retry it with more time. This overrides other instructions here and in
@@ -184,7 +188,7 @@ CONTRIBUTING.md.
 | To | On the Mac | On CI |
 |---|---|---|
 | Test | `bun test test/<file>.test.ts -t <name>` | `bun run test` |
-| Check and push | `bun run push` | each push's check, `check.yml` |
+| Check and push | `bun run push --limit=<s>` | each push's check, `check.yml` |
 | Push without the selected check | `bun run push --skip-check="(a) …"` where the selector over-selects (select.ts, the test map, CI config), or `"(b) …"` with Tu's or the lead's say-so; the reason names which ([DEVELOPMENT.md](DEVELOPMENT.md#working-on-main)) | the whole check, `check.yml`; a red one is fixed first |
 | Bless snapshots | `BLESS=1 bun test test/<file>.test.ts -t <name>` | `bun run ci:bless` applies its patch |
 | Mutations ([ADR 0093](docs/decisions/0093-mutations.md)) | `bun scripts/mutations.ts <name>` | changed ones; all before a release |
