@@ -6,7 +6,7 @@
 // A third keeps its wrap, as does a `- 1`. The binding is the program's own,
 // counting UTF-16 units natively as JS's `length` does.
 
-import { $main } from "@rust-js/std";
+import { $main, $repeatText } from "@rust-js/std";
 
 function short(str, substr) {
   return substr.length < 10 && str.length + substr.length < 40;
@@ -27,7 +27,7 @@ function last(s) {
 $main(main);
 
 function main() {
-  const long = "x".repeat(36);
+  const long = $repeatText("x", 36);
   for (const [str, substr] of [
     ["hello", "lo"],
     [long, "four"],

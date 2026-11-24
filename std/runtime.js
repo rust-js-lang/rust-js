@@ -96,6 +96,7 @@ export function $f64Digits(x) {
       return [digits, digits.length + decimalPower];
     }
   }
+  // its own Error: an invariant of the shortest digits, which some digits always hold; no program reaches it.
   throw new Error("No f64 round-trip decimal found");
 }
 
@@ -184,6 +185,7 @@ export function $f32Digits(x) {
       return [digits, digits.length + decimalPower];
     }
   }
+  // its own Error: an invariant of the shortest digits, which some digits always hold; no program reaches it.
   throw new Error("No f32 round-trip decimal found");
 }
 
@@ -449,8 +451,10 @@ export function $shouldPanic(f, expected) {
     if (expected === undefined || message.includes(expected)) {
       return;
     }
+    // its own Error: the test harness's failure, as Rust's harness says it.
     throw new Error("panic did not contain expected string\n      panic message: " + JSON.stringify(message) + "\n expected substring: " + JSON.stringify(expected));
   }
+  // its own Error: the test harness's failure, as Rust's harness says it.
   throw new Error("test did not panic as expected");
 }
 
@@ -459,6 +463,7 @@ export function $shouldPanic(f, expected) {
 // a string's or a number's as Rust shows it, a struct's without its name.
 export function $testResult(result) {
   if (result.TAG === "Err") {
+    // its own Error: the test harness's failure of a test's `Err`, as Rust's says it.
     throw new Error("Error: " + $debug(result._0));
   }
 }
@@ -516,6 +521,7 @@ export function $debugInt(text, hex, options) {
 // `undefined`; forced, `Backtrace::force_capture()`, JS's own stack, its
 // frames after the error's first line.
 export function $backtrace() {
+  // its own Error: JS's stack, read, never thrown.
   return (new Error().stack ?? "").split("\n").slice(1).join("\n");
 }
 
@@ -4385,6 +4391,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     let i = 0;
     if (init.length > 0) return this.fold(init[0], (a, x) => f(a, x, i++));
     const first = this.next();
+    // its own Error: JS's own `reduce`, which a JS caller of the iterator asks.
     if (first.done) throw new TypeError("Reduce of empty iterator with no initial value");
     i = 1;
     return this.fold(first.value, (a, x) => f(a, x, i++));
@@ -10765,6 +10772,27 @@ export function $repeatItems(v, n, size, copy, clone = copy) {
   return out;
 }
 
+// `s.repeat(n)` of a `str` or a `String`, std's `[u8]::repeat` of its
+// bytes (#2487): of a count past `usize::MAX` bytes, its `checked_mul`'s
+// `capacity overflow`, a `String` payload raised at `sliceRepeat`'s line;
+// past `isize::MAX` bytes, `Vec::with_capacity`'s (`$roomFor`); then JS's
+// own `repeat`. Its count a `usize`, or a signed integer's bits given as
+// they are (ADR 0774, amended), as `n >>> 0` reads them. Text std makes
+// past the engine's longest string, which JS can't hold, is refused as the
+// program runs.
+export function $repeatText(s, n) {
+  const count = n >>> 0;
+  const bytes = $byteLen(s) * count;
+  if (bytes > 2 ** 32 - 1) throw $stringPanic("capacity overflow", $stdSites.sliceRepeat[0]);
+  $roomFor(bytes, 1);
+  try {
+    return s.repeat(count);
+  } catch (e) {
+    if (e instanceof RangeError) throw $unsupported(`rust-js does not support text of ${bytes} bytes, longer than this engine's strings`);
+    throw e;
+  }
+}
+
 // A `VecDeque`'s `swap_remove_back(i)`, or `swap_remove_front(i)`: the item
 // at `i`, its last item, or its first, in its place; `None` past the end.
 export function $dequeSwapRemove(v, i, front) {
@@ -14899,6 +14927,7 @@ export function $writeDebugResult(f, result, ok, err, pretty) {
 export function $process(what) {
   const process = globalThis.process;
   if (process?.argv === undefined) {
+    // its own Error: a browser has no process, which Node's functions need (ADR 0391).
     throw new Error(`${what} needs Node's process, which a browser hasn't (ADR 0391)`);
   }
   return process;
@@ -14964,6 +14993,7 @@ export function $homeDir() {
   if (home !== undefined && home !== "") return home;
   if (process.platform === "android") return undefined;
   if (process.getuid() !== process.geteuid()) {
+    // its own Error: the real user's entry, which Node can't ask of a set-user-ID process (#1639).
     throw new Error("`std::env::home_dir` reads the real user's entry, which Node can't ask of a set-user-ID process (#1639)");
   }
   const user = $fsTry(() => process.getBuiltinModule("node:os").userInfo());
@@ -15017,6 +15047,7 @@ export function $main(entry) {
     }
   }
   if (browser) {
+    // its own Error: a browser's signal of a failing status, which has no process to end.
     if (status !== 0) throw new Error(`main exited with status ${status}`);
     return;
   }
@@ -15138,6 +15169,9 @@ export const $stdSites = {
   ],
   "strSplitAtMut": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/str/mod.rs:906:13"
+  ],
+  "hashTableCapacityOverflow": [
+    "/cargo/registry/25cdd57fae9f0462/hashbrown-0.17.1/src/raw.rs:36:40"
   ],
   "rotateLeft": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/mod.rs:3902:9"
@@ -16398,10 +16432,11 @@ export function $textRoomFor(s, additional) {
 // `HashMap` or `HashSet`, which std asks of hashbrown's table where a
 // capacity is asked (ADR 0774, amended): its buckets, at least 1/8 empty,
 // and a control byte each, and a group's more, past `isize::MAX` bytes, or
-// more than `usize::MAX` of them, a `Hash table capacity overflow` panic.
+// more than `usize::MAX` of them, a `Hash table capacity overflow` panic,
+// raised where hashbrown's `Fallibility::capacity_overflow` raises it (#2487).
 export function $tableRoomFor(count, size, align) {
   if (count === 0) return;
-  const overflow = () => new Error("Hash table capacity overflow");
+  const overflow = () => $panic("Hash table capacity overflow", $stdSites.hashTableCapacityOverflow[0]);
   // A group's control bytes, wasm32's.
   const width = 8;
   let buckets;
@@ -22052,8 +22087,12 @@ export function $charIndicesOffset(it) {
 // `extend_trusted` steps it, which drops what it holds where its fold
 // does, a `map`'s function before what it hasn't given (#710); and of one
 // `$folded` made, by its fold, as std's consumer that routes through it is
-// (#1161).
-export function $extend(v, items, byFold = false) {
+// (#1161). Of a range's or a chain of ranges', which may be longer than
+// `usize::MAX`, `unbounded`, its hint asked first, as std's
+// `extend_trusted` asks it: past `usize::MAX`, where std's has no upper
+// bound, std's `capacity overflow` before any is pushed, where JS would
+// push to its arrays' longest and throw its own (#2511).
+export function $extend(v, items, byFold = false, unbounded = false) {
   // A `TrustedLen` one grown as std grows it, `$grownBy`'s, as std's
   // `extend_trusted` steps it (#1803, #1805).
   if (byFold && typeof items.extendTrusted === "function") {
@@ -22062,6 +22101,7 @@ export function $extend(v, items, byFold = false) {
     });
     return;
   }
+  if (unbounded && !(($sizeHint(items)[1] ?? Infinity) <= 2 ** 32 - 1)) throw $panic("capacity overflow", $stdSites.vecExtendTrusted[0]);
   if ((byFold || items.byItsFold) && typeof items.fold === "function") {
     items.fold(undefined, (_, x) => {
       v.push(x);
@@ -22076,6 +22116,7 @@ export function $extend(v, items, byFold = false) {
     () => it.return?.(),
   );
 }
+
 
 // Past its end, `item`, which Rust's `insert` took, is dropped by `drop`
 // as the panic unwinds, then the panic, `message` or `Vec`'s (#1171).
@@ -23830,6 +23871,7 @@ export const $panicString = { typeId: () => "alloc::string::String" };
 // drops as it unwinds, where a binary's hook writes it, as std's runs
 // (`$hook`).
 export function $panic(message, raisedAt) {
+  // its own Error: the one a panic is, `$panic`'s.
   const error = new Error(message);
   Object.defineProperty(error, $raisedAt, { value: raisedAt });
   // What a panic runs as it's made: a binary's hook, `$hook`, which its
@@ -23895,6 +23937,7 @@ export function $unwinding(payload) {
     return payload.value;
   }
   // `resume_unwind`'s, which std's hook isn't run for: none written.
+  // its own Error: `resume_unwind`'s of a message, a panic's payload as it is.
   const resumed = id === "&str" || id === "alloc::string::String" ? new Error(payload.value) : new $Unwinding(payload);
   if (id === "alloc::string::String") Object.defineProperty(resumed, $stringPayload, { value: true });
   $hooked.add(resumed);

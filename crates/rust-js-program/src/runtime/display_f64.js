@@ -52,6 +52,7 @@ function $f64Digits(x) {
       return [digits, digits.length + decimalPower];
     }
   }
+  // its own Error: an invariant of the shortest digits, which some digits always hold; no program reaches it.
   throw new Error("No f64 round-trip decimal found");
 }
 

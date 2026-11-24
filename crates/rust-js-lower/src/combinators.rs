@@ -1104,11 +1104,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Not one whose fold is the steps its `next` takes, JS's own or a
         // range's (`folds_as_it_steps`), which `true` wouldn't change, as
         // React's `rects.extend((0..n).map(f))` is written.
-        let folds_its_own = !crate::iterators::folds_as_it_steps(&items);
+        // But one that may be longer than `usize::MAX`, a range's or a chain
+        // of ranges', whose hint std's `extend_trusted` asks first and panics
+        // of before it pushes any: asked so, `$extend(v, it, true, true)`
+        // (#2511).
+        let unbounded = onto_vec && crate::recognition::hint_may_be_unbounded(self.tcx, iter_ty);
+        let folds_its_own = !crate::iterators::folds_as_it_steps(&items) || unbounded;
         if (onto_vec && call && folds_its_own || self.folds_held_function(iter_ty))
             && crate::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)
         {
-            return Ok(Expr::call_helper("$extend", vec![collection, items, Expr::bool(true)]));
+            let asked = unbounded.then(|| Expr::bool(true));
+            return Ok(Expr::call_helper(
+                "$extend",
+                [vec![collection, items, Expr::bool(true)], asked.into_iter().collect()].concat(),
+            ));
         }
         // Onto a `Vec`, of one built of type parameters, as its callers say
         // it's `TrustedLen` (`callers_trusted`, asked by the facts owner's

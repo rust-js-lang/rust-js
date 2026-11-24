@@ -18,6 +18,7 @@ import {
   $index,
   $main,
   $print,
+  $repeatText,
   $unwound,
   $utf8Bytes,
 } from "@rust-js/std";
@@ -30,7 +31,7 @@ function leaf(name) {
 }
 
 function indentation(indent) {
-  return "  " + "  ".repeat(indent);
+  return "  " + $repeatText("  ", indent);
 }
 
 function findNotableNode(node) {
@@ -122,6 +123,6 @@ function main() {
   $print(`${firstDiff("hello there", "hello world")} ${firstDiff("ab", "ab")}\n`);
   const indent = -1;
   $print(`[${"".repeat(indent >>> 0)}] [${"ab".repeat(2)}]\n`);
-  $print(`${$catchUnwind(() => $byteLen("  ".repeat(indent))).TAG === "Err"}\n`);
+  $print(`${$catchUnwind(() => $byteLen($repeatText("  ", indent))).TAG === "Err"}\n`);
 }
 //# sourceMappingURL=case.js.map

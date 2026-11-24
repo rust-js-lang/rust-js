@@ -55,4 +55,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
     snapshots: true,
   },
+  {
+    name: "repeat-body-unwalked",
+    breaks: "a body whose only check is a `str`'s `repeat` isn't walked, so a constant count's is checked all the same (#2487)",
+    file: "crates/rust-js-lower/src/analysis/intervals/session.rs",
+    find: "                        || crate::recognition::is_str_repeat(tcx, callee)\n",
+    replace: "",
+    tests: ["test/lowering-strings.test.ts", "-t", "a string's repeat is checked as std's"],
+  },
 ];

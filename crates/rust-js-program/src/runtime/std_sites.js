@@ -40,6 +40,9 @@ const $stdSites = {
   "strSplitAtMut": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/str/mod.rs:906:13"
   ],
+  "hashTableCapacityOverflow": [
+    "/cargo/registry/25cdd57fae9f0462/hashbrown-0.17.1/src/raw.rs:36:40"
+  ],
   "rotateLeft": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/mod.rs:3902:9"
   ],

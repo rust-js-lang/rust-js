@@ -752,7 +752,7 @@ pub fn odd_to_five() -> Vec<u32> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("  $roomFor(n, 4);\n  return Array.from({ length: n }, (_, i) => Math.imul(i, i) >>> 0);");
-  expect(js).toContain('return $range(1, n + 1, 12)\n    .toReversed()\n    .map((k) => "*".repeat(k));');
+  expect(js).toContain('return $range(1, n + 1, 12)\n    .toReversed()\n    .map((k) => $repeatText("*", k));');
   expect(js).toContain("return $range(0, n, 4).toReversed();");
   expect(js).toContain("return $range(1, n + 1, 4);");
   expect(js).toContain("return Array.from(\n    $lazyRange(0, n)\n      .filter(");

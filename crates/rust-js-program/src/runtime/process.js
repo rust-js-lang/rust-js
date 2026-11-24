@@ -4,6 +4,7 @@
 function $process(what) {
   const process = globalThis.process;
   if (process?.argv === undefined) {
+    // its own Error: a browser has no process, which Node's functions need (ADR 0391).
     throw new Error(`${what} needs Node's process, which a browser hasn't (ADR 0391)`);
   }
   return process;
@@ -69,6 +70,7 @@ function $homeDir() {
   if (home !== undefined && home !== "") return home;
   if (process.platform === "android") return undefined;
   if (process.getuid() !== process.geteuid()) {
+    // its own Error: the real user's entry, which Node can't ask of a set-user-ID process (#1639).
     throw new Error("`std::env::home_dir` reads the real user's entry, which Node can't ask of a set-user-ID process (#1639)");
   }
   const user = $fsTry(() => process.getBuiltinModule("node:os").userInfo());

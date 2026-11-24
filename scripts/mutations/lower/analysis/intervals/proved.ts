@@ -110,4 +110,20 @@ export const mutations: Mutation[] = [
     replace: "                && self.least_known(&state, slice) >= 0\n",
     tests: ["test/corpus.test.ts", "-t", "^split_collected_is_never_empty.rs$"],
   },
+  {
+    name: "repeat-fits-never-proved",
+    breaks: "a `str`'s `repeat` whose bytes the intervals show fit is checked all the same, `$repeatText` of a constant count (#2487)",
+    file: "crates/rust-js-lower/src/analysis/intervals/proved.rs",
+    find: "n.hi.saturating_mul(bytes) <= REPEAT_FITS",
+    replace: "n.hi.saturating_mul(bytes) < 0",
+    tests: ["test/lowering-strings.test.ts", "-t", "a string's repeat is checked as std's"],
+  },
+  {
+    name: "repeat-fits-of-any-count",
+    breaks: "a `str`'s `repeat` of any count is JS's own, unchecked, its panic JS's `RangeError` (#2487)",
+    file: "crates/rust-js-lower/src/analysis/intervals/proved.rs",
+    find: "n.hi.saturating_mul(bytes) <= REPEAT_FITS",
+    replace: "n.hi >= 0",
+    tests: ["test/lowering-strings.test.ts", "-t", "a string's repeat is checked as std's"],
+  },
 ];

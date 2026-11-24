@@ -1196,8 +1196,9 @@ pub(crate) fn is_async_block(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     )
 }
 
-/// `str::repeat`, std's, a string's `repeat(n)`, JS's own (ADR 0774): what
-/// `classify` names `Std::Method("repeat")`, and a body's query asks of a
+/// `str::repeat`, std's, a string's `repeat(n)`, checked as std checks it
+/// where MIR can't show its bytes fit (#2487): what
+/// `classify` names `Std::StrRepeat`, and a body's query asks of a
 /// call's function.
 pub(crate) fn is_str_repeat(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     is_std_crate(tcx, def_id)

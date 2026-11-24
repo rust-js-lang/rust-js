@@ -48,7 +48,10 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/js.rs",
     find: "            Op::LooseNe | Op::NoneNe(_) => Some(true),\n",
     replace: "            Op::LooseNe => Some(true),\n",
-    tests: ["test/lowering-written-branches.test.ts", "test/lowering-bindings.test.ts", "test/none-given.test.ts"],
+    // Its three test files no longer show it once #2487 made `repeat`
+    // `$repeatText`; the hydration diff's case's snapshot does.
+    tests: ["test/corpus.test.ts", "-t", "^ptr_eq_items_and_counts\\.rs$"],
+    snapshots: true,
   },
   {
     name: "program-strict-equality-a-test-of-being-set",

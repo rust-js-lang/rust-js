@@ -407,4 +407,12 @@ export const mutations: Mutation[] = [
     replace: "        throw $stringPanic(\"called `Result::unwrap()` on an `Err` value: LayoutError\");\n",
     tests: ["test/corpus.test.ts", "-t", "^(rc_slice_collect_past_a_layout_panics_at_its_unwrap|arc_slice_collect_by_generic_code_past_a_layout).rs$"],
   },
+  {
+    name: "table-room-a-plain-error",
+    breaks: "a hash table's room past what it counts throws a plain `Error`, which std's hook names `<unknown>`, not hashbrown's `capacity_overflow` (#2487)",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
+    find: "$panic(\"Hash table capacity overflow\", $stdSites.hashTableCapacityOverflow[0])",
+    replace: "new Error(\"Hash table capacity overflow\")",
+    tests: ["test/corpus.test.ts", "-t", "^table_room_past_what_it_counts_panics_at_hashbrowns_line\\.rs$"],
+  },
 ];

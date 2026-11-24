@@ -7,6 +7,7 @@ import {
   $debugF64,
   $pad,
   $plus,
+  $repeatText,
   $rsplitOnce,
   $splitOnce,
   $stripSuffix,
@@ -104,7 +105,7 @@ export function folderAndFile(path) {
 }
 
 export function repeated(s, n) {
-  return s.repeat(n);
+  return $repeatText(s, n);
 }
 
 /** `match` on string literals, with `|`. */

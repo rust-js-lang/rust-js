@@ -605,10 +605,6 @@ react.dev's TopNav passes the same closure instead.
   case's: std promises the two slices hold its items in order, and leaves
   where they split to its ring buffer, which no program can rely on
   (`semantics.md`, 17).
-- **A string's `repeat(n)` past `isize::MAX` bytes throws the engine's
-  `RangeError`**, the second case's, the user's decision (this ADR's
-  amendment, "a string's `repeat` past the engine's length")
-  (`semantics.md`, 24).
 - **Room std's own growth asks isn't checked**, the second case's, the
   user's decision (2026-10-25; this ADR's amendment, "room std's growth
   asks, and a collect of smaller items") (`semantics.md`, 26).
@@ -826,3 +822,18 @@ id is only the gap that led to an exception, written `gap rdN` or `gaps
 rdN, rdM`. `test/docs-differences.test.ts` holds both: each exception of
 the second case names a difference the guide has, and no `rd` id there
 is anything but a gap.
+
+## Amendment: a string's `repeat` panics as std's (2026-11-24, #2487, the user's decision)
+
+The exception "a string's `repeat` past the engine's length" above, the
+guide's difference 24, is gone, as the user decided (2026-11-24, through
+the lead): its results changed, a `catch_unwind` reading no payload and
+std's hook naming `<unknown>`, the third case, so Rust's behaviour is kept.
+A `str`'s `repeat(n)` is checked as std's `[u8]::repeat` checks its bytes,
+`$repeatText(text, n)`, wherever MIR's intervals can't show they fit, its
+panics std's own, `capacity overflow` at `slice.rs` and at `Vec`'s room;
+JS's own `repeat` where they can, a constant's count, one a test bounds,
+or empty text ([0774](0774-room-past-isize-max-bytes-panics.md), amended).
+The React port reads `$repeatText` where upstream's count isn't bounded,
+an accepted difference of the port's.
+

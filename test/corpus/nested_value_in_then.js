@@ -6,7 +6,7 @@
 // "Fonts") : "Images"`, not its test turned, the `else` first. A `match`'s
 // arms, whose chain MIR may test the other way, keep theirs in the `else`.
 
-import { $debugStr, $main, $roomFor, $toUppercase } from "@rust-js/std";
+import { $debugStr, $main, $repeatText, $roomFor, $toUppercase } from "@rust-js/std";
 
 function reason(blocking, snapshot) {
   const blockedReason =
@@ -52,7 +52,7 @@ function both(a, b, c) {
 function pushed(name, indent, out) {
   out.push([
     indent,
-    name === "" ? (indent < 3 ? "-".repeat(indent) : $toUppercase(name)) : name.repeat(2),
+    name === "" ? (indent < 3 ? "-".repeat(indent) : $toUppercase(name)) : $repeatText(name, 2),
   ]);
 }
 

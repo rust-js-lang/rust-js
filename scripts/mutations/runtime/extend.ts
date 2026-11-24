@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_in_generic_code_drops_a_maps_closure_first.rs$"],
   },
+  {
+    name: "extend-trusted-unbounded-unchecked",
+    breaks: "a `Vec`'s `extend` of a `TrustedLen` iterator longer than `usize::MAX` pushes till JS's array length throws, where std's `extend_trusted` panics first (#2511)",
+    file: "crates/rust-js-program/src/runtime/extend.js",
+    find: "  if (unbounded && !(($sizeHint(items)[1] ?? Infinity) <= 2 ** 32 - 1)) throw $panic(\"capacity overflow\", $stdSites.vecExtendTrusted[0]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(extend_past_usize_max_panics_at_stds_line)\\.rs$"],
+  },
 ];

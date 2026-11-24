@@ -5,6 +5,11 @@
 
 use super::*;
 
+/// The most bytes a `repeat` JS's own makes, unchecked: V8's longest
+/// string, `2^29 - 24` units, each a byte at least, which is below
+/// `isize::MAX` bytes, so std makes it too (#2487).
+const REPEAT_FITS: i128 = (1 << 29) - 24;
+
 impl<'tcx> Walk<'_, 'tcx> {
     /// The checks and operators proved, each at the state where it runs.
     pub(super) fn proved(&self, entry: &IndexVec<BasicBlock, Option<State>>) -> Proofs {
@@ -88,6 +93,20 @@ impl<'tcx> Walk<'_, 'tcx> {
             {
                 proofs.present.insert(block);
             }
+            // A `str`'s `repeat(n)` whose bytes fit what std makes and a JS
+            // string holds: JS's own `repeat`, no check (#2487).
+            if let TerminatorKind::Call { func, args, .. } = &data.terminator().kind
+                && let Some((callee, _)) = func.const_fn_def()
+                && crate::recognition::is_str_repeat(self.tcx, callee)
+                && let [text, count] = &args[..]
+                && let Some(bytes) = self.constant_text_bytes(&text.node)
+                && (bytes == 0
+                    || self
+                        .operand(&count.node, &state)
+                        .is_some_and(|n| n.hi.saturating_mul(bytes) <= REPEAT_FITS))
+            {
+                proofs.call_bounds.insert(block);
+            }
             if let TerminatorKind::Call { func, args, .. } = &data.terminator().kind
                 && let Some((callee, callee_args)) = func.const_fn_def()
                 && let Some(at) = range_index(self.tcx, callee, callee_args)
@@ -104,6 +123,55 @@ impl<'tcx> Walk<'_, 'tcx> {
             }
         }
         proofs
+    }
+
+    /// How many bytes the text `text` is, of a `&str` constant, or a local
+    /// only such a constant is written to, `_3 = const "ab"`, or a reborrow
+    /// of one, `_2 = &(*_3)`: no parameter, no call's result, nothing lent
+    /// `&mut`.
+    fn constant_text_bytes(&self, text: &Operand<'tcx>) -> Option<i128> {
+        let bytes_of = |constant: &mir::ConstOperand<'tcx>| match constant.const_ {
+            mir::Const::Val(value, ty) if ty.is_ref() && ty.peel_refs().is_str() => {
+                Some(value.try_get_slice_bytes_for_diagnostics(self.tcx)?.len() as i128)
+            }
+            _ => None,
+        };
+        let mut local = match text {
+            Operand::Constant(constant) => return bytes_of(constant),
+            Operand::Copy(place) | Operand::Move(place) => place.as_local()?,
+            Operand::RuntimeChecks(_) => return None,
+        };
+        // A reborrow's chain, a few deep, as MIR built makes them.
+        for _ in 0..4 {
+            // Not a call's result, nor what's lent to be written.
+            let given = (self.body.basic_blocks.iter()).any(|data| match &data.terminator().kind {
+                TerminatorKind::Call { destination, .. } => destination.local == local,
+                TerminatorKind::InlineAsm { .. } | TerminatorKind::Yield { .. } => true,
+                _ => false,
+            });
+            if given || self.lent.contains(&local) || self.body.args_iter().any(|arg| arg == local) {
+                return None;
+            }
+            let mut written = (self.body.basic_blocks.iter())
+                .flat_map(|data| &data.statements)
+                .filter_map(|statement| match &statement.kind {
+                    StatementKind::Assign(assign) if assign.0.local == local => Some(assign),
+                    _ => None,
+                });
+            let (Some(assign), None) = (written.next(), written.next()) else {
+                return None;
+            };
+            if !assign.0.projection.is_empty() {
+                return None;
+            }
+            local = match &assign.1 {
+                Rvalue::Use(Operand::Constant(constant), _) => return bytes_of(constant),
+                Rvalue::Use(Operand::Copy(place) | Operand::Move(place), _) => place.as_local()?,
+                Rvalue::Ref(_, _, place) if place.projection.as_slice() == [mir::ProjectionElem::Deref] => place.local,
+                _ => return None,
+            };
+        }
+        None
     }
 
     /// Whether `index` is below `len`'s slice's length, as the relations

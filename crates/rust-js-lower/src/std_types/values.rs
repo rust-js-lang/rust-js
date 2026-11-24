@@ -827,6 +827,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::NeedsDrop => unreachable!("lowered by numeric_call"),
             Std::IterSource(_) => unreachable!("lowered by iter_source_call"),
             Std::Concat
+            | Std::StrRepeat
             | Std::StripPrefix
             | Std::StripSuffix
             | Std::StripCircumfix

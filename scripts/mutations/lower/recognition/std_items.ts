@@ -415,4 +415,12 @@ export const mutations: Mutation[] = [
     replace: "    let name = tcx.crate_name(id.krate);\n    (!is_std_crate(tcx, id)\n        && (tcx.crates(()).iter().chain([&rustc_span::def_id::LOCAL_CRATE]))\n            .filter(|&&c| tcx.crate_name(c) == name)\n            .count()\n            > 1)\n        .then_some(id.krate)\n",
     tests: ["test/registry-crates.test.ts", "-t", "links its crate at two versions"],
   },
+  {
+    name: "inclusive-range-hint-bounded",
+    breaks: "an inclusive range of every `usize` is taken for one whose hint is bounded, so its `extend` pushes where std panics (#2511)",
+    file: "crates/rust-js-lower/src/recognition/std_items.rs",
+    find: "\"RangeInclusive\" => Some(first.is_some_and(|of| wide(of, 32))),",
+    replace: "\"RangeInclusive\" => Some(false),",
+    tests: ["test/corpus.test.ts", "-t", "^(extend_past_usize_max_panics_at_stds_line)\\.rs$"],
+  },
 ];

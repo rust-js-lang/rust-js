@@ -14,7 +14,9 @@ function $shouldPanic(f, expected) {
     if (expected === undefined || message.includes(expected)) {
       return;
     }
+    // its own Error: the test harness's failure, as Rust's harness says it.
     throw new Error("panic did not contain expected string\n      panic message: " + JSON.stringify(message) + "\n expected substring: " + JSON.stringify(expected));
   }
+  // its own Error: the test harness's failure, as Rust's harness says it.
   throw new Error("test did not panic as expected");
 }

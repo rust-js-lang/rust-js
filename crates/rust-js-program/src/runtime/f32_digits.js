@@ -64,5 +64,6 @@ function $f32Digits(x) {
       return [digits, digits.length + decimalPower];
     }
   }
+  // its own Error: an invariant of the shortest digits, which some digits always hold; no program reaches it.
   throw new Error("No f32 round-trip decimal found");
 }

@@ -162,6 +162,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     let i = 0;
     if (init.length > 0) return this.fold(init[0], (a, x) => f(a, x, i++));
     const first = this.next();
+    // its own Error: JS's own `reduce`, which a JS caller of the iterator asks.
     if (first.done) throw new TypeError("Reduce of empty iterator with no initial value");
     i = 1;
     return this.fold(first.value, (a, x) => f(a, x, i++));

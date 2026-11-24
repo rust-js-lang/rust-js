@@ -820,8 +820,8 @@ export const mutations: Mutation[] = [
     name: "extend-trusted-by-next",
     breaks: "an `extend` of a `TrustedLen` iterator that folds a held function isn't by its fold (#710)",
     file: "crates/rust-js-lower/src/combinators.rs",
-    find: "            return Ok(Expr::call_helper(\"$extend\", vec![collection, items, Expr::bool(true)]));\n",
-    replace: "            return Ok(Expr::call_helper(\"$extend\", vec![collection, items]));\n",
+    find: "                [vec![collection, items, Expr::bool(true)], asked.into_iter().collect()].concat(),\n",
+    replace: "                vec![collection, items],\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
 
@@ -890,10 +890,16 @@ export const mutations: Mutation[] = [
     name: "extend-folds-as-it-steps-flagged",
     breaks: "a `Vec`'s `extend` of a range's map, whose fold is the steps its `next` takes, is given `true` too, a flag that changes nothing, and React's `collectClientRects` reads `$extend(rects, $lazyRange(0, n).map(f), true)` (#1803)",
     file: "crates/rust-js-lower/src/combinators.rs",
-    find: "        let folds_its_own = !crate::iterators::folds_as_it_steps(&items);\n",
+    find: "        let folds_its_own = !crate::iterators::folds_as_it_steps(&items) || unbounded;\n",
     replace: "        let folds_its_own = true;\n",
     tests: ["test/lowering-collected.test.ts", "-t", "a Vec extended by its fold only where the fold is its own"],
   },
-
-
+  {
+    name: "extend-unbounded-hint-not-trusted",
+    breaks: "a `Vec`'s `extend` of a range whose hint may have no upper bound isn't by `extend_trusted`'s path, so it pushes past `usize::MAX` where std panics (#2511)",
+    file: "crates/rust-js-lower/src/combinators.rs",
+    find: "        let unbounded = onto_vec && crate::recognition::hint_may_be_unbounded(self.tcx, iter_ty);",
+    replace: "        let unbounded = false;",
+    tests: ["test/corpus.test.ts", "-t", "^(extend_past_usize_max_panics_at_stds_line)\\.rs$"],
+  },
 ];

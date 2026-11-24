@@ -24,6 +24,7 @@ import {
   $pad,
   $parseF64,
   $parseInt,
+  $repeatText,
   $rev,
   $rfind,
   $rsplit,
@@ -119,7 +120,7 @@ function main() {
     const value$4 = $find(a, "b");
     const count = Iterator.from($matches(a, "a")).reduce((n) => n + 1, 0);
     const replace = a.replaceAll("a", "xy");
-    const repeat = a.repeat(2);
+    const repeat = $repeatText(a, 2);
     const parse = $parseInt(a, -2147483648, 2147483647);
     const value$5 = $parseF64(a);
     const value$6 = $utf8Lossy($utf8Bytes(a));

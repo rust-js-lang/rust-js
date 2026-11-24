@@ -906,7 +906,7 @@ pub fn described(value: Option<&Unknown>, on: bool) -> String {
       // Ignored.
       continue;
     }
-    const propValue = propName.repeat(2);
+    const propValue = $repeatText(propName, 2);
 `);
   expect(js).toContain(`    if (propName === "children") {
       // Handled below.

@@ -40,7 +40,7 @@ test("a call's value is read in a method's arguments, past the method", async ()
     ));
 }
 `);
-  expect(js).toContain('  out.push([\n    "-".repeat(indent) + name,\n    objectName === "Object" ? (indent < 3 ? "" : "…") : objectName,\n  ]);\n');
+  expect(js).toContain('  out.push([\n    $repeatText("-", indent) + name,\n    objectName === "Object" ? (indent < 3 ? "" : "…") : objectName,\n  ]);\n');
   expect(js).not.toMatch(/const (value|_\d+)/);
   const out: [string, string][] = [];
   lib.pushed("a" as never, "Object" as never, 1 as never, out as never);

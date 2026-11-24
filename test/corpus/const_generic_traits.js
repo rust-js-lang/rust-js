@@ -5,7 +5,7 @@
 // parameter is part of which trait an impl is, and a method's is given its
 // value, as a function's is (ADR 0107), through a dictionary too.
 
-import { $main, $traitImpl } from "@rust-js/std";
+import { $main, $repeatText, $traitImpl } from "@rust-js/std";
 
 const sevenRepeat = { repeat: sevenRepeat_repeat, twice: (seven) => sevenRepeat_repeat(seven, 2) };
 function sevenRepeat_repeat(seven, N) {
@@ -43,7 +43,7 @@ function anyScaled_scaled(any, K) {
 
 const dotsPad = { pad: dotsPad_pad };
 function dotsPad_pad(dots, value, N, TDisplay) {
-  return ".".repeat(N) + TDisplay.fmt(value);
+  return $repeatText(".", N) + TDisplay.fmt(value);
 }
 
 function padded(p, PPad) {

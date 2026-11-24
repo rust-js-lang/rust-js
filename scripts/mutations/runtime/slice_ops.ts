@@ -549,4 +549,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^slice_repeat_past_usize_panics_at_its_checked_mul.rs$"],
   },
+  {
+    name: "repeat-text-count-unchecked",
+    breaks: "a `str`'s `repeat` past `usize::MAX` bytes isn't std's `checked_mul` panic of a `String` at `slice.rs` (#2487)",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
+    find: "  if (bytes > 2 ** 32 - 1) throw $stringPanic(\"capacity overflow\", $stdSites.sliceRepeat[0]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(repeat_and_extend_past_usize_max_panic_as_std|repeat_past_usize_max_panics_at_stds_line)\\.rs$"],
+  },
+  {
+    name: "repeat-text-room-unasked",
+    breaks: "a `str`'s `repeat` past `isize::MAX` bytes isn't `Vec`'s room's panic (#2487)",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
+    find: "  $roomFor(bytes, 1);\n  try {",
+    replace: "  try {",
+    tests: ["test/lowering-strings.test.ts", "-t", "a string's repeat is checked as std's"],
+  },
+  {
+    name: "repeat-text-count-signed",
+    breaks: "a signed count given as it is isn't read as its `usize`, so a negative one makes empty text where std panics (#2487)",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
+    find: "  const count = n >>> 0;\n",
+    replace: "  const count = Math.max(0, n);\n",
+    tests: ["test/corpus.test.ts", "-t", "^(repeat_and_extend_past_usize_max_panic_as_std)\\.rs$"],
+  },
 ];

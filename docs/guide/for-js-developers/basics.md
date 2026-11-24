@@ -832,13 +832,15 @@ pub fn repeat(text: &str, times: Option<usize>) -> String {
 ```
 
 ```js
+import { $repeatText } from "@rust-js/std";
+
 export function greeting(name) {
   name ??= "stranger";
   return `Hello, ${name}`;
 }
 
 export function repeat(text, times) {
-  return text.repeat(times ?? 1);
+  return $repeatText(text, times ?? 1);
 }
 ```
 
@@ -879,6 +881,8 @@ pub fn twice_by(repeat: &dyn Fn(&str, Option<usize>) -> String) -> String {
 ```
 
 ```js
+import { $repeatText } from "@rust-js/std";
+
 const DISPATCHER = { repeat };
 
 export function twice() {
@@ -889,7 +893,7 @@ export function twiceBy(repeat) {
   return repeat("ab");
 }
 export function repeat(text, times) {
-  return text.repeat(times ?? 1);
+  return $repeatText(text, times ?? 1);
 }
 ```
 

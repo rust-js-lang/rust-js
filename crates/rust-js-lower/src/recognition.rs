@@ -320,6 +320,9 @@ pub enum Std {
     ToString,
     /// `String + &str`.
     Concat,
+    /// `s.repeat(n)` of a `str` or a `String`: JS's `repeat` where MIR
+    /// proves its bytes fit, else `$repeatText`, std's checks first (#2487).
+    StrRepeat,
     StringNew,
     /// `trim()`, `trim_start()` or `trim_end()`, by Unicode's White_Space.
     Trim {

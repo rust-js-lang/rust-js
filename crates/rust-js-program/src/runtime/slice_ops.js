@@ -501,6 +501,27 @@ function $repeatItems(v, n, size, copy, clone = copy) {
   return out;
 }
 
+// `s.repeat(n)` of a `str` or a `String`, std's `[u8]::repeat` of its
+// bytes (#2487): of a count past `usize::MAX` bytes, its `checked_mul`'s
+// `capacity overflow`, a `String` payload raised at `sliceRepeat`'s line;
+// past `isize::MAX` bytes, `Vec::with_capacity`'s (`$roomFor`); then JS's
+// own `repeat`. Its count a `usize`, or a signed integer's bits given as
+// they are (ADR 0774, amended), as `n >>> 0` reads them. Text std makes
+// past the engine's longest string, which JS can't hold, is refused as the
+// program runs.
+function $repeatText(s, n) {
+  const count = n >>> 0;
+  const bytes = $byteLen(s) * count;
+  if (bytes > 2 ** 32 - 1) throw $stringPanic("capacity overflow", $stdSites.sliceRepeat[0]);
+  $roomFor(bytes, 1);
+  try {
+    return s.repeat(count);
+  } catch (e) {
+    if (e instanceof RangeError) throw $unsupported(`rust-js does not support text of ${bytes} bytes, longer than this engine's strings`);
+    throw e;
+  }
+}
+
 // A `VecDeque`'s `swap_remove_back(i)`, or `swap_remove_front(i)`: the item
 // at `i`, its last item, or its first, in its place; `None` past the end.
 function $dequeSwapRemove(v, i, front) {

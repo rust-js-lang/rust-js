@@ -3,6 +3,7 @@
 // `undefined`; forced, `Backtrace::force_capture()`, JS's own stack, its
 // frames after the error's first line.
 function $backtrace() {
+  // its own Error: JS's stack, read, never thrown.
   return (new Error().stack ?? "").split("\n").slice(1).join("\n");
 }
 

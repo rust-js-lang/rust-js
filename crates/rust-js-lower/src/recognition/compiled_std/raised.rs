@@ -316,6 +316,17 @@ const RAISED: &[(&str, Option<&str>, Owner, &str)] = &[
         Owner::Primitive(SimplifiedType::Str),
         "split_at_mut",
     ),
+    // A hash table's room past what its buckets can count: hashbrown's
+    // `Fallibility::capacity_overflow`, its `panic!` (#2487).
+    (
+        "hashTableCapacityOverflow",
+        None,
+        Owner::Vendored(
+            &["raw", "Fallibility"],
+            (StdCrate::Std, &["collections", "hash", "map", "HashMap"], "base"),
+        ),
+        "capacity_overflow",
+    ),
     (
         "rotateLeft",
         None,

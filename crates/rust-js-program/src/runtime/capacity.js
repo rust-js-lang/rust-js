@@ -351,10 +351,11 @@ function $textRoomFor(s, additional) {
 // `HashMap` or `HashSet`, which std asks of hashbrown's table where a
 // capacity is asked (ADR 0774, amended): its buckets, at least 1/8 empty,
 // and a control byte each, and a group's more, past `isize::MAX` bytes, or
-// more than `usize::MAX` of them, a `Hash table capacity overflow` panic.
+// more than `usize::MAX` of them, a `Hash table capacity overflow` panic,
+// raised where hashbrown's `Fallibility::capacity_overflow` raises it (#2487).
 function $tableRoomFor(count, size, align) {
   if (count === 0) return;
-  const overflow = () => new Error("Hash table capacity overflow");
+  const overflow = () => $panic("Hash table capacity overflow", $stdSites.hashTableCapacityOverflow[0]);
   // A group's control bytes, wasm32's.
   const width = 8;
   let buckets;

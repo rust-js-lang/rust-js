@@ -533,3 +533,44 @@ Tests: corpus case `table_room_of_generic_entries`, a collect through a
 bound past the limit and within it, and its `generic-instances` rewrite,
 off test/metamorphic-known.txt; mutation
 `table-room-of-a-from-iterator-dictionary-unasked`, caught.
+
+## Amendment: a string's `repeat` is checked as std's, where MIR can't show it fits (2026-11-24, #2487, #2511)
+
+The amendments "a string's `repeat` is JS's own" and "a signed count of
+`repeat` is given as it is" left a repeat past what std makes to the
+engine's `RangeError`, ADR 0262's exception, the guide's difference 24.
+Its results changed: std's hook named `<unknown>`, and a `catch_unwind`
+read no payload where std's is a `String`, `"capacity overflow"`
+(m1-lisa's grouping of #2453, #2487; #2511). The user reversed it
+(2026-11-24): **a `str`'s or a `String`'s `repeat(n)` is `$repeatText(text,
+n)`**, which checks its bytes as std's `[u8]::repeat` does, its count past
+`usize::MAX` bytes a `String` panic at `slice.rs`'s `checked_mul`
+(`$stdSites.sliceRepeat`, #2488's), past `isize::MAX` bytes `$roomFor`'s,
+then JS's own `repeat`; text std makes past the engine's longest string,
+which JS can't hold, is refused as the program runs. **JS's own `repeat`
+stays where MIR's intervals show the bytes fit**, `Proofs::call_bounds`
+of the call (`constant_text_bytes`: a `&str` constant, or a local only one
+is written to, through its reborrows), its count's interval times its
+length at most V8's longest string, `2^29 - 24` units: a constant count,
+one a test bounds, or empty text. The signed count is still given as it
+is, which `$repeatText` reads as a `usize`, `n >>> 0`.
+
+And a `Vec`'s `extend` of a range, or a chain of ranges, that may be
+longer than `usize::MAX` (`hint_may_be_unbounded`: a range wider than 32
+bits, an inclusive one of 32, one without an end, a chain of ranges,
+through an adapter that keeps its length, whose JS hints are exact) is
+`$extend(v, it, true, true)`, which asks its hint first, as std's
+`extend_trusted` does, and panics where it passes `usize::MAX`, at its
+`panic!` (`$stdSites.vecExtendTrusted`), before it pushes any. And a hash table's room past what its buckets count
+panics at hashbrown's `Fallibility::capacity_overflow`
+(`$stdSites.hashTableCapacityOverflow`), not as a JS `Error` of no site.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): the third, Rust's
+behaviour kept. Moves: 5 corpus snapshots, 2 examples', 1 guide example,
+and the React port's 17 repeats of an unbounded count, an accepted
+difference of its own. Held by corpus cases
+`repeat_and_extend_past_usize_max_panic_as_std`,
+`repeat_past_usize_max_panics_at_stds_line`,
+`extend_past_usize_max_panics_at_stds_line`, test/lowering-strings.test.ts'
+rows, and the mutations of `$repeatText`, the proof, `$extend`'s check
+and `$tableRoomFor`'s site.

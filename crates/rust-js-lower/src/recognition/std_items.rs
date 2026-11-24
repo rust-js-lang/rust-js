@@ -395,6 +395,45 @@ pub(crate) fn is_trusted_len<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<
     })
 }
 
+/// Whether a `TrustedLen` iterator of type `ty` may be longer than
+/// `usize::MAX`, whose hint std gives no upper bound, which its
+/// `extend_trusted` panics of, `capacity overflow`, before it pushes any
+/// (#2511), where its JS's hint says so too: a range of integers wider than
+/// 32 bits, rust-js's `usize`'s, an inclusive one of 32, one without an
+/// end, or a chain of ranges, through an adapter that keeps its length. Of
+/// any other, none: its JS's hint may not know its upper bound where std's
+/// does, a zip's, so it isn't asked.
+pub(crate) fn hint_may_be_unbounded<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    ranges_past_usize_max(tcx, ty).is_some_and(|past| past)
+}
+
+/// Of a range, a chain of ranges, or one through an adapter that keeps its
+/// length, whose JS hint is exact: whether it may be longer than
+/// `usize::MAX`; `None` of any other.
+fn ranges_past_usize_max<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<bool> {
+    let wide = |of: Ty<'tcx>, bits: u64| match of.kind() {
+        ty::Int(i) => i.bit_width().unwrap_or(32) >= bits,
+        ty::Uint(u) => u.bit_width().unwrap_or(32) >= bits,
+        _ => false,
+    };
+    let ty::Adt(adt, args) = ty.kind() else { return None };
+    if !is_std_crate(tcx, adt.did()) {
+        return None;
+    }
+    let first = args.types().next();
+    match tcx.item_name(adt.did()).as_str() {
+        "Range" => Some(first.is_some_and(|of| wide(of, 33))),
+        "RangeInclusive" => Some(first.is_some_and(|of| wide(of, 32))),
+        "RangeFrom" => Some(true),
+        // Two ranges of `usize::MAX` each may be longer together.
+        "Chain" => (args.types().take(2))
+            .try_for_each(|side| ranges_past_usize_max(tcx, side).map(|_| ()))
+            .map(|()| true),
+        "Map" | "Enumerate" | "Rev" | "Copied" | "Cloned" | "Inspect" | "Fuse" => ranges_past_usize_max(tcx, first?),
+        _ => None,
+    }
+}
+
 /// Whether std's zip of `a` and `b`, `IntoIterator`s, reads each item by
 /// its index, as its
 /// `TrustedRandomAccess` specialization does, where that's seen: both

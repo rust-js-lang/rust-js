@@ -81,3 +81,25 @@ test("each panic the runtime raises passes its site, or says why it has none", (
   }
   expect(siteless).toEqual([]);
 });
+
+// The runtime raises a Rust panic only through `$panic` or `$stringPanic`,
+// which mark where std raises it: an `Error` it makes of its own is a
+// `rust-js:` bug's, or says in the comment above it why it's no panic, `//
+// its own Error: <why>`. A hash table's room past what it counts threw a
+// plain `Error`, which std's hook named `<unknown>` (#2487).
+test("the runtime makes a panic's Error only through $panic", () => {
+  const runtime = files("crates/rust-js-program/src/runtime").filter((file) => file.endsWith(".js"));
+  const unsaid: string[] = [];
+  for (const file of runtime) {
+    const lines = read(file).split("\n");
+    lines.forEach((line, at) => {
+      if (/^\s*\/\//.test(line) || !/new (?:Error|RangeError|TypeError)\(/.test(line)) return;
+      if (/new (?:Error|RangeError|TypeError)\(\s*["'`]rust-js:/.test(line)) return;
+      let above = at - 1;
+      while (above >= 0 && /^\s*\/\/ /.test(lines[above]) && !/^\s*\/\/ its own Error: \S/.test(lines[above])) above--;
+      if (above >= 0 && /^\s*\/\/ its own Error: \S/.test(lines[above])) return;
+      unsaid.push(`${file}:${at + 1}`);
+    });
+  }
+  expect(unsaid).toEqual([]);
+});

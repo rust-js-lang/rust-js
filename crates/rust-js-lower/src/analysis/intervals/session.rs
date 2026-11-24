@@ -70,8 +70,8 @@ pub fn body_proofs<'tcx>(
     let caches = crate::session::caches(tcx);
     let given = (caches.intervals.borrow().given.get(&body.source.def_id()).cloned()).unwrap_or_default();
     // Of a body with no bounds check, no index of a map, no `+`, `-` or `*`,
-    // no integer cast and no slice's `first()` or `last()` (#1860),
-    // nothing to prove, its walk left out.
+    // no integer cast, no slice's `first()` or `last()` (#1860) and no
+    // `str`'s `repeat` (#2487), nothing to prove, its walk left out.
     let asks = (body.basic_blocks.iter()).any(|data| {
         matches!(&data.terminator().kind, TerminatorKind::Assert { msg, .. } if matches!(**msg, AssertKind::BoundsCheck { .. }))
             || matches!(&data.terminator().kind, TerminatorKind::Call { func, .. }
@@ -80,6 +80,7 @@ pub fn body_proofs<'tcx>(
                         || range_index(tcx, callee, args).is_some()
                         || map_key(tcx, callee, args) == Some(MapKey::Index)
                         || slice_length(tcx, callee, args) == Some(SliceLength::End)
+                        || crate::recognition::is_str_repeat(tcx, callee)
                 }))
             || (data.statements.iter()).any(|statement| {
                 matches!(&statement.kind, StatementKind::Assign(assign)

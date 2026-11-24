@@ -35,6 +35,7 @@ function $main(entry) {
     }
   }
   if (browser) {
+    // its own Error: a browser's signal of a failing status, which has no process to end.
     if (status !== 0) throw new Error(`main exited with status ${status}`);
     return;
   }

@@ -260,18 +260,18 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   length and its bytes with the nul, as std's `[c_char]` does
   ([1119](../decisions/1119-a-c-string-is-its-bytes-with-its-nul.md), amended).
 
-Differences:
-
-- **A string's `repeat(n)` is JS's own, `text.repeat(n)`:** past
-  `isize::MAX` bytes, where std panics `capacity overflow`, it throws
-  the engine's `RangeError`, which in Node and Chrome is before any string
-  std would refuse is made. In Safari and Bun, whose strings are longer, a
-  string of text not all ASCII past a billion units may be made where std
-  panics. A signed count of text written there that isn't empty,
-  `"  ".repeat(indent as usize)`, is given as it is, `"  ".repeat(indent)`:
-  a negative one is past `isize::MAX` bytes as a `usize`, and JS throws
-  its `RangeError` of it alike
-  ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md), amended).
+- **A string's `repeat(n)` is checked as std's,** whose `[u8]::repeat`
+  checks its bytes: past `usize::MAX` of them a `capacity overflow` panic
+  of a `String`, raised at std's `slice.rs`, past `isize::MAX` one at
+  `Vec`'s room, `$repeatText(text, n)`. Where MIR's intervals show the
+  bytes fit, a constant's count, one a test bounds, `"-".repeat(if n < 3
+  { n } else { 2 })`, or of empty text, it's JS's own, `"-".repeat(n < 3 ?
+  n : 2)`. A signed count of text written there, `"  ".repeat(indent as
+  usize)`, is given as it is, `$repeatText("  ", indent)`, which reads its
+  bits as a `usize`, so a negative one panics as std's does. Text std
+  makes past the engine's longest string, which JS can't hold, is refused
+  as the program runs (#2487;
+  [0774](../decisions/0774-room-past-isize-max-bytes-panics.md), amended).
 
 What's refused of text is in [the limitations](limitations.md#numbers-and-text).
 
@@ -1303,6 +1303,10 @@ Differences:
   only where no caller can give it: an impl's associated type its
   dictionary doesn't carry, `I::Item` in an `impl<I: Iterator>`'s method
   (#934) ([0774](../decisions/0774-room-past-isize-max-bytes-panics.md), amended).
+- **A `Vec`'s `extend` of a `TrustedLen` iterator longer than
+  `usize::MAX`,** whose hint std gives no upper bound, `0..=usize::MAX` or
+  a chain past it, panics `capacity overflow` before it pushes any, at
+  std's `extend_trusted`, as std's does (#2511).
 - **Room std's own growth asks isn't checked,** a `push` past the
   capacity its doubling picks, nor a `collect()` whose length is a
   collection's of smaller items, `ids.iter().map(|x| x.to_string())`:
@@ -2403,10 +2407,6 @@ React and JSX are [their own pages](README.md#react).
     their count alone, as if they had none, where std checks their bytes
     against `isize::MAX` (ADR 0774, amended)
     (ADR 0262's exception, the user's decision, #1212).
-24. A string's `repeat(n)` past `isize::MAX` bytes, a negative signed
-    count's `as usize` too, throws the engine's `RangeError` where std
-    panics `capacity overflow`; in Safari and Bun, of text not all ASCII
-    past a billion units, it may be made (ADR 0774).
 26. Room std's own growth asks isn't checked: a `push`, `extend` or
     `insert` past the capacity std's doubling picks, a `collect()` whose
     length is a collection's of smaller items, `ids.iter().map(|x|

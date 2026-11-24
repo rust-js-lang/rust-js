@@ -26,6 +26,7 @@ const $panicString = { typeId: () => "alloc::string::String" };
 // drops as it unwinds, where a binary's hook writes it, as std's runs
 // (`$hook`).
 function $panic(message, raisedAt) {
+  // its own Error: the one a panic is, `$panic`'s.
   const error = new Error(message);
   Object.defineProperty(error, $raisedAt, { value: raisedAt });
   // What a panic runs as it's made: a binary's hook, `$hook`, which its
@@ -91,6 +92,7 @@ function $unwinding(payload) {
     return payload.value;
   }
   // `resume_unwind`'s, which std's hook isn't run for: none written.
+  // its own Error: `resume_unwind`'s of a message, a panic's payload as it is.
   const resumed = id === "&str" || id === "alloc::string::String" ? new Error(payload.value) : new $Unwinding(payload);
   if (id === "alloc::string::String") Object.defineProperty(resumed, $stringPayload, { value: true });
   $hooked.add(resumed);

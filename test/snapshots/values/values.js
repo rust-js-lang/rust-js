@@ -14,6 +14,7 @@ import {
   $index,
   $max,
   $next,
+  $repeatText,
   $sortedEntries,
   $toUppercase,
 } from "@rust-js/std";
@@ -60,7 +61,7 @@ export const Value = {
     return 0;
   },
   pretty(value, indent, out) {
-    const pad = " ".repeat(indent);
+    const pad = $repeatText(" ", indent);
     if (value.TAG === "List") {
       if (value._0.length === 0) {
         out.value += "[]";

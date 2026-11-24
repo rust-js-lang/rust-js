@@ -999,6 +999,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A `String`'s `+`: text joined to what's added (ADR 0639, amended).
             Std::Concat => Expr::text_joined(arg(), arg()),
+            // Of bytes MIR proves fit, JS's own `repeat`; else std's checks
+            // first, its count past `usize::MAX` bytes and past `isize::MAX`,
+            // each a panic where std raises it, `$repeatText` (#2487).
+            Std::StrRepeat => {
+                let (text, count) = (arg(), arg());
+                match call.in_bounds {
+                    true => Expr::read(text, "repeat", vec![count]),
+                    false => Expr::call_helper("$repeatText", vec![text, count]),
+                }
+            }
             Std::Method(name) => {
                 let this = arg();
                 let mut rest: Vec<Expr> = (1..tys.len()).map(|_| arg()).collect();

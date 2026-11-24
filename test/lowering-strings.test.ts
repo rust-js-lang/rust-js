@@ -950,13 +950,13 @@ console.log(JSON.stringify(texts.map((t) => [units(t), points(t), bytes(t), usef
   ]);
 });
 
-// A string's `repeat(n)` is JS's own, as React's
-// ReactPerformanceTrackProperties writes `prefix + '\xa0\xa0'.repeat(indent)`:
-// no room is checked first. A JS string is less than `isize::MAX` bytes, so
-// a repeat std refuses, `capacity overflow`, the engine refuses first, a
-// `RangeError` (ADR 0774, amended; a difference the guide lists). A `Vec`'s
-// room is checked as std checks it still.
-test("a string's repeat is JS's own, and one too long is JS's RangeError", async () => {
+// A string's `repeat(n)` is checked as std's `[u8]::repeat` checks its
+// bytes, `$repeatText`, where MIR can't show they fit (#2487): its count
+// past `usize::MAX` bytes a `capacity overflow` panic of a `String`, raised
+// at std's `slice.rs`, past `isize::MAX` bytes `Vec::with_capacity`'s. JS's
+// own `repeat` where the intervals bound it, a constant's or a count below
+// a test's, or of empty text. A `Vec`'s room is checked as std checks it.
+test("a string's repeat is checked as std's where MIR can't show its bytes fit", async () => {
   const dir = fixture("string-repeat");
   writeFileSync(join(dir, "lib.rs"), `pub fn indented(prefix: &str, indent: usize, name: &str) -> String {
     prefix.to_string() + &"\\u{a0}\\u{a0}".repeat(indent) + name
@@ -966,28 +966,35 @@ pub fn padded(text: &str, start: usize) -> usize {
     format!("{text}!").repeat(start).len()
 }
 
+pub fn fits(n: usize) -> String {
+    "ab".repeat(3) + &"-".repeat(if n < 4 { n } else { 3 }) + &"".repeat(n)
+}
+
 pub fn room(n: usize) -> usize {
     Vec::<u32>::with_capacity(n).len()
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('  return prefix + "\\xa0\\xa0".repeat(indent) + name;\n');
-  expect(js).toContain("  return $byteLen(`${text}!`.repeat(start));\n");
+  expect(js).toContain('  return prefix + $repeatText("\\xa0\\xa0", indent) + name;\n');
+  expect(js).toContain("  return $byteLen($repeatText(`${text}!`, start));\n");
+  expect(js).toContain('"ab".repeat(3)');
+  expect(js).toContain('"-".repeat(n < 4 ? n : 3)');
+  expect(js).toContain('"".repeat(n)');
   expect(js).toContain("  $roomFor(n, 4);\n");
-  expect(js.match(/\$roomFor\(/g)).toHaveLength(1);
   installStd(dir);
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.indented("-", 2, "k"), lib.padded("ab", 2)]).toEqual(["-\xa0\xa0\xa0\xa0k", 6]);
-  // Past the engine's string length: its RangeError, where std panics.
-  expect(() => lib.padded("ab", 2 ** 30)).toThrow(RangeError);
+  expect([lib.indented("-", 2, "k"), lib.padded("ab", 2), lib.fits(9)]).toEqual(["-\xa0\xa0\xa0\xa0k", 6, "ababab---"]);
+  // Past `isize::MAX` bytes, and past `usize::MAX`, std's panics.
+  expect(() => lib.padded("ab", 2 ** 30)).toThrow("capacity overflow");
+  expect(() => lib.padded("ab", 2 ** 31)).toThrow("capacity overflow");
 });
 
 // ADR 0774, amended: a signed count of written text's `repeat`, as React's
-// hydration diff indents, `'  '.repeat(indent)`: a negative one throws
-// JS's `RangeError` as its `usize`, 2^31 or more, does, where std panics.
-// Of text not written there, which may be empty, and of an integer wider
-// than 32 bits, it's cast.
+// hydration diff indents, `'  '.repeat(indent)`, is given as it is, and
+// `$repeatText` reads its bits as a `usize`: a negative one is 2^31 or more
+// as one, past `isize::MAX` bytes, std's panic. Of text not written there,
+// which may be empty, and of an integer wider than 32 bits, it's cast.
 test("a repeat's count of a signed integer is the integer", async () => {
   const dir = fixture("string-repeat-signed");
   writeFileSync(join(dir, "lib.rs"), `pub fn indentation(indent: i32) -> String {
@@ -1004,11 +1011,12 @@ pub fn wide(n: i64) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('  return "  " + "  ".repeat(indent);\n');
-  expect(js).toContain("  return text.repeat(n >>> 0);\n");
+  expect(js).toContain('  return "  " + $repeatText("  ", indent);\n');
+  expect(js).toContain("  return $repeatText(text, n >>> 0);\n");
+  installStd(dir);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.indentation(1), lib.ofText("", -1), lib.wide(2n ** 32n + 1n)]).toEqual(["    ", "", "ab"]);
-  expect(() => lib.indentation(-1)).toThrow(RangeError);
+  expect(() => lib.indentation(-1)).toThrow("capacity overflow");
 });
 
 // ADR 0945: a sort by UTF-16 units, `a.encode_utf16().cmp(b.encode_utf16())`,
