@@ -638,7 +638,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-copies-vec-ignored",
-    breaks: "a `Vec` a clone of which reaches JS is left out where no Rust code changes it, so JS gets one array twice (#2408, ADR 1191)",
+    breaks: "a `Vec` a clone of which reaches JS is left out where no Rust code changes it, so JS gets one array twice (#2408, ADR 1197)",
     file: "crates/rust-js-lower/src/copies.rs",
     find: "                .any(|&changed| self.instance_of(ty, changed))\n            || self.js_copies_here(ty);",
     replace: "                .any(|&changed| self.instance_of(ty, changed));",
@@ -646,7 +646,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-copies-type-ignored",
-    breaks: "a struct whose clone reaches JS is left out where no Rust code changes it: a module constant returned is JS's to change (#2408, ADR 1191)",
+    breaks: "a struct whose clone reaches JS is left out where no Rust code changes it: a module constant returned is JS's to change (#2408, ADR 1197)",
     file: "crates/rust-js-lower/src/copies.rs",
     find: "            || (self.krate.mutated.types.iter()).any(|&mutated| self.instance_of(ty, mutated))\n            || self.js_copies_here(ty);",
     replace: "            || (self.krate.mutated.types.iter()).any(|&mutated| self.instance_of(ty, mutated));",

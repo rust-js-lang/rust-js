@@ -388,6 +388,6 @@ mod tests {
                 }
             }
         }
-        assert_eq!(CARRIED.len(), 66);
+        assert_eq!(CARRIED.len(), 67);
     }
 }

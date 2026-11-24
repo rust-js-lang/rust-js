@@ -1,4 +1,4 @@
-# 1191. A clone whose value reaches JS is a copy
+# 1197. A clone whose value reaches JS is a copy
 
 Status: Accepted (2026-11-23, #2408, the value-level design the lead
 approved). Amends [0052](0052-std-trait-impls.md): a clone no Rust code

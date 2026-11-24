@@ -1,5 +1,5 @@
 // A clone read only through its fields is never a value JS gets whole
-// (#2408, ADR 1191): `let (node, depth) = stack[at].clone()` of an
+// (#2408, ADR 1197): `let (node, depth) = stack[at].clone()` of an
 // `(Rc<Node>, usize)`, whose `Rc` reaches JS in the `Vec` returned, copies
 // nothing, as an `Rc`'s clone shares and a number isn't an object: its JS
 // reads the parts, `let [node, depth] = stack[at]`, as React's

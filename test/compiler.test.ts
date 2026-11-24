@@ -851,8 +851,10 @@ pub fn read_only(v: &Vec<u32>, p: &Point) -> (Vec<u32>, Point) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  // Nothing changes a `Vec<u32>` or a `Point`: a clone is the value itself.
-  expect(await Bun.file(join(dir, "lib.js")).text()).toContain("  return [v, p];");
+  // Nothing Rust does changes a `Vec<u32>` or a `Point`, but these clones are
+  // given back to JS, which may change one, and a clone is its own: a copy
+  // (#2408, ADR 1197).
+  expect(await Bun.file(join(dir, "lib.js")).text()).toContain("  return [v.slice(), { ...p }];");
 });
 
 // ADR 0053: `==` is `===` for JS primitives and `$eq` for what compares field

@@ -248,8 +248,37 @@ impl<'tcx> Flow<'tcx> {
                     Some((id, _)) => crate::bindings::is_binding(tcx, id) || matches!(callable, Some(None)),
                     None => true,
                 };
+            // But a WebIDL dictionary a binding is given, which the platform
+            // reads into an IDL value, never keeping or changing what it's
+            // given (`bindings::is_dictionary`, #1907): not JS's to change.
+            let read_as_dictionary = |at: usize| {
+                callee.is_some_and(|(id, _)| {
+                    crate::bindings::is_binding(tcx, id) && {
+                        let sig = tcx.instantiate_bound_regions_with_erased(
+                            tcx.fn_sig(id).instantiate_identity().skip_normalization(),
+                        );
+                        // Of a reference to one, or an `Option` of one, too.
+                        (sig.inputs().get(at)).is_some_and(|input| {
+                            let input = input.peel_refs();
+                            let input = match input.kind() {
+                                ty::Adt(adt, args)
+                                    if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option) =>
+                                {
+                                    args.type_at(0).peel_refs()
+                                }
+                                _ => input,
+                            };
+                            matches!(input.kind(), ty::Adt(adt, _) if crate::bindings::is_dictionary(tcx, adt.did()))
+                        })
+                    }
+                })
+            };
+            let given: Vec<usize> = (args.iter().enumerate())
+                .filter(|(_, arg)| arg.node.place().is_some())
+                .map(|(at, _)| at)
+                .collect();
             let flows: Vec<bool> = match (callee, callable) {
-                _ if to_js => vec![true; arg_places.len()],
+                _ if to_js => given.iter().map(|&at| !read_as_dictionary(at)).collect(),
                 // The crate's closure, called: its result reaches JS where the
                 // call's does, and what it's given may be in it.
                 (_, Some(Some(closure))) => {

@@ -1,4 +1,4 @@
-// Mutations of crates/rust-js-lower/src/copies/reached.rs (ADR 1191).
+// Mutations of crates/rust-js-lower/src/copies/reached.rs (ADR 1197).
 import type { Mutation } from "../../../mutations";
 
 const file = "crates/rust-js-lower/src/copies/reached.rs";
@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     name: "js-function-arguments-not-reaching",
     breaks: "what a callback JS gave is given doesn't reach JS, so it may keep Rust's array (#2408)",
     file,
-    find: "                _ if to_js => vec![true; arg_places.len()],",
-    replace: "                _ if to_js => vec![false; arg_places.len()],",
+    find: "                _ if to_js => given.iter().map(|&at| !read_as_dictionary(at)).collect(),",
+    replace: "                _ if to_js => given.iter().map(|_| false).collect(),",
     tests: ["test/js-copies.test.ts", "-t", "callback"],
   },
   {
@@ -67,5 +67,13 @@ export const mutations: Mutation[] = [
     find: "                let whole = used_whole(body, destination.local);",
     replace: "                let whole = true || used_whole(body, destination.local);",
     tests: ["test/corpus.test.ts", "-t", "^clone_read_through_its_parts_copies_its_parts\\.rs$"],
+  },
+  {
+    name: "dictionary-given-copied",
+    breaks: "a library's stored WebIDL dictionary a binding is given is copied, though the platform never keeps or changes it (#1907, #2408)",
+    file: "crates/rust-js-lower/src/copies/reached.rs",
+    find: "                _ if to_js => given.iter().map(|&at| !read_as_dictionary(at)).collect(),",
+    replace: "                _ if to_js => given.iter().map(|_| true).collect(),",
+    tests: ["test/library-kept-copies.test.ts", "-t", "stored dictionary given to WebIDL"],
   },
 ];
