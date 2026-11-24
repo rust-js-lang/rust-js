@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { changedWhileChecked, untrackedRefusal, movedWhilePushed, againEnv, appendedBoth, givenRemade, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, portRegen, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
+import { changedWhileChecked, untrackedRefusal, movedWhilePushed, againEnv, appendedBoth, compileGate, gateRebase, givenRemade, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, portRegen, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -229,7 +229,7 @@ test("a run's own compiler is own-compiler.ts's, and a dead run's folder goes", 
 // `find` its code moved past or a test renamed, which check:fast reaches
 // minutes in.
 test("a push's fast phase runs first, push-guard's rule and the catalog's quick tests", () => {
-  expect(phases.slice(0, 3)).toEqual(["rebase", "fast", "build"]);
+  expect(phases.slice(0, 4)).toEqual(["rebase", "gate", "fast", "build"]);
   const source = readFileSync(join(root, "scripts/push.ts"), "utf8");
   const main = source.slice(source.indexOf("async function main"));
   const at = (text: string) => main.indexOf(text);
@@ -564,4 +564,61 @@ test("a push that skips its check is refused without its reason", () => {
   }
   const rule = readFileSync(join(root, "DEVELOPMENT.md"), "utf8");
   expect(rule).toContain("`--skip-check=<why>` is allowed only (a) where the selector is known to");
+});
+
+// A rebase's semantic conflict, the change removing what an incoming commit
+// newly calls, which git merges cleanly, is found by a compile right after
+// the rebase, not minutes later by a full check or CI: 567 s on the Mac
+// mini (#2484). Each compile only where both sides touch its language, the
+// one way a new conflict comes in.
+test("a rebase that brought commits is compiled before its tests, where both sides touch the language", () => {
+  expect(compileGate(["scripts/a.ts"], ["test/b.test.ts"])).toEqual(["typecheck"]);
+  expect(compileGate(["crates/x/src/a.rs"], ["Cargo.lock"])).toEqual(["clippy"]);
+  expect(compileGate(["scripts/a.ts", "crates/x/src/a.rs"], ["crates/y/src/b.rs", "test/c.mjs"])).toEqual(["typecheck", "clippy"]);
+  expect(compileGate(["scripts/a.ts"], ["crates/y/src/b.rs"])).toEqual([]);
+  expect(compileGate(["docs/a.md"], ["scripts/b.ts"])).toEqual([]);
+  expect(compileGate(["crates/x/src/a.rs"], [])).toEqual([]);
+
+  const dir = fixture("push-gate");
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const env = { ...process.env, GIT_DIR: join(dir, ".git"), GIT_WORK_TREE: dir, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@example.com", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@example.com" };
+  const git = (...args: string[]) => {
+    const p = spawnSync("git", args, { cwd: dir, env, encoding: "utf8" });
+    return { code: p.status ?? 1, out: `${p.stdout}${p.stderr}` };
+  };
+  const ok = (...args: string[]) => {
+    const done = git(...args);
+    expect(done.code, done.out).toBe(0);
+    return done.out.trim();
+  };
+  const commit = (file: string, text: string, message: string) => {
+    writeFileSync(join(dir, file), text);
+    ok("add", file);
+    ok("commit", "-q", "-m", message);
+  };
+  ok("init", "-q", "-b", "main");
+  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({ compilerOptions: { strict: true, noEmit: true, module: "esnext", target: "esnext", moduleResolution: "bundler" }, include: ["*.ts"] }));
+  ok("add", "tsconfig.json");
+  commit("lib.ts", "export function old(): number {\n  return 1;\n}\n", "base");
+  // `main` moves on: a commit that newly calls `old`.
+  ok("switch", "-q", "-c", "incoming");
+  commit("user.ts", 'import { old } from "./lib";\nexport const n = old();\n', "call old");
+  const mainIs = ok("rev-parse", "HEAD");
+  // The change, from the base, renames it: each side compiles alone.
+  ok("switch", "-q", "main");
+  const mainWas = ok("rev-parse", "HEAD");
+  ok("switch", "-q", "-c", "change");
+  commit("lib.ts", "export function renamed(): number {\n  return 1;\n}\n", "rename old");
+  const typecheck = { typecheck: [join(root, "node_modules/.bin/tsc"), "-p", dir], clippy: ["false"] };
+  ok("rebase", "-q", mainIs);
+  const refused = gateRebase(mainWas, mainIs, git, typecheck, dir);
+  expect(refused.ran).toEqual(["typecheck"]);
+  expect(refused.refused).toContain("a semantic conflict with the commits the rebase brought");
+  expect(refused.refused).toContain("call old");
+  // The change that keeps what the incoming commit calls passes.
+  commit("lib.ts", "export function renamed(): number {\n  return 1;\n}\nexport const old = renamed;\n", "keep old");
+  expect(gateRebase(mainWas, mainIs, git, typecheck, dir)).toEqual({ ran: ["typecheck"] });
+  // Nothing brought, nothing run.
+  expect(gateRebase(mainIs, mainIs, git, typecheck, dir)).toEqual({ ran: [] });
 });

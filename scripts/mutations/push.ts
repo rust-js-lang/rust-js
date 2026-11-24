@@ -3,6 +3,22 @@
 import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
+    name: "rebase-gate-never-run",
+    breaks: "a rebase that brought commits isn't compiled before its tests: a semantic conflict with them is found minutes later by a full check or CI (#2484)",
+    file: "scripts/push.ts",
+    find: "  for (const gate of gates) {",
+    replace: "  for (const gate of [] as typeof gates) {",
+    tests: ["test/push.test.ts", "-t", "a rebase that brought commits is compiled"],
+  },
+  {
+    name: "rebase-gate-own-side-only",
+    breaks: "the compile gate runs where the change alone touches a language, though the incoming commits don't, a compile of nothing new (#2484)",
+    file: "scripts/push.ts",
+    find: "    ...(own.some(typescript) && incoming.some(typescript) ? ([\"typecheck\"] as const) : []),",
+    replace: "    ...(own.some(typescript) ? ([\"typecheck\"] as const) : []),",
+    tests: ["test/push.test.ts", "-t", "a rebase that brought commits is compiled"],
+  },
+  {
     name: "moved-push-given-up",
     breaks: "a push the server refused as main moved under it is given up, a whole check again on the next push (#2338)",
     file: "scripts/push.ts",

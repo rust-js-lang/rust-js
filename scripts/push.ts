@@ -78,7 +78,7 @@ import { PORT_DOES_NOT_COMPILE, touchesPort } from "./iteratorSlice";
 import { refusal, undone } from "./push-guard";
 
 /** The phases, in the order they run. */
-export const phases = ["rebase", "fast", "build", "std", "mutants", "check", "sanity", "react", "files", "push"] as const;
+export const phases = ["rebase", "gate", "fast", "build", "std", "mutants", "check", "sanity", "react", "files", "push"] as const;
 
 /** The `fast` phase's tests: the mutation catalog's file whole, whose
  * failure, a `find` its code moved past, a test renamed or moved, or a
@@ -409,6 +409,9 @@ async function main() {
     // its first round (#2417).
     let carried = givenRemade(process.env);
     for (;;) {
+      // Where `main` was before the rebase, so the commits it brings are
+      // known (`compileGate`).
+      const mainWas = git("rev-parse", "origin/main").out.trim();
       const remade = [...new Set([...rebase(), ...carried])];
       carried = [];
       phase("rebase");
@@ -420,6 +423,16 @@ async function main() {
         } else console.log(`push: a full check: the round it was given can't be carried on from: ${refused}`);
         given = undefined;
       }
+      // A rebase that brought commits: the compiles that find a semantic
+      // conflict with them, before any test (#2484), and before push runs
+      // again from a rebased tree, whose own rebase brings nothing.
+      const mainIs = git("rev-parse", "origin/main").out.trim();
+      if (mainWas !== "" && mainWas !== mainIs) {
+        const gated = gateRebase(mainWas, mainIs, git);
+        if (gated.refused !== undefined) throw new Refused(gated.refused);
+        if (gated.ran.length > 0) console.log(`push: the rebase brought commits: ${gated.ran.join(" and ")} found no conflict with them`);
+      }
+      phase("gate");
       // A rebase that changed what this process has loaded: push runs again
       // from the rebased tree, with what it was given, its line its own
       // (#2275). Its run starts at the rebased commit, so it doesn't again.
@@ -634,6 +647,52 @@ export function beside(cmd: string[], log: string, env: Record<string, string> =
 }
 
 /** A command of a phase, its output shown; refused where it fails. */
+/** Of a rebase that brought commits, the compiles that find a semantic
+ * conflict in seconds, before any test (#2484, m1-lisa's design): the
+ * change removing or renaming what an incoming commit newly calls, which
+ * git merges cleanly and only a full check or CI found, 567 s late on the
+ * Mac mini. Each only where the change's own files, `own`, and the
+ * incoming commits', `incoming`, both touch its language, the one way a new
+ * conflict comes in, as each side alone was compiled by its own push:
+ * `typecheck` of TypeScript and JavaScript, `clippy` of Rust, check:fast's
+ * own lint commands, whose caches the next check reuses. */
+export function compileGate(own: string[], incoming: string[]): ("typecheck" | "clippy")[] {
+  const typescript = (file: string) => /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(file);
+  const rust = (file: string) => /\.rs$|(^|\/)Cargo\.(toml|lock)$/.test(file);
+  return [
+    ...(own.some(typescript) && incoming.some(typescript) ? (["typecheck"] as const) : []),
+    ...(own.some(rust) && incoming.some(rust) ? (["clippy"] as const) : []),
+  ];
+}
+
+/** `compileGate`'s commands. */
+export const gateCommands: Record<"typecheck" | "clippy", string[]> = {
+  typecheck: ["bun", "run", "typecheck"],
+  clippy: ["cargo", "clippy", "--locked", "--quiet", "--all-targets", "--", "-D", "warnings"],
+};
+
+/** `compileGate` run over a rebase from `mainWas` to `mainIs`, HEAD the
+ * change rebased onto it: the gates it ran, or its refusal, naming the
+ * command and the commits the rebase brought. */
+export function gateRebase(
+  mainWas: string,
+  mainIs: string,
+  git: (...args: string[]) => { code: number; out: string },
+  commands = gateCommands,
+  cwd = process.cwd(),
+): { ran: ("typecheck" | "clippy")[]; refused?: string } {
+  const incoming = lines(git("diff", "--name-only", mainWas, mainIs).out);
+  const gates = compileGate(lines(git("diff", "--name-only", mainIs, "HEAD").out), incoming);
+  for (const gate of gates) {
+    const p = spawnSync(commands[gate][0]!, commands[gate].slice(1), { cwd, stdio: "inherit" });
+    if (p.status !== 0) {
+      const subjects = lines(git("log", "--format=%h %s", `${mainWas}..${mainIs}`).out).map((line) => line.slice(0, 100));
+      return { ran: gates, refused: `a semantic conflict with the commits the rebase brought, found by \`${commands[gate].join(" ")}\`:\n${subjects.join("\n")}` };
+    }
+  }
+  return { ran: gates };
+}
+
 function run(name: Phase, cmd: string[]) {
   const p = spawnSync(cmd[0], cmd.slice(1), { stdio: "inherit" });
   if (p.status !== 0) throw new Refused(`${name} failed: ${cmd.join(" ")}`);
