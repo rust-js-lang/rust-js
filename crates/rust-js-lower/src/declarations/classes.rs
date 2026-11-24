@@ -163,14 +163,12 @@ impl Declarations<'_, '_> {
                         }
                     }
                 }
-                // What holds any value is the union, `unknown` or `any`.
-                let top = ["any", "unknown"]
-                    .into_iter()
-                    .find(|&top| types.contains(&keyword(top)));
-                let ty = match (top, types.len()) {
-                    (Some(top), _) => keyword(top),
-                    (None, 1) => types.remove(0),
-                    (None, _) => union(types),
+                // One that holds any value at it is printed `unknown` or
+                // `any`, the union's whole, as TypeScript makes it
+                // (typescript/index.js, #1850).
+                let ty = match types.len() {
+                    1 => types.remove(0),
+                    _ => union(types),
                 };
                 members
                     .push(json!({ "kind": "property", "name": key, "static": false, "optional": false, "type": ty }));
