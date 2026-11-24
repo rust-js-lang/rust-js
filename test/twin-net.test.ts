@@ -7,7 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { blessedCatalog, catalogFile, helpersCommand, helpersOf, importedHelpers, pittedHelpers, sharedHelpers, twinVerdict, unboundModels } from "./twin-net";
+import { blessedCatalog, catalog, catalogFile, helpersCommand, helpersOf, importedHelpers, pittedHelpers, sharedHelpers, twinVerdict, unboundModels } from "./twin-net";
 import { buildCompiler, fixture } from "./support";
 
 beforeAll(buildCompiler, 600_000);
@@ -16,6 +16,22 @@ test("each helper the catalog names is one the runtime declares", () => {
   const runtime = readFileSync(join(import.meta.dir, "..", "std", "runtime.js"), "utf8");
   const declared = new Set([...runtime.matchAll(/^(?:export )?(?:async )?(?:function\*? |class |const |let )(\$[A-Za-z0-9_$]*)/gm)].map((m) => m[1]));
   expect([...pittedHelpers(), ...Object.keys(sharedHelpers())].filter((helper) => !declared.has(helper))).toEqual([]);
+
+  // A form the lowering writes is named by the row of `$stdSites` it reads.
+  const sites = readFileSync(join(import.meta.dir, "..", "crates", "rust-js-program", "src", "runtime", "std_sites.js"), "utf8");
+  const rows = new Set(Object.keys(JSON.parse(sites.slice(sites.indexOf("{"), sites.lastIndexOf("}") + 1))));
+  const forms = catalog().models.filter((entry) => entry.kind === "form").map((entry) => entry.helper);
+  expect(forms.length).toBeGreaterThan(0);
+  expect(forms.filter((form) => !rows.has(form))).toEqual([]);
+});
+
+// A model `outside` the twin net's tables, which none reaches yet, isn't
+// taken off models.rs where no case imports it; glue nothing imports is.
+test("a whole run that imports no model outside the tables keeps it", () => {
+  const { unshare } = twinVerdict({ pitted: new Set(), unpitted: new Set() }, true);
+  expect(unshare).not.toContain("$durationAdd");
+  expect(unshare.filter((helper) => sharedHelpers()[helper] === "outside")).toEqual([]);
+  expect(unshare.length).toBeGreaterThan(0);
 });
 
 // #2513's measure: how many models stand for no std item yet, which each
@@ -23,7 +39,20 @@ test("each helper the catalog names is one the runtime declares", () => {
 test("how many models stand for no std item yet", () => {
   const unbound = unboundModels();
   console.log(`${unbound.length} models stand for no std item yet`);
-  expect(unbound.length).toBeLessThanOrEqual(220);
+  expect(unbound.length).toBeLessThanOrEqual(207);
+});
+
+// Of the runtime's exports, those models.rs doesn't say are glue or a
+// model yet, which each step of Campaign 5 catalogs as it touches them;
+// never more than this, so a helper added to the runtime is catalogued
+// with it (ADR 1202, amended).
+test("how many runtime exports the catalog doesn't name yet", () => {
+  const runtime = readFileSync(join(import.meta.dir, "..", "std", "runtime.js"), "utf8");
+  const exported = [...runtime.matchAll(/^export (?:async )?(?:function\*? |class |const |let )(\$[A-Za-z0-9_$]*)/gm)].map((m) => m[1]);
+  const named = new Set(catalog().models.filter((entry) => entry.kind !== "form").map((entry) => entry.helper));
+  const unnamed = exported.filter((helper) => !named.has(helper));
+  console.log(`${unnamed.length} runtime exports the catalog doesn't name yet`);
+  expect(unnamed.length).toBeLessThanOrEqual(1183);
 });
 
 test("a run's helpers are pitted where only the plain build imports them, and the catalog says why of the rest", () => {

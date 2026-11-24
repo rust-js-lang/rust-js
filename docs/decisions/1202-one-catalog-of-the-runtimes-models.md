@@ -78,3 +78,39 @@ by its proof, and each model needs its std item and proof in one place.
   `bun run std`'s path check, and the mutations `models-trait-method-unresolved`,
   `models-glue-as-a-model`, `models-pitted-unsaid`, `twin-bless-keeps-unshared`
   and `twin-bless-pit-unwritten`.
+
+## Amended: step 2a, the catalog's rows of `$stdSites` (2026-11-25)
+
+The runtime's helpers that read `$stdSites` were mostly outside the catalog:
+of 51, 31 had no entry and only 6 were bound, because step 1 seeded it from
+the twin net, which sees the iterator tables' helpers alone. And which std
+function each row's sites are of was a second table, `RAISED` in
+`compiled_std/raised.rs`, beside the catalog.
+
+- A model stands for std items of two kinds, `Stands::Path`, a std item at
+  its path, and `Stands::Row`, the function whose panics a row of
+  `$stdSites` holds, by the row's name. Each helper that reads a row names
+  it, so the rows keep their names (no output moves) and each is its
+  readers' key.
+- The lowering's own readers of a row, which write a form in place of a std
+  body (`clonedAt`, `vecDequeRange`, `ordClamp` and seven more), are
+  entries too, `Kind::Form`. A row a helper and the lowering both read is
+  the helper's entry, its note naming the lowering's file.
+- `RAISED` is the catalog's `models/rows.rs`, `ROWS`, split from models.rs
+  by concept; `bun run std` walks it as before, and refuses a catalog whose
+  model or form reads a row nothing writes (`rows_unwritten`).
+- A new reason, `outside`: a std function no table of the twin net reaches
+  yet, a `Duration`'s, UTF-8's, an I/O type's, or an iterator's no table has
+  a case of. The twin net doesn't take such a model off where no case
+  imports it, as no case is meant to yet; a form is no helper of the
+  runtime's, and the twin net doesn't judge it.
+- The runtime exports 1,529 helpers and the catalog names 346: the other
+  1,183 are ratcheted (`test/twin-net.test.ts`), so a helper added to the
+  runtime is catalogued with it, and each later step catalogs what it
+  touches. The unbound models' ratchet falls to 207, the 13 site readers
+  that were unbound now bound to their rows.
+
+Step 2b makes each model's rows its function's, walked from the catalog;
+step 2c checks each bound model reads every site of its function, or the
+catalog says why one is unreachable (#2509, #2488's class).
+

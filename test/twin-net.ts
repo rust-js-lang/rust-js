@@ -36,7 +36,7 @@ export function importedHelpers(js: string): string[] {
 /** One helper of the runtime's as the one catalog says it
  * (crates/rust-js-lower/src/recognition/models.rs, ADR 1202): glue, or a
  * model of the std items it stands for, pitted or unproven for a reason. */
-export type Entry = { helper: string; kind: "glue" | "model"; pitted: boolean; why: string | null; standsFor: string[]; note: string };
+export type Entry = { helper: string; kind: "glue" | "model" | "form"; pitted: boolean; why: string | null; standsFor: string[]; note: string };
 
 /** The catalog's file, which a whole run's drift is blessed into. */
 export const catalogFile = join(import.meta.dir, "..", "crates", "rust-js-lower", "src", "recognition", "models.rs");
@@ -59,9 +59,10 @@ export function pittedHelpers(): string[] {
 }
 
 /** Each helper both builds import, by why no case pits it against std's
- * body: glue's, or an unproven model's reason. */
+ * body: glue's, or an unproven model's reason. A form the lowering writes
+ * is no helper of the runtime's, and isn't one. */
 export function sharedHelpers(): Record<string, string> {
-  return Object.fromEntries(catalog().models.filter((entry) => !entry.pitted).map((entry) => [entry.helper, entry.why ?? "glue"]));
+  return Object.fromEntries(catalog().models.filter((entry) => entry.kind !== "form" && !entry.pitted).map((entry) => [entry.helper, entry.why ?? "glue"]));
 }
 
 /** Each model that stands for no std item yet: #2513's measure of what's
@@ -122,7 +123,11 @@ export function twinVerdict(run: { pitted: Set<string>; unpitted: Set<string> },
     );
   }
   const pit = [...run.pitted].filter((helper) => !listed.has(helper)).sort();
-  const unshare = Object.keys(shared).filter((helper) => run.pitted.has(helper) || !run.unpitted.has(helper)).sort();
+  // A model `outside` the twin net's tables, which none reaches yet, is no
+  // drift where no case imports it.
+  const unshare = Object.keys(shared)
+    .filter((helper) => run.pitted.has(helper) || (!run.unpitted.has(helper) && shared[helper] !== "outside"))
+    .sort();
   const drift = [
     ...pit.map((helper) => (shared[helper] === undefined ? `${helper}: a case pits it against std's body: onto models.rs, \`Pitted\`` : `${helper}: a case pits it against std's body now: \`Pitted\` in models.rs`)),
     ...unshare.filter((helper) => !run.pitted.has(helper)).map((helper) => `${helper}: no case imports it now: off models.rs`),

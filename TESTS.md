@@ -1,5 +1,9 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (Campaign 5 step 2a, ADR 1202 amended): test/twin-net.test.ts gains two tests, the runtime's exports the catalog doesn't name yet (1,183, at most) and a whole run keeps a model outside the tables no case imports; its measure falls to 207; each form is named by its row; a unit test of raised.rs, the catalog's rows are written; six mutations, two moved to scripts/mutations/lower/recognition/models/rows.ts.
+
+Changed on 2026-11-25 (Campaign 5 step 1, ADR 1202, ADR 1122 amended): test/architecture-models.test.ts, new, two tests (no second list of the runtime's models); test/twin-net.test.ts reads the catalog `rust-js --std-models` prints, gains its measure (220 models stand for no std item yet, at most), and its bless tests write models.rs; five mutations.
+
 Changed on 2026-11-25 (#1979): test/mutation-reach.test.ts, new, three tests: scripts/mutation-reach.ts' answers, the target it suggests, its line of a mutation and what of the JS it compares.
 
 Changed on 2026-11-25 (#2539, Campaign 6 step 0, ADR 1203, ADR 1199 amended): test/param-form-shadow.test.ts, new, two tests: `ParamForm`'s shadow, `--shadow param-form=<file>`, of each value converted where it crosses into or out of generic code the form taken beside every form that differs there, and of each iterator form asked the bounds that read its value; no output changed. `bun scripts/param-form-shadow.ts` counts the corpus's lines.

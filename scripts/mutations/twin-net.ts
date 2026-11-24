@@ -67,4 +67,20 @@ export const mutations: Mutation[] = [
     replace: "    if (!whole) throw new Error(",
     tests: blessed,
   },
+  {
+    name: "twin-outside-unshared",
+    breaks: "a model outside the twin net's tables, which no case reaches yet, is drift where no case imports it, so blessing a whole run takes a site reader, `$durationAdd`, off models.rs",
+    file: "test/twin-net.ts",
+    find: '    .filter((helper) => run.pitted.has(helper) || (!run.unpitted.has(helper) && shared[helper] !== "outside"))\n',
+    replace: "    .filter((helper) => run.pitted.has(helper) || !run.unpitted.has(helper))\n",
+    tests: ["test/twin-net.test.ts", "-t", "a whole run that imports no model outside the tables keeps it"],
+  },
+  {
+    name: "twin-form-shared",
+    breaks: "a form the lowering writes is taken for a runtime helper both builds import, so the catalog names a helper the runtime doesn't declare",
+    file: "test/twin-net.ts",
+    find: '  return Object.fromEntries(catalog().models.filter((entry) => entry.kind !== "form" && !entry.pitted)',
+    replace: "  return Object.fromEntries(catalog().models.filter((entry) => !entry.pitted)",
+    tests: ["test/twin-net.test.ts", "-t", "each helper the catalog names is one the runtime declares"],
+  },
 ];
