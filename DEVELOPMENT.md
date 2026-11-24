@@ -877,7 +877,20 @@ checked:
   first; CI checks the combination. What each pass ran and left is kept
   in the main checkout's `.cache/sanity-runs/<commit>.json`: where `main`
   goes red from two pushes meeting, look there for the failing test. It rebases and runs it again as
-  often as `main` moves, until it lands. Its line of times names which
+  often as `main` moves, until it lands. A rebase that brought commits is
+  compiled first, its `gate` phase: `bun run typecheck` where both the
+  change and the incoming commits touch TS or JS, `cargo clippy
+  --all-targets` where both touch Rust, so a semantic conflict, the change
+  removing what an incoming commit newly calls, is refused in seconds
+  (#2484). A rebase that changed push's own scripts runs push again from
+  the rebased tree, which carries on from the round before where the
+  branch's commits are patch for patch those it checked, the files a rebase
+  resolves mechanically (std/'s generated files, a blessed baseline, a
+  ratchet, an ADR's amendments, a line set, TESTS.md's `Changed on` lines)
+  left out; where they differ otherwise, it runs the same sanity pass with
+  nothing of the round reused, and only a round of another base or a tree
+  changed is checked whole. Each round past the first says which on the
+  line, `sanity carried …` or `… refused (<why>) …`. Its line of times names which
   (`check` or `sanity`) and what was selected, `select all (why)`,
   `select some (N files, M cases)`, `select capped …` or `select none`, the
   map's commit and how far behind it is. Each machine's sessions set

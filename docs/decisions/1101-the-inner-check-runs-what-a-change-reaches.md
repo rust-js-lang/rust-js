@@ -1086,3 +1086,51 @@ Each holds by a row of test-map.test.ts and a mutation: `test-map-inherent-metho
 `-trait-impl-trait-unsearched`, `-mod-beside-use-everything`. Left as they are:
 variants reordered and a default type parameter, which still select
 everything (over-selecting).
+
+## Amendment (2026-11-24, #2484): a rebase's commits compiled first, and a round carried on past a mechanical merge
+
+m1-lisa's design, from two of the day's costs.
+
+**A. A compile gate right after a rebase that brought commits** (8fdf5d8ae).
+A semantic conflict, the change removing or renaming what an incoming
+commit newly calls, merges cleanly, and the sanity pass runs no lint, so
+it was found only by a full check or CI: 567 s late on the Mac mini.
+`compileGate` runs `bun run typecheck` where both the change and the
+incoming commits touch TS or JS, and `cargo clippy --all-targets` where
+both touch Rust, check:fast's own lint commands, whose caches the next
+check reuses. One side alone was compiled by its own push, so only both
+can bring a new conflict. Its time is the line's `gate` phase.
+
+**B. A round carried on by what the push wrote, not by what the rebase
+rewrote.** Push run again from a rebased tree (#2286) carried on from the
+round before only where the branch's commits were patch for patch those it
+checked. A rebase that resolved a conflict mechanically rewrote a patch by
+itself: std/'s generated files taken as main's and made again, a blessed
+baseline, a ratchet's lower count, an ADR's two amendments, a line set,
+TESTS.md's `Changed on` lines. Each turned the run again into a full check
+where a round in one process runs the sanity pass. Now:
+- `roundRefused` compares the patches without those files (`withoutRemade`,
+  by `remakeable`, the one rule of what a rebase resolves mechanically).
+  They are push's own writes, each made and checked again by its own phase
+  (std/ by `std-fresh`) or by the tests that read it, which the sanity
+  pass picks as the incoming commits touch it. Any other file's difference
+  still refuses.
+- A refusal for the patches runs that sanity pass, `--sanity=<the commit
+  checked>`, with nothing of the round reused: its fast tests, mutants and
+  React gate run again (`carryOn`). The refused round's work is lost, not
+  its narrowing. A full check is left for a round whose base isn't an
+  ancestor, or a tree with a change.
+- Each round past the first says on the line how it came by the one
+  before: `sanity carried …`, or `… refused (<why>) …` (`roundSaid`).
+
+The files B leaves out include those `remadeStd` and `regenerate` write
+after the rebase and amend into the top commit: push's own mechanical
+writes, never the change's, so neither refuses a carried round.
+
+Held by test/push.test.ts: "a rebase that brought commits is compiled
+before its tests, where both sides touch the language" (A), and "push run
+again carries on past a rebase's mechanical merge, and a refused carry is
+a sanity pass" (B). Mutations `rebase-gate-never-run`,
+`rebase-gate-own-side-only`, `push-round-remade-compared`,
+`push-round-refused-whole`, `push-round-refused-reused` and
+`push-round-carry-unsaid`.

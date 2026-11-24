@@ -231,26 +231,77 @@ export function givenRound(env: NodeJS.ProcessEnv): Round | undefined {
   return checked && base ? { checked, base, ...(react ? { react } : {}) } : undefined;
 }
 
-/** Why push run again can't carry on from `round` at `base`, a full
- * check its answer, or `undefined` where it can: the round's base an
- * ancestor of this one, the tree clean, and the branch's commits over
- * this base patch for patch those it checked over its own. A rebase
- * rewrites them, so the checked commit itself is never this one's
- * ancestor; one that resolved a conflict changes a patch, and is checked
- * whole (#2286). `git` runs a git command in the checkout. */
-export function roundRefused(round: Round, base: string, git: (...args: string[]) => { code: number; out: string }): string | undefined {
-  if (git("merge-base", "--is-ancestor", round.base, base).code !== 0) return `its round's base ${round.base.slice(0, 9)} isn't an ancestor of ${base.slice(0, 9)}`;
-  if (git("status", "--porcelain", "--untracked-files=no").out.trim() !== "") return "its tree has a change";
+/** Why push run again can't carry on from `round` at `base`, or
+ * `undefined` where it can: the round's base an ancestor of this one, the
+ * tree clean, and the branch's commits over this base patch for patch
+ * those it checked over its own. A rebase rewrites them, so the checked
+ * commit itself is never this one's ancestor (#2286). The patches leave
+ * out each file a rebase resolves mechanically (`remakeable`): std/'s
+ * generated files and a blessed baseline, taken as main's and made again
+ * by push (`remade`, `remadeStd`), a ratchet's count, an ADR's two
+ * amendments, a line set and TESTS.md's `Changed on` lines, each made and
+ * checked again by its own phase or the tests that read it, which the
+ * sanity pass picks as the incoming commits touch it; push's own writes,
+ * never the change's. With them, a mechanical merge refused the round, a
+ * full check its answer (#2484). `full` where the round can't be carried
+ * on from at all, its base not an ancestor or the tree changed; else the
+ * patches differ, a conflict's context or a resolution of another file,
+ * and the round's narrowing still holds (`carryOn`). `git` runs a git
+ * command in the checkout. */
+export function roundRefused(round: Round, base: string, git: (...args: string[]) => { code: number; out: string }): { why: string; full: boolean } | undefined {
+  if (git("merge-base", "--is-ancestor", round.base, base).code !== 0) return { why: `its round's base ${round.base.slice(0, 9)} isn't an ancestor of ${base.slice(0, 9)}`, full: true };
+  if (git("status", "--porcelain", "--untracked-files=no").out.trim() !== "") return { why: "its tree has a change", full: true };
   const patches = (range: string) => {
-    const diff = git("log", "--reverse", "-p", "--format=commit %H", range);
+    const diff = git("log", "--reverse", "-p", "--no-renames", "--format=commit %H", range);
     if (diff.code !== 0) return undefined;
-    const ids = spawnSync("git", ["patch-id", "--stable"], { input: diff.out, encoding: "utf8" }).stdout;
+    const ids = spawnSync("git", ["patch-id", "--stable"], { input: withoutRemade(diff.out), encoding: "utf8" }).stdout;
     return ids.split("\n").filter(Boolean).map((line) => line.split(" ")[0]).join(" ");
   };
   const checked = patches(`${round.base}..${round.checked}`);
   const now = patches(`${base}..HEAD`);
-  if (checked === undefined || checked === "" || checked !== now) return `its commits aren't patch for patch those its round checked`;
+  if (checked === undefined || checked === "" || checked !== now) return { why: "its commits aren't patch for patch those its round checked", full: false };
   return undefined;
+}
+
+/** `log`, `git log -p --no-renames`' commits, without the sections of the
+ * files a rebase resolves mechanically (`remakeable`), which `roundRefused`
+ * leaves out of its patches. A section starts at its `diff --git` line and
+ * a commit at its `commit` line; a diff's own lines each start with a
+ * space, a `+`, a `-` or a header's word, never either. */
+export function withoutRemade(log: string): string {
+  let dropped = false;
+  return log
+    .split("\n")
+    .filter((line) => {
+      if (line.startsWith("commit ")) dropped = false;
+      else if (line.startsWith("diff --git ")) {
+        const file = line.match(/^diff --git a\/(\S+) b\/\S+$/)?.[1];
+        dropped = file !== undefined && remakeable([file]);
+      }
+      return !dropped;
+    })
+    .join("\n");
+}
+
+/** A round as the push's line says it: its name, how it came by the round
+ * before, `carried` or `refused (<why>)` (`carryOn`), where it's past one,
+ * and its selection: `sanity carried some (3 files, 2 cases)` (#2484). */
+export function roundSaid(name: Phase, carry: string | undefined, selection: string): string {
+  return [name, carry, selection].filter((part) => part !== undefined).join(" ");
+}
+
+/** Where push run again goes on from, given the round it was given and
+ * `roundRefused`'s answer: carried, the commit it checked, its base and its
+ * React gate's, a sanity pass of what the rebase brought with the round's
+ * fast tests, mutants and port reused where they read nothing it brought;
+ * refused for its patches, the same sanity pass, as a round past a rebase
+ * in one process runs, with none of the round's work reused, each phase
+ * run again (#2484: the refused round's work is lost, not its narrowing);
+ * refused `full`, nothing, a full check. `said` is the round's on the
+ * push's line: `carried`, or `refused (<why>)`. */
+export function carryOn(round: Round, refused: { why: string; full: boolean } | undefined): { checked: string; base: string; react?: string; said: string } {
+  if (refused === undefined) return { checked: round.checked, base: round.base, ...(round.react ? { react: round.react } : {}), said: "carried" };
+  return { checked: refused.full ? "" : round.checked, base: "", said: `refused (${refused.why})` };
 }
 
 /** The work tree as a round checks it: when it settled, before the round
@@ -364,6 +415,10 @@ async function main() {
   // Each round's selection, said on the line in turn, the check's and each
   // sanity pass's (#2258).
   const rounds: string[] = [];
+  // How the next round past a rebase came by its round before: `carried`, a
+  // round of this process or the one push run again was given, or
+  // `refused (<why>)`, said on its line (#2484); none of the first round.
+  let carry: string | undefined;
   // The files the mutation catalog names, which the `fast` phase's tests
   // read (`fastAgain`), asked once.
   let named: ReadonlySet<string> | undefined;
@@ -421,10 +476,10 @@ async function main() {
       phase("rebase");
       if (given !== undefined) {
         const refused = roundRefused(given, git("rev-parse", "origin/main").out.trim(), git);
-        if (refused === undefined) {
-          console.log(`push: carrying on from the round before it ran again: ${given.checked.slice(0, 9)} checked over ${given.base.slice(0, 9)}`);
-          ({ checked, base: checkedBase, react: reactBase } = given);
-        } else console.log(`push: a full check: the round it was given can't be carried on from: ${refused}`);
+        ({ checked, base: checkedBase, react: reactBase, said: carry } = carryOn(given, refused));
+        if (refused === undefined) console.log(`push: carrying on from the round before it ran again: ${given.checked.slice(0, 9)} checked over ${given.base.slice(0, 9)}`);
+        else if (refused.full) console.log(`push: a full check: the round it was given can't be carried on from: ${refused.why}`);
+        else console.log(`push: the round it was given can't be carried on from: ${refused.why}; its sanity pass, nothing of the round reused`);
         given = undefined;
       }
       // A rebase that brought commits: the compiles that find a semantic
@@ -532,8 +587,9 @@ async function main() {
         // only that there was none).
         if (fetched.startsWith("no map fetched")) selection += ` [${fetched}]`;
         console.log(`push: selected ${selection}`);
-        rounds.push(`${name} ${selection}`);
+        rounds.push(roundSaid(name, carry, selection));
         selection = rounds.join("; ");
+        carry = "carried";
         phase(name);
         if (regen !== undefined) {
           const code = await regen.done;

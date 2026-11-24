@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { changedWhileChecked, untrackedRefusal, movedWhilePushed, againEnv, appendedBoth, compileGate, gateRebase, givenRemade, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, portRegen, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
+import { changedWhileChecked, untrackedRefusal, movedWhilePushed, againEnv, appendedBoth, compileGate, gateRebase, givenRemade, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, carryOn, roundSaid, withoutRemade, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, portRegen, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -449,12 +449,12 @@ test("push run again carries on from its round only where the round is its own",
   // Its own round: carried on from, its sanity pass of what came in.
   expect(roundRefused({ checked: h1, base: b1 }, b2, git)).toBeUndefined();
   // Forged: a commit it didn't check.
-  expect(roundRefused({ checked: b2, base: b1 }, b2, git)).toContain("patch for patch");
+  expect(roundRefused({ checked: b2, base: b1 }, b2, git)).toEqual({ why: "its commits aren't patch for patch those its round checked", full: false });
   // Stale: a base past this one.
-  expect(roundRefused({ checked: h1, base: b2 }, b1, git)).toContain("isn't an ancestor");
+  expect(roundRefused({ checked: h1, base: b2 }, b1, git)).toMatchObject({ full: true, why: expect.stringContaining("isn't an ancestor") });
   // A change in the tree.
   writeFileSync(join(dir, "b.txt"), "changed since\n");
-  expect(roundRefused({ checked: h1, base: b1 }, b2, git)).toBe("its tree has a change");
+  expect(roundRefused({ checked: h1, base: b1 }, b2, git)).toEqual({ why: "its tree has a change", full: true });
   ok("checkout", "--", "b.txt");
   // The round given through the environment, and none where none passed.
   const round = { checked: h1, base: b1, react: b1 };
@@ -463,9 +463,86 @@ test("push run again carries on from its round only where the round is its own",
   // Taken up right after the rebase, before the selection asks the rebase's
   // commits since its base, so its round is a sanity pass.
   const source = readFileSync(join(root, "scripts/push.ts"), "utf8");
-  const taken = source.indexOf("({ checked, base: checkedBase, react: reactBase } = given);");
-  expect(taken).toBeGreaterThan(source.indexOf('      const remade = rebase();\n      phase("rebase");\n'));
+  const taken = source.indexOf("({ checked, base: checkedBase, react: reactBase, said: carry } = carryOn(given, refused));");
+  const rebased = source.indexOf('      const remade = [...new Set([...rebase(), ...carried])];\n      carried = [];\n      phase("rebase");\n');
+  expect(rebased).toBeGreaterThan(0);
+  expect(taken).toBeGreaterThan(rebased);
   expect(taken).toBeLessThan(source.indexOf("const since = checkedBase"));
+});
+
+// A rebase that resolved a file mechanically, std/'s generated files taken
+// as main's and a ratchet's lower count, rewrote the change's patches by
+// itself, and push run again checked everything again: "its commits aren't
+// patch for patch those its round checked" (#2484). The patches leave those
+// files out, push's own writes, which their own phases make and check
+// again; any other file's difference is still refused, and that refusal is
+// the sanity pass a round past a rebase runs, with nothing of the round's
+// own work reused, not a full check.
+test("push run again carries on past a rebase's mechanical merge, and a refused carry is a sanity pass", () => {
+  const dir = fixture("push-round-remade");
+  rmSync(dir, { recursive: true, force: true });
+  for (const sub of ["std", "test", "src"]) mkdirSync(join(dir, sub), { recursive: true });
+  const env = { ...process.env, GIT_DIR: join(dir, ".git"), GIT_WORK_TREE: dir, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@example.com", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@example.com" };
+  const git = (...args: string[]) => {
+    const p = spawnSync("git", args, { cwd: dir, env, encoding: "utf8" });
+    return { code: p.status ?? 1, out: `${p.stdout}${p.stderr}` };
+  };
+  const ok = (...args: string[]) => {
+    const done = git(...args);
+    expect(done.code, done.out).toBe(0);
+    return done.out.trim();
+  };
+  const commit = (files: Record<string, string>, message: string) => {
+    for (const [file, text] of Object.entries(files)) writeFileSync(join(dir, file), text);
+    ok("add", "-A");
+    ok("commit", "-q", "-m", message);
+    return ok("rev-parse", "HEAD");
+  };
+  ok("init", "-q", "-b", "main");
+  const b1 = commit({ "src/a.rs": "fn a() {\n    1;\n}\n", "std/runtime.js": "const one = 1;\n", "test/sig-binders.txt": "src/a.rs\t3\n" }, "base");
+  // The change: a function's body, a helper of std/'s and a ratchet lowered.
+  ok("switch", "-q", "-c", "change");
+  const changed = "fn a() {\n    2;\n}\n";
+  const h1 = commit({ "src/a.rs": changed, "std/runtime.js": "const one = 1;\nconst two = 2;\n", "test/sig-binders.txt": "src/a.rs\t2\n" }, "change");
+  // `main` moves on, std/ and the ratchet each its own way.
+  ok("switch", "-q", "main");
+  const b2 = commit({ "std/runtime.js": "const one = 1;\nconst three = 3;\n", "test/sig-binders.txt": "src/a.rs\t1\n" }, "incoming");
+  // The change rebased as push resolves it: std/ as main's, to be made
+  // again, and the ratchet's lower count, which is main's.
+  ok("switch", "-q", "-c", "rebased");
+  commit({ "src/a.rs": changed }, "change");
+  expect(roundRefused({ checked: h1, base: b1 }, b2, git)).toBeUndefined();
+  // And after push's own write: std/ made again, amended in.
+  writeFileSync(join(dir, "std/runtime.js"), "const one = 1;\nconst three = 3;\nconst two = 2;\n");
+  ok("commit", "-q", "-a", "--amend", "--no-edit");
+  expect(roundRefused({ checked: h1, base: b1 }, b2, git)).toBeUndefined();
+  // The sections left out are those files' alone, whole.
+  const log = withoutRemade(git("log", "-p", "--no-renames", "--format=commit %H", `${b1}..${h1}`).out);
+  expect(log).toContain("diff --git a/src/a.rs b/src/a.rs");
+  expect(log).toContain(`commit ${h1}`);
+  expect(log).not.toContain("std/runtime.js");
+  expect(log).not.toContain("sig-binders");
+  // A hand-written file's resolution differs: refused, but not whole.
+  ok("switch", "-q", "-c", "edited", b2);
+  commit({ "src/a.rs": "fn a() {\n    3;\n}\n" }, "change");
+  const refused = roundRefused({ checked: h1, base: b1 }, b2, git);
+  expect(refused).toEqual({ why: "its commits aren't patch for patch those its round checked", full: false });
+  // Carried: the round's commit, base and React gate, so its fast tests,
+  // mutants and port are reused where the rebase's commits reach nothing
+  // they read.
+  const round = { checked: h1, base: b1, react: b1 };
+  expect(carryOn(round, undefined)).toEqual({ checked: h1, base: b1, react: b1, said: "carried" });
+  // Refused for its patches: the sanity pass over what came in since the
+  // commit checked, `--sanity=<checked>`, each phase of the round run again.
+  expect(carryOn(round, refused)).toEqual({ checked: h1, base: "", said: "refused (its commits aren't patch for patch those its round checked)" });
+  // Refused whole: a full check.
+  expect(carryOn(round, { why: "its tree has a change", full: true })).toEqual({ checked: "", base: "", said: "refused (its tree has a change)" });
+  // Each round past a rebase says how it came by the one before.
+  expect(roundSaid("check", undefined, "all (x)")).toBe("check all (x)");
+  expect(roundSaid("sanity", "carried", "some (3 files, 2 cases)")).toBe("sanity carried some (3 files, 2 cases)");
+  expect(roundSaid("check", "refused (its tree has a change)", "all (x)")).toBe("check refused (its tree has a change) all (x)");
+  const source = readFileSync(join(root, "scripts/push.ts"), "utf8");
+  expect(source).toContain("rounds.push(roundSaid(name, carry, selection));");
 });
 
 // What a rebase resolved as main's is carried into push run again from the
