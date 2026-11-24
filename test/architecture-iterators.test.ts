@@ -512,14 +512,15 @@ test("what's stepped from its back is its value's, no type's set", () => {
 // lowering file but back_stepped.rs scans MIR's calls for what steps from
 // its back through a `&mut`.
 test("a counted adapter is stepped from its back by back_stepped's stepped_locals alone", () => {
-  const owner = read("crates/rust-js-lower/src/analysis/back_stepped.rs");
-  const types = owner.slice(0, owner.indexOf("pub(super) fn stepped_locals"));
+  // The types' half of the owner, back_stepped.rs; its locals' half is
+  // back_stepped/locals.rs (#1458's split by concept).
+  const types = read("crates/rust-js-lower/src/analysis/back_stepped.rs");
   const locals = read("crates/rust-js-mir/src/temporaries.rs");
   const struct = locals.slice(locals.indexOf("pub(super) struct IterLocals {"));
   const fields = [...struct.slice(0, struct.indexOf("\n}\n")).matchAll(/^    (?:pub\(super\) )?(\w+):/gm)].map((m) => m[1]);
   const scans = loweringSources().filter(
     (file) =>
-      file !== "crates/rust-js-lower/src/analysis/back_stepped.rs" &&
+      file !== "crates/rust-js-lower/src/analysis/back_stepped/locals.rs" &&
       read(file).includes("TerminatorKind::Call") &&
       read(file).includes("BorrowKind::Mut") &&
       /steps_from_its_back\(\)|IterMethod::(NextBack|NthBack|RFind)\b/.test(read(file)),
@@ -719,7 +720,7 @@ test("whether a consumer keeps each item is one catalog", () => {
 // `rev()`, a JS iterator, blocks that `rev()`'s flip. Both hold: the ground's
 // read alone, the order (above), and the check in `held_links`.
 test("back_stepped reads the ground's rev()s, and the flip is given nothing the ground made", () => {
-  expect(read("crates/rust-js-lower/src/analysis/back_stepped.rs")).toMatch(/callee == rev\n\s+&& !body\.facts\.in_place_adapters\.ground_made_at\(&body\.thir, \*fn_span\)/);
+  expect(read("crates/rust-js-lower/src/analysis/back_stepped/locals.rs")).toMatch(/callee == rev\n\s+&& !body\.facts\.in_place_adapters\.ground_made_at\(&body\.thir, \*fn_span\)/);
   const source = read("crates/rust-js-lower/src/body_queries/in_place.rs");
   const held = source.slice(source.indexOf("fn held_links"), source.indexOf("fn let_made"));
   expect(held).toContain("let ground = body.facts.in_place_adapters.ground();");
@@ -751,9 +752,9 @@ test("in-place adapters are decided in two stages, then read", () => {
   // And how a value of a held-compiled type is cloned, `makes_in_place`,
   // whether the body made one of that type in place (#1973): one answer
   // for how a link is made and how it's cloned.
-  const ofOwner = new Set(["crates/rust-js-lower/src/analysis/back_stepped.rs: ground_made_at", "crates/rust-js-lower/src/std_impls/clones.rs: makes_in_place"]);
+  const ofOwner = new Set(["crates/rust-js-lower/src/analysis/back_stepped/locals.rs: ground_made_at", "crates/rust-js-lower/src/std_impls/clones.rs: makes_in_place"]);
   expect(reads.filter((read) => !read.endsWith(": made_at") && !ofOwner.has(read))).toEqual([]);
-  expect(reads.filter((read) => read.endsWith(": ground_made_at"))).toEqual(["crates/rust-js-lower/src/analysis/back_stepped.rs: ground_made_at"]);
+  expect(reads.filter((read) => read.endsWith(": ground_made_at"))).toEqual(["crates/rust-js-lower/src/analysis/back_stepped/locals.rs: ground_made_at"]);
   const source = read("crates/rust-js-lower/src/body_queries.rs");
   expect(source).toMatch(/pub struct InPlace \{\n    ground: Option<IndexSet<ExprId>>,\n    held: std::cell::OnceCell<IndexSet<ExprId>>,\n\}/);
   expect(source).toMatch(/\n    fn decided\(set: IndexSet<ExprId>\) -> Self \{/);
@@ -909,7 +910,8 @@ test("whether a copy is its source is asked of is_its_source alone", () => {
     "crates/rust-js-lower/src/iterators/hint_asks.rs": [2, "its hint's parts, of its source where `is_its_source`; whether its hint is its parts', which a map's is too"],
     "crates/rust-js-lower/src/iterators/mir_steps/sources.rs": [2, "`counted_in_place`, a copy's count its source's, as std's `Copied::count` asks it; `steps_an_array`, where `is_its_source`"],
     "crates/rust-js-lower/src/std_impls/clones.rs": [1, "its clone, `copied_clone`, which asks `is_its_source`"],
-    "crates/rust-js-lower/src/analysis/back_stepped.rs": [3, "what steps it from its back, a copy as a map"],
+    "crates/rust-js-lower/src/analysis/back_stepped.rs": [1, "what steps it from its back, a copy as a map: of a type"],
+    "crates/rust-js-lower/src/analysis/back_stepped/locals.rs": [2, "what steps it from its back, a copy as a map: of a local"],
     "crates/rust-js-lower/src/analysis/hint_asked.rs": [1, "whether its hint is asked, as a map's"],
     "crates/rust-js-lower/src/iterators/in_place_forms.rs": [1, "the std type, `Copied`, whose form made knowing its hint alone is `$copied`, a question of its type"],
     "crates/rust-js-lower/src/recognition/lengths.rs": [2, "its hint's lower bound, its source's, as a map's"],
