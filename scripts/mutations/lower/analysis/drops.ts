@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "    if !library && !drops_any(tcx, all_bodies, &runs) && !foreign.libraries_drop() {",
     replace: "    if !drops_any(tcx, all_bodies, &runs) && !foreign.libraries_drop() {",
-    tests: ["test/crates.test.ts", "-t", "impl_drops"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "impl_drops"],
   },
   {
     name: "trait-method-own-drops-not-taken",
@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "    if !library && !drops_any(tcx, all_bodies, &runs) && !foreign.libraries_drop() {\n",
     replace: "    if !library && !drops_any(tcx, all_bodies, &runs) {\n",
-    tests: ["test/crates.test.ts", "-t", "library_extend_drops_the_crates_iterator|library_extend_given_a_middle_crates_iterator"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "library_extend_drops_the_crates_iterator|library_extend_given_a_middle_crates_iterator"],
   },
   {
     name: "generic-destructors-unseen",
@@ -178,6 +178,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/drops.rs",
     find: "    let Some(trait_id) = (tcx.trait_of_assoc(item)).filter(|id| id.is_local() || foreign.is_library(id.krate)) else {\n",
     replace: "    let Some(trait_id) = (tcx.trait_of_assoc(item)).filter(|id| id.is_local() || false && foreign.is_library(id.krate)) else {\n",
-    tests: ["test/crates.test.ts", "-t", "library_trait_item_dropped_through_a_bound"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "library_trait_item_dropped_through_a_bound"],
   },
 ];

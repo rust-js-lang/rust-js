@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     file: "src/main.rs",
     find: "        config.opts.unstable_opts.ub_checks = Some(false);\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: generic_boxed_drop"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: generic_boxed_drop"],
   },
   {
     name: "std-bodies-not-the-meaning",

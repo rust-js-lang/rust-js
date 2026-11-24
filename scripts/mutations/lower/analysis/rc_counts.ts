@@ -337,7 +337,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/rc_counts.rs",
     find: "            args.extend(\n                (predicates.projection_bounds())\n",
     replace: "            args.extend(\n                (predicates.projection_bounds().filter(|_| false))\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_fn_dyns_of_two_results"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_fn_dyns_of_two_results"],
   },
   {
     name: "crate-reads-no-fn-identity",
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/rc_counts.rs",
     find: "        body.thir.exprs.iter().any(|expr| identity_read(tcx, expr.ty).is_some())\n",
     replace: "        false && body.thir.exprs.iter().any(|expr| identity_read(tcx, expr.ty).is_some())\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
   {
     name: "uncounted-rc-of-a-clone-merges-nothing",
@@ -355,7 +355,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/rc_counts.rs",
     find: "        .filter(|&&(_, from)| !its_own(from))\n        .map(|&(owner, _)| owner)\n",
     replace: "        .filter(|&&(_, from)| false && !its_own(from))\n        .map(|&(owner, _)| owner)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
   {
     name: "rcs-an-instance-makes-unseen",
@@ -365,7 +365,7 @@ export const mutations: Mutation[] = [
     find: "                if let (Some(from), Some(to)) = (rc_pointee(tcx, from_owner), rc_pointee(tcx, to_owner)) {\n",
     replace:
       "                if let (Some(from), Some(to)) = (rc_pointee(tcx, from_owner), rc_pointee(tcx, to_owner))\n                    && false\n                {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
   {
     name: "allocations-an-instance-makes-unseen",
@@ -374,7 +374,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/rc_counts.rs",
     find: "                    unsized_fns.insert((erased(from_owner), erased(from), erased(to)));\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_allocations_of_one_function"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_allocations_of_one_function"],
   },
   {
     name: "library-allocations-merge-unlisted",
@@ -383,7 +383,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/rc_counts.rs",
     find: "\n                allocated_by.push((owner, erased(from)));\n",
     replace: "\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_allocations_of_one_function"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_allocations_of_one_function"],
   },
   {
     name: "allocations-of-one-function-merged",
@@ -429,7 +429,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/rc_counts.rs",
     find: "                    if crate::copies::is_copy(tcx, env, from) {\n                        copied.insert(erased(from));\n                    }\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_allocations_of_one_function"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_allocations_of_one_function"],
   },
   {
     name: "allocation-of-a-function-made-with-it-apart",
@@ -560,7 +560,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/rc_counts.rs",
     find: "                    owned_dropping(tcx, (env, &given), decl.ty, &mut owned_seen, &mut counted);\n",
     replace: "                    _ = (&given, &owned_seen);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_(rc_shared_by_its_consumers_instance|iterator_held_in_a_place)$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_(rc_shared_by_its_consumers_instance|iterator_held_in_a_place)$"],
   },
   {
     name: "instance-rc-counts-unread",
@@ -569,7 +569,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/rc_counts.rs",
     find: "                    && reads_rc_count(tcx, def_id, args.types().next())\n                {\n",
     replace: "                    && reads_rc_count(tcx, def_id, args.types().next())\n                    && false\n                {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_rc_counted_by_its_consumers_instance"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_rc_counted_by_its_consumers_instance"],
   },
   {
     name: "counted-library-class-unseen",
@@ -577,7 +577,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/rc_counts.rs",
     find: "        own.chain(counted)\n",
     replace: "        own.chain(counted.filter(|_| false))\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_class_rc_made_by_its_generic_code$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "^two crates: library_class_rc_made_by_its_generic_code$"],
   },
   {
     name: "mir-identity-unread",
@@ -585,11 +585,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/rc_counts.rs",
     find: "                    IdentityRead::Compared(pointee) => _ = asked.insert(erased(pointee)),\n                }\n            }\n            for (from_owner, to_owner)",
     replace: "                    IdentityRead::Compared(_) => {}\n                }\n            }\n            for (from_owner, to_owner)",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "^two crates: (rc_fn_identity)$"
-    ]
+    tests: ["test/crates-pairs-3.test.ts", "-t", "^two crates: (rc_fn_identity)$"]
   },
   {
     name: "rc-pointees-of-constants",

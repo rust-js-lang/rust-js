@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
     find: "            let mut reserved: IndexSet<String> = uses.globals.iter().chain(items).cloned().collect();",
     replace:
       "            let mut reserved: IndexSet<String> = uses.globals.iter().cloned().collect();",
-    tests: ["test/crates.test.ts", "-t", "two crates: same_name"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: same_name"],
   },
   {
     name: "component-default-import-unnamed",

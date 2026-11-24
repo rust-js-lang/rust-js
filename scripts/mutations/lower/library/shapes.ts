@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/shapes.rs",
     find: "        (Some(of), Some((head, args))) => {\n            *of == head_key(tcx, &head)\n",
     replace: "        (Some(of), Some((head, args))) => {\n            true\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: rc_counted_by_its_library_alone$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: rc_counted_by_its_library_alone$"],
   },
   {
     name: "cell-shape-dyn-anywhere",
@@ -18,10 +18,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/shapes.rs",
     find: "        _ if dyn_shape && unsized_here => true,\n",
     replace: "        _ if dyn_shape => true,\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "a library's checked cell of a Vec of dyn Fns",
-    ],
+    tests: ["test/crates.test.ts", "-t", "a library's checked cell of a Vec of dyn Fns"],
   },
 ];

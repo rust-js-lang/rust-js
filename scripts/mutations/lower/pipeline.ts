@@ -103,12 +103,7 @@ export const mutations: Mutation[] = [
     file: "src/pipeline.rs",
     find: " (used.contains(&id) || (library && library::reachable(tcx, id))) && queued.insert(id)",
     replace: "                    used.contains(&id) && queued.insert(id)",
-    tests: [
-      "test/crates.test.ts",
-      "test/cargo-workspace.test.ts",
-      "-t",
-      "prints what native",
-    ],
+    tests: ["test/crates.test.ts", "test/cargo-workspace.test.ts", "-t", "prints what native"],
   },
   {
     name: "library-derive-pruned",
@@ -273,7 +268,7 @@ export const mutations: Mutation[] = [
     file: "src/pipeline.rs",
     find: "        drops_observed.gather(cx.drops_observed.take());\n",
     replace: "        let _ = cx.drops_observed.take();\n",
-    tests: ["test/crates.test.ts", "-t", "drops_by_need"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "drops_by_need"],
   },
   {
     name: "named-default-constant-exported-by-name",
@@ -418,7 +413,7 @@ export const mutations: Mutation[] = [
     file: "src/pipeline.rs",
     find: "                        cloned_closures: closure_facts.clones(),\n",
     replace: "                        cloned_closures: Vec::new(),\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
   {
     name: "pipeline-capacity-unasked",

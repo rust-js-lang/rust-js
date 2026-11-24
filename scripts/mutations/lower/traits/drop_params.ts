@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/drop_params.rs",
     find: "    library || drop_trait.is_some_and(",
     replace: "    drop_trait.is_some_and(",
-    tests: ["test/crates.test.ts", "-t", "two crates: (rc_per_type|library_without_destructors_drops_what_a_pointer_holds)"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: (rc_per_type|library_without_destructors_drops_what_a_pointer_holds)"],
   },
   {
     name: "copy-param-given-a-drop",

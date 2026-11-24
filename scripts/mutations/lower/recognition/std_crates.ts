@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition/std_crates.rs",
     find: "        .find(|&std| std_crate_num(tcx, std) == Some(krate))\n",
     replace: '        .find(|&std| tcx.crate_name(krate).as_str() == ["core", "alloc", "std"][std as usize])\n',
-    tests: ["test/crates.test.ts", "-t", "crate_named_core"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "crate_named_core"],
   },
   {
     name: "std-path-of-any-crate",

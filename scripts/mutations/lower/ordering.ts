@@ -291,7 +291,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/ordering.rs",
     find: " && !self.recognition().derives(if partial { partial_ord } else { ord }, ty)",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "derived_order"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "derived_order"],
   },
   {
     name: "library-partial-derive-as-ord",
@@ -300,7 +300,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/ordering.rs",
     find: "&& !self.recognition().derives(if partial { partial_ord } else { ord }, ty)",
     replace: "&& !self.recognition().derives(ord, ty)",
-    tests: ["test/crates.test.ts", "-t", "derived_order"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "derived_order"],
   },
   {
     name: "ordering-of-other-type-as-self",
@@ -590,7 +590,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/ordering.rs",
     find: "            false => self.krate.foreign.partial_cmp_is_cmp(imp),\n",
     replace: "            false => false,\n",
-    tests: ["test/crates.test.ts", "-t", "derived_partial_cmp_is_cmp"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "derived_partial_cmp_is_cmp"],
   },
   {
     name: "variants-ordered-by-bits",

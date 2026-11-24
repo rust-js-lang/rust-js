@@ -62,6 +62,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/reached.rs",
     find: "                if !self.merged_here(id, args) {\n",
     replace: "                if true {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
 ];

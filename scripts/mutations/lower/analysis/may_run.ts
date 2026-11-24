@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "destructor.filter(|d| d.is_local() || bodies.contains_key(d))",
     replace: "destructor.filter(|d| d.is_local())",
-    tests: ["test/crates.test.ts", "-t", "library_writer_prints_in_a_programs_line"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "library_writer_prints_in_a_programs_line"],
   },
   {
     name: "may-run-const-param-call-resolved",
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/may_run.rs",
     find: "                                true => Ok(None),\n",
     replace: "                                true => crate::items::resolve_instance_in(tcx, typing_env, callee, callee_args),\n",
-    tests: ["test/crates.test.ts", "-t", "library_writer_reaching_a_const_generic_deref"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "library_writer_reaching_a_const_generic_deref"],
   },
   {
     name: "may-run-const-param-inherent-call-unresolved",

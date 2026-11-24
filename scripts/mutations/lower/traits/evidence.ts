@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/evidence.rs",
     find: "        let facts = match (self.exported_impl(tr)).and_then(|_| self.krate.foreign.trait_method_facts(id)) {\n",
     replace: "        let facts = match (self.exported_impl(tr)).and_then(|_| self.krate.foreign.trait_method_facts(id)).filter(|_| false) {\n",
-    tests: ["test/crates.test.ts", "-t", "library_default_where_clause_through_its_dictionary"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "library_default_where_clause_through_its_dictionary"],
   },
   {
     name: "facts-through-a-type-parameters-dictionary-unsaid",
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/evidence.rs",
     find: "    let Some(contract) = foreign.trait_method_facts(id) else {\n",
     replace: "    let Some(contract) = foreign.trait_method_facts(id).filter(|_| false) else {\n",
-    tests: ["test/crates.test.ts", "-t", "library_trait_method_fact_through_a_dictionary"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "library_trait_method_fact_through_a_dictionary"],
   },
   {
     name: "provided-entry-given-none-of-its-bounds",

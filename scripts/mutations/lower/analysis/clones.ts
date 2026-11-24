@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/clones.rs",
     find: "        todo.extend(given_out_clone(tcx, all_bodies).into_iter().map(|ty| (ty, None)));\n",
     replace: "        let _ = given_out_clone(tcx, all_bodies);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
   {
     name: "generic-clone-uninstanced",
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/clones.rs",
     find: "                    (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(hidden)))\n                        .unwrap_or(hidden),\n",
     replace: "                    hidden,\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
   {
     name: "compiled-behind-an-impl-cloned-apart",
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/clones.rs",
     find: "            true => compiled_seen.insert(ty),\n",
     replace: "            true => false,\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
   {
     name: "library-closure-clones-unseen",
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/clones.rs",
     find: "            .flat_map(|body| mir_given_clones(tcx, body))\n",
     replace: "            .flat_map(|_| Vec::<Ty<'tcx>>::new())\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_allocations_of_one_function"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_allocations_of_one_function"],
   },
   {
     name: "cloned-owners-unrecorded",

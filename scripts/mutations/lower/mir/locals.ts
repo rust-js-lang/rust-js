@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/locals.rs",
     find: "                if let TerminatorKind::SwitchInt { discr, .. } = &data.terminator().kind {\n                    count_operand(&mut locals, discr);\n                }\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: program_form"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: program_form"],
   },
   {
     name: "let-name-ignored",
@@ -202,7 +202,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/locals.rs",
     find: "                        own(place.local, place.projection.is_empty());\n",
     replace: "                        if place.projection.is_empty() {\n                            own(place.local, true);\n                        }\n",
-    tests: ["test/crates.test.ts", "-t", "run_leftover_overwritten_as_a_drop_panics"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "run_leftover_overwritten_as_a_drop_panics"],
   },
   {
     name: "const-pointer-changes-nothing",

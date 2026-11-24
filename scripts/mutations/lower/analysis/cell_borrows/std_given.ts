@@ -125,11 +125,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/cell_borrows/std_given.rs",
     find: "                if traits.iter().any(|&t| implemented(t) && !(identity && by_address(t))) {\n",
     replace: "                if traits.iter().any(|&t| implemented(t)) {\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "equal only to itself keys its consumer",
-    ],
+    tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
   },
   {
     name: "library-impl-always-there",
@@ -139,11 +135,7 @@ export const mutations: Mutation[] = [
     find: "                    impls.non_blanket_impls().contains_key(&own)\n",
     replace:
       "                    true || impls.non_blanket_impls().contains_key(&own)\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "equal only to itself keys its consumer",
-    ],
+    tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
   },
   {
     name: "std-function-given-its-types",

@@ -315,7 +315,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/closures.rs",
     find: "        state.in_place.insert(local, closure.clone());\n        Ok(Some(closure))\n",
     replace: "        let _ = closure;\n        Ok(None)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
   {
     name: "writer-sink-captured-as-a-copy",

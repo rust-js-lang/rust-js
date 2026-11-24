@@ -145,7 +145,7 @@ export const mutations: Mutation[] = [
     find: "            } if if_then_scope == scope => Some([cond, then]),\n",
     replace:
       "            } if if_then_scope == scope && false => Some([cond, then]),\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: ref_cells"],
+    tests: ["test/crates-pairs-1.test.ts", "test/crates-pairs-2.test.ts", "test/crates-pairs-3.test.ts", "-t", "two crates: ref_cells"],
   },
   {
     name: "if-let-else-held",
@@ -214,11 +214,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/drops/facts.rs",
     find: "                vec![lhs]\n",
     replace: "                vec![extent]\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "two crates: assigned_after_its_value",
-    ],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: assigned_after_its_value"],
   },
   {
     name: "called-once-closure-refused",
@@ -396,7 +392,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/drops/facts.rs",
     find: "                || self.cx.recognition.foreign.is_instance(def_id))\n",
     replace: "                || false && self.cx.recognition.foreign.is_instance(def_id))\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: closure_made_by_an_inlined_function"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: closure_made_by_an_inlined_function"],
   },
   {
     name: "returned-once-closure-refused",

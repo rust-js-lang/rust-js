@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition/traits.rs",
     find: "    foreign.compiled_by_rust_js(id)\n        || tcx.is_lang_item(id, LangItem::Copy)\n",
     replace: "    id.is_local()\n        || tcx.is_lang_item(id, LangItem::Copy)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: dict"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: dict"],
   },
   {
     name: "generic-operators-refused",

@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/back_stepped.rs",
     find: "                if asked {\n                    let given = given_behind_an_impl(tcx, recognition, hidden, &drops);\n",
     replace: "                if false {\n                    let given = given_behind_an_impl(tcx, recognition, hidden, &drops);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
   },
   {
     name: "library-given-backs-unmade",
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/back_stepped.rs",
     find: "            if recognition.foreign.is_library(callee.krate) {\n",
     replace: "            if false {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
   },
   {
     name: "library-own-params-unstepped",
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/back_stepped.rs",
     find: "            typed.extend(backs.into_iter().map(|ty| typed_key(tcx, body.def_id, ty)));\n            // Its regions erased, those it binds too.\n",
     replace: "            let _ = backs;\n            // Its regions erased, those it binds too.\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
   },
   {
     name: "stepped-sources-unmarked",

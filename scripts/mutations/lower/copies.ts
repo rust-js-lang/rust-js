@@ -104,11 +104,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/copies.rs",
     find: "                (foreign.in_library(adt.did()) && foreign.changed_by_a_library(ty))\n",
     replace: "                false\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "(two crates: copy_enum_library_changed|three crates: library_type_changed_by_another_library)",
-    ],
+    tests: ["test/crates.test.ts", "test/crates-pairs-2.test.ts", "-t", "(two crates: copy_enum_library_changed|three crates: library_type_changed_by_another_library)"],
   },
   {
     name: "library-vec-shared",
@@ -126,7 +122,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/copies.rs",
     find: "            ty::Tuple(_) | ty::Array(..) => self.krate.compiled_once || foreign.changed_by_a_library(ty),\n",
     replace: "            ty::Tuple(_) | ty::Array(..) => false,\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: tuple"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: tuple"],
   },
   {
     name: "library-copy-enum-shared",
@@ -135,7 +131,7 @@ export const mutations: Mutation[] = [
     find: "            && (self.krate.foreign.compiled_by_rust_js(adt.did()) || self.is_std_type(ty, StdItem::Result)))\n",
     replace:
       "            && (adt.did().is_local() || self.is_std_type(ty, StdItem::Result)))\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: copy_enum"],
+    tests: ["test/crates-pairs-2.test.ts", "test/crates-pairs-3.test.ts", "-t", "two crates: copy_enum"],
   },
   {
     name: "functions-can-change",
@@ -164,11 +160,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/copies.rs",
     find: "        shared && self.may_be_object(ty)",
     replace: "        shared && self.is_object(ty)",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "two crates: copy_enum_library_changed",
-    ],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: copy_enum_library_changed"],
   },
   {
     name: "untagged-copy-shared",
@@ -306,7 +298,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/copies.rs",
     find: "            ty::Adt(adt, args) if !super::recognition::is_std_crate(tcx, adt.did()) && !adt.is_union() => adt",
     replace: "            ty::Adt(adt, args) if adt.did().is_local() && !adt.is_union() => adt",
-    tests: ["test/crates.test.ts", "-t", "two crates: static_of_a_library_struct"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: static_of_a_library_struct"],
   },
   {
     name: "std-struct-shareable",
@@ -569,7 +561,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/copies.rs",
     find: "        if self.krate.library && !self.krate.compiled_once && self.may_be_object(ty) {\n",
     replace: "        if false && self.krate.library && !self.krate.compiled_once && self.may_be_object(ty) {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_elided_copies_said"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_elided_copies_said"],
   },
   {
     name: "elided-of-changed",
@@ -590,7 +582,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/copies.rs",
     find: "        for &unchanged in found.iter() {\n",
     replace: "        for &unchanged in found.iter().filter(|&&t| t == ty) {\n",
-    tests: ["test/crates.test.ts", "test/crates-compiled-here.test.ts", "test/cross-crate-copies.test.ts"],
+    tests: ["test/crates.test.ts", "test/crates-pairs-1.test.ts", "test/crates-pairs-2.test.ts", "test/crates-pairs-3.test.ts", "test/crates-compiled-here.test.ts", "test/cross-crate-copies.test.ts"],
   },
   {
     name: "changed-in-place-records",

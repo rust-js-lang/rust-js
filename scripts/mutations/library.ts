@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/library.rs",
     find: "            counted_rcs,\n            with_this_arguments,\n            changed,\n            ref_cells,\n            identities: ",
     replace: "            counted_rcs: { let _ = counted_rcs; vec![RcShape { of: None, args: Vec::new() }] },\n            with_this_arguments,\n            changed,\n            ref_cells,\n            identities: ",
-    tests: ["test/crates.test.ts", "-t", "two crates: rc_counted_by_its_library_alone$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: rc_counted_by_its_library_alone$"],
   },
   {
     name: "manifest-writers-options-dropped",
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/library.rs",
     find: "            associated: (associated.iter())\n                .filter(|associated| associated.carrier.is_none())\n",
     replace: "            associated: (associated.iter())\n                .filter(|_| false)\n",
-    tests: ["test/crates.test.ts", "-t", "item_size_of_instance"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "item_size_of_instance"],
   },
   {
     name: "super-item-unread-from-manifest",
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/library.rs",
     find: "            carried_super: carried_super(&associated),\n",
     replace: "            carried_super: IndexMap::default(),\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_default_item_layouts"],
   },
   {
     name: "library-cloned-closures-unread",
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/library.rs",
     find: "            cloned_closures: (cloned_closures.into_iter()).map(|c| (c.key, c.apart)).collect(),\n",
     replace: "            cloned_closures: { let _ = cloned_closures; IndexMap::default() },\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
   {
     name: "std-library-not-builtin",
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/library.rs",
     find: "            builtin: builtin.is_some(),\n",
     replace: "            builtin: false,\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
   {
     name: "library-dropping-errors-unread",
@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/library.rs",
     find: "            makes_dropping_anys,\n            makes_dropping_errors,\n            makes_dropping_fn_dyns,\n            dictionary_consts: ",
     replace: "            makes_dropping_anys,\n            makes_dropping_errors: { let _ = makes_dropping_errors; false },\n            makes_dropping_fn_dyns,\n            dictionary_consts: ",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_makes_a_dropping_dyn_error"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_makes_a_dropping_dyn_error"],
   },
   {
     name: "drops-any-missing-drop-free",

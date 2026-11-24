@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/lib.rs",
     find: "            let at_definition = location.kind == defined.kind;",
     replace: "            let at_definition = true;",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
   {
     name: "held-arg-spilled-as-a-word",
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/lib.rs",
     find: "        if self.tcx.trait_of_assoc(def_id).is_none()\n            && let Some(why) = self.krate.foreign.unlisted(def_id)\n",
     replace: "        if let Some(why) = self.krate.foreign.unlisted(def_id)\n",
-    tests: ["test/crates.test.ts", "-t", "trait_method_as_value"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "trait_method_as_value"],
   },
   {
     name: "load-reads-const-by-name",
@@ -396,7 +396,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/lib.rs",
     find: "        if matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {\n            return self.constructor_value(def_id, args, span).map(Some);\n        }\n        // A library's function its manifest doesn't list; not a trait's\n        // method, `Zero::is_zero`, which is its impl's, as a call of it is.\n        if self.tcx.trait_of_assoc(def_id).is_none()\n            && let Some(why) = self.krate.foreign.unlisted(def_id)\n        {\n            return Err(crate::refusal::error(self.tcx, span, why));\n        }\n",
     replace: "        if self.tcx.trait_of_assoc(def_id).is_none()\n            && let Some(why) = self.krate.foreign.unlisted(def_id)\n        {\n            return Err(crate::refusal::error(self.tcx, span, why));\n        }\n        if matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {\n            return self.constructor_value(def_id, args, span).map(Some);\n        }\n",
-    tests: ["test/crates.test.ts", "-t", "library_constructor_value"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "library_constructor_value"],
   },
   {
     name: "library-located-fn-value-a-call-arrow",
@@ -405,7 +405,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/lib.rs",
     find: "        let located = self.krate.foreign.item(def_id).is_some() && self.takes_caller_location(def_id);\n",
     replace: "        let located = false && self.krate.foreign.item(def_id).is_some() && self.takes_caller_location(def_id);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
   {
     name: "spill-named-at-once",

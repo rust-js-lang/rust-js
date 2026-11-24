@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/instances/failing.rs",
     find: "    if !failing.any || foreign.fails(callee) || !args.types().next().is_some() {\n",
     replace: "    if true {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_generic_writer_given_a_failing_one$"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_generic_writer_given_a_failing_one$"],
   },
   {
     name: "failing-writer-given-to-a-helper-unasked",
@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/instances/failing.rs",
     find: "                || (compiled_here(self.foreign, tcx, callee) && !self.foreign.fails(callee) && self.fails((callee, given), seen))\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_generic_writer_given_a_failing_one$"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_generic_writer_given_a_failing_one$"],
   },
   {
     name: "failing-writer-given-to-a-closure-unasked",
@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/instances/failing.rs",
     find: "                    Some(ty::Closure(closure, of)) => !closure.is_local() && self.fails((closure, of), seen),\n",
     replace: "                    Some(ty::Closure(..)) => false,\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_method_of_a_generic_writer_given_a_failing_one$"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_method_of_a_generic_writer_given_a_failing_one$"],
   },
   {
     name: "failing-value-formatted-unasked",
@@ -36,6 +36,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/instances/failing.rs",
     find: "            return (args.types().next().into_iter().flat_map(formatted_parts))\n                .any(|part| may_fail(fmt, tcx.mk_args(&[part.into()])));\n",
     replace: "            return false;\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_generic_formatter_given_a_failing_one$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_generic_formatter_given_a_failing_one$"],
   },
 ];

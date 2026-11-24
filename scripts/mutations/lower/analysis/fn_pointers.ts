@@ -100,11 +100,7 @@ export const mutations: Mutation[] = [
     find: "        (self.rust_fields.iter()).map(|&field| (field, rust_js_program::library::FieldFact::RustFunctions))\n",
     replace:
       "        (self.rust_fields.iter()).filter(|_| false).map(|&field| (field, rust_js_program::library::FieldFact::RustFunctions))\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "a library's field of its own functions",
-    ],
+    tests: ["test/crates.test.ts", "-t", "a library's field of its own functions"],
   },
   {
     name: "library-rust-field-read-as-open",
@@ -114,11 +110,7 @@ export const mutations: Mutation[] = [
     find: "                            .field_has(field.did, rust_js_program::library::FieldFact::RustFunctions)\n",
     replace:
       "                            .field_has(field.did, rust_js_program::library::FieldFact::RustFunctions)\n                            && false\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "a library's field of its own functions",
-    ],
+    tests: ["test/crates.test.ts", "-t", "a library's field of its own functions"],
   },
   {
     name: "library-rust-pointer-runs-nothing",
@@ -127,7 +119,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/fn_pointers.rs",
     find: "        if self.all_open || self.open.contains(&key) || self.library_rust.contains(&key) {\n",
     replace: "        if self.all_open || self.open.contains(&key) {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: fn_pointer_of_a_library"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: fn_pointer_of_a_library"],
   },
   {
     name: "with-this-unrecorded",

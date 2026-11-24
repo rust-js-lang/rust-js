@@ -146,7 +146,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/std_calls/written_into.rs",
     find: "                    Some(instance) if self.tcx.trait_of_assoc(instance.def_id()).is_some() => {\n",
     replace: "                    Some(instance) if self.tcx.trait_of_assoc(instance.def_id()).is_some() && false => {\n",
-    tests: ["test/crates.test.ts", "-t", "trait_default_written_by_a_librarys_display"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "trait_default_written_by_a_librarys_display"],
   },
   {
     name: "picked-writer-unarmed",

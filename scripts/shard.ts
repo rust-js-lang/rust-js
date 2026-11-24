@@ -17,6 +17,22 @@ export function shard<T extends string>(items: T[], index: number, count: number
   return [...items].sort().filter((_, i) => i % count === index - 1);
 }
 
+/** The part, from 1, of `count` that `name` is in, by a hash of the name
+ * alone (32-bit FNV-1a): another name added or gone moves none, as
+ * `shard`'s place in the sorted list would, so what names a case's part,
+ * a mutation's test file, stays right (#2465). */
+export function partOf(name: string, count: number): number {
+  let hash = 0x811c9dc5;
+  for (const byte of new TextEncoder().encode(name)) hash = Math.imul(hash ^ byte, 0x01000193) >>> 0;
+  return (hash % count) + 1;
+}
+
+/** The parts the crate pairs' table runs in, a test file each
+ * (test/crates-pairs-<i>.test.ts), as bun's pool and CI's suite take a file
+ * as their unit: a fixed count, not one sized to the machine, which a file
+ * name can't follow. Three of some 23 s each of CI's 69 s (#2465). */
+export const cratePairParts = 3;
+
 /** Shard `index`, from 1, of `count`, of items that take time: each, the
  * longest first, given to the shard with the least time so far, the first
  * of those that tie, by `seconds` of each, those it doesn't know the median

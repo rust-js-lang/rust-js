@@ -18,6 +18,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/std_types/result.rs",
     find: "        self.compiled_conversion(method, args, span)\n",
     replace: "        let _ = (method, args, span);\n        Ok(None)\n",
-    tests: ["test/crates.test.ts", "-t", "instance_converts_and_transmutes"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "instance_converts_and_transmutes"],
   },
 ];

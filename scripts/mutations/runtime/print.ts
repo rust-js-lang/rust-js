@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/print.js",
     find: "    $stdout().held.push(chunk);\n    $wrapLog();\n",
     replace: "    $stdout().held.push(chunk);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_line_inside_a_held_line"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_line_inside_a_held_line"],
   },
   {
     name: "hold-wrapper-never-removed",

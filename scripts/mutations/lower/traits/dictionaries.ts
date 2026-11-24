@@ -596,7 +596,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/dictionaries.rs",
     find: "            false => self.carried_super(tr.def_id),\n",
     replace: "            false => Vec::new(),\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_default_item_layouts"],
   },
   {
     name: "library-impl-dispatch-unasked",
@@ -785,7 +785,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/dictionaries.rs",
     find: "                true => Some(self.dictionary(ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]), span)?),\n",
     replace: "                true => None,\n",
-    tests: ["test/crates.test.ts", "-t", "library_clones_through_a_copy_bound"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "library_clones_through_a_copy_bound"],
   },
   {
     name: "copy-dictionary-dropped-with-its-clone",
@@ -793,7 +793,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/dictionaries.rs",
     find: "            if js::same_path(&copy, &value) && clone.is_none() {\n",
     replace: "            if js::same_path(&copy, &value) {\n",
-    tests: ["test/crates.test.ts", "-t", "library_clones_through_a_copy_bound"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "library_clones_through_a_copy_bound"],
   },
   {
     name: "as-ref-of-a-counted-rc-is-the-rc",

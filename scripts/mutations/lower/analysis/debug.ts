@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/debug.rs",
     find: "            format_options: uses_format_options(tcx, all_bodies) || (library && pretty_debug),",
     replace: "            format_options: uses_format_options(tcx, all_bodies),",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_pretty_debug_given_options$"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_pretty_debug_given_options$"],
   },
   {
     name: "format-options-flag-primitive",
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/debug.rs",
     find: "            && !writes.contains(&id)\n",
     replace: "            && !writes.contains(&id)\n            && false\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_writers_given_options"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_writers_given_options"],
   },
   {
     name: "formatter-written-reads-options",

@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/operands.rs",
     find: "            return Ok(Some(match self.std_value_as(Value::Expr(std.value()), ty, &[]) {\n",
     replace: "            return Ok(Some(match Value::Expr(std.value()) {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: empty_of_a_librarys_default_compiled_by_its_consumer"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: empty_of_a_librarys_default_compiled_by_its_consumer"],
   },
   {
     name: "projected-read-shared",
@@ -359,7 +359,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/operands.rs",
     find: "        if matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.all_fields().next().is_none()) {\n",
     replace: "        if false {\n",
-    tests: ["test/crates.test.ts", "-t", "unit_struct_of_instance"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "unit_struct_of_instance"],
   },
   {
     name: "js-alone-value-its-call",
@@ -410,7 +410,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/operands.rs",
     find: "                let arrow = self.mir_called_value(state, (def_id, args), span, Forms::Callers)?;",
     replace: "                let arrow = self.mir_called_value(state, (def_id, args), span, Forms::Generic)?;",
-    tests: ["test/crates.test.ts", "-t", "library_fn_values_take_their_callers_forms"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "library_fn_values_take_their_callers_forms"],
   },
   {
     name: "boxed-field-read-whole-as-box",

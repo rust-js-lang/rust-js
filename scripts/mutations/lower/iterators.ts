@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators.rs",
     find: "            ) if def_id.krate == id.krate && !seen.contains(&def_id) => {\n",
     replace: "            ) if def_id.is_local() && !seen.contains(&def_id) => {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_into_iter_held_as_it_is"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_into_iter_held_as_it_is"],
   },
   {
     name: "owned-range-copied-twice",

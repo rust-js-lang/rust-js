@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/drops.rs",
     find: "            ty::Adt(adt, args) if self.krate.foreign.compiled_by_rust_js(adt.did()) => {\n",
     replace: "            ty::Adt(adt, args) if adt.did().is_local() => {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_drops_its_consumer_gives"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_drops_its_consumer_gives"],
   },
   {
     name: "drop-size-overflows",

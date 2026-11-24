@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "                    carried_super.insert((trait_id, assoc, *fact));\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_default_item_layouts"],
   },
   {
     name: "vec-growth-size-unasked",
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "        .filter(|_| tcx.defaultness(caller).has_value() && !instance_over_self(tcx, foreign, caller));\n",
     replace: "        .filter(|_| tcx.defaultness(caller).has_value());\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_collects_self_in_place"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_default_collects_self_in_place"],
   },  {
     name: "instance-over-self-though-copied",
     breaks: "a library's default the crate compiles itself is a function over `Self` asking its own facts though the crate's impls copy it, whose dictionaries give them already, so each impl's entry takes them again, read nowhere (#990, #1370, #1409)",
@@ -218,7 +218,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts/collects.rs",
     find: "    if crate::recognition::is_std_crate(tcx, callee) && !dispatched {\n",
     replace: "    if false {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_iterator_growing_by_its_parameters_take"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_iterator_growing_by_its_parameters_take"],
   },
   {
     name: "entry-vec-layout-unasked",

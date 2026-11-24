@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
     find: "                    if let [(value, then)] = targets.iter().collect::<Vec<_>>()[..] =>\n",
     replace:
       "                    if false && let [(value, then)] = targets.iter().collect::<Vec<_>>()[..] =>\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: program_form"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: program_form"],
   },
   {
     name: "lent-iterator-unheld",
@@ -373,7 +373,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/drops.rs",
     find: "            || rust_js_lower::recognition::is_std_crate(self.tcx, body.source.def_id())\n",
     replace: "            || !body.source.def_id().is_local()\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_iterator_held_in_a_place"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_iterator_held_in_a_place"],
   },
   {
     name: "kept-starts-unwritten",
@@ -389,7 +389,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/drops.rs",
     find: "                        self.flag_sets(state, at, &mut out)\n                            .and_then(|()| self.mir_assign(state, place, rvalue, span, &mut out))\n",
     replace: "                        self.flag_sets(state, at, &mut out)\n                            .and_then(|()| self.mir_assign(state, place, rvalue, span, &mut out))\n                            .and_then(|()| match state.pending.is_empty() {\n                                true => Ok(()),\n                                false => Err(self.unsupported(span, \"this cleanup, from its MIR\")),\n                            })\n",
-    tests: ["test/crates.test.ts", "-t", "coalesce_of_a_library_as_itertools_writes_it"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "coalesce_of_a_library_as_itertools_writes_it"],
   },
   {
     name: "compiled-struct-not-a-holder",

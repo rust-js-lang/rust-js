@@ -362,7 +362,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        let whole = self.slice_item(ty.peel_refs()).is_some() && !self.implements_iterator(ty);\n",
     replace: "        let whole = false;\n",
-    tests: ["test/crates.test.ts", "-t", "length_first_eq"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "length_first_eq"],
   },
   {
     name: "length-first-pure-uncollected",
@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            return Ok(Expr::str(\"pure\"));\n",
     replace: "            return Ok(Expr::bool(false));\n",
-    tests: ["test/crates.test.ts", "-t", "length_first_eq"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "length_first_eq"],
   },
   {
     name: "length-first-endless-collected",
@@ -386,7 +386,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "            Some(_) => self.iterable_js_iterator(other, other_ty, span)?,\n            None => self.as_js_iterator(other, other_ty, span)?,\n",
     replace: "            Some(_) | None => self.as_js_iterator(other, other_ty, span)?,\n",
-    tests: ["test/crates.test.ts", "-t", "length_first_eq"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "length_first_eq"],
   },
   {
     name: "eq-length-of-a-call-read-again",

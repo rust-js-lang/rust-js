@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/library/dependencies.rs",
     find: "        self.libraries.insert(crate::runtime::PACKAGE.to_string(), exports);\n",
     replace: '        for krate in ["core", "alloc", "std"] {\n            self.libraries.insert(krate.to_string(), exports.clone());\n        }\n',
-    tests: ["test/crates.test.ts", "-t", "crate_named_core|library_closures_cloned_as_made"],
+    tests: ["test/crates-pairs-2.test.ts", "test/crates-pairs-3.test.ts", "-t", "crate_named_core|library_closures_cloned_as_made"],
   },
   {
     name: "library-file-exports-unsaid",

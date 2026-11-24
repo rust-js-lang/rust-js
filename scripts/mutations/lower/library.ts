@@ -47,11 +47,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "        param(&mut params, index).marks.insert(ParamFact::Drop);\n",
     replace: "        param(&mut params, index);\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "a library's generic function that takes a drop is called with the consumer's",
-    ],
+    tests: ["test/crates.test.ts", "-t", "a library's generic function that takes a drop is called with the consumer's"],
   },
   {
     name: "library-facts-unsaid",
@@ -70,7 +66,7 @@ export const mutations: Mutation[] = [
     find: "        self.item(id)\n            .is_some_and(|item| item.calling.has(ItemFact::TakesLocation))\n",
     replace:
       "        self.item(id)\n            .is_some_and(|item| false && item.calling.has(ItemFact::TakesLocation))\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: track_caller"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: track_caller"],
   },
   {
     name: "private-trait-impl-unexported",
@@ -87,7 +83,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "        param(&mut params, index).stepped.push(key(tcx, by));\n",
     replace: "        let _ = (param(&mut params, index), by);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: extension_default"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: extension_default"],
   },
   {
     name: "instance-imported",
@@ -192,11 +188,7 @@ export const mutations: Mutation[] = [
     find: "        .filter(|&&id| tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))\n",
     replace:
       "        .filter(|&&id| false && tcx.trait_of_assoc(id).is_some() && !fns.contains_key(&id))\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "whose impl alone tracks its caller and reads it",
-    ],
+    tests: ["test/crates.test.ts", "-t", "whose impl alone tracks its caller and reads it"],
   },
   {
     name: "with-this-arguments-unread-by-consumer",
@@ -256,7 +248,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "                && (library.dictionary_consts.as_ref()).is_some_and(|consts| !consts.contains(&konst_key));\n",
     replace: "                && (library.dictionary_consts.as_ref()).is_none_or(|consts| !consts.contains(&konst_key));\n",
-    tests: ["test/crates.test.ts", "test/rust-js-test-programs.test.ts"],
+    tests: ["test/crates.test.ts", "test/crates-pairs-1.test.ts", "test/crates-pairs-2.test.ts", "test/crates-pairs-3.test.ts", "test/rust-js-test-programs.test.ts"],
   },
   {
     name: "program-dyn-trait-keys-unread",
@@ -273,7 +265,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "        let Some(of) = built_types::template(tcx, foreign, id, slot.ty) else {\n",
     replace: "        let Some(of) = built_types::template(tcx, foreign, id, slot.ty).filter(|_| false) else {\n",
-    tests: ["test/crates.test.ts", "-t", "built_layout_of_a_library"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "built_layout_of_a_library"],
   },
   {
     name: "partial-cmp-is-cmp-unread",
@@ -281,7 +273,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "                .is_some_and(|library| library.partial_cmp_is_cmp.contains(&key(self.tcx, imp)))\n",
     replace: "                .is_some_and(|library| library.partial_cmp_is_cmp.is_empty())\n",
-    tests: ["test/crates.test.ts", "-t", "derived_partial_cmp_is_cmp"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "derived_partial_cmp_is_cmp"],
   },
   {
     name: "fails-of-an-instance-unlisted",
@@ -290,7 +282,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "        let item = listed(id).or_else(|| listed(self.tcx.trait_impl_of_assoc(id)?));\n",
     replace: "        let item = self.item(id).or_else(|| self.item(self.tcx.trait_impl_of_assoc(id)?));\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
   },
   {
     name: "library-recursive-clone-inline",
@@ -299,7 +291,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "        id.is_local() || self.in_library(id)\n",
     replace: "        id.is_local()\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: tree"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: tree"],
   },
   {
     name: "library-writes-never-fail",
@@ -308,7 +300,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: ".any(|library| library.writes_may_fail)",
     replace: ".any(|_| false)",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_io_writer_fails"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_io_writer_fails"],
   },
   {
     name: "library-closure-clone-unasked",
@@ -316,7 +308,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "        (self.library(id.krate)?.cloned_closures.get(&key(self.tcx, id))).copied()\n",
     replace: "        (self.library(id.krate)?.cloned_closures.get(&key(self.tcx, id))).and(None)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
   {
     name: "uncounted-library-rcs-unseen",
@@ -334,7 +326,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "                true => reached.counted_rcs.push(pointee),\n",
     replace: "                true => {}\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: rc_counted_by_its_library_alone$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: rc_counted_by_its_library_alone$"],
   },
   {
     name: "instance-writers-take-nothing",
@@ -343,7 +335,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "            .is_some_and(|library| !library.builtin && library.writers_take_options)\n",
     replace: "            .is_some_and(|library| !library.builtin && library.writers_take_options && false)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_instances_ask_what_the_crate_doesnt"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_instances_ask_what_the_crate_doesnt"],
   },
   {
     name: "shown-params-unexported",
@@ -352,7 +344,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "        if shown.pretty {\n            marks.insert(ParamFact::ShownPretty);\n        }\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
   },
   {
     name: "std-asks-consumers-keep-capacity",
@@ -370,11 +362,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "            param(&mut params, index).marks.insert(ParamFact::Counted);\n",
     replace: "",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "^two crates: (rc_counted_by_its_librarys_call)$"
-    ]
+    tests: ["test/crates-pairs-2.test.ts", "-t", "^two crates: (rc_counted_by_its_librarys_call)$"]
   },
   {
     name: "generic-pointee-handed-by-library",
@@ -382,11 +370,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "            if decided_by_call && rustc_middle::ty::TypeVisitableExt::has_non_region_param(&pointee) {\n",
     replace: "            if false && decided_by_call && rustc_middle::ty::TypeVisitableExt::has_non_region_param(&pointee) {\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "^two crates: (rc_counted_by_a_consumers_call)$"
-    ]
+    tests: ["test/crates-pairs-2.test.ts", "-t", "^two crates: (rc_counted_by_a_consumers_call)$"]
   },
   {
     name: "library-written-into-marks-left-out",
@@ -411,7 +395,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "                facts.extend(of(item).filter(|&(index, _)| index < count));\n",
     replace: "                let _ = (item, count);\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_growing_by_its_parameters_take$"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "^two crates: library_iterator_growing_by_its_parameters_take$"],
   },
   {
     name: "tracked-declaration-refused",
@@ -419,6 +403,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library.rs",
     find: "        .filter(|&&id| !super::std_types::location::tracked_without_default(tcx, id))\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: track_caller$"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: track_caller$"],
   },
 ];

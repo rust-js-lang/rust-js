@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/drops/ref_cells/places.rs",
     find: "            walk.skip_current_subtree();\n            continue;\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: thread_local_cell"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: thread_local_cell"],
   },
   {
     name: "thread-local-init-a-value",
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/drops/ref_cells/places.rs",
     find: "        made.push(body.expr);\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: thread_local_cell"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: thread_local_cell"],
   },
   {
     name: "field-made-of-any-value",

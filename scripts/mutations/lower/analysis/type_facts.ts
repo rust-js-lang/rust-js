@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
     find: "                if asked.contains(&(callee, to, fact)) && asked.insert((caller, from, fact)) {",
     replace:
       "                if false && asked.contains(&(callee, to, fact)) && asked.insert((caller, from, fact)) {",
-    tests: ["test/crates.test.ts", "-t", "library_instance_impl_asks_its_defaults_facts"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "library_instance_impl_asks_its_defaults_facts"],
   },
   {
     name: "dyn-any-param-unasked",
@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
     find: "            for fact in foreign.carried(item.def_id) {\n",
     replace: "            for fact in Vec::<TypeFact>::new() {\n",
-    tests: ["test/crates.test.ts", "-t", "library_trait_facts_of_own_impl"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "library_trait_facts_of_own_impl"],
   },
   {
     name: "trusted-len-of-a-collect-unasked",
@@ -202,7 +202,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
     find: "        self.carried_super.insert((trait_id, assoc, fact));\n        // A library's trait's impls here carry what its manifest says.\n",
     replace: "        // A library's trait's impls here carry what its manifest says.\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_default_item_layouts"],
   },
   {
     name: "super-item-impls-unasked",
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
     find: "            false => foreign.carried_super(trait_id),\n",
     replace: "            false => Vec::new(),\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_default_item_layouts"],
   },
   {
     name: "map-made-unasked-of-mir",
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
     find: "                // library's copies do (`map_made`, #990).\n                for (index, fact) in map_made(tcx, foreign, caller, (callee, args)) {\n",
     replace: "                // library's copies do (`map_made`, #990).\n                for (index, fact) in map_made(tcx, foreign, caller, (callee, args)).into_iter().filter(|_| false) {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_map_keys"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_default_map_keys"],
   },
   {
     name: "eq-asks-of-mir-unread",
@@ -242,7 +242,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
     find: "            for (callee, args) in named {\n                for index in eq_asks(recognition, typing_env, caller, (callee, args), &compares) {\n",
     replace: "            for (callee, args) in named {\n                for index in eq_asks(recognition, typing_env, caller, (callee, args), &compares).into_iter().filter(|_| false) {\n",
-    tests: ["test/crates.test.ts", "-t", "length_first_eq"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "length_first_eq"],
   },
   {
     name: "default-call-facts-unasked-of-copies",
@@ -275,7 +275,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
     find: "            || (tcx.trait_of_assoc(id).is_some() && foreign.is_instance(id));\n",
     replace: "            || false;\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: (library_default_collects_self_in_place|library_default_size_of_self_in_a_consumers_impl)"],
+    tests: ["test/crates-pairs-2.test.ts", "test/crates-pairs-3.test.ts", "-t", "two crates: (library_default_collects_self_in_place|library_default_size_of_self_in_a_consumers_impl)"],
   },
   {
     name: "mir-body-std-call-asks-unread",
@@ -283,7 +283,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
     find: "                // What std's call asks of its items' type, a body read from\n                // MIR alone too, a library's default compiled here (#1370).\n                if asking.std_call_asks((tcx, foreign), typing_env, caller, (callee, args)) {\n                    continue;\n                }\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_collects_self_in_place"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_default_collects_self_in_place"],
   },
   {
     name: "instance-impl-defaults-unasked",
@@ -292,7 +292,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
     find: "                    passed.push(((imp, param.index), (item.def_id, index as u32)));\n",
     replace: "                    let _ = (imp, param, index, &passed);\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
   },
   {
     name: "instance-impl-super-items-unasked",
@@ -301,7 +301,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
     find: "    for &(trait_id, imp) in &lowered {\n        let facts = match trait_id.is_local() {\n",
     replace: "    for &(trait_id, imp) in lowered.iter().filter(|(_, imp)| imp.is_local()) {\n        let facts = match trait_id.is_local() {\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
   },
   {
     name: "rc-instance-unasked",
@@ -325,7 +325,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
     find: "        _ if new_cyclic => args.type_at(0),\n",
     replace: "        _ if new_cyclic || recognition.classify(callee, args).is_some() && false => args.type_at(0),\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: const_generic_(with_type|inside)$"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: const_generic_(with_type|inside)$"],
   },
   {
     name: "room-and-size-both-taken",
@@ -365,7 +365,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
     find: "            let Some(instances) = &instances else { return true };\n",
     replace: "            let Some(instances) = &instances else { return false };\n",
-    tests: ["test/crates.test.ts","-t","two crates: lend_offset_a_consumer_gives"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: lend_offset_a_consumer_gives"],
   },
   {
     name: "default-self-asks-unrelayed",
@@ -389,7 +389,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
     find: "            for (step, step_args) in knowing_of {\n",
     replace: "            for (step, step_args) in knowing_of.into_iter().take(0) {\n",
-    tests: ["test/crates.test.ts", "-t", "fused_fact_of_a_librarys_impl"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "fused_fact_of_a_librarys_impl"],
   },
   {
     name: "in-place-flatten-asks-no-fused",
@@ -431,6 +431,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts.rs",
     find: "            for &call in &named {\n                asking.of_held_iterators((tcx, foreign, fns), typing_env, caller, call);\n",
     replace: "            for &call in named.iter().filter(|_| false) {\n                asking.of_held_iterators((tcx, foreign, fns), typing_env, caller, call);\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_function_compiled_here_given_a_held_iterator$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "^two crates: library_function_compiled_here_given_a_held_iterator$"],
   },
 ];

@@ -268,6 +268,16 @@ That regression remains failing; no waiver or known-failure entry is added.
 The first full gate also requires the new facts total (67) and the full new
 module path in the architecture. Exact results are retained by the port.
 
+Split on 2026-11-24 (#2465, B.1): the crate pairs' table, one test of each
+`test/crates/pairs/<case>/`, is `test/crates-pairs-1.test.ts` to `-3`, each the
+pairs a hash of the name puts in its part (`scripts/shard.ts`' `partOf`, a
+fixed `cratePairParts`, as a file is the pool's unit), through
+`test/crates-pairs.ts`; `test/crates.test.ts` keeps the tests that read what a
+pair's builds write, and the triples (71). CI's 96 s, 69 s of it the pairs
+(check 45344065161); on the M5 Pro, quiet, the compile cache off: 44.5 s
+before; 15.5 s, 12.2 s (75), 10.0 s (60) and 11.3 s (71) side by side after,
+277 tests as before.
+
 Split on 2026-11-24 (#2465, A.3): `test/snapshots-serde.test.ts` holds the
 snapshots of serde's examples (`wire`, `inbox`, `api`, `dynamic`, `wide`: 5
 tests), moved from `test/snapshots.test.ts` (42), so `inbox`'s compile, the

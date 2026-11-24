@@ -211,7 +211,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/given.rs",
     find: "            || !self.carried_super(carrier).contains(&(def_id, fact))\n",
     replace: "            || true\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_default_item_layouts"],
   },
   {
     name: "own-slot-fact-of-the-impl-counted-own",

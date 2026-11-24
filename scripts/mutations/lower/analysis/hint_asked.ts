@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
     find: "        (None, Some(mir)) if !crate::recognition::is_std_crate(tcx, body.def_id) => (mir.body.basic_blocks.iter())",
     replace: "        (None, Some(mir)) if false && !crate::recognition::is_std_crate(tcx, body.def_id) => (mir.body.basic_blocks.iter())",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_generic_collect_asks_the_hint_of_a_chain_it_is_given$"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "^two crates: library_generic_collect_asks_the_hint_of_a_chain_it_is_given$"],
   },
   {
     name: "hint-asked-unmarked",

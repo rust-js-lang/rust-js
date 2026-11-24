@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/shown_params.rs",
     find: "                    changed |= found.give(tcx, owner, ty, shown);\n",
     replace: "                    _ = (owner, ty, shown);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
   },
   {
     name: "shown-fields-unreached",
@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/shown_params.rs",
     find: "                    self.reach(tcx, field.ty(tcx, args).skip_normalization(), shown, seen);\n",
     replace: "                    _ = (field, args);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
   },
   {
     name: "dyn-debug-made-unshown",
@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/shown_params.rs",
     find: "                        found.give(tcx, owner, made_of, found.dyn_debug_given);\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "library_shows_a_consumers_dyn_debug_with_options"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "library_shows_a_consumers_dyn_debug_with_options"],
   },
   {
     name: "library-dyn-debug-unrecorded",
@@ -34,6 +34,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/shown_params.rs",
     find: "            .fold(self.dyn_debug_given, |all, (_, &shown)| all.with(shown))\n",
     replace: "            .fold(Shown::default(), |all, (_, _)| all)\n",
-    tests: ["test/crates.test.ts", "-t", "library_shows_a_consumers_dyn_debug_with_options"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "library_shows_a_consumers_dyn_debug_with_options"],
   },
 ];

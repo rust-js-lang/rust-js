@@ -9,12 +9,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/prepared.rs",
     find: "        (body, promoted) = revealed::revealed(tcx, (body, promoted));\n",
     replace: "",
-    tests: [
-      "test/corpus.test.ts",
-      "test/crates.test.ts",
-      "-t",
-      "^((impl_trait_hides_std_adapters|impl_trait_hides_own_iterator|rc_of_impl_fn_returned|closures_made_and_folded|returned_impl_ends|lazy_iterator_clone|consumed_own_iterator_dropped_once|try_folds_of_stages_unwind).rs|two crates: impl_iterator_of_a_library)$",
-    ],
+    tests: ["test/crates-pairs-3.test.ts", "test/corpus.test.ts", "-t", "^((impl_trait_hides_std_adapters|impl_trait_hides_own_iterator|rc_of_impl_fn_returned|closures_made_and_folded|returned_impl_ends|lazy_iterator_clone|consumed_own_iterator_dropped_once|try_folds_of_stages_unwind).rs|two crates: impl_iterator_of_a_library)$"],
   },
   {
     name: "optimized-boxes-read-through-pointer",
@@ -23,7 +18,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/prepared.rs",
     find: "            boxes_read_as_values(tcx, &mut body);\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: generic_boxed_drop"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: generic_boxed_drop"],
   },
   {
     name: "mir-await-loop-kept",
@@ -133,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/prepared.rs",
     find: "                Some((_, from)) => from,\n",
     replace: "                Some(_) => Place::from(boxed),\n",
-    tests: ["test/crates.test.ts", "-t", "boxed_places_a_consumer_writes_through"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "boxed_places_a_consumer_writes_through"],
   },
   {
     name: "box-copy-only-just-before",
@@ -141,7 +136,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/prepared.rs",
     find: "                [copy_at] if copy_at.statement_index < at => {\n",
     replace: "                [copy_at] if copy_at.statement_index + 1 == at => {\n",
-    tests: ["test/crates.test.ts", "-t", "boxed_places_a_consumer_writes_through"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "boxed_places_a_consumer_writes_through"],
   },
   {
     name: "discriminant-read-by-a-call-dropped",

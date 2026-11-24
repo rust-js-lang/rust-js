@@ -172,7 +172,7 @@ export const mutations: Mutation[] = [
     find: "                true => Some(self.drop_argument(id, index, (ty, iterated), span)?),\n",
     replace:
       "                true => self.held_drop_function(ty, iterated, span)?,\n",
-    tests: ["test/crates.test.ts", "-t", "drops_by_need"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "drops_by_need"],
   },
   {
     name: "own-borrow-mut-guarded",
@@ -456,7 +456,7 @@ export const mutations: Mutation[] = [
     find: "        if !identity && let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)? {\n",
     replace:
       "        if false\n            && let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)?\n        {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: operator_through_dictionary"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: operator_through_dictionary"],
   },
   {
     name: "own-method-through-dictionary-skipped",
@@ -466,7 +466,7 @@ export const mutations: Mutation[] = [
     find: "        if !identity && let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)? {\n",
     replace:
       "        if !identity\n            && !matches!(self.recognition().trait_call(id, trait_id), Some(TraitCall::Equality { .. } | TraitCall::Ordering))\n            && let Some((instance, entry)) = self.dictionary_entry(id, generic_args, values.len(), span)?\n        {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
   },
   {
     name: "subclass-getter-read-called",
@@ -508,7 +508,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/calls.rs",
     find: "            let values = self.through_dictionary(id, generic_args, values, span, out)?;\n            let called = Expr::call(entry, values);\n",
     replace: "            let called = Expr::call(entry, values);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_impl_method_where_clause"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_impl_method_where_clause"],
   },
   {
     name: "hashed-key-borrowed-unrefused",
@@ -583,7 +583,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/calls.rs",
     find: "                    let value = match self.given_fact_of(of, fact) {\n",
     replace: "                    let value = match None::<Expr> {\n",
-    tests: ["test/crates.test.ts", "-t", "library_blanket_impl_its_consumer_compiles_gives_its_facts"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "library_blanket_impl_its_consumer_compiles_gives_its_facts"],
   },
   {
     name: "into-iter-bound-dictionary-the-impls",

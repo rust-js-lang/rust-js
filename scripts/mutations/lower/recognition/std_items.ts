@@ -269,7 +269,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition/std_items.rs",
     find: "    (!is_std_crate(tcx, id)).then_some(id.krate)\n",
     replace: "    (!is_std_crate(tcx, id) && tcx.crate_name(id.krate).as_str() != \"core\").then_some(id.krate)\n",
-    tests: ["test/crates.test.ts", "-t", "crate_named_core"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "crate_named_core"],
   },
   {
     name: "std-memchr-unanswered",

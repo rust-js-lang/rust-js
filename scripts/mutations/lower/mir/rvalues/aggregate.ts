@@ -153,7 +153,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/rvalues/aggregate.rs",
     find: "                if made.is_some() && self.given_rc_new(span) {\n",
     replace: "                if false {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
   {
     name: "boxed-field-made-as-object",

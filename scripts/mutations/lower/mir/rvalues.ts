@@ -771,7 +771,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/rvalues.rs",
     find: "                    self.transmute(v, (from, *to), span, out)?\n",
     replace: "                    self.cast(v, from, *to, span)?\n",
-    tests: ["test/crates.test.ts", "-t", "instance_converts_and_transmutes"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "instance_converts_and_transmutes"],
   },
   {
     name: "placed-lend-pointer-refused",

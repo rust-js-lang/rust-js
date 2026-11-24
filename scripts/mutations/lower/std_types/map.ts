@@ -462,7 +462,7 @@ export const mutations: Mutation[] = [
     find: "            Some(key) if self.is_value_key(key) && !self.is_js_key(key) && self.holds_identity(key) => {\n",
     replace:
       "            Some(key) if self.is_value_key(key) && !self.is_js_key(key) && self.holds_identity(key) && key.ty_adt_def().is_none_or(|adt| adt.did().is_local()) => {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: identity_inside_keys"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: identity_inside_keys"],
   },
   {
     name: "generic-made-key-classed",

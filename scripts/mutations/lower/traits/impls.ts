@@ -525,7 +525,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/impls.rs",
     find: "            && !names_own_type\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
   {
     name: "library-entry-unboxes-unknown",
@@ -534,7 +534,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/impls.rs",
     find: "            .filter(|(imp, _)| self.krate.foreign.compiled_by_rust_js(*imp))?;\n",
     replace: "            .filter(|(imp, _)| imp.is_local())?;\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
   {
     name: "own-fact-given-in-trait-terms",
@@ -542,7 +542,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/impls.rs",
     find: "                let of = self.drop_slot_of(item.def_id, index, args);\n",
     replace: "                let of = drop_slot(self.tcx, self.slots(), item.def_id, index);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_map_keys"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_default_map_keys"],
   },
   {
     name: "library-class-default-through-its-library",
@@ -632,7 +632,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/impls.rs",
     find: "                if !(self.given.type_facts.iter()).any(|&(at, given, _)| at == of && given == fact) {\n",
     replace: "                if (self.given.type_facts.iter()).any(|&(at, given, _)| at == of && given == fact) {\n                    return Err(self.unsupported(span, \"a trait method's type parameter's fact here\"));\n                }\n                {\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
   },
   {
     name: "own-reader-impl-no-defaults",
@@ -765,7 +765,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/impls.rs",
     find: "            let own_facts = self.facts_through_dictionary(item.def_id, own_facts);\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "library_trait_method_fact_through_a_dictionary"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "library_trait_method_fact_through_a_dictionary"],
   },
   {
     name: "impl-makes-assoc-iterator-a-js-iterator",

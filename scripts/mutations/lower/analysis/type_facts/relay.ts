@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts/relay.rs",
     find: " crate::recognition::trait_holds_in(tcx, typing_env, ty, fact_trait).is_none()",
     replace: "            false && crate::recognition::trait_holds_in(tcx, typing_env, ty, fact_trait).is_none()",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_zip_of_a_vec_of_a_slots_items"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_zip_of_a_vec_of_a_slots_items"],
   },
   {
     name: "nested-layouts-unbounded",

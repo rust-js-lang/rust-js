@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/dictionaries/placed.rs",
     find: "                true => None,\n",
     replace: "                true => self.call_callee(method, args_of(bound))?,\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
   },
   {
     name: "placed-dictionary-words-made-first",

@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     find: "        for &(callee, args, _, _) in graph.names_of(body.def_id) {\n",
     replace:
       "        for &(callee, args, _, _) in graph.names_of(body.def_id).iter().filter(|_| body.root().is_some()) {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_private_writer_fails"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_private_writer_fails"],
   },
   {
     name: "fmt-error-not-passed-on",
@@ -108,7 +108,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/fmt_failures.rs",
     find: "if foreign.compiled_by_rust_js(adt.did()))",
     replace: "if adt.did().is_local())",
-    tests: ["test/crates.test.ts", "-t", "library_writer_formatted_fails"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "library_writer_formatted_fails"],
   },
   {
     name: "io-write-error-uncounted",
@@ -177,7 +177,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/fmt_failures.rs",
     find: "                    Callee::Unseen if library => unseen.push(caller),\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_dyn_writer_given_a_failing_one$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_dyn_writer_given_a_failing_one$"],
   },
   {
     name: "library-dyn-format-never-fails",
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/fmt_failures.rs",
     find: "                    Some(Callee::Unseen) if library => unseen.push(caller),\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_dyn_formatter_given_a_failing_one$"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_dyn_formatter_given_a_failing_one$"],
   },
   {
     name: "library-dictionaries-fail-with-its-dyns",
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/fmt_failures.rs",
     find: "        Some(Callee::Known(id)) => failing.fns.contains(&id) || foreign.fails(id) || of_own_writer(foreign, id, args),\n",
     replace: "        Some(Callee::Known(id)) => failing.fns.contains(&id) || foreign.fails(id),\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_generic_writer_given_a_failing_one$"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_generic_writer_given_a_failing_one$"],
   },
   {
     name: "converted-residual-never-fails",

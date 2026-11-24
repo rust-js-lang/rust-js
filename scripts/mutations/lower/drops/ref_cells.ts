@@ -227,11 +227,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            crate::recognition::transparent_field(tcx, adt).is_none() && !crate::representation::numbered_struct(adt)\n",
     replace: "            !crate::representation::numbered_struct(adt)\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "a library's RefCells are the values they hold",
-    ],
+    tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values they hold"],
   },
   {
     name: "transparent-refcell-holds-nothing",
@@ -331,7 +327,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "            if thread_local_key(tcx, tcx.typeck_root_def_id(body.def_id)) {\n",
     replace: "            if false {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: thread_local_cell"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: thread_local_cell"],
   },
   {
     name: "quiet-library-key-counted",
@@ -340,11 +336,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                            || self.krate.quiet_library_keys.contains(&key))",
     replace: "                            || false)",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "two crates: thread_local_ref_cell_read",
-    ],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: thread_local_ref_cell_read"],
   },
   {
     name: "field-accessor-lends-its-field",
@@ -555,7 +547,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                founds.extend(instances::mir_borrows(&recognition, &mir.body));\n",
     replace: "                _ = mir;\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: guard_held_while_a_library_type_parameters_value_drops"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: guard_held_while_a_library_type_parameters_value_drops"],
   },
   {
     name: "quiet-cell-write-of-a-checked-cell",

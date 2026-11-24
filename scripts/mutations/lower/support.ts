@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/support.rs",
     find: "                    self.krate.foreign.compiled_by_rust_js(id) && self.dyn_supported(id)\n",
     replace: "                    id.is_local() && self.dyn_supported(id)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: dyn_trait"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: dyn_trait"],
   },
   {
     name: "dyn-pointer-refused",

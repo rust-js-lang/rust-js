@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/instances.rs",
     find: "            if let Some(called) = super::fn_def(constant.ty().peel_refs()) {\n",
     replace: "            if let Some(called) = super::fn_def(constant.ty()) {\n",
-    tests: ["test/crates.test.ts", "-t", "library_some_through_a_dyn"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "library_some_through_a_dyn"],
   },
   {
     name: "relayed-copy-lost",
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/instances.rs",
     find: "            !library\n                || !crate::declarations::js_names(tcx, owner)\n                || consumer_compiles(tcx, tcx.typeck_root_def_id(owner))\n",
     replace: "            !library || !crate::declarations::js_names(tcx, owner) || true\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_rc_(of_what_its_consumer_drops|counted_through_a_traits_generic_method)$"],
+    tests: ["test/crates-pairs-1.test.ts", "test/crates-pairs-2.test.ts", "-t", "^two crates: library_rc_(of_what_its_consumer_drops|counted_through_a_traits_generic_method)$"],
   },
   {
     name: "library-pub-compilable-rc-callers-unseen",
@@ -166,11 +166,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/instances.rs",
     find: "            !library\n                || !crate::declarations::js_names(tcx, owner)\n                || consumer_compiles(tcx, tcx.typeck_root_def_id(owner))\n",
     replace: "            !library || !crate::declarations::js_names(tcx, owner)\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "a library counts each type's Rcs apart"
-    ]
+    tests: ["test/crates.test.ts", "-t", "a library counts each type's Rcs apart"]
   },
   {
     name: "trait-family-unfollowed",

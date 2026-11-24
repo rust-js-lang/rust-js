@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/writer.rs",
     find: "                Some(self.through_refs(place, ty).0)\n",
     replace: "                Some(place)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_(string_pushed_through_a_reference|writers_given_options)"],
+    tests: ["test/crates-pairs-1.test.ts", "test/crates-pairs-2.test.ts", "-t", "two crates: library_(string_pushed_through_a_reference|writers_given_options)"],
   },
   {
     name: "writer-dyn-debug-made-a-pair",

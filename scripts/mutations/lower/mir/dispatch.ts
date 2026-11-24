@@ -20,7 +20,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/dispatch.rs",
     find: "                        Some((form, given)) => self.form_back(form, given, Expr::var(p)),",
     replace: "                        Some(_) => Expr::var(p),",
-    tests: ["test/crates.test.ts", "-t", "library_generic_fn_item_forms"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "library_generic_fn_item_forms"],
   },
   {
     name: "held-function-write-error-uncaught",
@@ -844,7 +844,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/dispatch.rs",
     find: "        if let Some(at) = self.recognition().formatter_param(def_id)\n            && let evidence = self.evidence_args(def_id, args, span)?\n",
     replace: "        if let Some(at) = None::<usize>\n            && let evidence = self.evidence_args(def_id, args, span)?\n",
-    tests: ["test/crates.test.ts", "-t", "library_writer_fn_pointer_at_an_instance"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "library_writer_fn_pointer_at_an_instance"],
   },
   {
     name: "binding-arguments-given-as-they-are",

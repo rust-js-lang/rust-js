@@ -282,11 +282,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/items.rs",
     find: "                None => reference.item(),\n",
     replace: "                None => reference,\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "a library's function returned past a guard's drop",
-    ],
+    tests: ["test/crates.test.ts", "-t", "a library's function returned past a guard's drop"],
   },
   {
     name: "lazy-read-unmarked",
@@ -449,7 +445,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/items.rs",
     find: "                .insert(local.to_string());\n",
     replace: "                .shift_remove(local);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_static_changing_in_place"],
   },
   {
     name: "changing-static-by-name-unmarked",
@@ -457,7 +453,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/items.rs",
     find: "            self.read_import_of(def_id, local);\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_static_changing_in_place"],
   },
   {
     name: "changing-static-through-namespace-unmarked",
@@ -466,7 +462,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/items.rs",
     find: "                self.read_import_of(def_id, &local);\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_static_changing_in_place"],
   },
   {
     name: "library-class-const-static",
@@ -474,7 +470,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/items.rs",
     find: "                Some(constant) if super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) => {\n",
     replace: "                Some(constant) if false && super::classes::member(self.tcx, def_id) == Some(super::classes::Member::Const) => {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_singles_across_crates"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_singles_across_crates"],
   },
   {
     name: "to-vec-value-unanswered",
@@ -515,7 +511,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/items.rs",
     find: "(self.is_rust_fn(instance.def_id()) || self.krate.foreign.in_library(instance.def_id()))",
     replace: "self.is_rust_fn(instance.def_id())",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
   },
   {
     name: "called-copy-in-impls-terms",

@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/assign/boxed_args.rs",
     find: "        Ok(values.iter().any(|v| matches!(v, Value::Ref(_))) || (!of_dyn && !compiled && given.iter().any(a_mut)))\n",
     replace: "        Ok(values.iter().any(|v| matches!(v, Value::Ref(_))) || (!of_dyn && given.iter().any(a_mut)))\n",
-    tests: ["test/crates.test.ts", "-t", "library_own_methods_through_its_dictionary"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "library_own_methods_through_its_dictionary"],
   },
   {
     name: "known-receivers-mut-given-to-stds-dictionary",

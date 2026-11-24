@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/declarations.rs",
     find: "        self.owner = def_id;\n        self.erased = self.erased(def_id);\n",
     replace: "        self.erased = self.erased(def_id);\n        self.owner = def_id;\n",
-    tests: ["test/crates.test.ts", "-t", "library_signatures_asked_of_their_items"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "library_signatures_asked_of_their_items"],
   },
   {
     name: "kept-word-parameter-declared",

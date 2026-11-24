@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/chars_asked.rs",
     find: "        let crosses = library && {\n",
     replace: "        let crosses = false && {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_chars_given"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_chars_given"],
   },
   {
     name: "chars-dyn-unseen",
@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/chars_asked.rs",
     find: "            || mir_asks\n",
     replace: "            || mir_asks && false\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_instances_ask_what_the_crate_doesnt"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_instances_ask_what_the_crate_doesnt"],
   },
   {
     name: "vec-grown-by-chars-unasked",

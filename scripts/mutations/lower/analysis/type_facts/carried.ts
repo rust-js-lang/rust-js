@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "        ) if def_id.is_local() || foreign.is_library(def_id.krate) => Some(*def_id),\n",
     replace: "        ) if def_id.is_local() => Some(*def_id),\n",
-    tests: ["test/crates.test.ts", "-t", "item_size_of_instance"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "item_size_of_instance"],
   },
   {
     name: "uncarried-associated-read",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "            if crate::recognition::trait_holds_in(tcx, typing_env, projection, into_iterator) == Some(true)\n",
     replace: "            if crate::recognition::trait_holds_in(tcx, typing_env, projection, into_iterator) == Some(false)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_trait_items_flattened_where_its_hint_is_seen"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_trait_items_flattened_where_its_hint_is_seen"],
   },
   {
     name: "iterator-assoc-sizes-carried",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "            if library\n                && crate::library::escapes",
     replace: "            if false\n                && crate::library::escapes",
-    tests: ["test/crates.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
   },
   {
     name: "private-trait-assoc-layouts-carried",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "                && projection.is_sized(tcx, typing_env)\n",
     replace: "                && true\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
   },
   {
     name: "generic-assoc-layouts-carried",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "                Some(super::Asked::Built(built, ..)) => foreign.templates(imp, built),\n",
     replace: "                Some(super::Asked::Built(..)) => true,\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
   },
   {
     name: "other-assoc-layouts-carried",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "                Some(super::Asked::Carried(..)) => false,\n",
     replace: "                Some(super::Asked::Carried(..)) => true,\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
   },
   {
     name: "unknown-layout-assoc-carried",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "                None => tcx.layout_of(typing_env.as_query_input(ty)).is_ok(),\n",
     replace: "                None => true,\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: size_of_a_library_traits_item"],
   },
   {
     name: "room-of-a-library-traits-item-uncarried",
@@ -96,6 +96,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts/carried.rs",
     find: "    assoc.is_local() || carried.contains(&fact) || fact == TypeFact::Room && carried.contains(&TypeFact::Size)\n",
     replace: "    assoc.is_local() || carried.contains(&fact)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: capacity_of_a_library_traits_item"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: capacity_of_a_library_traits_item"],
   },
 ];

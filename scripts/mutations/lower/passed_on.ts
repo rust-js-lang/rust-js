@@ -368,11 +368,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/passed_on.rs",
     find: "            js::ExprKind::Member(..) => callee.is_named(),\n",
     replace: "",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "returned past a guard's drop is returned after its finally",
-    ],
+    tests: ["test/crates.test.ts", "-t", "returned past a guard's drop is returned after its finally"],
   },
   {
     name: "host-callee-not-a-fn",
@@ -930,7 +926,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/passed_on.rs",
     find: "                if scope_method && !namespace {\n",
     replace: "                if false {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
   {
     name: "conversion-arrow-not-passed-on",

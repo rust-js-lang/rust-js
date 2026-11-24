@@ -154,7 +154,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "            Std::FmtDebug if recognition.is_io_error(ty) => {\n",
     replace: "            Std::FmtDebug if recognition.is_io_error(ty) && false => {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_writes_an_io_error_piecewise"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_writes_an_io_error_piecewise"],
   },
   {
     name: "error-kind-display-as-debug",
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/display/sink_writes.rs",
     find: "            // A pointer's address, by the options as it runs (#2282).\n            Std::FmtPointer | Std::FmtDebug if self.shows_an_address(kind, ty) => {\n",
     replace: "            // A pointer's address, by the options as it runs (#2282).\n            Std::FmtPointer | Std::FmtDebug if false => {\n",
-    tests: ["test/crates.test.ts", "-t", "library_derived_debug_of_a_pointer_field"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "library_derived_debug_of_a_pointer_field"],
   },
   {
     name: "std-build-frames-by-old-contract",

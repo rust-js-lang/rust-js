@@ -33,6 +33,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition/sorts.rs",
     find: "    let map = is_std_def(tcx, adt.did(), StdItem::BTreeMap);",
     replace: "    let map = adt.did() == std_item(tcx, StdItem::BTreeMap);",
-    tests: ["test/crates.test.ts", "-t", "two crates: no_std_without_alloc"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: no_std_without_alloc"],
   },
 ];

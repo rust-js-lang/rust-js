@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "                Some(EqSide::Given(alias.self_ty()))\n",
     replace: "                Some(EqSide::Built)\n",
-    tests: ["test/crates.test.ts", "-t", "length_first_eq"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "length_first_eq"],
   },
   {
     name: "counted-where-given-none",
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition/lengths.rs",
     find: "Some(StdPath::SliceIter | StdPath::SliceIterMut | StdPath::VecIntoIter | StdPath::ArrayIntoIter | StdPath::OpsRange)))",
     replace: "Some(StdPath::SliceIterMut)))",
-    tests: ["test/crates.test.ts", "-t", "length_first_eq"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "length_first_eq"],
   },
   {
     name: "lower-bound-of-counted-arrays-stds",

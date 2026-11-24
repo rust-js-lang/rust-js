@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "                && let Some(adt) = plain_struct(tcx, ty)\n            {\n                found.projected.insert(adt);\n",
     replace: "                && let Some(adt) = plain_struct(tcx, ty)\n            {\n                drop(adt);\n",
-    tests: ["test/crates.test.ts", "-t", "flattened_struct_lent_by_a_consumer"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "flattened_struct_lent_by_a_consumer"],
   },
   {
     name: "untagged-records-unfound",
@@ -176,6 +176,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/bindings/flattened.rs",
     find: "                        found.states.insert(state.did());\n",
     replace: "                        let _ = state;\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_flattened_state"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_flattened_state"],
   },
 ];

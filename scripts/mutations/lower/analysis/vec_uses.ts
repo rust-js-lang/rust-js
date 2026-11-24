@@ -17,10 +17,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/vec_uses.rs",
     find: "        id.is_local()\n            && tcx.trait_impl_of_assoc(id)",
     replace: "        false\n            && tcx.trait_impl_of_assoc(id)",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "crate_readers_across_crates"
-    ]
+    tests: ["test/crates-pairs-3.test.ts", "-t", "crate_readers_across_crates"]
   },
 ];

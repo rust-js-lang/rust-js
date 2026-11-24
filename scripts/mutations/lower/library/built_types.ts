@@ -9,6 +9,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/built_types.rs",
     find: "        return Some(TypeTemplate::Slot(index));\n",
     replace: "        return Some(TypeTemplate::Slot(index + 1));\n",
-    tests: ["test/crates.test.ts", "-t", "built_layout_of_a_library"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "built_layout_of_a_library"],
   },
 ];

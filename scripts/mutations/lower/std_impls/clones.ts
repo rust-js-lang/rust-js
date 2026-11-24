@@ -373,7 +373,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/std_impls/clones.rs",
     find: "                Some(true) => return Ok(place),\n",
     replace: "                Some(true) => {}\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
   {
     name: "closure-clone-apart-unmade",

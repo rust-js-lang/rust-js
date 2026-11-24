@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
     find: "        held_supertraits(self.recognition.tcx, self.recognition.foreign, from.def_id, from.args)\n            .into_iter()\n            .find_map(|(name, tr)| {\n",
     replace:
       "        supertraits(self.recognition.tcx, from.def_id, from.args)\n            .into_iter()\n            .find_map(|(name, tr, _)| {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: (extension_default|default_where_clause_drops)$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: (extension_default|default_where_clause_drops)$"],
   },
   {
     name: "known-extend-by-dictionary",

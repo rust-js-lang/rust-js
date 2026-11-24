@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/elided.rs",
     find: "            work.extend(callees.get(&at).into_iter().flatten().copied());\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_elides_through_a_private_callee"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_elides_through_a_private_callee"],
   },
   {
     name: "elided-impl-methods-dropped",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/elided.rs",
     find: "            all.entry(imp).or_default().extend(found);\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: program_form"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: program_form"],
   },
   {
     name: "elided-trait-method-impls-unfollowed",
@@ -24,6 +24,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/elided.rs",
     find: "            if let Some(trait_id) = tcx.trait_of_assoc(at) {\n",
     replace: "            if let Some(trait_id) = tcx.trait_of_assoc(at).filter(|_| false) {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: program_form"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: program_form"],
   },
 ];

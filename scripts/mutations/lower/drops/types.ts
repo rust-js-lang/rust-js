@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/drops/types.rs",
     find: "        drop.is_local() || foreign.compiled(drop)\n",
     replace: "        drop.is_local() || (foreign.compiled(drop) && foreign.item(drop).is_none() && !foreign.compiles(drop))\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: drop"],
+    tests: ["test/crates-pairs-1.test.ts", "test/crates-pairs-3.test.ts", "-t", "two crates: drop"],
   },
   {
     name: "closure-part-taken",
@@ -399,7 +399,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/drops/types.rs",
     find: " || self.foreign_takes_whole(closure)",
     replace: " || false && self.foreign_takes_whole(closure)",
-    tests: ["test/crates.test.ts", "-t", "two crates: closure_of_another_crate"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: closure_of_another_crate"],
   },
   {
     name: "splice-drop-of-its-items",

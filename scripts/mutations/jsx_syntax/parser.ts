@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-jsx/src/parser.rs",
     find: "        format!(\"#[allow_internal_unstable(stmt_expr_attributes)] macro {ident} {body}\"),\n",
     replace: "        format!(\"macro {ident} {body}\"),\n",
-    tests: ["test/crates.test.ts","-t","component of another crate"],
+    tests: ["test/crates.test.ts", "-t", "component of another crate"],
   },
   {
     name: "struct-update-refused",

@@ -19,7 +19,7 @@ export const mutations: Mutation[] = [
     find: "                if kept.contains(&to) && kept.insert(from) {\n",
     replace:
       "                if false && kept.contains(&to) && kept.insert(from) {\n",
-    tests: ["test/crates.test.ts", "-t", "drops_by_need"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "drops_by_need"],
   },
   {
     name: "drops-by-need-names-of-one-gathered",
@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/drops/uses.rs",
     find: "        observed.used.extend(\n            self.drop_state\n                .used_drops\n                .iter()\n                .filter_map(own)\n                .map(|param| (id, param)),\n        );\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "drops_by_need"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "drops_by_need"],
   },
   {
     name: "drops-by-need-passed-as-used",
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     find: "kept.contains(&(local(item), index)).then_some(*drop)",
     replace:
       "Some(if kept.contains(&(local(item), index)) { *drop } else { Expr::js_undefined() })",
-    tests: ["test/crates.test.ts", "-t", "drops_by_need"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "drops_by_need"],
   },
   {
     name: "drops-by-need-arrow-kept",

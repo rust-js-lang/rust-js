@@ -230,7 +230,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "    found.dyn_written = !dyns_written.is_empty() || foreign.writes_dyns_given();\n",
     replace: "    found.dyn_written = !dyns_written.is_empty() || foreign.writes_dyns_given();\n    found.dyn_any |= foreign.writes_dyns_given();\n",
-    tests: ["test/crates.test.ts", "-t", "derived_debug_beside_a_library_that_writes_a_dyn"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "derived_debug_beside_a_library_that_writes_a_dyn"],
   },
   {
     name: "library-dyn-through-generic-code-unrefused",
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/written_params.rs",
     find: "    if let Some((callee, args)) = fn_def(expr.ty) {\n",
     replace: "    if let Some((callee, args)) = fn_def(expr.ty).filter(|&(callee, _)| tcx.trait_of_assoc(callee).is_some()) {\n",
-    tests: ["test/crates.test.ts", "-t", "library_writes_a_dyn_errors_debug"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "library_writes_a_dyn_errors_debug"],
   },
   {
     name: "io-error-held-dyn-unwritten",

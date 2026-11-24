@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/untagged/froms.rs",
     find: "            None if foreign.is_library(def_id.krate) => foreign.gives_its_argument(def_id),\n",
     replace: "            None if foreign.is_library(def_id.krate) => true,\n",
-    tests: ["test/crates.test.ts", "-t", "untagged_from_across_crates|untagged From"],
+    tests: ["test/crates.test.ts", "test/crates-pairs-1.test.ts", "-t", "untagged_from_across_crates|untagged From"],
   },
   {
     name: "untagged-from-of-a-binding-called",

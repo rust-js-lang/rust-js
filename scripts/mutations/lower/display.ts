@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/display.rs",
     find: "        opt_std_item(self.tcx, StdItem::ToString)",
     replace: "        Some(std_item(self.tcx, StdItem::ToString))",
-    tests: ["test/crates.test.ts", "-t", "no_std"],
+    tests: ["test/crates.test.ts", "test/crates-pairs-1.test.ts", "-t", "no_std"],
   },
   {
     name: "std-radix-unprefixed",
@@ -354,7 +354,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/display.rs",
     find: "            _ if self.krate.shown.of_writer(self.tcx, writer).any() => \"shown\",\n",
     replace: "            _ if false => \"shown\",\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
   },
   {
     name: "shown-hex-unformatted",
@@ -363,7 +363,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/display.rs",
     find: "        self.krate.format_options || self.writing.shown.hex\n",
     replace: "        self.krate.format_options\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_shows_a_consumers_value_with_options"],
   },
   {
     name: "mir-writer-options-dropped",

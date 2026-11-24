@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts/calls.rs",
     find: "        let relayed = |at: usize| of_slots(at) || at >= impl_args.len();\n",
     replace: "        let relayed = |at: usize| of_slots(at);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_given_an_associated_types_size$"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_default_given_an_associated_types_size$"],
   },
   {
     name: "dictionary-of-callers-params-relays-no-layout",
@@ -172,7 +172,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/type_facts/calls.rs",
     find: "                    true => crate::traits::facts_through_dictionary(tcx, foreign, id, facts),\n",
     replace: "                    true => facts,\n",
-    tests: ["test/crates.test.ts", "-t", "library_trait_method_fact_through_a_dictionary"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "library_trait_method_fact_through_a_dictionary"],
   },
   {
     name: "size-of-built-type-unasked",

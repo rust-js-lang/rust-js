@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/classes/accessors.rs",
     find: "        return field_accessor_of_mir(tcx, def_id);\n",
     replace: "        return None;\n",
-    tests: ["test/crates.test.ts", "-t", "library_trait_of_classes_given_fields|quiet field"],
+    tests: ["test/crates.test.ts", "test/crates-pairs-3.test.ts", "-t", "library_trait_of_classes_given_fields|quiet field"],
   },
   {
     name: "library-field-accessor-past-its-end",
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/classes/accessors.rs",
     find: "    if !matches!(block.terminator().kind, mir::TerminatorKind::Return) {\n        return None;\n    }\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "library_trait_of_classes_given_fields"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "library_trait_of_classes_given_fields"],
   },
   {
     name: "library-field-accessor-after-statements",
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/classes/accessors.rs",
     find: "            _ => return None,\n        }\n    }\n    let given = given.filter(",
     replace: "            _ => {}\n        }\n    }\n    let given = given.filter(",
-    tests: ["test/crates.test.ts", "-t", "library_trait_of_classes_given_fields"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "library_trait_of_classes_given_fields"],
   },
   {
     name: "library-field-accessor-of-a-mut",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/classes/accessors.rs",
     find: "                let mir::Rvalue::Ref(_, mir::BorrowKind::Shared, place) = &assign.1 else {\n",
     replace: "                let mir::Rvalue::Ref(_, _, place) = &assign.1 else {\n",
-    tests: ["test/crates.test.ts", "-t", "library_trait_of_classes_given_fields"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "library_trait_of_classes_given_fields"],
   },
   {
     name: "library-field-accessor-of-another-parameter",
@@ -81,6 +81,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/classes/accessors.rs",
     find: "    let given = given.filter(|place| place.local.as_usize() == 1)?;\n",
     replace: "    let given = given?;\n",
-    tests: ["test/crates.test.ts", "-t", "library_trait_of_classes_given_fields"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "library_trait_of_classes_given_fields"],
   },
 ];

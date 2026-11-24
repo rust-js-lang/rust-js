@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "            _ if is_std_path(tcx, did, StdPath::IterEmpty) => StdZeroSized::IterEmpty,\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: empty_of_a_librarys_default_compiled_by_its_consumer"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: empty_of_a_librarys_default_compiled_by_its_consumer"],
   },
   {
     name: "std-zero-sized-io-empty-unknown",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/representation/consts.rs",
     find: "            _ if is_std_path(tcx, did, StdPath::IoEmpty) => StdZeroSized::IoEmpty,\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: empty_of_a_librarys_default_compiled_by_its_consumer"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: empty_of_a_librarys_default_compiled_by_its_consumer"],
   },
   {
     name: "nullable-const-field-undefined",

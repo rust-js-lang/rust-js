@@ -357,7 +357,7 @@ export const mutations: Mutation[] = [
     find: "                    if !follow(&mut stepped, &mut passed, imp, impl_args) {\n",
     replace:
       "                    if foreign.item(imp).is_none() && !crate::traits::is_lowered_impl(foreign, imp) {\n                        continue;\n                    }\n                    if crate::traits::is_lowered_impl(foreign, imp) && !follow(&mut stepped, &mut passed, imp, impl_args) {\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_blanket_impl_steps_a_callers_parameter$"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "^two crates: library_blanket_impl_steps_a_callers_parameter$"],
   },
   {
     name: "library-iterator-held-unfollowed",
@@ -367,7 +367,7 @@ export const mutations: Mutation[] = [
     find: "                    follow_held(&mut stepped, &mut passed, held, instance);\n                }\n                continue;\n",
     replace:
       "                    if fns.contains_key(&instance.def_id()) {\n                        follow_held(&mut stepped, &mut passed, held, instance);\n                    }\n                }\n                continue;\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
   },
   {
     name: "given-library-iterator-unfollowed",
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
     find: "                follow_held(&mut stepped, &mut passed, held, instance);\n            }\n",
     replace:
       "                if fns.contains_key(&instance.def_id()) {\n                    follow_held(&mut stepped, &mut passed, held, instance);\n                }\n            }\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
   },
   {
     name: "kept-default-library-holder-unseen",
@@ -386,7 +386,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
     find: "                        Some(Followed::Library(steps)) => kept_through.extend(\n",
     replace: "                        Some(Followed::Library(steps)) => Vec::<(Param, Kept)>::new().extend(\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
   },
   {
     name: "associated-library-iterator-unstepped",
@@ -395,7 +395,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
     find: "                    stepped.extend(steps.into_iter().map(|(param, by)| (imp, param, by)));\n",
     replace: "                    let _ = steps;\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
   },
   {
     name: "followed-library-arm-dropped",
@@ -404,7 +404,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
     find: "    (foreign.item(callee).is_some()).then(|| Followed::Library(library_steps(tcx, foreign, callee, args)))\n",
     replace: "    let _ = library_steps;\n    None\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
   },
   {
     name: "instance-impl-of-a-callers-param-unpassed",
@@ -414,7 +414,7 @@ export const mutations: Mutation[] = [
     find: "                    if !follow(&mut stepped, &mut passed, imp, impl_args) {\n",
     replace:
       "                    if crate::traits::is_lowered_impl(foreign, imp) || !follow(&mut stepped, &mut passed, imp, impl_args) {\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
   },
   {
     name: "box-step-of-its-param-unrecorded",

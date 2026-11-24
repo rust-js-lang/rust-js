@@ -244,7 +244,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits.rs",
     find: "|| foreign.steps(id, param.index, tr.def_id);\n",
     replace: ";\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: extension_default"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: extension_default"],
   },
   {
     name: "into-iter-held-no-dictionary",
@@ -401,7 +401,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits.rs",
     find: "    declared_impls(tcx).chain(instances).collect()\n",
     replace: "    declared_impls(tcx).chain(instances.filter(|_| false)).collect()\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_(blanket_default_compiled_by_its_consumer|instance_impl_asks_its_defaults_facts)$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "^two crates: library_(blanket_default_compiled_by_its_consumer|instance_impl_asks_its_defaults_facts)$"],
   },
   {
     name: "lowered-impl-local-only",
@@ -410,7 +410,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits.rs",
     find: "    imp.is_local() || foreign.is_instance(imp)\n",
     replace: "    imp.is_local() || (foreign.is_instance(imp) && false)\n",
-    tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
   },
   {
     name: "index-bound-of-a-known-type-given",

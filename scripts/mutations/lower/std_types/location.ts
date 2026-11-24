@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/std_types/location.rs",
     find: "    caller_locations.contains(&id) || foreign.takes_location(id) || tracked_without_default(tcx, id)\n",
     replace: "    caller_locations.contains(&id) || foreign.takes_location(id)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: track_caller$"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: track_caller$"],
   },
   {
     name: "tracked-default-taken-as-a-declaration",

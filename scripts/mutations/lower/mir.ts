@@ -449,7 +449,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/lib.rs",
     find: "        let changing = (self.dependencies.borrow().changing_imports.iter())\n",
     replace: "        let changing = (self.dependencies.borrow().changing_imports.iter().filter(|_| false))\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_static_changing_in_place"],
   },
   {
     name: "pointed-param-assumed-a-cell",

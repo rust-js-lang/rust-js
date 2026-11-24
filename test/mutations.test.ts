@@ -10,6 +10,7 @@ import { pathToFileURL } from "node:url";
 import { againstWholeCorpus, Answers, heartbeat, failingOf, bySnapshots, inconclusiveSaid, judgedApart, unplaced, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, timedOut, lists, unitsAsItIs, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
 import type { ControlPart } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
+import { cratePairParts, partOf } from "../scripts/shard";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
 import { run as runChild, runSync, type Exit } from "./child";
@@ -273,7 +274,12 @@ test("each mutation's test pattern names a test of its file", () => {
         ? readdirSync(join(root, "test/corpus")).filter((name) => name.endsWith(".rs"))
         : source.includes("snapshotTests(")
           ? [...source.matchAll(/^\s*\["(\w+)", "/gm)].map((m) => `${m[1]}: the generated JS is its snapshot`)
-          : [];
+          : /^test\/crates-pairs-(\d+)\.test\.ts$/.test(file)
+            ? // A part of the crate pairs' table: the pairs `partOf` puts in it.
+              readdirSync(join(root, "test/crates/pairs"))
+                .filter((name) => partOf(name, cratePairParts) === Number(/(\d+)\.test\.ts$/.exec(file)![1]))
+                .map((name) => `two crates: ${name}`)
+            : [];
       named.set(file, { names: [...cases, ...[...source.matchAll(literal)].map((m) => JSON.parse(`"${m[1]}"`))], dynamic });
     }
     return named.get(file)!;

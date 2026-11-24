@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    if recognition.foreign.writes_dyns_given() {\n",
     replace: "    if false {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: derived_debug_made_a_dyn_a_library_writes"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: derived_debug_made_a_dyn_a_library_writes"],
   },
   {
     name: "writer-that-prints-unseen",
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
     find: "    (graph.names_of(body.def_id).iter()).any(|&(id, args, _, _)| recognition.writes_stream(id, args, error))\n",
     replace:
       "    (graph.names_of(body.def_id).iter()).any(|&(id, args, _, _)| body.root().is_some() && recognition.writes_stream(id, args, error))\n",
-    tests: ["test/crates.test.ts", "-t", "library_writer_prints_in_a_programs_line"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "library_writer_prints_in_a_programs_line"],
   },
   {
     name: "library-stopping-where-caught-unsaid",
@@ -405,6 +405,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/prints.rs",
     find: "    let ran: Vec<(&Body<'tcx>, Option<Vec<DefId>>)> = (writers.iter().copied())\n        .filter(|writer| writer.def_id.is_local())\n",
     replace: "    let ran: Vec<(&Body<'tcx>, Option<Vec<DefId>>)> = (writers.iter().copied())\n",
-    tests: ["test/crates.test.ts", "-t", "writers_of_a_dependency_where_a_panic_is_caught"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "writers_of_a_dependency_where_a_panic_is_caught"],
   },
 ];

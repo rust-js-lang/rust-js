@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition/chars.rs",
     find: "            .map(|part| self.reveal(part))\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_chars_behind_impl_trait"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_chars_behind_impl_trait"],
   },
   {
     name: "chars-rest-unseen",
@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition/chars.rs",
     find: "            ty::Adt(adt, args) if adt.did().is_local() => (adt.all_fields())\n",
     replace: "            ty::Adt(adt, args) if false && adt.did().is_local() => (adt.all_fields())\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_chars_in_a_public_field"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_chars_in_a_public_field"],
   },
   {
     name: "chars-opaque-unrevealed",
@@ -65,6 +65,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition/chars.rs",
     find: "            ty::Alias(_, alias) if let ty::Opaque { def_id } = alias.kind => {\n",
     replace: "            ty::Alias(_, alias) if false && let ty::Opaque { def_id } = alias.kind => {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_chars_behind_impl_trait"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_chars_behind_impl_trait"],
   },
 ];

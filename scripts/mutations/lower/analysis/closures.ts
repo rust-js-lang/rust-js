@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "        (self.cloned.contains(&closure)).then(|| !self.cloned_apart.contains(&closure))\n",
     replace: "        (self.cloned.contains(&closure)).then_some(true)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
   {
     name: "library-closures-said-shared",
@@ -288,7 +288,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/closures.rs",
     find: "            .map(|&id| (id, self.cloned_apart.contains(&id)))\n",
     replace: "            .map(|&id| (id, false))\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
   {
     name: "error-dyns-drop-always",

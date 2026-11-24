@@ -134,11 +134,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/mutation.rs",
     find: "                && !expr.span.in_external_macro(tcx.sess.source_map())\n",
     replace: "",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "two crates: thread_local_beside_a_made_cell",
-    ],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: thread_local_beside_a_made_cell"],
   },
   {
     name: "part-borrow-unchanged",

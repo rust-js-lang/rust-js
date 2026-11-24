@@ -130,17 +130,11 @@ test("a consumer given a library but not the libraries it uses is refused", () =
   expect(() => run(partial)).toThrow("`models` was compiled against `validation`, a rust-js library");
 }, 300_000);
 
-// Two crates at a time (`test/crates/pairs/<case>/`): a library, `dep`, and an
-// `app` using it, for each thing crossing between them that a consumer must
-// be told, or must assume. Found in review: each had printed another answer.
-// Three at a time (`test/crates/triples/<case>/`): `dep`, `mid` using it, and
-// `app` using both, sharing what one makes through the others (ADR 0523).
-
-for (const name of readdirSync(pairs).sort()) {
-  test(`two crates: ${name}`, () => {
-    chain(pairs, name, ["dep", "app"]);
-  }, 300_000);
-}
+// Two crates at a time (`test/crates/pairs/<case>/`), each pair's own test,
+// are test/crates-pairs-<i>.test.ts' (test/crates-pairs.ts, #2465); the
+// tests here that read what a pair's builds write are this file's. Three at
+// a time (`test/crates/triples/<case>/`): `dep`, `mid` using it, and `app`
+// using both, sharing what one makes through the others (ADR 0523).
 
 // A program's derived `Debug`s beside a library that writes a `dyn` it's
 // given, none made a `dyn` but by a derived `Debug` of its field, which

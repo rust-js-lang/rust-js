@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
     find: "                    (ItemFact::TakesLocation, caller_locations.contains(&id)),\n",
     replace:
       "                    (ItemFact::TakesLocation, false && caller_locations.contains(&id)),\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: track_caller"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: track_caller"],
   },
   {
     name: "library-rest-unlisted",
@@ -148,11 +148,7 @@ export const mutations: Mutation[] = [
     find: "            let mut keys: Vec<String> = (identities.iter())\n                .filter(|&&id| reachable(tcx, id))\n",
     replace:
       "            let mut keys: Vec<String> = (identities.iter())\n                .filter(|_| false)\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "equal only to itself keys its consumer",
-    ],
+    tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
   },
   {
     name: "library-lists-unexported",
@@ -276,7 +272,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/exports.rs",
     find: "                .filter(|&(&id, _)| id.is_local() && tcx.def_kind(id) == rustc_hir::def::DefKind::AssocTy)\n",
     replace: "                .filter(|_| false)\n",
-    tests: ["test/crates.test.ts", "-t", "item_size_of_instance"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "item_size_of_instance"],
   },
   {
     name: "keyed-contract-unwritten",
@@ -319,7 +315,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/exports.rs",
     find: "                .filter(|&imp| crate::ordering::partial_cmp_is_cmp(tcx, imp))\n",
     replace: "                .filter(|_| false)\n",
-    tests: ["test/crates.test.ts", "-t", "derived_partial_cmp_is_cmp"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "derived_partial_cmp_is_cmp"],
   },
   {
     name: "field-giving-method-listed",
@@ -336,7 +332,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/exports.rs",
     find: "            for (&carrier, facts) in contracts.carried_super.iter().filter(|&(&id, _)| id.is_local()) {\n",
     replace: "            for (&carrier, facts) in contracts.carried_super.iter().filter(|_| false) {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_item_layouts"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_default_item_layouts"],
   },
   {
     name: "library-closure-clone-said-inverted",
@@ -344,7 +340,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/exports.rs",
     find: "                    key: key(tcx, id),\n                    apart,\n",
     replace: "                    key: key(tcx, id),\n                    apart: !apart,\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
   {
     name: "manifest-dyn-debug-hex-dropped",
@@ -352,7 +348,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/exports.rs",
     find: "        dyn_debug_hex: dyn_debug_shown.hex,\n",
     replace: "        dyn_debug_hex: false,\n",
-    tests: ["test/crates.test.ts", "-t", "library_shows_a_consumers_dyn_debug_with_options"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "library_shows_a_consumers_dyn_debug_with_options"],
   },
   {
     name: "library-modules-unlisted",
@@ -370,7 +366,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/exports.rs",
     find: "        drops_any: *drops_any,\n",
     replace: "        drops_any: { let _ = drops_any; false },\n",
-    tests: ["test/crates.test.ts", "-t", "library_extend_drops_the_crates_iterator|library_extend_given_a_middle_crates_iterator"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "library_extend_drops_the_crates_iterator|library_extend_given_a_middle_crates_iterator"],
   },
   {
     name: "trait-method-facts-unlisted",
@@ -378,7 +374,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/exports.rs",
     find: "                    id.is_local() && !facts.is_empty() && tcx.trait_of_assoc(id).is_some_and(|tr| tr.is_local())\n",
     replace: "                    false && id.is_local() && !facts.is_empty() && tcx.trait_of_assoc(id).is_some_and(|tr| tr.is_local())\n",
-    tests: ["test/crates.test.ts", "-t", "library_default_where_clause_through_its_dictionary"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "library_default_where_clause_through_its_dictionary"],
   },
   {
     name: "library-written-into-types-unlisted",
@@ -418,6 +414,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/exports.rs",
     find: "                    (ItemFact::ReturnsJs, contracts.given.js_given.main(tcx, id).returns_js),\n",
     replace: "                    (ItemFact::ReturnsJs, false),\n",
-    tests: ["test/crates.test.ts", "-t", "impl_iterator_of_a_library"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "impl_iterator_of_a_library"],
   },
 ];

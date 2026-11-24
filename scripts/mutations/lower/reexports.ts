@@ -513,7 +513,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/reexports.rs",
     find: "        let unsaid = unsaid || std_without_js(tcx, foreign, id);\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: std_items_reexported_by_a_library"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: std_items_reexported_by_a_library"],
   },
   {
     name: "reexported-type-by-its-rust-name",

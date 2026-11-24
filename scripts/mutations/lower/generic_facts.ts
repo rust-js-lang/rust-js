@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/generic_facts.rs",
     find: "        let form = [Form::Handle, Form::Box, Form::HeldBox, Form::Tagged, Form::Placed]",
     replace: "        let form = [Form::Handle, Form::HeldBox, Form::Tagged, Form::Placed]",
-    tests: ["test/crates.test.ts", "-t", "library_generic_fn_item_forms"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "library_generic_fn_item_forms"],
   },
   {
     name: "reified-object-mut-unboxed",
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/generic_facts.rs",
     find: "                        && d.is_struct()\n",
     replace: "                        && false\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
   },
   {
     name: "placed-library-public-field-unrefused",
@@ -364,7 +364,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/generic_facts.rs",
     find: "(d, i, None)).collect()\n",
     replace: "(d, i, Some(false))).collect()\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
   },
   {
     name: "placed-within-unrefused",

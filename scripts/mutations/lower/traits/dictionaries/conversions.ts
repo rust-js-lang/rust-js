@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/dictionaries/conversions.rs",
     find: "        if !self.is_rust_fn(instance.def_id()) || self.tcx.trait_of_assoc(instance.def_id()).is_some() {\n",
     replace: "        if !self.krate.fns.contains_key(&instance.def_id()) || self.tcx.trait_of_assoc(instance.def_id()).is_some() {\n",
-    tests: ["test/crates.test.ts", "-t", "instance_converts_and_transmutes"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "instance_converts_and_transmutes"],
   },
   {
     name: "placed-conversion-unformed",
@@ -59,6 +59,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/dictionaries/conversions.rs",
     find: "            &mut values,\n            Arguments::Raw,\n            span,\n            &mut made,\n",
     replace: "            &mut values,\n            Arguments::Formed,\n            span,\n            &mut made,\n",
-    tests: ["test/crates.test.ts", "test/corpus.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code|^conversion_dictionary_given_the_crates_iterator.rs$"],
+    tests: ["test/crates-pairs-3.test.ts", "test/corpus.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code|^conversion_dictionary_given_the_crates_iterator.rs$"],
   },
 ];

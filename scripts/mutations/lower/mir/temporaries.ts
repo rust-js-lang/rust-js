@@ -587,7 +587,7 @@ export const mutations: Mutation[] = [  {
     file: "crates/rust-js-mir/src/temporaries.rs",
     find: "        let literal = |n: rust_js_lower::discriminants::Discr| n.expr(big);\n",
     replace: "        let literal = |n: rust_js_lower::discriminants::Discr| n.expr(big && false);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: wide_discriminants"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: wide_discriminants"],
   },
   {
     name: "held-dyn-debug-made-a-pair",
@@ -620,7 +620,7 @@ export const mutations: Mutation[] = [  {
     file: "crates/rust-js-mir/src/temporaries.rs",
     find: "        if state.locals.writes[local] == 0\n            && state.body.local_kind(local) != mir::LocalKind::Arg\n",
     replace: "        if false\n            && state.body.local_kind(local) != mir::LocalKind::Arg\n",
-    tests: ["test/crates.test.ts", "-t", "zero_sized_value_a_librarys_generic_impl_gives"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "zero_sized_value_a_librarys_generic_impl_gives"],
   },
   {
     name: "flushed-temporary-unasked",

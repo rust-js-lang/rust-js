@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/compiled_here.rs",
     find: "        !id.is_local() && (self.item(id).is_some() || self.is_instance(id) || self.compiles(id))\n",
     replace: "        !id.is_local() && (self.item(id).is_some() || self.compiles(id))\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_iterator_own_size_hint"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_iterator_own_size_hint"],
   },
   {
     name: "writer-given-options-the-librarys",
@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/compiled_here.rs",
     find: "            _ if self.writes.options && !library.writers_take_options => \"a placeholder's options, `{:>4}` or `{:#?}`\",\n",
     replace: "            _ if false && self.writes.options && !library.writers_take_options => \"a placeholder's options, `{:>4}` or `{:#?}`\",\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_writers_given_options"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_writers_given_options"],
   },
   {
     name: "writer-given-debug-hex-the-librarys",
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/compiled_here.rs",
     find: "            _ if self.writes.hex && !library.debug_hex => \"an integer's `{:?}` in hex, `{:x?}`\",\n",
     replace: "            _ if false && self.writes.hex && !library.debug_hex => \"an integer's `{:?}` in hex, `{:x?}`\",\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_writer_given_debug_hex"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_writer_given_debug_hex"],
   },
   {
     name: "writer-reading-nothing-compiled",
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/compiled_here.rs",
     find: "            (self.writes_more(id).is_some() || self.merges_identities(id) || self.keeps_more(id))\n",
     replace: "            (self.writes_more(id).is_some() || self.keeps_more(id))\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
   {
     name: "merging-unlisted-of-its-callers",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/compiled_here.rs",
     find: "            .filter(|(from, to)| merging.contains(to) && !merging.contains(from))\n",
     replace: "            .filter(|(from, to)| false && merging.contains(to) && !merging.contains(from))\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
   {
     name: "merging-impl-method-unresolved",
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/compiled_here.rs",
     find: "            return self.merges_identities(instance.def_id());\n",
     replace: "            return false;\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
   {
     name: "merging-impls-of-generic-code-unasked",
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/compiled_here.rs",
     find: "        !impls.is_empty()\n",
     replace: "        false && !impls.is_empty()\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
   {
     name: "merging-closures-unlisted",
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/compiled_here.rs",
     find: "            .filter(|(_, item)| item.dependencies.merges_identities)\n",
     replace: "            .filter(|_| false)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
   {
     name: "dyn-method-resolved-to-the-trait",
@@ -116,7 +116,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/library/compiled_here.rs",
     find: "            && instance.def_id() != id\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_dyn_method_identities"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_dyn_method_identities"],
   },
   {
     name: "capacity-kept-library-not-compiled-here",

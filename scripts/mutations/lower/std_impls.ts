@@ -475,11 +475,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/std_impls.rs",
     find: "            true => recognition.foreign.equal_only_to_itself(adt.did()),\n",
     replace: "            true => false,\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "equal only to itself keys its consumer",
-    ],
+    tests: ["test/crates.test.ts", "-t", "equal only to itself keys its consumer"],
   },
   {
     name: "rc-identity-unread",

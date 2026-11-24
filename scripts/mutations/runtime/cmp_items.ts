@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/cmp_items.js",
     find: "  if (!firstA || !firstB) return $iterEq(a, b, eq, dropA, dropB);\n",
     replace: "  return $iterEq(a, b, eq, dropA, dropB);\n",
-    tests: ["test/crates.test.ts", "-t", "length_first_eq"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "length_first_eq"],
   },
   {
     name: "iter-eq-pair-dropped-one-by-one",
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/runtime/cmp_items.js",
     find: "  const [lower, upper] = $sizeHint(it);\n  if (lower !== upper)",
     replace: "  const [lower, upper] = [0, 0];\n  if (lower !== upper)",
-    tests: ["test/crates.test.ts", "test/iterator-steps.test.ts", "-t", "length_first_eq|LengthFirst form"],
+    tests: ["test/crates-pairs-1.test.ts", "test/iterator-steps.test.ts", "-t", "length_first_eq|LengthFirst form"],
   },
   {
     name: "length-first-endless-counted",

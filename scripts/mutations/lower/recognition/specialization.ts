@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition/specialization.rs",
     find: "                && trait_holds_in(tcx, typing_env, held[at], bound.def_id()) != Some(true)\n",
     replace: "                && false\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_zip_of_a_vec_of_a_slots_items"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_zip_of_a_vec_of_a_slots_items"],
   },
   {
     name: "flatten-trusted-asked-whole",

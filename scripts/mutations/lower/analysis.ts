@@ -231,11 +231,7 @@ export const mutations: Mutation[] = [
     find: "                (params_may_drop, &reached.counted_rcs, &|owner, index, pointee| {\n",
     replace:
       "                (params_may_drop, &[], &|owner, index, pointee| {\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "two crates: rc_per_type|two crates: rc_counted_by_its_library_alone|three crates: rc_generic",
-    ],
+    tests: ["test/crates-pairs-1.test.ts", "test/crates-pairs-3.test.ts", "-t", "two crates: rc_per_type|two crates: rc_counted_by_its_library_alone|three crates: rc_generic"],
   },
   {
     name: "library-rcs-uncounted",
@@ -245,11 +241,7 @@ export const mutations: Mutation[] = [
     find: "    let params_may_drop = crate::traits::may_have_destructors(tcx, (&foreign, library));\n    let reached = foreign.reached(all_bodies);\n",
     replace:
       "    let params_may_drop = crate::traits::may_have_destructors(tcx, (&foreign, false));\n    let reached = foreign.reached(all_bodies);\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "reads no count|two crates: assoc_drop",
-    ],
+    tests: ["test/crates.test.ts", "test/crates-pairs-1.test.ts", "-t", "reads no count|two crates: assoc_drop"],
   },
   {
     name: "fn-given-always-quiet",
@@ -466,7 +458,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis.rs",
     find: "        if let Some(apart) = foreign.closure_cloned_apart(id) {\n            return !apart;\n        }\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_closures_cloned_as_made"],
   },
   {
     name: "generic-clones-unseen-by-rc-counts",
