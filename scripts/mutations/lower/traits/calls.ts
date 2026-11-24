@@ -724,4 +724,12 @@ export const mutations: Mutation[] = [
     replace: "        match false {\n",
     tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
   },
+  {
+    name: "own-bound-unplaced",
+    breaks: "a method's own bound, a trait default's `Self::Item: IntoIterator`, gives generic code that holds what it makes in a place its plain dictionary, so it holds a unit struct's iterator bare, `$held(undefined)` (#2466)",
+    file: "crates/rust-js-lower/src/traits/calls.rs",
+    find: "                    let made = match self.placed_dictionary(id, (bound, instantiated), span)? {\n",
+    replace: "                    let made = match None::<Expr> {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_trait_default_into_iters_items_held_as_no_object"],
+  },
 ];

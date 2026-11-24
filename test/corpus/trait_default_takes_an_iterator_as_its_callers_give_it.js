@@ -118,11 +118,22 @@ function main() {
           [0],
           {},
           {
-            intoIter: (items) => items,
-            IntoIterIterator: () => ({
-              next: neverIterator_next,
-              sizeHint: neverIterator_sizeHint,
-            }),
+            ...$throughPlace(
+              {
+                intoIter: (items) => items,
+                IntoIterIterator: () => ({
+                  next: neverIterator_next,
+                  sizeHint: neverIterator_sizeHint,
+                }),
+              },
+              { intoIter: [1] },
+              { intoIter: 1 },
+            ),
+            IntoIterIterator: () =>
+              $throughPlace(
+                { next: neverIterator_next, sizeHint: neverIterator_sizeHint },
+                { sizeHint: [1] },
+              ),
           },
         ),
         (iterator) =>

@@ -1054,14 +1054,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             match slot {
                 Slot::Location => values.extend(location.take()),
                 Slot::Const(index) => values.push(self.const_arg(generic_args.const_at(index as usize), span)?),
-                Slot::Bound(bound) => values.push(
-                    self.dictionary(
-                        ty::EarlyBinder::bind(self.tcx, bound)
-                            .instantiate(self.tcx, generic_args)
-                            .skip_normalization(),
-                        span,
-                    )?,
-                ),
+                // Of a type generic code holds in a place of its own, its
+                // entries read the place, through a dictionary's method's own
+                // bounds as through a call's (#2255, #2466).
+                Slot::Bound(bound) => {
+                    let instantiated = ty::EarlyBinder::bind(self.tcx, bound)
+                        .instantiate(self.tcx, generic_args)
+                        .skip_normalization();
+                    let made = match self.placed_dictionary(id, (bound, instantiated), span)? {
+                        Some(placed) => placed,
+                        None => self.dictionary(instantiated, span)?,
+                    };
+                    values.push(made);
+                }
                 Slot::Fact(index, fact) if !keep(index, fact) => {}
                 Slot::Fact(index, _) if !self.gives_slot(id, index, generic_args) => values.push(Expr::js_undefined()),
                 Slot::Fact(index, fact) => {

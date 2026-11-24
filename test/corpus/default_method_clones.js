@@ -5,7 +5,7 @@
 // which a clone can share, and `b`'s a `Vec`, which a clone must copy,
 // though both clone a `Holder<T>`.
 
-import { $main } from "@rust-js/std";
+import { $main, $throughPlace } from "@rust-js/std";
 
 function numbersIterator_next(numbers) {}
 
@@ -18,11 +18,11 @@ $main(main);
 function main() {
   const clone = { clone: (value) => value };
   const n = { item: 1 };
-  let c = sTr.a(n, clone);
+  let c = sTr.a(n, $throughPlace(clone, { clone: [1] }, { clone: 1 }));
   console.log(`${n.item} ${c.item}`);
 
   const h = { item: [1] };
-  c = sTr.b(h, clone);
+  c = sTr.b(h, $throughPlace(clone, { clone: [1] }, { clone: 1 }));
   c.item.push(2);
   console.log(`[${h.item.join(", ")}] [${c.item.join(", ")}]`);
 }

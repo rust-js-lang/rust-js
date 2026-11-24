@@ -518,3 +518,23 @@ Results changed: ADR 0262's third case. Corpus
 structs (test/iterator-forms.test.ts), agrees with native. Mutations
 `random-access-of-steps-told-the-types`, `stepped-as-js-given-a-dictionary`
 and `stepped-as-js-of-what-it-doesnt-step`.
+
+## Amendment: a method's own bound of a placed iterator, its dictionary placed (2026-11-24, #2466)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): JS threw a
+`TypeError` where Rust returned.
+
+A dictionary of a type generic code holds in a place of its own
+(`Form::Placed`, #2255) was placed where a call gives its callee's bounds
+from its caller's, but a method's own where-clause bound, given from the
+types it's called with (`own_evidence_keeping`'s `Slot::Bound`), was its
+plain dictionary: itertools' `multi_cartesian_product`, a trait default
+whose `Self::Item: IntoIterator` makes each item an iterator, held a unit
+struct's, `undefined`, bare and threw, `$held(undefined)`. Each such bound
+now asks `placed_dictionary` as a call's does, its entries reading and
+making the place. Held by the crate pair
+`library_trait_default_into_iters_items_held_as_no_object` (a unit
+struct's iterator, lazy, and a fieldless enum's, stepped), itertools'
+Crater (`tests/laziness.rs::multi_cartesian_product` as native, its line
+gone from `scripts/crater-decided.txt`), and the mutation
+`own-bound-unplaced`.
