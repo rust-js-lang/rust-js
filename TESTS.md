@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (ADR 1200 amended): test/mutations.test.ts' check of each mutation's test pattern is each mutation's tests, a file there and a test it names, refused as a list of what to run (`refuseUnmatched`), of a file named by templates by Bun's listing where the change touches it (test/test-names.ts, new); a test of the read and the listing; three mutations (scripts/mutations/test-names.ts).
+
 Changed on 2026-11-25 (#2485, ADR 1154 amended): test/source-mutations.test.ts gains a test, a source workspace's files are the working tree's, its untracked files too, not its ignored, its deleted nor a nested checkout; three mutations.
 
 Changed on 2026-11-25 (#2564, ADR 1092 amended): corpus gains `fallible_collect_drops_what_it_collected_as_its_close_panics`, an `Option` or `Result` collect stopped early whose close panics dropping what it collected, then the `Err`; test/known/metamorphic/2564.txt is gone, its `loud-drop` rewrite native-equal.

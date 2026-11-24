@@ -58,3 +58,27 @@ mutations `case-list-unmatched-run`, `case-list-only-none-matched-refused`,
 `case-list-path-unexplained`, `corpus-case-list-unchecked`,
 `corpus-case-list-held-to-the-runners-cases` (scripts/mutations/case-lists.ts
 and support.ts).
+
+## Amendment (2026-11-25): a mutation's tests are a list of what to run too
+
+A mutation's `tests`, a test file and a `-t` pattern of its tests, are a
+list of what to run, given to Bun. #2542 (c5ca09901) took away the test
+`never-holding-fact-asked` named, in test/crates.test.ts, and `main` went
+red on CI, the mutation INCONCLUSIVE, "its tests run nothing". The
+catalogue's own test read each file's literal test names and skipped a file
+with any test named otherwise, by a template or a value, which
+test/crates.test.ts is; and the runner's controls, which would have said so,
+ran only on CI, as the mutation was none of the change's.
+
+The catalogue's test now asks `refuseUnmatched` of every mutation's
+`tests`, `<name>: <file> -t <pattern>`: the file is there, and its pattern
+names a test of it (`namesATest`, test/test-names.ts). Of a file whose tests
+are all literals, its read names. Of one whose aren't, that the change
+touches or that a mutation it adds or edits names, Bun's own listing of
+its tests, `listedTests`: the file run with a pattern none has, its JUnit
+report naming each test it skipped, about 0.6 s a file and 9 s of
+test/compiler.test.ts', at once on the cores. Any other such file is the
+runner's controls' to judge, as before: listing every one, 54 files, took
+9 s of the 18 cores on each run. It's test/mutations.test.ts, which
+`bun run push` runs in its first seconds, `fast`, so a push that takes
+away a test a mutation names stops there, naming the mutation.

@@ -4,13 +4,12 @@
 
 import { expect, test } from "bun:test";
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, Answers, heartbeat, failingOf, bySnapshots, inconclusiveSaid, judgedApart, unplaced, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, timedOut, lists, unitsAsItIs, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, snapshotParts, removedOfCrate, retireControls, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
+import { againstWholeCorpus, Answers, heartbeat, failingOf, bySnapshots, inconclusiveSaid, judgedApart, unplaced, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, timedOut, lists, unitsAsItIs, mutate, mutations, ownSince, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, snapshotParts, removedOfCrate, retireControls, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
 import type { ControlPart } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
-import { cratePairParts, partOf } from "../scripts/shard";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
 import { run as runChild, runSync, type Exit } from "./child";
@@ -19,6 +18,8 @@ import { installPackages } from "./packages-of";
 import { node } from "./programs";
 import { limitations } from "./limitations-of";
 import { fixture, root, run } from "./support";
+import { refuseUnmatched } from "./case-lists";
+import { listedTests, namesATest, testNamesOf } from "./test-names";
 import { compilerRustFiles, crateOf, isCompilerSource } from "../scripts/compiler-crates";
 
 // What the crate includes from beyond `src/`, `include_str!("../../../test/
@@ -264,53 +265,54 @@ test("every source file of more than 80 lines has mutations, or says why it need
 });
 
 // So code that moves takes its mutations with it, to the list of where it went.
-// Each mutation's `-t` names a test its file has: one that names none, of a
-// test moved to another file, ran nothing as the compiler is, and CI's
-// mutations shard said so only when it ran (the closures' guard tests split
-// from lowering-drop-guards.test.ts). Of a file whose tests are each named
-// by a literal, read without running it.
-test("each mutation's test pattern names a test of its file", () => {
-  // Each file's tests named by a literal, and whether others are named
-  // where they run, of a template or a value, which aren't read here.
-  const named = new Map<string, { names: string[]; dynamic: boolean }>();
-  const namesOf = (file: string) => {
-    if (!named.has(file)) {
-      const source = existsSync(join(root, file)) ? readFileSync(join(root, file), "utf8") : "";
-      const literal = /^\s*(?:test|it)(?:\.\w+)?\(\s*"((?:[^"\\]|\\.)*)"/gm;
-      const dynamic = /^\s*(?:test|it)(?:\.\w+)?\(\s*[^"\s]/m.test(source) || !file.endsWith(".test.ts");
-      // The corpus's tests are its cases, each by its file's name; a
-      // snapshots file's, each row of the table it gives `snapshotTests`
-      // (test/snapshot-cases.ts), by its name.
-      const cases = file === "test/corpus.test.ts"
-        ? readdirSync(join(root, "test/corpus")).filter((name) => name.endsWith(".rs"))
-        : source.includes("snapshotTests(")
-          ? [...source.matchAll(/^\s*\["(\w+)", "/gm)].map((m) => `${m[1]}: the generated JS is its snapshot`)
-          : /^test\/crates-pairs-(\d+)\.test\.ts$/.test(file)
-            ? // A part of the crate pairs' table: the pairs `partOf` puts in it.
-              readdirSync(join(root, "test/crates/pairs"))
-                .filter((name) => partOf(name, cratePairParts) === Number(/(\d+)\.test\.ts$/.exec(file)![1]))
-                .map((name) => `two crates: ${name}`)
-            : [];
-      named.set(file, { names: [...cases, ...[...source.matchAll(literal)].map((m) => JSON.parse(`"${m[1]}"`))], dynamic });
-    }
-    return named.get(file)!;
-  };
-  const unmatched = mutations.flatMap((m) => {
-    const [file, ...args] = m.tests ?? [];
-    const at = args.indexOf("-t");
-    if (file === undefined || at < 0) return [];
-    const { names, dynamic } = namesOf(file);
-    const pattern = new RegExp(args[at + 1]);
-    if (names.some((name) => pattern.test(name))) return [];
-    if (dynamic) return [];
-    return [`${m.name}: ${file} -t ${args[at + 1]}`];
-  });
-  // Of a file naming others where they run, a pattern that names none of
-  // its literal names isn't read here: the runner's controls run each
-  // mutation's tests as the compiler is first and refuse one that runs
-  // nothing (scripts/mutations.ts), on a push, CI's run and each night's.
-  expect(unmatched).toEqual([]);
-});
+// Each mutation's `tests` are a file there and, of a `-t`, a test it has:
+// one that names none, of a test moved to another file, ran nothing as the
+// compiler is, and CI's mutations shard said so only when it ran (the
+// closures' guard tests split from lowering-drop-guards.test.ts; #2542's
+// `never-holding-fact-asked`, of test/crates.test.ts, whose other tests are
+// named by templates, which a read of the file's literals skipped, red
+// `main`, 2026-11-25). Of a file whose tests are all literals, read; of one
+// whose aren't that the change touches, or that a mutation it adds or edits
+// names, Bun's own listing of its tests (`listedTests`), each at once; the
+// rest the runner's controls judge as they run. Refused as every list of
+// what to run is (`refuseUnmatched`), in a push's first seconds, `fast`.
+test("each mutation's tests are a file there and a test of it its pattern names", async () => {
+  const said = new Map(
+    mutations.flatMap((m): [string, [string, string | undefined]][] => {
+      const [file, ...args] = m.tests ?? [];
+      if (file === undefined) return [];
+      const at = args.indexOf("-t");
+      const pattern = at < 0 ? undefined : args[at + 1];
+      return [[`${m.name}: ${file}${pattern === undefined ? "" : ` -t ${pattern}`}`, [file, pattern]]];
+    }),
+  );
+  const base = runSync(["git", "merge-base", "HEAD", "origin/main"], root, 30_000).stdout.trim();
+  const changed = new Set(base === "" ? [] : [...runSync(["git", "diff", "--name-only", base], root, 30_000).stdout.split("\n"), ...runSync(["git", "ls-files", "--others", "--exclude-standard"], root, 30_000).stdout.split("\n")].filter(Boolean));
+  const own = new Set(base === "" ? [] : (await ownSince(base)).flatMap((m) => m.tests?.slice(0, 1) ?? []));
+  const unread = [...new Set([...said.values()].map(([file]) => file))].filter((file) => (changed.has(file) || own.has(file)) && testNamesOf(file).exists && !testNamesOf(file).complete);
+  const listed = listedTests(unread, join(fixture("test-listings"), "reports"));
+  let refused = "";
+  try {
+    refuseUnmatched([...said.keys()], (entry) => said.has(entry) && namesATest(...said.get(entry)!, listed), { list: "the mutations' `tests`", what: "a file there and a test of it" });
+  } catch (error) {
+    refused = (error as Error).message;
+  }
+  expect(refused).toBe("");
+}, underLoad(60_000));
+
+test("a pattern names a test of a file by its literal names, of one named otherwise by Bun's listing, and none of a file that isn't there", async () => {
+  const dir = fixture("test-names");
+  const file = relative(root, join(dir, "named.test.ts"));
+  writeFileSync(join(root, file), 'import { test } from "bun:test";\ntest("a literal name", () => {});\nfor (const name of ["x"])\n  test(`two crates: ${name}`, () => {});\n');
+  // Read, any pattern may name a test named by a template.
+  expect([namesATest(file, "a literal"), namesATest(file, "two crates: x"), namesATest(file, "never"), namesATest(file, undefined)]).toEqual([true, true, true, true]);
+  // Listed by Bun, only what it has: not what a test of it took away, as
+  // #2542's, or never had.
+  const listed = listedTests([file], join(dir, "reports"));
+  expect([namesATest(file, "a literal", listed), namesATest(file, "two crates: x", listed), namesATest(file, "a zip of what's never random access", listed), namesATest(file, "two crates: y", listed)]).toEqual([true, true, false, false]);
+  const gone = relative(root, join(dir, "gone.test.ts"));
+  expect([namesATest(gone, undefined), namesATest(gone, "x")]).toEqual([false, false]);
+}, underLoad(60_000));
 
 // A test failing as the compiler is leaves its own mutations unjudged, and
 // only those: nightly 44963035271's shards 5, 9, 10 and 12 judged none of
