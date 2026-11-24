@@ -32,8 +32,6 @@ function steppedDisplay_fmt(stepped) {
   return f.done();
 }
 
-$main(main);
-
 function main() {
   const s = $formatting(() => loudDebug_fmt([1]));
   $out(`format ${s}\n`);
@@ -48,6 +46,8 @@ function main() {
 }
 
 const loudFmtString = { fmtString: loudFmtString_fmtString };
+$main(main);
+
 function loudFmtString_fmtString(loud) {
   return loudDebug_fmt(loud);
 }

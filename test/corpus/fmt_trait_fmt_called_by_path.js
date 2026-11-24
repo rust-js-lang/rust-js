@@ -111,8 +111,8 @@ function fullWrite_writeStr(full, s) {
   full[0] = (full[0] - $byteLen(s)) >>> 0;
 }
 
-$main(main);
 export const stdDisplay = { fmt: stdDisplay_fmt };
+$main(main);
 function stdDisplay_fmt(std, options) {
   let f = $formatted("5", options, true);
   f += " ";

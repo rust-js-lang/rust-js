@@ -987,6 +987,31 @@ pub fn names_jump(stmts: &[Stmt], label: &Name) -> bool {
     })
 }
 
+/// `items`, in load order, with a binary's start, `entry`, `$main(main)`,
+/// moved past every `const`, namespace and statement load order left after
+/// it, so it runs last of all its module makes as it loads; functions, made
+/// as the load begins, may follow. Load order places the start by what
+/// `main` reads in its own module, but through an import cycle another
+/// module's function `main` calls may call back into this one and read what
+/// it declares after `main`, a generic impl's cache, unmade where the start
+/// was placed (#2527).
+pub fn entry_last(mut items: Vec<Item>, entry: Option<&[Stmt]>) -> Vec<Item> {
+    let Some(entry) = entry else { return items };
+    let Some(at) = items
+        .iter()
+        .position(|item| matches!(item, Item::Statements(stmts) if stmts == entry))
+    else {
+        return items;
+    };
+    if let Some(last) = (items.iter()).rposition(|item| !matches!(item, Item::Function(_)))
+        && last > at
+    {
+        let start = items.remove(at);
+        items.insert(last, start);
+    }
+    items
+}
+
 /// `items` where their Rust has them, each made when its module loads
 /// after the `const`s and types it reads, the functions' it calls read
 /// too, closures' too: JS throws on a `const` read before it's made, where

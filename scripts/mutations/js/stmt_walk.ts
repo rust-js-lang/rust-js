@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "entry-where-main-reads-place-it",
+    breaks:
+      "a binary's `$main(main)` stays where `main`'s own reads in its module place it, so a generic impl's cache declared after `main`, which `main` reaches through another module's call back in, is read before it's made, and the JS throws where Rust prints (a wrong answer, #2527)",
+    file: "crates/rust-js-program/src/js/stmt_walk.rs",
+    find: "        && last > at\n",
+    replace: "        && last > at && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^main_through_a_cycle_reaches_an_impl_cache.rs$"],
+  },
+  {
     name: "same-without-facts",
     breaks:
       "statements alike but for what's known of their parts are the same, so one arm's field read stands for another's getter, its facts taken for both (rd687)",

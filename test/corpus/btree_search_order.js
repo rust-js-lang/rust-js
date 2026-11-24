@@ -170,8 +170,6 @@ function run(name, boom$1, f) {
   console.log(`${r.TAG === "Ok" ? "ended" : "panicked"}`);
 }
 
-$main(main);
-
 function main() {
   const keys = [5, 2, 8, 1, 9, 3, 7, 4, 6, 10, 11];
   for (let boom$1 = 0; boom$1 < 4; boom$1++) {
@@ -656,6 +654,8 @@ function qPartialOrd_partialCmp(q, other) {
 }
 
 export const qOrd = $ord({ PartialOrd: () => qPartialOrd, cmp: qOrd_cmp });
+$main(main);
+
 function qOrd_cmp(q, other) {
   return $cmp(q[0], other[0]);
 }

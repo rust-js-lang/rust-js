@@ -208,3 +208,24 @@ as clearly at run time as at compile time). Held by binaries.test.ts'
 `exited` reads the line (status 1 alone), and mutations
 `binary-refusal-uncaught`, `binary-refusal-placed-in-the-runtime` and
 `rustc-run-refusal-of-any-status`.
+
+## Amendment: the start runs after all its module makes (2026-11-24, #2527)
+
+`$main(main)` was placed by load order (ADR 0306), which reads only what
+`main` reaches in its own module. Through an import cycle, `main` may call
+another module's function that calls back into this one and reads what it
+declares after `main`, such as a generic impl's cache, `const $wrapShow = new
+WeakMap()`. The start ran before that `const` was made, and the JS threw
+`Cannot access '$wrapShow' before initialization` where Rust printed. This
+was a wrong answer, found by #2481's `observe-borrows` rewrite in
+`guard_held_in_an_undo_stack.rs`, whose `main` calls its `tests` module's
+functions.
+
+The start now runs last of all its module makes as it loads.
+`js::entry_last`, beside `in_load_order`, moves it past each `const`,
+namespace and statement that load order left after it. It never moves the
+start earlier, so a module whose start already ran last prints as it did,
+and only functions, made as the load begins, follow it. This is ADR 0262's
+"results change" case: Rust's behavior is preserved however the output
+reads. Held by the corpus case `main_through_a_cycle_reaches_an_impl_cache`
+and the mutation `entry-where-main-reads-place-it`.
