@@ -5,10 +5,12 @@
 
 use super::*;
 
+mod cloned_at;
 mod raised;
 mod rows;
 mod stored;
 
+pub(crate) use cloned_at::{ClonedBy, cloned_by};
 pub(crate) use raised::raised_catalogue;
 pub(crate) use rows::Rows;
 pub(crate) use stored::catalogue;

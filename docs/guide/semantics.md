@@ -2752,3 +2752,10 @@ React and JSX are [their own pages](README.md#react).
     addresses there, which JS has none of (ADR 0262, Tu's decision,
     2026-11-24, #2447;
     [ADR 1198](../decisions/1198-the-corpuss-main-build-is-the-binary.md)).
+65. A `BTreeMap`'s or a `BTreeSet`'s clone of a `RefCell` mutably borrowed
+    names std's line of a leaf's entries, `map.rs:258`, wherever the entry
+    is: native std's names its internal nodes' line, `map.rs:278`, of an
+    entry in one, of a map past eleven entries, which depends on how it was
+    built and changed and rust-js's map, a sorted array, doesn't keep. The
+    panic, its message and payload are Rust's; only the hook's line of such
+    an entry differs (ADR 0262, Tu's decision, 2026-11-24, #2509).

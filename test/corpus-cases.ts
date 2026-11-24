@@ -63,11 +63,13 @@ export function nondeterministic(source: string): string | undefined {
 }
 
 /** The issue and why a case's panic is raised otherwise than native's, as
- * its `//@ located-otherwise: #<issue> <why>` says (#2292): every net
+ * its `//@ located-otherwise: #<issue> <why>` says (#2292), or the guide's
+ * difference it is, an ADR 0262 exception, `difference <n>, <why>`
+ * (#2509): every net
  * compares its runs but for where it was raised (`runNative`'s), and the
  * corpus that it still differs. */
 export function locatedOtherwise(source: string): string | undefined {
-  return /^\/\/@ located-otherwise: (#\d+ .+)$/m.exec(source)?.[1];
+  return /^\/\/@ located-otherwise: ((?:#\d+|difference \d+,?) .+)$/m.exec(source)?.[1];
 }
 
 /** What a case's directives say, or the problems with them. */
@@ -93,7 +95,7 @@ export function directives(source: string): Directives | string {
     else if (name === "library-differs" && value === undefined) libraryDiffers = true;
     else if (name === "instances-keep-cost" && value) instancesKeepCost = value;
     else if (name === "nondeterministic" && value) why = value;
-    else if (name === "located-otherwise" && value && /^#\d+ ./.test(value)) located = value;
+    else if (name === "located-otherwise" && value && /^(?:#\d+|difference \d+,?) ./.test(value)) located = value;
     else if (name === "run-pass" && value === undefined) found.push({ kind: "run-pass" });
     else if (name === "run-fail" && value) found.push({ kind: "run-fail", message: value.replaceAll("\\n", "\n") });
     else if (name === "run-abort" && value === undefined) found.push({ kind: "run-abort" });

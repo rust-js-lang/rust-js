@@ -39,7 +39,7 @@ function main() {
     pairs,
     (value) =>
       value.map((item) => {
-        const value = $borrow(item, $stdSites.sliceToVec[1]).value;
+        const value = $borrow(item, $stdSites.clonedAt["alloc::vec::Vec"][0]).value;
         return { value: [value[0], value[1]] };
       }),
     "test/corpus/refcell_clone_nested_parts.rs:13:24",

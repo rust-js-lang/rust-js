@@ -125,9 +125,11 @@ export function stdSites(raised: string, root: string): string {
   const version = spawnSync("rustc", ["-vV"], { cwd: resolve(root), encoding: "utf8" }).stdout;
   const commit = /^commit-hash: ([0-9a-f]{40})$/m.exec(version)?.[1];
   if (commit === undefined) throw new Error(`rustc -vV names no commit:\n${version}`);
+  // A type parameter's position no `RefCell` reaches, `clonedAt`'s `null`,
+  // stays one (#2509).
   const placed = (sites: unknown): unknown =>
     Array.isArray(sites)
-      ? sites.map((site) => vendoredSite(site, root) ?? `/rustc/${commit}/${site}`)
+      ? sites.map((site) => (site === null ? null : vendoredSite(site, root) ?? `/rustc/${commit}/${site}`))
       : Object.fromEntries(Object.entries(sites as object).map(([tag, each]) => [tag, placed(each)]));
   // And the root itself, `source`, which a std location the compiler
   // writes in a program's JS is joined to: a shim's of std's, or a std
@@ -155,7 +157,11 @@ function vendoredSite(site: string, root: string): string | undefined {
   const sysroot = spawnSync("rustc", ["--print", "sysroot"], { cwd: resolve(root), encoding: "utf8" }).stdout.trim();
   const lib = join(sysroot, "lib", "rustlib", "wasm32-unknown-unknown", "lib");
   const named = new RegExp(`(/[\\x21-\\x7e]*?/)${dir.replaceAll(".", "\\.")}/${file.replaceAll(".", "\\.")}`);
-  for (const rlib of readdirSync(lib).filter((name) => name.startsWith(`lib${crate.replaceAll("-", "_")}-`) && name.endsWith(".rlib"))) {
+  // Its `.rlib`'s debug info names the files its code is of, and its
+  // `.rmeta`'s source map every file its metadata's MIR is, a generic
+  // impl's, hashbrown's `map.rs` (#2509).
+  const shipped = readdirSync(lib).filter((name) => name.startsWith(`lib${crate.replaceAll("-", "_")}-`) && /\.(rlib|rmeta)$/.test(name));
+  for (const rlib of shipped) {
     const found = named.exec(readFileSync(join(lib, rlib), "latin1"));
     if (found !== null) return `${found[1]}${dir}/${file}:${line}:${column}`;
   }

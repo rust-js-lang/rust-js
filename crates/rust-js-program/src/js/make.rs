@@ -369,6 +369,14 @@ impl Expr {
         Expr::index(Expr::member(Expr::helper("$stdSites"), name), Expr::int(at as i128))
     }
 
+    /// The `at`th site of `name`'s row `tag`, `$stdSites.clonedAt[tag][at]`:
+    /// of a row by a std type's key, `"core::option::Option"`, as `bun run
+    /// std` writes it (#2509).
+    pub fn std_site_of(name: &str, tag: &str, at: usize) -> Expr {
+        let row = Expr::index(Expr::member(Expr::helper("$stdSites"), name), Expr::str(tag));
+        Expr::index(row, Expr::int(at as i128))
+    }
+
     pub fn call_helper(name: &'static str, args: Vec<Expr>) -> Expr {
         Expr::call(Expr::helper(name), args)
     }

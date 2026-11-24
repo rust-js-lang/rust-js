@@ -103,3 +103,16 @@ test("the runtime makes a panic's Error only through $panic", () => {
   }
   expect(unsaid).toEqual([]);
 });
+
+// Where a std type's clone raises a `RefCell`'s panic is std's MIR's, read
+// of the impl rustc resolves the clone to (`clonedAt`, `cloned_by`),
+// never a list of std types the lowering keeps: #2471's named eight, and
+// `HashMap`'s and `BTreeMap`'s, which it didn't, named the caller's line
+// (#2509). `clone_site` names no std type but the `RefCell` it asks of.
+test("a std type's clone site is read of the impl rustc resolves, not a list of types", () => {
+  const source = read("crates/rust-js-lower/src/std_impls/clones.rs");
+  const at = source.indexOf("    fn clone_site(");
+  const body = source.slice(at, source.indexOf("\n    }\n", at));
+  expect(body).toContain("cloned_by(");
+  expect([...body.matchAll(/StdItem::(\w+)|LangItem::(\w+)/g)].map((m) => m[1] ?? m[2]).filter((name) => name !== "RefCell" && name !== "CloneFn")).toEqual([]);
+});

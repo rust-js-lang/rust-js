@@ -511,3 +511,39 @@ sites themselves, and the rows serve only the in-place forms; #1458 keeps
 them in step. Held by eighteen corpus cases, one per site, the nested one
 and one that an adapter's site never names a later panic, the unit test
 `held_steps_are_the_catalogs`, and the mutations of each row's use.
+
+## Amendment: a std type's clone site is read of std's MIR, not a list (2026-11-24, #2509)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a panic named the
+caller's line where Rust names std's.
+
+#2471 read a container's clone site from rows of eight types it listed; a
+`HashMap`'s and a `BTreeMap`'s clone of a borrowed `RefCell` named the
+caller's line. The rule is wider: wherever std's clone of a type calls a
+`RefCell`'s `clone`, the frame nearest it that doesn't track its caller.
+`bun run std` now walks std's monomorphic MIR from each std `Clone` impl
+(`raised_through`), each type parameter that may be a `RefCell` (its
+impl's clauses may hold of one) a `RefCell<u8>`, another its type's
+default or a `u8`, through each call that holds it, resolved as rustc does,
+specialized and through shims, at codegen's frame: through an inlined
+function that doesn't track its caller, that function's line,
+`option::IntoIter`'s `Option::clone`. It writes `clonedAt[type][position]`,
+91 types. Of the five whose walk finds several sites, `VecDeque`'s
+`try_fold` and `fold`, a `BTreeMap`'s leaf and internal nodes, a native
+oracle settles it (test/std-cloned-at.rs, `cloned_at_oracle.txt`), and
+`bun run std` refuses one it has none of. The lowering's `clone_site`
+resolves the clone's impl and reads its row, `$stdSites.clonedAt[key]
+[position]`, by the same owner (`cloned_at_site`), a map's key and value
+each its own position, a std enum's variant its field's; one where no
+`RefCell` may be needs none, and a std impl with no row where one may be
+is refused. A `BTreeMap`'s entry in an internal node names the leaf's line,
+the guide's difference 65, Tu's decision. #2471's container rows are gone.
+Held by the corpus cases of a `HashMap`, a `BTreeMap` and a `VecDeque`,
+`btree_map_clone_of_an_inner_entry_names_the_leaf_line` (`located-otherwise`
+by difference 65), test/binaries.test.ts' container rows,
+test/std-cloned-at.test.ts, the architecture test that `clone_site` names
+no std type, and the mutations `clone-site-of-std-unread`,
+`map-parts-unsited`, `cloned-at-inlined-frames-skipped`,
+`cloned-at-oracle-unread`, `cloned-at-defaults-unused` and
+`cloned-at-key-shapes-unsaid`. The item-cloning models, a `cloned()`'s, an
+`extend_from_slice`'s and an `Option<&T>`'s `cloned`, follow.

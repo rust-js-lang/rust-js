@@ -154,23 +154,6 @@ const $stdSites = {
   "ordClamp": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cmp.rs:1166:9"
   ],
-  "optionClone": [
-    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
-  ],
-  "resultClone": [
-    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1898:27",
-    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1899:29"
-  ],
-  "sliceToVec": [
-    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:21",
-    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38"
-  ],
-  "boxClone": [
-    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone/uninit.rs:20:33"
-  ],
-  "arrayClone": [
-    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/array/mod.rs:494:21"
-  ],
   "tupleClone": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone.rs:236:5"
   ],
@@ -275,6 +258,321 @@ const $stdSites = {
   "saturatingOp": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/saturating.rs:551:1"
   ],
+  "clonedAt": {
+    "[T; N]": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/array/mod.rs:494:21"
+    ],
+    "alloc::borrow::Cow": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/borrow.rs:78:14"
+    ],
+    "alloc::boxed::Box": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone/uninit.rs:20:33",
+      null
+    ],
+    "alloc::boxed::Box<[_], _>": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
+      null
+    ],
+    "alloc::boxed::iter::BoxedArrayIntoIter": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
+      null,
+      null
+    ],
+    "alloc::collections::binary_heap::BinaryHeap": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
+      null
+    ],
+    "alloc::collections::binary_heap::IntoIter": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
+      null
+    ],
+    "alloc::collections::binary_heap::IntoIterSorted": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
+      null
+    ],
+    "alloc::collections::btree::map::BTreeMap": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/btree/map.rs:258:45",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/btree/map.rs:258:56",
+      null
+    ],
+    "alloc::collections::btree::set::BTreeSet": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/btree/map.rs:258:45",
+      null
+    ],
+    "alloc::collections::linked_list::IntoIter": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
+      null
+    ],
+    "alloc::collections::linked_list::LinkedList": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
+      null
+    ],
+    "alloc::collections::vec_deque::VecDeque": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
+      null
+    ],
+    "alloc::collections::vec_deque::into_iter::IntoIter": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
+      null
+    ],
+    "alloc::vec::Vec": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
+      null
+    ],
+    "alloc::vec::into_iter::IntoIter": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
+      null
+    ],
+    "core::array::iter::IntoIter": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/array/iter/iter_inner.rs:132:31",
+      null
+    ],
+    "core::array::iter::iter_inner::PolymorphicIter<?>": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/array/iter/iter_inner.rs:132:31"
+    ],
+    "core::async_iter::from_iter::FromIter": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/async_iter/from_iter.rs:12:10"
+    ],
+    "core::cell::once::OnceCell": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell/once.rs:406:49"
+    ],
+    "core::cmp::KeyAndValue": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cmp.rs:752:23",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cmp.rs:752:23"
+    ],
+    "core::cmp::Reverse": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cmp.rs:740:24"
+    ],
+    "core::future::ready::Ready": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
+    ],
+    "core::io::cursor::Cursor": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/io/cursor.rs:288:36"
+    ],
+    "core::iter::adapters::chain::Chain": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
+    ],
+    "core::iter::adapters::cloned::Cloned": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:17:10"
+    ],
+    "core::iter::adapters::copied::Copied": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/copied.rs:18:10"
+    ],
+    "core::iter::adapters::cycle::Cycle": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cycle.rs:12:10"
+    ],
+    "core::iter::adapters::enumerate::Enumerate": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/enumerate.rs:14:10"
+    ],
+    "core::iter::adapters::filter::Filter": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/filter.rs:20:10",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/filter.rs:20:10"
+    ],
+    "core::iter::adapters::filter_map::FilterMap": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/filter_map.rs:17:10",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/filter_map.rs:17:10"
+    ],
+    "core::iter::adapters::flatten::FlattenCompat": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
+    ],
+    "core::iter::adapters::fuse::Fuse": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
+    ],
+    "core::iter::adapters::inspect::Inspect": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/inspect.rs:17:10",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/inspect.rs:17:10"
+    ],
+    "core::iter::adapters::map::Map": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/map.rs:60:10",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/map.rs:60:10"
+    ],
+    "core::iter::adapters::map_while::MapWhile": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/map_while.rs:16:10",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/map_while.rs:16:10"
+    ],
+    "core::iter::adapters::map_windows::Buffer": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/array/mod.rs:494:21",
+      null
+    ],
+    "core::iter::adapters::rev::Rev": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/rev.rs:12:10"
+    ],
+    "core::iter::adapters::scan::Scan": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/scan.rs:16:10",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/scan.rs:16:10",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/scan.rs:16:10"
+    ],
+    "core::iter::adapters::skip::Skip": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/skip.rs:18:10"
+    ],
+    "core::iter::adapters::skip_while::SkipWhile": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/skip_while.rs:16:10",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/skip_while.rs:16:10"
+    ],
+    "core::iter::adapters::step_by::StepBy": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/step_by.rs:16:10"
+    ],
+    "core::iter::adapters::take::Take": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/take.rs:14:10"
+    ],
+    "core::iter::adapters::take_while::TakeWhile": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/take_while.rs:16:10",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/take_while.rs:16:10"
+    ],
+    "core::iter::adapters::zip::Zip": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/zip.rs:10:10",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/zip.rs:10:10"
+    ],
+    "core::iter::sources::from_coroutine::FromCoroutine": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/from_coroutine.rs:38:10"
+    ],
+    "core::iter::sources::from_fn::FromFn": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/from_fn.rs:59:10"
+    ],
+    "core::iter::sources::once::Once": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
+    ],
+    "core::iter::sources::once_with::OnceWith": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
+    ],
+    "core::iter::sources::repeat::Repeat": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:71:10"
+    ],
+    "core::iter::sources::repeat_n::RepeatN": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:63:10"
+    ],
+    "core::iter::sources::repeat_n::RepeatNInner": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:63:10"
+    ],
+    "core::iter::sources::repeat_with::RepeatWith": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_with.rs:75:16"
+    ],
+    "core::iter::sources::successors::Successors": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/successors.rs:40:10"
+    ],
+    "core::mem::manually_drop::ManuallyDrop": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/manually_drop.rs:153:16"
+    ],
+    "core::mem::maybe_dangling::MaybeDangling": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_dangling.rs:71:23"
+    ],
+    "core::num::complex::Complex": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/complex.rs:4:10"
+    ],
+    "core::num::saturating::Saturating": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/saturating.rs:35:42"
+    ],
+    "core::num::wrapping::Wrapping": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/wrapping.rs:40:42"
+    ],
+    "core::ops::control_flow::ControlFlow": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/control_flow.rs:88:16",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/control_flow.rs:88:16"
+    ],
+    "core::ops::coroutine::CoroutineState": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/coroutine.rs:8:10",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/coroutine.rs:8:10"
+    ],
+    "core::ops::range::Bound": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/range.rs:709:16"
+    ],
+    "core::ops::range::Range": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/range.rs:84:16"
+    ],
+    "core::ops::range::RangeFrom": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/range.rs:200:16"
+    ],
+    "core::ops::range::RangeInclusive": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/range.rs:359:10"
+    ],
+    "core::ops::range::RangeTo": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/range.rs:284:16"
+    ],
+    "core::ops::range::RangeToInclusive": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/range.rs:626:10"
+    ],
+    "core::option::IntoIter": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
+    ],
+    "core::option::Item": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
+    ],
+    "core::option::Option": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
+    ],
+    "core::option::OptionFlatten": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
+    ],
+    "core::pin::Pin": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/pin.rs:1090:16"
+    ],
+    "core::range::Range": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/range.rs:70:16"
+    ],
+    "core::range::RangeFrom": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/range.rs:488:16"
+    ],
+    "core::range::RangeInclusive": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/range.rs:250:10"
+    ],
+    "core::range::RangeToInclusive": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/range.rs:663:16"
+    ],
+    "core::range::iter::RangeFromIter": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/range/iter.rs:326:17"
+    ],
+    "core::range::iter::RangeInclusiveIter": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/range.rs:359:10"
+    ],
+    "core::range::iter::RangeIter": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/range.rs:84:16"
+    ],
+    "core::result::IntoIter": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
+    ],
+    "core::result::Result": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1898:27",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1899:29"
+    ],
+    "core::slice::iter::ChunkBy": [
+      null,
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/iter.rs:3101:61"
+    ],
+    "core::task::poll::Poll": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/task/poll.rs:10:16"
+    ],
+    "std::collections::hash::map::HashMap": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone.rs:236:5",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone.rs:236:5",
+      "/cargo/registry/25cdd57fae9f0462/hashbrown-0.17.1/src/map.rs:190:45",
+      null
+    ],
+    "std::collections::hash::set::HashSet": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone.rs:236:5",
+      "/cargo/registry/25cdd57fae9f0462/hashbrown-0.17.1/src/map.rs:190:45",
+      null
+    ],
+    "std::sync::mpmc::error::SendTimeoutError": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/std/src/sync/mpmc/error.rs:9:25"
+    ],
+    "std::sync::mpmc::utils::CachePadded": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/std/src/sync/mpmc/utils.rs:5:10"
+    ],
+    "std::sync::mpsc::SendError": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/std/src/sync/mpsc.rs:413:25"
+    ],
+    "std::sync::mpsc::TrySendError": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/std/src/sync/mpsc.rs:469:25"
+    ],
+    "std::sync::once_lock::OnceLock": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+    ]
+  },
   "flattenCount": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/flatten.rs:610:24"
   ],

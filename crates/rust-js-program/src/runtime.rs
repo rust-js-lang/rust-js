@@ -534,6 +534,26 @@ pub(crate) fn never_throws(name: &str) -> bool {
     is_pure(name) || NEVER_THROW.contains(&name)
 }
 
+/// Whether `bun run std` wrote a site of `$stdSites`' row `name` of `tag`
+/// at `at`, `$stdSites.clonedAt[tag][at]` a string, not `null`: of the
+/// runtime's own table, the one the program reads, which the lowering asks
+/// before it names one, never computing it again in a program's own
+/// session, whose std's MIR is inlined otherwise than the whole std's
+/// `bun run std` walks (#2509).
+pub fn std_site_written(name: &str, tag: &str, at: usize) -> bool {
+    static SITES: std::sync::OnceLock<serde_json::Value> = std::sync::OnceLock::new();
+    let sites = SITES.get_or_init(|| {
+        let text = include_str!("runtime/std_sites.js");
+        let table = &text[text.find('{').expect("std_sites.js's table")..=text.rfind('}').expect("its end")];
+        serde_json::from_str(table).expect("std_sites.js's table is JSON")
+    });
+    (sites
+        .get(name)
+        .and_then(|row| row.get(tag))
+        .and_then(|sites| sites.get(at)))
+    .is_some_and(serde_json::Value::is_string)
+}
+
 /// The helper that declares `name`, an export of the runtime's.
 pub fn helper_of(name: &str) -> Option<Helper> {
     signatures::declarations().get(name).map(|declared| declared.helper)

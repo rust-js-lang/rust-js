@@ -202,6 +202,10 @@ test("a container's clone of a borrowed `RefCell` names where its clone impl clo
     ["Some(RefCell::new(1))", "o.as_ref().unwrap()"],
     ["Ok::<RefCell<i32>, ()>(RefCell::new(1))", "o.as_ref().unwrap()"],
     ["Err::<(), RefCell<i32>>(RefCell::new(1))", "o.as_ref().unwrap_err()"],
+    // Both its sides cells, each variant's clone where std's clones it,
+    // `Ok`'s line and `Err`'s (#2509).
+    ["Ok::<RefCell<i32>, RefCell<i32>>(RefCell::new(1))", "o.as_ref().unwrap()"],
+    ["Err::<RefCell<i32>, RefCell<i32>>(RefCell::new(1))", "o.as_ref().unwrap_err()"],
     ["vec![RefCell::new(1)]", "&o[0]"],
     ["std::collections::VecDeque::from([RefCell::new(1)])", "&o[0]"],
     ["Box::new(RefCell::new(1))", "&*o"],

@@ -37,6 +37,7 @@ const statics: Record<string, Class> = {
   // The compiler's build, `build.rs`'s hash, given once as main starts
   // (ADR 1181): the same in every build a process compiles.
   "crates/rust-js-program/src/manifest.rs BUILD": "constant",
+  "crates/rust-js-program/src/runtime.rs SITES": "constant",
   "crates/rust-js-program/src/decisions.rs PATH": "process",
   "crates/rust-js-program/src/decisions.rs GIVEN": "process",
   "crates/rust-js-program/src/decisions.rs BODY": "process",

@@ -110,6 +110,18 @@ react.dev's TopNav passes the same closure instead.
   (`semantics.md`, 64); the corpus leaves those frames out of what it
   compares of an abort (`test/programs.ts` `compared`)
   ([1198](1198-the-corpuss-main-build-is-the-binary.md)).
+- **A `BTreeMap`'s or a `BTreeSet`'s clone of a borrowed `RefCell` names
+  the leaf's line**, the second case's, Tu's decision (2026-11-24, #2509):
+  std's `clone_subtree` clones a leaf's entries at `map.rs:258` and an
+  internal node's at `map.rs:278`, so where a mutably borrowed `RefCell`'s
+  panic is raised depends on where its entry sits in the tree, which
+  depends on how the map was built and changed; rust-js's map, a sorted
+  array, keeps none of it, and names the leaf's line, every entry's of a
+  map of eleven or fewer and most of a larger one's. The panic, its message
+  and payload are Rust's. Listed in the guide's differences
+  (`semantics.md`, 65); held by the corpus case
+  `btree_map_clone_of_an_inner_entry_names_the_leaf_line`; revisited if
+  Campaign 5 compiles std's `BTreeMap` (#2513).
 - **Each decision says which case it's in**, on a `Case:` line under its
   status, every case its parts are in, the first the main one; N where it
   decides no disagreement, tooling, bindings' shape or the output's

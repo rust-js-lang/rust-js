@@ -412,41 +412,71 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Where `ty`'s own clone, std's impl or a derive, clones its items, the
-    /// caller a `RefCell`'s clone of one raises its panic at, as rustc's
-    /// does (#2471): of std's containers, the line of std's own each one's
-    /// clone runs, `$stdSites`', from std's MIR (`compiled_std/raised.rs`):
-    /// an `Option`'s derive's, a `Result`'s of `variant`, its `Ok`'s or its
-    /// `Err`'s; a slice's `to_vec`, a `Vec`'s, a `BinaryHeap`'s, a `Box<[T]>`'s;
-    /// a `VecDeque`'s and a `LinkedList`'s `iter().cloned()`, rustc's `FnMut`
-    /// shim's; a `Box`'s; an array's; a tuple's, rustc's `Clone` shim's; and
-    /// of the crate's own derived `Clone`, its derive's.
-    fn clone_site(&self, ty: Ty<'tcx>, variant: Option<usize>) -> Option<Expr> {
-        let std = |item: StdItem| self.is_std_type(ty, item);
-        let site = match ty.kind() {
-            ty::Tuple(parts) if !parts.is_empty() => ("tupleClone", 0),
-            ty::Array(..) => ("arrayClone", 0),
-            ty::Slice(..) => ("sliceToVec", 1),
-            ty::Adt(..) if self.is_lang_adt(ty, LangItem::Option) => ("optionClone", 0),
-            ty::Adt(..) if std(StdItem::Result) => ("resultClone", variant?),
-            ty::Adt(..) if std(StdItem::Vec) || std(StdItem::BinaryHeap) => ("sliceToVec", 1),
-            ty::Adt(..) if std(StdItem::VecDeque) || std(StdItem::LinkedList) => ("fnMutCall", 0),
-            ty::Adt(_, args) if ty.is_box() => match args.type_at(0).kind() {
-                ty::Slice(..) => ("sliceToVec", 1),
-                _ => ("boxClone", 0),
-            },
+    /// Where `ty`'s clone of a `RefCell` its part at `position` is, a
+    /// variant's or a map's key or value, else of the one part that may be
+    /// a `RefCell`, raises, as std's does (#2509): a tuple's, the `Clone`
+    /// shim's (`tupleClone`); the crate's own derive's, its span; of std's
+    /// impl rustc resolves the clone to, the row `bun run std` writes of it,
+    /// `$stdSites.clonedAt[key][position]`, which `cloned_at_site` is the one
+    /// owner of. None where no part is a `RefCell` or may be one, whose
+    /// clone a nearer one places, `Vec<Vec<RefCell>>`'s inner's, or where
+    /// std's clone never calls one's there, a `slice::Iter`'s, of which `bun
+    /// run std` wrote none, as std-sites.test.ts holds it to std's MIR.
+    fn clone_site(&self, ty: Ty<'tcx>, position: Option<usize>) -> Option<Expr> {
+        if let ty::Tuple(parts) = ty.kind()
+            && !parts.is_empty()
+        {
+            return Some(Expr::std_site("tupleClone", 0));
+        }
+        let (key, parts) = match crate::recognition::cloned_by(self.tcx, self.typing_env, ty) {
+            crate::recognition::ClonedBy::Std { key, parts } => (key, parts),
             // The crate's own derive, which rustc resolves its `clone` to.
-            ty::Adt(..) => {
-                let clone = self.tcx.require_lang_item(LangItem::CloneFn, rustc_span::DUMMY_SP);
-                let args = self.tcx.mk_args(&[ty.into()]);
-                let instance = crate::traits::resolve(self.tcx, self.typing_env, clone, args).ok()??;
-                let derived = (self.tcx.impl_of_assoc(instance.def_id()))
-                    .filter(|&imp| self.tcx.is_automatically_derived(imp))?;
-                return Some(self.location_at(self.tcx.def_span(derived)));
-            }
-            _ => return None,
+            crate::recognition::ClonedBy::Derive(imp) => return Some(self.location_at(self.tcx.def_span(imp))),
+            crate::recognition::ClonedBy::Other => return None,
         };
-        Some(Expr::std_site(site.0, site.1))
+        let clone = self.tcx.require_lang_item(LangItem::CloneFn, rustc_span::DUMMY_SP);
+        let may_be_cell = |part: Ty<'tcx>| {
+            self.is_std_type(part, StdItem::RefCell)
+                || (crate::recognition::known_by_bounds(part)
+                    && crate::recognition::tracking_impl_may_be(
+                        self.tcx,
+                        self.frame.owner,
+                        clone,
+                        self.tcx.mk_args(&[part.into()]),
+                    ))
+        };
+        let cell_at = |at: usize| parts.get(at).copied().flatten().is_some_and(may_be_cell);
+        let at = match position {
+            Some(at) => at,
+            None => {
+                let mut cells = (0..parts.len()).filter(|&at| cell_at(at));
+                match (cells.next(), cells.next()) {
+                    (Some(at), None) => at,
+                    _ => return None,
+                }
+            }
+        };
+        // Of none written, std's clone never calls a `RefCell`'s there, a
+        // `slice::Iter`'s of what it lends: no panic to place.
+        (cell_at(at) && rust_js_program::runtime::std_site_written("clonedAt", &key, at))
+            .then(|| Expr::std_site_of("clonedAt", &key, at))
+    }
+
+    /// The position of `ty`'s, a std enum's, `variant`'s part, the type
+    /// parameter its first field of one is, as `clonedAt` indexes it:
+    /// `Result`'s `Err`'s `E`, 1 (#2509).
+    fn variant_position(&self, ty: Ty<'tcx>, variant: &ty::VariantDef) -> Option<usize> {
+        let ty::Adt(adt, _) = ty.kind() else { return None };
+        let identity = self.tcx.type_of(adt.did()).instantiate_identity().skip_normalization();
+        let ty::Adt(_, params) = identity.kind() else {
+            return None;
+        };
+        let held = (variant.fields.iter()).find_map(|field| {
+            crate::generic_facts::type_parameter_of(
+                self.tcx.type_of(field.did).instantiate_identity().skip_normalization(),
+            )
+        })?;
+        (params.iter()).position(|arg| arg.as_type().and_then(crate::generic_facts::type_parameter_of) == Some(held))
     }
 
     /// `clone_value` of a `ty` that needs a copy, part by part.
@@ -684,15 +714,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     fields,
                 } in groups.copied
                 {
-                    // Of a `Result`, each variant's where its clone clones it.
-                    let at = adt.variants().iter().position(|each| each.def_id == variant.def_id);
-                    let copy = match at.and_then(|at| self.clone_site(ty, Some(at))) {
-                        Some(at) if self.is_std_type(ty, StdItem::Result) => Expr::raised_at(at, || {
-                            self.clone_fields(place.clone(), (ty, Some(variant)), fields, span, out)
-                        })?,
-                        _ => self.clone_fields(place.clone(), (ty, Some(variant)), fields, span, out)?,
+                    // Of a std enum, each variant's where its clone clones its
+                    // part, a `Result`'s `Ok` and `Err` each its own (#2471,
+                    // #2509): variants of the same fields cloned at another
+                    // line each, `Result<RefCell<_>, RefCell<_>>`'s, apart.
+                    let site_of = |this: &Self, index: rustc_abi::VariantIdx| {
+                        (this.variant_position(ty, adt.variant(index))).and_then(|at| this.clone_site(ty, Some(at)))
                     };
-                    copies.push((indices, copy));
+                    let sites: Vec<Option<Expr>> = indices.iter().map(|&index| site_of(self, index)).collect();
+                    let parts: Vec<(Vec<rustc_abi::VariantIdx>, Option<Expr>, &ty::VariantDef)> =
+                        match sites.iter().all(|site| *site == sites[0]) {
+                            true => vec![(indices, sites[0].clone(), variant)],
+                            false => (indices.iter().zip(sites))
+                                .map(|(&index, site)| (vec![index], site, adt.variant(index)))
+                                .collect(),
+                        };
+                    for (indices, site, variant) in parts {
+                        let copy = match site {
+                            Some(at) => Expr::raised_at(at, || {
+                                self.clone_fields(place.clone(), (ty, Some(variant)), fields.clone(), span, out)
+                            })?,
+                            None => self.clone_fields(place.clone(), (ty, Some(variant)), fields.clone(), span, out)?,
+                        };
+                        copies.push((indices, copy));
+                    }
                 }
                 Ok(self.variants_tested((place.clone(), place), (ty, *adt), copies, &groups.others))
             }

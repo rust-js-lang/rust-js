@@ -568,43 +568,10 @@ const RAISED: &[(&str, Option<&str>, Owner, &str)] = &[
         Owner::Default(StdCrate::Core, &["cmp", "Ord"]),
         "clamp",
     ),
-    // Where a container's clone clones its items, which a `RefCell`'s
-    // clone, tracking its caller, raises its panic at (#2471): a derive's,
-    // `Option`'s and `Result`'s; a slice's `to_vec`, a `Vec`'s; `Box`'s, by
-    // its `CloneToUninit`; an array's; and of rustc's shims, a tuple's
-    // `Clone::clone` and a function's `FnMut::call_mut`, a `VecDeque`'s
-    // `iter().cloned()`.
-    (
-        "optionClone",
-        None,
-        Owner::Impl {
-            trait_: Trait::Lang(LangItem::Clone),
-            of: (StdCrate::Core, &["option", "Option"]),
-        },
-        "clone",
-    ),
-    (
-        "resultClone",
-        None,
-        Owner::Impl {
-            trait_: Trait::Lang(LangItem::Clone),
-            of: (StdCrate::Core, &["result", "Result"]),
-        },
-        "clone",
-    ),
-    ("sliceToVec", None, Owner::Primitive(SimplifiedType::Slice), "to_vec_in"),
-    (
-        "boxClone",
-        None,
-        Owner::Blanket(StdCrate::Core, &["clone", "uninit", "CopySpec"]),
-        "clone_one",
-    ),
-    (
-        "arrayClone",
-        None,
-        Owner::Blanket(StdCrate::Core, &["array", "SpecArrayClone"]),
-        "clone",
-    ),
+    // Of rustc's shims a `RefCell`'s clone, tracking its caller, raises its
+    // panic at (#2471): a tuple's `Clone::clone` and a function's
+    // `FnMut::call_mut`. A std type's own clone's are `clonedAt`'s, read of
+    // the impl rustc resolves it to (#2509).
     (
         "tupleClone",
         None,
@@ -957,6 +924,19 @@ fn function(tcx: TyCtxt<'_>, owner: Owner, name: &str) -> Option<DefId> {
 /// not this one's; but of one inlined of a closure of `root`'s own,
 /// through `Result::map`'s, `root`'s, where its closure writes it.
 fn site(tcx: TyCtxt<'_>, root: DefId, body: &mir::Body<'_>, info: mir::SourceInfo) -> Option<(String, usize, usize)> {
+    located_through(tcx, Some(root), body, info)
+}
+
+/// `site`'s, of `root`'s own; of none, codegen's whatever body it's
+/// inlined of: at the first inlined function that doesn't track its
+/// caller, an `Option`'s `clone` inlined into an iterator's, that one's
+/// line, as the frame a `RefCell`'s panic names (#2509).
+pub(super) fn located_through(
+    tcx: TyCtxt<'_>,
+    root: Option<DefId>,
+    body: &mir::Body<'_>,
+    info: mir::SourceInfo,
+) -> Option<(String, usize, usize)> {
     let mut span = info.span;
     let mut scope = info.scope;
     loop {
@@ -964,7 +944,7 @@ fn site(tcx: TyCtxt<'_>, root: DefId, body: &mir::Body<'_>, info: mir::SourceInf
         if let Some((callee, call)) = data.inlined {
             match (
                 tracks_caller(tcx, callee.def_id()),
-                nested_in(tcx, callee.def_id(), root),
+                root.is_none_or(|root| nested_in(tcx, callee.def_id(), root)),
             ) {
                 (true, _) => span = call,
                 (false, true) => break,
@@ -981,7 +961,7 @@ fn site(tcx: TyCtxt<'_>, root: DefId, body: &mir::Body<'_>, info: mir::SourceInf
 
 /// `span`'s site, `library/..`, line and column: at its outermost macro's
 /// call, as rustc's `caller_location` places it.
-fn located(tcx: TyCtxt<'_>, span: rustc_span::Span) -> (String, usize, usize) {
+pub(super) fn located(tcx: TyCtxt<'_>, span: rustc_span::Span) -> (String, usize, usize) {
     let topmost = span.ctxt().outer_expn().expansion_cause().unwrap_or(span);
     let at = tcx.sess.source_map().lookup_char_pos(topmost.lo());
     let file = at
@@ -1179,6 +1159,10 @@ pub(crate) fn raised_catalogue(tcx: TyCtxt<'_>) -> Result<String, String> {
         }
     }
     held_steps_checked(HELD_STEPS, HELD_STEPS_ELSEWHERE)?;
+    let cloned: ::serde_json::Map<String, ::serde_json::Value> = (super::cloned_at::cloned_at(tcx)?.into_iter())
+        .map(|(key, sites)| (key, ::serde_json::Value::from(sites)))
+        .collect();
+    kept.insert("clonedAt", ::serde_json::Value::Object(cloned));
     for &(name, _, owner, step) in HELD_STEPS {
         let id = function(tcx, owner, step).ok_or_else(|| format!("std has no `{step}` of {owner:?}"))?;
         let sites = held_step_sites(tcx, id, step);

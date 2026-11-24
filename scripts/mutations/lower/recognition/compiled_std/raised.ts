@@ -138,4 +138,12 @@ export const mutations: Mutation[] = [
     replace: "            return Some(instance.def_id()).filter(|_| false).or(Some(method));\n",
     tests: ["test/std-sites.test.ts"],
   },
+  {
+    name: "cloned-at-inlined-frames-skipped",
+    breaks: "the clone walk skips a call inside an inlined function that doesn't track its caller, so `option::IntoIter`'s clone, which inlines `Option::clone`, has no site, where codegen names that function's line (#2509)",
+    file: "crates/rust-js-lower/src/recognition/compiled_std/raised.rs",
+    find: "                root.is_none_or(|root| nested_in(tcx, callee.def_id(), root)),\n",
+    replace: "                root.is_some_and(|root| nested_in(tcx, callee.def_id(), root)),\n",
+    tests: ["test/std-sites.test.ts"],
+  },
 ];

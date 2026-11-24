@@ -1,0 +1,10 @@
+# Where std raises a `RefCell`'s panic as a std type's `clone` clones it, of the
+# types whose clone reaches it by more than one path in std's MIR (#2509), made
+# by test/std-cloned-at.test.ts from this toolchain's std run natively
+# (`BLESS=1 bun test test/std-cloned-at.test.ts` writes it; never by hand).
+# `<type> <its type parameter's position> <site>`.
+alloc::collections::vec_deque::VecDeque 0 library/core/src/ops/function.rs:166:5
+alloc::collections::vec_deque::into_iter::IntoIter 0 library/core/src/ops/function.rs:166:5
+alloc::collections::btree::map::BTreeMap 0 library/alloc/src/collections/btree/map.rs:258:45
+alloc::collections::btree::map::BTreeMap 1 library/alloc/src/collections/btree/map.rs:258:56
+alloc::collections::btree::set::BTreeSet 0 library/alloc/src/collections/btree/map.rs:258:45
