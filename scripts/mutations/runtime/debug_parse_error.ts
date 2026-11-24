@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "  if (name === \"TryFromIntError\") return $writeDebugTuple(f, name, [[undefined, (g) => g.write(\"()\")]], pretty);\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
+  {
+    name: "borrow-error-debug-shows-a-kind",
+    breaks: "a `RefCell`'s `BorrowError` and `BorrowMutError` shown by `Debug` write a `kind` field std's don't, `BorrowError { kind: undefined }` (#2476)",
+    file: "crates/rust-js-program/src/runtime/debug_parse_error.js",
+    find: 'const $namedAlone = new Set(["ParseBoolError", "BorrowError", "BorrowMutError"]);\n',
+    replace: 'const $namedAlone = new Set(["ParseBoolError"]);\n',
+    tests: ["test/corpus.test.ts", "-t", "^borrow_errors_shown_by_debug.rs$"],
+  },
 ];

@@ -19885,11 +19885,17 @@ export function $parseErrorKind(message) {
   return kinds[message];
 }
 
+// The errors whose `Debug` is their name alone: `ParseBoolError`'s derive
+// of its `()` field's struct, and a `RefCell`'s `BorrowError` and
+// `BorrowMutError`, whose `Debug` std writes as `debug_struct(name)` of no
+// field but where its `debug_refcell` feature adds one (#2476).
+export const $namedAlone = new Set(["ParseBoolError", "BorrowError", "BorrowMutError"]);
+
 // Its derived `Debug` into a writer's sink `f`, a piece at a time, as
 // `$debugParseError` shows it (#1652): its name; a `()` field's, `()`; or
 // its kind, one `write_str` of its variant's name, a field's or a tuple's.
 export function $writeDebugParseError(f, message, name, pretty) {
-  if (name === "ParseBoolError") return f.write(name);
+  if ($namedAlone.has(name)) return f.write(name);
   if (name === "CharTryFromError" || name === "TryFromCharError") {
     return $writeDebugTuple(f, name, [[undefined, (g) => g.write("()")]], pretty);
   }
@@ -19902,7 +19908,7 @@ export function $writeDebugParseError(f, message, name, pretty) {
 // their own, indented.
 export function $debugParseError(message, name, options) {
   const kind = $parseErrorKind(message);
-  if (name === "ParseBoolError") return name;
+  if ($namedAlone.has(name)) return name;
   // A `char`'s, which hold `()`.
   if (name === "CharTryFromError" || name === "TryFromCharError") return options?.alternate ? `${name}(\n    (),\n)` : `${name}(())`;
   if (name === "TryFromIntError") return options?.alternate ? `TryFromIntError(\n    ${kind},\n)` : `TryFromIntError(${kind})`;
