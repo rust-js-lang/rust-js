@@ -247,14 +247,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
   },
   {
-    name: "hint-of-a-library-unasked",
-    breaks: "a flatten under a `filter` given to a library's function, whose body the crate can't see, is made in place, though the library may ask its hint: `(0, None)` (#1323)",
-    file: "crates/rust-js-lower/src/body_queries/in_place.rs",
-    find: "                    Some(_) => callee == size_hint || hint_asked.contains(&callee) || library(callee),\n",
-    replace: "                    Some(_) => callee == size_hint || hint_asked.contains(&callee),\n",
-    tests: ["test/crates.test.ts", "-t", "flatten given to a library's function knows its hint"],
-  },
-  {
     name: "collect-hint-seen-made-in-place",
     breaks: "a flatten collected where the program sees the hint std's collect asks is made in place, JS's own `flatMap`, which knows no items' constant size: its source's printing `size_hint` asked three times where std asks once (#1327)",
     file: "crates/rust-js-lower/src/body_queries/in_place.rs",

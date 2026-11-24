@@ -560,8 +560,11 @@ Held by `test/libraries.test.ts`' "what a library's impl is given to
 step knows its hint", a library and its consumer against native Rust,
 called by name, by `collect()` and by `sum()`, and the metamorphic net's
 `library` rewrite of `hint_asked_by_a_crates_own_collect_and_sum.rs`,
-off its known list; mutations `library-impl-given-unmarked` and
-`library-impl-by-collect-unseen`.
+off its known list. Its mutations `library-impl-given-unmarked` and
+`library-impl-by-collect-unseen` were retired (2026-11-24): since #2515 a
+consumer compiles every library impl whose method takes an iterator of a
+type parameter of its own, and its own analysis of that impl marks what
+it's given, so this marking is that answer again where it's reached.
 
 
 ## Amendment: what generic code gives an impl its callers choose (2026-11-24, #2512)

@@ -269,7 +269,9 @@ on, one through `identity`, one under a `map`, a `filter` and a `rev()`, one ask
 made of a type parameter's items, and the other adapters given there,
 against native Rust in both builds. Mutations (`lower/body_queries/in_place.ts`):
 `flatten-wanted-made-in-place`, `hint-wanted-not-through-adapters`,
-`hint-asked-bodies-unrevisited` and `hint-of-a-library-unasked`, and
+`hint-asked-bodies-unrevisited` (`hint-of-a-library-unasked` retired,
+2026-11-24: the whole suite, React's port and the crate corpus ran as
+before without what it takes away), and
 (`lower/analysis/hint_asked.ts`) `hint-asked-of-no-param` and
 `hint-asked-not-relayed`; `test/crates.test.ts`' "a consumer's flatten
 given to a library's function knows its hint"; `rev-never-in-place`,

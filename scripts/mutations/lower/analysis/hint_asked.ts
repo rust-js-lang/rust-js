@@ -290,24 +290,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_a_crates_own_collect_and_sum.rs$"],
   },
   {
-    name: "library-impl-given-unmarked",
-    breaks:
-      "what a consumer gives a library's impl to step, `Hinted::from_iter(v.into_iter().take(2))`, stays JS's own adapter, whose hint is `(0, None)`, where the impl, which the consumer can't see, asks std's (#2384)",
-    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "                _ = mark_given(tcx, recognition, (body.def_id, given), keeps_capacity, &mut asked);\n",
-    replace: "                _ = given;\n",
-    tests: ["test/libraries.test.ts", "-t", "knows its hint"],
-  },
-  {
-    name: "library-impl-by-collect-unseen",
-    breaks:
-      "a `collect()` or `sum()` into a library's collection gives its impl what it steps unseen, only a call by name is, so a `skip(1)` collected is JS's own `drop(1)`, `(0, None)` (#2384)",
-    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "    let mut reached = crate::recognition::crate_impl_called_by(tcx, typing_env, callee, args);\n",
-    replace: "    let mut reached = Vec::new();\n",
-    tests: ["test/libraries.test.ts", "-t", "knows its hint"],
-  },
-  {
     name: "hint-types-made-in-every-function",
     breaks:
       "a type of type parameters marked knowing its hint, `boxed`'s `Skip<IntoIter<T>>`, is made knowing it in every function that makes one spelled alike, `counted`'s `$skipping` where JS's own `.drop(1)` was its form (#2133)",
