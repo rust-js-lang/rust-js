@@ -166,6 +166,18 @@ export function difference(native: string, js: string): string {
   return `${native.length} and ${js.length} characters, first differing at ${at}: native ${around(native)}, JS ${around(js)}`;
 }
 
+/** Why a run that exited `code` failed, of its `stderr`: rust-js's own
+ * refusal where it runs, `$unsupported`'s, which the run's `$main` lets
+ * end the process uncaught, said as a rejection is (`failureKind`), never
+ * as the uncaught error's first line, its place in std/runtime.js (#2447's
+ * first CI run took four listed rejections so for crashes); else its code
+ * and its first error. */
+export function exited(code: number | null, stderr: string): string {
+  const refused = /^\$Unsupported \[Error\]: (rust-js does not support [^\n]*)$/m.exec(stderr)?.[1];
+  if (refused !== undefined) return `ended {"error":"Error: ${refused.slice(0, 200)}"}`;
+  return `exited ${code}: ${firstError(stderr).slice(0, 200)}`;
+}
+
 /** How a test fails, from what its reason says: `rejected`, rust-js's
  * own clear error; `crashed`, another compile error, such as a panic of
  * rustc's; or `wrong`, JS that ran otherwise than native Rust. */
@@ -410,12 +422,13 @@ export async function runTest(ui: string, file: string, listedChanging: Set<stri
     }
     for (const [name, runtime] of [["node", "node"]]) {
       // Its `entry` run as a binary's `main` is, by the runtime's `$main`
-      // (test/corpus-run.ts, #2447): its status the process's.
-      const ran = await run([runtime, join(root, "test", "corpus-run.ts"), js], dir, 10_000);
+      // (test/corpus-run.ts, #2447): its status the process's, its path
+      // native's binary's, as a test that prints `args()` prints it.
+      const ran = await run([runtime, join(root, "test", "corpus-run.ts"), js, binary], dir, 10_000);
       const why = stopped(ran, 10_000);
       if (why) return { test, status: "fail", reason: `${name}: ${why}` };
       // Natively it exited 0, by `main`'s end or by `process::exit(0)`.
-      if (ran.code !== 0) return { test, status: "fail", reason: `${name}: exited ${ran.code}: ${firstError(ran.stderr).slice(0, 200)}` };
+      if (ran.code !== 0) return { test, status: "fail", reason: `${name}: ${exited(ran.code, ran.stderr)}` };
       for (const stream of ["stdout", "stderr"] as const) {
         if (!ran.bytes[stream].equals(native.bytes[stream])) {
           return { test, status: "fail", reason: `${name}: different ${stream}`, detail: difference(printed(native, ran, stream), printed(ran, native, stream)) };

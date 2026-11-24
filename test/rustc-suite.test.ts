@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 
 import { homedir } from "node:os";
 
-import { failureKind, features, firstError, ratchet, scope, stableFeatures, surprises, unblessable, validate, type Result, type Shard } from "../scripts/rustc-suite";
+import { exited, failureKind, features, firstError, ratchet, scope, stableFeatures, surprises, unblessable, validate, type Result, type Shard } from "../scripts/rustc-suite";
 
 test("a test is in scope unless a directive says it needs what a case can't have", () => {
   expect(scope("//@ run-pass\nfn main() {}\n")).toEqual({ edition: "2015" });
@@ -97,6 +97,12 @@ test("a failure is rejected, crashed or wrong, and one listed as rejected may no
   expect(failureKind('node: ended {"error":"TypeError: rust-js does not support"}')).toBe("wrong");
   expect(failureKind('node: ended {"panic":"assertion failed: rust-js does not support"}')).toBe("wrong");
   expect(failureKind("node: different stdout")).toBe("wrong");
+  // A run's `$unsupported`, uncaught, ends the process as Node prints it: a
+  // rejection, never the stack's first line, std/runtime.js's place (#2447's
+  // first CI run); a panic of those words, the hook's, is the program's.
+  const unsupported = "file:///x/std/runtime.js:23929\n  return new $Unsupported(message);\n\n$Unsupported [Error]: rust-js does not support the address of a value JS holds as itself\n    at $unsupported (file:///x/std/runtime.js:23929:10)\n";
+  expect(failureKind(`node: ${exited(1, unsupported)}`)).toBe("rejected");
+  expect(failureKind(`node: ${exited(101, "\nthread 'main' panicked at m.rs:1:1:\nrust-js does not support x\n")}`)).toBe("wrong");
   const listed = new Map([
     ["a.rs", "error: rust-js does not support statics yet"],
     ["b.rs", "error: rust-js does not support statics yet"],
