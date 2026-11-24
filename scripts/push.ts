@@ -474,7 +474,10 @@ async function main() {
         phase("build");
         // std/'s generated files the rebase resolved as main's, written
         // again by this tree's compiler (#2259).
-        if (remade.some(stdGenerated)) remadeStd();
+        // Its own write of std/ isn't a change meanwhile: the tree settles
+        // again past it, as it does past the amends before the build (both
+        // pushes of #2447's red fix refused their own `std/runtime.js`).
+        if (remade.some(stdGenerated) && remadeStd()) settled = { at: Date.now(), untracked: settled.untracked };
         // std/ made again and compared, the one check of it, CI's lint's too
         // (scripts/std-fresh.ts), which names the fix where it differs.
         run("std", ["bun", "scripts/std-fresh.ts"]);
@@ -996,15 +999,16 @@ export function rebase(): string[] {
 /** std/'s generated files written again by `bun run std` from the rebased
  * tree, just built, after a rebase resolved them as main's (`stdGenerated`),
  * its diff's files printed, and the top commit amended with them where they
- * changed; refused only where the writing fails (#2259). */
-function remadeStd() {
+ * changed, which it says; refused only where the writing fails (#2259). */
+function remadeStd(): boolean {
   const made = spawnSync("bun", ["scripts/std.ts"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
   if (made.status !== 0) throw new Refused(`std/ couldn't be made again after the rebase resolved it as main's:\n${(made.stdout + made.stderr).slice(-2000)}`);
   const changed = lines(git("diff", "--name-only", "--", "std").out);
-  if (changed.length === 0) return;
+  if (changed.length === 0) return false;
   console.log(`push: std/ made again after the rebase: ${changed.join(", ")}`);
   git("add", "std");
   git("commit", "-q", "--amend", "--no-edit");
+  return true;
 }
 
 /** `file`, a blessed baseline, made again from this tree by its test's

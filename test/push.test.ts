@@ -538,6 +538,14 @@ test("a push refuses a tree written while it was checked, though put back", () =
   expect(settles).toBeGreaterThan(-1);
   expect(settles).toBeLessThan(push.indexOf('run("build", ["cargo", "build", "--quiet"]);'));
   expect(push.indexOf("the tree changed while it was checked; nothing pushed")).toBeLessThan(push.indexOf('git("push", "-q", "origin", "HEAD:main")'));
+  // Its own write of std/ after the build, `remadeStd`'s amend of what a
+  // rebase resolved as main's, settles the tree again: no refusal of it,
+  // where #2447's red fix was refused twice of its own `std/runtime.js`.
+  const remakes = push.indexOf("remadeStd()) settled = { at: Date.now()");
+  expect(remakes).toBeGreaterThan(push.indexOf('run("build", ["cargo", "build", "--quiet"]);'));
+  const resettled = { ...settled, at: 1500 };
+  expect(changedWhileChecked(settled, new Map([["std/runtime.js", 1400]]), new Map([["notes.txt", 950]]))).toEqual(["std/runtime.js"]);
+  expect(changedWhileChecked(resettled, new Map([["std/runtime.js", 1400]]), new Map([["notes.txt", 950]]))).toEqual([]);
 });
 
 // An untracked file git doesn't ignore, there as a push starts, would be

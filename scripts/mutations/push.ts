@@ -354,4 +354,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/push.test.ts", "-t", "push run again makes again what its rebase resolved as main's"],
   },
+  {
+    name: "push-own-std-write-refused",
+    breaks: "a push's own write of std/ after the build, the amend of what a rebase resolved as main's, isn't settled past, so the push refuses its own `std/runtime.js` as a change meanwhile (#2447's red fix, twice)",
+    file: "scripts/push.ts",
+    find: "remadeStd()) settled = { at: Date.now(), untracked: settled.untracked };",
+    replace: "remadeStd()) settled = { at: settled.at, untracked: settled.untracked };",
+    tests: ["test/push.test.ts", "-t", "refuses a tree written while it was checked"],
+  },
 ];
