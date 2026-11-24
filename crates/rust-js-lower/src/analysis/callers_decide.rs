@@ -50,40 +50,53 @@ pub(super) fn refuse_what_callers_decide<'tcx>(
     // What steps a zip by `next()`, and what asks it nothing it steps.
     let next = trait_method(tcx, iterator, "next");
     let asks_nothing = ["size_hint", "by_ref"].map(|name| trait_method(tcx, iterator, name));
-    // Each body's own, by its function: what it asks that holds its type
-    // parameters, which each caller's call makes of its types.
+    // What a call of `callee` with `args`, in `owner`'s body, asks that
+    // holds its type parameters: one rule of a THIR call and a MIR one.
+    let asks_of_call = |owner: rustc_span::def_id::DefId, callee, args: ty::GenericArgsRef<'tcx>| {
+        let mut asks = Vec::new();
+        let mut types = args.types();
+        let Some(this) = types.next() else { return asks };
+        // Of a side made of type parameters, `Map<I, F>`'s: one given as
+        // a type parameter is its caller's `LengthFirst` (#1182).
+        if compares.contains(&callee)
+            && let Some(other) = types.next()
+            && (this.has_param() || other.has_param())
+            && (Recognition {
+                typing_env: ty::TypingEnv::post_analysis(tcx, owner),
+                ..recognition
+            })
+            .eq_sides(this, other)
+            .is_some_and(|sides| sides.contains(&crate::recognition::EqSide::Built))
+        {
+            asks.push(Asked::Eq(this, other));
+        }
+        if tcx.trait_of_assoc(callee) == Some(iterator) && !asks_nothing.contains(&callee) {
+            let zips = (this.walk())
+                .filter_map(|part| part.as_type())
+                .filter(|ty| ty.has_param() && zipped_sources(tcx, *ty).is_some());
+            let asked = match callee == next {
+                true => Asked::ZipStep,
+                false => Asked::ZipFold,
+            };
+            asks.extend(zips.map(asked));
+        }
+        asks
+    };
+    // Each body's own, by its function, a closure's its function's, which
+    // its callers call: what it asks that holds its type parameters, which
+    // each caller's call makes of its types, a zip of an item `s.map(|i|
+    // i.zip(..).count())` steps among them (#2542).
     let mut of_body: IndexMap<rustc_span::def_id::DefId, IndexSet<Asked<'tcx>>> = IndexMap::default();
     for body in all_bodies {
+        let owner = tcx.typeck_root_def_id(body.def_id);
         for expr in body.thir.exprs.iter() {
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
-            let mut types = args.types();
-            let Some(this) = types.next() else { continue };
-            // Of a side made of type parameters, `Map<I, F>`'s: one given as
-            // a type parameter is its caller's `LengthFirst` (#1182).
-            if compares.contains(&callee)
-                && let Some(other) = types.next()
-                && (this.has_param() || other.has_param())
-                && (Recognition {
-                    typing_env: ty::TypingEnv::post_analysis(tcx, body.def_id),
-                    ..recognition
-                })
-                .eq_sides(this, other)
-                .is_some_and(|sides| sides.contains(&crate::recognition::EqSide::Built))
-            {
-                of_body.entry(body.def_id).or_default().insert(Asked::Eq(this, other));
-            }
-            if tcx.trait_of_assoc(callee) == Some(iterator) && !asks_nothing.contains(&callee) {
-                let zips = (this.walk())
-                    .filter_map(|part| part.as_type())
-                    .filter(|ty| ty.has_param() && zipped_sources(tcx, *ty).is_some());
-                let asked = match callee == next {
-                    true => Asked::ZipStep,
-                    false => Asked::ZipFold,
-                };
-                of_body.entry(body.def_id).or_default().extend(zips.map(asked));
-            }
+            of_body
+                .entry(owner)
+                .or_default()
+                .extend(asks_of_call(body.def_id, callee, args));
         }
     }
     let trusted_len = fact_trait(tcx, TypeFact::TrustedLen);
@@ -94,7 +107,43 @@ pub(super) fn refuse_what_callers_decide<'tcx>(
     let mut refused = IndexSet::default();
     // Each call, as the callers' instances are carried (ADR 1115): of a
     // library's function the crate compiles itself too, of MIR alone.
-    let callers = crate::instances::callers_of(tcx, names, all_bodies);
+    let mut callers = crate::instances::callers_of(tcx, names, all_bodies);
+    // And each library's generic function the crate calls, which it calls
+    // as its export: what its MIR asks, its closures' its own, and what it
+    // calls in turn, a call of the crate's, so a zip its body steps is
+    // refused where the consumer gives it what std stops short of, as of
+    // the crate's own generic code (#2542). Not std's, whose bodies are
+    // modelled or compiled apart.
+    let mut foreign: Vec<rustc_span::def_id::DefId> = (callers.keys().copied())
+        .filter(|&id| !id.is_local() && !crate::recognition::is_std_crate(tcx, id) && tcx.generics_of(id).count() > 0)
+        .collect();
+    let mut read = IndexSet::default();
+    while let Some(id) = foreign.pop() {
+        if !read.insert(id) {
+            continue;
+        }
+        let (bodies, makers) = super::foreign_bodies::foreign_bodies(tcx, vec![id]);
+        for body in &bodies {
+            let owner = makers.get(&body.def_id).copied().unwrap_or(body.def_id);
+            let Some(mir) = &body.mir else { continue };
+            for data in mir.body.basic_blocks.iter() {
+                let rustc_middle::mir::TerminatorKind::Call { func, fn_span, .. } = &data.terminator().kind else {
+                    continue;
+                };
+                let Some((callee, args)) = func.const_fn_def() else {
+                    continue;
+                };
+                of_body
+                    .entry(owner)
+                    .or_default()
+                    .extend(asks_of_call(owner, callee, args));
+                if !callee.is_local() && !crate::recognition::is_std_crate(tcx, callee) {
+                    callers.entry(callee).or_default().push((owner, args, *fn_span));
+                    foreign.push(callee);
+                }
+            }
+        }
+    }
     // Through what calls each caller in turn, as far as 32 calls deep, as a
     // function calling itself with a type made of its own would go on.
     for _ in 0..32 {

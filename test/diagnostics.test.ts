@@ -327,6 +327,10 @@ for (const [name, source, message, crate] of [
   // And one it steps by `next()`, of sides std reads by index, whose `next()` stops there too.
   // A `repeat()` of the crate's clones zipped and collected in generic code, its `IntoIter` side a
   // projection where the caller's types are made (#1162).
+  // A zip of an item, which generic code steps in a closure of its own,
+  // `s.map(|i| i.zip(..).count())`: the closure's ask is its function's,
+  // which its callers call (#2542).
+  ["a zip of an item in a closure of generic code", 'fn zipped_each<S: Iterator>(s: S) -> Vec<usize> where S::Item: Iterator { s.map(|i| i.zip(0..2).count()).collect() }\npub fn f(v: &[u32]) -> Vec<usize> { zipped_each([v.iter().map(|x| { println!("a"); *x })].into_iter()) }', "giving generic code a zip it folds or steps, which std stops at its shorter side"],
   ["a zip of a repeat of the crate's clones collected in generic code", 'pub struct C(u32);\nimpl Clone for C { fn clone(&self) -> C { C(self.0 + 1) } }\nfn pairs<I: Iterator<Item = C>, J: IntoIterator<Item = C>>(it: I, arg: J) -> usize { it.zip(arg).count() }\npub fn f() -> usize { pairs(std::iter::repeat(C(7)), vec![C(1), C(2)]) }', "a zip it folds or steps, which std stops at its shorter side"],
   // Generic code's `eq` of a side its caller gives, `LengthFirst`: refused where the caller gives a
   // `TrustedLen` JS can't count before stepping it, whose steps run code (#1182).

@@ -37,4 +37,28 @@ export const mutations: Mutation[] = [
     replace: "                            if true {\n",
     tests: ["test/diagnostics.test.ts", "-t", "eq in generic code of maps it builds"],
   },
+  {
+    name: "closure-zip-asks-its-own",
+    breaks: "a zip generic code steps in a closure of its own, `s.map(|i| i.zip(..).count())`, is the closure's ask, which no caller calls, so its caller's map closure runs once more than std's (#2542)",
+    file: "crates/rust-js-lower/src/analysis/callers_decide.rs",
+    find: "        let owner = tcx.typeck_root_def_id(body.def_id);\n",
+    replace: "        let owner = body.def_id;\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a zip of an item in a closure of generic code"],
+  },
+  {
+    name: "library-zip-asks-unread",
+    breaks: "a library's generic zip isn't read of its MIR, so its consumer's map closure runs once more than std's, where one crate's own generic code is refused (#2542)",
+    file: "crates/rust-js-lower/src/analysis/callers_decide.rs",
+    find: "        .filter(|&id| !id.is_local() && !crate::recognition::is_std_crate(tcx, id) && tcx.generics_of(id).count() > 0)\n",
+    replace: "        .filter(|_| false)\n",
+    tests: ["test/crates-refused.test.ts", "-t", "zip a closure std stops short"],
+  },
+  {
+    name: "library-chain-asks-uncarried",
+    breaks: "a library's function calling another of its own that zips isn't carried to its consumer's call, which runs the map closure once more than std's (#2542)",
+    file: "crates/rust-js-lower/src/analysis/callers_decide.rs",
+    find: "                    callers.entry(callee).or_default().push((owner, args, *fn_span));\n",
+    replace: "",
+    tests: ["test/crates-refused.test.ts", "-t", "zip a closure std stops short"],
+  },
 ];

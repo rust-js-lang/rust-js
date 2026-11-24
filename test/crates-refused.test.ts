@@ -111,3 +111,37 @@ test("a consumer's impl of a library's trait asking a fact its contract doesn't 
   ]);
   expect(native).toBe("8 4\n");
 }, 300_000);
+
+// #2542: a library's generic zip of what its consumer gives it, which
+// std's `Zip` of a `TrustedRandomAccess` side stops at its shorter side
+// of: refused at the consumer's call, as one crate's own generic code is,
+// the library's ask read of its MIR, through another of its functions
+// too.
+test("a consumer giving a library's generic zip a closure std stops short of is refused", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "library_zip_of_a_closure_std_stops_short", ["dep", "app"], [
+    "giving generic code a zip it folds or steps, which std stops at its shorter side",
+    "app.rs:11:13",
+    "app.rs:20:13",
+  ]);
+  expect(native).toBe("[(2, 10), (4, 20)] [1, 2]\n[(1, 10), (2, 20)] 2\n");
+}, 300_000);
+
+// #1385's and #1389's shape, itertools' `MultiProduct::last`: a library's
+// zip of a `Vec<Held<I>>` with values, given items that drop, whose fold
+// std takes to the shorter side without stepping the first again. One
+// crate's own generic code refuses it; so does a consumer's call (#2542),
+// where it compiled the library's function itself (ADR 0914) and stepped
+// the first side once more. The numbers' halves stay crate pairs.
+for (const [name, line, printed] of [
+  ["library_zip_of_what_is_never_random_access_of_items_that_drop", "app.rs:23:16", "drop 1\ndrop 8\ndrop 9\n[Loud(2), Loud(9)]\ndrop 2\ndrop 9\n"],
+  ["library_zip_of_a_vec_of_a_slots_items_of_items_that_drop", "app.rs:23:16", "drop 1\ndrop 8\n[Loud(2), Loud(9)]\ndrop 2\ndrop 9\n"],
+] as const) {
+  test(`a consumer giving a library's zip items that drop, which std stops short of, is refused: ${name}`, () => {
+    const native = chain(join(root, "test", "crates", "refused"), name, ["dep", "app"], [
+      "giving generic code a zip it folds or steps, which std stops at its shorter side",
+      line,
+    ]);
+    expect(native).toBe(printed);
+  }, 300_000);
+}
+

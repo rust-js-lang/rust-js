@@ -194,3 +194,26 @@ Held by:
 - the mutations `length-first-endless-collected` (lower/iterators/mir_steps/closing.ts) and `length-first-endless-counted` (runtime/cmp_items.ts).
 
 `repeat(x).rev()` is refused in the plain build (#2127), so it's in no case and no mutation holds the `Rev` arm until then. It was probed with `--std-iterators`, where it matches native.
+
+## Amendment (2026-11-25, #2542): a library's generic code, and a closure's zip
+
+The refusal was one crate's. A library's generic zip, which its consumer
+calls as its export, `$lazyZip(Iterator.from(a), b)`, stepped the first
+side once more where std's `TrustedRandomAccess` or `TrustedLen` fold
+stops at the shorter: a consumer's `map` closure ran a third time where
+native ran it twice, at an argument, a bound's `IntoIterator` and a
+generic struct's method alike. And a zip generic code steps in a closure
+of its own, `s.map(|i| i.zip(0..2).count())`, was the closure's ask, which
+no caller calls. `callers_decide.rs` now keys a body's asks by its
+function, a closure's its maker's, and reads each library's generic
+function the crate calls of its MIR (`foreign_bodies`): what it asks, its
+closures' with it, and what it calls of its library in turn, carried to
+the consumer's call, where the zip is refused as one crate's is. Not
+std's, whose bodies are modelled or compiled apart.
+
+#1385's and #1389's pairs, itertools' `MultiProduct::last` shape, gave
+the library's zip items that drop; one crate refused that code already,
+and so does their consumer now. Their numbers' halves stay crate pairs,
+holding the facts their mutations ask; the halves that drop are
+test/crates/refused's. Lifting the refusal, the consumer giving the zip's
+facts across the crossing, is Campaign 6's (#2539).

@@ -245,3 +245,8 @@ B: Debug> Debug for Zip<A, B>` does. That landed first (ADR 0335,
 amended), so no program that printed starts being refused. Held by
 `debug_of_a_zip.rs` against native, and the whole corpus and crate corpus
 compiled with it.
+
+Since #2542 (ADR 1014, amended), the two pairs above hold their numbers
+alone; their consumers giving items that drop are refused, as one crate's
+own generic code is, in test/crates/refused/'s `_of_items_that_drop`
+pairs.
