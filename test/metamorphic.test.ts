@@ -14,7 +14,8 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { corpus, nondeterministic } from "./corpus-cases";
+import { refuseUnmatched } from "./case-lists";
+import { cases, corpus, nondeterministic } from "./corpus-cases";
 import { runSync } from "./child";
 import { mayBeUndefined, miriInstalled, undefinedBehaviour } from "./miri";
 import { agreesUpToHashOrder, buildRewriter, libraryCrate, middleEvent, nightlyOnly, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
@@ -36,7 +37,7 @@ const which = partSetting("METAMORPHIC");
 const named = process.env.METAMORPHIC_REWRITES?.split(",").filter((name) => name !== "");
 // A push's sample runs every rewrite but the nightly's own (`nightlyOnly`).
 const rewritesRun = rewrites.filter((rewrite) => (named === undefined ? which === "all" || !nightlyOnly.includes(rewrite) : named.includes(rewrite)));
-if (named !== undefined && rewritesRun.length !== named.length) throw new Error(`METAMORPHIC_REWRITES=${named.join(",")}: of ${rewrites.join(", ")}`);
+if (named !== undefined) refuseUnmatched(named, new Set<string>(rewrites), { list: `METAMORPHIC_REWRITES=${named.join(",")}`, what: `rewrites, of ${rewrites.join(", ")}` });
 if (which !== undefined && which !== "all") throw new Error(`METAMORPHIC=${which}: \`all\`, or unset for a push's sample`);
 const known = readKnown();
 const all = rewritable();
@@ -47,7 +48,9 @@ const all = rewritable();
 // scripts/iteratorSlice.ts run metamorphic`, #1165).
 const listed = (process.env.RUST_JS_CASES ?? "").includes(":");
 const picked = which === "all" || listed ? all : all.filter(({ name }) => sampled(name));
-const chosen = new Set(caseShard(picked.map(({ name }) => name)));
+// A list's every name a corpus case's: one the net can't rewrite is said
+// unrewritten, not run, as any case of the corpus it isn't given.
+const chosen = new Set(caseShard(picked.map(({ name }) => name), cases));
 
 /** The net's own harness, its text, which a kept run's key holds as
  * `shared()` holds the corpus's. */

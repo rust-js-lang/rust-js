@@ -40,6 +40,7 @@ import { resultsFile, verdictOf, type Result as CrateResult, type Verdict } from
 import { devTimes, ownsTimes } from "./devTimes";
 import { floorBytes } from "../test/bounded";
 import { freeBytes } from "../tooling/bounded.js";
+import { refuseUnmatched } from "../test/case-lists";
 import { type CompilerCrate, compilerCrates, crateOf, crateOfModule, cratesBuilding, modulePath } from "./compiler-crates";
 
 const root = join(import.meta.dir, "..");
@@ -2224,8 +2225,7 @@ async function main() {
     return typecheck(checked);
   }
   const named = args.filter((arg) => !arg.startsWith("--"));
-  const unknown = named.filter((name) => !mutations.some((m) => m.name === name));
-  if (unknown.length > 0) throw new Error(`no mutation ${unknown.join(", ")}; there are ${mutations.map((m) => m.name).join(", ")}`);
+  refuseUnmatched(named, new Set(mutations.map((m) => m.name)), { list: `the mutations named, ${named.join(" ")},`, what: "mutations of scripts/mutations/" });
   let chosen = named.length > 0 ? mutations.filter((m) => named.includes(m.name)) : mutations;
   // Mutations to retire, their evidence asked (`retire`), no other run.
   const retiring = retiringNames(args);

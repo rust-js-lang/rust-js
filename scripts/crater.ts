@@ -54,6 +54,7 @@ import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { corpusRows, type Crate } from "./crate-corpus";
 import { cut, cutFor, dropped, errorsAt, followed, items, leftByCut, modulePath, offTarget, placeOf, testModulePath, testOnlyFile, testsOfExpanded, underItems } from "./crater-cuts";
 import { atOnce } from "./shard";
+import { refuseUnmatched } from "../test/case-lists";
 
 const root = join(import.meta.dir, "..");
 const work = join(root, "target", "crater");
@@ -1035,6 +1036,7 @@ if (import.meta.main) {
     reported(chosen, verdicts, decided, check);
   } else {
     const named = args.filter((arg) => !arg.startsWith("--"));
+    refuseUnmatched(named, new Set(rows.map((crate) => crate.name)), { list: `the crates named, ${named.join(" ")},`, what: "rows of docs/crate-corpus.md" });
     const [shard, of] = (option("shard") ?? "1/1").split("/").map(Number);
     if (!(of >= 1 && shard >= 1 && shard <= of)) throw new Error(`--shard=${option("shard")}: write it \`--shard=2/4\``);
     const chosen = inShard(

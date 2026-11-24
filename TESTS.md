@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (ADR 1200): test/case-lists.test.ts, new, two tests: a list of what to run naming a path or a misspelt name fails, naming each, the corpus's `RUST_JS_CASES=i/n:<file>` among them, which the metamorphic net, tidy's stages, the iterator forms and the determinism net read too; five mutations.
+
 Changed on 2026-11-25 (#2538, ADR 1184 amended): test/binaries.test.ts gains a test, a panic with its output a file runs nothing `main` queued, against native, on Node and Bun; mutation `file-stream-waited-for`.
 
 Changed on 2026-11-25 (#2532, ADR 0454 amended): test/diagnostics.test.ts gains two rows, a `&mut` to an object in an `Rc` or a `Box` given to generic code by an impl over `&mut T`, refused; mutations `impl-self-mut-object-unasked`, `impl-self-own-mut-refused`; test/known/metamorphic/2532.txt removed, its 2 rows now refused.

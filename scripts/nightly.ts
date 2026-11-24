@@ -14,6 +14,7 @@ import { join } from "node:path";
 import { run } from "../test/child";
 import { shown } from "./timing";
 import { machine } from "./shard";
+import { refuseUnmatched } from "../test/case-lists";
 
 const root = join(import.meta.dir, "..");
 // The machine's cores (scripts/shard.ts' `machine`): each net split in a
@@ -333,8 +334,7 @@ export const jobs: Record<string, Part[]> = {
 
 async function main() {
   const named = process.argv.slice(2).filter((a) => !a.startsWith("--"));
-  const unknown = named.filter((name) => !(name in jobs));
-  if (unknown.length > 0) throw new Error(`no job ${unknown.join(", ")}; there are ${Object.keys(jobs).join(", ")}`);
+  refuseUnmatched(named, new Set(Object.keys(jobs)), { list: `the jobs named, ${named.join(" ")},`, what: `the nightly's jobs, of ${Object.keys(jobs).join(", ")}` });
   // The jobs named, and those whose parts theirs need first.
   const all = Object.values(jobs).flat();
   const wanted = new Map<string, Part>();

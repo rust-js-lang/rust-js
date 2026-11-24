@@ -107,4 +107,20 @@ export const mutations: Mutation[] = [
     replace: "  mkdirSync(dir, { recursive: true });",
     tests: ["test/support.test.ts", "-t", "a native program's sources directory is counted in its store's index"],
   },
+  {
+    name: "corpus-case-list-unchecked",
+    breaks: "the corpus's case list, `RUST_JS_CASES=i/n:<file>`, which the metamorphic net, tidy's stages, the iterator forms and the determinism net read too, runs what it matches of a list of paths or misspellings, and passes",
+    file: "test/support.ts",
+    find: "  refuseUnmatched([...named], new Set(known), { list: `RUST_JS_CASES=${given}`, what: \"corpus cases\" });\n",
+    replace: "",
+    tests: ["test/case-lists.test.ts", "-t", "the corpus's case list"],
+  },
+  {
+    name: "corpus-case-list-held-to-the-runners-cases",
+    breaks: "a runner of some of the corpus's cases, the metamorphic net's, refuses a list naming a case it doesn't run, which a change's selection gives every runner",
+    file: "test/support.ts",
+    find: "export function caseShard<T extends string>(cases: T[], known: readonly string[] = cases): T[] {",
+    replace: "export function caseShard<T extends string>(cases: T[], _known: readonly string[] = cases, known: readonly string[] = cases): T[] {",
+    tests: ["test/case-lists.test.ts", "-t", "the corpus's case list"],
+  },
 ];

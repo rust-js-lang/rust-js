@@ -222,6 +222,21 @@ the shadow, or by writing the case at the edge.
     answer. The metamorphic net now counts each rewrite's compiled and
     refused variants, and fails where every one of 5 or more was refused.
 
+18. **A list of what to run is checked against what the runner has.** The
+    metamorphic net given its cases as `test/corpus/...` paths, where it
+    takes their names, ran none of them and said "25 pass" (2026-11-25):
+    the passes were its other tests'. A list that matches nothing, or fewer
+    than it names, is a run of something else, as an all-refused table is.
+    Every runner that takes one, the corpus's `RUST_JS_CASES=i/n:<file>`
+    (the metamorphic net, tidy's stages, the iterator forms and the
+    determinism net read it too), the net's rewrites, the crate corpus's
+    and the Crater's crates, rustc's tests' folders, the nightly's jobs and
+    the mutations' names, asks one check, `refuseUnmatched`
+    (test/case-lists.ts), which fails naming each entry it has nothing of,
+    and of a path, the name to give. A mutation's `-t` pattern is held
+    likewise: test/mutations.test.ts names one that matches no test of its
+    file, and the runner's controls refuse one that runs nothing.
+
 ## Nets still to build
 
 | Net | Issue | What it would find |

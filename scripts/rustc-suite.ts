@@ -24,6 +24,7 @@ import { compileFailure, printed, run, stopped, type Exit } from "../test/child"
 import { programFlags } from "../test/support";
 import { rustcCommit, rustcTests } from "./rustc-tests";
 import { machine } from "./shard";
+import { refuseUnmatched } from "../test/case-lists";
 
 const root = join(import.meta.dir, "..");
 
@@ -617,6 +618,7 @@ async function main() {
   compiler = resolve(option("compiler") ?? compiler);
   const ui = rustcTests();
   if (!existsSync(compiler)) throw new Error(`no rust-js at ${compiler}: build it with cargo build --release`);
+  refuseUnmatched(selectors, (selector) => existsSync(join(ui, selector)) && testsUnder(ui, selector).length > 0, { list: `the tests named, ${selectors.join(" ")},`, what: "folders or files of rustc's tests" });
   const all = selectors.length > 0 ? [...new Set(selectors.flatMap((s) => testsUnder(ui, s)))] : findTests(ui);
   let tests = all;
   // `--shard=2/4`: every fourth test, from the second.

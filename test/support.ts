@@ -8,6 +8,7 @@ import { type Exit, runSync, stopped } from "./child";
 import { alive, keptApps, markUsed, mayKeep, nativeCache, nativeSources, noteKept, pruneKeptApps, takeClaim } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
 import { parts, shard } from "../scripts/shard";
+import { refuseUnmatched } from "./case-lists";
 import { checkoutTarget, compiler, compilerGiven, helpersModule, stdDir, target } from "./packages-of";
 
 export const root = join(import.meta.dir, "..");
@@ -1077,13 +1078,17 @@ export function expectSnapshot(
  * one, for `check:fast`'s processes, which run a file's parts at once; all of
  * them where it isn't set. `i/n:<file>`: the `i`th part of only the cases
  * `<file>` names, a line each, those a change can affect, as plain
- * `check:fast` picks them (scripts/testMap.ts, #877). */
-export function caseShard<T extends string>(cases: T[]): T[] {
+ * `check:fast` picks them (scripts/testMap.ts, #877). A file naming one
+ * that isn't a case of `known`, the corpus's for a runner of some of them,
+ * is refused, naming each (`refuseUnmatched`): one of paths ran nothing,
+ * and passed. */
+export function caseShard<T extends string>(cases: T[], known: readonly string[] = cases): T[] {
   const given = process.env.RUST_JS_CASES ?? "1/1";
   const split = given.indexOf(":");
   const [i, n] = (split < 0 ? given : given.slice(0, split)).split("/").map(Number);
   if (split < 0) return shard(cases, i, n);
   const named = new Set(readFileSync(given.slice(split + 1), "utf8").split("\n").filter(Boolean));
+  refuseUnmatched([...named], new Set(known), { list: `RUST_JS_CASES=${given}`, what: "corpus cases" });
   return shard(
     cases.filter((name) => named.has(name)),
     i,

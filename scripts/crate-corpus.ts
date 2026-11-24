@@ -33,6 +33,7 @@ import { cargoHome, floorBytes } from "../test/bounded";
 import { run as runChild, stopped, type Exit } from "../test/child";
 import { atOnce } from "./shard";
 import { mirLabels } from "./labels";
+import { refuseUnmatched } from "../test/case-lists";
 
 /** The target a run keeps what it builds and writes in: the checkout's, or
  * with `RUST_JS_TARGET`, a mutant's tests' own (ADR 0093), so mutants
@@ -402,11 +403,7 @@ async function main() {
   // ones its commit picks (#1174).
   const sample = process.argv.includes("--sample");
   const wanted = process.argv.slice(2).filter((arg) => arg !== "--check" && arg !== "--lock" && arg !== "--sample");
-  const unknown = wanted.filter((name) => !corpus.some((c) => c.name === name));
-  if (unknown.length) {
-    console.error(`docs/crate-corpus.md has no row of ${unknown.join(", ")}`);
-    process.exit(1);
-  }
+  refuseUnmatched(wanted, new Set(corpus.map((c) => c.name)), { list: `the crates named, ${wanted.join(" ")},`, what: "rows of docs/crate-corpus.md" });
   // A graph is resolved anew only as asked, crate by crate, never the
   // whole corpus at once by forgetting to name one.
   if (lock && !wanted.length) {
