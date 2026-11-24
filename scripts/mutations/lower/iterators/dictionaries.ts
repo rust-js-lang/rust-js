@@ -494,4 +494,13 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n            let provided: Vec<js::Prop> =",
     tests: ["test/corpus.test.ts", "-t", "^iterator_provided_methods_a_type_writes_are_its_own.rs$"],
   },
+  {
+    name: "dictionary-count-by-its-reach",
+    breaks: "generic code's dictionary of std's adapter carries the form's own `count`, `$count`, only where it reaches the crate's own steps, never where std's `count` asks a hint that may run the crate's code, so generic code's count of it asks none (#2112, Change A step 3f)",
+    file: "crates/rust-js-lower/src/iterators/dictionaries.rs",
+    find: "                        .owns_its_step(ty, OwnStep::Count)\n",
+    replace: "                        .reaches_its_own(ty, OwnStep::Count, Reach::Sure)\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_try_fold.rs$"],
+    snapshots: true,
+  },
 ];

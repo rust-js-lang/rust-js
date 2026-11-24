@@ -425,10 +425,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .reaches_its_own(ty, OwnStep::Nth, Reach::Sure)
                         .then(|| Expr::helper(if boxed { "$nthSome" } else { "$nth" })),
                     recognition
-                        .reaches_its_own(ty, OwnStep::Last, Reach::Sure)
+                        .owns_its_step(ty, OwnStep::Last)
                         .then(|| Expr::helper(if boxed { "$lastSome" } else { "$last" })),
                     recognition
-                        .reaches_its_own(ty, OwnStep::Count, Reach::Sure)
+                        .owns_its_step(ty, OwnStep::Count)
                         .then(|| Expr::helper("$count")),
                 )
             }

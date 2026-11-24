@@ -988,3 +988,26 @@ test("a projection's iterator is told its type's own value by projection_as_it_i
     .flatMap((file) => read(file).split("\n").filter((line) => /^\s*ty::Alias\(\.\.\) => true/.test(line)).map((line) => `${file}: ${line.trim()}`));
   expect(byKind).toEqual([]);
 });
+
+// A consumer of std's adapter takes its own `count` or `last` where
+// `owns_its_step` says, the one answer: whether std's step of it may be
+// observably its own, as its committed runs ask (`observably_owns`), and
+// what it asks reaches the crate's own or a hint that may run its code
+// (#2112, Change A step 3a). So no lowering asks `reaches_its_own` of
+// `count` or `last` itself, which would take a form's own step where
+// std's is its default; `nth` and `nth_back` aren't asked so until #2213.
+// Its meaning, each consumer over each in-place form, is the consumer
+// net's (test/consumer-net.ts, `inPlaceForms`).
+test("a consumer asks owns_its_step of count and last, never reaches_its_own", () => {
+  const lowering = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src")].filter(
+    (file) => file.endsWith(".rs") && file !== "crates/rust-js-lower/src/recognition/own_steps.rs",
+  );
+  const code = (file: string) => read(file).split("\n").filter((line) => !/^\s*\/\//.test(line)).join("\n");
+  // Of `count` or `last` named in the call, or in a list of steps handed
+  // to it a few lines before.
+  const asks = /reaches_its_own\([^()]*OwnStep::(?:Count|Last)\b|\[[^\]]*OwnStep::(?:Count|Last)\b[^\]]*\][^;]{0,160}?reaches_its_own\(/;
+  const wrong = lowering
+    .filter((file) => asks.test(code(file)))
+    .map((file) => `${file}: asks \`reaches_its_own\` of \`count\` or \`last\`; ask \`owns_its_step\`, the one answer of whether a consumer takes the form's own step`);
+  expect(wrong).toEqual([]);
+});

@@ -212,12 +212,45 @@ const raw = (kind: string, name: string, expr: string, back = true): Source => (
 
 const ls = "L(1), L(2), L(3)";
 
+/** `Loud` behind each std adapter an in-place form stands for that gives
+ * its items as they are (crates/rust-js-lower/src/iterators/in_place_forms.txt):
+ * so each consumer runs over each form, and one that takes a form's own
+ * step where std's is its default, or its default where std's is its own,
+ * differs from native Rust, not just one wired past the owner,
+ * `owns_its_step` (#2112, Change A step 3f). Double-ended where std's
+ * adapter is. */
+function inPlaceForms(kind: string, items: string): Source[] {
+  const loud = (boom: number) => `loud(vec![${items}], "src", ${boom})`;
+  const behind = (name: string, adapted: string, back = true): Source => ({
+    name: `loud ${name}`,
+    kind,
+    expr: (boom) => `${loud(boom)}${adapted}`,
+    loud: true,
+    back,
+  });
+  return [
+    behind("map", ".map(|x| x)"),
+    behind("filter", ".filter(|_| true)"),
+    behind("inspect", ".inspect(|_| {})"),
+    behind("skip", ".skip(1)"),
+    behind("take", ".take(2)"),
+    behind("step_by", ".step_by(1)"),
+    behind("chain", `.chain(loud(Vec::<${kind}>::new(), "other", 0))`),
+    behind("rev", ".rev()"),
+    behind("flat_map", ".flat_map(std::iter::once)"),
+    behind("fuse", ".fuse()"),
+    behind("take_while", ".take_while(|_| true)", false),
+    behind("skip_while", ".skip_while(|_| false)", false),
+  ];
+}
+
 /** Each kind of item a template takes, and its sources. */
 export const sources: Source[] = [
   ...louds("L", "L", [
     ["loud", ls],
     ["loud unsorted", "L(3), L(1), L(2)"],
   ]),
+  ...inPlaceForms("L", ls),
   raw("L", "array", `[${ls}].into_iter()`),
   raw("L", "repeat_n", "std::iter::repeat_n(L(7), 3)"),
   raw("L", "repeat take", "std::iter::repeat(L(7)).take(3)", false),

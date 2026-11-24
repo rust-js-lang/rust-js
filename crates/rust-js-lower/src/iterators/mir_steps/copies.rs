@@ -227,9 +227,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `copied()` that reaches the crate's own `nth`, `last` or `count`,
         // which std's `Copied` asks of its source, `$copied`, which does
         // too; else a map, as std's `Cloned` steps as its `Map` does.
-        let passes_on = [OwnStep::Nth, OwnStep::Last, OwnStep::Count]
-            .into_iter()
-            .any(|step| recognition.reaches_its_own(output, step, Reach::Sure));
+        let passes_on = recognition.reaches_its_own(output, OwnStep::Nth, Reach::Sure)
+            || [OwnStep::Last, OwnStep::Count]
+                .into_iter()
+                .any(|step| recognition.owns_its_step(output, step));
         let copied = crate::recognition::copied_source(self.tcx, output).is_some() && passes_on;
         body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
         let copy = Expr::arrow(vec![x.into()], body);

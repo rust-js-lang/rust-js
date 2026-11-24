@@ -278,3 +278,33 @@ whose form is chosen apart from it, and seven `last`s that
 `count-reached-of-the-lent`, `flatten-count-always-own`,
 `own-last-of-destructors-undropped` retargeted; `flatten-count-by-reduce`
 retired with its redundant term.
+
+## Amended: each consumer asks the owner, and the net runs each over each form (2026-11-24, #2112 Change A step 3f)
+
+Two more consumers of a std adapter's `count` and `last` asked
+`reaches_its_own` themselves: generic code's dictionary of it
+(iterators/dictionaries.rs, its `last: $last` and `count: $count`) and a
+`copied()`'s choice of `$copied`, which passes them on
+(iterators/mir_steps/copies.rs). Both ask `owns_its_step` now; their `nth`
+keeps `reaches_its_own` until #2213. Two corpus snapshots move, each a
+generic dictionary that gains `count: $count` where std's `count` asks a
+hint that may run the crate's code (`skip_try_fold`,
+`panic_in_own_rfold_drops`), both as native Rust runs.
+
+The check is both halves:
+
+- **Wiring** (test/architecture-iterators.test.ts): outside
+  recognition/own_steps.rs, no code asks `reaches_its_own` of `count` or
+  `last`, in its call or in a list of steps handed to it; its message names
+  `owns_its_step`.
+- **Meaning** (test/consumer-net.ts, `inPlaceForms`): each consumer runs over
+  the crate's iterator behind each std adapter an in-place form stands for
+  that gives its items as they are, `map`, `filter`, `inspect`, `skip`,
+  `take`, `step_by`, `chain`, `rev`, `flat_map`, `fuse`, `take_while` and
+  `skip_while`, against native Rust: one that takes a form's own step where
+  std's is its default, or the default where std's is its own, differs. It
+  added 7,138 cases, 14,024 in 234 programs. On its first run it found
+  #2434 (std's compiled `Zip` told a range's `TrustedRandomAccess` of a value
+  stepped as a JS iterator), fixed before this landed.
+
+Mutation `dictionary-count-by-its-reach`.

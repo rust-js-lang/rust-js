@@ -91,7 +91,7 @@ function anyKeptAbove(it, n, dropI) {
     iterator_map(
       iterator_filter($stepsOf(it), (x) => x !== 0, $jsIterator, dropI),
       (x) => (x + 1) | 0,
-      { next: $next, fold: $foldOf },
+      { next: $next, fold: $foldOf, count: $count },
       (filter) => {
         filter.return();
       },

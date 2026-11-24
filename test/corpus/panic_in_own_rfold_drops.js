@@ -3,6 +3,7 @@
 import {
   $catchUnwind,
   $cleanup,
+  $count,
   $dropEach,
   $exactLen,
   $foldDropping,
@@ -218,7 +219,7 @@ function main() {
           undefined,
           dDrop_drop,
         ),
-        { next: $next, fold: $foldOf },
+        { next: $next, fold: $foldOf, count: $count },
         {
           next_back: (iterator) =>
             filterDoubleEndedIterator_nextBack(
