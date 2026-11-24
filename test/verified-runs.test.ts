@@ -5,6 +5,8 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { bytesOf } from "../tooling/bounded.js";
+import { keptSince } from "./kept";
 import { fixture } from "./support";
 import { reached, shared } from "./verified-runs";
 
@@ -60,7 +62,10 @@ test("a kept reach is read again only while each file of the JS it bundled is as
   const store = join(dir, "store");
   const given = std(dir);
   const first = await reached(entry, given, store, roomy);
-  expect(readdirSync(store).filter((id) => existsSync(join(store, id, "reach.json"))).length).toBe(1);
+  const ids = readdirSync(store).filter((id) => existsSync(join(store, id, "reach.json")));
+  expect(ids.length).toBe(1);
+  // Counted in the store's index as it's kept (#2498).
+  expect(keptSince(store)).toBe(bytesOf(join(store, ids[0]!)));
   expect(await reached(entry, given, store, roomy)).toBe(first);
   // The JS's other file changed, its entry the same: bundled again.
   writeFileSync(join(entry, "../more.js"), `export function more() {\n  return 50;\n}\n`);

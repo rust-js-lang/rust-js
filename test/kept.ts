@@ -6,8 +6,8 @@
 // what's unused for a week, then the least recently used past each one's
 // cap, and below the disk's floor until it's back (test/bounded.ts).
 
-import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { appendFileSync, existsSync, linkSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { checkout, disk, floorBytes, machineStore, retiredMachineStore } from "./bounded";
@@ -19,6 +19,11 @@ const day = 24 * 60 * 60;
  * worktree's, as a build is the same in any checkout of the same sources
  * (`nativeBinary`, #1047). */
 export const nativeCache = join(machineStore, "native-cache");
+
+/** Where native programs' sources and wrappers are written, each in a
+ * directory named by what's in it (`contentDirectory`, test/support.ts):
+ * the checkout's, whichever target the tests run in (#875). */
+export const nativeSources = join(checkoutTarget, "native-sources");
 
 /** Where native programs' runs are kept by what they were built from
  * (test/native-outcomes.ts): the machine's, every worktree's, as their
@@ -59,7 +64,7 @@ export const stdReach = target === checkoutTarget ? join(machineStore, "std-reac
  * 500 MB (#914), and the net's about 100 MB more. */
 export const keptStores = [
   { dir: nativeCache, cap: disk.nativeCache },
-  { dir: join(checkoutTarget, "native-sources"), cap: 64 * 2 ** 20 },
+  { dir: nativeSources, cap: 64 * 2 ** 20 },
   { dir: verifiedRuns, cap: 512 * 2 ** 20 },
   { dir: stdReach, cap: 64 * 2 ** 20 },
   { dir: nativeOutcomes, cap: 256 * 2 ** 20 },
@@ -117,11 +122,68 @@ export function markUsed(entry: string) {
   } catch {}
 }
 
+/** A store's index (#2498): beside it, `.walked.json`, when `pruneKept`
+ * last walked it and the size of what it left; and `.kept`, a line for
+ * each entry kept in it since, its size and its path in the store, which
+ * what keeps one appends (`noteKept`). Its size between walks is the two together: never less
+ * than it is, as a removal by another checkout's prune only makes it
+ * more. A walk takes `.kept` first, so an entry kept as it walks is
+ * counted again, not lost. Derived from the walk alone, it's a cache of
+ * it, walked again where it can't say (`walkDue`). */
+const walkedOf = (store: string) => join(store, ".walked.json");
+const keptLogOf = (store: string) => join(store, ".kept");
+
+/** `entry`, just kept in `store`, counted in the store's size until its
+ * next walk (`pruneKept`): what every store's writer calls once it has
+ * kept one. */
+export function noteKept(store: string, entry: string) {
+  try {
+    appendFileSync(keptLogOf(store), `${bytesOf(entry)}\t${relative(store, entry)}\n`);
+  } catch {}
+}
+
+/** The size of what `noteKept` counted in `store` since its last walk. */
+export function keptSince(store: string): number {
+  let since = 0;
+  try {
+    for (const line of readFileSync(keptLogOf(store), "utf8").split("\n")) since += Number(line.split("\t")[0]) || 0;
+  } catch {}
+  return since;
+}
+
+/** `store`'s size by its index: its last walk's and what was kept since;
+ * none where it has no last walk. */
+export function indexedSize(store: string): { walked: number; bytes: number } | undefined {
+  let last: { walked?: unknown; bytes?: unknown };
+  try {
+    last = JSON.parse(readFileSync(walkedOf(store), "utf8"));
+  } catch {
+    return undefined;
+  }
+  if (typeof last.walked !== "number" || typeof last.bytes !== "number") return undefined;
+  return { walked: last.walked, bytes: last.bytes + keptSince(store) };
+}
+
+/** Whether `store` is walked now, or its index says what a walk would
+ * remove is nothing: walked where it has no index; a day after its last
+ * walk, so what's unused for a week goes within a day of it; with the
+ * disk below its floor; or with its size past `cap` an hour after its
+ * last walk, as a working set past its cap, which a walk keeps, is
+ * walked once an hour, not by every check. `now` is in seconds. */
+export function walkDue(store: string, { cap, free, now }: { cap: number; free: () => number; now: number }): boolean {
+  const index = indexedSize(store);
+  if (index === undefined || free() < floorBytes) return true;
+  const ago = now - index.walked;
+  return ago < 0 || ago >= day || (index.bytes > cap && ago >= 60 * 60);
+}
+
 /** Drop the entries in `cache` unused for `days`, and those a crash left
  * half made, `.building-*`, an hour on; then held to `cap`, its working
  * set, used since `since` (ms), kept, and to the disk's `free` space above
- * its floor (`holdKept`); then a thing with none left. `now` is in
- * seconds. What it removed, and the size of what's left. */
+ * its floor (`holdKept`); then a thing with none left. Each walk is kept
+ * in the store's index, which says when the next is due (`walkDue`): till
+ * then, nothing's listed. `now` is in seconds. What it removed, and the
+ * size of what's left. */
 export function pruneKept(
   cache: string,
   {
@@ -132,12 +194,18 @@ export function pruneKept(
     since = workingSetSince(),
   }: { now?: number; days?: number; cap?: number; free?: () => number; since?: number } = {},
 ): { removed: number; size: number } {
+  if (!walkDue(cache, { cap, free, now })) return { removed: 0, size: indexedSize(cache)!.bytes };
   let programs: string[];
   try {
-    programs = readdirSync(cache);
+    programs = readdirSync(cache).filter((name) => !name.startsWith("."));
   } catch {
     return { removed: 0, size: 0 };
   }
+  // What's kept as it walks is counted again after it, not lost.
+  const taken = `${keptLogOf(cache)}.${process.pid}`;
+  try {
+    renameSync(keptLogOf(cache), taken);
+  } catch {}
   let removed = 0;
   for (const program of programs) {
     const dir = join(cache, program);
@@ -166,6 +234,12 @@ export function pruneKept(
       if (readdirSync(join(cache, program)).length === 0) rmSync(join(cache, program), { recursive: true, force: true });
     } catch {}
   }
+  const writing = `${walkedOf(cache)}.${process.pid}`;
+  try {
+    writeFileSync(writing, JSON.stringify({ walked: now, bytes: evicted.size }));
+    renameSync(writing, walkedOf(cache));
+  } catch {}
+  rmSync(taken, { force: true });
   return { removed: removed + evicted.removed, size: evicted.size };
 }
 
@@ -176,7 +250,7 @@ export function pruneKept(
 export function keptBuilds(cache: string): Kept[] {
   let programs: string[];
   try {
-    programs = readdirSync(cache);
+    programs = readdirSync(cache).filter((name) => !name.startsWith("."));
   } catch {
     return [];
   }

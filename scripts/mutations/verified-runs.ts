@@ -42,4 +42,20 @@ export const mutations: Mutation[] = [
     replace: "  return true;\n}",
     tests: ["test/native-outcomes.test.ts", "-t", "verified run is run again"],
   },
+  {
+    name: "verified-run-unnoted",
+    breaks: "a corpus case's verified run is kept but not counted in its store's index (#2498)",
+    file: "test/verified-runs.ts",
+    find: "  noteKept(cache, join(cache, key));\n",
+    replace: "",
+    tests: ["test/native-outcomes.test.ts", "-t", "verified run is run again"],
+  },
+  {
+    name: "reach-unnoted",
+    breaks: "a JS's reach of std is kept but not counted in its store's index, std-reach's 109k entries' store (#2498)",
+    file: "test/verified-runs.ts",
+    find: "    noteKept(store, dirname(kept));\n",
+    replace: "",
+    tests: ["test/verified-runs.test.ts", "-t", "a kept reach is read again only while"],
+  },
 ];

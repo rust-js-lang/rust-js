@@ -190,3 +190,25 @@ test process writes is a second record of the stores to keep true. It's
 #2498's second half, left until a measure says the walk's CPU matters.
 
 Amended the same day: the kept compiles' prune runs again before the jobs, after the build it's of (`startup`'s `compiles`). Beside the jobs, it dropped another build's entries that test/compiles.test.ts keeps in that store and reads again. The ENOENT failed every agent's check, and a false red costs more than its 0.6–25 s. The stores' prune stays beside the jobs. test/check-startup.test.ts holds the order; mutation `check-startup-compiles-pruned-beside`.
+
+Amended the next day (#2498's second half, the lead's call): each kept
+store keeps its size in an index after all. Beside the jobs the walk was
+14–24 s of a core under load and 9 s quiet (std-reach's 109k entries alone
+3.4 s), on every check of every checkout, as the stores are the machine's;
+and support.test's floor test walked the machine's stores, 44 s alone on
+the Mac mini, before 0f11b7da6 gave it a store of its own. The index is
+derived from the walk alone: `.walked.json` beside the store, when
+`pruneKept` last walked it and the size it left, and `.kept`, a line for
+each entry kept since, its size and path, appended by the store's writer
+(`noteKept`, called by each of the five: a native build, a native run, a
+verified run, a reach, a native program's sources). Its size between walks
+is never less than the store's: a removal by another prune only makes it
+more, and a walk takes `.kept` first, so what's kept as it walks is counted
+again. A store is walked where it has no index, a day after its last walk
+(so what's a week unused goes within a day of it), with the disk below its
+floor, or past its cap an hour on (a working set past its cap, which a walk
+keeps, isn't walked by every check). A writer that forgets to note is
+caught by its test (mutations `native-build-unnoted`, `native-run-unnoted`,
+`verified-run-unnoted`, `reach-unnoted`, `native-sources-unnoted`); bytes
+missed, as a sources directory's files written after it's made, are found
+by the next day's walk.

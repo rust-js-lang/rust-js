@@ -400,7 +400,11 @@ at again as it goes, so a job's use of an entry since the walk listed it
 keeps it (`holdKept`, test/kept.ts). Only below the disk's floor do the
 jobs wait for it, as they'd keep nothing they made, and a failed build
 waits for it before the check stops. Each is timed from its own start to
-its own exit, awaited apart (#1917).
+its own exit, awaited apart (#1917). A store is walked only when its
+index says a walk is due (#2498): `.walked.json` beside it, its last walk's
+time and size, and `.kept`, what each writer kept since (`noteKept`); a day
+after its last walk, below the disk's floor, or past its cap an hour on.
+Between, its prune reads two small files, not std-reach's 109k entries.
 
 What keeps them there:
 

@@ -10,7 +10,7 @@ import { basename, dirname, join, relative } from "node:path";
 import { bytesOf, volumeBytes } from "../tooling/bounded.js";
 import { disk, diskProfile, floorBytes, mainCheckoutOf } from "./bounded";
 import { boundEntries, budgetBytes, entriesOf, holdToBudget, overBudget, pinnedToolchains, sccacheConfigText, sccacheWritten, sizeSccache, unpinnedToolchains, type Store } from "../scripts/disk";
-import { adoptRetiredStores, holdKept, keptAppsCap, keptStores, mayKeep, nativeCache, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, verifiedRuns, workingSetMs, workingSetSince } from "./kept";
+import { adoptRetiredStores, holdKept, indexedSize, keptAppsCap, keptStores, mayKeep, nativeCache, nativeSources, noteKept, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, verifiedRuns, walkDue, workingSetMs, workingSetSince } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
 import { boundCrateProjects } from "../scripts/crate-corpus";
@@ -26,16 +26,43 @@ import { cargoArtifacts, contentDirectory, expectSnapshot, fixture, knownText, n
 test("a kept native program is built again when a file it includes changes", () => {
   const dir = fixture("native-transitive");
   writeFileSync(join(dir, "cases.rs"), 'pub fn value() -> u32 {\n    include!("value.rs")\n}\n');
-  const answer = () => {
+  const build = () => {
     const built = nativeBinary('include!("cases.rs");\nfn main() {\n    println!("{}", value());\n}\n', dir, ["--edition=2024"]);
     if ("error" in built) throw new Error(built.error);
-    return run([built.binary]).trim();
+    return built;
   };
+  const answer = () => run([build().binary]).trim();
   writeFileSync(join(dir, "value.rs"), "1\n");
   expect(answer()).toBe("1");
-  writeFileSync(join(dir, "value.rs"), "2\n");
-  expect(answer()).toBe("2");
+  // A value of this run's, so its build is new, and counted in the store's
+  // index (#2498), unless the store's walk took its count meanwhile.
+  const value = String(Date.now() % 2 ** 31);
+  const began = Date.now() / 1000;
+  writeFileSync(join(dir, "value.rs"), `${value}\n`);
+  const built = build();
+  expect(built.built).toBe(true);
+  expect(run([built.binary]).trim()).toBe(value);
+  // Not kept below the disk's floor, so not counted.
+  expect(!built.kept || notedSince(nativeCache, dirname(built.binary), began)).toBe(true);
 });
+
+// A native program's sources, in a directory named by them, are counted in
+// their store's index as it's made (#2498).
+test("a native program's sources directory is counted in its store's index", () => {
+  const began = Date.now() / 1000;
+  expect(notedSince(nativeSources, contentDirectory(`// ${crypto.randomUUID()}`), began)).toBe(true);
+});
+
+/** Whether `entry` was counted in `store`'s index as it was kept (#2498):
+ * named in what's kept since its last walk, or a walk since `began`, a
+ * machine's store's, which may have taken that count. */
+function notedSince(store: string, entry: string, began: number): boolean {
+  let log = "";
+  try {
+    log = readFileSync(join(store, ".kept"), "utf8");
+  } catch {}
+  return log.includes(`\t${relative(store, entry)}\n`) || (indexedSize(store)?.walked ?? 0) >= began;
+}
 
 // A program of several crates is kept as one built from one is (#882): found
 // again, as it was, and built again, or another kept build of those inputs
@@ -326,9 +353,53 @@ test("a kept store past its cap keeps its working set, and only stale builds go"
   expect(pruneKept(cache, { now, cap: each, free: () => Number.POSITIVE_INFINITY, since })).toEqual({ removed: 2, size: 2 * each });
   expect([used, usedLater, stale, staler].map(existsSync)).toEqual([true, true, false, false]);
   // The disk at its floor takes from it, the least recently used first.
-  let free = floorBytes - 1;
-  expect(pruneKept(cache, { now, cap: each, free: () => free++, since })).toEqual({ removed: 1, size: each });
+  // Below it till one's gone: asked again before the walk, whether it's due.
+  expect(pruneKept(cache, { now, cap: each, free: () => (existsSync(used) ? floorBytes - 1 : floorBytes), since })).toEqual({ removed: 1, size: each });
   expect([used, usedLater].map(existsSync)).toEqual([false, true]);
+});
+
+// A store's walk lists and sizes every entry: std-reach's 109k took 3.4 s,
+// the five stores' 9 s quiet and 14–24 s of a core beside a check's jobs
+// (#2498). Each walk is kept in the store's index, with what's kept since,
+// and the next is made only where it's due: a day on, so what's a week
+// unused goes within a day of it; with the disk below its floor; or past
+// its cap, an hour on, as a working set past it is kept by a walk anyway.
+test("a store is walked again only once its index says a walk is due", () => {
+  const cache = fixture("native-indexed");
+  const now = Date.now() / 1000;
+  const day = 24 * 3600;
+  const entry = (name: string, ago: number) => {
+    const dir = join(cache, name, "build");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "native"), Buffer.alloc(64 * 1024));
+    utimesSync(dir, now - ago, now - ago);
+    return dir;
+  };
+  const used = entry("used", 60);
+  const each = bytesOf(used);
+  const room = () => Number.POSITIVE_INFINITY;
+  const since = Date.now() - workingSetMs;
+  const cap = 3 * each;
+  expect(pruneKept(cache, { now, cap, free: room, since })).toEqual({ removed: 0, size: each });
+  expect(indexedSize(cache)).toEqual({ walked: now, bytes: each });
+  // A week unused, made where no walk saw it: it's not listed till one's due.
+  const stale = entry("stale", 8 * day);
+  expect(pruneKept(cache, { now: now + 60, cap, free: room, since })).toEqual({ removed: 0, size: each });
+  expect(existsSync(stale)).toBe(true);
+  // A day on, it's walked, and the week-old entry goes.
+  expect(pruneKept(cache, { now: now + day, cap, free: room, since })).toEqual({ removed: 1, size: each });
+  expect(existsSync(stale)).toBe(false);
+  expect(existsSync(join(cache, ".kept"))).toBe(false);
+  // What's kept since counts: past the cap, it's walked an hour after the
+  // last walk, not before.
+  for (const name of ["a", "b", "c"]) noteKept(cache, entry(name, 0));
+  expect(indexedSize(cache)).toEqual({ walked: now + day, bytes: 4 * each });
+  expect(walkDue(cache, { cap, free: room, now: now + day + 60 })).toBe(false);
+  expect(walkDue(cache, { cap: 4 * each, free: room, now: now + day + 3600 })).toBe(false);
+  expect(walkDue(cache, { cap, free: room, now: now + day + 3600 })).toBe(true);
+  // Below the disk's floor, at once.
+  expect(walkDue(cache, { cap: Number.POSITIVE_INFINITY, free: () => floorBytes - 1, now: now + day + 60 })).toBe(true);
+  expect(walkDue(cache, { cap: Number.POSITIVE_INFINITY, free: room, now: now + day + 60 })).toBe(false);
 });
 
 // A check's prune runs beside its jobs (#2498), so a build its walk listed

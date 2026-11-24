@@ -91,4 +91,20 @@ export const mutations: Mutation[] = [
     replace: "  for (let n = counts.get(counted) ?? 0; ; n++) {\n    const dir = join(base, `${name}_${n}`);\n    takeClaim(`${dir}.owner`);\n",
     tests: ["test/docs.test.ts", "-t", "a guide run compiles in its own directory"],
   },
+  {
+    name: "native-build-unnoted",
+    breaks: "a native program's build is kept but not counted in its store's index, so the native builds grow past their cap for a day unwalked (#2498)",
+    file: "test/support.ts",
+    find: "    renameSync(building, kept);\n    noteKept(nativeCache, kept);\n",
+    replace: "    renameSync(building, kept);\n",
+    tests: ["test/support.test.ts", "-t", "a kept native program is built again when a file it includes changes"],
+  },
+  {
+    name: "native-sources-unnoted",
+    breaks: "a native program's sources directory is made but not counted in its store's index (#2498)",
+    file: "test/support.ts",
+    find: "  if (mkdirSync(dir, { recursive: true }) !== undefined) noteKept(nativeSources, dir);",
+    replace: "  mkdirSync(dir, { recursive: true });",
+    tests: ["test/support.test.ts", "-t", "a native program's sources directory is counted in its store's index"],
+  },
 ];

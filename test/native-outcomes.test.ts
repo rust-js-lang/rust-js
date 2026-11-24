@@ -4,11 +4,12 @@
 
 import { afterEach, beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 
+import { bytesOf } from "../tooling/bounded.js";
 import { cases, corpus, directives } from "./corpus-cases";
 import { floorBytes } from "./bounded";
-import { nativeCache, nativeOutcomes } from "./kept";
+import { keptSince, nativeCache, nativeOutcomes } from "./kept";
 import { keepRun, keptRun, recheck } from "./native-outcomes";
 import { nativeFlags, nativeLimitKey, nativeRunKey, runNative, type Run } from "./programs";
 import { record, verified } from "./verified-runs";
@@ -152,9 +153,10 @@ test("a run stopped by its time or memory isn't kept", () => {
   writeFileSync(join(build, "inputs.json"), JSON.stringify({ files: [], env: [] }));
   keepRun("0".repeat(64), build, stopped, store, roomy);
   expect(readdirSync(store)).toEqual([]);
-  // The same run, ended, is kept.
+  // The same run, ended, is kept, and counted in the store's index (#2498).
   keepRun("0".repeat(64), build, { ...stopped, stopped: undefined, outcome: { exit: 0 } }, store, roomy);
   expect(keptRun("0".repeat(64), store)?.outcome).toEqual({ exit: 0 });
+  expect(keptSince(store)).toBe(bytesOf(join(store, "0".repeat(32), basename(build))));
   // Below the disk's floor, as its `free` says, nothing.
   keepRun("1".repeat(64), build, { ...stopped, stopped: undefined, outcome: { exit: 0 } }, store, () => floorBytes - 1);
   expect(keptRun("1".repeat(64), store)).toBeUndefined();
@@ -201,6 +203,8 @@ test("a verified run is run again of the nightly's share", () => {
   const cache = fixture("native-outcome-verified");
   record("k", "note", cache, roomy);
   expect(verified("k", cache)).toBe(true);
+  // Counted in the store's index as it's kept (#2498).
+  expect(keptSince(cache)).toBe(bytesOf(join(cache, "k")));
   process.env.RUST_JS_NATIVE_RECHECK = "1";
   expect(verified("k", cache)).toBe(false);
 });

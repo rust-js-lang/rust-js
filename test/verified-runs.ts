@@ -14,7 +14,7 @@ import { dirname, join, posix, relative, resolve } from "node:path";
 import type { BunPlugin } from "bun";
 
 import { freeBytes } from "../tooling/bounded.js";
-import { markUsed, mayKeep, stdReach, verifiedRuns } from "./kept";
+import { markUsed, mayKeep, noteKept, stdReach, verifiedRuns } from "./kept";
 import { node } from "./programs";
 import { rechecked } from "./native-outcomes";
 import { root, run, stdDir } from "./support";
@@ -48,6 +48,7 @@ export function record(key: string, note: string, cache = verifiedRuns, free = (
   if (!mayKeep(cache, free)) return;
   mkdirSync(join(cache, key), { recursive: true });
   writeFileSync(join(cache, key, "passed"), `${note}\n`);
+  noteKept(cache, join(cache, key));
 }
 
 /** The `.js` files under `dir`, sorted, but those under a directory of
@@ -175,6 +176,7 @@ export async function reached(entry: string, std = stdDir, store = stdReach, fre
   if (mayKeep(store, free)) {
     mkdirSync(dirname(kept), { recursive: true });
     writeFileSync(kept, JSON.stringify({ inputs: read.map((file) => [relative(dir, file), sha(readFileSync(file, "utf8"))]), reach }));
+    noteKept(store, dirname(kept));
   }
   return reach;
 }

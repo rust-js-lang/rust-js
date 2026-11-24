@@ -21,7 +21,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { markUsed, mayKeep, nativeOutcomes } from "./kept";
+import { markUsed, mayKeep, nativeOutcomes, noteKept } from "./kept";
 import { same, type Outcome } from "./oracle";
 import type { Run } from "./programs";
 import { unchanged } from "./support";
@@ -71,6 +71,7 @@ export function keepRun(key: string, build: string, run: Run, store = nativeOutc
   writeFileSync(join(making, "run.json"), JSON.stringify(kept));
   try {
     renameSync(making, dir);
+    noteKept(store, dir);
   } catch {
     rmSync(making, { recursive: true, force: true });
   }

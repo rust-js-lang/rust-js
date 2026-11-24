@@ -5,7 +5,7 @@ import { basename, dirname, join, resolve } from "node:path";
 
 import { cargoHome, tempRoot } from "./bounded";
 import { type Exit, runSync, stopped } from "./child";
-import { alive, keptApps, markUsed, mayKeep, nativeCache, pruneKeptApps, takeClaim } from "./kept";
+import { alive, keptApps, markUsed, mayKeep, nativeCache, nativeSources, noteKept, pruneKeptApps, takeClaim } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
 import { parts, shard } from "../scripts/shard";
 import { checkoutTarget, compiler, compilerGiven, helpersModule, stdDir, target } from "./packages-of";
@@ -183,8 +183,9 @@ export function writeWhole(path: string, text: string) {
 export function contentDirectory(...contents: string[]): string {
   const hash = createHash("sha256");
   for (const content of contents.map(portable)) hash.update(`${content.length}:${content}`);
-  const dir = join(checkoutTarget, "native-sources", hash.digest("hex").slice(0, 32));
-  mkdirSync(dir, { recursive: true });
+  const dir = join(nativeSources, hash.digest("hex").slice(0, 32));
+  // Counted as it's made, its files, a few KB, at the store's next walk.
+  if (mkdirSync(dir, { recursive: true }) !== undefined) noteKept(nativeSources, dir);
   return dir;
 }
 
@@ -368,6 +369,7 @@ function keptNative(key: string, wrapper: string, timeout: number, steps: (into:
   const kept = join(program, createHash("sha256").update(read).digest("hex").slice(0, 32));
   try {
     renameSync(building, kept);
+    noteKept(nativeCache, kept);
   } catch {
     // Another file built it at the same time, from the same sources.
     rmSync(building, { recursive: true, force: true });

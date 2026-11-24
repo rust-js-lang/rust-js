@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "  if (!mayKeep(store)) return;",
     tests: ["test/native-outcomes.test.ts", "-t", "a run stopped by its time or memory isn't kept"],
   },
+  {
+    name: "native-run-unnoted",
+    breaks: "a native program's run is kept but not counted in its store's index (#2498)",
+    file: "test/native-outcomes.ts",
+    find: "    noteKept(store, dir);\n",
+    replace: "",
+    tests: ["test/native-outcomes.test.ts", "-t", "a run stopped by its time or memory isn't kept"],
+  },
 ];
