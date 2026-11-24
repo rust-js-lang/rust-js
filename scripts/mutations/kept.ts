@@ -40,6 +40,14 @@ export const mutations: Mutation[] = [
     tests: working,
   },
   {
+    name: "kept-used-since-listed-removed",
+    breaks: "a stale entry the prune listed is removed though a job used it since, a check's prune running beside its jobs (#2498): the job's native build or verified run gone under it",
+    file: "test/kept.ts",
+    find: "    if (used !== undefined && used >= since) return false;\n",
+    replace: "",
+    tests: ["test/support.test.ts", "-t", "a kept entry used after the prune listed it stays"],
+  },
+  {
     name: "disk-floor-spares-working-set",
     breaks: "the disk at its floor never takes from the working set, so a full disk stops every run instead of losing a cache",
     file: "test/kept.ts",

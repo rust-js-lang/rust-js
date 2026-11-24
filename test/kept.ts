@@ -87,12 +87,24 @@ export function workingSetSince(now = Date.now(), mark = lastCheckMark): number 
  * machine's runs use is the least a store keeps, measured, not a constant
  * below it (#2163 of the budget, #2344 of a store's cap). Only the disk's
  * floor takes from it, the least recently used first. What it removed,
- * and the size of the entries left. The one rule of both. */
+ * and the size of the entries left. The one rule of both.
+ *
+ * A stale entry is looked at again as it goes: one a run used since it was
+ * listed is the working set's, and stays. A check's prune runs beside its
+ * jobs (scripts/checkFast.ts' `startup`, #2498), and every checkout's
+ * beside the others' runs, so the store's walk, seconds of it, is no
+ * longer the last word on what's in use. */
 export function holdKept(kept: Kept[], { cap, free, since, rest = 0 }: { cap: number; free: () => number; since: number; rest?: number }): { removed: number; size: number } {
   const stale = kept.filter((entry) => entry.used < since);
   const working = kept.filter((entry) => entry.used >= since);
   const workingBytes = working.reduce((n, entry) => n + entry.bytes, 0);
-  const old = evict(stale, { cap: Math.max(0, cap - rest - workingBytes), free, floor: floorBytes });
+  const remove = ({ path }: Kept) => {
+    const used = statSync(path, { throwIfNoEntry: false })?.mtimeMs;
+    if (used !== undefined && used >= since) return false;
+    rmSync(path, { recursive: true, force: true });
+    return true;
+  };
+  const old = evict(stale, { cap: Math.max(0, cap - rest - workingBytes), free, floor: floorBytes, remove });
   const floored = evict(working, { cap: Number.POSITIVE_INFINITY, free, floor: floorBytes });
   return { removed: old.removed + floored.removed, size: old.size + floored.size };
 }

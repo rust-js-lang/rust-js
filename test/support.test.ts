@@ -10,7 +10,7 @@ import { basename, dirname, join, relative } from "node:path";
 import { bytesOf, volumeBytes } from "../tooling/bounded.js";
 import { disk, diskProfile, floorBytes, mainCheckoutOf } from "./bounded";
 import { boundEntries, budgetBytes, entriesOf, holdToBudget, overBudget, pinnedToolchains, sccacheConfigText, sccacheWritten, sizeSccache, unpinnedToolchains, type Store } from "../scripts/disk";
-import { adoptRetiredStores, keptAppsCap, keptStores, mayKeep, nativeCache, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, verifiedRuns, workingSetMs, workingSetSince } from "./kept";
+import { adoptRetiredStores, holdKept, keptAppsCap, keptStores, mayKeep, nativeCache, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, verifiedRuns, workingSetMs, workingSetSince } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
 import { boundCrateProjects } from "../scripts/crate-corpus";
@@ -329,6 +329,29 @@ test("a kept store past its cap keeps its working set, and only stale builds go"
   let free = floorBytes - 1;
   expect(pruneKept(cache, { now, cap: each, free: () => free++, since })).toEqual({ removed: 1, size: each });
   expect([used, usedLater].map(existsSync)).toEqual([false, true]);
+});
+
+// A check's prune runs beside its jobs (#2498), so a build its walk listed
+// stale may be used by a job before it's removed: looked at again as it
+// goes, it's the working set's, and stays; one still stale goes.
+test("a kept entry used after the prune listed it stays", () => {
+  const cache = fixture("kept-used-since-listed");
+  const day = 24 * 3600 * 1000;
+  const entry = (name: string) => {
+    const dir = join(cache, name);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "native"), Buffer.alloc(64 * 1024));
+    const at = (Date.now() - 3 * day) / 1000;
+    utimesSync(dir, at, at);
+    return { path: dir, bytes: bytesOf(dir), used: Date.now() - 3 * day };
+  };
+  const listed = [entry("used since"), entry("still stale")];
+  // A job's use of the first, `markUsed`'s, after the walk read its time.
+  const now = new Date();
+  utimesSync(listed[0]!.path, now, now);
+  const since = Date.now() - day;
+  expect(holdKept(listed, { cap: 0, free: () => Number.POSITIVE_INFINITY, since })).toEqual({ removed: 1, size: listed[0]!.bytes });
+  expect(listed.map(({ path }) => existsSync(path))).toEqual([true, false]);
 });
 
 // The kept apps (#882) are held to their cap, the least recently used first,

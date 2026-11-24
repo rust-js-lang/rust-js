@@ -158,3 +158,33 @@ continues working: startup must remain asynchronous, report the prune's
 shorter duration, retain either child's failure, and await both children.
 Owner mutations restore blocking, substitute the build duration, skip the
 build wait or suppress pruning failure. No test inspects source text.
+
+## Amendment: the jobs start with the build, the prune beside them (2026-11-24, #2498)
+
+The jobs no longer wait for the prune. They need the compiler, so they
+start once its build is done; the prune of what the tests keep goes on
+beside them, and the kept compiles' prune, which ran in the check's own
+process after the build, is a process beside them too. Each is said, with
+its time against its usual of the same kind (`, beside the jobs`), once
+the jobs have ended, and a prune that failed fails the check as before.
+The prune's walk of the stores, sizing each entry, was the critical path of
+every check whose build was warm: 25.7 s median on the M1, 6–20 s on the
+Mac mini, with the kept compiles' 1–25 s after it.
+
+What it removes beside the jobs is stale: unused since the checkout's last
+check and for a day. Its walk takes seconds, so an entry it listed stale
+may be used by a job before it's removed; `holdKept` looks at each again
+as it goes and keeps one used since (test/kept.ts). Every checkout's prune
+already ran beside the others' jobs, and the budget's measure beside its
+own; this narrows that race for all of them.
+
+Two cases still wait. Below the disk's floor the jobs would keep nothing
+they make, so they start once the prunes have freed what they can. A
+build that failed waits for the prune before the check stops, so nothing
+of the check's is left running.
+
+Rejected: keeping each store's size in an index, updated by each writer,
+so the prune reads only what it removes. With the walk off the critical
+path it costs a core for seconds beside 18 busy ones, and an index every
+test process writes is a second record of the stores to keep true. It's
+#2498's second half, left until a measure says the walk's CPU matters.

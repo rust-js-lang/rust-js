@@ -22,7 +22,8 @@ import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "
 import { cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { compilerCrates, isCompilerSource } from "./compiler-crates";
-import { currentBuild, prune } from "../test/compiles";
+import { floorBytes } from "../test/bounded";
+import { freeBytes } from "../tooling/bounded.js";
 import {childWarnings} from "../test/child";
 import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins, type Family } from "./iteratorSlice";
 import { OWNER_PAGE, ownerTable, sourceLine } from "./owners";
@@ -41,18 +42,66 @@ const root = join(import.meta.dir, "..");
 /** The push suite's test files, which a selection is of. */
 const pushSuite = suiteFiles().length;
 
-/** Build and prune before jobs can use either result. Commands are explicit
- * so the startup barrier and each child's observed duration can be tested
- * with real processes without building the compiler or pruning real stores. */
-export async function startup(cwd: string, commands: { build: string[]; prune: string[] }) {
-  const pruning = Date.now();
-  const pruned = Bun.spawn(commands.prune, { cwd, stdout: "inherit", stderr: "inherit" }).exited
-    .then(code => ({ code, seconds: (Date.now() - pruning) / 1000 }));
+/** A step a check runs beside its jobs, a process of its own: its exit, its
+ * time from its start to its exit, and what it said, which the check says
+ * once its jobs have ended, not among their lines. */
+export type Beside = { code: number; seconds: number; stdout: string; stderr: string };
+
+/** `cmd` run in `cwd` beside the jobs, a `Beside` once it exits. */
+export function beside(cmd: string[], cwd: string): Promise<Beside> {
+  const started = Date.now();
+  const p = Bun.spawn(cmd, { cwd, stdout: "pipe", stderr: "pipe" });
+  return Promise.all([p.exited, new Response(p.stdout).text(), new Response(p.stderr).text()]).then(([code, stdout, stderr]) => ({
+    code,
+    seconds: (Date.now() - started) / 1000,
+    stdout,
+    stderr,
+  }));
+}
+
+/** The check's prunes, `prune` the stores' and `compiles` the kept
+ * compiles', said once each has ended, each timed against its usual of
+ * the same kind, beside the jobs or before them, and what each said: the
+ * compiles' what it kept and dropped, the stores' a warning of the budget.
+ * Whether both did their work. */
+export async function pruned(prune: Promise<Beside>, compiles: Promise<Beside> | undefined, before: boolean): Promise<boolean> {
+  const where = before ? "" : ", beside the jobs";
+  const stores = await prune;
+  console.log(timed(`pruning what tests keep${where}`, stores.seconds));
+  const warned = `${stores.stdout}${stores.stderr}`.trim();
+  if (warned) console.log(warned);
+  if (compiles === undefined) return stores.code === 0;
+  const kept = await compiles;
+  if (kept.code !== 0) {
+    console.log(`pruning kept compiles failed:\n${`${kept.stdout}${kept.stderr}`.trim()}`);
+    return false;
+  }
+  const { size, builds, removed } = JSON.parse(kept.stdout.trim().split("\n").at(-1)!) as { size: number; builds: number; removed: number };
+  const dropped = [builds ? "another build's" : "", removed ? `${removed} past the cap or the disk's floor` : ""].filter(Boolean);
+  console.log(`${timed(`pruning kept compiles${where}`, kept.seconds)}: ${(size / 2 ** 20).toFixed(0)} MB kept${dropped.length ? `, ${dropped.join(" and ")} dropped` : ""}`);
+  return stores.code === 0;
+}
+
+/** Build, with the prune beside it: the jobs need the compiler, so they
+ * wait for its build; not for the prune, which goes on beside them, as
+ * what it removes is stale, no check's in a day, and looked at again as
+ * it goes (`holdKept`, test/kept.ts). On the M1 it was 25.7 s of every
+ * check's start (#2498). But where the disk is below its floor, which a
+ * `statfs` says, the jobs would keep nothing they make (test/bounded.ts),
+ * so they wait for what it frees; and a build that failed waits for it,
+ * so nothing's left running as the check stops. Each timed from its own
+ * start to its own exit, as each is awaited apart (#1917). Commands are
+ * explicit so the start and each child's duration can be tested with real
+ * processes without building the compiler or pruning real stores. */
+export async function startup(cwd: string, commands: { build: string[]; prune: string[] }, belowFloor: () => boolean) {
+  const prune = beside(commands.prune, cwd);
   const building = Date.now();
   const build = Bun.spawn(commands.build, { cwd, stdout: "inherit", stderr: "inherit" });
   const code = await build.exited;
   const built = { code, seconds: (Date.now() - building) / 1000 };
-  return { build: built, prune: await pruned };
+  const waited = code !== 0 || belowFloor();
+  if (waited) await prune;
+  return { build: built, prune, waited };
 }
 
 /** A job of the check, a process of its own: its command, what's added to
@@ -887,27 +936,25 @@ if (import.meta.main) {
   const { ownSince } = await import("./mutations");
   const added = (await ownSince("HEAD")).map((m) => m.name);
 
-  // What no test used for a week, and past each store's cap, before any
-  // runs (test/kept.ts), as the whole suite prunes it: a Mac's native
-  // programs' builds grew 23 GB in two days. In a process of its own while
-  // the compiler builds, so it takes none of the run's time: 0.1 s of a
-  // store of 2,000 programs, a few seconds where it removes many.
   // The install matches the manifests before anything runs (#1817): a
   // rebase over a package or workspace change, `@rust-js/webapi`'s, left
   // `node_modules` without it, and a tsc test failed on its import.
   installed();
 
-  // Every store inside the checkouts, the crate corpus's projects and the
-  // temp root too, and a warning where they're near their budget (#1213).
+  // What no test used for a week, and past each store's cap (test/kept.ts),
+  // as the whole suite prunes it: a Mac's native programs' builds grew 23
+  // GB in two days. Every store inside the checkouts, the crate corpus's
+  // projects and the temp root too, and a warning where they're near their
+  // budget (#1213). In a process of its own, beside the build and then the
+  // jobs, so it takes none of the run's time (`startup`, #2498).
   // Each step's time is kept, and said against its usual (scripts/timing.ts).
-  const prepared = await startup(root, {
-    build: ["cargo", "build", "--quiet"],
-    prune: ["bun", "scripts/disk.ts", "--prune", "--inside", "--quiet"],
-  });
+  const prepared = await startup(
+    root,
+    { build: ["cargo", "build", "--quiet"], prune: ["bun", "scripts/disk.ts", "--prune", "--inside", "--quiet"] },
+    () => freeBytes(root) < floorBytes,
+  );
   if (prepared.build.code !== 0) process.exit(1);
   console.log(timed("cargo build", prepared.build.seconds));
-  if (prepared.prune.code !== 0) process.exit(1);
-  console.log(timed("pruning what tests keep", prepared.prune.seconds));
 
   // The jobs' compiler is the run's own link of the one just built
   // (scripts/own-compiler.ts): the run's build however the checkout's
@@ -920,13 +967,16 @@ if (import.meta.main) {
   process.env.RUST_JS_APPS_SEED = join(own, "apps-seed");
 
   // The compiles the tests keep (test/compiles.ts, ADR 1099), bounded
-  // before any runs: another build's, never found again, and past the
-  // cap, the least recently used.
-  const pruningCompiles = Date.now();
-  // Not of another compiler's run: the checkout's build's would go.
-  const compiles = given === undefined ? prune({ current: currentBuild(compiler) }) : { size: 0, builds: 0, removed: 0 };
-  const dropped = [compiles.builds ? "another build's" : "", compiles.removed ? `${compiles.removed} past the cap or the disk's floor` : ""].filter(Boolean);
-  console.log(`${timed("pruning kept compiles", (Date.now() - pruningCompiles) / 1000)}: ${(compiles.size / 2 ** 20).toFixed(0)} MB kept${dropped.length ? `, ${dropped.join(" and ")} dropped` : ""}`);
+  // beside the jobs as the prune is: another build's, never found again,
+  // and past the cap, the least recently used, which a test's own keep
+  // prunes as the jobs' do. Not of another compiler's run: the checkout's
+  // build's would go.
+  const compiles = given === undefined
+    ? beside(["bun", "-e", `import { currentBuild, prune } from "./test/compiles.ts"; console.log(JSON.stringify(prune({ current: currentBuild(${JSON.stringify(compiler)}) })));`], root)
+    : undefined;
+  // Below the disk's floor, what either frees before the jobs keep anything.
+  const prunedBefore = prepared.waited ? await pruned(prepared.prune, compiles, true) : undefined;
+  if (prunedBefore === false) process.exit(1);
 
   // And the node bindings the bindings and lowering tests compile against,
   // once, before the jobs that ask for them: built by the first test to ask
@@ -991,6 +1041,10 @@ if (import.meta.main) {
   const results = await run(listed, compiler, cores, clock, logs, given === undefined ? jobTimesStore : join(own, "job-times"), leaseStore, args.includes("--fail-fast"));
   const failed = results.filter((r) => r.code !== 0 && !r.cut);
   profiled(results, clock.samples, args.includes("--profile"));
+  // The prunes beside the jobs, said as they've ended: one that failed
+  // fails the check, as it did when it ran before them.
+  const prunedOk = prunedBefore ?? (await pruned(prepared.prune, compiles, false));
+  const failures = failed.length + (prunedOk ? 0 : 1);
   // Still left running as it ends: its numbers aren't a measurement.
   const leftAtEnd = said(strays(root));
   if (leftAtEnd) console.warn(`warning: ${leftAtEnd}`);
@@ -1016,14 +1070,14 @@ if (import.meta.main) {
   console.log(sourceLine(ownerTable(readFileSync(join(root, OWNER_PAGE), "utf8"))));
   const scope = all ? "check:fast --all" : picked ? "check:fast, what the change reaches" : "check:fast, everything";
   console.log(
-    `\n${failed.length === 0 ? `all passed: ${timed(scope, total, { ran: totalKey(listed) })}` : `${failed.length} failed in ${total.toFixed(0)}s`}`,
+    `\n${failures === 0 ? `all passed: ${timed(scope, total, { ran: totalKey(listed) })}` : `${failures} failed in ${total.toFixed(0)}s`}`,
   );
   // Its line in the machine's log, its slowest jobs its steps; a mutant's
   // or a retirement's run is its runner's line.
   if (owns) {
-    devTimes("check:fast", { started: 0, phases: slowest(jobSeconds(results)), selection: scope, ok: failed.length === 0, note: failed.length ? `${failed.length} failed` : "" });
+    devTimes("check:fast", { started: 0, phases: slowest(jobSeconds(results)), selection: scope, ok: failures === 0, note: failures ? `${failures} failed` : "" });
   }
-  process.exit(failed.length === 0 ? 0 : 1);
+  process.exit(failures === 0 ? 0 : 1);
 }
 
 /** Each job's name and its seconds, from its start to its end, which a

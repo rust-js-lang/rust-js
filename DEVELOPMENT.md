@@ -301,7 +301,7 @@ builds past the budget once made every check's measure remove every
 corpus run it was about to reuse, and native-cache's 10 GiB cap, below
 the 11.5 GiB the Mac mini's checks used, evicted builds in use (#2344).
 A kept store's cap is what it keeps past its working set. `check:fast` prunes the stores inside the
-checkouts as it starts, and its measure made apart holds them to the
+checkouts as it starts, beside its build and then its jobs (#2498), and its measure made apart holds them to the
 budget so; past it with all they may lose gone, it names the largest
 holders, a stale worktree's build mostly, for someone to remove.
 `scripts/disk.ts` is their catalogue, and `test/disk-owners.test.ts` holds
@@ -310,7 +310,7 @@ that no other script makes a path in the user's home.
 | What | Where | Bound | Held by |
 |---|---|---|---|
 | The tests' compiles to JS (above) | `target/compile-cache/` | 2 GB; another build's dropped as a run starts; nothing written below the floor | `test/compiles.test.ts` |
-| Native programs' builds | `.cache/native-cache/`, the machine's, every worktree's and whatever `RUST_JS_TARGET` a mutant's or the test map's tests run in (#875, #1047), keyed by what they're built from said from the checkout's root | The disk's (4%, at least 8 GiB), the corpus's and the metamorphic net's about 8 GB, and a week unused; nothing kept below the floor, a build there used from a fixture; pruned as each `check:fast` (while the compiler builds) and `bun run test` starts, and below the floor until it's back | `test/support.test.ts` |
+| Native programs' builds | `.cache/native-cache/`, the machine's, every worktree's and whatever `RUST_JS_TARGET` a mutant's or the test map's tests run in (#875, #1047), keyed by what they're built from said from the checkout's root | The disk's (4%, at least 8 GiB), the corpus's and the metamorphic net's about 8 GB, and a week unused; nothing kept below the floor, a build there used from a fixture; pruned as each `check:fast` (beside its build and jobs) and `bun run test` starts, and below the floor until it's back | `test/support.test.ts` |
 | Native programs' wrappers | `target/native-sources/`, the checkout's likewise | 64 MB, and a week unused, the same way: about 8 MB | `test/support.test.ts` |
 | A corpus case's and a metamorphic rewrite's verified runs (ADR 0567) | `.cache/verified-runs/`, the machine's (#1047); a mutant's tests', their target's `corpus-cache/` | 512 MB, a week unused, the same way: about 8 MB a build of the compiler of the corpus, 100 MB of the net | `test/support.test.ts` |
 | Native programs' runs, kept by what they were built from (ADR 0567, amended) | `.cache/native-outcomes/`, the machine's, keyed as their builds are; what CI's jobs restore and `main`'s save (`.github/actions/native-outcomes`) | 256 MB, a week unused, the same way: about 3 MB of a corpus part of 324 cases | `test/support.test.ts`, `test/native-outcomes.test.ts` |
@@ -386,11 +386,18 @@ and its slowest; `bun run timings <step>` its runs, by commit, with what
 each ran. A warning is the next thing to look at: what made it slower,
 before the loop is built on it.
 
-The compiler build and startup pruning run concurrently. The build is
-awaited asynchronously so the parent can observe and time the prune's exit
-while the build continues. Both must succeed before test jobs start. Older
-pruning timings taken beside a synchronous build included time spent waiting
-for that blocked parent; they cannot establish a pruning bottleneck (#1917).
+The compiler build and the prune of what tests keep start together, and
+the jobs start once the build is done: the prune goes on beside them, as
+does the kept compiles' (another build's, and past their cap), each said
+with its time once the jobs have ended, `pruning what tests keep, beside
+the jobs`, and failing the check where it failed (#2498). Waiting on its
+walk of the stores was 25.7 s of every check's start on the M1 and 6–20 s
+on the Mac mini. What it removes is stale, no check's in a day, and looked
+at again as it goes, so a job's use of an entry since the walk listed it
+keeps it (`holdKept`, test/kept.ts). Only below the disk's floor do the
+jobs wait for it, as they'd keep nothing they made, and a failed build
+waits for it before the check stops. Each is timed from its own start to
+its own exit, awaited apart (#1917).
 
 What keeps them there:
 
