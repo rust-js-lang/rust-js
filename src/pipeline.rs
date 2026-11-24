@@ -1079,7 +1079,6 @@ pub fn lower_crate<'tcx>(
             let no_ref_cells = drops::RefCells::default();
             let ref_cells = ref_cells.get().unwrap_or(&no_ref_cells);
             let aliases: Vec<(String, String)> = aliased_items.iter().map(|(_, names)| names.clone()).collect();
-            let entry = pass.entry.take_if(|(of, _)| *of == module).map(|(_, entry)| entry);
             let mut lowered = LoweredModule {
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),
@@ -1092,42 +1091,7 @@ pub fn lower_crate<'tcx>(
                 taken_into: Vec::new(),
                 reexports,
                 aliases,
-                // A binary's `main`'s start, after all its module makes and
-                // runs as it loads (#2292, #2527).
-                items: js::entry_last(
-                    js::in_load_order(
-                        (pass
-                            .namespaces
-                            .swap_remove(&module)
-                            .into_iter()
-                            .flatten()
-                            .map(js::Item::Namespace))
-                        .chain(
-                            const_items
-                                .swap_remove(&module)
-                                .into_iter()
-                                .flatten()
-                                .map(js::Item::Const),
-                        )
-                        .chain(
-                            pass.statements
-                                .swap_remove(&module)
-                                .into_iter()
-                                .flatten()
-                                .map(js::Item::Statements),
-                        )
-                        .chain(entry.clone().map(js::Item::Statements))
-                        .chain(
-                            pass.functions
-                                .swap_remove(&module)
-                                .into_iter()
-                                .flatten()
-                                .map(js::Item::Function),
-                        )
-                        .collect(),
-                    ),
-                    entry.as_deref(),
-                ),
+                items: pass.take_items(module, const_items.swap_remove(&module)),
                 default_export: default_export.map(|function| bindings::fn_name(tcx, function)),
                 default_declared: default_declared && read_default.is_none(),
                 declarations: None,

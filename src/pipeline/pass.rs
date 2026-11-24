@@ -46,6 +46,38 @@ pub(super) struct Pass {
 }
 
 impl Pass {
+    /// `module`'s items, of the pass and its `constants`, in the order they
+    /// load: its namespaces, constants, statements and functions, a
+    /// binary's `main`'s start after all its module makes and runs as it
+    /// loads (#2292, #2527).
+    pub(super) fn take_items(&mut self, module: LocalModId, constants: Option<Vec<js::Const>>) -> Vec<js::Item> {
+        let entry = self.entry.take_if(|(of, _)| *of == module).map(|(_, entry)| entry);
+        let namespaces = self
+            .namespaces
+            .swap_remove(&module)
+            .into_iter()
+            .flatten()
+            .map(js::Item::Namespace);
+        let constants = constants.into_iter().flatten().map(js::Item::Const);
+        let statements = self
+            .statements
+            .swap_remove(&module)
+            .into_iter()
+            .flatten()
+            .map(js::Item::Statements);
+        let functions = self
+            .functions
+            .swap_remove(&module)
+            .into_iter()
+            .flatten()
+            .map(js::Item::Function);
+        let items = (namespaces.chain(constants).chain(statements))
+            .chain(entry.clone().map(js::Item::Statements))
+            .chain(functions)
+            .collect();
+        js::entry_last(js::in_load_order(items), entry.as_deref())
+    }
+
     /// `module`'s default, its function, class or constant named `name`,
     /// of `constants` its own, is its default alone, whatever its
     /// visibility: `const v = ..; export default v;`, never `export const
