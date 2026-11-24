@@ -304,6 +304,24 @@ test("a library's write through a dyn may fail, and one through a type parameter
   );
 }, 300_000);
 
+// #2518: a library's generic `sum()` of an iterator it makes, given an impl
+// its export answers, std's, the consumer's that asks nothing of what it's
+// given, or the library's own that asks the hint, which its compile made
+// knowing it, is the library's export, imported; given the consumer's own
+// that asks, it's the consumer's copy, whose analysis makes what it gives
+// knowing its hint.
+test("a library's generic sum given impls its export answers is imported, and given one that asks is compiled", () => {
+  const out = chain(pairs, "library_generic_sum_given_impls_its_export_answers", ["dep", "app"]);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).not.toContain("function totalForAnyone(");
+  expect(app).toContain("Dep.totalForAnyone([4, 5, 6], countSumU32)");
+  expect(app).toContain("Dep.totalForAnyone([4, 5, 6], tallySumU32)");
+  const asked = chain(pairs, "library_generic_sum_and_collect_given_its_consumers_impls", ["dep", "app"]);
+  const own = readFileSync(join(asked, "app", "lib.js"), "utf8");
+  expect(own).toContain("function totalForAnyone(v, SSumU32) {\n  return SSumU32.sum(");
+  expect(own).not.toContain("Dep.totalForAnyone(");
+}, 300_000);
+
 // A consumer that reads a `Vec`'s capacity compiles its own of each function
 // it reaches of a library that keeps none, so what they grow has std's
 // capacity (#1180's (5)); of one that reads its library's private state,

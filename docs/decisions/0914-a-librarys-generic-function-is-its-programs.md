@@ -2175,3 +2175,65 @@ Case of [0262](0262-when-rust-and-js-disagree.md): none, no output
 changes. Held by the library-contract suites (crates, crates-compiled-here,
 cross-crate-copies, pilot), mutation `elided-of-changed` retargeted, and
 `elided-walk-parts-unrecorded`, which records only the type asked of.
+
+## Amendment: an impl the call chooses that asks the hint (2026-11-24, #2518)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change, so
+Rust's behavior holds.
+
+A library's generic code that makes an iterator and gives it to an impl
+its callers choose, `v.into_iter().take(1).sum()` into an `S: Sum`, made
+it as its own compile decided for callers it can't see: knowing its hint
+where the library's own impl of the trait asks it (ADR 0170, #2512), else
+JS's own `values().take(1)`. A consumer that gave it its own `Sum`, which
+asks `size_hint()` of what it's given, got `(0, None)` where std's `Take`
+gives `(1, Some(1))`; the debug build's check of what std's code reaches
+took the library's function for std's and panicked first. The export's JS
+depended on a fact its contract doesn't say: which impls its callers'
+types choose.
+
+**A call that gives a library's function an impl its body chooses that
+asks the hint of what it makes, the consumer's own or a third crate's,
+compiles the consumer's own of it** (`hint_asked::chooses_an_asking_impl`,
+asked by `gives_more`), whose analysis then makes what it gives that impl
+knowing its hint, as the crate's own generic code is (ADR 0170). The body
+is read of its optimized MIR as the call instantiates it, each call that
+reaches an impl its callers choose (`impl_called_unresolved`) resolved and
+asked `impl_asks`, with the closures it makes and its library's functions
+it calls. Of a type the call leaves its caller's type parameter, where one
+of the crate's own impls of the trait asks. An impl of the library's own,
+which its compile asked itself, is its export's. And a call of a library
+trait's method whose dictionary the library exports, its default or its
+impl's own method choosing such an impl, `fn tally(&self) -> Self::Item
+where Self::Item: Sum<u32>`, compiles that impl here (`chooses_unsaid`,
+beside `where_unsaid`), as no consumer compiles a trait's method alone.
+
+The debug build's check takes a library's function called through its
+export for none of std's: it must reach no impl of the crate's that asks,
+which this rule would have compiled it for; one compiled here is the
+crate's own body, walked as one.
+
+- Why the consumer: it's this decision's rule, Rust's codegen's, and it's
+  measured: each route, a function, an inherent method, a private function
+  behind a public one, a closure and a trait's default, printed native
+  Rust's answer once compiled here. A contract fact of which impls a
+  library's function may choose couldn't say a consumer's impl's body.
+- What it doesn't decide: an iterator of the function's own type
+  parameters, which its callers make, was already right; and placement
+  (#2508), whose export's JS is every instance's: its wrong answers are one
+  crate's (#2520), fixed there.
+- Held by the crate pairs `library_generic_sum_and_collect_given_its_consumers_impls`
+  (by a `sum()` and a `collect()`, and through the consumer's own generic
+  function), `library_code_gives_its_consumers_impl_by_each_route` and
+  `library_generic_sum_given_impls_its_export_answers` (std's, a
+  non-asking and the library's own impl: the export, imported), the triple
+  `library_generic_sum_given_a_middle_crates_impl_that_asks`, each against
+  native Rust; test/crates-compiled-here.test.ts' "a library's generic sum
+  given impls its export answers is imported, and given one that asks is
+  compiled". Mutations `gives-more-hint-unasked`, `chooses-unsaid-unasked`
+  (`lower/instances/needed.ts`), `asking-impl-callees-unwalked`,
+  `asking-impl-closures-unwalked`, `asking-impl-std-taken-to-ask`,
+  `asking-impl-of-the-callees-crate`,
+  `asking-impl-of-a-callers-parameter-unasked`
+  (`lower/analysis/hint_asked.ts`), `std-reach-library-taken-for-std` and
+  `std-reach-instance-taken-for-export` (`lower/instances/std_reach.ts`).

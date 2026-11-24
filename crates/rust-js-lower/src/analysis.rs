@@ -32,7 +32,7 @@ pub(super) use cell_flow::CellClass;
 mod clones;
 mod located_calls;
 pub(crate) use clones::Cloned;
-pub(crate) use hint_asked::{Hinted, asked_of_own};
+pub(crate) use hint_asked::{Hinted, asked_of_own, asking, chooses_an_asking_impl};
 pub(crate) use iterator_facts::IteratorFacts;
 pub(crate) use located_calls::Located;
 mod closures;

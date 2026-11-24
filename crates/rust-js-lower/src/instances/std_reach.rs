@@ -9,6 +9,13 @@
 //! program. std's MIR is followed where it's there, an instance once,
 //! only while what it's given holds something of the crate's, as std's
 //! code can reach the crate's no other way.
+//!
+//! A library's function the crate calls through its export is no std's:
+//! its JS was made for callers its library couldn't see, and an impl of the
+//! crate's it reaches that asks the hint of what it's given is one the crate
+//! compiles its own of the function for (`hint_asked::chooses_an_asking_impl`,
+//! #2518), so one it reaches through its export is that question's bug, said
+//! as this one is. One compiled here is the crate's own body, walked as one.
 
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::mir::TerminatorKind;
@@ -31,6 +38,7 @@ pub(crate) fn check_std_reach<'tcx>(
     all_bodies: &[&Body<'tcx>],
 ) {
     let mut reaching: IndexMap<ty::Instance<'tcx>, Reached<'tcx>> = IndexMap::default();
+    let asking = std::cell::OnceCell::new();
     // Of this analysis alone, the crate's again once it's given instances.
     crate::session::caches(tcx).std_reach_unanswered.borrow_mut().clear();
     for body in all_bodies {
@@ -43,6 +51,24 @@ pub(crate) fn check_std_reach<'tcx>(
                 continue;
             };
             let reached = reach(tcx, typing_env, instance, &mut reaching);
+            if !crate::recognition::is_std_crate(tcx, callee) {
+                // A library's: compiled here, the crate's own body; else its
+                // export, which must reach no impl of the crate's that asks.
+                let compiled_here = all_bodies.iter().any(|body| body.def_id == instance.def_id());
+                let asking = asking.get_or_init(|| crate::analysis::asking(tcx, all_bodies));
+                let unseen = (reached.iter()).find(|(def, _)| asking.contains(&tcx.typeck_root_def_id(*def)));
+                if !compiled_here && let Some(&(def, def_args)) = unseen {
+                    (crate::session::caches(tcx).std_reach_unanswered.borrow_mut()).push(format!(
+                        "rust-js: the library's `{}` at {span:?}, called through its export, calls the crate's \
+                         `{}` given `{def_args:?}`, which asks the hint of what it's given, where its export \
+                         made that not knowing it (#2518): `hint_asked::chooses_an_asking_impl` doesn't answer \
+                         it, so the crate doesn't compile its own: follow that route there",
+                        tcx.def_path_str(callee),
+                        tcx.def_path_str(def),
+                    ));
+                }
+                continue;
+            }
             let answered: Vec<_> = (crate::recognition::crate_impl_called_by(tcx, typing_env, callee, args)
                 .into_iter())
             .filter_map(|(called, called_args)| crate::traits::resolve(tcx, typing_env, called, called_args).ok()?)

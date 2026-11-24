@@ -319,4 +319,22 @@ export const mutations: Mutation[] = [
     replace: "    asks.then_some(imp).filter(|_| false)\n",
     tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_trait_method_where_steps_param"],
   },
+  {
+    name: "gives-more-hint-unasked",
+    breaks:
+      "a consumer's call of a library's generic `sum()`, given its own `Sum` that asks the hint of what the library makes, calls the export, JS's own `values().take(1)`, `total 0 None` where native prints `total 1 Some(1)` (#2518)",
+    file: "crates/rust-js-lower/src/instances/needed.rs",
+    find: "        || crate::analysis::chooses_an_asking_impl(\n",
+    replace: "        || false && crate::analysis::chooses_an_asking_impl(\n",
+    tests: ["test/crates-pairs-1.test.ts", "-t", "^two crates: library_generic_sum_and_collect_given_its_consumers_impls$"],
+  },
+  {
+    name: "chooses-unsaid-unasked",
+    breaks:
+      "a library trait's default with no type parameters of its own, called through the dictionary its library exports, whose `sum()` its caller's `Self::Item` makes the consumer's `Sum` that asks its hint, is its library's JS, `Room(0, None)` where native prints `Room(2, Some(2))` (#2518)",
+    file: "crates/rust-js-lower/src/instances/needed.rs",
+    find: "                where_unsaid(&calls, caller, (callee, args)).or_else(|| chooses_unsaid(&calls, caller, (callee, args)))\n",
+    replace: "                where_unsaid(&calls, caller, (callee, args))\n",
+    tests: ["test/crates-pairs-3.test.ts", "-t", "^two crates: library_code_gives_its_consumers_impl_by_each_route$"],
+  },
 ];

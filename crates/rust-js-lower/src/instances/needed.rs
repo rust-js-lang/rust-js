@@ -1,9 +1,11 @@
 //! Which of its libraries' functions a crate compiles itself (ADR 0914):
 //! one its call gives a value to copy or drop that its export takes nothing
 //! for, or what may fail that it writes or formats through where its export
-//! never fails (`failing.rs`, #1392), and the library's private functions an
-//! instance calls; and the refusal of an instance's read of its library's
-//! private state.
+//! never fails (`failing.rs`, #1392), or an impl it chooses by what the
+//! call gives that asks the hint of what it makes, which its export made not
+//! knowing it (`hint_asked::chooses_an_asking_impl`, #2518), and the
+//! library's private functions an instance calls; and the refusal of an
+//! instance's read of its library's private state.
 
 use super::*;
 
@@ -25,6 +27,9 @@ pub struct Analyzed<'a, 'tcx> {
     /// Its functions that may give back a write's error, and whether any
     /// of its writes may (ADR 0187).
     pub failing: crate::analysis::Failing<'a>,
+    /// Its functions that ask the hint of what they're given
+    /// (`hint_asked::asking`, #2518).
+    pub asking: &'a IndexSet<DefId>,
     pub bodies: Vec<&'a Body<'tcx>>,
 }
 
@@ -51,6 +56,8 @@ struct Calls<'a, 'tcx> {
     failing: crate::analysis::Failing<'a>,
     /// The `Rc`s the crate counts (ADR 0852).
     counted: &'a crate::analysis::Counted<'tcx>,
+    /// Its functions that ask the hint of what they're given (#2518).
+    asking: &'a IndexSet<DefId>,
 }
 
 /// The library functions the crate's bodies, its own and the instances it
@@ -70,6 +77,7 @@ pub fn needed<'tcx>(
         drop_params,
         given,
         failing,
+        asking,
         bodies,
     } = analyzed;
     let recognition = crate::recognition::Recognition {
@@ -92,6 +100,7 @@ pub fn needed<'tcx>(
         clones_itself: &clones_itself,
         failing,
         counted,
+        asking,
     };
     let mut more: Vec<(DefId, LocalModId)> = Vec::new();
     let mut may_drop: IndexMap<(DefId, u32), bool> = IndexMap::default();
@@ -122,10 +131,12 @@ pub fn needed<'tcx>(
             }
         }
         // A library's impl whose trait's method's own `where` the contract
-        // can't answer of what the call gives: compiled here, with its
-        // methods (`where_unsaid`).
+        // can't answer of what the call gives (`where_unsaid`), or whose
+        // method chooses by it an impl that asks the hint (`chooses_unsaid`):
+        // compiled here, with its methods.
         for &(callee, args) in &by_name {
-            if let Some(imp) = where_unsaid(&calls, caller, (callee, args))
+            if let Some(imp) =
+                where_unsaid(&calls, caller, (callee, args)).or_else(|| chooses_unsaid(&calls, caller, (callee, args)))
                 && !instances.contains(tcx, imp)
                 && !more.iter().any(|&(id, _)| id == imp)
             {
@@ -208,6 +219,32 @@ fn where_unsaid<'tcx>(
     asks.then_some(imp)
 }
 
+/// The library's impl a call of its trait's method, `callee` of `args`, is
+/// of, where its dictionary is the library's export and the method the call
+/// reaches, the impl's own or the trait's default, chooses by what the call
+/// gives an impl that asks the hint of what it's given, `Self::Item`'s
+/// `Sum` the consumer's (`hint_asked::chooses_an_asking_impl`): its export
+/// made that iterator not knowing it, so the crate compiles the impl itself,
+/// whose analysis then makes it knowing (#2518). An impl the library doesn't
+/// export is compiled here already where it's used.
+fn chooses_unsaid<'tcx>(
+    calls: &Calls<'_, 'tcx>,
+    caller: DefId,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Option<DefId> {
+    let tcx = calls.tcx;
+    let trait_id = tcx.trait_of_assoc(callee)?;
+    let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
+    let own = ty::TraitRef::new_from_args(tcx, trait_id, args.truncate_to(tcx, tcx.generics_of(trait_id)));
+    let (imp, _) = crate::traits::evidence_impl(tcx, typing_env, own)?;
+    if imp.is_local() || !calls.foreign.is_library(imp.krate) || calls.foreign.item(imp).is_none() {
+        return None;
+    }
+    let instance = crate::traits::resolve(tcx, typing_env, callee, args).ok()??;
+    crate::analysis::chooses_an_asking_impl(tcx, calls.asking, typing_env, (instance.def_id(), instance.args))
+        .then_some(imp)
+}
+
 /// A call of a namespace's method through a value: the method, its generic
 /// arguments, where it's called, and the local its result is.
 type ThroughCall<'tcx> = (DefId, ty::GenericArgsRef<'tcx>, rustc_span::Span, mir::Local);
@@ -261,7 +298,9 @@ pub(in crate::instances) fn compiled_here(
 /// Whether `caller`'s call of `callee`, of `args`, gives it a value to copy
 /// or drop that its export takes nothing for: of a type parameter its body
 /// may drop, a value whose drop runs a destructor; of one its `Copy` bound
-/// copies, a value whose copy isn't itself (ADRs 0098, 0289, 0914).
+/// copies, a value whose copy isn't itself (ADRs 0098, 0289, 0914); or
+/// what else its export's JS was compiled without, an impl its body chooses
+/// that asks the hint of what it's given (#2518).
 fn gives_more<'tcx>(
     calls: &Calls<'_, 'tcx>,
     (caller, callee, args): (DefId, DefId, ty::GenericArgsRef<'tcx>),
@@ -322,6 +361,14 @@ fn gives_more<'tcx>(
         // crate's Rust reads what it reveals (ADR 1169, #1999).
         || item.is_some_and(|item| item.calling.has(rust_js_program::library::ItemFact::ReturnsJs))
         || super::failing::fails_given(calls.tcx, calls.foreign, calls.failing, (caller, callee, args))
+        // An impl its body chooses by what the call gives that asks the
+        // hint of what it makes, which its export made not knowing it (#2518).
+        || crate::analysis::chooses_an_asking_impl(
+            calls.tcx,
+            calls.asking,
+            ty::TypingEnv::post_analysis(calls.tcx, caller),
+            (callee, args),
+        )
 }
 
 /// Whether a call gives `callee`, a library's function, a type an `Rc` of

@@ -31,4 +31,22 @@ export const mutations: Mutation[] = [
     replace: "    (!unanswered.is_empty()).then(|| unanswered.join(\"\\n\"))\n",
     unitTests: "instances::std_reach::tests::an_unanswered_reach_is_said_of_a_compile_that_succeeds",
   },
+  {
+    name: "std-reach-library-taken-for-std",
+    breaks:
+      "a library's function the crate compiles its own of, given the crate's `Sum` that asks the hint, is taken for std's code, which `crate_impl_called_by` must answer, and the debug build panics where it runs as native Rust (#2518)",
+    file: "crates/rust-js-lower/src/instances/std_reach.rs",
+    find: "            if !crate::recognition::is_std_crate(tcx, callee) {\n",
+    replace: "            if false {\n",
+    tests: ["test/crates-pairs-1.test.ts", "-t", "^two crates: library_generic_sum_and_collect_given_its_consumers_impls$"],
+  },
+  {
+    name: "std-reach-instance-taken-for-export",
+    breaks:
+      "a library's function the crate compiles its own of is taken for its export, whose reach of the crate's `Sum` that asks the hint is said as a missed route, and the debug build panics where it runs as native Rust (#2518)",
+    file: "crates/rust-js-lower/src/instances/std_reach.rs",
+    find: "                if !compiled_here && let Some(&(def, def_args)) = unseen {\n",
+    replace: "                if compiled_here && let Some(&(def, def_args)) = unseen {\n",
+    tests: ["test/crates-pairs-1.test.ts", "-t", "^two crates: library_generic_sum_and_collect_given_its_consumers_impls$"],
+  },
 ];

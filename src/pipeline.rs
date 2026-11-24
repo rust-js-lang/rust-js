@@ -221,6 +221,7 @@ pub fn lower_crate<'tcx>(
             any: writes_may_fail,
             dictionaries: dictionaries_fail,
         },
+        asking: iterators.hinted.asking(),
         bodies: bodies.iter().copied().chain(closures.values().copied()).collect(),
     };
     match instances::needed(&foreign, instances, analyzed) {

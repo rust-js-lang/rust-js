@@ -359,8 +359,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what generic code collects into a `T: FromIterator<D>` whose caller gives the crate's own `from_iter`, which gives it on to std's `Vec::from_iter` alone, is taken to ask its hint, so it's `$mapEnds` where JS's own `map` was, a hint std asks for a capacity nothing reads (#2512, #2468)",
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "                    themselves.contains(&tcx.typeck_root_def_id(called.def_id()))\n",
-    replace: "                    true\n",
+    find: "        true => asking.contains(&tcx.typeck_root_def_id(called)),\n",
+    replace: "        true => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^from_iter_entry_drops_its_items.rs$"],
     snapshots: true,
   },
@@ -369,8 +369,62 @@ export const mutations: Mutation[] = [
     breaks:
       "the crate's own `from_iter` or `sum` that asks `size_hint()` of what generic code gives it isn't seen to, so what's given is JS's own `values().take(2)`, `(0, None)` where std's `Take` gives `(2, Some(2))` (#2512)",
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "                    themselves.contains(&tcx.typeck_root_def_id(called.def_id()))\n",
-    replace: "                    false\n",
+    find: "        true => asking.contains(&tcx.typeck_root_def_id(called)),\n",
+    replace: "        true => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^hint_asked_by_an_own_impl_generic_code_collects_into.rs$"],
+  },
+  {
+    name: "asking-of-themselves-only",
+    breaks:
+      "the crate's own `sum` or `from_iter` that gives what it's given on to its own function that asks `size_hint()`, `by_ref(&items)`, isn't taken to ask, so what generic code makes and gives it is JS's own `values().drop(1)`, `(0, None)` where std's `Skip` gives `(2, Some(2))` (#2521)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "                    (callee == size_hint || asking.contains(&tcx.typeck_root_def_id(callee))) && generic(args)\n",
+    replace: "                    callee == size_hint && generic(args)\n",
+    tests: ["test/corpus.test.ts", "-t", "^hint_asked_through_an_impls_own_helper.rs$"],
+  },
+  {
+    name: "asking-impl-callees-unwalked",
+    breaks:
+      "a library's public function whose private function makes an iterator and gives it to the consumer's `Sum` that asks its hint isn't compiled by the consumer, so it's the export's JS's own `values().take(2)`, `Room(0, None)` where native prints `Room(2, Some(2))` (#2518)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "                todo.push((called, called_args));\n",
+    replace: "",
+    tests: ["test/crates-pairs-3.test.ts", "-t", "^two crates: library_code_gives_its_consumers_impl_by_each_route$"],
+  },
+  {
+    name: "asking-impl-closures-unwalked",
+    breaks:
+      "a library's function whose closure makes an iterator and gives it to the consumer's `Sum` that asks its hint isn't compiled by the consumer, so each is JS's own `values().drop(n)`, `Room(0, None)` where native prints `Room(2, Some(2))` (#2518)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "                    todo.push((closure, closure_args));\n",
+    replace: "",
+    tests: ["test/crates-pairs-3.test.ts", "-t", "^two crates: library_code_gives_its_consumers_impl_by_each_route$"],
+  },
+  {
+    name: "asking-impl-std-taken-to-ask",
+    breaks:
+      "a library's generic `sum()` given std's `u32`, whose impl asks no hint, is compiled by its consumer as if it asked, a copy of the library's function where its export answers (#2518)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "        false => !crate::recognition::is_std_crate(tcx, called) && decided_by != Some(called.krate),\n",
+    replace: "        false => decided_by != Some(called.krate),\n",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "impls its export answers"],
+  },
+  {
+    name: "asking-impl-of-the-callees-crate",
+    breaks:
+      "a library's generic `sum()` given the library's own `Sum` that asks its hint, which its own compile made knowing it, is compiled by its consumer again, a copy where its export answers (#2518)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "        false => !crate::recognition::is_std_crate(tcx, called) && decided_by != Some(called.krate),\n",
+    replace: "        false => !crate::recognition::is_std_crate(tcx, called),\n",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "impls its export answers"],
+  },
+  {
+    name: "asking-impl-of-a-callers-parameter-unasked",
+    breaks:
+      "a consumer's generic function that hands its own `S` on to a library's generic `sum()`, given its `Room` that asks its hint by its callers, uses the export, JS's own `values().take(1)`, `(0, None)` where std's `Take` gives `(1, Some(1))` (#2518)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "                    true => own_impl_asks(tcx, asking, method),\n",
+    replace: "                    true => false,\n",
+    tests: ["test/crates-pairs-1.test.ts", "-t", "^two crates: library_generic_sum_and_collect_given_its_consumers_impls$"],
   },
 ];

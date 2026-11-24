@@ -620,3 +620,29 @@ case); a consumer's own impl given there is #2518's, whose compile stops
 in the debug build's check of what std reaches, left as main has it, as
 test/libraries.test.ts' library `gather` of
 `from_iter_entry_drops_its_items.rs`'s shape holds.
+
+## Amendment: an impl asks through what it gives on to (2026-11-24, #2521)
+
+#2512's impl that asks was one whose own body calls `size_hint()` of what
+it's given (`ask_the_hint_themselves`); one that gives it on to its own
+function that asks, `Room::sum`'s `hint_of(&items)`, was left to the
+callers' carrier, which never gives that impl what generic code's
+unresolved `S::sum(..)` makes: `(0, None)` where std's `Skip` gives `(2,
+Some(2))`. #2512's corpus case held that path only by chance, its
+`Take<vec::IntoIter<u32>>` marked crate-wide by another call's impl that
+asks itself; with `step_by(2)` it printed `0 None`.
+
+**Which of the crate's functions ask the hint of what they're given is one
+set, `asking`: those that call `size_hint()` of it, and those that give it
+on to one that does, to the fixed point of the crate's bodies.** Not one
+that only gives it to std's `Vec::from_iter` (#2468). It replaces
+`ask_the_hint_themselves`, and is the one answer `impl_asks` reads, of
+what generic code makes knowing its hint here and of whether a consumer
+compiles a library's function itself (ADR 0914's amendment of #2518).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's. Held by `test/corpus/hint_asked_through_an_impls_own_helper.rs`
+(by reference, by value, through `IntoIterator` and two helpers down, each
+of an adapter no other call makes) against native Rust; mutation
+`asking-of-themselves-only`; #2512's `unresolved-own-impl-taken-to-ask`
+and `unresolved-own-ask-unseen` follow `impl_asks`.
