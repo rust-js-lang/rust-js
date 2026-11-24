@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { cpSync, mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { bunTest, fixture } from "./support";
 import {
@@ -7,6 +7,7 @@ import {
   makeSourceWorkspace,
   markSourceLoad,
   ofBindingsCrate,
+  sourceFilesOf,
   sourceWasLoaded,
 } from "../scripts/source-mutations";
 import { existsSync } from "node:fs";
@@ -278,4 +279,30 @@ test("a wasm mutation's workspace links what the wasm build made", () => {
   }
   linkWasmBuild(workspace, from);
   expect(wasmBuild.map((path) => realpathSync(join(workspace, path)))).toEqual(wasmBuild.map((path) => realpathSync(join(from, path))));
+});
+
+// A source mutant's workspace is the working tree's files, what git tracks
+// and what it doesn't track that isn't ignored: a test written for the
+// change, not committed yet, was missing from it, so its mutation ran
+// nothing, "mutated source was not executed", committed, judged and amended
+// three times (#2485). A file deleted from the working tree isn't one.
+test("a source workspace's files are the working tree's, its untracked files too, not its ignored nor its deleted", () => {
+  const dir = fixture("source-files-of");
+  const git = (...args: string[]) => Bun.spawnSync(["git", ...args], { cwd: dir, stdout: "pipe", stderr: "pipe" });
+  git("init", "-q");
+  writeFileSync(join(dir, ".gitignore"), "target/\n");
+  writeFileSync(join(dir, "tracked.ts"), "");
+  writeFileSync(join(dir, "gone.ts"), "");
+  git("add", ".");
+  git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "files");
+  rmSync(join(dir, "gone.ts"));
+  mkdirSync(join(dir, "test"));
+  writeFileSync(join(dir, "test", "new.test.ts"), "");
+  mkdirSync(join(dir, "target"));
+  writeFileSync(join(dir, "target", "built.js"), "");
+  // Nor another checkout inside it, a worktree under `.claude/worktrees/`.
+  mkdirSync(join(dir, "nested"));
+  Bun.spawnSync(["git", "init", "-q"], { cwd: join(dir, "nested") });
+  writeFileSync(join(dir, "nested", "theirs.ts"), "");
+  expect(sourceFilesOf(dir).sort()).toEqual([".gitignore", "test/new.test.ts", "tracked.ts"]);
 });

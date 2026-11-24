@@ -51,6 +51,19 @@ export function cloneTree(from: string, to: string, clone: (from: string, to: st
   return clone(from, to);
 }
 
+/** The files a source workspace of `root` is made of: the working tree's,
+ * what git tracks and what it doesn't that it doesn't ignore, as a change's
+ * own files are read (`since`, scripts/mutations.ts), and none the working
+ * tree deleted. Of git's tracked files alone, a test the change adds,
+ * uncommitted, wasn't in the copy, so its mutation ran nothing (#2485). */
+export function sourceFilesOf(root: string): string[] {
+  const listed = Bun.spawnSync(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"], { cwd: root, stdout: "pipe", stderr: "pipe", timeout: 10_000 });
+  if (listed.exitCode !== 0) throw new Error(`git ls-files in ${root} failed: ${listed.stderr.toString()}`);
+  // Not a nested checkout git lists whole, `dir/`: another worktree's, under
+  // the main checkout's `.claude/worktrees/` where nothing ignores it.
+  return [...new Set(listed.stdout.toString().split("\0"))].filter((file) => file && !file.endsWith("/") && existsSync(join(root, file)));
+}
+
 /** A source workspace of `files` at `workspace`, and its size. Of a `root`
  * that's itself a workspace made of the same `files`, as each mutant's is
  * of the run's template, a clone of it whole (`cloneTree`, #2503): 0.05 s

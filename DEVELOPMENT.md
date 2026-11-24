@@ -1086,7 +1086,7 @@ the workflow's 2 machines; `--shards=4` splits it across four.
   saying `past its limit, <s> s of its run against --limit=<s>`. Its wait
   is said as it ends and on its line, `turn <s>`.
 - **A new worktree runs `bun install --frozen-lockfile` first**, and
-  check:fast runs it again wherever the manifests changed since its last
+  check:fast and a mutation run run it again wherever the manifests changed since its last
   install, a rebase over a new workspace's (`docs/dev-loop.md`). Without a
   `node_modules` of its own, a worktree under `.claude/worktrees/` finds the
   checkout's above it, so its tests' JS imports that checkout's

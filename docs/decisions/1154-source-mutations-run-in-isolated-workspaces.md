@@ -71,3 +71,18 @@ The independent core was checked on ef8807570597a4132d4442dd78315a7b39eaba06, wi
 The timing difference is not an isolated speed-up: before starts with a 43 s build and 0 MB kept compiles, after with a 0.529 s build and 49 MB kept. Startup pruning changes from 43 s to 4.2 s. Recorded job CPU is 3,191 versus 3,127 core-seconds; cores average 84% versus 86% busy, under half busy 17% in both. The after crate sample takes 2 min 2 s versus 1 min 52 s before; its final typenum compile was active on one core. These are whole-gate/cache/contention costs, not generator execution times.
 
 After the core check, the same ten Intl/model owner mutants run through the ordinary runner without tracing at the original underLoad(1_000) preparation bound: ten of ten caught in about 34 s, no inconclusive verdicts or observed-overrun warnings, template 1.7 s/91,377,664 bytes and peak workspace 91,381,760 bytes. The bound keeps a 1 s scheduling floor over the measured 21–25 ms launch-to-exit trace, scaled by load; the 20 s diagnostic allowance is removed. Workspace copying is outside preparation. Existing control/load/cleanup rules and all nine self-mutants remain in force. The full core gate used the interim 20 s bound; the final bound is proved by this ordinary ten-owner workload, not represented as another whole-gate run. No automatic preload, second deadline parameter or guessed child lifetime is introduced.
+
+## Amendment (2026-11-25, #2485): the template is the working tree's files
+
+The template was git's tracked files alone, `git ls-files`. A test the
+change adds, or a helper it imports, isn't tracked until it's committed, so
+it wasn't in the copy, and its mutation said "mutated source was not
+executed". An agent committed, judged and amended three times to judge one.
+The template is now the working tree's files, `sourceFilesOf`
+(scripts/source-mutations.ts): what git tracks and what it doesn't that it
+doesn't ignore, the files a change's own are read as (`since`), less those
+the working tree deleted and a checkout nested in it, which git lists whole
+as `dir/`, another worktree under the main checkout's `.claude/worktrees/`.
+And a mutation run installs the packages first where the install isn't of
+the manifests, as check:fast does (`installed`, scripts/checkFast.ts): a
+fresh worktree's mutants found no `node_modules`.

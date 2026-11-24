@@ -32,7 +32,8 @@ import { passed, summary } from "./test-summary";
 import { mutantsLock } from "./disk";
 import { ownCompiler } from "./own-compiler";
 import { acquire, holdLease, ownMemory, ownShare, runYielding, turnPhase, yieldBetween } from "./leases";
-import { makeSourceWorkspace, sourceMutation } from "./source-mutations";
+import { makeSourceWorkspace, sourceFilesOf, sourceMutation } from "./source-mutations";
+import { installed } from "./checkFast";
 import { wasmPath } from "../wasm/web/site.ts";
 import { latentSurvivors, type Results } from "./latent-survivors";
 import { binaryHash, builtBinary, freshShare, unapplied, verdictKind } from "./mutant-builds";
@@ -2194,6 +2195,9 @@ export class Answers extends Map<Mutation, string> {
 }
 
 async function main() {
+  // The packages, installed as check:fast installs them, where the install
+  // isn't of the manifests: a fresh worktree's mutants found none (#2485).
+  installed("mutations");
   const args = process.argv.slice(2);
   // Where the run's time goes, phase by phase, written beside its
   // mutations' times, `phases.json`, which CI uploads with them: of a
@@ -2612,9 +2616,7 @@ async function main() {
   // The builds' tests, which run on after their workers go on to build.
   const buildsTesting: Promise<unknown>[] = [];
   let builds = 0;
-  const sourceFiles = sources.size ? runSync(["git", "ls-files", "-z"], root, 10_000) : undefined;
-  if (sourceFiles && sourceFiles.code !== 0) throw new Error(sourceFiles.stderr);
-  const tracked = sourceFiles?.stdout.split("\0").filter(file => file && existsSync(join(root, file))) ?? [];
+  const tracked = sources.size ? sourceFilesOf(root) : [];
   const template = join(sourceWorkspaces, ".template");
   if (sources.size) {
     const started = performance.now();

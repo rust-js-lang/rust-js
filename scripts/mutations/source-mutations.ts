@@ -23,4 +23,28 @@ export const mutations: Mutation[] = [
     replace: "  symlinkSync(from, to);\n  return true;",
     tests: ["test/source-mutations.test.ts", "-t", "a workspace made of a workspace of the same files is its own"],
   },
+  {
+    name: "source-workspace-tracked-only",
+    breaks: "a source mutant's workspace is git's tracked files alone, so a test the change adds, uncommitted, isn't in it and its mutation runs nothing (#2485)",
+    file: "scripts/source-mutations.ts",
+    find: "[\"git\", \"ls-files\", \"-z\", \"--cached\", \"--others\", \"--exclude-standard\"]",
+    replace: "[\"git\", \"ls-files\", \"-z\"]",
+    tests: ["test/source-mutations.test.ts", "-t", "a source workspace's files are the working tree's"],
+  },
+  {
+    name: "source-workspace-ignored-taken",
+    breaks: "a source mutant's workspace takes what git ignores, every build and `node_modules` copied into each mutant's (#2485)",
+    file: "scripts/source-mutations.ts",
+    find: "[\"git\", \"ls-files\", \"-z\", \"--cached\", \"--others\", \"--exclude-standard\"]",
+    replace: "[\"git\", \"ls-files\", \"-z\", \"--cached\", \"--others\"]",
+    tests: ["test/source-mutations.test.ts", "-t", "a source workspace's files are the working tree's"],
+  },
+  {
+    name: "source-workspace-nested-checkout-taken",
+    breaks: "a source mutant's workspace takes a checkout nested in it whole, another worktree under the main checkout's `.claude/worktrees/` (#2485)",
+    file: "scripts/source-mutations.ts",
+    find: ".filter((file) => file && !file.endsWith(\"/\") && existsSync(join(root, file)));",
+    replace: ".filter((file) => file && existsSync(join(root, file)));",
+    tests: ["test/source-mutations.test.ts", "-t", "a source workspace's files are the working tree's"],
+  },
 ];

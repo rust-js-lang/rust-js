@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2485, ADR 1154 amended): test/source-mutations.test.ts gains a test, a source workspace's files are the working tree's, its untracked files too, not its ignored, its deleted nor a nested checkout; three mutations.
+
 Changed on 2026-11-25 (#2564, ADR 1092 amended): corpus gains `fallible_collect_drops_what_it_collected_as_its_close_panics`, an `Option` or `Result` collect stopped early whose close panics dropping what it collected, then the `Err`; test/known/metamorphic/2564.txt is gone, its `loud-drop` rewrite native-equal.
 
 Changed on 2026-11-25 (Campaign 5 step 1, ADR 1202, ADR 1122 amended): test/architecture-models.test.ts, new, one test (no second list of the runtime's models); test/twin-net.test.ts reads the catalog `rust-js --std-models` prints, gains its measure (220 models stand for no std item yet, at most), and its bless tests write models.rs; five mutations.

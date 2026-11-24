@@ -1124,7 +1124,7 @@ export function installNeeded(read: (file: string) => string, stamp: string | un
  * leaves it, before anything runs, else nothing: its stamp,
  * `node_modules/.rust-js-installed`, the manifests' hash it installed. A
  * lockfile the manifests don't match fails it, saying what to run. */
-function installed() {
+export function installed(who = "check:fast") {
   const stamp = join(root, "node_modules", ".rust-js-installed");
   const read = (file: string) => readFileSync(join(root, file), "utf8");
   const why = installNeeded(read, existsSync(stamp) ? readFileSync(stamp, "utf8") : undefined, (name) => existsSync(join(root, "node_modules", name)));
@@ -1133,7 +1133,7 @@ function installed() {
   const installing = Date.now();
   const install = Bun.spawnSync(["bun", "install", "--frozen-lockfile"], { cwd: root, stdout: "inherit", stderr: "inherit" });
   if (install.exitCode !== 0) {
-    console.error("check:fast: `bun install --frozen-lockfile` failed: bun.lock doesn't match the package.json files; run `bun install` and commit bun.lock");
+    console.error(`${who}: \`bun install --frozen-lockfile\` failed: bun.lock doesn't match the package.json files; run \`bun install\` and commit bun.lock`);
     process.exit(1);
   }
   writeFileSync(stamp, now);
