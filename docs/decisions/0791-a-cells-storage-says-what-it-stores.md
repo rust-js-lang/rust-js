@@ -311,3 +311,24 @@ mutations `guard-name-borrowck-read-a-use`, `guard-name-reborrow-unfollowed`,
 wrong answer, and `guard-name-moved-unfollowed`, held by its snapshot: a
 holder not followed falls back to a handle on its `value`, right but
 wrapped twice.
+
+## Amendment: the held-handle record's last two untested checks are gone (2026-11-24, #2433)
+
+Of the three checks the #2429 amendment kept without a mutation, #2443's
+amendment replaced the third (`used_once`). The other two are removed:
+
+- **Flush's `const` of a held handle isn't recorded.** `note_held_handle`
+  records a handle where `mir_store` declares its variable, and no longer
+  where `flush` makes a `const` of a pending one. No case lends a flushed
+  one's `value`. Where one did, the handle lent would be one on its
+  `value`, a second wrap that reads and writes through the first, whose
+  setter stores as its place does.
+- **A handle stored as it's given is recorded too.** `Handled::of` records
+  any handle, whatever its storage. A pair or a handle on its place reads
+  and writes as one on its `value` does, so the one form serves both.
+
+Proof: with both removed, check:fast over 421 test files and 2,954
+corpus cases gave the same JS, every snapshot byte for byte. The probes
+#2433 names, and a nullable `RefCell` and `Cell` field lent five ways,
+agree with native Rust. Case ([0262](0262-when-rust-and-js-disagree.md)):
+none, no output moved.

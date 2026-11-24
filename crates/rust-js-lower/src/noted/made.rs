@@ -24,8 +24,8 @@ pub struct Made {
 
 impl Made {
     /// `name`, a `const` MIR's lowering declares once of `made`, noted
-    /// where `made` is a handle on a place that stores its own way
-    /// (`Handled::of`), so what's lent of its `value` is that handle,
+    /// where `made` is a handle on a place (`Handled::of`), so what's lent
+    /// of its `value` is that handle,
     /// `mut_refs/handles.rs`' (ADR 0791, #2429).
     /// And of `made`, a variable holding one, that handle's: `name` is
     /// another name of it, `const state$1 = state`; and of an `Ok` made of
@@ -62,18 +62,18 @@ pub struct Handled {
 }
 
 impl Handled {
-    /// Of `made`, a handle on a place that stores what's written its own
-    /// way, `null` for a `None` or a flattened state's keys set on its
-    /// object (ADRs 0791, 1044): its place and storage. `None` of one
-    /// that stores it as it's given, or anything else.
+    /// Of `made`, a handle on a place, its place and storage, which stores
+    /// what's written its own way, `null` for a `None` or a flattened
+    /// state's keys set on its object (ADRs 0791, 1044), or as it's given;
+    /// `None` of anything else. One stored as it's given is recorded too:
+    /// a pair or a handle on its place reads and writes as one on its
+    /// `value` does (#2433).
     fn of(made: &Expr) -> Option<Handled> {
         match &made.kind {
-            rust_js_program::js::ExprKind::Handle(on, storage) if *storage != rust_js_program::js::Storage::AsGiven => {
-                Some(Handled {
-                    on: (**on).clone(),
-                    storage: *storage,
-                })
-            }
+            rust_js_program::js::ExprKind::Handle(on, storage) => Some(Handled {
+                on: (**on).clone(),
+                storage: *storage,
+            }),
             _ => None,
         }
     }

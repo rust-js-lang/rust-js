@@ -178,7 +178,6 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             let name = state.locals.names[local].clone();
             state.locals.declared[local] = true;
             note_marks(state, local, &expr);
-            self.note_held_handle(state, local, &name, &expr);
             made.push(StmtKind::Const(name, expr).at(js::Span::NONE));
         }
         state.pending = kept;

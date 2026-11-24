@@ -1,10 +1,10 @@
 //! A handle on a `&mut`'s place, and a `dyn`'s pair on one: the one way
 //! each is made of a place, so what's written through it is stored as the
 //! place stores it, a nullable field's `None` as `null` (ADR 0791, #2427).
-//! A handle a variable holds of a `&mut` to a place that stores its own
-//! way (`Made::handles`) is that handle wherever its `value` is lent on, as
-//! a call's argument, what a call gives back, a vector keeps or a `dyn`'s
-//! pair holds. Split from `mut_refs.rs` by concept.
+//! A handle a variable holds of a `&mut`'s place (`Made::handles`) is
+//! that handle wherever its `value` is lent on, as a call's argument, what
+//! a call gives back, a vector keeps or a `dyn`'s pair holds. Split from
+//! `mut_refs.rs` by concept.
 
 use super::*;
 
