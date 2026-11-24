@@ -47,28 +47,20 @@ export const mutations: Mutation[] = [
   {
     name: "held-adapter-not-back-stepped",
     breaks:
-      "a filter or a map a type holds, asked to be double-ended by the call that asks it of that type, isn't made knowing its back",
+      "what a function gives behind an `impl DoubleEndedIterator`, alone or held in a type, asked double-ended by its caller's `rev()`, isn't made knowing its back: a clone of a deque's items, which std's struct doesn't step (`Cloned` is kept as its meaning), is refused",
     file: "crates/rust-js-lower/src/analysis/back_stepped.rs",
     find: "                            .filter(|&made| !holds_compiled(tcx, made, &compiled));\n",
     replace: "                            .filter(|_| false);\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(filters_held_double_ended|returned_impl_ends).rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^cloned_behind_an_impl_reversed_by_its_caller.rs$"],
   },
   {
     name: "held-adapter-opaque",
     breaks:
-      "what an `impl DoubleEndedIterator` is isn't seen, so a filter behind one isn't made knowing its back",
+      "what an `impl DoubleEndedIterator` hides isn't seen, so a clone of a deque's items behind one, reversed by its caller, isn't made knowing its back, and is refused",
     file: "crates/rust-js-lower/src/analysis/back_stepped.rs",
     find: "                let asked = recognition.reveal(hidden);\n",
     replace: "                let asked = hidden;\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(filters_held_double_ended|returned_impl_ends).rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^cloned_behind_an_impl_reversed_by_its_caller.rs$"],
   },
 
   {
@@ -83,11 +75,11 @@ export const mutations: Mutation[] = [
   {
     name: "given-impl-not-back-stepped",
     breaks:
-      "an adapter a function gives behind an impl is made knowing its back",
+      "an adapter a function gives behind an `impl` isn't taken for one its caller can't make knowing its back, so a clone of a deque's items behind one, reversed by its caller, is refused",
     file: "crates/rust-js-lower/src/analysis/back_stepped.rs",
     find: "                let given = hidden != asked;",
     replace: "                let given = false;",
-    tests: ["test/corpus.test.ts", "-t", "^returned_impl_ends.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cloned_behind_an_impl_reversed_by_its_caller.rs$"],
   },
 
 
@@ -180,19 +172,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "library-impl-backs-unmade",
-    breaks: "a library's public function that gives a filter behind an `impl DoubleEndedIterator` makes JS's own `.filter`, and its consumer's `next_back` throws `it.back is not a function` (#1024)",
+    breaks: "a library's public function that gives a clone of a deque's items behind an `impl DoubleEndedIterator`, which its consumer reverses, doesn't make it knowing its back: the library is refused (#1024)",
     file: "crates/rust-js-lower/src/analysis/back_stepped.rs",
     find: "                if asked {\n                    let given = given_behind_an_impl(tcx, recognition, hidden, &drops);\n",
     replace: "                if false {\n                    let given = given_behind_an_impl(tcx, recognition, hidden, &drops);\n",
-    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
+    tests: ["test/crates-pairs-3.test.ts", "-t", "two crates: library_cloned_behind_an_impl_reversed_by_its_consumer$"],
   },
   {
     name: "library-given-backs-unmade",
-    breaks: "a filter of the library's own iterator, or of a `VecDeque`'s items, a crate gives a library's generic function that steps it from its back is JS's own `.filter`, and the library's `next_back` throws (#1024, #1109; a slice's is made knowing its hint, so its back, by hint_asked.rs's rule of what a library is given)",
+    breaks: "filters of a deque's items past a `skip`, given a library's generic function in an array, `[Filter<I, P>; 2]`, that steps them from their back, aren't made knowing their back, and are refused (#1024; one given as a variable is back_stepped/locals.rs' to mark, #1981)",
     file: "crates/rust-js-lower/src/analysis/back_stepped.rs",
     find: "            if recognition.foreign.is_library(callee.krate) {\n",
     replace: "            if false {\n",
-    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_given_an_array_of_filters_it_steps_from_their_back$"],
   },
   {
     name: "library-own-params-unstepped",
