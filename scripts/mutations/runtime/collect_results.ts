@@ -30,4 +30,20 @@ export const mutations: Mutation[] = [
     replace: "  }, {}, values, undefined, restFirst);",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
+  {
+    name: "collect-results-close-holds-nothing",
+    breaks: "a `collect` into a `Result` stopped at an `Err` drops nothing it collected where closing what it steps panics (#2564)",
+    file: "crates/rust-js-program/src/runtime/collect_results.js",
+    find: "    drop && (() => $dropItems(values, drop)),\n",
+    replace: "    undefined,\n",
+    tests: ["test/corpus.test.ts", "-t", "^fallible_collect_drops_what_it_collected_as_its_close_panics.rs$"],
+  },
+  {
+    name: "collect-results-close-err-unheld",
+    breaks: "a `collect` into a `Result` stopped at an `Err` leaves the `Err` it kept undropped where closing what it steps panics (#2564)",
+    file: "crates/rust-js-program/src/runtime/collect_results.js",
+    find: "    dropErr && (() => dropErr(failed._0)),\n",
+    replace: "    undefined,\n",
+    tests: ["test/corpus.test.ts", "-t", "^fallible_collect_drops_what_it_collected_as_its_close_panics.rs$"],
+  },
 ];

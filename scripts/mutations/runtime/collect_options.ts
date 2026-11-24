@@ -30,4 +30,12 @@ export const mutations: Mutation[] = [
     replace: "        () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_results_asks_hint.rs$"],
   },
+  {
+    name: "collect-options-close-holds-nothing",
+    breaks: "a `collect` into an `Option` stopped at a `None` drops nothing it collected where closing what it steps panics (#2564)",
+    file: "crates/rust-js-program/src/runtime/collect_options.js",
+    find: "  $unwinds(() => it.return?.(), drop && (() => $dropItems(values, drop)));\n",
+    replace: "  it.return?.();\n",
+    tests: ["test/corpus.test.ts", "-t", "^fallible_collect_drops_what_it_collected_as_its_close_panics.rs$"],
+  },
 ];

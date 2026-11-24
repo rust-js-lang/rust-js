@@ -147,12 +147,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ]));
             Expr::call(Expr::helper("$collectOptions"), list)
         } else {
+            // The `Err` kept, dropped where closing what's left panics (#2564).
+            let drop_err = match item.map(|item| item.kind()) {
+                Some(ty::Adt(_, args)) if args.types().count() == 2 => self.std_drop_function(args.type_at(1), span)?,
+                _ => None,
+            };
             let mut list = vec![items];
             list.extend(given(vec![
                 (into, Expr::js_undefined()),
                 (drop, Expr::js_undefined()),
                 (rest_first, Expr::bool(false)),
                 (size, Expr::js_undefined()),
+                (drop_err, Expr::js_undefined()),
             ]));
             Expr::call(Expr::helper("$collectResults"), list)
         })

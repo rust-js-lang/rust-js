@@ -2318,3 +2318,34 @@ batches some 15 s of it.
 `library Box` cases didn't, in both builds: #2419, a `Box` given to
 generic code not made knowing its length and its back (above), the crate's
 own generic code alike. Fixed before the table landed, so no row is listed.
+
+## Amendment: a fallible collect's close is unwound with what it holds (2026-11-25, #2564)
+
+`$collectOptions` and `$collectResults`, stopped at a `None` or an `Err`,
+closed what they step and then dropped what they had collected. Where the
+close panicked, for example the crate's iterator whose `Drop` panics,
+nothing they held was dropped. Std's `from_iter` drops the
+`GenericShunt` it's given before the `Vec` it made, so the panic unwinds
+through the `Vec`, then through `try_process`'s frame, which holds the
+`Err`. Native drops the values collected, then the `Err`'s value. The JS
+dropped neither.
+
+The close is now an `$unwinds` call (S2, S7) holding what it collected,
+then, of a `Result`, the `Err` kept, by a new `dropErr` the lowering gives
+where the error type has a destructor, as `$tryProcessResults` has one.
+
+Probed against native with the iterator's `Drop` panicking, 18 forms:
+- **Shared the cause, now native-equal:** an `Option` and a `Result`
+  collect stopped early, of a type parameter's iterator, the crate's own,
+  and a `map` of it.
+- **Native-equal already:** the same collects run to their end, into a
+  `Vec`, `partition`, `unzip`, a fallible `sum`, a `try_fold` into a
+  `Vec`, `fold`, `extend`, `max_by_key`, and a `String` collect.
+  `$tryProcessing`'s `collect` drops its shunt itself, inside the crate's
+  own `from_iter`.
+
+`test/corpus/fallible_collect_drops_what_it_collected_as_its_close_panics.rs`
+holds four such collects by `catch_unwind`, beside one that runs to its
+end. Mutations `collect-options-close-holds-nothing`,
+`collect-results-close-holds-nothing` and
+`collect-results-close-err-unheld`.

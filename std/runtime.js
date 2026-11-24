@@ -25436,7 +25436,8 @@ export function $replaceBy(s, test, to, n = Infinity) {
 // `collect()` into a `Result`: the first `Err`, where it stops, as Rust's
 // does, or `Ok` of all the values, made `into` the collection where it's
 // one but an array. Stopped, what it steps is closed, dropping what's left
-// of it, then each value collected is dropped by `drop`, as std's are.
+// of it, then each value collected is dropped by `drop`, as std's are, and
+// as the close unwinds, then the `Err` kept, by `dropErr` (#2564).
 // Where stepping it throws, a panic in a closure, what it collected and
 // what's left are dropped as std's unwinds, what's left first,
 // `restFirst`, where it doesn't collect in place (#423). Of a `Vec` of
@@ -25444,7 +25445,7 @@ export function $replaceBy(s, test, to, n = Infinity) {
 // hint asked as std's `Vec` grows of the `GenericShunt` (`$shuntGrowth`):
 // where asking it panics, the value just taken dropped first (#848); the
 // capacity it reaches kept (#1180).
-export function $collectResults(items, into, drop, restFirst = false, size) {
+export function $collectResults(items, into, drop, restFirst = false, size, dropErr) {
   const values = [];
   let failed;
   const it = items[Symbol.iterator]();
@@ -25466,7 +25467,15 @@ export function $collectResults(items, into, drop, restFirst = false, size) {
   }, it, values, drop, restFirst);
   grown?.keep(values);
   if (failed === undefined) return { TAG: "Ok", _0: into ? into(values) : values };
-  it.return?.();
+  // Closed, as std's `from_iter` drops the `GenericShunt` it's given before
+  // the `Vec` it made: where that close panics, what it collected is
+  // dropped as the panic unwinds `from_iter`'s frame, then the `Err` kept,
+  // by `dropErr`, a local of `try_process`'s (#2564).
+  $unwinds(
+    () => it.return?.(),
+    drop && (() => $dropItems(values, drop)),
+    dropErr && (() => dropErr(failed._0)),
+  );
   if (drop) $dropItems(values, drop);
   return failed;
 }
@@ -25475,7 +25484,8 @@ export function $collectResults(items, into, drop, restFirst = false, size) {
 // as Rust's does, or all the values, each out of its box where it has one
 // (ADR 0051), made `into` the collection where it's one but an array.
 // Stopped, what it steps is closed, dropping what's left of it, then each
-// value collected is dropped by `drop`, as std's are. Where stepping it
+// value collected is dropped by `drop`, as std's are, as the close
+// unwinds too (#2564). Where stepping it
 // throws, a panic in a closure, what it collected and what's left are
 // dropped as std's unwinds, what's left first, `restFirst`, where it
 // doesn't collect in place (#423). Of a `Vec` of values of `size` bytes,
@@ -25505,7 +25515,10 @@ export function $collectOptions(items, boxed = false, into, drop, restFirst = fa
   }, it, values, drop, restFirst);
   grown?.keep(values);
   if (!failed) return into ? into(values) : values;
-  it.return?.();
+  // Closed, as std's `from_iter` drops the `GenericShunt` it's given before
+  // the `Vec` it made: where that close panics, what it collected is
+  // dropped as the panic unwinds `from_iter`'s frame (#2564).
+  $unwinds(() => it.return?.(), drop && (() => $dropItems(values, drop)));
   if (drop) $dropItems(values, drop);
   return undefined;
 }

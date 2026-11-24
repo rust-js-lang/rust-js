@@ -121,6 +121,7 @@ function checked(items, IInPlace, dropI) {
     dDrop_drop,
     !$collectsInPlace(IInPlace, 4, 4),
     4,
+    dDrop_drop,
   );
 }
 

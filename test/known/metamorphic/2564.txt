@@ -1,2 +1,0 @@
-#2564 P0: a panic in the iterator's Drop as a fallible collect() closes it leaves the values collected so far undropped
-plain std loud-drop generic_fallible_collect_drops_its_iterator_once.rs

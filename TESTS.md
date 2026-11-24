@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2564, ADR 1092 amended): corpus gains `fallible_collect_drops_what_it_collected_as_its_close_panics`, an `Option` or `Result` collect stopped early whose close panics dropping what it collected, then the `Err`; test/known/metamorphic/2564.txt is gone, its `loud-drop` rewrite native-equal.
+
 Changed on 2026-11-25 (Campaign 5 step 1, ADR 1202, ADR 1122 amended): test/architecture-models.test.ts, new, one test (no second list of the runtime's models); test/twin-net.test.ts reads the catalog `rust-js --std-models` prints, gains its measure (220 models stand for no std item yet, at most), and its bless tests write models.rs; five mutations.
 
 Changed on 2026-11-25 (#2561, ADR 0570 amended): corpus gains `generic_fallible_collect_drops_its_iterator_once`, generic code's `collect()` into an `Option` or a `Result` dropping the iterator it's given once; test/known/metamorphic/2564.txt lists its `loud-drop` rewrite under #2564.
