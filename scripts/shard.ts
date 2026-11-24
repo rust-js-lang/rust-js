@@ -424,7 +424,14 @@ export function casePoolJobs(index: number, count: number, cores: number): { fil
  * clippy's 1.8. A test file, or a part of the corpus or of a net, each a
  * compile at a time, holds 0.1 to 0.3, the largest 1.8, a crate of the
  * crate corpus 0.5 (2.1 GB, four at once); `check:fast --all` whole, its
- * pool held to the budget below, 5.0 GB. */
+ * pool held to the budget below, 5.0 GB. Measured again on the quiet M5
+ * Pro, 18 cores and 48 GB (2026-11-24, the compiler grown by its crates'
+ * split and the MIR analyses), and held: the largest one process of a
+ * build of the compiler's crates in a fresh target, rustc, 3.2 GB (its
+ * whole tree, cargo's and sccache's processes each counting the pages they
+ * share, 3.9); of `cargo test` built and run 1.3, of clippy `--all-targets`
+ * 0.9; a corpus part of 18, cold, 1.7 its whole tree, compiler.test 1.2;
+ * the crate corpus whole 4.2 at 9 at once, 4.8 at 18. */
 export const peakGB = { compilerBuild: 3.5, compilerCheck: 2, crate: 0.6, test: 0.3 };
 
 /** The bytes free for a run as it starts, read once a process: on macOS
@@ -503,12 +510,15 @@ export function atOnce(kind: keyof typeof jobKinds, on: Machine = machine(), roo
  * and no more than the memory holds beside a test on each core. Past four
  * a build's own threads fill the cores: on 14 cores and 36 GB, seven builds
  * ran 656 mutations in 533 s where four ran 643 in 540 s, the load at 114
- * where it was 24 (2026-11-11). Two on CI's four cores and 16 GB, two on
- * 8 cores and 16 GB, where the cores alone said four; one there with 9 GB
- * of it free. */
+ * where it was 24 (2026-11-11); on 18 cores and 48 GB, nine ran 845
+ * mutations in 443 s where four ran them in 417 s, the run's tests, not its
+ * builds, holding the cores (2026-11-24). Two on CI's four cores and 16
+ * GB, two on 8 cores and 16 GB, where the cores alone said four; one there
+ * with 9 GB of it free. */
+export const compilerBuildsMeasured = 4;
 export function compilerBuilds(cores: number, total = totalmem(), free = availableMemory(), budget = memoryBudget(total, free)): number {
   const room = budget - cores * peakGB.test;
-  return Math.min(4, atOnce("compilerBuild", { cores, totalGB: total / 2 ** 30, freeGB: free / 2 ** 30 }, room));
+  return Math.min(compilerBuildsMeasured, atOnce("compilerBuild", { cores, totalGB: total / 2 ** 30, freeGB: free / 2 ** 30 }, room));
 }
 
 /** The builds a run makes at once of `asked`, its `--jobs`: as many as it

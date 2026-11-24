@@ -25,7 +25,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
-import { caseParts, casePartCores, compilerBuilds, compilerBuildsAsked, drivesBrowser, machine, memoryBudget, peakGB, shardArg, shareOfShard, slots, timedShard, wholeCorpusParts } from "./shard";
+import { caseParts, casePartCores, compilerBuilds, compilerBuildsAsked, compilerBuildsMeasured, drivesBrowser, machine, memoryBudget, peakGB, shardArg, shareOfShard, slots, timedShard, wholeCorpusParts } from "./shard";
 import { casesReaching, ensureMap, headMapCommit, noMap } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
@@ -2471,7 +2471,7 @@ async function main() {
   const budget = ownMemory(memoryBudget());
   const asked = compilerBuildsAsked(said >= 1 ? said : undefined, ownShare(machine().cores), undefined, undefined, budget);
   const jobs = asked.builds;
-  if (asked.cut) console.log(`--jobs=${said}: ${jobs} at once, what the memory holds beside its tests (${budget.toFixed(1)} GB its own, ${peakGB.compilerBuild} GB a build, shard.ts)`);
+  if (asked.cut) console.log(`--jobs=${said}: ${jobs} at once, ${jobs === compilerBuildsMeasured ? `as many as help, past which its tests, not its builds, hold the cores (shard.ts' \`compilerBuildsMeasured\`)` : `what the memory holds beside its tests (${budget.toFixed(1)} GB its own, ${peakGB.compilerBuild} GB a build, shard.ts)`}`);
   // And of up to `--batch` mutations each, every one chosen by name as the
   // compiler runs (ADR 1031): a build of each alone was 85% of a run's time.
   // `--batch=1` builds each alone.
