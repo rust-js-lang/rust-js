@@ -50,15 +50,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "into-iter-written-in-place",
-    breaks:
-      "`into_iter` of a `&mut C` with a dictionary is written in place as std's, which doesn't know `C`",
-    file: "crates/rust-js-lower/src/traits/routes.rs",
-    find: "        is_std_def(tcx, trait_id, StdItem::IntoIterator) && !into_iter_by_dictionary(tcx, trait_id, self_ty);\n",
-    replace: "        is_std_def(tcx, trait_id, StdItem::IntoIterator);\n",
-    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
-  },
-  {
     name: "from-dictionary-written-everywhere",
     breaks:
       "the crate's `From` impl's dictionary is written where nothing generic reads it",

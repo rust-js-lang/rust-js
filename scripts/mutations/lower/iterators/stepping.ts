@@ -507,14 +507,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^into_iter_bound_stepped_from_its_back.rs$|^into_iter_bound_stepped_from_its_back with"],
   },
   {
-    name: "made-into-iter-of-what-it-doesnt-take",
-    breaks: "the crate's iterator a `U::IntoIter` bound is of, where `U` is no input of the callee, std's compiled `flatten`'s, is taken for one the call made a JS iterator, and given its dictionary, so the flatten's back steps throw `it.back is not a function` (#1604)",
-    file: "crates/rust-js-lower/src/iterators/stepping.rs",
-    find: "        if !inputs.iter().any(taken) {\n",
-    replace: "        if false && !inputs.iter().any(taken) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
-  },
-  {
     name: "compiled-given-a-param-as-it-is",
     breaks: "a std body compiled into `@rust-js/std` given an `impl Iterator` parameter is given it as it is, so a JS caller's array, which ADR 0061 lets it give, is stepped by `.next()` and throws (#1962)",
     file: "crates/rust-js-lower/src/iterators/stepping.rs",

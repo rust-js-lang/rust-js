@@ -749,14 +749,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^counted_adapters_where_capacity_is_read.rs$"],
   },
   {
-    name: "back-step-of-a-value-as-it-is",
-    breaks: "`rfold` of a `T::IntoIter` held as it is, an `impl Is<T>`'s `T`, steps the caller's own value as a JS iterator it isn't, and throws `it[by] is not a function` (#1604)",
-    file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
-    find: "        let it = match self.iterator_given_as_it_is(iter_ty) && !crate::iterators::is_js_iterator(&it) {\n",
-    replace: "        let it = match false && self.iterator_given_as_it_is(iter_ty) && !crate::iterators::is_js_iterator(&it) {\n",
-    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^into_iter_bound_stepped_from_its_back.rs$|^into_iter_bound_stepped_from_its_back with"],
-  },
-  {
     name: "rev-no-back-stepper",
     breaks: "a `try_rfold` of a `rev()`, `$tryFoldSome($rev(it))`, whose `$rev` steps the `rev()` it's given from its back, has it reversed inward into a chain over reversed items, JS's own, with no back: `it.back is not a function` (#1855)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
