@@ -14,32 +14,49 @@ use super::*;
 /// makes in place is decided once the crate's `Recognition` exists
 /// (`decide_in_place`).
 pub fn collect_bodies(tcx: TyCtxt<'_>, library: bool) -> Vec<Body<'_>> {
-    crate::recognition::std_paths_if_first(tcx);
-    let bodies = lowered_bodies(tcx);
-    bodies_of_build(tcx, bodies, library)
+    bodies_of_build(tcx, copied_bodies(tcx), library)
 }
 
-/// The THIR of every function and closure in the crate, copied before
-/// `analysis` steals it, as `collect_bodies` begins, of each build of a
-/// case one rustc session compiles, its program's and its library's, each
-/// of which takes it as `bodies_of_build` says, in a lowering session of
-/// its own (#2301).
-pub fn copied_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
-    crate::recognition::std_paths_if_first(tcx);
-    lowered_bodies(tcx)
+/// What a build is lowered from, read of the crate's THIR before `analysis`
+/// steals it (`copied_bodies`): each lowered body, and what each method of
+/// an impl never lowered (ADR 0425) calls of the crate's own functions,
+/// whose THIR no build lowers but `bodies_of_build` reads.
+#[derive(Clone)]
+pub struct Copied<'tcx> {
+    pub bodies: Vec<Body<'tcx>>,
+    unlowered_calls: IndexMap<DefId, IndexSet<DefId>>,
 }
 
-/// What a build lowers of `bodies`, the crate's THIR (`copied_bodies`), in
+/// The THIR of every function and closure in the crate, and what the
+/// unlowered impls' methods call, copied before `analysis` steals them, as
+/// `collect_bodies` begins, of each build of a case one rustc session
+/// compiles, its program's and its library's, each of which takes it as
+/// `bodies_of_build` says, in a lowering session of its own (#2301): the
+/// second, after `analysis`, read an unlowered method's THIR stolen, and the
+/// worker died on every case with one (#2448).
+pub fn copied_bodies(tcx: TyCtxt<'_>) -> Copied<'_> {
+    crate::recognition::std_paths_if_first(tcx);
+    Copied {
+        bodies: lowered_bodies(tcx),
+        unlowered_calls: unlowered_calls(tcx),
+    }
+}
+
+/// What a build lowers of `copied`, the crate's THIR (`copied_bodies`), in
 /// its lowering session: of a `library`, each one only an unlowered impl
 /// reaches left out.
-pub fn bodies_of_build<'tcx>(tcx: TyCtxt<'tcx>, mut bodies: Vec<Body<'tcx>>, library: bool) -> Vec<Body<'tcx>> {
+pub fn bodies_of_build<'tcx>(tcx: TyCtxt<'tcx>, copied: Copied<'tcx>, library: bool) -> Vec<Body<'tcx>> {
+    let Copied {
+        mut bodies,
+        unlowered_calls,
+    } = copied;
     crate::recognition::std_paths_if_first(tcx);
     // What `{:?}` shows of std's adapters compiled as their meaning alone,
     // before anything asks the catalogue (#1401).
     crate::recognition::note_debug_shown(tcx, &bodies);
     crate::body_queries::across_bodies(tcx, &mut bodies);
     // What only an unlowered impl reaches is no JS either (ADR 0425).
-    let unreached = reached_only_unlowered(tcx, &bodies, library);
+    let unreached = reached_only_unlowered(tcx, &bodies, &unlowered_calls, library);
     bodies.retain(|body| !unreached.contains(&tcx.typeck_root_def_id(body.def_id)));
     bodies
 }
@@ -122,38 +139,59 @@ fn lowered_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
         .collect()
 }
 
-/// The crate's private functions only an unlowered impl's methods call
-/// (ADR 0425), a type's own `io::Read`'s helpers, or only what's found so:
-/// what no JS calls, and so never lowered. One a consumer may call, or none
-/// calls, is lowered as it was.
-fn reached_only_unlowered(tcx: TyCtxt<'_>, bodies: &[Body<'_>], library: bool) -> IndexSet<DefId> {
-    // Each function's callers, by the function each call is in.
-    let mut callers: IndexMap<DefId, IndexSet<DefId>> = IndexMap::default();
-    let mut calls_in = |caller: DefId, thir: &rustc_middle::thir::Thir<'_>| {
-        for expr in thir.exprs.iter() {
-            if let ty::FnDef(callee, _) = *expr.ty.kind()
-                && callee.is_local()
-            {
-                callers.entry(callee).or_default().insert(caller);
-            }
-        }
-    };
-    for body in bodies {
-        calls_in(tcx.typeck_root_def_id(body.def_id), &body.thir);
-    }
-    let unlowered: IndexSet<DefId> = (tcx.hir_crate_items(()).definitions())
+/// The crate's own functions a body's THIR calls.
+fn local_callees(thir: &rustc_middle::thir::Thir<'_>) -> impl Iterator<Item = DefId> {
+    thir.exprs.iter().filter_map(|expr| match *expr.ty.kind() {
+        ty::FnDef(callee, _) if callee.is_local() => Some(callee),
+        _ => None,
+    })
+}
+
+/// Each method of an impl rust-js never lowers (ADR 0425) with a body, and
+/// what it calls of the crate's own functions, read of its THIR, which
+/// `analysis` steals: `copied_bodies`' to read, before it.
+fn unlowered_calls(tcx: TyCtxt<'_>) -> IndexMap<DefId, IndexSet<DefId>> {
+    (tcx.hir_crate_items(()).definitions())
         .filter(|&def_id| {
             tcx.def_kind(def_id) == DefKind::AssocFn
                 && is_unlowered_impl(tcx, tcx.parent(def_id.to_def_id()))
                 && tcx.hir_maybe_body_owned_by(def_id).is_some()
         })
-        .map(|def_id| def_id.to_def_id())
-        .collect();
-    for &method in &unlowered {
-        if let Ok((thir, _)) = tcx.thir_body(method.expect_local()) {
-            calls_in(method, &thir.borrow());
+        .map(|def_id| {
+            let callees = match tcx.thir_body(def_id) {
+                Ok((thir, _)) => local_callees(&thir.borrow()).collect(),
+                Err(_) => IndexSet::default(),
+            };
+            (def_id.to_def_id(), callees)
+        })
+        .collect()
+}
+
+/// The crate's private functions only an unlowered impl's methods call
+/// (ADR 0425), a type's own `io::Read`'s helpers, or only what's found so:
+/// what no JS calls, and so never lowered. One a consumer may call, or none
+/// calls, is lowered as it was. `unlowered_calls`, what each unlowered
+/// method calls, copied with the bodies (`copied_bodies`).
+fn reached_only_unlowered(
+    tcx: TyCtxt<'_>,
+    bodies: &[Body<'_>],
+    unlowered_calls: &IndexMap<DefId, IndexSet<DefId>>,
+    library: bool,
+) -> IndexSet<DefId> {
+    // Each function's callers, by the function each call is in.
+    let mut callers: IndexMap<DefId, IndexSet<DefId>> = IndexMap::default();
+    for body in bodies {
+        let caller = tcx.typeck_root_def_id(body.def_id);
+        for callee in local_callees(&body.thir) {
+            callers.entry(callee).or_default().insert(caller);
         }
     }
+    for (&method, callees) in unlowered_calls {
+        for &callee in callees {
+            callers.entry(callee).or_default().insert(method);
+        }
+    }
+    let unlowered = |id: &DefId| unlowered_calls.contains_key(id);
     let mut unreached: IndexSet<DefId> = IndexSet::default();
     loop {
         let found = (callers.iter())
@@ -161,9 +199,7 @@ fn reached_only_unlowered(tcx: TyCtxt<'_>, bodies: &[Body<'_>], library: bool) -
                 !unreached.contains(callee)
                     && matches!(tcx.def_kind(*callee), DefKind::Fn | DefKind::AssocFn)
                     && !crate::library::seen_outside(tcx, library, *callee)
-                    && by
-                        .iter()
-                        .all(|caller| unlowered.contains(caller) || unreached.contains(caller))
+                    && by.iter().all(|caller| unlowered(caller) || unreached.contains(caller))
             })
             .map(|(&callee, _)| callee)
             .collect::<Vec<_>>();

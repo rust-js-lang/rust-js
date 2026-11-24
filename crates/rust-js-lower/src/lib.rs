@@ -132,7 +132,7 @@ pub mod untagged;
 mod uses;
 
 pub use analysis::{
-    bodies_of_build, collect_bodies, collect_initializers, collect_mir, collect_std_bodies, copied_bodies,
+    Copied, bodies_of_build, collect_bodies, collect_initializers, collect_mir, collect_std_bodies, copied_bodies,
 };
 /// Whether each `#[rust_js::name]` gives a name its item hasn't anyway, of
 /// a crate `--rustc` compiles for its metadata too (ADR 0573).

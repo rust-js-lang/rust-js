@@ -38,7 +38,7 @@ pub(crate) use located_calls::Located;
 mod closures;
 mod collected;
 pub use collected::{
-    bodies_of_build, collect_bodies, collect_initializers, collect_mir, collect_std_bodies, copied_bodies,
+    Copied, bodies_of_build, collect_bodies, collect_initializers, collect_mir, collect_std_bodies, copied_bodies,
 };
 use collected::{coded_inline_consts, lowered_derive};
 pub(crate) use collected::{exported_value_const, impl_const, is_type_system_const};

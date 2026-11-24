@@ -30,6 +30,14 @@ export const mutations: Mutation[] = [
     tests: tested,
   },
   {
+    name: "worker-panic-unsaid",
+    breaks: "a panic that kills the worker leaves its message in the build's capture, which it removes: the harness saw `it ended (101)` and nothing of why (#2448)",
+    file: "src/worker.rs",
+    find: "        if std::thread::panicking() {\n",
+    replace: "        if false && std::thread::panicking() {\n",
+    unitTests: "worker::tests::a_panic_past_a_capture_says_what_its_build_printed",
+  },
+  {
     name: "worker-shares-any-flags",
     breaks: "builds with flags of rust-js's besides what they write share a session, whose flags are the process's statics, so one build's flag changes another's JS (#2301)",
     file: "src/worker.rs",

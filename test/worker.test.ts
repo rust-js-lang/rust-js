@@ -15,7 +15,7 @@
 //   RUST_JS_WORKER_CASES=all RUST_JS_CASES=1/12 bun test test/worker.test.ts
 
 import { expect, test } from "bun:test";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { chmodSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 
@@ -120,6 +120,43 @@ test("the worker's jobs ran apart only where a build before printed", () => {
   if (apart.of > 0) console.log(`worker: ${apart.builds} of ${apart.of} builds ran apart`);
   // And every row's jobs went to one worker, kept between them.
   if (mine.length > 0) expect([...pids].length).toBe(1);
+});
+
+// A case with an impl rust-js never lowers (ADR 0425), a `Future` or an
+// `io::Read` of the crate's own: its second build in the session read that
+// impl's methods' THIR after `analysis` had stolen it, a panic, and the
+// worker died, `it ended (101)`, on both of them in every nightly (#2448).
+test("a case's impls never lowered are answered in either order, both builds in one session", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "rust-js-worker-"));
+  try {
+    for (const name of ["unlowered_impls.rs", "unlowered_helpers.rs"]) {
+      const c = running.find((each) => each.name === name)!;
+      const builds = (["program", "library"] as const).map((library) => compileCommand(join(corpus, c.name), dir, c.edition, library, []).cmd);
+      for (const order of [[0, 1], [1, 0]]) {
+        emptied(dir);
+        const answered = await workerJob(order.map((i) => builds[i]!), root, timeout, env);
+        expect([answered.map((answer) => answer?.code), workerApart()]).toEqual([[0, 0], [undefined, undefined]]);
+      }
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// A worker that dies says why: what it said on its own stderr, a panic's
+// message, is the reason its builds ran apart (#2448).
+test("a worker that ends says what it said as it ended", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "rust-js-worker-"));
+  try {
+    const dying = join(dir, "dying");
+    writeFileSync(dying, "#!/bin/sh\nread job\necho \"thread 'rustc' panicked at here: attempted to read from stolen value\" >&2\nexit 101\n");
+    chmodSync(dying, 0o755);
+    const answered = await workerJob([[dying, "lib.rs"]], dir, timeout, env);
+    expect(answered).toEqual([undefined]);
+    expect(workerApart()).toEqual(["it ended (101), saying:\nthread 'rustc' panicked at here: attempted to read from stolen value"]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("each build of a job is given the record of what the session read, as its own compile is", async () => {

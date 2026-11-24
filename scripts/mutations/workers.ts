@@ -7,6 +7,14 @@ const tested = ["test/worker.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "worker-death-unsaid",
+    breaks: "a worker that ends is said to have ended and no more, its panic's message dropped: 4 builds ran apart in each of two nightly parts, named by nothing (#2448)",
+    file: "test/workers.ts",
+    find: "    const said = worker.said.text.trim();\n",
+    replace: "    const said = \"\";\n",
+    tests: [...tested, "-t", "a worker that ends says what it said"],
+  },
+  {
     name: "worker-not-kept",
     breaks: "each job starts a worker of its own, paying the compiler's start again (#2301 step 2)",
     file: "test/workers.ts",

@@ -151,3 +151,32 @@ libraries, is paid once per test process, not once per job.
   against 37 s and 374 s unbounded.
 - **Mutations:** `worker-not-kept`, `worker-answers-swapped`,
   `worker-kept-past-its-share`.
+
+## Amendment (2026-11-24, #2448): what every build reads of the THIR is copied before `analysis`, and a worker that dies says why
+
+- **The fault:** each build's bodies were copied before `analysis`
+  (`copied_bodies`), but `bodies_of_build` also read the THIR of the
+  methods of an impl rust-js never lowers (ADR 0425), a `Future` or an
+  `io::Read` of the crate's own, to find what only they call. The session's
+  first build reads it before `analysis`; the second read it after, stolen,
+  a panic: `attempted to read from stolen value: Thir`. The worker died,
+  exit 101, on both builds of `unlowered_impls.rs` and
+  `unlowered_helpers.rs` in either order, in every nightly's run of every
+  case, and each was compiled apart. No answer was wrong: a build run apart
+  is its own compile.
+- **The fix, at the owner:** `copied_bodies` returns `Copied`, the bodies
+  and what each unlowered method calls of the crate's own functions, read
+  of its THIR once, before `analysis`; `bodies_of_build` reads the copy.
+  A single compile copies and takes it at once, as before.
+- **Its cause said:** a panic unwinds past the build's capture, whose
+  files held its message, and removed them. `Capture`'s drop, as a panic
+  unwinds, writes what each segment printed on the process's own stderr
+  first; the harness keeps the end of a worker's own stderr, 4,000
+  characters, and a job it died on says `it ended (101), saying: ..` with
+  it. This failure would have named its cause in the nightly's log.
+- **Tests:** test/worker.test.ts runs both cases' builds in one session,
+  either order, and a stand-in worker that dies saying a panic's message;
+  `worker::tests::a_panic_past_a_capture_says_what_its_build_printed`.
+  Mutations `unlowered-calls-read-after-analysis`,
+  `unlowered-calls-not-copied`, `worker-panic-unsaid`,
+  `worker-death-unsaid`.

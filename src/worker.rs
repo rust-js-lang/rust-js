@@ -254,7 +254,7 @@ impl Callbacks for Shared<'_, '_> {
         let session = pipeline::start_session(tcx, self.builds[0].session_flags());
         let mut copied = rust_js_lower::copied_bodies(tcx);
         let mut initializers = rust_js_lower::collect_initializers(tcx);
-        rust_js_lower::collect_mir(tcx, &mut copied);
+        rust_js_lower::collect_mir(tcx, &mut copied.bodies);
         rust_js_lower::collect_mir(tcx, &mut initializers);
         let mut bodies = rust_js_lower::bodies_of_build(tcx, copied.clone(), self.builds[0].library_filter());
         tcx.ensure_ok().analysis(());
@@ -366,7 +366,26 @@ impl Capture {
 }
 
 impl Drop for Capture {
+    /// Its files removed; but where a panic unwinds past it, what each
+    /// segment since `begin` printed, the panic's message among it, said
+    /// on the process's own stderr first: rustc's `catch_with_exit_code`
+    /// unwinds a panic that isn't a fatal error past the session, and the
+    /// harness saw only the worker's exit, 101, of a job it died on (#2448).
     fn drop(&mut self) {
+        if std::thread::panicking() {
+            flush();
+            let _ = redirect(self.stdout.as_raw_fd(), 1);
+            let _ = redirect(self.stderr.as_raw_fd(), 2);
+            let mut stderr = std::io::stderr();
+            for (out, err) in &self.segments {
+                for path in [out, err] {
+                    if let Ok(bytes) = std::fs::read(path) {
+                        let _ = stderr.write_all(&bytes);
+                    }
+                }
+            }
+            let _ = stderr.flush();
+        }
         let _ = std::fs::remove_dir_all(&self.dir);
     }
 }
@@ -398,7 +417,38 @@ fn redirect(from: i32, to: i32) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::shared_part;
+    use super::{Capture, duplicate, redirect, shared_part};
+    use std::io::Write;
+    use std::os::fd::{AsRawFd, FromRawFd};
+
+    /// A panic past a build's capture says what the build printed, its
+    /// panic's message among it, on the process's own stderr, not in a file
+    /// it removes (#2448).
+    #[test]
+    fn a_panic_past_a_capture_says_what_its_build_printed() {
+        let dir = std::env::temp_dir().join(format!("rust-js-worker-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let own = dir.join("stderr");
+        // The process's own, put back whatever the capture left: the test's
+        // runner reports on them.
+        let saved = (duplicate(1).unwrap(), duplicate(2).unwrap());
+        let file = std::fs::File::create(&own).unwrap();
+        redirect(file.as_raw_fd(), 2).unwrap();
+        let died = std::panic::catch_unwind(|| {
+            let mut capture = Capture::new().unwrap();
+            capture.begin().unwrap();
+            // SAFETY: the process's stderr, written and not closed.
+            let mut stderr = std::mem::ManuallyDrop::new(unsafe { std::fs::File::from_raw_fd(2) });
+            stderr.write_all(b"the build's own line\n").unwrap();
+            panic!("a build dies");
+        });
+        redirect(saved.0.as_raw_fd(), 1).unwrap();
+        redirect(saved.1.as_raw_fd(), 2).unwrap();
+        let said = std::fs::read_to_string(&own).unwrap();
+        let _ = std::fs::remove_dir_all(&dir);
+        assert!(died.is_err());
+        assert!(said.contains("the build's own line"), "{said}");
+    }
 
     fn args(text: &str) -> Vec<String> {
         text.split(' ').map(String::from).collect()

@@ -36,6 +36,25 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(user_hash|unlowered_impls).rs$"],
   },
   {
+    name: "unlowered-calls-read-after-analysis",
+    breaks:
+      "a build reads what an unlowered impl's methods call of their THIR as it's lowered, which `analysis` stole before a worker's second build: the worker died on every case with a `Future` or `io::Read` of the crate's own (#2448)",
+    file: "crates/rust-js-lower/src/analysis/collected.rs",
+    find: "    let unreached = reached_only_unlowered(tcx, &bodies, &unlowered_calls, library);\n",
+    replace: "    let unreached = reached_only_unlowered(tcx, &bodies, &self::unlowered_calls(tcx), library);\n",
+    tests: ["test/worker.test.ts", "-t", "impls never lowered are answered"],
+  },
+  {
+    name: "unlowered-calls-not-copied",
+    breaks:
+      "what the unlowered impls' methods call isn't copied with the bodies, so a helper only they call is lowered, and what it calls refused (ADR 0425, #2448)",
+    file: "crates/rust-js-lower/src/analysis/collected.rs",
+    find: "        unlowered_calls: unlowered_calls(tcx),\n",
+    replace: "        unlowered_calls: IndexMap::default(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^unlowered_helpers.rs$"],
+    snapshots: true,
+  },
+  {
     name: "js-object-deref-lowered",
     breaks:
       "a JS class's `Deref` to the class it extends is lowered, a function making a pointer to nothing",

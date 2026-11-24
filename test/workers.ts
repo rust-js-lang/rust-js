@@ -20,10 +20,14 @@ type Answered = { builds: ({ code: number; stdout: string; stderr: string } | { 
  * line, and what it was started as, so a job of another compiler, place or
  * environment starts its own. */
 type Kept = {
-  proc: Subprocess<"pipe", "pipe", "ignore">;
+  proc: Subprocess<"pipe", "pipe", "pipe">;
   reader: ReadableStreamDefaultReader<Uint8Array>;
   buffered: string;
   key: string;
+  /** The end of what it said on its own stderr, outside any build's, at
+   * most `saidMost` characters: a panic's message as it dies, and read
+   * till it ends. */
+  said: { text: string; read: Promise<void> };
   /** What it held when last measured, every `measureEvery` ms, and the
    * timer that measures it. */
   held: number;
@@ -33,6 +37,9 @@ type Kept = {
 /** How often a kept worker's memory is measured, in ms: measuring takes
  * about 20 ms (`treeBytes`), too long to ask after each job. */
 const measureEvery = 2000;
+/** The most of a worker's own stderr kept: a panic's message and its
+ * backtrace's first frames. */
+const saidMost = 4000;
 let kept: Kept | undefined;
 /** The pid of the worker that answered the last job. */
 let answeredBy: number | undefined;
@@ -64,16 +71,24 @@ function start(program: string, cwd: string, env: Record<string, string | undefi
     stdin: "pipe",
     stdout: "pipe",
     // Its own output outside a build's, a crash's, is no build's: a job
-    // it ends gets each build compiled apart, which says it.
-    stderr: "ignore",
+    // it ends gets each build compiled apart, which says it, and what it
+    // said as it died, as a panic's message is all that names what killed
+    // it: 4 builds of two cases ran apart in each of two nightly parts,
+    // "it ended (101)" and no more (#2448).
+    stderr: "pipe",
     detached: true,
   });
+  const said = { text: "", read: Promise.resolve() };
+  said.read = (async () => {
+    const decoder = new TextDecoder();
+    for await (const chunk of proc.stderr) said.text = (said.text + decoder.decode(chunk, { stream: true })).slice(-saidMost);
+  })().catch(() => {});
   // It neither keeps this process alive nor outlives it: its stdin closes
   // as this process ends, and its watcher stops it (`guarded`).
   proc.unref();
   const watch = setInterval(measureKept, measureEvery);
   watch.unref();
-  return { proc, reader: proc.stdout.getReader(), buffered: "", key, held: 0, watch };
+  return { proc, reader: proc.stdout.getReader(), buffered: "", key, said, held: 0, watch };
 }
 
 /** The worker's next line, or `undefined` where it ended or `deadline` came first. */
@@ -136,8 +151,10 @@ async function answered(cmds: string[][], cwd: string, timeout: number, env: Rec
     // Ended, or late: which, as its exit says a moment after.
     await Promise.race([worker.proc.exited, Bun.sleep(1000)]);
     const ended = worker.proc.exitCode ?? worker.proc.signalCode;
+    if (ended !== null) await Promise.race([worker.said.read, Bun.sleep(1000)]);
     stop();
-    return noneBecause(ended === null ? `it gave no answer in ${timeout * cmds.length} ms` : `it ended (${ended})`);
+    const said = worker.said.text.trim();
+    return noneBecause(ended === null ? `it gave no answer in ${timeout * cmds.length} ms` : `it ended (${ended})${said ? `, saying:\n${said}` : ""}`);
   }
   let answer: Answered;
   try {
