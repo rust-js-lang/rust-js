@@ -1,17 +1,23 @@
 // The source-copy worker: the one owner of files, aliases and disk-floor checks.
-import {constants,copyFileSync,existsSync,lstatSync,mkdirSync,readdirSync,readFileSync,statSync,symlinkSync} from "node:fs";
-import {dirname,join} from "node:path";
+import {constants,copyFileSync,existsSync,lstatSync,mkdirSync,readdirSync,readFileSync,statSync,symlinkSync,writeFileSync} from "node:fs";
+import {dirname,join,relative} from "node:path";
 import {parentPort,workerData} from "node:worker_threads";
 import {bytesOf} from "../tooling/bounded.js";
 import {floorBytes} from "../test/bounded";
 
 /** An independently writable source tree, without generated stores. The
- * caller supplies Git's tracked files, including current working-tree edits. */
+ * caller supplies Git's tracked files, including current working-tree edits.
+ * Its workspace packages' links are relative, so a clone of the whole tree
+ * (`makeSourceWorkspace`, #2503) resolves them inside itself; and it's
+ * marked made of `files`, by `key`, with its size, so a clone of it knows
+ * it's what a copy would be. */
 function copySourceWorkspace(
   root: string,
   workspace: string,
   files: string[],
   free: number,
+  key: string,
+  marker: string,
 ): number {
   const kept = files.filter(
     (file) =>
@@ -27,6 +33,9 @@ function copySourceWorkspace(
     throw new Error(
       "a source mutation workspace would cross the development disk floor",
     );
+  // Made fresh, it's no more than `files`: one copied over another's isn't
+  // marked, as what was there before is in it too.
+  const fresh = !existsSync(workspace);
   mkdirSync(workspace, { recursive: true });
   for (const file of kept) {
     const from = join(root, file),
@@ -64,15 +73,17 @@ function copySourceWorkspace(
     for (const [name, path] of packages) {
       const to = join(local, name);
       mkdirSync(dirname(to), { recursive: true });
-      symlinkSync(join(workspace, path), to);
+      symlinkSync(relative(dirname(to), join(workspace, path)), to);
     }
   };
   linkDependencies("");
   for (const directory of packages.values()) linkDependencies(directory);
-  return bytesOf(workspace);
+  const bytes = bytesOf(workspace);
+  if (fresh) writeFileSync(join(workspace, marker), JSON.stringify({ key, bytes }));
+  return bytes;
 }
 
-type Workspace = {root:string; workspace:string; files:string[]; free:number};
+type Workspace = {root:string; workspace:string; files:string[]; free:number; key:string; marker:string};
 const task = workerData as Workspace;
-parentPort!.postMessage(copySourceWorkspace(task.root,task.workspace,task.files,task.free));
+parentPort!.postMessage(copySourceWorkspace(task.root,task.workspace,task.files,task.free,task.key,task.marker));
 parentPort!.close();

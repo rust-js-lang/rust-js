@@ -4,6 +4,8 @@
 import {existsSync,mkdirSync,readFileSync,rmSync,symlinkSync,writeFileSync} from "node:fs";
 import {dirname,join,resolve} from "node:path";
 import {Worker} from "node:worker_threads";
+import {createHash} from "node:crypto";
+import {dlopen,FFIType,ptr} from "bun:ffi";
 import {bytesOf,freeBytes} from "../tooling/bounded.js";
 import { run, type Exit } from "../test/child";
 import type { Mutation } from "./mutations";
@@ -18,12 +20,46 @@ const checkout = join(import.meta.dir, "..");
  * rather than retaining the diagnostic interim 20 s allowance (#1861). */
 const prepareTimeout = underLoad(1_000);
 
-/** Copy on a worker so one mutant's files cannot block another child's exit.
- * Existing build/test slots bound how many copies may be active. `free`, the
- * disk's free bytes it's made by, above the floor, a test's own (#2505). */
+/** What a workspace made of `files` is marked by, beside them, and its size. */
+const madeMarker = ".source-workspace.json";
+const filesKey = (files: string[]) => createHash("sha256").update(files.join("\0")).digest("hex");
+
+/** clonefile(2) of the tree `from` as `to`, which mustn't be there: APFS's
+ * copy of a whole tree in one call, each file shared until it's written.
+ * Whether it cloned: not where the system has no clonefile, or the volume
+ * can't, as Linux's runners can't. */
+let clonefile: ((from: Uint8Array, to: Uint8Array) => number) | undefined;
+export function cloneTree(from: string, to: string): boolean {
+  if (process.platform !== "darwin") return false;
+  try {
+    if (clonefile === undefined) {
+      const lib = dlopen("libSystem.B.dylib", { clonefile: { args: [FFIType.ptr, FFIType.ptr, FFIType.u32], returns: FFIType.i32 } });
+      clonefile = (a, b) => lib.symbols.clonefile(ptr(a), ptr(b), 0);
+    }
+    mkdirSync(dirname(to), { recursive: true });
+    return clonefile(Buffer.from(`${from}\0`), Buffer.from(`${to}\0`)) === 0;
+  } catch {
+    return false;
+  }
+}
+
+/** A source workspace of `files` at `workspace`, and its size. Of a `root`
+ * that's itself a workspace made of the same `files`, as each mutant's is
+ * of the run's template, a clone of it whole (`cloneTree`, #2503): 0.05 s
+ * for 7,362 files where each file's own clone took 0.55 s, and no data
+ * written, so no floor asked. Else copied a file at a time on a worker so
+ * one mutant's files cannot block another child's exit. Existing build/test
+ * slots bound how many copies may be active. `free`, the disk's free bytes
+ * it's made by, above the floor, a test's own (#2505). */
 export function makeSourceWorkspace(root: string, workspace: string, files: string[], free = freeBytes(root)): Promise<number> {
+  const key = filesKey(files);
+  let made: { key?: string; bytes?: number } = {};
+  try {
+    made = JSON.parse(readFileSync(join(root, madeMarker), "utf8"));
+  } catch {}
+  if (made.key === key && typeof made.bytes === "number" && cloneTree(root, workspace)) return Promise.resolve(made.bytes);
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL("./source-workspace.ts", import.meta.url), {workerData:{root,workspace,files,free}});
+    const worker = new Worker(new URL("./source-workspace.ts", import.meta.url), {workerData:{root,workspace,files,free,key,marker:madeMarker}});
     let bytes: number | undefined;
     worker.once("message", (value: number) => { bytes = value; });
     worker.once("error", reject);

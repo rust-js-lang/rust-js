@@ -15,4 +15,12 @@ export const mutations: Mutation[] = [
     replace: "  for (const path of wasmBuild.slice(0, 1)) {\n",
     tests: ["test/source-mutations.test.ts", "-t", "a wasm mutation's workspace links what the wasm build made"],
   },
+  {
+    name: "source-clone-shares-the-template",
+    breaks: "a mutant's workspace is the template itself, linked, not a clone, so its write reaches the template and every mutant after it (#2503)",
+    file: "scripts/source-mutations.ts",
+    find: "    return clonefile(Buffer.from(`${from}\\0`), Buffer.from(`${to}\\0`)) === 0;",
+    replace: "    symlinkSync(from, to);\n    return true;",
+    tests: ["test/source-mutations.test.ts", "-t", "a workspace made of a workspace of the same files is its own"],
+  },
 ];

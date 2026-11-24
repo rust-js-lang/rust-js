@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } fro
 import { join } from "node:path";
 import { bunTest, fixture } from "./support";
 import {
+  cloneTree,
   makeSourceWorkspace,
   markSourceLoad,
   ofBindingsCrate,
@@ -59,6 +60,31 @@ test("source mutation workspaces isolate sources and workspace package aliases",
   expect(
     readFileSync(join(source, "typescript", "index.js"), "utf8"),
   ).toContain("value = 1");
+});
+
+// Each mutant's workspace is made of the run's template, a workspace of the
+// same files: on APFS a clone of it whole, one call (#2503). Its workspace
+// package's link resolves inside it, not the template, and what's written
+// in it reaches neither the template nor another mutant's.
+test("a workspace made of a workspace of the same files is its own, its aliases inside it", async () => {
+  const dir = fixture("source-mutation-clone");
+  const source = join(dir, "source");
+  mkdirSync(join(source, "typescript"), { recursive: true });
+  writeFileSync(join(source, "package.json"), JSON.stringify({ workspaces: ["typescript"] }));
+  writeFileSync(join(source, "typescript", "package.json"), JSON.stringify({ name: "@rust-js/typescript", main: "index.js" }));
+  writeFileSync(join(source, "typescript", "index.js"), "export const value = 1;\n");
+  const files = ["package.json", "typescript/package.json", "typescript/index.js"];
+  const template = join(dir, "template");
+  const bytes = await makeSourceWorkspace(source, template, files, Number.POSITIVE_INFINITY);
+  const [one, two] = [join(dir, "sources", "one"), join(dir, "sources", "two")];
+  expect(await makeSourceWorkspace(template, one, files, Number.POSITIVE_INFINITY)).toBe(bytes);
+  expect(await makeSourceWorkspace(template, two, files, Number.POSITIVE_INFINITY)).toBe(bytes);
+  expect(realpathSync(join(one, "node_modules", "@rust-js", "typescript"))).toBe(realpathSync(join(one, "typescript")));
+  writeFileSync(join(one, "typescript", "index.js"), "export const value = 3;\n");
+  expect(readFileSync(join(template, "typescript", "index.js"), "utf8")).toContain("value = 1");
+  expect(readFileSync(join(two, "typescript", "index.js"), "utf8")).toContain("value = 1");
+  // This Mac's volume clones a tree whole.
+  if (process.platform === "darwin") expect(cloneTree(template, join(dir, "sources", "three"))).toBe(true);
 });
 
 test("a source mutant is loaded only when its instrumented module actually executes", async () => {

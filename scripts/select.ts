@@ -170,6 +170,8 @@ export const osBranches: Record<string, string> = {
   "test/node-bindings.test.ts": "what the compiled program prints of its platform, as it runs",
   "scripts/strays.ts": "how processes left running are listed",
   "scripts/shard.ts": "how the machine's free memory is read",
+  "scripts/source-mutations.ts": "how a source mutant's workspace is copied, a clonefile on macOS, file by file elsewhere, which no compile reads (#2503)",
+  "test/source-mutations.test.ts": "which copy of a source mutant's workspace is tested, as scripts/source-mutations.ts makes it (#2503)",
   "scripts/disk.ts": "where sccache keeps its cache and its config, which no compile reads",
   "scripts/package-compiler.ts": "the package's `os` and `cpu`",
   "scripts/package-distribution.ts": "the distribution's platform, a field of its manifest",
