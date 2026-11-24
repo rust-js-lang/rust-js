@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "compiled-library-body-calls-unread",
+    breaks:
+      "a library's generic `collect` the consumer compiles itself, given a chain of two takes of a set's items, reads none of its calls, its body's MIR alone: the takes are JS's own `values().take(n)`, which know no hint, and the `Vec`'s capacity is 8 where std's is 7 (#2456)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "        (None, Some(mir)) if !crate::recognition::is_std_crate(tcx, body.def_id) => (mir.body.basic_blocks.iter())",
+    replace: "        (None, Some(mir)) if false && !crate::recognition::is_std_crate(tcx, body.def_id) => (mir.body.basic_blocks.iter())",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_generic_collect_asks_the_hint_of_a_chain_it_is_given$"],
+  },
+  {
     name: "hint-asked-unmarked",
     breaks: "a `filter` a caller makes and gives generic code that asks its hint is JS's own `values().filter(p)`, whose hint is `(0, None)`, where std's is `(0, Some(4))` (#1236)",
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",

@@ -1198,3 +1198,33 @@ Tests: `unzip_sides_grow_as_std_extends_them.rs` (an array, a `filter`, a
 `iter()` skipped and chained, the crate's own), `unzip_asks_its_hint.rs`
 (the crate's own, through a `filter`, a `map`, a chain and a `flat_map`),
 against native; and diagnostics' refusal of `chars().skip(1)` unzipped.
+
+## Amendment (2026-11-24, #2456): a library's body the consumer compiles is read for what it asks
+
+#2277's amendment held that `$hintAsked` answers every hint a library's
+generic function asks. It answers only where the library's own JS runs.
+A library's generic function that isn't a trait's method is one its
+consumer compiles itself (`instances::consumer_compiles`, ADR 0914), from
+its MIR alone, whose THIR is empty, and the hint scan read only THIR: the
+consumer's copy of `collected<I: Iterator, B: FromIterator<I::Item>>`
+asked its `collect`'s hint unseen. A chain of two takes of a set's items
+given it was made JS's own `values().take(n)`, which know no hint, so
+std's `Vec` collected by `next` got capacity 8 where std's is 7 (the
+metamorphic net's `library` rewrite of `capacity_of_generic_collects`).
+The `mark_given` #2277 removed had covered it.
+
+The hint scan now reads each call of such a body from its MIR
+(`hint_asked::calls_of`), as it reads a THIR body's function items, and
+asks each the same questions: its `collect` asks of what its callers
+give (`AsksHint::of_params`), as a crate's own generic function's does.
+Not std's bodies, whose asks std's hint answers. This follows ADR 0262's
+"results change" case: Rust's capacity is kept.
+
+Test: the pair `library_generic_collect_asks_the_hint_of_a_chain_it_is_given`
+(a chain of takes collected by the library, two levels down, through the
+consumer's own generic function, and its `size_hint()`), against native.
+New mutation: `compiled-library-body-calls-unread`. Two gaps the removed
+marking had also hidden, which fail in one crate as well, are their own
+issues: `B::from_iter(it)` is not taken for the `collect` it is (#2463),
+and a generic `extend` by such a chain refuses its `capacity()` at run
+time (#2464).

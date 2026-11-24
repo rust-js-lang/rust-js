@@ -1,2 +1,0 @@
-#2456 P0 regression: a chain of two takes given to a library's generic collect loses its hint: capacity 8 where native gives 7 (metamorphic library rewrite)
-plain library capacity_of_generic_collects.rs

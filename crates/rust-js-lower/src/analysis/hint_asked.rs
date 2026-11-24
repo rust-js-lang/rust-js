@@ -113,10 +113,7 @@ pub(super) fn of_crate<'tcx>(
     let iterator = crate::recognition::std_item(tcx, crate::recognition::StdItem::Iterator);
     let size_hint = crate::recognition::trait_method(tcx, iterator, "size_hint");
     for body in all_bodies {
-        for expr in body.thir.exprs.iter() {
-            let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
-                continue;
-            };
+        for (callee, args) in calls_of(tcx, body) {
             // What a library's function its consumer doesn't compile, an
             // impl's `from_iter` or `extend`, is given to step, by name or by
             // a std consumer's call: made knowing its hint, as its body,
@@ -738,6 +735,28 @@ fn made_knowing_by_its_maker<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
 /// (`crate_impl_called_by`). A free function or an inherent method of a
 /// library's is compiled here where it's given more, so its own questions
 /// are the crate's; a binding's is JS's (#2384).
+/// Each function `body` calls, and what it's given: of its THIR, each
+/// function item's; of a library's function the crate compiles itself,
+/// whose THIR is empty (ADR 0914), each its MIR calls, as what its body asks
+/// is the crate's to see as its own body's is (#2456). Not of std's bodies,
+/// whose asks std's own hint answers.
+fn calls_of<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRef<'tcx>)> {
+    match (body.root(), &body.mir) {
+        (None, Some(mir)) if !crate::recognition::is_std_crate(tcx, body.def_id) => (mir.body.basic_blocks.iter())
+            .filter_map(|data| match &data.terminator().kind {
+                rustc_middle::mir::TerminatorKind::Call { func, .. } => func.const_fn_def(),
+                _ => None,
+            })
+            .collect(),
+        _ => (body.thir.exprs.iter())
+            .filter_map(|expr| match expr.kind {
+                ExprKind::ZstLiteral { .. } => fn_def(expr.ty),
+                _ => None,
+            })
+            .collect(),
+    }
+}
+
 fn given_a_library_unseen<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
