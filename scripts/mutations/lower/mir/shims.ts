@@ -130,4 +130,28 @@ export const mutations: Mutation[] = [
     replace: "                Rvalue::Aggregate(kind, fields) if false && held == Held::Value => match **kind {\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "returned-place-unread",
+    breaks: "a tracked function a function returns is a use no rule reads, so a binary refuses `copier()`'s `RefCell::clone` where its one caller calls it through `Fn::call`, `function.rs:79:5` (#2530)",
+    file: "crates/rust-js-mir/src/shims.rs",
+    find: "        return Way::Returned;\n",
+    replace: "        return Way::Unknown;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(tracked_fn_returned_names_fn_calls_line|generic_clone_returned_names_fn_calls_line)\\.rs$"],
+  },
+  {
+    name: "fn-trait-call-unread",
+    breaks: "a `Fn` trait's own method called of the value, `Fn::call(&copy, ..)`, says nothing, so a returned `RefCell::clone` is refused where Rust names `function.rs:79:5` (#2530)",
+    file: "crates/rust-js-mir/src/shims.rs",
+    find: "            if at == 0\n",
+    replace: "            if false && at == 0\n",
+    tests: ["test/corpus.test.ts", "-t", "^(tracked_fn_returned_names_fn_calls_line)\\.rs$"],
+  },
+  {
+    name: "returned-unseen-callers-ignored",
+    breaks: "a `pub` function's returned tracked value is placed by the crate's own callers alone, where JS or another crate may call it and call what it returns otherwise (#2530)",
+    file: "crates/rust-js-mir/src/shims.rs",
+    find: "        || rust_js_lower::library::seen_outside(tcx, library, owner)\n",
+    replace: "        || false\n",
+    tests: ["test/corpus.test.ts", "-t", "^(tracked_fn_returned_by_a_pub_fn_refused)\\.rs$"],
+  },
 ];

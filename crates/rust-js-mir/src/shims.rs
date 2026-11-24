@@ -87,6 +87,9 @@ enum Way {
     Called(Through),
     Unused,
     Unknown,
+    /// Returned by the body it's made in, whose callers say (`returned_through`,
+    /// #2530); of a callee's MIR, unknown.
+    Returned,
 }
 
 /// What an operand holds of the function value: the value; a shared
@@ -105,8 +108,8 @@ enum Held {
 pub(crate) fn through<'tcx>(
     tcx: TyCtxt<'tcx>,
     (body, promoted): (&Body<'tcx>, &IndexSlice<Promoted, Body<'tcx>>),
-    function: DefId,
-    span: Span,
+    (function, span): (DefId, Span),
+    (bodies, library): (&[&Body<'tcx>], bool),
 ) -> Called {
     let mut found = Found {
         value: Value {
@@ -126,10 +129,14 @@ pub(crate) fn through<'tcx>(
         .at
         .iter()
         .map(|&(at, held)| use_through(tcx, body, at, &mut |op| value.held(op) == Some(held), held, 0));
-    match joined(ways) {
+    let way = match joined(ways) {
+        Way::Returned => returned_through(tcx, (bodies, library), body.source.def_id()),
+        way => way,
+    };
+    match way {
         Way::Called(way) => Called::Through(way),
         Way::Unused => Called::Never,
-        Way::Unknown => Called::Untold,
+        Way::Unknown | Way::Returned => Called::Untold,
     }
 }
 
@@ -143,6 +150,7 @@ fn joined(ways: impl Iterator<Item = Way>) -> Way {
             (one, Way::Unused) => one,
             (Way::Unused, way) => way,
             (Way::Called(a), Way::Called(b)) if a == b => one,
+            (Way::Returned, Way::Returned) => one,
             _ => return Way::Unknown,
         };
     }
@@ -280,6 +288,21 @@ fn use_through<'tcx>(
                 return Way::Unknown;
             };
             let callee = func.ty(body, tcx);
+            // A `Fn` trait's own method called of it, `Fn::call(&f, ..)` of
+            // what a call returned, by that trait; of a reference, `F::call`,
+            // as `&F`'s impls call it (#2530).
+            if at == 0
+                && let ty::FnDef(called, _) = *callee.kind()
+                && let Some(kind) = tcx
+                    .trait_of_assoc(called)
+                    .and_then(|tr| tcx.fn_trait_kind_from_def_id(tr))
+            {
+                return match held {
+                    Held::Value => Way::Called(Through::of(kind)),
+                    Held::Reference => Way::Called(Through::Fn),
+                    Held::Boxed => Way::Unknown,
+                };
+            }
             match held {
                 // `Box::new(f)`: the box's uses.
                 Held::Value if is_box_new(tcx, callee) && depth < 4 => match destination.as_local() {
@@ -314,6 +337,9 @@ fn stored_through<'tcx>(
     held: Held,
     depth: usize,
 ) -> Way {
+    if local == mir::RETURN_PLACE && held == Held::Value && field.is_none() {
+        return Way::Returned;
+    }
     if local == mir::RETURN_PLACE || depth > 4 {
         return Way::Unknown;
     }
@@ -367,7 +393,7 @@ fn stored_through<'tcx>(
                         if param.as_usize() > callee.arg_count {
                             return Way::Unknown;
                         }
-                        stored_through(tcx, callee, (param, Some(field)), held, depth + 1)
+                        not_returned(stored_through(tcx, callee, (param, Some(field)), held, depth + 1))
                     }
                     _ => Way::Unknown,
                 }
@@ -485,7 +511,7 @@ fn argument_through<'tcx>(tcx: TyCtxt<'tcx>, callee: Ty<'tcx>, at: usize, depth:
         let body = tcx.optimized_mir(callee);
         let param = Local::from_usize(at + 1);
         if param.as_usize() <= body.arg_count
-            && let Way::Called(way) = stored_through(tcx, body, (param, None), Held::Value, depth + 1)
+            && let Way::Called(way) = not_returned(stored_through(tcx, body, (param, None), Held::Value, depth + 1))
         {
             return Some(way);
         }
@@ -578,5 +604,71 @@ fn capture_through(tcx: TyCtxt<'_>, closure: DefId, field: FieldIdx) -> Option<T
     match ways.as_slice() {
         [first, rest @ ..] if rest.iter().all(|way| way == first) => Some(*first),
         _ => None,
+    }
+}
+
+/// Of a callee's own MIR, what it returns isn't the body being lowered's
+/// return: unknown.
+fn not_returned(way: Way) -> Way {
+    match way {
+        Way::Returned => Way::Unknown,
+        way => way,
+    }
+}
+
+/// How a function value `owner` returns is called: as each of the
+/// crate's calls of `owner`, in `bodies`, the MIR the emitter reads, uses
+/// what it returns, where every mention of `owner` is such a call (#2530).
+/// Never of one no call names, which nothing calls. Unknown of a closure,
+/// and of one a caller rust-js
+/// doesn't compile may call: JS's or, of a library, another crate's
+/// (`library::seen_outside`, #2015, #2403), as #2335's rule has it.
+fn returned_through<'tcx>(tcx: TyCtxt<'tcx>, (bodies, library): (&[&Body<'tcx>], bool), owner: DefId) -> Way {
+    if !owner.is_local()
+        || !matches!(
+            tcx.def_kind(owner),
+            rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
+        )
+        || rust_js_lower::library::seen_outside(tcx, library, owner)
+    {
+        return Way::Unknown;
+    }
+    let names = |ty: Ty<'tcx>| matches!(*ty.peel_refs().kind(), ty::FnDef(id, _) if id == owner);
+    let mut ways: Vec<Way> = Vec::new();
+    for &caller in bodies {
+        let mut mentions = Mentions {
+            names: &names,
+            at: Vec::new(),
+        };
+        mentions.visit_body(caller);
+        for at in mentions.at {
+            let way = match caller.stmt_at(at).right().map(|terminator| &terminator.kind) {
+                Some(TerminatorKind::Call {
+                    func: Operand::Constant(c),
+                    destination,
+                    ..
+                }) if names(c.ty()) => match destination.as_local() {
+                    Some(made) => not_returned(stored_through(tcx, caller, (made, None), Held::Value, 1)),
+                    None => Way::Unknown,
+                },
+                _ => Way::Unknown,
+            };
+            ways.push(way);
+        }
+    }
+    joined(ways.into_iter())
+}
+
+/// Each place a body names a function `names` says, as a constant.
+struct Mentions<'a, 'tcx> {
+    names: &'a dyn Fn(Ty<'tcx>) -> bool,
+    at: Vec<Location>,
+}
+
+impl<'tcx> Visitor<'tcx> for Mentions<'_, 'tcx> {
+    fn visit_const_operand(&mut self, constant: &ConstOperand<'tcx>, location: Location) {
+        if (self.names)(constant.ty()) {
+            self.at.push(location);
+        }
     }
 }

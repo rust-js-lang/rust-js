@@ -327,8 +327,8 @@ test("a `#[track_caller]` function made a value whose calls the body doesn't say
     "fn main() {\n    let f = Option::unwrap;\n    let a: Vec<i32> = vec![Some(1)].into_iter().map(f).collect();\n    println!(\"{:?} {:?}\", a, Some(Some(2)).map(f));\n}\n",
     // A `Box<dyn Fn>`, called as its own calls say.
     "fn main() {\n    let b: Box<dyn Fn(Option<i32>) -> i32> = Box::new(Option::unwrap);\n    println!(\"{}\", b(Some(1)));\n}\n",
-    // Returned, and captured.
-    "fn get() -> impl Fn(Option<i32>) -> i32 {\n    Option::unwrap\n}\n\nfn main() {\n    println!(\"{}\", get()(Some(1)));\n}\n",
+    // Captured; a returned one is told by its callers (#2530), one a
+    // `pub` function returns isn't (tracked_fn_returned_by_a_pub_fn_refused).
     "fn main() {\n    let f = Option::unwrap;\n    let c = move |x: Option<i32>| f(x);\n    println!(\"{}\", c(Some(1)));\n}\n",
     // Stored in a struct given whole; the crate's own, two parameters.
     "struct Held<F>(F);\n\nfn run<F: Fn(Option<i32>) -> i32>(h: Held<F>) -> i32 {\n    (h.0)(Some(1))\n}\n\nfn main() {\n    println!(\"{}\", run(Held(Option::unwrap)));\n}\n",

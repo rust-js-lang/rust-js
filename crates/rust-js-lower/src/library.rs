@@ -147,7 +147,7 @@ pub(crate) fn escapes(tcx: TyCtxt<'_>, library: bool, id: DefId) -> bool {
 /// Whether code rust-js doesn't compile may call `id`, a function the
 /// crate writes: another crate's, where it's a library (`escapes`), or
 /// JS's, which its module exports it to (`js_facing`'s rule) (#2015).
-pub(crate) fn seen_outside(tcx: TyCtxt<'_>, library: bool, id: DefId) -> bool {
+pub fn seen_outside(tcx: TyCtxt<'_>, library: bool, id: DefId) -> bool {
     escapes(tcx, library, id) || super::analysis::exported_function(tcx, id)
 }
 

@@ -1964,7 +1964,10 @@ Differences:
   says how it's called, and a callee's own MIR where it's given on,
   `FnOnce::call_once`'s of an `F: FnMut` a callee moves into `Option::map`;
   generic code's `map(T::clone)` too, of a `RefCell`, whose impl tracks it
-  (#2522); a binary refuses one whose calls it doesn't say
+  (#2522); of one a function returns, as the crate's callers of that
+  function call what it returns, `Fn::call`'s of `copier()(x)`, one JS or
+  another crate may call aside (#2530); a binary refuses one whose calls it
+  doesn't say
   (#2335, [limitations](limitations.md)); of a std method whose impl
   tracks its caller where its trait's declaration doesn't, called through
   generic code's dictionary, the generic line, as rustc's instance names

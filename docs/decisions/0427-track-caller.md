@@ -663,3 +663,31 @@ mutations `argument-mir-unread`, `value-drop-a-use`, `holder-moved-unread`,
 `model-location-not-raised` and `no-callers-no-location`. Still to do: a
 tracked function returned as a value (#2530).
 
+## Amendment: a tracked function a function returns is placed by its callers (2026-11-24, #2530)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a panic named another
+line than Rust's.
+
+`fn copier() -> impl Fn(&RefCell<u8>) -> RefCell<u8> { RefCell::clone }`,
+called `copier()(&x)` with `x` mutably borrowed, panics natively at
+`Fn::call`'s shim, `function.rs:79:5`. rust-js named `copier`'s line, or,
+since #2522, refused it in a binary as untold: "returned" was a use no rule
+read. Now `stored_through` answers the return place `Returned`, and
+`through` resolves it by the crate's callers of the function
+(`returned_through`): each mention of it in the bodies the emitter reads
+must be a direct call whose destination's uses say one way. A direct call
+of a `Fn` trait's own method of the value, `<F as Fn>::call(&copy, ..)`,
+says that trait, and of a reference `Fn::call`, as `&F`'s impls call it.
+That rule was missing everywhere: a value put in a local and called that
+way was untold. A function JS may call, or, of a library, another crate
+may (`library::seen_outside`, #2015, #2403), keeps #2335's refusal, as its
+callers can't all be seen. binaries.test.ts' untold list loses its returned
+value, which its caller now tells. A callee's own return, in the MIR the walk
+reads of std, is no return of the body lowered.
+
+Held by `tracked_fn_returned_names_fn_calls_line`,
+`generic_clone_returned_names_fn_calls_line`,
+`tracked_fn_returned_by_a_pub_fn_refused` (compile-fail) and the mutations
+`returned-place-unread`, `fn-trait-call-unread` and
+`returned-unseen-callers-ignored`.
+

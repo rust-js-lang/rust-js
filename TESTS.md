@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-24 (#2530, ADR 0427 amended): corpus gains `tracked_fn_returned_names_fn_calls_line`, `generic_clone_returned_names_fn_calls_line` and `tracked_fn_returned_by_a_pub_fn_refused`; three mutations.
+
 Changed on 2026-11-24 (#2531, ADR 0270 amended): corpus gains `thread_local_object_borrowed_from_another_module`, and the crate pairs `thread_local_object_of_a_library_borrowed`; `exported_cells`' snapshot loses its two counted borrows of another module's thread-local; mutation `quiet-local-counted-in-another-module` replaces `quiet-with-borrow-of-another-module`; test/known/metamorphic/2531.txt removed, its 2 rows run as Rust does; the corpus row recounted, 3,028 (`ls test/corpus/*.rs | wc -l`).
 
 Changed on 2026-11-24 (#2522, ADR 0427 amended): corpus gains `generic_clone_made_a_value_names_call_muts_line`, `fn_mut_moved_into_option_map_names_call_onces_line` and `clone_held_in_a_struct_given_whole_names_call_onces_line`; test/iterator-forms.test.ts' `differs` loses its three #2522 rows and test/known/metamorphic/2522.txt is removed; seven mutations.

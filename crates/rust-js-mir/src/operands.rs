@@ -901,7 +901,18 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         if !self.value_tracks_caller((def_id, args)) {
             return Ok(None);
         }
-        let shim = match crate::shims::through(tcx, (state.body, state.facts.promoted().as_slice()), def_id, span) {
+        // The crate's bodies, as the emitter reads them, whose calls of a
+        // function that returns the value say how it's called (#2530).
+        let bodies: Vec<&rustc_middle::mir::Body<'tcx>> = (self.krate.bodies.values())
+            .chain(self.krate.closures.values())
+            .filter_map(|body| body.mir.as_ref().map(|mir| &mir.body))
+            .collect();
+        let shim = match crate::shims::through(
+            tcx,
+            (state.body, state.facts.promoted().as_slice()),
+            (def_id, span),
+            (&bodies, self.krate.library),
+        ) {
             crate::shims::Called::Through(way) => way.shim(tcx, def_id),
             crate::shims::Called::Never => None,
             // Of the crate's own body: refused where a panic's location is
