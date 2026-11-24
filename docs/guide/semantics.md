@@ -2013,13 +2013,16 @@ Differences:
   inside it an overflow is a panic whose payload is the engine's error ([exceptions](interop/exceptions.md#catch-a-stack-overflow-jscatch_stack_overflow), [1140](../decisions/1140-catch-stack-overflow.md)).
 - **What rust-js doesn't support as a program runs is refused then,**
   `rust-js does not support ..`, which no `catch_unwind` takes for a panic
-  and past which no drop runs (`$unsupported`, #1132, #1180). A binary
+  and past which no drop runs, a scope's as it unwinds neither
+  (`$unsupported`, #1132, #1180, #2496). A binary
   says it as a refusal at compile time is said, on stderr, and ends with
   status 1: `error: rust-js does not support ..` and, on the next line,
   ` --> ` and where the JS asked it, `file:line:col`, the Rust source's
   where the host maps the JS's source map (`node --enable-source-maps`),
   never the host's report of an uncaught error (#2493). A library's
-  export gives its JS caller the error, thrown.
+  export gives its JS caller the error, thrown, and the library must not
+  be used again: a refusal ends it as it ends a binary, so from then on no
+  drop of its runs.
 
 What's refused of panics and processes is in
 [the limitations](limitations.md#panics-processes-and-io).

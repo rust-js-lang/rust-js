@@ -254,8 +254,8 @@ export const mutations: Mutation[] = [
     name: "overflow-drops-skipped-in-catcher",
     breaks: "inside a catcher, a scope's drops don't run as an overflow unwinds, so a drop the program sees is lost",
     file: "crates/rust-js-program/src/runtime/unwind.js",
-    find: "  if (!$aborted && ($suspect === undefined || $overflowCatchers > 0)) return true;\n",
-    replace: "  if (!$aborted && $suspect === undefined) return true;\n",
+    find: "  if (!$aborted && !$refused && ($suspect === undefined || $overflowCatchers > 0)) return true;\n",
+    replace: "  if (!$aborted && !$refused && $suspect === undefined) return true;\n",
     tests: ["test/stack-overflow.test.ts", "-t", "unwinds as a panic does"],
   },
   {
@@ -289,5 +289,21 @@ export const mutations: Mutation[] = [
     find: "  if (raisedAt !== null) $panic(why, raisedAt);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^drop_glue_second_panic_aborts.rs$"],
+  },
+  {
+    name: "refusal-runs-drops",
+    breaks: "a run-time refusal runs the drops of the scopes it unwinds past, the program's own code after rust-js refused to go on (#2496)",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
+    find: "  $refused = true;\n",
+    replace: "",
+    tests: ["test/binaries.test.ts", "-t", "run-time refusal"],
+  },
+  {
+    name: "refusal-live-unread",
+    breaks: "`$live()` is true after a run-time refusal, so a scope's drops run as it unwinds (#2496)",
+    file: "crates/rust-js-program/src/runtime/unwind.js",
+    find: "  if (!$aborted && !$refused && ($suspect === undefined || $overflowCatchers > 0)) return true;\n",
+    replace: "  if (!$aborted && ($suspect === undefined || $overflowCatchers > 0)) return true;\n",
+    tests: ["test/binaries.test.ts", "-t", "run-time refusal"],
   },
 ];

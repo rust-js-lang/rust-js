@@ -179,3 +179,26 @@ Inside `js::catch_stack_overflow(f)`, the engine's stack overflow is a
 panic whose payload is the engine's error: each frame's drops run, a
 `catch_unwind` takes it, and the catcher gives what none took as `Err`. With none open it's Rust's
 abort, as above (#1692, [1140](1140-catch-stack-overflow.md)).
+
+## Amendment: no drop runs past a run-time refusal (2026-11-24, #2496)
+
+A run-time refusal was said to be one no cleanup runs past, but only
+`$cleanup` asked: a scope's drops, `finally { if ($live()) { .. } }`, ran
+as an `$Unsupported` unwound, since `$live()` asked only of an abort and a
+stack overflow. So a binary refused at run time printed a `Drop`'s line
+before rust-js's error, the program's own code run after rust-js had
+refused to go on. Each `$unsupported(..)` is made only to be thrown, so it
+sets `$refused`, and `$live()` is false from then on, as after an abort.
+
+A library is held to the same rule, as the lead decided: the refusal is
+thrown to its JS caller and the library ends there, so its drops run no
+more; the guide says it must not be used again after one. A flag cleared
+as an export returns was the other choice, but a library's export can be
+reached from another export's callback and through a JS host's own frames,
+where no one place knows when the refusal is done with.
+
+No output a Rust program has changes (ADR 0262: Rust's behaviour cannot
+be preserved, so it's refused, and nothing of the program runs after).
+Held by binaries.test.ts' "a run-time refusal ends a binary", whose `main`
+holds a guard that prints as it's dropped, on Node and Bun, and the
+mutations `refusal-runs-drops` and `refusal-live-unread`.

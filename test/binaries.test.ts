@@ -626,11 +626,13 @@ test("an `Err` from main ends the process at once: a host's pending timer never 
 // What rust-js doesn't support as the program runs ends a binary as its
 // refusals at compile time are said, `error: rust-js does not support ..`
 // and where the JS asked it, status 1, never Node's or Bun's report of an
-// uncaught error, its stack (#2447, #2493).
-test("a run-time refusal ends a binary with rust-js's error and where it was asked, status 1", () => {
+// uncaught error, its stack (#2447, #2493). It ends the program, so no
+// drop runs past it: the guard in `main`'s scope prints nothing as the
+// refusal unwinds (#2496).
+test("a run-time refusal ends a binary with rust-js's error and where it was asked, status 1, no drop run", () => {
   const dir = fixture("refused-as-it-runs");
   mkdirSync(dir, { recursive: true });
-  const source = 'fn address<T>(value: &T) -> usize {\n    unsafe { std::mem::transmute(value) }\n}\n\nfn main() {\n    println!("before");\n    let x = Some(5u64);\n    if let Some(y) = &x {\n        println!("{}", address(y) % 8);\n    }\n}\n';
+  const source = 'struct D;\n\nimpl Drop for D {\n    fn drop(&mut self) {\n        println!("dropped");\n    }\n}\n\nfn address<T>(value: &T) -> usize {\n    unsafe { std::mem::transmute(value) }\n}\n\nfn main() {\n    let _d = D;\n    println!("before");\n    let x = Some(5u64);\n    if let Some(y) = &x {\n        println!("{}", address(y) % 8);\n    }\n}\n';
   writeFileSync(join(dir, "native.rs"), source);
   const js = join(dir, "main.js");
   run([compiler, join(dir, "native.rs"), "-o", js, "--", ...flags, "--crate-type", "bin", "-Awarnings"]);

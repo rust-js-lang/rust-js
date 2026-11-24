@@ -208,9 +208,14 @@ function $panicking() {
 // What rust-js doesn't support as the program runs, where Rust's runs on:
 // `$unsupported("rust-js does not support ..")`'s, the one form of a
 // refusal at run time, which no `catch_unwind` takes for a panic and no
-// cleanup runs drops past, as it ends the program (#1132, #1180).
+// cleanup runs drops past, as it ends the program (#1132, #1180). Each is
+// made only to be thrown, so once one is made the program has ended:
+// `$live()` is false from then on, so no scope's drops run as it unwinds,
+// a library's neither, which isn't used again after a refusal (#2496).
+let $refused = false;
 class $Unsupported extends Error {}
 function $unsupported(message) {
+  $refused = true;
   return new $Unsupported(message);
 }
 
@@ -317,21 +322,22 @@ function $abortEnds() {
   }
 }
 
-// Whether the program goes on, not aborted: a scope's drops a program sees
-// run only so, in a `finally` that runs as an abort unwinds, where the
-// host has no process to end, a browser, or the stack had no room to end
-// it yet (#1193).
+// Whether the program goes on, not aborted and not refused: a scope's
+// drops a program sees run only so, in a `finally` that runs as an abort
+// unwinds, where the host has no process to end, a browser, or the stack
+// had no room to end it yet (#1193), or as a run-time refusal unwinds
+// (`$refused`, #2496).
 //
 // Of a stack overflow that `$unwindsOn` kept, `$suspect`, where it had no
 // room to abort, the abort, here or further out (#1193); inside a
 // `js::catch_stack_overflow`, where an overflow unwinds as a panic does,
 // none (ADR 1140).
 function $live() {
-  if (!$aborted && ($suspect === undefined || $overflowCatchers > 0)) return true;
+  if (!$aborted && !$refused && ($suspect === undefined || $overflowCatchers > 0)) return true;
   return $liveTold();
 }
 function $liveTold() {
-  if ($suspect !== undefined) {
+  if ($suspect !== undefined && !$refused) {
     const suspect = $suspect;
     if (!$isStackOverflow(suspect)) {
       $suspect = undefined;
