@@ -25,6 +25,7 @@ mod may_be_cell;
 mod runs_nothing;
 mod std_given;
 mod unnamed;
+mod unproven;
 use at_hand::AtHand;
 pub(crate) use may_be_cell::{may_be_cell, unsized_in_place};
 use runs_nothing::{CallArgs, field_access_may_run, generic_read, read_may_run};
@@ -32,6 +33,7 @@ pub(crate) use runs_nothing::{
     binding_call_runs_nothing, binding_runs_nothing, call_runs_nothing, resolve_runs_nothing,
 };
 use std_given::{Given, bound_runs, derived_method, std_given};
+pub(crate) use unproven::Unproven;
 
 /// A cell a borrow is of: a thread-local's, by its key, or any of a type.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]

@@ -355,6 +355,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         mir: &rust_js_lower::analysis::Mir<'tcx>,
     ) -> (Option<Elaboration<'tcx>>, QuietCells) {
         let cells = self.mir_quiet_cells(&mir.body, &mir.promoted);
+        self.shadow_cell_forms(&mir.body, (&cells.calls, &cells.momentary));
         let elaboration = self.elaborated(&mir.body, &cells.unchecked_guards());
         self.shadow_drops(mir, elaboration.as_ref(), &cells.unchecked_guards());
         (elaboration, cells)

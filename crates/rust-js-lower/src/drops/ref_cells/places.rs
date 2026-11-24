@@ -90,7 +90,7 @@ pub(super) fn field_of<'tcx>(
 /// counts where it may meet another, or takes it whole, `into_inner`,
 /// which rustc lets no borrow outlive: what a field's use may be and the
 /// field still have no reference to it elsewhere (ADR 0863, amended; #687).
-pub(super) fn borrows_its_cell<'tcx>(
+pub(crate) fn borrows_its_cell<'tcx>(
     recognition: &crate::recognition::Recognition<'_, 'tcx>,
     id: DefId,
     args: ty::GenericArgsRef<'tcx>,

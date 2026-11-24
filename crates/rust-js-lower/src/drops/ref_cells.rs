@@ -14,9 +14,10 @@ mod bound;
 mod instances;
 mod places;
 use bound::{BoundPlaces, bound_place, bound_ref_cells};
+pub(crate) use places::borrows_its_cell;
 use places::{
-    borrows_its_cell, cell_lent, field_of, fields_given, flattened_state_lent, held_parts, made_places, property_reads,
-    thread_local_key, through_borrows,
+    cell_lent, field_of, fields_given, flattened_state_lent, held_parts, made_places, property_reads, thread_local_key,
+    through_borrows,
 };
 
 /// What the crate's bodies do with its `RefCell`s: by type, each of its
@@ -331,6 +332,69 @@ impl<'tcx> RefCells<'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `CellForm`'s shadow of `body`, the MIR being lowered, where the
+    /// session records it (#2490, ADR 1199): each borrow's proof
+    /// (`analysis::shadow_cell_forms_of`) beside the form its lowering takes,
+    /// of `QuietCells`' blocks, those unchecked, `quiet`, and those checked
+    /// and not counted, `momentary`; else as `std_types/cell.rs` asks, a type
+    /// no borrow of which is counted unchecked; a flattened state as its
+    /// declaration says. The crate's fields used whole are found once.
+    pub fn shadow_cell_forms(
+        &self,
+        body: &rustc_middle::mir::Body<'tcx>,
+        (quiet, momentary): (
+            &IndexSet<rustc_middle::mir::BasicBlock>,
+            &IndexSet<rustc_middle::mir::BasicBlock>,
+        ),
+    ) {
+        use crate::analysis::Today;
+        use crate::session::ShadowKind;
+        if !crate::session::shadowing(self.tcx, ShadowKind::CellForm) {
+            return;
+        }
+        let recognition = self.recognition();
+        let drops = |ty| {
+            super::drop_runs(
+                recognition,
+                (self.krate.library, self.krate.closure_facts),
+                self.krate.counted,
+                ty,
+            )
+        };
+        let proving = crate::analysis::Proving {
+            recognition: &recognition,
+            borrows: self.krate.cell_borrows,
+            drops: &drops,
+        };
+        let today = |block, cell, field: Option<&'tcx ty::FieldDef>| match () {
+            _ if field.is_some_and(|field| crate::bindings::is_flattened_state_field(self.tcx, field)) => {
+                Today::Declared
+            }
+            _ if quiet.contains(&block) || self.quiet_ref_cell(cell, false) => Today::Unchecked,
+            _ if momentary.contains(&block) => Today::Momentary,
+            _ => Today::Counted,
+        };
+        let thir = (body.source.def_id() == self.frame.owner).then_some(self.frame.thir);
+        let caches = crate::session::caches(self.tcx);
+        let wholes = caches.cell_form_wholes.get_or_init(|| {
+            let bodies = (self.krate.bodies.values().chain(self.krate.closures.values()))
+                .filter(|body| body.def_id.is_local())
+                .filter_map(|body| body.mir.as_ref().map(|mir| &mir.body));
+            crate::analysis::whole_uses(&recognition, bodies)
+        });
+        for (&field, whole) in wholes {
+            crate::session::shadow(self.tcx, ShadowKind::CellForm, || {
+                let lent = if whole.lent_to_borrows {
+                    "lent-to-borrows"
+                } else {
+                    "used"
+                };
+                format!("whole\t{}\t{lent}\t{}", self.tcx.def_path_str(field), whole.why)
+            });
+        }
+        crate::analysis::shadow_cell_forms_of(&proving, body, (thir, wholes), &today);
+    }
+
     /// Whether a `RefCell` of type `ty` is the object it holds, not a
     /// `{ value }` box (ADR 0863): a `Vec`'s array, a map's `Map`, a set's
     /// `Set`, a struct's object (`holds_itself`), which its borrows read

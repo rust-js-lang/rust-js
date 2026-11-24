@@ -49,6 +49,7 @@ pub use self::uses::*;
 
 use facts::{Facts, find_facts};
 pub use inlined::inlined_drops;
+pub(crate) use ref_cells::borrows_its_cell;
 pub use ref_cells::{RefCells, holds_itself};
 pub use types::Drops;
 pub(super) use types::no_type_here;

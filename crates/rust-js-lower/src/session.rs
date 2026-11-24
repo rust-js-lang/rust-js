@@ -101,6 +101,9 @@ pub struct Caches {
     /// The shadows the session records, `--shadow`'s, where it records
     /// any (`shadows.rs`).
     pub shadows: Option<shadows::Shadows>,
+    /// Of the `cell-form` shadow, each `RefCell` field of the crate's
+    /// structs some body uses whole, and how, found once (`cell_form.rs`).
+    pub(crate) cell_form_wholes: OnceCell<rust_js_program::collections::IndexMap<DefId, super::analysis::Whole>>,
     /// What std's own code reaches of the crate's impls that take an
     /// iterator that `crate_impl_called_by` doesn't answer, found as the
     /// crate is analyzed (`instances::check_std_reach`), each said where the
@@ -270,6 +273,7 @@ fn start_keyed(gcx: usize, flags: Flags, hooks: &'static dyn MirHooks) -> Sessio
             without_moves: flags.without_moves,
             intervals_by_effects: flags.intervals_by_effects,
             shadows: shadows::Shadows::of(&flags.shadows),
+            cell_form_wholes: OnceCell::new(),
             #[cfg(debug_assertions)]
             std_reach_unanswered: RefCell::default(),
             intervals: RefCell::default(),

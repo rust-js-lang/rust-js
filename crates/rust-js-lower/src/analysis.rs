@@ -23,6 +23,8 @@ use rust_js_program::collections::{IndexMap, IndexSet};
 mod callers_decide;
 mod cell_borrows;
 mod cell_flow;
+mod cell_form;
+pub(super) use cell_form::{Proving, Today, Whole, shadow_cell_forms_of, whole_uses};
 mod chars_asked;
 mod vec_uses;
 pub(super) use cell_borrows::{

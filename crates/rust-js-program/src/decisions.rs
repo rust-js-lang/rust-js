@@ -52,6 +52,12 @@ pub(crate) const CATALOGUE: &[Decision] = &[
         typed: false,
     },
     Decision {
+        name: "cell-form",
+        owner: "crates/rust-js-lower/src/analysis/cell_form.rs shadow",
+        answers: &["agrees", "gains-count", "loses-count"],
+        typed: false,
+    },
+    Decision {
         name: "refcell-try-borrow",
         owner: "crates/rust-js-lower/src/std_types/cell.rs Std::TryBorrow",
         answers: &["flattened", "unchecked", "checked"],

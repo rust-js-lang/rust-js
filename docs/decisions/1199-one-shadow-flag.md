@@ -52,3 +52,20 @@ the same plumbing, which AGENTS.md's one-way rule rules out.
   unknown kind, test/cargo.test.ts' "RUST_JS_SHADOW gives a Cargo build's
   crate the lines --shadow gives it", and the intervals' and drops'
   shadows' own tests, which read the lines by kind.
+
+## Amendment: the `cell-form` kind (2026-11-24, #2490)
+
+Campaign 4's phase 1 is the `cell-form` shadow: of each `RefCell` borrow
+of the crate's bodies, `site` and the form the compile takes (`unchecked`,
+`momentary`, `counted`, or `declared`, a flattened state's), beside the
+form `CellForm`'s proof gives from MIR, alone and with the crate's bodies'
+borrow summaries (`CellBorrows::call_asks`), the borrow's shape in its
+source, what it's borrowed of and its field, the first defeat of each, its
+function and where; and `whole`, each field some body uses whole and how.
+`analysis/cell_form.rs` proves; `decisions::record("cell-form", ..)` counts
+`agrees`, `gains-count` and `loses-count`. No output changes: the table
+`scripts/cell-form-shadow.ts` makes of the corpus's three builds and the
+React port's crates goes to Tu before any form flips. Held by
+test/cell-form-shadow.test.ts and the mutations of `cell_form.rs` and
+`cell_borrows/unproven.rs`.
+

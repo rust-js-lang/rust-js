@@ -18,17 +18,21 @@ pub enum ShadowKind {
     /// Each `Drop` of the crate's bodies compared with rustc's elaboration
     /// (#2112's change D).
     Drops,
+    /// Each `RefCell` borrow's form as the compile takes it, beside the one
+    /// `CellForm`'s proof gives from MIR (#2490).
+    CellForm,
 }
 
 impl ShadowKind {
     /// Every kind, in the order the file says them.
-    pub const ALL: [ShadowKind; 2] = [ShadowKind::Intervals, ShadowKind::Drops];
+    pub const ALL: [ShadowKind; 3] = [ShadowKind::Intervals, ShadowKind::Drops, ShadowKind::CellForm];
 
     /// The name `--shadow` takes it by, and its lines begin with.
     pub fn name(self) -> &'static str {
         match self {
             ShadowKind::Intervals => "intervals",
             ShadowKind::Drops => "drops",
+            ShadowKind::CellForm => "cell-form",
         }
     }
 
