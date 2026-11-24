@@ -42,6 +42,11 @@ type Site = {
   defeatSummed: string;
   fn: string;
   at: string;
+  /** The function whose call defeated it with the summaries. */
+  by: string;
+  /** The ADR 0262 differences its range is passed by, `39`, `44`: Tu's
+   * decisions the proof keeps as today's output does, not proofs. */
+  exceptions: string;
 };
 
 function sitesOf(text: string, build: string, name: string): Site[] {
@@ -49,8 +54,8 @@ function sitesOf(text: string, build: string, name: string): Site[] {
     .split("\n")
     .filter((line) => line.startsWith("cell-form\tsite\t"))
     .map((line) => {
-      const [, , today, alone, summed, shape, of, field, cell, defeatAlone, defeatSummed, fn, at] = line.split("\t");
-      return { build, name, today, alone, summed, shape, of, field, cell, defeatAlone, defeatSummed, fn, at };
+      const [, , today, alone, summed, shape, of, field, cell, defeatAlone, defeatSummed, fn, at, by, exceptions] = line.split("\t");
+      return { build, name, today, alone, summed, shape, of, field, cell, defeatAlone, defeatSummed, fn, at, by: by ?? "-", exceptions: exceptions ?? "-" };
     });
 }
 
@@ -127,9 +132,9 @@ function table(rows: Site[], by: (s: Site) => string): string {
   ];
   for (const [key, group] of [...groups].sort((a, b) => b[1].length - a[1].length)) {
     const quiet = group.filter(quietToday);
-    const keptAlone = quiet.filter((s) => s.alone === "quiet").length;
-    const keptSummed = quiet.filter((s) => s.summed === "quiet").length;
-    const loses = group.filter((s) => s.today === "counted" && s.summed === "quiet").length;
+    const keptAlone = quiet.filter((s) => s.alone !== "counted").length;
+    const keptSummed = quiet.filter((s) => s.summed !== "counted").length;
+    const loses = group.filter((s) => s.today === "counted" && s.summed !== "counted").length;
     const defeats = new Map<string, number>();
     for (const s of quiet.filter((s) => s.summed === "counted")) defeats.set(s.defeatSummed, (defeats.get(s.defeatSummed) ?? 0) + 1);
     const top = [...defeats].sort((a, b) => b[1] - a[1]).map(([d, n]) => `${d} ${n}`).join(", ");
@@ -182,13 +187,41 @@ function patternTable(rows: Site[]): string {
     const defeats = new Map<string, number>();
     for (const s of gains) defeats.set(s.defeatSummed, (defeats.get(s.defeatSummed) ?? 0) + 1);
     const top = [...defeats].sort((a, b) => b[1] - a[1]).map(([d, n]) => `${d} ${n}`).join(", ");
-    const loses = group.filter((s) => s.today === "counted" && s.summed === "quiet").length;
+    const loses = group.filter((s) => s.today === "counted" && s.summed !== "counted").length;
     const refused = group.filter((s) => declared(s) && s.summed === "counted").length;
     lines.push(`| ${name} | ${group.length} | ${quiet.length} | ${share(gainsAlone, quiet.length)} | ${share(gains.length, quiet.length)} | ${top || "-"} | ${loses} | ${refused} |`);
   }
   return lines.join("\n");
 }
 
+// What a flip would do, of each build's borrows: a quieter form today the
+// proof counts gains `$borrow`; an unchecked one it checks, of a field used
+// whole whose proofs A and B fail, gains the check (\`momentary\`); a
+// counted one it proves quiet loses its count.
+for (const build of [...new Set(sites.map((s) => s.build))]) {
+  const of = sites.filter((s) => s.build === build);
+  const quiet = of.filter(quietToday);
+  const defeats = new Map<string, number>();
+  for (const s of quiet.filter((s) => s.summed === "counted")) defeats.set(s.defeatSummed, (defeats.get(s.defeatSummed) ?? 0) + 1);
+  console.log(`\n## ${build}: what a flip would do\n`);
+  console.log(`- borrows: ${of.length}; quiet today: ${quiet.length}`);
+  console.log(`- gain \`$borrow\`, alone: ${share(quiet.filter((s) => s.alone === "counted").length, quiet.length)}`);
+  console.log(`- gain \`$borrow\`, with summaries: ${share(quiet.filter((s) => s.summed === "counted").length, quiet.length)} (${[...defeats].map(([d, n]) => `${d} ${n}`).join(", ") || "-"})`);
+  console.log(`- unchecked today, gain a check: ${of.filter((s) => s.today === "unchecked" && s.summed === "momentary").length}`);
+  // Kept quiet only by an exception: its range proven but for a call Tu's
+  // decision passes, never a proof (ADR 0262's differences 39 and 44).
+  const excepted = (n: string) => quiet.filter((s) => s.summed !== "counted" && s.exceptions.split(",").includes(n)).length;
+  console.log(`- held by Tu's exception 39 (a guard only a call's receiver), not proven: ${excepted("39")}`);
+  console.log(`- held by Tu's exception 44 (a guard read only for a binding's argument), not proven: ${excepted("44")}`);
+  // A field used whole the proof alone can't pass: unchecked by proof A, a
+  // lend only to parameters only ever borrowed, or B, its type's borrows
+  // all quiet; else checked, \`momentary\`.
+  const wholeUse = quiet.filter((s) => s.defeatAlone === "whole-use" && s.summed === "quiet");
+  const lentToBorrows = (s: Site) => wholes.get(`${build} ${s.name} ${s.field}`) === "lent-to-borrows";
+  console.log(`- a field used whole, passed by proof A: ${wholeUse.filter(lentToBorrows).length}; by proof B alone: ${wholeUse.filter((s) => !lentToBorrows(s)).length}`);
+  console.log(`- counted today, proof quiet: ${of.filter((s) => s.today === "counted" && s.summed !== "counted").length}`);
+  console.log(`- declared, proof fails (refused): ${of.filter((s) => declared(s) && s.summed === "counted").length}`);
+}
 for (const build of [...new Set(sites.map((s) => s.build))]) {
   const of = sites.filter((s) => s.build === build);
   console.log(`\n## ${build}, by lisa's patterns\n`);

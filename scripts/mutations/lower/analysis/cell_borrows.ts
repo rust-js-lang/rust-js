@@ -509,4 +509,13 @@ export const mutations: Mutation[] = [
     replace: "        let anything = || self.anything_asks(tcx, held);\n",
     tests: ["test/binaries.test.ts", "-t", "held while it's asked of"],
   },
+  {
+    name: "cell-borrows-instances-unseen",
+    breaks: "a generic body's type is of no instance its callers make, so a type parameter's value dropped while `CellForm`'s guard is held is taken to run anything (#2490, #1321)",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows.rs",
+    find: "        .listed_or_any()\n    }\n\n    /// What of the crate is a value at hand",
+    replace: "        .listed_or_any()\n        .and(None)\n    }\n\n    /// What of the crate is a value at hand",
+    tests: ["test/cell-form-shadow.test.ts", "-t", "nothing can contest"],
+  },
 ];
+

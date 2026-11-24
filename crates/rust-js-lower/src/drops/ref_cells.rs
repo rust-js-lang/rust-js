@@ -392,7 +392,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 format!("whole\t{}\t{lent}\t{}", self.tcx.def_path_str(field), whole.why)
             });
         }
-        crate::analysis::shadow_cell_forms_of(&proving, body, (thir, wholes), &today);
+        let proofs = caches.cell_form_types.get_or_init(|| {
+            let bodies = (self.krate.bodies.values().chain(self.krate.closures.values()))
+                .filter(|body| body.def_id.is_local())
+                .filter_map(|body| Some((&body.mir.as_ref()?.body, &body.thir)));
+            // Each body proved of its own typing.
+            let prove = |owner: DefId, each: &mut dyn FnMut(&crate::analysis::Proving<'_, '_, 'tcx>)| {
+                let recognition = crate::recognition::Recognition {
+                    typing_env: ty::TypingEnv::post_analysis(self.tcx, self.tcx.typeck_root_def_id(owner)),
+                    ..recognition
+                };
+                each(&crate::analysis::Proving {
+                    recognition: &recognition,
+                    ..proving
+                });
+            };
+            crate::analysis::TypeProofs::of_crate(self.tcx, bodies, &prove, wholes)
+        });
+        crate::analysis::shadow_cell_forms_of(&proving, body, (thir, wholes, proofs), &today);
     }
 
     /// Whether a `RefCell` of type `ty` is the object it holds, not a

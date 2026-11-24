@@ -25,33 +25,58 @@ impl<'tcx> CellBorrows<'tcx> {
     /// code of the crate's, by std's or a binding's, and borrows no cell
     /// `held`'s may be. With no receiver known, a borrow's call is what may
     /// be any (`called`'s `Any`); the proof reads a `RefCell`'s own borrows
-    /// itself.
+    /// itself. Its `receiver`, in its body's THIR where the proof finds the
+    /// call there, says what a binding's method runs, as `call_asks`'s does.
     pub(crate) fn unproven_call(
         &self,
         recognition: &Recognition<'_, 'tcx>,
         (owner, def_id, args): (DefId, DefId, ty::GenericArgsRef<'tcx>),
+        receiver: Option<(&Thir<'tcx>, ExprId)>,
         held: Borrow<'tcx>,
     ) -> Option<Unproven> {
         let tcx = recognition.tcx;
         let itself = |ty| self.clones_itself(recognition, owner, ty);
-        match called(recognition, def_id, args, None, &itself) {
+        let one = receiver.map(|(_, r)| [r]);
+        let given = (receiver.zip(one.as_ref())).map(|((thir, _), one)| CallArgs {
+            thir,
+            args: &one[..],
+            at_hand: &self.at_hand,
+            pointers: Some(&self.pointers),
+        });
+        match called(recognition, def_id, args, given, &itself) {
             Called::Nothing => None,
-            Called::Cell(theirs) => asks(tcx, &self.closed, theirs, held).then_some(Unproven::SecondBorrow),
+            // A cell's own call: its borrow, and what it runs by its bounds
+            // while it holds it, a `with_borrow_mut`'s closure.
+            Called::Cell(theirs) if asks(tcx, &self.closed, theirs, held) => Some(Unproven::SecondBorrow),
+            Called::Cell(_) => self.std_runs_unproven(recognition, (def_id, args), held),
             Called::Body(body, _) if tcx.is_closure_like(body) => Some(Unproven::Closure),
             Called::Body(..) | Called::Bodies(_) => Some(Unproven::CrateFn),
-            Called::Std(id, args) => {
-                let given = std_given(recognition, &self.impls, id, args);
-                if given.any {
-                    Some(Unproven::Generic)
-                } else if !given.bodies.is_empty() {
-                    Some(Unproven::StdRunsCrate)
-                } else {
-                    (given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held)))
-                        .then_some(Unproven::SecondBorrow)
-                }
-            }
+            Called::Std(id, args) => self.std_runs_unproven(recognition, (id, args), held),
             Called::Read(_) | Called::Any => Some(Unproven::Generic),
             Called::Unseen => Some(Unproven::Unseen),
+        }
+    }
+
+    /// What std's call of `id`, of `args`, runs by its bounds that the
+    /// proof alone can't pass (`std_given`): what may be any code, the
+    /// crate's code, or a borrow of a cell `held`'s may be.
+    fn std_runs_unproven(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        (id, args): (DefId, ty::GenericArgsRef<'tcx>),
+        held: Borrow<'tcx>,
+    ) -> Option<Unproven> {
+        let given = std_given(recognition, &self.impls, id, args);
+        if given.any {
+            Some(Unproven::Generic)
+        } else if !given.bodies.is_empty() {
+            Some(Unproven::StdRunsCrate)
+        } else {
+            (given
+                .cells
+                .iter()
+                .any(|&theirs| asks(recognition.tcx, &self.closed, theirs, held)))
+            .then_some(Unproven::SecondBorrow)
         }
     }
 

@@ -9,7 +9,7 @@ use rustc_middle::ty;
 use rustc_span::def_id::DefId;
 
 use super::lent_field;
-use crate::recognition::{Recognition, StdItem};
+use crate::recognition::{Recognition, Std, StdItem};
 
 /// How a `RefCell` field is used whole (`whole_uses`): the first use found,
 /// and whether every one is a lend to a parameter of the crate's that's
@@ -122,8 +122,12 @@ pub(crate) fn whole_uses<'b, 'tcx: 'b>(
                 let Some(&field) = lent.get(&of.local).filter(|_| of.projection.is_empty()) else {
                     continue;
                 };
-                let own = index == 0
-                    && callee.is_some_and(|(id, args)| crate::drops::borrows_its_cell(recognition, id, args));
+                // The cell's own call, a borrow of it; a `swap`'s of either
+                // cell, which borrows each mutably (#659's rule).
+                let own = callee.is_some_and(|(id, args)| {
+                    (index == 0 && crate::drops::borrows_its_cell(recognition, id, args))
+                        || (index <= 1 && matches!(recognition.classify(id, args), Some(Std::CellSwap)))
+                });
                 if !own {
                     let to = callee.map_or_else(|| "a fn pointer".to_string(), |(id, _)| tcx.def_path_str(id));
                     let borrows_only = callee.is_some_and(|(id, _)| {

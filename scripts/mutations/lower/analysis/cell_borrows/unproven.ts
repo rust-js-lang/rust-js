@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "            Called::Body(..) | Called::Bodies(_) => None,\n",
     tests: ["test/cell-form-shadow.test.ts", "-t", "the summaries prove quiet"],
   },
+  {
+    name: "unproven-cell-call-runs-nothing",
+    breaks: "`CellForm`'s proof alone passes a cell's own call while a guard is held, a `with_borrow_mut` whose closure runs the crate's code (#2490)",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/unproven.rs",
+    find: "            Called::Cell(_) => self.std_runs_unproven(recognition, (def_id, args), held),\n",
+    replace: "            Called::Cell(_) => None,\n",
+    tests: ["test/cell-form-shadow.test.ts", "-t", "nothing can contest"],
+  },
 ];

@@ -12,7 +12,7 @@ export const mutations: Mutation[] = [
     file,
     find: "                if !own {\n",
     replace: "                if false {\n",
-    tests: test("is lent whole is counted"),
+    tests: test("is lent whole is checked"),
   },
   {
     name: "cell-form-derive-unseen",
@@ -20,7 +20,7 @@ export const mutations: Mutation[] = [
     file,
     find: "                if recognition.is_std_type(ty, StdItem::RefCell) {\n                    let why = format!(\"derived",
     replace: "                if false {\n                    let why = format!(\"derived",
-    tests: test("is lent whole is counted"),
+    tests: test("is lent whole is checked"),
   },
   {
     name: "cell-form-param-read-unseen",
@@ -28,6 +28,14 @@ export const mutations: Mutation[] = [
     file,
     find: "            if mentioned.found && !derived {\n",
     replace: "            if false && mentioned.found && !derived {\n",
-    tests: test("is lent whole is counted"),
+    tests: test("is lent whole is checked"),
+  },
+  {
+    name: "cell-form-swap-a-whole-use",
+    breaks: "a cell's own `swap`, a borrow of each cell, is a whole use of a field it's of (#659's rule)",
+    file,
+    find: "                        || (index <= 1 && matches!(recognition.classify(id, args), Some(Std::CellSwap)))\n",
+    replace: "                        || (false && matches!(recognition.classify(id, args), Some(Std::CellSwap)))\n",
+    tests: test("is lent whole is checked"),
   },
 ];

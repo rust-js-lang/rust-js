@@ -69,3 +69,79 @@ React port's crates goes to Tu before any form flips. Held by
 test/cell-form-shadow.test.ts and the mutations of `cell_form.rs` and
 `cell_borrows/unproven.rs`.
 
+## Amendment: phase 2, what the proof reads (2026-11-25, #2490)
+
+Phase 1's table left the React port 122 borrows the flip would count that
+no run can find borrowed, 74 of them "unseen": a binding's or another
+crate's code run while the guard's held. Phase 2 teaches the proof what
+today's deciders read, each as a rule of its own, and measures again. No
+output changes; nothing flips before Tu sees the table.
+
+- **A call's arguments.** The proof read each call in a guard's range of
+  its MIR alone, with no arguments, so a binding's method was any code.
+  Each MIR call's THIR call is found by where its callee is written (one
+  call there, or none found), and its receiver is given to `called`, as
+  lowering's `Quiet` gives it: a method of what a builtin made (`AtHand`,
+  `Map::get` of `js::map::new`), a binding that runs only what it's given,
+  and a promise's resolve given what runs nothing.
+- **Tu's exceptions 39 and 44, named, never proofs.** A guard that's only a
+  call's receiver is held while the call runs, not while its other
+  arguments do (`receiver_only`: a temporary guard, each way from its
+  `Deref` through the arguments, an `if`'s or a `match`'s arms but no
+  loop, coming to the one call it's the receiver of, which its drop
+  follows); of the arguments, only what rust-js sees asks. A guard read
+  only for a binding's argument isn't held while the binding runs. These
+  are ADR 0262's differences 39 and 44, Tu's decisions (ADR 0863,
+  amended): the proof keeps them as today's output does, neither wider nor
+  narrower, and a site they pass is written with the difference's number,
+  the line's last column, so the table counts what rests on an exception
+  apart from what's proven.
+- **Whole uses, proofs A and B.** A field used whole had every borrow
+  counted. Proof A, a field lent only to parameters only ever borrowed,
+  and proof B, a field of a type of no parameters none of whose borrows'
+  ranges is loud, are the proof's now, B found once of the crate's bodies
+  (`TypeProofs`, a session cache, as the shadow's alone needs it). Where
+  neither passes and the range is quiet, the borrow is `momentary`,
+  checked and not counted: a whole use needs the cell's flag, not a count.
+  A declared form has no flag, so the proof fails it.
+- **#659's and #687's rules, Tu's proofs.** A cell's own `swap` borrows
+  each cell, so it's no whole use. A flattened state's `try_borrow` is
+  proved by its range, as every borrow of the state is proved quiet or
+  refused. Any other `try_borrow` is counted by design, but one of a type
+  no guard of which is loud, which nothing can find borrowed (ADR 0863's
+  "a `RefCell` no borrow of which can meet another"). A thread-local's
+  `with_borrow(_mut)` and a cell's `replace_with` hold their cell while
+  code runs, so their types are loud, and a loud type of a generic body is
+  loud of each instance.
+- **Two fields' places are two cells.** A borrow, or a cell's own call
+  that runs none of the crate's code, of another field than the guard's
+  never meets it, whichever objects they're of.
+- **Drops.** A type parameter's value dropped while a guard's held runs
+  each instance's destructor, of the instances its callers make, any where
+  they aren't all seen (#1321). A std type's drop runs what it holds, an
+  `Rc<Loud>`'s `Loud`'s, and a struct's its fields'. A cell's own call
+  reads what it runs by its bounds, a `with_borrow_mut`'s closure.
+
+Measured, each "corpus (binary) / port", quiet today 1,233 / 2,327:
+
+| | phase 1 | phase 2 |
+|---|---|---|
+| gain `$borrow`, with summaries | 50 / 122 | 14 / 3 |
+| held by exception 39, not proven | | 0 / 63 |
+| held by exception 44, not proven | | 0 / 4 |
+| unchecked today, gain a check | | 0 / 0 |
+| a field used whole, passed by proof A; by B alone | measured, not taken: 12, 13 / 14, 8 | 12, 13 / 12, 18 |
+| declared, refused | 16 / 1 | 0 / 0 |
+| counted today, proof quiet | 53 / 10 | 50 / 15 |
+
+What's left: 13 corpus and 2 port guards held while a type parameter's
+value drops, whose instances aren't all seen (generic code a library's
+consumer may give any type: today's `drop_may_ask` answers them quiet),
+and the "contains-guarded" push of `contains_guarded_borrow.rs` and the
+port's `ReactFiberGestureScheduler.rs:132`, which only a path's test
+tells apart. A counted borrow the proof passes loses its count at a flip:
+#2491's count-every-cell net and #2481's observe rewrites hold those.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a shadow changes
+no output. Held by test/cell-form-shadow.test.ts and the mutations of
+`cell_form.rs`, `cell_borrows.rs` and `cell_borrows/unproven.rs`.

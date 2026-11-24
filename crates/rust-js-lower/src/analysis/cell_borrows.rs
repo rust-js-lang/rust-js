@@ -675,6 +675,19 @@ impl<'tcx> CellBorrows<'tcx> {
         may_run && self.anything_asks(tcx, held)
     }
 
+    /// Each type `ty`, naming `owner`'s type parameters, is of each
+    /// instance its callers make, where every one is seen (`instances_of`,
+    /// as `read_asks` asks it); `None`, any type.
+    pub(crate) fn instances_of(&self, tcx: TyCtxt<'tcx>, owner: DefId, ty: Ty<'tcx>) -> Option<IndexSet<Ty<'tcx>>> {
+        crate::instances::instances_of(
+            tcx,
+            (&self.callers, crate::instances::Fact::Shared),
+            ty,
+            tcx.typeck_root_def_id(owner),
+        )
+        .listed_or_any()
+    }
+
     /// What of the crate is a value at hand, a builtin's (#2106, #2111).
     pub fn at_hand(&self) -> &AtHand {
         &self.at_hand

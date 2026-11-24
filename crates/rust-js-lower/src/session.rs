@@ -104,6 +104,10 @@ pub struct Caches {
     /// Of the `cell-form` shadow, each `RefCell` field of the crate's
     /// structs some body uses whole, and how, found once (`cell_form.rs`).
     pub(crate) cell_form_wholes: OnceCell<rust_js_program::collections::IndexMap<DefId, super::analysis::Whole>>,
+    /// `CellForm`'s shadow's proofs of the crate's `RefCell` types, of
+    /// every borrow's range (`analysis::TypeProofs`), found once of the
+    /// crate's bodies (#2490).
+    pub(crate) cell_form_types: OnceCell<super::analysis::TypeProofs>,
     /// What std's own code reaches of the crate's impls that take an
     /// iterator that `crate_impl_called_by` doesn't answer, found as the
     /// crate is analyzed (`instances::check_std_reach`), each said where the
@@ -274,6 +278,7 @@ fn start_keyed(gcx: usize, flags: Flags, hooks: &'static dyn MirHooks) -> Sessio
             intervals_by_effects: flags.intervals_by_effects,
             shadows: shadows::Shadows::of(&flags.shadows),
             cell_form_wholes: OnceCell::new(),
+            cell_form_types: OnceCell::new(),
             #[cfg(debug_assertions)]
             std_reach_unanswered: RefCell::default(),
             intervals: RefCell::default(),

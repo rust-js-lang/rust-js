@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2490 phase 2, ADR 1199 amended): test/cell-form-shadow.test.ts gains two tests, eight in all: a binding run while a guard's held, passed by Tu's exceptions 39 and 44, each site named, or by what it's given (a builtin's `Map`); a `try_borrow` nothing can contest, another field's borrow, a type parameter's and an `Rc`'s drop, a thread-local's `with_borrow_mut` and a generic body's loud type; its whole-use test gains proofs A and B and the `momentary` verdict; 23 mutations of `cell_form.rs`, `cell_borrows.rs` and `cell_borrows/unproven.rs`.
+
 Changed on 2026-11-25 (#2562, ADR 1118 amended): test/support.test.ts gains a test, a crate project being measured is never removed under its run, claimed before or after the prune lists it, by its cap's bound and the checkouts' budget alike; four mutations.
 
 Changed on 2026-11-25 (#2543, ADRs 0562, 1022 and 1120 amended): corpus gains `option_payload_address_after_a_generic_walk`, `option_map_subject_written_through_a_kept_mut` and `hashed_map_clone_hashes_no_key`; test/known/metamorphic/2543.txt is removed; mutations `ptr-offset-unrefined`, `subject-handle-unread`, `hashed-clone-rehashed`, `clone-into-rehashed`, `assign-rehashed` and `apart-hashed-plain`.
