@@ -689,13 +689,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // is; a provided method's `Self`, `iterator_partition`'s, which
             // it isn't given, the JS iterator that dictionary steps,
             // `$given(w[0], LIterator)`, as generic code's own consumers are.
-            match self.given_js_iterator(value.clone(), given, false, false) {
-                None => {
-                    let held = std::mem::replace(value, Expr::taken());
-                    *value = Expr::call_helper("$stepsOf", vec![held]);
-                }
-                Some(made) if !self.takes_iterator_dictionary(callee, index) => *value = made,
-                Some(_) => {}
+            if self.stepped_as_a_js_iterator((callee, index), given) {
+                let held = std::mem::replace(value, Expr::taken());
+                *value = Expr::call_helper("$stepsOf", vec![held]);
+            } else if let Some(made) = self.given_js_iterator(value.clone(), given, false, false)
+                && !self.takes_iterator_dictionary(callee, index)
+            {
+                *value = made;
             }
         }
         // A `Vec`'s, given its steps that drop what they pass as one
@@ -990,6 +990,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 },
             },
         })
+    }
+
+    /// Whether `callee`, a std body compiled into `@rust-js/std`, steps a
+    /// value of `given`, a type parameter given no `Iterator` dictionary of
+    /// its own, as its type parameter `index`, which it bounds by
+    /// `Iterator`, as a JS iterator, `$stepsOf(items)` or one as it is, whose
+    /// dictionary is `$jsIterator`'s, which reads nothing by index. The one
+    /// answer of the crossing that makes it so and of what the body is told
+    /// of it: its random access is `false`, the form's, never the type's,
+    /// which std's zip would take its index path by, reading what isn't
+    /// there (#2434).
+    pub(crate) fn stepped_as_a_js_iterator(&self, (callee, index): (DefId, u32), given: ty::Ty<'tcx>) -> bool {
+        crate::generic_facts::is_type_parameter(given)
+            && crate::recognition::is_compiled_std(self.tcx, callee)
+            && bound_by_iterator(self.tcx, callee, index)
+            && self
+                .iterator_evidence(given, std_item(self.tcx, StdItem::Iterator))
+                .is_none()
     }
 
     /// Whether `callee` is given the `Iterator` dictionary of its type

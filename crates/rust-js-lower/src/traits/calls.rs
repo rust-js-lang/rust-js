@@ -276,6 +276,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         values.push(Expr::js_undefined());
                         continue;
                     }
+                    // Of a value the body steps as a JS iterator, which reads
+                    // nothing by index, its random access is the form's,
+                    // `false` (`stepped_as_a_js_iterator`, #2434).
+                    if matches!(fact, TypeFact::RandomAccess | TypeFact::RandomAccessNoCoerce)
+                        && self.stepped_as_a_js_iterator((id, index), of)
+                    {
+                        values.push(Expr::bool(false));
+                        continue;
+                    }
                     values.push(self.type_fact_value(of, fact, span)?);
                 }
                 Slot::Drop(index) if let Some((_, drop)) = dropped.iter().find(|(at, _)| *at == index) => {

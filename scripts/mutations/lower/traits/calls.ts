@@ -707,4 +707,13 @@ export const mutations: Mutation[] = [
     replace: "                        self.tcx.erase_and_anonymize_regions(*of) == erased || (false && normalized(*of) == wanted)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_iterator_writing_partition_given_to_generic_code.rs$"],
   },
+  {
+    name: "random-access-of-steps-told-the-types",
+    breaks: "a type parameter's value std's compiled body steps as a JS iterator, which reads nothing by index, is told its type's random access, a range's `TrustedRandomAccess`, so std's zip takes its index path and reads `NaN` (#2434)",
+    file: "crates/rust-js-lower/src/traits/calls.rs",
+    find: "                        && self.stepped_as_a_js_iterator((id, index), of)\n",
+    replace: "                        && false\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^zip_of_a_generic_range_is_stepped_by_its_steps"],
+    env: { ITERATOR_FORMS: "corpus" },
+  },
 ];

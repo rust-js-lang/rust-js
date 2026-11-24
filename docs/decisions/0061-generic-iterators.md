@@ -488,3 +488,33 @@ Results changed, so this follows ADR 0262's third case. Corpus
 (`partition`, `unzip` and `peekable` of a field's, `partition` of an
 `impl Into<I>`'s) agrees with native; mutation
 `dictionary-held-self-given-raw`.
+
+## Amendment: what a value crossed as a JS iterator is told of its random access (2026-11-24, #2434)
+
+A type parameter's value given to a std body compiled into `@rust-js/std`
+with no `Iterator` dictionary of its own is crossed as the JS iterator
+generic code steps, `$stepsOf(items)`, whose dictionary is `$jsIterator`'s,
+which reads nothing by index (#1962). The body was told the type's facts all
+the same, a range's `TrustedRandomAccess`. So std's compiled `Zip`, where
+the crate collects a zip by its fold (`$foldToArray`, which a generic
+`extend` of a `take_while` elsewhere in the crate makes it choose), took its
+index path over that value and read `NaN`: `fn pairs<I, J>(it: I, arg: J) {
+it.zip(arg).collect() }` given `1..4u32` printed `[(NaN, 1), ..]`.
+
+Now the facts follow the value's form, decided where the crossing makes it,
+by one answer (stepping.rs `stepped_as_a_js_iterator`): of a type
+parameter of the body it bounds by `Iterator`, which it steps, never one it
+doesn't, `Zip`'s `A` in its `Debug`, whose `ZipFmt` asks the same facts to
+choose what it prints, `Zip` of ranges, as std's does. The crossing makes
+`$stepsOf` of it, and the evidence it's given (traits/calls.rs
+`evidence_args_given`) tells the body `false` of its `TrustedRandomAccess`
+and `TrustedRandomAccessNoCoerce`: the form has no reader by index, so std's
+zip steps it by `next`, as it does any iterator that isn't
+`TrustedRandomAccess`. Giving the stand-in a reader would have been a second
+runtime index path for what std's form covers already (the lead's choice).
+
+Results changed: ADR 0262's third case. Corpus
+`zip_of_a_generic_range_is_stepped_by_its_steps`, run with std's iterator
+structs (test/iterator-forms.test.ts), agrees with native. Mutations
+`random-access-of-steps-told-the-types`, `stepped-as-js-given-a-dictionary`
+and `stepped-as-js-of-what-it-doesnt-step`.

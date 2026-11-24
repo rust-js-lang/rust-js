@@ -518,8 +518,8 @@ export const mutations: Mutation[] = [
     name: "compiled-given-a-param-as-it-is",
     breaks: "a std body compiled into `@rust-js/std` given an `impl Iterator` parameter is given it as it is, so a JS caller's array, which ADR 0061 lets it give, is stepped by `.next()` and throws (#1962)",
     file: "crates/rust-js-lower/src/iterators/stepping.rs",
-    find: "                    *value = Expr::call_helper(\"$stepsOf\", vec![held]);\n",
-    replace: "                    *value = held;\n",
+    find: "                *value = Expr::call_helper(\"$stepsOf\", vec![held]);\n",
+    replace: "                *value = held;\n",
     tests: ["test/lowering-generic-iterators.test.ts", "-t", "a std body compiled given a generic iterator takes an array too"],
   },
   {
@@ -664,8 +664,8 @@ export const mutations: Mutation[] = [
     name: "dictionary-held-self-given-raw",
     breaks: "a type parameter's iterator generic code holds with its dictionary, a field's `w.0`, is given std's compiled `partition` into generic sides as the value itself, which it steps as a JS iterator, and throws (#2423)",
     file: "crates/rust-js-lower/src/iterators/stepping.rs",
-    find: "                Some(made) if !self.takes_iterator_dictionary(callee, index) => *value = made,\n",
-    replace: "                Some(made) if false => *value = made,\n",
+    find: "                && !self.takes_iterator_dictionary(callee, index)\n",
+    replace: "                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^provided_methods_of_a_dictionary_held_iterator_into_generic_sides.rs$"],
   },
   {
@@ -675,5 +675,21 @@ export const mutations: Mutation[] = [
     find: "                    None => (self.own_provided(ty, span)?.into_iter())\n",
     replace: "                    None => (Vec::<(DefId, Expr)>::new().into_iter())\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_provided_methods_a_type_writes_are_its_own.rs$"],
+  },
+  {
+    name: "stepped-as-js-given-a-dictionary",
+    breaks: "a type parameter given its `Iterator` dictionary is taken for one stepped as a JS iterator, so a crate's iterator given by its dictionary is crossed as `$stepsOf` of its value and told no random access (#2434)",
+    file: "crates/rust-js-lower/src/iterators/stepping.rs",
+    find: "            && self\n                .iterator_evidence(given, std_item(self.tcx, StdItem::Iterator))\n                .is_none()\n",
+    replace: "            && (self\n                .iterator_evidence(given, std_item(self.tcx, StdItem::Iterator))\n                .is_none() || true)\n",
+    tests: ["test/corpus.test.ts", "-t", "^provided_methods_of_a_dictionary_held_iterator_into_generic_sides.rs$"],
+  },
+  {
+    name: "stepped-as-js-of-what-it-doesnt-step",
+    breaks: "a type parameter std's compiled body doesn't bound by `Iterator`, `Zip`'s `A` in its `Debug`, is taken for one it steps as a JS iterator, so it's told no `TrustedRandomAccess` and `Debug` of a zip of ranges prints its fields where std's prints `Zip` (#2434)",
+    file: "crates/rust-js-lower/src/iterators/stepping.rs",
+    find: "            && bound_by_iterator(self.tcx, callee, index)\n            && self\n",
+    replace: "            && self\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
 ];
