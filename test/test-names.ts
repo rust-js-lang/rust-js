@@ -63,7 +63,19 @@ export function listedTests(files: string[], dir: string): Map<string, string[]>
     const report = join(dir, `${file.replace(/\W/g, "_")}.xml`);
     bunTest([`./${file}`, "-t", "^ no test is named this $", "--reporter=junit", `--reporter-outfile=${report}`]);
     const xml = existsSync(report) ? readFileSync(report, "utf8") : "";
-    listed.set(file, [...xml.matchAll(/<testcase name="([^"]*)"/g)].map((m) => unescape(m[1]!)));
+    // Each test by the name `-t` matches, its describes' titles before its
+    // own, as Bun joins them: JUnit nests a describe as a `testsuite` in
+    // the file's, so a pattern of a describe's title alone, `neither is`
+    // of crates.test.ts's, named no test of the listing.
+    const names: string[] = [];
+    const suites: string[] = [];
+    for (const [tag, closing, kind, selfClosing] of xml.matchAll(/<(\/?)(testsuite|testcase)(?=[\s/>])[^>]*?(\/?)>/g)) {
+      const name = unescape(/\bname="([^"]*)"/.exec(tag)?.[1] ?? "");
+      if (kind === "testcase" && closing === "") names.push([...suites.slice(1), name].join(" "));
+      else if (kind === "testsuite" && closing === "/") suites.pop();
+      else if (kind === "testsuite" && selfClosing === "") suites.push(name);
+    }
+    listed.set(file, names);
   }
   return listed;
 }

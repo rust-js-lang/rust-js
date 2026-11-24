@@ -313,13 +313,16 @@ test("each mutation's tests are a file there and a test of it its pattern names"
 test("a pattern names a test of a file by its literal names, of one named otherwise by Bun's listing, and none of a file that isn't there", async () => {
   const dir = fixture("test-names");
   const file = relative(root, join(dir, "named.test.ts"));
-  writeFileSync(join(root, file), 'import { test } from "bun:test";\ntest("a literal name", () => {});\nfor (const name of ["x"])\n  test(`two crates: ${name}`, () => {});\n');
+  writeFileSync(join(root, file), 'import { describe, test } from "bun:test";\ntest("a literal name", () => {});\nfor (const name of ["x"])\n  test(`two crates: ${name}`, () => {});\ndescribe("published, or neither is", () => {\n  test("inner", () => {});\n});\n');
   // Read, any pattern may name a test named by a template.
   expect([namesATest(file, "a literal"), namesATest(file, "two crates: x"), namesATest(file, "never"), namesATest(file, undefined)]).toEqual([true, true, true, true]);
   // Listed by Bun, only what it has: not what a test of it took away, as
   // #2542's, or never had.
   const listed = listedTests([file], join(dir, "reports"));
   expect([namesATest(file, "a literal", listed), namesATest(file, "two crates: x", listed), namesATest(file, "a zip of what's never random access", listed), namesATest(file, "two crates: y", listed)]).toEqual([true, true, false, false]);
+  // A test in a describe by its full name, as `-t` matches it: its
+  // describe's title names it, its own anchored alone doesn't.
+  expect([namesATest(file, "neither is", listed), namesATest(file, "or neither is inner$", listed), namesATest(file, "^inner$", listed)]).toEqual([true, true, false]);
   const gone = relative(root, join(dir, "gone.test.ts"));
   expect([namesATest(gone, undefined), namesATest(gone, "x")]).toEqual([false, false]);
 }, underLoad(60_000));
