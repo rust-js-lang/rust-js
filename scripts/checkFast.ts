@@ -78,7 +78,7 @@ export async function pruned(prune: Promise<Beside>, compiles: Promise<Beside> |
   }
   const { size, builds, removed } = JSON.parse(kept.stdout.trim().split("\n").at(-1)!) as { size: number; builds: number; removed: number };
   const dropped = [builds ? "another build's" : "", removed ? `${removed} past the cap or the disk's floor` : ""].filter(Boolean);
-  console.log(`${timed(`pruning kept compiles${where}`, kept.seconds)}: ${(size / 2 ** 20).toFixed(0)} MB kept${dropped.length ? `, ${dropped.join(" and ")} dropped` : ""}`);
+  console.log(`${timed("pruning kept compiles", kept.seconds)}: ${(size / 2 ** 20).toFixed(0)} MB kept${dropped.length ? `, ${dropped.join(" and ")} dropped` : ""}`);
   return stores.code === 0;
 }
 
@@ -93,7 +93,7 @@ export async function pruned(prune: Promise<Beside>, compiles: Promise<Beside> |
  * start to its own exit, as each is awaited apart (#1917). Commands are
  * explicit so the start and each child's duration can be tested with real
  * processes without building the compiler or pruning real stores. */
-export async function startup(cwd: string, commands: { build: string[]; prune: string[] }, belowFloor: () => boolean) {
+export async function startup(cwd: string, commands: { build: string[]; prune: string[]; compiles?: () => string[] }, belowFloor: () => boolean) {
   const prune = beside(commands.prune, cwd);
   const building = Date.now();
   const build = Bun.spawn(commands.build, { cwd, stdout: "inherit", stderr: "inherit" });
@@ -101,7 +101,13 @@ export async function startup(cwd: string, commands: { build: string[]; prune: s
   const built = { code, seconds: (Date.now() - building) / 1000 };
   const waited = code !== 0 || belowFloor();
   if (waited) await prune;
-  return { build: built, prune, waited };
+  // The kept compiles' prune, of the build just made, ended before the
+  // jobs: test/compiles.test.ts keeps entries of other builds in that
+  // store and reads them again, and a prune beside it dropped them under
+  // it, an ENOENT failing every agent's check (2026-11-24, the race
+  // cc8d65739 opened). Its 0.6-25 s is the price of no false red.
+  const compiles = code === 0 && commands.compiles ? await beside(commands.compiles(), cwd) : undefined;
+  return { build: built, prune, waited, compiles };
 }
 
 /** A job of the check, a process of its own: its command, what's added to
@@ -950,7 +956,17 @@ if (import.meta.main) {
   // Each step's time is kept, and said against its usual (scripts/timing.ts).
   const prepared = await startup(
     root,
-    { build: ["cargo", "build", "--quiet"], prune: ["bun", "scripts/disk.ts", "--prune", "--inside", "--quiet"] },
+    {
+      build: ["cargo", "build", "--quiet"],
+      prune: ["bun", "scripts/disk.ts", "--prune", "--inside", "--quiet"],
+      // The compiles the tests keep (test/compiles.ts, ADR 1099): another
+      // build's, never found again, and past the cap, the least recently
+      // used. Not of another compiler's run: the checkout's build's would go.
+      // Made once the build is done: the run's own link of it.
+      compiles: given === undefined
+        ? () => ["bun", "-e", `import { currentBuild, prune } from "./test/compiles.ts"; console.log(JSON.stringify(prune({ current: currentBuild(${JSON.stringify(ownCompiler(root, "check-fast"))}) })));`]
+        : undefined,
+    },
     () => freeBytes(root) < floorBytes,
   );
   if (prepared.build.code !== 0) process.exit(1);
@@ -966,14 +982,7 @@ if (import.meta.main) {
   // `seeded`, #1005).
   process.env.RUST_JS_APPS_SEED = join(own, "apps-seed");
 
-  // The compiles the tests keep (test/compiles.ts, ADR 1099), bounded
-  // beside the jobs as the prune is: another build's, never found again,
-  // and past the cap, the least recently used, which a test's own keep
-  // prunes as the jobs' do. Not of another compiler's run: the checkout's
-  // build's would go.
-  const compiles = given === undefined
-    ? beside(["bun", "-e", `import { currentBuild, prune } from "./test/compiles.ts"; console.log(JSON.stringify(prune({ current: currentBuild(${JSON.stringify(compiler)}) })));`], root)
-    : undefined;
+  const compiles = prepared.compiles === undefined ? undefined : Promise.resolve(prepared.compiles);
   // Below the disk's floor, what either frees before the jobs keep anything.
   const prunedBefore = prepared.waited ? await pruned(prepared.prune, compiles, true) : undefined;
   if (prunedBefore === false) process.exit(1);

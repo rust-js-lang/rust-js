@@ -9,6 +9,14 @@ export const mutations: Mutation[] = [
   {"name":"check-startup-floor-ignored","breaks":"below the disk's floor the jobs start before the prune frees anything, and keep nothing they make","file":"scripts/checkFast.ts","find":"  const waited = code !== 0 || belowFloor();\n","replace":"  const waited = code !== 0;\n","tests":["test/check-startup.test.ts"]},
   {"name":"check-startup-failed-build-leaves-prune","breaks":"a check whose build failed stops with its prune still running","file":"scripts/checkFast.ts","find":"  const waited = code !== 0 || belowFloor();\n","replace":"  const waited = belowFloor();\n","tests":["test/check-startup.test.ts"]},
   {
+    name: "check-startup-compiles-pruned-beside",
+    breaks: "the kept compiles' prune runs beside the jobs, dropping another build's entries a test reads again, an ENOENT failing the check (2026-11-24)",
+    file: "scripts/checkFast.ts",
+    find: "  const compiles = code === 0 && commands.compiles ? await beside(commands.compiles(), cwd) : undefined;",
+    replace: "  const compiles = code === 0 && commands.compiles ? (beside(commands.compiles(), cwd), undefined) : undefined;",
+    tests: ["test/check-startup.test.ts", "-t", "startup prunes the kept compiles"],
+  },
+  {
     name: "check-passing-child-warning-hidden",
     breaks: "a successful job hides an observed child overrun and its job name",
     file: "scripts/checkFast.ts",

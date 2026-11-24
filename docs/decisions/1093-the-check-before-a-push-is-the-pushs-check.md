@@ -188,3 +188,5 @@ so the prune reads only what it removes. With the walk off the critical
 path it costs a core for seconds beside 18 busy ones, and an index every
 test process writes is a second record of the stores to keep true. It's
 #2498's second half, left until a measure says the walk's CPU matters.
+
+Amended the same day: the kept compiles' prune runs again before the jobs, after the build it's of (`startup`'s `compiles`). Beside the jobs, it dropped another build's entries that test/compiles.test.ts keeps in that store and reads again. The ENOENT failed every agent's check, and a false red costs more than its 0.6–25 s. The stores' prune stays beside the jobs. test/check-startup.test.ts holds the order; mutation `check-startup-compiles-pruned-beside`.

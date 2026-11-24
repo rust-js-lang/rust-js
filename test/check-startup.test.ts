@@ -93,3 +93,26 @@ test("startup waits for the prune where the build failed", async () => {
   expect(result.waited).toBe(true);
   expect(existsSync(join(dir, "pruned"))).toBe(true);
 });
+
+// The kept compiles' prune ends before the jobs, after the build it's of:
+// test/compiles.test.ts keeps entries of other builds in that store and
+// reads them again, and a prune beside the jobs dropped them under it, an
+// ENOENT failing every agent's check (2026-11-24). A failed build runs none.
+test("startup prunes the kept compiles after the build and before the jobs", async () => {
+  const dir = fixture("startup-compiles");
+  const commands = {
+    prune: [process.execPath, "-e", "0"],
+    build: [process.execPath, "-e", 'await Bun.write("built", "done");'],
+    compiles: () => [process.execPath, "-e", 'await Bun.sleep(200); await Bun.write("compiles", (await Bun.file("built").exists()) ? "after the build" : "before it");'],
+  };
+  const result = await startup(dir, commands, above);
+  expect(result.build.code).toBe(0);
+  expect(result.compiles?.code).toBe(0);
+  expect(readFileSync(join(dir, "compiles"), "utf8")).toBe("after the build");
+
+  const failed = fixture("startup-compiles-failed");
+  const none = await startup(failed, { ...commands, build: [process.execPath, "-e", "process.exit(3)"] }, above);
+  expect(none.build.code).toBe(3);
+  expect(none.compiles).toBeUndefined();
+  expect(existsSync(join(failed, "compiles"))).toBe(false);
+});

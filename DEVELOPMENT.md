@@ -387,10 +387,13 @@ each ran. A warning is the next thing to look at: what made it slower,
 before the loop is built on it.
 
 The compiler build and the prune of what tests keep start together, and
-the jobs start once the build is done: the prune goes on beside them, as
-does the kept compiles' (another build's, and past their cap), each said
-with its time once the jobs have ended, `pruning what tests keep, beside
-the jobs`, and failing the check where it failed (#2498). Waiting on its
+the jobs start once the build is done: the prune goes on beside them,
+said with its time once the jobs have ended, `pruning what tests keep,
+beside the jobs`, and failing the check where it failed (#2498). The kept
+compiles' prune (another build's, and past their cap) ends before the
+jobs, after the build it's of: beside them it dropped entries of other
+builds that test/compiles.test.ts reads again, an ENOENT that failed every
+agent's check. Waiting on its
 walk of the stores was 25.7 s of every check's start on the M1 and 6–20 s
 on the Mac mini. What it removes is stale, no check's in a day, and looked
 at again as it goes, so a job's use of an entry since the walk listed it
