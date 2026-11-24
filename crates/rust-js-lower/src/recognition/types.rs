@@ -810,6 +810,14 @@ pub(crate) fn is_decode_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
         && tcx.item_name(adt.did()).as_str() == "DecodeUtf16Error")
 }
 
+/// One of std's errors whose `Debug` the runtime's writer of std's errors
+/// writes by its name, beside the parse errors (`is_parse_error`): a
+/// `TryFromSliceError`, a `FromUtf16Error` and a `DecodeUtf16Error`, its
+/// value the surrogate it found (#2510).
+pub(crate) fn is_error_debugged_by_name(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    is_try_from_slice_error(tcx, ty) || is_from_utf16_error(tcx, ty) || is_decode_utf16_error(tcx, ty)
+}
+
 /// A `char`'s or a `str`'s `escape_default()`, `escape_debug()` or
 /// `escape_unicode()`: the array of its `char`s, as a case mapping is (ADRs
 /// 0327, 0971).

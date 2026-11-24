@@ -3,7 +3,7 @@
 // A slice into an array, `<&[u8; 3]>::try_from(&bytes[..3])`, as chrono
 // reads a date's digits: `Ok` of its length, else a `TryFromSliceError`.
 
-import { $main, $unwrapOk } from "@rust-js/std";
+import { $debugParseError, $main, $unwrapOk } from "@rust-js/std";
 
 $main(main);
 
@@ -14,19 +14,19 @@ function main() {
     slice.length === 3 ? { TAG: "Ok", _0: slice } : { TAG: "Err" },
     "test/corpus/slice_to_array.rs:7:51",
     undefined,
-    (e) => "TryFromSliceError(())",
+    (e) => $debugParseError(e, "TryFromSliceError"),
   );
   const slice$1 = bytes.slice(1, 3);
   const owned = $unwrapOk(
     slice$1.length === 2 ? { TAG: "Ok", _0: slice$1 } : { TAG: "Err" },
     "test/corpus/slice_to_array.rs:8:51",
     undefined,
-    (e) => "TryFromSliceError(())",
+    (e) => $debugParseError(e, "TryFromSliceError"),
   );
   const slice$2 = bytes.slice(0, 3);
   const wrong = slice$2.length === 4 ? { TAG: "Ok", _0: slice$2 } : { TAG: "Err" };
   console.log(
-    `[${fixed.join(", ")}] [${owned.join(", ")}] ${wrong.TAG === "Ok" ? `Ok([${wrong._0.join(", ")}])` : "Err(TryFromSliceError(()))"} ${wrong.TAG === "Err"}`,
+    `[${fixed.join(", ")}] [${owned.join(", ")}] ${wrong.TAG === "Ok" ? `Ok([${wrong._0.join(", ")}])` : `Err(${$debugParseError(wrong._0, "TryFromSliceError")})`} ${wrong.TAG === "Err"}`,
   );
   const value = bytes.length === 2 ? { TAG: "Ok", _0: bytes.slice() } : { TAG: "Err" };
   if (value.TAG === "Ok") {
@@ -39,7 +39,7 @@ function main() {
     words.length === 2 ? { TAG: "Ok", _0: words } : { TAG: "Err" },
     "test/corpus/slice_to_array.rs:16:58",
     undefined,
-    (e) => "TryFromSliceError(())",
+    (e) => $debugParseError(e, "TryFromSliceError"),
   );
   console.log(`${pair[0]} ${pair[1]}`);
 }

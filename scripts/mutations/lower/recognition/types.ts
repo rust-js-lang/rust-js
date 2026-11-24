@@ -494,4 +494,12 @@ export const mutations: Mutation[] = [
     replace: "    info.name == rustc_span::sym::__awaitee\n",
     tests: ["test/drops-shadow.test.ts", "-t", "a closure called once, an async body and a box's rest are compared with rustc's"],
   },
+  {
+    name: "named-std-errors-debugged-apart",
+    breaks: "`TryFromSliceError`, `FromUtf16Error` and `DecodeUtf16Error` aren't the runtime's std errors' writer's, so their `Debug` isn't std's (#2510)",
+    file: "crates/rust-js-lower/src/recognition/types.rs",
+    find: "    is_try_from_slice_error(tcx, ty) || is_from_utf16_error(tcx, ty) || is_decode_utf16_error(tcx, ty)\n",
+    replace: "    let _ = (is_try_from_slice_error, is_from_utf16_error, is_decode_utf16_error);\n    false\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_errors_debug_pretty_by_one_writer\\.rs$"],
+  },
 ];

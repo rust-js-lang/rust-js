@@ -13,6 +13,7 @@ import {
   $clone,
   $cloning,
   $copyFromSlice,
+  $debugParseError,
   $index,
   $iter,
   $main,
@@ -246,7 +247,7 @@ function main() {
     slice.length === 2 ? { TAG: "Ok", _0: slice.map((item) => [item[0]]) } : { TAG: "Err" },
     "test/corpus/copied_of_a_copy_with_its_own_clone.rs:129:48",
     undefined,
-    (e) => "TryFromSliceError(())",
+    (e) => $debugParseError(e, "TryFromSliceError"),
   );
   array[0][0] = 6;
   $print(`array of a slice [${array.map((item) => pDebug_fmt(item)).join(", ")}]\n`);

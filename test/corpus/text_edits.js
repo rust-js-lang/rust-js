@@ -5,6 +5,7 @@
 
 import {
   $ceilCharBoundary,
+  $debugParseError,
   $debugStr,
   $encodeUtf16,
   $floorCharBoundary,
@@ -95,9 +96,8 @@ function main() {
   );
   console.log(`[${Array.from($encodeUtf16("hé𝄞")).join(", ")}]`);
   const value$2 = $fromUtf16([104, 55348, 56606]);
-  const value$3 = $fromUtf16([55348, 104]);
   console.log(
-    `${value$2.TAG === "Ok" ? `Ok(${$debugStr(value$2._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"} ${value$3.TAG === "Ok" ? `Ok(${$debugStr(value$3._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"}`,
+    `${value$2.TAG === "Ok" ? `Ok(${$debugStr(value$2._0)})` : `Err(${$debugParseError(value$2._0, "FromUtf16Error")})`} ${((result) => (result.TAG === "Ok" ? `Ok(${$debugStr(result._0)})` : `Err(${$debugParseError(result._0, "FromUtf16Error")})`))($fromUtf16([55348, 104]))}`,
   );
   console.log(
     `${($unwrapErr($fromUtf16([56606]), "test/corpus/text_edits.rs:31:50"), "invalid utf-16: lone surrogate found")}`,

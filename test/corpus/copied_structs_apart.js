@@ -9,6 +9,7 @@ import {
   $BTreeMap,
   $cmp,
   $copyFromSlice,
+  $debugParseError,
   $debugStr,
   $index,
   $main,
@@ -75,7 +76,7 @@ function main() {
     points.length === 2 ? { TAG: "Ok", _0: points.map((item) => ({ ...item })) } : { TAG: "Err" },
     "test/corpus/copied_structs_apart.rs:38:55",
     undefined,
-    (e) => "TryFromSliceError(())",
+    (e) => $debugParseError(e, "TryFromSliceError"),
   );
   array[0].x = 13;
   console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);

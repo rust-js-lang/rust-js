@@ -170,19 +170,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_fmt_error(ty) {
             return Ok(Expr::str("Error"));
         }
-        if crate::recognition::is_try_from_slice_error(self.tcx, ty) {
-            return Ok(Expr::str("TryFromSliceError(())"));
-        }
-        if crate::recognition::is_from_utf16_error(self.tcx, ty) {
-            return Ok(Expr::str("FromUtf16Error { kind: LoneSurrogate }"));
-        }
-        if crate::recognition::is_decode_utf16_error(self.tcx, ty) {
-            return Ok(join(vec![
-                Expr::str("DecodeUtf16Error { code: "),
-                Expr::call(Expr::js_global("String"), vec![value]).built_in(),
-                Expr::str(" }"),
-            ]));
-        }
         // A `SystemTimeError`'s, its `Duration`'s; a time's is unix's and
         // wasip1's, its seconds and nanoseconds, rust-js's platform's for
         // time (ADR 0447).
@@ -452,8 +439,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(Expr::str("AccessError"));
         }
-        // A parse error is its message (ADR 0063), which says its kind.
-        if self.is_parse_error(ty) {
+        // A parse error is its message (ADR 0063), which says its kind; and
+        // std's errors the runtime's writer of them writes by name (#2510).
+        if self.is_parse_error(ty) || crate::recognition::is_error_debugged_by_name(self.tcx, ty) {
             let ty::Adt(adt, _) = ty.kind() else {
                 unreachable!("a struct")
             };

@@ -9,6 +9,7 @@ import {
   $asciiBytes,
   $at,
   $chunks,
+  $debugParseError,
   $dedup,
   $index,
   $iter,
@@ -43,7 +44,7 @@ function uses(s) {
     slice.length === 6 ? { TAG: "Ok", _0: slice.slice() } : { TAG: "Err" },
     "test/corpus/text_bytes_lent_and_owned.rs:20:55",
     undefined,
-    (e) => "TryFromSliceError(())",
+    (e) => $debugParseError(e, "TryFromSliceError"),
   );
   f[5] = 6;
   const g = Array.from(new TextEncoder().encode(s));

@@ -34,8 +34,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // first, where reading it runs code, a call's (#1756).
         let evaluated = value.has_effects().then(|| value.clone());
         let unread = |text: Expr| evaluated_first(evaluated.clone(), text);
-        // A parse error's derived `Debug`, of its message (ADR 0063).
-        if self.recognition().is_parse_error(ty)
+        // A parse error's derived `Debug`, of its message (ADR 0063), and
+        // std's errors the runtime writes by name (#2510).
+        if (self.recognition().is_parse_error(ty) || crate::recognition::is_error_debugged_by_name(self.tcx, ty))
             && let ty::Adt(adt, _) = ty.kind()
         {
             let name = Expr::str(self.tcx.item_name(adt.did()).as_str());

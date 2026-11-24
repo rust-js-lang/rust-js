@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "sink-parse-error-debug-refused",
     breaks: "a parse error's `Debug` in a framed writer, thiserror's derived `Debug` of a `&ParseIntError`, is refused",
     file: "crates/rust-js-lower/src/display/sink_debug.rs",
-    find: "        if self.recognition().is_parse_error(ty)\n",
-    replace: "        if self.recognition().is_parse_error(ty) && false\n",
+    find: "        if (self.recognition().is_parse_error(ty) || crate::recognition::is_error_debugged_by_name(self.tcx, ty))\n",
+    replace: "        if (self.recognition().is_parse_error(ty) || crate::recognition::is_error_debugged_by_name(self.tcx, ty)) && false\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_rest.rs$"],
   },
   {

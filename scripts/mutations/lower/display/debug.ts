@@ -178,14 +178,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
-    name: "try-from-slice-error-debug",
-    breaks: "`{:?}` of a `TryFromSliceError` isn't std's",
-    file: "crates/rust-js-lower/src/display/debug.rs",
-    find: '            return Ok(Expr::str("TryFromSliceError(())"));',
-    replace: '            return Ok(Expr::str("TryFromSliceError"));',
-    tests: ["test/corpus.test.ts", "-t", "slice_to_array"],
-  },
-  {
     name: "js-error-debug-unknown",
     breaks:
       "`{:?}` of a `js::JsError`, as an `unwrap`'s panic shows it, is refused",

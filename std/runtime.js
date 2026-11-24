@@ -19981,7 +19981,9 @@ export function $unwrapErr(result, raisedAt, message = "called `Result::unwrap_e
   return result._0;
 }
 
-// A parse error, which is its message (ADR 0063): its kind, which
+// std's errors' `Debug`, the one writer of them (#2510): a parse error,
+// which is its message (ADR 0063), `TryFromSliceError`, `FromUtf16Error`
+// and `DecodeUtf16Error`, by name. A parse error's kind, which
 // `ParseIntError::kind()` gives and its `Debug` shows.
 export function $parseErrorKind(message) {
   const kinds = {
@@ -19994,7 +19996,10 @@ export function $parseErrorKind(message) {
     "invalid float literal": "Invalid",
     "cannot parse char from empty string": "EmptyString",
     "too many characters in string": "TooManyChars",
+    "invalid utf-16: lone surrogate found": "LoneSurrogate",
   };
+  // A `FromUtf16Error`, which holds no message: its one kind.
+  if (message === undefined) return "LoneSurrogate";
   return kinds[message];
 }
 
@@ -20009,9 +20014,11 @@ export const $namedAlone = new Set(["ParseBoolError", "BorrowError", "BorrowMutE
 // its kind, one `write_str` of its variant's name, a field's or a tuple's.
 export function $writeDebugParseError(f, message, name, pretty) {
   if ($namedAlone.has(name)) return f.write(name);
-  if (name === "CharTryFromError" || name === "TryFromCharError") {
+  if (name === "CharTryFromError" || name === "TryFromCharError" || name === "TryFromSliceError") {
     return $writeDebugTuple(f, name, [[undefined, (g) => g.write("()")]], pretty);
   }
+  // A `DecodeUtf16Error`'s, its value the surrogate it found, `code`.
+  if (name === "DecodeUtf16Error") return $writeDebugStruct(f, name, [["code", String(message), (g, code) => g.write(code)]], pretty);
   const kind = [$parseErrorKind(message), (g, kind) => g.write(kind)];
   if (name === "TryFromIntError") return $writeDebugTuple(f, name, [kind], pretty);
   $writeDebugStruct(f, name, [["kind", ...kind]], pretty);
@@ -20022,8 +20029,9 @@ export function $writeDebugParseError(f, message, name, pretty) {
 export function $debugParseError(message, name, options) {
   const kind = $parseErrorKind(message);
   if ($namedAlone.has(name)) return name;
-  // A `char`'s, which hold `()`.
-  if (name === "CharTryFromError" || name === "TryFromCharError") return options?.alternate ? `${name}(\n    (),\n)` : `${name}(())`;
+  // A `char`'s and a slice's, which hold `()`.
+  if (name === "CharTryFromError" || name === "TryFromCharError" || name === "TryFromSliceError") return options?.alternate ? `${name}(\n    (),\n)` : `${name}(())`;
+  if (name === "DecodeUtf16Error") return options?.alternate ? `${name} {\n    code: ${message},\n}` : `${name} { code: ${message} }`;
   if (name === "TryFromIntError") return options?.alternate ? `TryFromIntError(\n    ${kind},\n)` : `TryFromIntError(${kind})`;
   return options?.alternate ? `${name} {\n    kind: ${kind},\n}` : `${name} { kind: ${kind} }`;
 }
