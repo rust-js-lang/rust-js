@@ -147,3 +147,24 @@ test("the dispatchers of what's called don't grow", () => {
     expect(length(file, signature), signature).toBe(cap);
   }
 });
+
+// Where a std call goes has one answer, the call's, `compiled_instance(id,
+// args)`, and what std compiles a body of, a definition's,
+// `compiled_std_body(id)`: two questions, each recognition's (#2398). The
+// catalog's membership itself, `is_compiled_std`, is read in recognition
+// alone; and `compiled_ahead_of_place`, the call's answer before what's
+// made in place is known, by the in-place analysis alone, as it's what
+// decides the rest.
+test("std's catalog is read through compiled_instance and compiled_std_body alone", () => {
+  const sources = compilerRustFiles();
+  const code = (file: string) => read(file).split("\n").filter((line) => !/^\s*\/\//.test(line)).join("\n");
+  const recognition = (file: string) => file.startsWith("crates/rust-js-lower/src/recognition/") || file === "crates/rust-js-lower/src/recognition.rs";
+  const membership = sources
+    .filter((file) => !recognition(file) && /\bis_compiled_std\(/.test(code(file)))
+    .map((file) => `${file}: reads \`is_compiled_std\`; ask \`compiled_instance(id, args)\` of a call or \`compiled_std_body(id)\` of a definition`);
+  expect(membership).toEqual([]);
+  const ahead = sources
+    .filter((file) => !recognition(file) && file !== "crates/rust-js-lower/src/body_queries/in_place.rs" && /\bcompiled_ahead_of_place\(/.test(code(file)))
+    .map((file) => `${file}: asks \`compiled_ahead_of_place\`, the in-place analysis's alone; ask \`compiled_instance(id, args)\``);
+  expect(ahead).toEqual([]);
+});
