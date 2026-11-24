@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy/flags.rs",
     find: "                    if name.helper().is_none() {\n",
     replace: "                    if true {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(owner_handle_returns_another|owner_handle_kept_apart)\\.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^drop_flags_beside_a_helper\\.rs$"],
     snapshots: true,
   },
   {
