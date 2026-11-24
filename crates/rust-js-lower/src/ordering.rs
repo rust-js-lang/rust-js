@@ -980,7 +980,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `&mut`s to cells, std's `Ord for &mut A`'s default `clamp`:
             // what each points at compared, as `max` and `min` compare them
             // (#2188), and the chosen `&mut` given back, `$clampBy`'s pick
-            // (#2191); its panic is the default's, never a `char`'s.
+            // (#2191); its panic is the default's, never a `char`'s (#2506).
             let cells = self.is_cell(ty);
             let compare = match cells {
                 true => self.cell_order(ty, span)?,
@@ -988,7 +988,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let mut args = values;
             args.push(compare);
-            let show = (!cells && ty.peel_refs().is_char()).then(|| {
+            let show = ty.is_char().then(|| {
                 let c = js::Name::declared("c".to_string());
                 let shown = Expr::call_helper("$debugStr", vec![Expr::var(c.clone()), Expr::str("'")]);
                 Expr::arrow(vec![c.into()], vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)])
@@ -998,9 +998,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 args.push(show.unwrap_or_else(Expr::js_undefined));
             }
             args.extend(drop);
-            // A `char`'s tracks its caller; std's default, `Ord::clamp`'s,
-            // doesn't, so its panic is std's own line (#2324).
-            if !cells && ty.peel_refs().is_char() {
+            // A `char`'s, by value, tracks its caller; std's default,
+            // `Ord::clamp`'s, a `&char`'s too, as `Ord for &A` writes no
+            // `clamp`, doesn't, so its panic is std's own line (#2324, #2506).
+            if ty.is_char() {
                 return Ok(Some(Expr::call_helper("$clampBy", args)));
             }
             return Ok(Some(Expr::raised_at(Expr::std_site("ordClamp", 0), || {

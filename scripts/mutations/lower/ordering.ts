@@ -375,8 +375,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `char`'s `clamp` of bounds the wrong way round panics as `Ord`'s default does, not showing them",
     file: "crates/rust-js-lower/src/ordering.rs",
-    find: "            let show = (!cells && ty.peel_refs().is_char()).then(|| {\n",
-    replace: "            let show = (false && ty.peel_refs().is_char()).then(|| {\n",
+    find: "            let show = ty.is_char().then(|| {\n",
+    replace: "            let show = (false && ty.is_char()).then(|| {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -696,7 +696,7 @@ export const mutations: Mutation[] = [
     name: "default-clamp-raised-by-its-caller",
     breaks: "a `String`'s `clamp`, std's default, which tracks no caller, names its caller's line, not std's (#2324)",
     file: "crates/rust-js-lower/src/ordering.rs",
-    find: "            if !cells && ty.peel_refs().is_char() {\n                return Ok(Some(Expr::call_helper(\"$clampBy\", args)));",
+    find: "            if ty.is_char() {\n                return Ok(Some(Expr::call_helper(\"$clampBy\", args)));",
     replace: "            if true {\n                return Ok(Some(Expr::call_helper(\"$clampBy\", args)));",
     tests: ["test/binaries.test.ts", "-t", "through a dictionary, names generic"],
   },
@@ -718,10 +718,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "clamp-of-mut-char-shows-a-char",
-    breaks: "`clamp` of `&mut char`s of bounds the wrong way round panics with a `char`'s own message, where std's `Ord for &mut A` default says `assertion failed: min <= max` (#2191)",
+    breaks: "`clamp` of `&char`s or `&mut char`s of bounds the wrong way round panics with a `char`'s own message at its caller's line, where std's `Ord for &A` and `Ord for &mut A` default says `assertion failed: min <= max` at its own (#2191, #2506)",
     file: "crates/rust-js-lower/src/ordering.rs",
-    find: "            let show = (!cells && ty.peel_refs().is_char()).then(|| {\n",
-    replace: "            let show = (ty.peel_refs().is_char()).then(|| {\n",
-    tests: ["test/corpus.test.ts", "-t", "^clamp_of_mut_references_gives_back_the_chosen.rs$"],
+    find: "            let show = ty.is_char().then(|| {\n",
+    replace: "            let show = ty.peel_refs().is_char().then(|| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(clamp_of_mut_references_gives_back_the_chosen|clamp_of_char_refs_is_ords_default).rs$"],
   },
 ];
