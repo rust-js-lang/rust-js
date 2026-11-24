@@ -439,8 +439,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a module whose only re-exports are globs writes no file, so its importers fail to load (#592)",
     file: "crates/rust-js-lower/src/analysis.rs",
-    find: "            || super::reexports::globs_values(tcx, module);\n",
-    replace: ";\n",
+    find: "            || super::reexports::globs_values(tcx, module)\n",
+    replace: "            || false\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob re-exports each name as the module it names exports it"],
   },
   {
@@ -502,5 +502,13 @@ export const mutations: Mutation[] = [
     find: "            .filter(|ty| forgotten.is_empty() || !forgotten.contains(&ty.to_string()))\n",
     replace: "            .filter(|ty| !forgotten.contains(&ty.to_string()))\n",
     tests: ["test/phase-times.test.ts", "-t", "a lowering forces no walk"],
+  },
+  {
+    name: "library-namespace-module-unwritten",
+    breaks: "a module whose only item re-exports a library's module writes no file, so the root's re-export of it, `pub use inline as i;`, gives JS no `i` (#2544)",
+    file: "crates/rust-js-lower/src/analysis.rs",
+    find: "            || super::reexports::reexports_library_namespace(tcx, module, &foreign);\n",
+    replace: "            ;\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a module whose only item re-exports a library's module is a file"],
   },
 ];

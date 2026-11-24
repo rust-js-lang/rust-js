@@ -778,3 +778,22 @@ Held by `test/declarations-type-maps.test.ts` and
 `test/reexport-docs.test.ts`; mutations trait-reexport-untyped,
 type-map-aliases-renamed (`reexports.rs`), trait-interface-unreexported
 (`declarations/dictionaries.rs`).
+
+## Amendment: a module whose only item re-exports a library's module is a file (#2544, 2026-11-25)
+
+Case: a Rust path JS hadn't. A module is written where it has a `pub
+use`'s re-export (ADR 0240), but a module's re-export counted only of the
+crate's own modules. `pub mod sub { pub use dep as d; }` with the root's
+`pub use sub as s;` wrote no `sub.js`, so the root, which re-exports
+`sub` from its file, wrote no `export * as s` either. The compile
+succeeded and JS had no `s`, with nothing said. A `pub use` of a library's
+module that has JS is its namespace, `export * as d from` its file
+(#1420). **A module whose only item is one, by name or a glob's, is now a
+file of its own** (`reexports::reexports_library_namespace`), with its
+`.d.ts`, and the root's re-export of it reaches JS. A library's module of
+types alone has no JS, as before. Held by `test/glob-reexports.test.ts`'s
+"a module whose only item re-exports a library's module is a file" (a
+library root and a module, inline and in a file, by name and by a glob,
+each read through by JS as Rust reads it), and mutation
+`library-namespace-module-unwritten` (`analysis.rs`).
+

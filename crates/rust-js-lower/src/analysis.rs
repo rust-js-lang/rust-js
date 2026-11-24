@@ -1014,7 +1014,8 @@ pub fn analyze_crate<'a, 'tcx>(
             modules.push(module);
         }
         let reexports = (crate::uses::module_leaves(tcx, module).iter()).any(|leaf| is_reexport(tcx, leaf))
-            || super::reexports::globs_values(tcx, module);
+            || super::reexports::globs_values(tcx, module)
+            || super::reexports::reexports_library_namespace(tcx, module, &foreign);
         // Or a default that's another module's function (ADR 0240).
         let defaulted = || !super::default_exports::default_exports(tcx, module).is_empty();
         if (reexports || defaulted()) && seen_modules.insert(module) {

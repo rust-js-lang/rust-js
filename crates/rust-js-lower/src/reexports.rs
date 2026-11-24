@@ -1230,6 +1230,23 @@ pub(super) fn globs_values(tcx: TyCtxt<'_>, module: rustc_span::def_id::LocalMod
     })
 }
 
+/// Whether `module` re-exports a library's module that has JS as a
+/// namespace, `pub use dep::m as ns;` or a glob's, its file's (#1420),
+/// though it has nothing of its own: a file of its, `export * as ns from`.
+/// Else none was written, and another's re-export of it, the root's `pub
+/// use sub as s;`, gave JS no `s`, a Rust path JS hadn't (#2544).
+pub(super) fn reexports_library_namespace(
+    tcx: TyCtxt<'_>,
+    module: LocalModId,
+    foreign: &super::library::Foreign<'_, '_>,
+) -> bool {
+    (tcx.module_children_local(module.to_local_def_id()).iter()).any(|child| {
+        child.vis.is_public()
+            && !child.reexport_chain.is_empty()
+            && matches!(child.res, rustc_hir::def::Res::Def(DefKind::Mod, id) if !id.is_local() && foreign.module_file(id).is_some())
+    })
+}
+
 /// Whether `module` exports a type, which gives a module of types alone its
 /// `.d.ts` (the user's decision, ADR 1005): one of its own, or another's it
 /// re-exports, `pub use money::Money`, a glob's or a library's, its `export
