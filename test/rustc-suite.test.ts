@@ -97,11 +97,13 @@ test("a failure is rejected, crashed or wrong, and one listed as rejected may no
   expect(failureKind('node: ended {"error":"TypeError: rust-js does not support"}')).toBe("wrong");
   expect(failureKind('node: ended {"panic":"assertion failed: rust-js does not support"}')).toBe("wrong");
   expect(failureKind("node: different stdout")).toBe("wrong");
-  // A run's `$unsupported`, uncaught, ends the process as Node prints it: a
-  // rejection, never the stack's first line, std/runtime.js's place (#2447's
-  // first CI run); a panic of those words, the hook's, is the program's.
-  const unsupported = "file:///x/std/runtime.js:23929\n  return new $Unsupported(message);\n\n$Unsupported [Error]: rust-js does not support the address of a value JS holds as itself\n    at $unsupported (file:///x/std/runtime.js:23929:10)\n";
+  // A run's `$unsupported` ends the process as `$main` writes it, `error:
+  // rust-js does not support ..` and where, status 1: a rejection, never
+  // stderr's first line (#2447's first CI run, #2493); a panic of those
+  // words, the hook's, is the program's, and so is another status.
+  const unsupported = "before\nerror: rust-js does not support the address of a value JS holds as itself\n --> /x/e.rs:13:9\n";
   expect(failureKind(`node: ${exited(1, unsupported)}`)).toBe("rejected");
+  expect(failureKind(`node: ${exited(101, unsupported)}`)).toBe("wrong");
   expect(failureKind(`node: ${exited(101, "\nthread 'main' panicked at m.rs:1:1:\nrust-js does not support x\n")}`)).toBe("wrong");
   const listed = new Map([
     ["a.rs", "error: rust-js does not support statics yet"],

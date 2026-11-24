@@ -11,4 +11,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/rustc-suite.test.ts", "-t", "a failure is rejected, crashed or wrong"],
   },
+  {
+    name: "rustc-run-refusal-of-any-status",
+    breaks: "a run that writes rust-js's refusal line but exits otherwise than `$main`'s 1, a panic's 101, is said to be a rejection",
+    file: "scripts/rustc-suite.ts",
+    find: "  const refused = code === 1 ? ",
+    replace: "  const refused = code !== null ? ",
+    tests: ["test/rustc-suite.test.ts", "-t", "a failure is rejected, crashed or wrong"],
+  },
 ];

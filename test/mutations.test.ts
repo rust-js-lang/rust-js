@@ -878,6 +878,34 @@ test("a corpus mutant's compiler gets one thing wrong", async () => {
   expect(await compile("refuses-a-library", true)).toMatchObject({ code: 1, stderr: "error: a mutant's refusal\n" });
 });
 
+// Each mutant of a run's JS changes the run of a `run-fail` case, whose
+// binary ends the process as `main` fails, `$main(main)` near its top: its
+// edit runs first, in the run it's for (#2447's first CI run, where an edit
+// appended at the module's end never ran there and node-stdout survived on
+// five panicking cases). The stand-in's module ends the process at once.
+test("each corpus mutant of a run's JS changes a run that fails at once", async () => {
+  const dir = fixture("corpus-mutant-fails");
+  const compiler = join(dir, "compiler");
+  writeFileSync(compiler, '#!/bin/sh\nwhile [ "$1" != "-o" ]; do shift; done\nprintf "process.exit(101);\\n" > "$2"\n');
+  chmodSync(compiler, 0o755);
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }\n');
+  const where = { node: ["case.js"], minified: ["case.min.js"], program: ["program", "case.js"], library: ["library", "case.js"] };
+  const ofRuns = corpusMutants.filter((m) => m.of === "runs" && "js" in m.edit && m.mode === false && m.caught);
+  expect(ofRuns.length).toBe(12);
+  const unchanged = await Promise.all(
+    ofRuns.map(async (mutant) => {
+      const run = Object.keys(where).find((r) => mutant.name.startsWith(`${r}-`)) as keyof typeof where;
+      const js = join(dir, mutant.name, ...where[run]);
+      mkdirSync(dirname(js), { recursive: true });
+      const args = [process.execPath, join(root, "test/corpus-mutants.ts"), mutant.name, compiler, "case.rs", "-o", js, ...(run === "library" ? ["--library"] : [])];
+      expect((await runChild(args, root, 30_000)).code).toBe(0);
+      const ran = await runChild([node ?? "node", js], dir, 30_000);
+      return ran.code === 101 && ran.stdout === "" && ran.stderr === "" ? [mutant.name] : [];
+    }),
+  );
+  expect(unchanged.flat()).toEqual([]);
+});
+
 // A mutant whose tests ran past their memory cap, a compiler that ran away,
 // is caught, not inconclusive (#1097).
 test("a mutant whose tests outgrew their memory is caught", () => {

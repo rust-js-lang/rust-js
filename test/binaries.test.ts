@@ -622,3 +622,22 @@ test("an `Err` from main ends the process at once: a host's pending timer never 
     expect(ran([runtime, "--import", "./timer.mjs", js], dir)).toEqual({ status: 1, out: 'Error: "bad"\n' });
   }
 }, 300_000);
+
+// What rust-js doesn't support as the program runs ends a binary as its
+// refusals at compile time are said, `error: rust-js does not support ..`
+// and where the JS asked it, status 1, never Node's or Bun's report of an
+// uncaught error, its stack (#2447, #2493).
+test("a run-time refusal ends a binary with rust-js's error and where it was asked, status 1", () => {
+  const dir = fixture("refused-as-it-runs");
+  mkdirSync(dir, { recursive: true });
+  const source = 'fn address<T>(value: &T) -> usize {\n    unsafe { std::mem::transmute(value) }\n}\n\nfn main() {\n    println!("before");\n    let x = Some(5u64);\n    if let Some(y) = &x {\n        println!("{}", address(y) % 8);\n    }\n}\n';
+  writeFileSync(join(dir, "native.rs"), source);
+  const js = join(dir, "main.js");
+  run([compiler, join(dir, "native.rs"), "-o", js, "--", ...flags, "--crate-type", "bin", "-Awarnings"]);
+  installStd(dir);
+  const refused = "error: rust-js does not support the address of a value JS holds as itself, a copy, which reads memory by where it is";
+  for (const runtime of ["node", "bun"]) {
+    const { status, out } = ran([runtime, js], dir);
+    expect({ runtime, status, out: out.replace(/ --> \S+\/main\.js:\d+:\d+\n/, " --> main.js\n") }).toEqual({ runtime, status: 1, out: `before\n${refused}\n --> main.js\n` });
+  }
+}, 300_000);

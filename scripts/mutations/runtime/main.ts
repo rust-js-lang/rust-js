@@ -26,4 +26,20 @@ export const mutations: Mutation[] = [
     replace: "    const e = thrown;\n",
     tests: ["test/corpus.test.ts", "-t", "^stack_overflow_no_drops_aborts.rs$"],
   },
+  {
+    name: "binary-refusal-uncaught",
+    breaks: "a run-time refusal reaching a binary's `$main` ends it as the host reports an uncaught error, its stack, not rust-js's `error:` line (#2493)",
+    file: "crates/rust-js-program/src/runtime/main.js",
+    find: "    if (!browser && e instanceof $Unsupported) {\n",
+    replace: "    if (false) {\n",
+    tests: ["test/binaries.test.ts", "-t", "run-time refusal"],
+  },
+  {
+    name: "binary-refusal-placed-in-the-runtime",
+    breaks: "a run-time refusal names the runtime's own place, `$unsupported`'s, not where the program asked it",
+    file: "crates/rust-js-program/src/runtime/main.js",
+    find: "  const asked = places.find((place) => place[1] !== own);\n",
+    replace: "  const asked = places[0];\n",
+    tests: ["test/binaries.test.ts", "-t", "run-time refusal"],
+  },
 ];

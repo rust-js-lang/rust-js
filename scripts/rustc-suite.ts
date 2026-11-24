@@ -167,13 +167,13 @@ export function difference(native: string, js: string): string {
 }
 
 /** Why a run that exited `code` failed, of its `stderr`: rust-js's own
- * refusal where it runs, `$unsupported`'s, which the run's `$main` lets
- * end the process uncaught, said as a rejection is (`failureKind`), never
- * as the uncaught error's first line, its place in std/runtime.js (#2447's
- * first CI run took four listed rejections so for crashes); else its code
- * and its first error. */
+ * refusal where it runs, `$unsupported`'s, which the run's `$main` writes
+ * as a compile's refusal is, `error: rust-js does not support ..`, and
+ * ends with status 1 (#2493), said as a rejection is (`failureKind`),
+ * never as stderr's first line (#2447's first CI run took four listed
+ * rejections so for crashes); else its code and its first error. */
 export function exited(code: number | null, stderr: string): string {
-  const refused = /^\$Unsupported \[Error\]: (rust-js does not support [^\n]*)$/m.exec(stderr)?.[1];
+  const refused = code === 1 ? /^error: (rust-js does not support [^\n]*)$/m.exec(stderr)?.[1] : undefined;
   if (refused !== undefined) return `ended {"error":"Error: ${refused.slice(0, 200)}"}`;
   return `exited ${code}: ${firstError(stderr).slice(0, 200)}`;
 }

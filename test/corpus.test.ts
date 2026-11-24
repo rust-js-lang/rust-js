@@ -6,14 +6,16 @@
 // A case that runs, run-pass or run-fail, keeps the JS rust-js makes of it
 // beside it, `<case>.js`, as `test/snapshots/` keeps the examples' (ADR
 // 0050): the JS each feature is, to read, and any change to it a diff.
-// `bun run bless` writes them anew.
+// `bun run bless` writes them anew. Where its JS as a program, the crate
+// that exports `entry`, isn't its binary's but for what the wrapper adds,
+// that's kept too, `<case>.program.js` (ADR 1198, amended).
 //
 //   case.rs ─┬─ rustc ──► native ─────────────────┐
 //            └─ rust-js ──► case.js ─┬─ bun  ──────┼─► stdout, stderr, outcome: the same?
 //                                    └─ node ──────┘
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
-import { appendFileSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { build } from "vite";
@@ -167,7 +169,10 @@ async function check(file: string): Promise<string[]> {
     problems.push(`rust-js can't compile it as a program:\n${programBuild.error}`);
     return problems;
   }
-  if (asBinary(programBuild.js) !== asBinary(compiled.js)) {
+  const programDiffers = asBinary(programBuild.js) !== asBinary(compiled.js);
+  const programSnapshot = programSnapshotProblem(file, programDiffers ? programBuild.js : undefined);
+  if (programSnapshot) problems.push(programSnapshot);
+  if (programDiffers) {
     const programKey = await ranKey("program", generatedTexts(join(dir, "program")), programBuild.js);
     if (!verified(programKey)) {
       const run = judged(timed("JS run: program", () => runJs([node ?? "node"], programBuild.js, dir, "program", undefined, "program")));
@@ -221,12 +226,13 @@ const snapshotsAlone = process.env.RUST_JS_SNAPSHOTS === "only";
 
 /** What's wrong with a case's JS alone: nothing, if it's its snapshot. A
  * case with none, one that doesn't run, says nothing. */
-function snapshotAlone(file: string, want: Directives, dir: string): string[] {
+async function snapshotAlone(file: string, want: Directives, dir: string): Promise<string[]> {
   if (want.kind !== "run-pass" && want.kind !== "run-fail" && want.kind !== "run-abort") return [];
-  const compiled = compileJs(file, dir, want.edition);
+  const [compiled, programBuild] = await compileBuilds(file, dir, want.edition, ["binary", "program"]);
   if ("error" in compiled) return [`rust-js can't compile it:\n${compiled.error}`];
-  const problem = snapshotProblem(file, compiled.js);
-  return problem === undefined ? [] : [problem];
+  if ("error" in programBuild) return [`rust-js can't compile it as a program:\n${programBuild.error}`];
+  const differs = asBinary(programBuild.js) !== asBinary(compiled.js);
+  return [snapshotProblem(file, compiled.js), programSnapshotProblem(file, differs ? programBuild.js : undefined)].filter((problem) => problem !== undefined);
 }
 
 /** A build's JS but the line naming where it was written from. */
@@ -301,6 +307,37 @@ function snapshotProblem(file: string, js: string): string | undefined {
   return undefined;
 }
 
+/** Whether a case's JS as a program is its snapshot, `<case>.program.js`
+ * beside it, where `js`, the program's, isn't its binary's but for what its
+ * wrapper adds (`asBinary`), or there's none, where it is; with `BLESS` set,
+ * the snapshot it is now, or none. A decision the exported build alone
+ * shows, a cell counted where `entry` hands its crate to a caller, a copy
+ * kept, is so held by a snapshot as the binary's are (#2447: the binary's
+ * snapshot no longer showed them, and `held-field-read-unsettled`
+ * survived). */
+function programSnapshotProblem(file: string, js: string | undefined): string | undefined {
+  if (process.env.RUST_JS_SNAPSHOTS === "ignore") return undefined;
+  const snapshot = file.replace(/\.rs$/, ".program.js");
+  if (js === undefined) {
+    if (!existsSync(snapshot)) return undefined;
+    if (process.env.BLESS) {
+      rmSync(snapshot);
+      return undefined;
+    }
+    return `its JS as a program is its binary's now: remove ${basename(snapshot)}, or run \`bun run bless\``;
+  }
+  const text = snapshotText(file, js);
+  if (process.env.BLESS) {
+    writeFileSync(snapshot, text);
+    return undefined;
+  }
+  if (!existsSync(snapshot)) return `its JS as a program isn't its binary's, and it has no snapshot of it, ${basename(snapshot)}: run \`bun run bless\``;
+  if (readFileSync(snapshot, "utf8") !== text) {
+    return `its JS as a program isn't its snapshot, ${basename(snapshot)}: if that's intended, run \`bun run bless\` and review the diff`;
+  }
+  return undefined;
+}
+
 beforeAll(() => {
   buildCompiler();
   if (!node) throw new Error("the corpus runs under Node too: install Node 22.18 or later");
@@ -314,12 +351,15 @@ firstPart("the corpus has cases", () => {
 // A snapshot is a case's that runs: one left of a case removed, or of one
 // that's compile-fail or ignore-rust-js now, would be JS nothing checks.
 firstPart("every snapshot in the corpus is the JS of a case that runs", () => {
-  const snapshots = readdirSync(corpus).filter((f) => f.endsWith(".js")).sort();
+  const snapshots = readdirSync(corpus).filter((f) => f.endsWith(".js") && !f.endsWith(".program.js")).sort();
   const running = cases.filter((name) => {
     const want = directives(readFileSync(join(corpus, name), "utf8"));
     return typeof want !== "string" && (want.kind === "run-pass" || want.kind === "run-fail" || want.kind === "run-abort");
   });
   expect(snapshots).toEqual(running.map((name) => name.replace(/\.rs$/, ".js")));
+  // And a program's, `<case>.program.js`, of a case that runs.
+  const programs = readdirSync(corpus).filter((f) => f.endsWith(".program.js"));
+  expect(programs.filter((f) => !running.includes(f.replace(/\.program\.js$/, ".rs")))).toEqual([]);
 });
 
 // Run on its own, not as a part of check:fast's or a mutant's, its line in

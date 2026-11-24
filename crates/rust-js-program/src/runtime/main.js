@@ -8,7 +8,10 @@
 // what it holds. A status of `0` lets the process end as it does by
 // itself. In a browser, which has no process, a panic is thrown on to the
 // page, and a failing status thrown as an error, its signal of a failure
-// (#847's of an abort).
+// (#847's of an abort). What rust-js doesn't support as the program runs
+// (`$unsupported`) is said as its refusals at compile time are, `error:
+// rust-js does not support ..` and where the program asked it, status 1,
+// never Node's report of an uncaught error (#2447, #2493).
 function $main(entry) {
   const process = globalThis.process;
   const browser = process?.argv === undefined;
@@ -21,9 +24,15 @@ function $main(entry) {
     // As a scope's cleanup gives it on (`$unwindsOn`): a stack overflow is
     // Rust's abort, its lines and exit 134, never a panic (#2452).
     const e = $unwindsOn(thrown);
-    if (browser || $endsTheProgram(e)) throw e;
-    $hook(e);
-    status = 101;
+    if (!browser && e instanceof $Unsupported) {
+      $eprint($refusedAsItRan(e));
+      status = 1;
+    } else if (browser || $endsTheProgram(e)) {
+      throw e;
+    } else {
+      $hook(e);
+      status = 101;
+    }
   }
   if (browser) {
     if (status !== 0) throw new Error(`main exited with status ${status}`);
@@ -34,6 +43,21 @@ function $main(entry) {
   const blocking = [process.stdout, process.stderr].every((stream) => stream?._handle?.setBlocking !== undefined || stream?.isTTY);
   if (blocking) process.exit(status & 255);
   process.stdout.write("", () => process.stderr.write("", () => process.exit(status & 255)));
+}
+
+// A refusal as the program ran, `e`, as rust-js writes one at compile
+// time: its message, and where it was asked, the first frame of its stack
+// outside the runtime's own module, `$unsupported`'s, the JS's place, as
+// the engine gives it; none where every frame is the runtime's, a bundle's.
+function $refusedAsItRan(e) {
+  const places = String(e.stack ?? "")
+    .split("\n")
+    .map((line) => /^\s*at (?:.* \()?(.+?):(\d+):(\d+)\)?$/.exec(line))
+    .filter((place) => place !== null);
+  const own = places[0]?.[1];
+  const asked = places.find((place) => place[1] !== own);
+  const where = asked === undefined ? "" : ` --> ${asked[1].replace(/^file:\/\//, "")}:${asked[2]}:${asked[3]}\n`;
+  return `error: ${e.message}\n${where}`;
 }
 
 // std's panic hook's text of `e`, a panic, on stderr, once: where it was

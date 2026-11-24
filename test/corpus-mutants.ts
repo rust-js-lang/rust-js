@@ -73,6 +73,9 @@ export type CorpusMutant = {
 };
 
 const reads = { js: "// a mutant's comment" };
+/** A program's JS that reads otherwise past what the wrapper adds: a
+ * comment would be its binary's still (`asBinary`). */
+const programReads = { js: `void "a mutant's statement";`, alone: "program" as const };
 
 /** Each mutant, by its name. */
 export const corpusMutants: CorpusMutant[] = [
@@ -93,6 +96,8 @@ export const corpusMutants: CorpusMutant[] = [
   { name: "reads-otherwise-ignored", breaks: "the JS reads otherwise, which a mutation's run ignores", edit: reads, of: "runs", mode: false, caught: false },
   { name: "reads-otherwise", breaks: "the JS reads otherwise, and isn't its snapshot", edit: reads, of: "runs", mode: true, caught: true },
   { name: "reads-otherwise-alone", breaks: "the JS reads otherwise, and isn't its snapshot, judged alone", edit: reads, of: "runs", mode: "alone", caught: true },
+  { name: "program-reads-otherwise", breaks: "a program's JS reads otherwise, and isn't its snapshot (ADR 1198, amended)", edit: programReads, of: "runs", mode: true, caught: true },
+  { name: "program-reads-otherwise-alone", breaks: "a program's JS reads otherwise, judged by snapshots alone", edit: programReads, of: "runs", mode: "alone", caught: true },
   { name: "crashes-alone", breaks: "rust-js crashes on a program, judged by snapshots alone", edit: { exit: "crashes" }, of: "runs", mode: "alone", caught: true },
   { name: "compiles", breaks: "rust-js compiles a program it can't", edit: { exit: "compiles" }, of: "compile-fail", mode: false, caught: true },
   { name: "crashes-refusing", breaks: "rust-js crashes where it refuses", edit: { exit: "crashes" }, of: "compile-fail", mode: false, caught: true },

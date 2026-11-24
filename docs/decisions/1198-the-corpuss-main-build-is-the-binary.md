@@ -41,7 +41,8 @@ compared with the native binary of the same file run as a process.**
     crate is (ADR 0360). It's compiled for every case and run only where its
     JS isn't the binary's past what the wrapper adds (`asBinary`: comments,
     blank lines, `$main`, `entry`, `export`). The compiler's output decides;
-    there's no directive.
+    there's no directive. Where it isn't, its JS is a second snapshot,
+    `<case>.program.js`, and where it is, there's none (amended, below).
   - `library` is that crate with `--library`, as before (`//@
     library-differs`). It's compared with the program build.
   - `program` and `library` share one worker session (ADR 1182); the
@@ -124,3 +125,25 @@ compared with the native binary of the same file run as a process.**
   - every run re-verified: 129 s before, 155 s after;
   - the first run after the change, about 2,900 native binaries built and
     first checked by macOS: 335 s, once.
+
+## Amendment: a program's JS is a snapshot too (2026-11-24)
+
+A decision the exported build alone shows, a cell counted where `entry`
+hands the crate to a caller, a copy kept, a nullable exit, was held by no
+snapshot once the binary's became the case's: the old snapshot was the
+wrapper's. The mutation `held-field-read-unsettled` survived so on main
+(m1-lisa's read, #2447 comment 7127662433): its counted `lines` shows in
+`scope_struct_of_type_parameters`'s program build alone.
+
+- A case whose program JS isn't its binary's past what the wrapper adds
+  (`asBinary`) keeps it beside it, `<case>.program.js`, its header naming
+  the case, as `<case>.js` does. The case fails where it's missing, where
+  it isn't the program's JS, or where one is kept of a program whose JS is
+  its binary's. `bun run bless` writes or removes it.
+- A run of snapshots alone (`RUST_JS_SNAPSHOTS=only`, a mutation's judge,
+  #864) compiles the program build beside the binary, so a mutant that
+  moves only a program's JS is judged by it too.
+- 40 cases of 2,970 keep one: `dyn Any`'s and `dyn Error`'s type ids,
+  generic and `dyn` cells, io errors, drops. `held-field-read-unsettled`
+  is caught by `scope_struct_of_type_parameters`'s, whose program's JS
+  differs with the mutant.

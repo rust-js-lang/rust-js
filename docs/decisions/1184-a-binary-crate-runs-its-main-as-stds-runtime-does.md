@@ -187,3 +187,24 @@ none, `// no site: <why>`, of which there's one, `$allocError`, as std's
 `arc_slice_collect_by_generic_code_past_a_layout`, and the mutations
 `layout-error-unsited`, `rc-slice-layout-at-its-unbounded` and
 `rc-slice-layout-row-of-another`.
+
+## Amendment: a run-time refusal is said as rust-js's error (2026-11-24, #2493)
+
+What rust-js doesn't support as the program runs, `$unsupported`'s error,
+reached a binary's `$main` and was thrown on, so the host reported it as an
+uncaught error: Node's `std/runtime.js` line, a caret, `$Unsupported
+[Error]: ..` and its stack, status 1. The rustc suite read that first line
+as a crash (#2447's first CI run). `$main` now writes it as a refusal at
+compile time is written, `error: rust-js does not support ..`, then ` --> `
+and the first place of its stack outside the runtime's module, where the
+JS asked it (`$refusedAsItRan`), and ends with status 1, after what the
+streams hold is written. A host that maps the JS's source map gives the
+Rust source's place. A browser's is thrown on, as before.
+
+No output a Rust program has changes: native Rust has no such refusal
+(ADR 0262: Rust's behaviour cannot be preserved, so it's refused, here
+as clearly at run time as at compile time). Held by binaries.test.ts'
+"a run-time refusal ends a binary" on Node and Bun, scripts/rustc-suite.ts'
+`exited` reads the line (status 1 alone), and mutations
+`binary-refusal-uncaught`, `binary-refusal-placed-in-the-runtime` and
+`rustc-run-refusal-of-any-status`.
