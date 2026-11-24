@@ -606,8 +606,6 @@ test("a rebase that brought commits is compiled before its tests, where both sid
     ok("commit", "-q", "-m", message);
   };
   ok("init", "-q", "-b", "main");
-  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({ compilerOptions: { strict: true, noEmit: true, module: "esnext", target: "esnext", moduleResolution: "bundler" }, include: ["*.ts"] }));
-  ok("add", "tsconfig.json");
   commit("lib.ts", "export function old(): number {\n  return 1;\n}\n", "base");
   // `main` moves on: a commit that newly calls `old`.
   ok("switch", "-q", "-c", "incoming");
@@ -618,7 +616,11 @@ test("a rebase that brought commits is compiled before its tests, where both sid
   const mainWas = ok("rev-parse", "HEAD");
   ok("switch", "-q", "-c", "change");
   commit("lib.ts", "export function renamed(): number {\n  return 1;\n}\n", "rename old");
-  const typecheck = { typecheck: [join(root, "node_modules/.bin/tsc"), "-p", dir], clippy: ["false"] };
+  // A compile that refuses an import of what isn't exported, as the gate's
+  // own `typecheck` does: Bun's, which a mutation's copy of the checkout
+  // runs as a worktree does, with no node_modules (test/type-checked.ts
+  // alone runs TypeScript's compiler).
+  const typecheck = { typecheck: [process.execPath, "build", join(dir, "user.ts"), "--outdir", join(dir, "out")], clippy: ["false"] };
   ok("rebase", "-q", mainIs);
   const refused = gateRebase(mainWas, mainIs, git, typecheck, dir);
   expect(refused.ran).toEqual(["typecheck"]);
