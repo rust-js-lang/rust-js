@@ -457,3 +457,20 @@ the caller's line. Each now takes the location it's given,
 a body's dictionary of one is named once and given on. Held by the corpus
 case `index_in_generic_code_names_the_body` and the mutation
 `std-index-entry-located-elsewhere`.
+
+## Amendment: a capacity overflow std raises at its own line (2026-11-24, #2488)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)).
+
+The runtime raised every `capacity overflow` at raw_vec's line, which is
+right where a `Vec` asks room for too many bytes, but not where std's own
+code panics before asking: a slice's `repeat` of a count past
+`usize::MAX`, its `checked_mul(n).expect("capacity overflow")`,
+`slice.rs:526:50`; and a collect of `0..=usize::MAX`, whose hint has no
+upper bound, std's `TrustedLen` collect, `spec_from_iter_nested.rs:57:18`.
+`$stdSites` gains `sliceRepeat`, read from std's MIR, and `$repeatItems`
+and `$range` raise those at their own rows before asking the room. Held
+by the corpus cases `slice_repeat_past_usize_panics_at_its_checked_mul`
+and `collect_of_a_range_past_usize_panics_at_trusted_len`, and the
+mutations `slice-repeat-at-raw-vec`, `range-past-usize-at-raw-vec` and
+`slice-repeat-row-of-another`.

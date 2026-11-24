@@ -98,4 +98,12 @@ export const mutations: Mutation[] = [
     replace: "        \"rcSliceLayout\",\n        None,\n        Owner::Type(StdCrate::Alloc, &[\"rc\", \"Rc\"]),\n        \"allocate_for_layout\",\n",
     tests: ["test/std-sites.test.ts"],
   },
+  {
+    name: "slice-repeat-row-of-another",
+    breaks: "`sliceRepeat`'s row walks a slice's `to_vec`, not its `repeat`, so its site isn't the `checked_mul` std panics at (#2488)",
+    file: "crates/rust-js-lower/src/recognition/compiled_std/raised.rs",
+    find: "    (\"sliceRepeat\", None, Owner::Primitive(SimplifiedType::Slice), \"repeat\"),\n",
+    replace: "    (\"sliceRepeat\", None, Owner::Primitive(SimplifiedType::Slice), \"to_vec_in\"),\n",
+    tests: ["test/std-sites.test.ts"],
+  },
 ];

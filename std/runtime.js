@@ -10746,8 +10746,12 @@ export function $sliceStripCircumfix(v, prefix, suffix, eq) {
 // of `size` bytes each asked first (ADR 0774): its first copy each item's
 // `clone`, as std's `extend(self)` makes it, the rest that copy's bits,
 // `copy`'s, as std's `copy_nonoverlapping` doubles it (ADR 0623); its
-// clone its copy unless a hand-written `clone` is given.
+// clone its copy unless a hand-written `clone` is given. Of a count past
+// `usize::MAX`, std's `checked_mul`'s `expect("capacity overflow")`, a
+// `String` payload, raised at its line, `sliceRepeat`'s, before the room
+// it'd ask (#2488).
 export function $repeatItems(v, n, size, copy, clone = copy) {
+  if (v.length * n > 2 ** 32 - 1) throw $stringPanic("capacity overflow", $stdSites.sliceRepeat[0]);
   $roomFor(v.length * n, size);
   if (n === 0) return [];
   const first = clone === undefined ? v : v.map(clone);
@@ -15192,6 +15196,9 @@ export const $stdSites = {
   ],
   "arcFromTrustedLen": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/sync.rs:4368:13"
+  ],
+  "sliceRepeat": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:526:50"
   ],
   "rcSliceLayout": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/rc.rs:2420:41"
@@ -24166,9 +24173,13 @@ export function $unwrapOk(result, raisedAt, message = "called `Result::unwrap()`
 
 // `(start..end).collect()`, a range's numbers in an array, room for them
 // of `size` bytes each asked first, where it may not fit, as std's
-// `collect` asks it of an iterator that knows its length (ADR 0774).
+// `collect` asks it of an iterator that knows its length (ADR 0774). Of a
+// length past `usize::MAX`, `0..=usize::MAX`'s, whose hint has no upper
+// bound, the `capacity overflow` std's `TrustedLen` collect panics with at
+// its own line, `vecFromTrustedLen`'s (#2488).
 export function $range(start, end, size) {
   const length = Math.max(0, end - start);
+  if (size !== undefined && length > 2 ** 32 - 1) throw $panic("capacity overflow", $stdSites.vecFromTrustedLen[0]);
   if (size !== undefined) $roomFor(length, size);
   return Array.from({ length }, (_, i) => start + i);
 }

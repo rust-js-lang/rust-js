@@ -127,6 +127,9 @@ const $stdSites = {
   "arcFromTrustedLen": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/sync.rs:4368:13"
   ],
+  "sliceRepeat": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:526:50"
+  ],
   "rcSliceLayout": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/rc.rs:2420:41"
   ],

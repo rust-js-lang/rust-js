@@ -487,8 +487,12 @@ function $sliceStripCircumfix(v, prefix, suffix, eq) {
 // of `size` bytes each asked first (ADR 0774): its first copy each item's
 // `clone`, as std's `extend(self)` makes it, the rest that copy's bits,
 // `copy`'s, as std's `copy_nonoverlapping` doubles it (ADR 0623); its
-// clone its copy unless a hand-written `clone` is given.
+// clone its copy unless a hand-written `clone` is given. Of a count past
+// `usize::MAX`, std's `checked_mul`'s `expect("capacity overflow")`, a
+// `String` payload, raised at its line, `sliceRepeat`'s, before the room
+// it'd ask (#2488).
 function $repeatItems(v, n, size, copy, clone = copy) {
+  if (v.length * n > 2 ** 32 - 1) throw $stringPanic("capacity overflow", $stdSites.sliceRepeat[0]);
   $roomFor(v.length * n, size);
   if (n === 0) return [];
   const first = clone === undefined ? v : v.map(clone);

@@ -327,6 +327,9 @@ const RAISED: &[(&str, Option<&str>, Owner, &str)] = &[
         ),
         "to_arc_slice",
     ),
+    // A slice's `repeat`, its `checked_mul(n).expect("capacity overflow")`
+    // of a count past `usize::MAX` (#2488).
+    ("sliceRepeat", None, Owner::Primitive(SimplifiedType::Slice), "repeat"),
     // Where `Rc::<[T]>`'s and `Arc::<[T]>`'s slice is allocated, its
     // `Layout::array::<T>(len).unwrap()`, which a collect past what a
     // `Layout` holds panics at (#2489).

@@ -541,4 +541,12 @@ export const mutations: Mutation[] = [
     replace: "          drop?.(item);\n",
     tests: ["test/corpus.test.ts", "-t", "^is_sorted_drop_panics_during_its_unwind.rs$"],
   },
+  {
+    name: "slice-repeat-at-raw-vec",
+    breaks: "a slice's `repeat` of a count past `usize::MAX` panics at raw_vec's line, where std's `checked_mul(n).expect(..)` in `[T]::repeat` raises it, `slice.rs:526:50` (#2488)",
+    file: "crates/rust-js-program/src/runtime/slice_ops.js",
+    find: "  if (v.length * n > 2 ** 32 - 1) throw $stringPanic(\"capacity overflow\", $stdSites.sliceRepeat[0]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^slice_repeat_past_usize_panics_at_its_checked_mul.rs$"],
+  },
 ];
