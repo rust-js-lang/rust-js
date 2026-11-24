@@ -437,7 +437,7 @@ export const mutations: Mutation[] = [
     name: "std-build-writer-options-by-contract",
     breaks: "a std writer `@rust-js/std`'s build compiles, `fuseDebug_fmt`, is given no options where another it compiles calls it, as std's own build has no contract of core's, so its dictionaries shift into their place (#2252)",
     file: "crates/rust-js-lower/src/display.rs",
-    find: "            || (self.krate.compiled_once && crate::recognition::is_compiled_std(self.tcx, writer));\n",
+    find: "            || (self.krate.compiled_once && crate::recognition::compiled_std_body(self.tcx, writer));\n",
     replace: "            || false;\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
   },

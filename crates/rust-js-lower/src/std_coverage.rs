@@ -108,7 +108,7 @@ pub fn report<'tcx>(tcx: TyCtxt<'tcx>, dependencies: &rust_js_program::library::
                 };
                 // Known as an idiom `classify` writes, or as std's own body,
                 // compiled into `@rust-js/std` (ADR 0561).
-                let known = recognition::is_compiled_std(tcx, def_id)
+                let known = recognition::compiled_std_body(tcx, def_id)
                     || match as_called {
                         Some((trait_item, trait_args)) => recognition.classify(trait_item, trait_args).is_some(),
                         None => [ty::Ty::new_static_str(tcx), tcx.types.char, tcx.types.usize]

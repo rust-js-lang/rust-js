@@ -280,7 +280,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // nothing by index, its random access is the form's,
                     // `false` (`stepped_as_a_js_iterator`, #2434).
                     if matches!(fact, TypeFact::RandomAccess | TypeFact::RandomAccessNoCoerce)
-                        && self.stepped_as_a_js_iterator((id, index), of)
+                        && self.stepped_as_a_js_iterator((id, args, index), of)
                     {
                         values.push(Expr::bool(false));
                         continue;
@@ -331,7 +331,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn compiled_here(&self, id: DefId) -> bool {
         id.is_local()
             || self.krate.foreign.is_instance(id)
-            || crate::recognition::is_compiled_std(self.tcx, id) && self.krate.fns.contains_key(&id)
+            || crate::recognition::compiled_std_body(self.tcx, id) && self.krate.fns.contains_key(&id)
             // An impl whose dictionary this build makes of the methods it
             // compiles, `Zip`'s `Debug` of `@rust-js/std`'s build: what they
             // ask of its parameters is this build's, never the contract its
@@ -521,7 +521,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A std trait's provided method compiled into `@rust-js/std` is
         // that function of a `dyn` too, given the `dyn`'s own dictionary,
         // `read_line` of a `dyn BufRead` (#1156).
-        let compiled_provided = crate::recognition::is_compiled_std(self.tcx, id);
+        let compiled_provided = crate::recognition::compiled_instance(self.tcx, id, generic_args);
         let of_dyn = matches!(tr.self_ty().kind(), ty::Dynamic(..));
         if of_dyn && !compiled_provided && operational(self.tcx, self.krate.foreign, trait_id) {
             // A std trait's dictionary has only what it's given: `Error`'s, its
@@ -665,7 +665,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `partition`'s: given the crate's iterator as one, as generic
             // code is, a compiled adapter its `Self` with its dictionary
             // (`given_self_iterator`, ADR 0061, #2387).
-            if crate::recognition::is_compiled_std(self.tcx, instance.def_id())
+            if crate::recognition::compiled_instance(self.tcx, instance.def_id(), instance.args)
                 && self.tcx.trait_of_assoc(id) == Some(crate::recognition::std_item(self.tcx, StdItem::Iterator))
                 && !self.given_self_iterator(instance.def_id())
                 && let Some(self_ty) = instance.args.types().next()

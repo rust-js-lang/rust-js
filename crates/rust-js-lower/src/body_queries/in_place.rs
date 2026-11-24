@@ -504,8 +504,7 @@ pub(super) fn in_place_adapters<'tcx>(
         // `unzip()` into sides its helper fills, which steps its source as a
         // JS iterator (`filled_by_its_helper`, #2395).
         let std = crate::recognition::is_std_crate(tcx, callee)
-            && (!crate::recognition::is_compiled_std(tcx, callee)
-                || crate::recognition::filled_by_its_helper(tcx, callee, callee_args));
+            && !crate::recognition::compiled_ahead_of_place(tcx, callee, callee_args);
         // What it's given for, a type parameter bound by `Iterator` or
         // `IntoIterator`, which steps it, `filter`'s `Self`, `zip`'s `U`,
         // `next_back()`'s and `len()`'s too: not one that holds it,
@@ -551,8 +550,7 @@ pub(super) fn in_place_adapters<'tcx>(
         let by_iterator = tcx
             .trait_of_assoc(callee)
             .is_some_and(|tr| iterator_traits.contains(&tr))
-            && (!crate::recognition::is_compiled_std(tcx, callee)
-                || crate::recognition::filled_by_its_helper(tcx, callee, callee_args))
+            && !crate::recognition::compiled_ahead_of_place(tcx, callee, callee_args)
             && callee != size_hint;
         let by_ref = by_iterator && crate::recognition::is_by_ref(tcx, callee);
         for &arg in args.iter() {

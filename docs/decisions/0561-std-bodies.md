@@ -864,3 +864,30 @@ answer is caught by output; the rule is held by #2398's architecture test
 (`is_compiled_std` read only in recognition), its third commit.
 `naming-parameter-not-as-it-is` and `std-provided-self-given-by-trait`
 retargeted.
+
+## Amendment: a call's question and a definition's, each its own (2026-11-24, #2398, commit 2 of 3)
+
+The catalog's membership, `is_compiled_std`, was read in 21 places outside
+recognition, each its own way of asking where a std call goes or what a
+std body is. Now each asks one of two questions, which aren't two ways to
+one:
+
+- **Of a call** (`compiled_instance(id, args)`, recognition/compiled_std.rs):
+  where it goes, its instance's, its arguments' too: a trait call's
+  `$provided` branch, a resolved instance of `Iterator`'s compiled consumer
+  given `Self` as a JS iterator (#2387), the type facts of each call, the
+  crossing, `stepped_as_a_js_iterator`, and a resolved fmt instance's
+  (`sink_writes.rs`, `fmt_into.rs`: a resolved instance asks the instance).
+- **Of a definition** (`compiled_std_body(id)`): what std compiles a body
+  of, whatever calls it: display's writers, whose crate's JS, which impl
+  methods are compiled, the coverage report, a body's own facts and
+  evidence, the body being lowered.
+
+What steps a source in place (`body_queries/in_place.rs`) asks a third,
+`compiled_ahead_of_place(id, args)`: `compiled_instance`'s parts known
+before what's made in place, `compiled_std_body` and not a helper-filled
+`partition` or `unzip`, never a maker's `compiled_for`, which that analysis
+decides; asked there, `compiled_instance` fed the analysis its own output,
+and a cloned compiled `Map` became `$mapEnds`. `compiled_instance` is made
+of it, so the two never part, and only that analysis may ask it (#2398's
+architecture test, commit 3). No output moves.

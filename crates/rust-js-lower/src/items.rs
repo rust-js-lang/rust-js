@@ -767,7 +767,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A std body compiled of the type it's called for, an adapter's of
         // one held as std's struct (`compiled_instance`, #1401).
         let of_its_type = |i: ty::Instance<'tcx>| {
-            !super::recognition::is_compiled_std(self.tcx, i.def_id())
+            !super::recognition::compiled_std_body(self.tcx, i.def_id())
                 || super::recognition::compiled_instance(self.tcx, i.def_id(), i.args)
         };
         Ok(resolved.is_some_and(|i| self.is_rust_fn(i.def_id()) && of_its_type(i))
@@ -838,7 +838,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // itself, `Chain`'s `read_until`, that one, which takes its `&mut
         // self` as its own body does, the object, not the provided method's
         // box of a `Self` (#1156).
-        let compiled_std = |id| crate::recognition::is_compiled_std(self.tcx, id);
+        let compiled_std = |id| crate::recognition::compiled_std_body(self.tcx, id);
         Ok(match self.tcx.trait_of_assoc(def_id) {
             None => Some((def_id, generic_args)),
             Some(_)

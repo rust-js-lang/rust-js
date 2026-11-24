@@ -464,7 +464,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A provided method compiled into `@rust-js/std` that a call
             // dispatches, `$provided`: its entry only where this impl writes
             // its own, as a dictionary without one gives std's default (#2414).
-            if crate::recognition::is_compiled_std(self.tcx, item.def_id)
+            if crate::recognition::compiled_std_body(self.tcx, item.def_id)
                 && crate::recognition::overridden_in_reach(self.tcx, item.def_id)
                 && !self.tcx.impl_item_implementor_ids(id).contains_key(&item.def_id)
             {

@@ -153,7 +153,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !(by_value || tried) || iterator.is_mutable_ptr() {
             return false;
         }
-        if crate::recognition::is_compiled_std(self.tcx, self.frame.owner) {
+        if crate::recognition::compiled_std_body(self.tcx, self.frame.owner) {
             return self.carries_its_drop(f) || self.given_drop(f).is_some();
         }
         if self.drops(f) == crate::drops::Drops::Nothing {

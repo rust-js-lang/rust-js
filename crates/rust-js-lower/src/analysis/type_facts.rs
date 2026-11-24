@@ -516,7 +516,7 @@ pub(super) fn type_fact_params<'tcx>(
             // default and gives it of its own (#2290): only of one compiled
             // over `Self`, std's or a library's, as its own are asked.
             let copied = tcx.trait_of_assoc(callee).is_some()
-                && !(crate::recognition::is_compiled_std(tcx, callee)
+                && !(crate::recognition::compiled_instance(tcx, callee, args)
                     || collects::instance_over_self(tcx, foreign, callee));
             let parents = tcx.generics_of(callee).parent_count as u32;
             let mut facts: Vec<(ty::Ty<'tcx>, TypeFact)> = (asked_by.get(&callee).into_iter().flatten())
@@ -635,7 +635,7 @@ pub(super) fn type_fact_params<'tcx>(
         // (`instance_over_self`) or for its own impls that copy it,
         // `sz_al(self, SelfSz)`: of the trait's own, `Self`'s layout no
         // dictionary carries, its impls' entries give (#2291).
-        let compiled = crate::recognition::is_compiled_std(tcx, id)
+        let compiled = crate::recognition::compiled_std_body(tcx, id)
             || (tcx.trait_of_assoc(id).is_some() && foreign.is_instance(id));
         // Of an impl's method, the size std grows a `Vec` of an associated
         // type's items by, an item slot, which its dictionary can't give

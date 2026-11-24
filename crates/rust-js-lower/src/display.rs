@@ -330,7 +330,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub fn takes_options(&self, writer: DefId) -> bool {
         let compiled_here = writer.is_local()
             || self.krate.foreign.is_instance(writer)
-            || (self.krate.compiled_once && crate::recognition::is_compiled_std(self.tcx, writer));
+            || (self.krate.compiled_once && crate::recognition::compiled_std_body(self.tcx, writer));
         match compiled_here {
             true => self.compiled_writer_takes_options(writer),
             false => {

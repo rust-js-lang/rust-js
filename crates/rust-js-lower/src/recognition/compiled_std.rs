@@ -750,11 +750,6 @@ pub(super) fn compiled_for<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
     }
 }
 
-/// Whether a call of `id` with `args` is of std's body compiled into
-/// `@rust-js/std` for a value of the type it's of (#1401): one of
-/// `compiled_std`'s, and, of an impl's method of std's adapter, of a type
-/// compiled for this build (`compiled_for`). The one answer of where a call
-/// goes, its instance's, as `is_compiled_std` is of a body's.
 /// Whether a call of `id`, std's `partition` or `unzip`, of `args`, fills
 /// its sides by its helper, `$partition` or `$unzip`, as std does, where
 /// each is one the helper fills (`side_filled_by_helper`, #2387, #2395):
@@ -770,7 +765,33 @@ pub(crate) fn filled_by_its_helper<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty:
     }
 }
 
+/// `compiled_instance`'s answer as what steps a source in place asks it
+/// (`body_queries/in_place.rs`), before that's known: std's compiled body
+/// of `id` (`compiled_std_body`) and not a `partition` or an `unzip` its
+/// helper fills (`filled_by_its_helper`), never its maker's `compiled_for`,
+/// which what's made in place decides (#2398). The parts of the call's one
+/// answer that don't wait on the analysis that asks them, of which
+/// `compiled_instance` is made, so the two never part. Only the in-place
+/// analysis asks it, as it's what decides the rest (architecture test);
+/// every other question of a call asks `compiled_instance`.
+pub(crate) fn compiled_ahead_of_place<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    compiled_std_body(tcx, id) && !filled_by_its_helper(tcx, id, args)
+}
+
+/// Whether a call of `id` with `args` is of std's body compiled into
+/// `@rust-js/std` for a value of the type it's of (#1401): one of
+/// `compiled_std`'s, and, of an impl's method of std's adapter, of a type
+/// compiled for this build (`compiled_for`), and not a `partition` or an
+/// `unzip` its helper fills (`filled_by_its_helper`). The one answer of
+/// where a *call* goes, its instance's, which every question of a call
+/// asks, a resolved instance's too (#2398). Not `compiled_std_body`, which
+/// asks of a *definition*, whatever calls it: two questions, not two ways
+/// to one.
 pub(crate) fn compiled_instance<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    // What's known before what's made in place, then of the type it's of.
+    if !compiled_ahead_of_place(tcx, id, args) {
+        return false;
+    }
     // A maker of `HELD_COMPILED`'s adapters, `filter`, of the type it makes.
     let maker = (HELD_COMPILED.iter()).any(|&(_, method, _)| compiled_provided_method(tcx, "Iterator", method) == id);
     if maker {
@@ -780,17 +801,13 @@ pub(crate) fn compiled_instance<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::Ge
             .skip_normalization()
             .skip_binder()
             .output();
-        return is_compiled_std(tcx, id) && compiled_for(tcx, made);
+        return compiled_for(tcx, made);
     }
-    if filled_by_its_helper(tcx, id, args) {
-        return false;
-    }
-    is_compiled_std(tcx, id)
-        && tcx.impl_of_assoc(id).is_none_or(|imp| {
-            let of = ty::EarlyBinder::bind(tcx, tcx.type_of(imp).instantiate_identity().skip_normalization());
-            let impl_args = &args[..tcx.generics_of(imp).count().min(args.len())];
-            compiled_for(tcx, of.instantiate(tcx, impl_args).skip_normalization())
-        })
+    tcx.impl_of_assoc(id).is_none_or(|imp| {
+        let of = ty::EarlyBinder::bind(tcx, tcx.type_of(imp).instantiate_identity().skip_normalization());
+        let impl_args = &args[..tcx.generics_of(imp).count().min(args.len())];
+        compiled_for(tcx, of.instantiate(tcx, impl_args).skip_normalization())
+    })
 }
 
 /// Whether std's `Zip` is compiled for this build, which reads its sides by
@@ -861,8 +878,17 @@ pub(crate) fn std_home_module(tcx: TyCtxt<'_>, id: DefId) -> Option<LocalModId> 
     found
 }
 
-/// Whether `id` is a std body compiled into `@rust-js/std`, one of
-/// `compiled_std`'s, or a closure one makes.
+/// Whether std compiles the body of `id`, a definition, into
+/// `@rust-js/std`, one of `compiled_std`'s, or a closure one makes: what
+/// that body takes and gives, whose crate's JS it is, what's exported,
+/// whatever calls it (#2398). Not `compiled_instance`, which asks where a
+/// *call* goes, its arguments' too: two questions, not two ways to one.
+/// The catalog's membership, read only here and in recognition.
+pub(crate) fn compiled_std_body(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    is_compiled_std(tcx, id)
+}
+
+/// `compiled_std_body`'s, recognition's own read of the catalog.
 pub(crate) fn is_compiled_std(tcx: TyCtxt<'_>, id: DefId) -> bool {
     !id.is_local()
         && (compiled_std(tcx).contains(&id) || {

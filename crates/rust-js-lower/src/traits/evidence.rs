@@ -53,7 +53,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// last argument is it leaves it out (ADR 0995): the one rule, of its
     /// parameter and of its calls.
     pub(crate) fn default_dictionary(&self, id: DefId, tr: DefId) -> Option<(&'static str, &'static str)> {
-        if !crate::recognition::is_compiled_std(self.tcx, id) {
+        if !crate::recognition::compiled_std_body(self.tcx, id) {
             return None;
         }
         if is_std_def(self.tcx, tr, StdItem::Iterator) {

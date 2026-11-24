@@ -687,7 +687,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // dictionary steps, as it is.
         } else if let Some(index) = crate::generic_facts::type_parameter_of(input)
             && crate::generic_facts::is_type_parameter(given)
-            && crate::recognition::is_compiled_std(self.tcx, callee)
+            && crate::recognition::compiled_instance(self.tcx, callee, args)
             && bound_by_iterator(self.tcx, callee, index)
             && !is_js_iterator(value)
         {
@@ -695,7 +695,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // is; a provided method's `Self`, `iterator_partition`'s, which
             // it isn't given, the JS iterator that dictionary steps,
             // `$given(w[0], LIterator)`, as generic code's own consumers are.
-            if self.stepped_as_a_js_iterator((callee, index), given) {
+            if self.stepped_as_a_js_iterator((callee, args, index), given) {
                 let held = std::mem::replace(value, Expr::taken());
                 *value = Expr::call_helper("$stepsOf", vec![held]);
             } else if let Some(made) = self.given_js_iterator(value.clone(), given, false, false)
@@ -1011,9 +1011,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// of it: its random access is `false`, the form's, never the type's,
     /// which std's zip would take its index path by, reading what isn't
     /// there (#2434).
-    pub(crate) fn stepped_as_a_js_iterator(&self, (callee, index): (DefId, u32), given: ty::Ty<'tcx>) -> bool {
+    pub(crate) fn stepped_as_a_js_iterator(
+        &self,
+        (callee, args, index): (DefId, ty::GenericArgsRef<'tcx>, u32),
+        given: ty::Ty<'tcx>,
+    ) -> bool {
         crate::generic_facts::is_type_parameter(given)
-            && crate::recognition::is_compiled_std(self.tcx, callee)
+            && crate::recognition::compiled_instance(self.tcx, callee, args)
             && bound_by_iterator(self.tcx, callee, index)
             && self
                 .iterator_evidence(given, std_item(self.tcx, StdItem::Iterator))

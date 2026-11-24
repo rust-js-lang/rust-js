@@ -409,8 +409,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what a function a consumer compiles asks of its type parameters is read of its library's manifest, which has none of it, so `footprint` is given no size (ADRs 0145, 0914)",
     file: "crates/rust-js-lower/src/traits/calls.rs",
-    find: "            || self.krate.foreign.is_instance(id)\n            || crate::recognition::is_compiled_std",
-    replace: "            || crate::recognition::is_compiled_std",
+    find: "            || self.krate.foreign.is_instance(id)\n            || crate::recognition::compiled_std_body",
+    replace: "            || crate::recognition::compiled_std_body",
     tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
@@ -522,8 +522,8 @@ export const mutations: Mutation[] = [
     name: "dyn-provided-refused",
     breaks: "a std trait's compiled provided method of a `dyn`, `read_line` of a `dyn BufRead`, is refused",
     file: "crates/rust-js-lower/src/traits/calls.rs",
-    find: "        let compiled_provided = crate::recognition::is_compiled_std(self.tcx, id);\n",
-    replace: "        let compiled_provided = crate::recognition::is_compiled_std(self.tcx, id) && !matches!(tr.self_ty().kind(), ty::Dynamic(..));\n",
+    find: "        let compiled_provided = crate::recognition::compiled_instance(self.tcx, id, generic_args);\n",
+    replace: "        let compiled_provided = crate::recognition::compiled_instance(self.tcx, id, generic_args) && !matches!(tr.self_ty().kind(), ty::Dynamic(..));\n",
     tests: ["test/corpus.test.ts", "-t", "^io_buf_read.rs$"],
   },
   {
@@ -711,7 +711,7 @@ export const mutations: Mutation[] = [
     name: "random-access-of-steps-told-the-types",
     breaks: "a type parameter's value std's compiled body steps as a JS iterator, which reads nothing by index, is told its type's random access, a range's `TrustedRandomAccess`, so std's zip takes its index path and reads `NaN` (#2434)",
     file: "crates/rust-js-lower/src/traits/calls.rs",
-    find: "                        && self.stepped_as_a_js_iterator((id, index), of)\n",
+    find: "                        && self.stepped_as_a_js_iterator((id, args, index), of)\n",
     replace: "                        && false\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^zip_of_a_generic_range_is_stepped_by_its_steps"],
     env: { ITERATOR_FORMS: "corpus" },

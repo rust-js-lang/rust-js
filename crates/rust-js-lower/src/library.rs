@@ -119,7 +119,7 @@ fn crate_name(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> String {
 /// `io::Write`, by a bound (ADR 0100).
 pub fn reachable(tcx: TyCtxt<'_>, id: DefId) -> bool {
     // A std body compiled into `@rust-js/std` is what its consumers call.
-    if super::recognition::is_compiled_std(tcx, id) {
+    if super::recognition::compiled_std_body(tcx, id) {
         return true;
     }
     let id = tcx.trait_impl_of_assoc(id).unwrap_or(id);

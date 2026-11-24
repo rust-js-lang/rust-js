@@ -323,7 +323,7 @@ fn given_as_it_is_of<'tcx>(
     ) && (tcx.trait_of_assoc(id).is_none()
         || match args {
             Some(args) => super::recognition::compiled_instance(tcx, id, args),
-            None => super::recognition::is_compiled_std(tcx, id),
+            None => super::recognition::compiled_std_body(tcx, id),
         })
         && tcx.trait_impl_of_assoc(id).is_none()
         && {

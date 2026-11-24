@@ -135,7 +135,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let compiled_std = instance.is_some_and(|instance| {
-            crate::recognition::is_compiled_std(self.tcx, instance.def_id())
+            crate::recognition::compiled_instance(self.tcx, instance.def_id(), instance.args)
                 && self.writes_through_sink(instance.def_id())
         });
         let listed = !adt.is_local() && !compiled_std && self.krate.foreign.lists_fmt_into(adt);

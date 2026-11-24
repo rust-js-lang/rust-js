@@ -223,7 +223,7 @@ fn written_into_writers<'tcx>(
     let shown_by = |body: &Body<'tcx>| shown_by(recognition, graph, body);
     // The crate's, and of `@rust-js/std`'s build, std's compiled bodies,
     // `fuseDebug_fmt` of a `Fuse<I>`'s derived `Debug` (#1712).
-    let compiled_std = |id: DefId| crate::recognition::is_compiled_std(tcx, id);
+    let compiled_std = |id: DefId| crate::recognition::compiled_std_body(tcx, id);
     let writers: Vec<&Body<'tcx>> = (all_bodies.iter().copied())
         .filter(|body| {
             (body.def_id.is_local() || compiled_std(body.def_id))

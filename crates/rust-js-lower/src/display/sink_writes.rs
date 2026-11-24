@@ -396,7 +396,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // lists it, or, of `@rust-js/std`'s own build, as that build frames
         // it, a writer it compiles, whose contract it writes (`published`):
         // `FlattenCompat`'s a `Flatten`'s `Debug` shows (#2252).
-        let std_framed = crate::recognition::is_compiled_std(self.tcx, instance.def_id())
+        let std_framed = crate::recognition::compiled_instance(self.tcx, instance.def_id(), instance.args)
             && (self.krate.foreign.lists_fmt_into(adt) || self.krate.prints.published.contains(&adt));
         (instance.def_id().is_local() && self.writes_through_sink(instance.def_id())) || std_framed
     }
