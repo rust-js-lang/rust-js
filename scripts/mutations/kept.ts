@@ -85,7 +85,17 @@ export const mutations: Mutation[] = [
     file: "test/kept.ts",
     find: "    if (takeOver(taking)) {\n",
     replace: "    if (true) {\n",
-    tests: ["test/support.test.ts", "-t", "a claim whose process is gone is taken over by one of the processes racing for it"],
+    // Judged in-process: the racers' test runs it in child processes,
+    // which the judge never sees, and opens its race by luck (#2558).
+    tests: ["test/support.test.ts", "-t", "a claim whose process is gone is taken over only by the one process taking it"],
+  },
+  {
+    name: "claim-taking-left-by-the-dead-kept",
+    breaks: "a claim's `.taking` a process that died taking it over left is never removed, so its claim, its process gone, is never taken again (#2446)",
+    file: "test/kept.ts",
+    find: "    if (made !== undefined && Date.now() - made > 10_000) rmSync(taking, { recursive: true, force: true });\n",
+    replace: "",
+    tests: ["test/support.test.ts", "-t", "a claim whose process is gone is taken over only by the one process taking it"],
   },
   {
     name: "disk-native-cap-fixed",

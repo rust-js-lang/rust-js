@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2558): test/support.test.ts gains a test, a claim whose process is gone is taken over only by the one process taking it, in-process, which judges `claim-taken-over-unlocked` where the racers' child processes judged it by luck; mutation `claim-taking-left-by-the-dead-kept`.
+
 Changed on 2026-11-25 (ADR 1122 amended): test/twin-net.test.ts gains three tests, a gap fails a run, drift fails none and its bless writes the lists, and `BLESS=1 bun test/twin-net.ts helpers` blesses a whole run that passed alone; six mutations (scripts/mutations/twin-net.ts).
 
 Changed on 2026-11-25 (#2539, #2557, ADR 1201): test/architecture-stopgaps.test.ts, new, four tests: each of Campaign 6's stopgap cells, `refusal::Crossing`, is mapped once to an issue of its own and named by a refusal, 33 counted; a stopgap is made by the refusal API alone; a cell whose issue is closed is named. The issue-labels workflow runs scripts/stopgap-refusals.ts as an issue closes and daily. test/diagnostics.test.ts' three `extend` rows assert the refusal's words as `refuse` says them.

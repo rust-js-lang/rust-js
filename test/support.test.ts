@@ -10,7 +10,7 @@ import { basename, dirname, join, relative } from "node:path";
 import { bytesOf, volumeBytes } from "../tooling/bounded.js";
 import { disk, diskProfile, floorBytes, mainCheckoutOf } from "./bounded";
 import { boundEntries, budgetBytes, capOf, entriesOf, holdEntries, holdToBudget, overBudget, pinnedToolchains, sccacheConfigText, sccacheWritten, sizeSccache, unpinnedToolchains, type Store } from "../scripts/disk";
-import { adoptRetiredStores, holdKept, indexedSize, keptAppsCap, keptStores, mayKeep, nativeCache, nativeSources, noteKept, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, verifiedRuns, walkDue, workingSetMs, workingSetSince } from "./kept";
+import { adoptRetiredStores, holdKept, indexedSize, keptAppsCap, keptStores, mayKeep, nativeCache, nativeSources, noteKept, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, takeClaim, verifiedRuns, walkDue, workingSetMs, workingSetSince } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
 import { boundCrateProjects } from "../scripts/crate-corpus";
@@ -482,6 +482,33 @@ test("a kept app claimed after the prune listed it, before it's removed, stays",
   rmSync(`${dir}.owner`);
   expect(pruneKeptApps({ base, cap: Number.POSITIVE_INFINITY, free: () => floorBytes - 1 }).removed).toBe(1);
   expect([existsSync(dir), existsSync(`${dir}.owner`)]).toEqual([false, false]);
+});
+
+// A claim whose process is gone is taken over only under its `.taking`,
+// by one process at a time (#2446): this process, finding another's
+// taking it, leaves it be. Here, not in the racers below, whose race the
+// mutant opens only where two read the claim at one moment, and whose
+// lines the mutation's judge never sees run, being child processes: one
+// run said SURVIVED, the next "not executed" (#2558).
+test("a claim whose process is gone is taken over only by the one process taking it", () => {
+  const base = fixture("claims-taken-over");
+  const owner = join(base, "app_0.owner");
+  writeFileSync(owner, "99999999");
+  mkdirSync(`${owner}.taking`);
+  expect(takeClaim(owner)).toBe(false);
+  expect(readFileSync(owner, "utf8")).toBe("99999999");
+  // The other done, it's this process's to take.
+  rmSync(`${owner}.taking`, { recursive: true });
+  expect(takeClaim(owner)).toBe(true);
+  expect([readFileSync(owner, "utf8"), existsSync(`${owner}.taking`)]).toEqual([String(process.pid), false]);
+  // A taking a process that died left, seconds old, is removed for the
+  // next to take it over; the claim's own process alive stays its.
+  writeFileSync(owner, "99999999");
+  mkdirSync(`${owner}.taking`);
+  utimesSync(`${owner}.taking`, new Date(Date.now() - 60_000), new Date(Date.now() - 60_000));
+  expect([takeClaim(owner), existsSync(`${owner}.taking`)]).toEqual([false, false]);
+  expect(takeClaim(owner)).toBe(true);
+  expect(takeClaim(owner)).toBe(false);
 });
 
 // A claim whose process is gone, taken over by several processes at once:
