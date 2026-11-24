@@ -1050,3 +1050,28 @@ library `put`, and generic_deref_mut (given alone, compiles). Mutations
 guard-given-to-a-whole-write-unrefused,
 guard-given-to-a-library-whole-write-unrefused and
 guard-given-alone-refused.
+
+## Amendment: a guard written whole by a closure that borrows it (2026-11-24, #2475 1b)
+
+The same write reached a guard by another route, a closure that captures
+its variable by reference: `let mut state = a.borrow_mut(); let other =
+b.borrow_mut(); (|| state = other)();` (m1-lisa's probe, #2475 comment
+7127242310, a flattened state's guard; the Mac mini's, two plain cells and
+a plain struct field). The variable's release is decided by the guard its
+`let` gives it, uncounted where nothing can ask while it's held
+(`let_held`, which takes the closure's capture for a read), so the counted
+guard written in the closure was never released, and the next
+`b.borrow()` panicked "already mutably borrowed" where native prints
+`Pending { tries: 0 } Pending { tries: 9 }`. Written where the variable
+is, `state = other;`, the body sees the write and releases what it holds,
+as Rust does; a `move` closure owns the guard, and runs as Rust's.
+
+It's refused in the closure's body (`Finder::guard_replaced_in_a_closure`,
+drops/facts.rs): an assignment whose left side is a captured variable of
+a guard's type, captured by reference. #2490's `CellForm` decides a form
+per assignment; until then the refusal holds.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): the fourth, compile
+error. Held by corpus cases `guard_replaced_by_a_closure_refused` and
+`flattened_guard_replaced_by_a_closure_refused`, and mutation
+guard-replaced-in-a-closure-unrefused.

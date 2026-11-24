@@ -434,4 +434,12 @@ export const mutations: Mutation[] = [
     replace: "                        && false && self.cx.closure_facts.held_fn_dyn(c.closure_id.to_def_id())\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_fn_in_an_option_called_once_refused.rs$"],
   },
+  {
+    name: "guard-replaced-in-a-closure-unrefused",
+    breaks: "a `RefCell` guard a closure captures by reference and writes whole, `|| state = other`, compiles, and the other cell's guard is never released, its next borrow panicking where Rust's runs (#2475 1b)",
+    file: "crates/rust-js-lower/src/drops/facts.rs",
+    find: ".any(|captured| captured.get_root_variable() == var_hir_id.0 && captured.is_by_ref())",
+    replace: ".any(|captured| captured.get_root_variable() == var_hir_id.0 && captured.is_by_ref() && false)",
+    tests: ["test/corpus.test.ts", "-t", "^(guard_replaced_by_a_closure_refused|flattened_guard_replaced_by_a_closure_refused)\\.rs$"],
+  },
 ];

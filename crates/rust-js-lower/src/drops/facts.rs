@@ -180,6 +180,33 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         self.facts.problems.push((span, what.to_string()));
     }
 
+    /// A guard a closure takes by reference, written whole there, `|| state
+    /// = other`: refused (#2475). Its variable's release is decided by the
+    /// guard its `let` gives it, uncounted where that's held quietly
+    /// (`let_held`), which a write in a closure doesn't change, so another
+    /// cell's counted guard written there was never released. Written where
+    /// the variable is, `state = other;`, it's seen, and a guard's `&mut`
+    /// given to code that writes it whole is refused where it's given
+    /// (`generic_facts::refuse_guard_written_whole`).
+    fn guard_replaced_in_a_closure(&mut self, expr: &ThirExpr<'tcx>) {
+        let tcx = self.cx.recognition.tcx;
+        if let ExprKind::Assign { lhs, .. } = expr.kind
+            && self.cx.recognition.is_guard(self.thir[lhs].ty)
+            && let ExprKind::UpvarRef {
+                closure_def_id,
+                var_hir_id,
+            } = self.thir[strip(self.thir, lhs)].kind
+            && let Some(closure) = closure_def_id.as_local()
+            && (tcx.closure_captures(closure).iter())
+                .any(|captured| captured.get_root_variable() == var_hir_id.0 && captured.is_by_ref())
+        {
+            self.problem(
+                expr.span,
+                "a `RefCell` guard written whole by a closure that borrows its variable, `|| state = other`, whose release is decided by the guard it's first given (#2475): write it where the variable is, `state = other;`",
+            );
+        }
+    }
+
     /// A closure that holds a value with a destructor drops it through the
     /// variables it took, which JS sees only where they're seen: it's made
     /// for a `let` or a call, and written over nowhere. One its own body
@@ -932,6 +959,7 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
         }
         self.replaced_with(id);
         self.closure_checked(expr);
+        self.guard_replaced_in_a_closure(expr);
         // What a closure takes, which rustc's walk doesn't reach: a capture by
         // value moves it in.
         if let ExprKind::Closure(ref closure) = expr.kind {
