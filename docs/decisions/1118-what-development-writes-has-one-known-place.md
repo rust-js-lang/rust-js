@@ -358,3 +358,28 @@ Each path the run works in is one of these, so what it holds is what it
 uses. Its store's bound and the checkouts' budget remove its
 entries by `removeClaimed`. A second Crater run in the same checkout waits
 for the first, saying so, as two would race on a crate's copies anyway.
+
+
+## Amendment (2026-11-25): serde's snapshots are a store of their own, held by their readers
+
+`target/serde-kept/`, serde's builds as the tests compile against them
+(test/serde-kept.ts, #1711), was counted as "the build", which nothing
+bounds, and kept each snapshot a day after it was last asked for. Each
+rebuild of the compiler makes another of the metadata's, as rust-js
+writes it, so the M5 Pro's main checkout held 62, 4.1 GiB of its "build"
+of 14.6, and another worktree 18, 1.2 GiB (#2483's second item).
+
+A snapshot is now kept an hour after it was last asked for, and never
+while a live process that asked for it reads it. The process that asks
+marks it read first, `<snapshot>.reader-<pid>`, which lasts as long as the
+process; a sweep removes a mark whose process is gone, and a snapshot is
+renamed away before it's removed and its readers read again, so one a run
+marked meanwhile is put back. A reader mark is not a claim (test/kept.ts'
+`takeClaim`): a claim is one process's, and every test process of a run
+reads the same snapshot at once.
+
+`scripts/disk.ts` lists them as a store, `serde-kept`, of what no live
+process reads, kept 1 GiB past its working set; its bound is the owner's
+sweep, `sweepSerdeKept`, and "the build" is what's left. Not changed:
+`target/serde/`, Cargo's target of them, which is a build, bounded only
+when Cargo's own units are (#2483's third item).

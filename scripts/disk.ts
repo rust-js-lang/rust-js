@@ -40,6 +40,7 @@ import { boundCrateProjects, crateProjectsCap, crateProjectsKept } from "./crate
 import { boundCrater, craterCap, craterKept } from "./crater";
 import { bound as boundPorts, ports, portsCap } from "./react-in-rust";
 import { keptMaps, mapStore, mapsCap, pruneMaps } from "./testMap";
+import { serdeSnapshots, sweepSerdeKept } from "../test/serde-kept";
 
 const GiB = 2 ** 30;
 
@@ -280,27 +281,7 @@ export function stores(): Store[] {
     },
   });
   // Each worktree's `target/`: its stores, each of their own, and its build.
-  for (const tree of worktrees.length ? worktrees : [main]) {
-    const at = (path: string) => join(tree, "target", path);
-    const own = tree === checkout;
-    // Another checkout's stores, while a run there holds a lease, are its
-    // to bound: one it's using, a crate's project mid-build, isn't taken
-    // from under it (scripts/leases.ts). Counted all the same.
-    const bounded = own || !leasedIn(tree);
-    const label = (path: string) => (tree === main ? `target/${path}` : `${resolve(tree).split("/").pop()}/target/${path}`);
-    inChecks.push(
-      { name: label("crate-corpus"), dir: at("crate-corpus"), cap: crateProjectsCap, bound: bounded ? (free) => void boundCrateProjects({ dir: at("crate-corpus"), free }) : undefined, kept: bounded ? () => crateProjectsKept(at("crate-corpus")) : undefined, remove: removeClaimed },
-      { name: label("crater"), dir: at("crater"), cap: craterCap, bound: bounded ? (free) => void boundCrater({ dir: at("crater"), free }) : undefined, kept: bounded ? () => craterKept(at("crater")) : undefined, remove: removeClaimed },
-      { name: label("kept-apps"), dir: at("kept-apps"), cap: keptAppsCap },
-      { name: label("compile-cache"), dir: at("compile-cache"), cap: compileCap(), bound: own ? (free) => void pruneCompiles({ root: compileCache, free }) : undefined },
-      mutantsStore(tree, label("mutants"), bounded),
-      { name: label("native-sources"), dir: at("native-sources"), past: 64 * 2 ** 20 },
-      // The npm crates' packs, one key's, which their packer keeps alone
-      // (scripts/package-npm-crates.ts): under 1 MiB.
-      { name: label("npm-crates"), dir: at("npm-crates"), past: 16 * 2 ** 20 },
-      { name: label("the build"), dir: join(tree, "target"), entries: (name) => !storedIn.has(name) },
-    );
-  }
+  for (const tree of worktrees.length ? worktrees : [main]) inChecks.push(...targetStores(tree, main));
   const outside: Store[] = [
     { name: "rustup's toolchains", dir: join(rustupHome, "toolchains"), outside: true, bound: () => {
       const listed = spawnSync("rustup", ["toolchain", "list"], { encoding: "utf8" }).stdout.split("\n").filter(Boolean);
@@ -323,6 +304,40 @@ export function stores(): Store[] {
   return [...inChecks, ...outside];
 }
 
+/** A checkout's `target/` stores, `tree`'s, each of their own, and its
+ * build, what's left; `main`, the main checkout, named by `target/` alone. */
+export function targetStores(tree: string, main: string): Store[] {
+  const at = (path: string) => join(tree, "target", path);
+  const own = tree === checkout;
+  // Another checkout's stores, while a run there holds a lease, are its
+  // to bound: one it's using, a crate's project mid-build, isn't taken
+  // from under it (scripts/leases.ts). Counted all the same.
+  const bounded = own || !leasedIn(tree);
+  const label = (path: string) => (tree === main ? `target/${path}` : `${resolve(tree).split("/").pop()}/target/${path}`);
+  return [
+    { name: label("crate-corpus"), dir: at("crate-corpus"), cap: crateProjectsCap, bound: bounded ? (free) => void boundCrateProjects({ dir: at("crate-corpus"), free }) : undefined, kept: bounded ? () => crateProjectsKept(at("crate-corpus")) : undefined, remove: removeClaimed },
+    { name: label("crater"), dir: at("crater"), cap: craterCap, bound: bounded ? (free) => void boundCrater({ dir: at("crater"), free }) : undefined, kept: bounded ? () => craterKept(at("crater")) : undefined, remove: removeClaimed },
+    { name: label("kept-apps"), dir: at("kept-apps"), cap: keptAppsCap },
+    { name: label("compile-cache"), dir: at("compile-cache"), cap: compileCap(), bound: own ? (free) => void pruneCompiles({ root: compileCache, free }) : undefined },
+    mutantsStore(tree, label("mutants"), bounded),
+    { name: label("native-sources"), dir: at("native-sources"), past: 64 * 2 ** 20 },
+    // The npm crates' packs, one key's, which their packer keeps alone
+    // (scripts/package-npm-crates.ts): under 1 MiB.
+    { name: label("npm-crates"), dir: at("npm-crates"), past: 16 * 2 ** 20 },
+    // serde's snapshots (test/serde-kept.ts), each a build of serde the
+    // tests compile against, about 70 MiB: none a live process reads
+    // listed or taken, and one an hour unasked swept (#2483).
+    {
+      name: label("serde-kept"),
+      dir: at("serde-kept"),
+      past: serdeKeptPast,
+      bound: bounded ? () => void sweepSerdeKept(at("serde-kept")) : undefined,
+      kept: bounded ? () => serdeSnapshots(at("serde-kept")) : undefined,
+    },
+    { name: label("the build"), dir: join(tree, "target"), entries: (name) => !storedIn.has(name) },
+  ];
+}
+
 /** The lock a checkout's mutation run holds while it builds in
  * `target/mutants` (scripts/mutations.ts). */
 export const mutantsLock = (tree: string) => join(tree, "target", "mutants.lock");
@@ -341,7 +356,10 @@ export function mutantsStore(tree: string, name: string, bounded: boolean): Stor
 }
 
 /** A worktree's `target/` entries that are stores of their own. */
-const storedIn = new Set(["crate-corpus", "crater", "kept-apps", "compile-cache", "mutants", "native-sources", "npm-crates"]);
+const storedIn = new Set(["crate-corpus", "crater", "kept-apps", "compile-cache", "mutants", "native-sources", "npm-crates", "serde-kept"]);
+
+/** What serde's snapshots keep past their working set: about 14 of them. */
+const serdeKeptPast = 2 ** 30;
 
 /** What `store` takes of the disk: its entries', or its directory's. */
 export function bytesOfStore(store: Store): number {

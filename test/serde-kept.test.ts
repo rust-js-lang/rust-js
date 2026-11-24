@@ -3,11 +3,13 @@
 // whole, and a rebuild of what Cargo built, its files written anew, takes
 // none from under them.
 import { expect, test } from "bun:test";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { basename, join } from "node:path";
 
 import { fixture, root } from "./support";
-import { copied, keptSerdeFlags } from "./serde-kept";
+import { copied, keptSerdeFlags, readerOf, serdeSnapshots, sweepSerdeKept } from "./serde-kept";
+
+const hour = 3600 * 1000;
 
 test("two runs setting serde up at once each compile against a whole snapshot, which a rebuild after takes nothing from", async () => {
   const dir = fixture("serde-kept");
@@ -77,4 +79,54 @@ test("a file Cargo takes away while serde's build is copied is left out", () => 
   const file = join(dir, "libserde-1.rmeta");
   writeFileSync(file, "serde's");
   expect(() => copied(file, join(dir, "kept.rmeta"), (from, into) => (rmSync(from), copyFileSync(from, into)))).toThrow("ENOENT");
+});
+
+// A snapshot is of one build of serde, a compiler's mostly, so each
+// rebuild of the compiler makes another, and kept a day they were 62 in
+// the M5 Pro's main checkout, 4.1 GiB (#2483). One goes an hour after it
+// was last asked for, but never while a live process that asked for it
+// reads it: each marks its own (`readerOf`), and a mark of a process gone
+// goes at the next sweep, as a snapshot half made by one does.
+test("a snapshot an hour unasked goes, but not one a live process reads", async () => {
+  const store = join(fixture("serde-kept-swept"), "kept");
+  const now = Date.now();
+  const snapshot = (letter: string, age: number) => {
+    const at = join(store, letter.repeat(24));
+    mkdirSync(join(at, "0"), { recursive: true });
+    writeFileSync(join(at, "0", "libserde-1.rmeta"), letter);
+    const then = new Date(now - age);
+    utimesSync(at, then, then);
+    return at;
+  };
+  const ended = Bun.spawn(["true"]);
+  await ended.exited;
+  const old = snapshot("a", 2 * hour);
+  const read = snapshot("b", 2 * hour);
+  writeFileSync(readerOf(read), "");
+  const readOnce = snapshot("c", 2 * hour);
+  writeFileSync(readerOf(readOnce, ended.pid), "");
+  const fresh = snapshot("d", hour / 2);
+  mkdirSync(join(store, `${"e".repeat(24)}.making-${ended.pid}`));
+  // A prune may take only what no live process reads.
+  expect(serdeSnapshots(store).map(({ path }) => basename(path)).sort()).toEqual([old, readOnce, fresh].map((at) => basename(at)));
+  expect(sweepSerdeKept(store, now)).toBe(2);
+  expect(readdirSync(store).sort()).toEqual([read, readerOf(read), fresh].map((at) => basename(at)).sort());
+});
+
+// The process that asks for a snapshot marks it read before it's made or
+// found, so a sweep in another run never takes it from under the compiles
+// it gives the flags to.
+test("a run marks the snapshot it asks for read", () => {
+  const dir = fixture("serde-kept-reader");
+  const built = join(dir, "libserde-1.rmeta");
+  writeFileSync(built, "serde's");
+  const store = join(dir, "kept");
+  const [, kept] = keptSerdeFlags(["--extern", `serde=${built}`], store);
+  const snapshot = join(store, kept.slice(`serde=${store}/`.length).split("/")[0]);
+  expect(existsSync(readerOf(snapshot))).toBe(true);
+  // Last asked for two hours ago and swept now, it stays while this run lives.
+  const then = new Date(Date.now() - 2 * hour);
+  utimesSync(snapshot, then, then);
+  expect(sweepSerdeKept(store)).toBe(0);
+  expect(readFileSync(kept.slice("serde=".length), "utf8")).toBe("serde's");
 });

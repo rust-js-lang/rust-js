@@ -4,7 +4,8 @@
 // checkout.
 import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { targetStores } from "../scripts/disk";
 import { root } from "./support";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
@@ -58,4 +59,16 @@ test("only the stores' owners name where development keeps things outside a chec
     .filter((file) => !owners.has(file))
     .filter((file) => read(file).split("\n").some((line) => !/^\s*(\/\/|\*)/.test(line) && /join\(\s*homedir\(\)|["'`]~\//.test(line)));
   expect(named).toEqual([]);
+});
+
+// serde's snapshots (test/serde-kept.ts) were "the build"'s, which nothing
+// bounds: 4.1 GiB of the M5 Pro's main checkout's 14.6 (#2483). They're a
+// store of their own, swept as their owner sweeps them, and the build is
+// what's left.
+test("serde's snapshots are a store of their own, not the build's", () => {
+  const all = targetStores(root, root);
+  const own = all.filter((store) => resolve(store.dir) === resolve(root, "target", "serde-kept"));
+  expect(own.map(({ past, bound, kept }) => [past, typeof bound, typeof kept])).toEqual([[2 ** 30, "function", "function"]]);
+  const build = all.find((store) => resolve(store.dir) === resolve(root, "target") && store.entries !== undefined);
+  expect(["serde-kept", "debug"].map((name) => build?.entries?.(name))).toEqual([false, true]);
 });

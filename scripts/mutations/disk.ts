@@ -87,4 +87,20 @@ export const mutations: Mutation[] = [
     replace: "  const remove = (entry: Kept) => removeWhole(entry);",
     tests: ["test/support.test.ts", "-t", "a crate project being measured is never removed under its run"],
   },
+  {
+    name: "serde-kept-left-in-the-build",
+    breaks: "serde's snapshots are counted as the build's, which nothing bounds or lists apart: 4.1 GiB of the M5 Pro's main checkout's 14.6 (#2483)",
+    file: "scripts/disk.ts",
+    find: '"npm-crates", "serde-kept"]);',
+    replace: '"npm-crates"]);',
+    tests: ["test/disk-owners.test.ts", "-t", "serde's snapshots are a store of their own, not the build's"],
+  },
+  {
+    name: "serde-kept-store-unswept",
+    breaks: "serde's snapshots' store has no bound of its own, so `bun run disk --prune` leaves those an hour unasked to the next test that asks for one",
+    file: "scripts/disk.ts",
+    find: '      bound: bounded ? () => void sweepSerdeKept(at("serde-kept")) : undefined,\n',
+    replace: "",
+    tests: ["test/disk-owners.test.ts", "-t", "serde's snapshots are a store of their own, not the build's"],
+  },
 ];
