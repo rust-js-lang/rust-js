@@ -21,11 +21,21 @@ pub enum ShadowKind {
     /// Each `RefCell` borrow's form as the compile takes it, beside the one
     /// `CellForm`'s proof gives from MIR (#2490).
     CellForm,
+    /// Each crossing into or out of generic code: the form the compile
+    /// takes there, beside every form generic code's view differs in, the
+    /// plan `ParamForm`'s one record would derive; and each iterator form
+    /// asked beside the bounds that read its value (#2539, step 0).
+    ParamForm,
 }
 
 impl ShadowKind {
     /// Every kind, in the order the file says them.
-    pub const ALL: [ShadowKind; 3] = [ShadowKind::Intervals, ShadowKind::Drops, ShadowKind::CellForm];
+    pub const ALL: [ShadowKind; 4] = [
+        ShadowKind::Intervals,
+        ShadowKind::Drops,
+        ShadowKind::CellForm,
+        ShadowKind::ParamForm,
+    ];
 
     /// The name `--shadow` takes it by, and its lines begin with.
     pub fn name(self) -> &'static str {
@@ -33,6 +43,7 @@ impl ShadowKind {
             ShadowKind::Intervals => "intervals",
             ShadowKind::Drops => "drops",
             ShadowKind::CellForm => "cell-form",
+            ShadowKind::ParamForm => "param-form",
         }
     }
 

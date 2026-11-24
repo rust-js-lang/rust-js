@@ -62,6 +62,7 @@ use rustc_span::Span;
 use rustc_span::def_id::{CRATE_DEF_ID, DefId};
 
 mod caller_facts;
+mod param_form;
 mod refusals;
 pub(crate) use caller_facts::{
     GivenADrop, boxed_steps_given, clone_given_by_caller, error_impl_has_type_id, given_a_drop_of,
@@ -965,6 +966,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.form_differs(form, crossing) {
             return Ok(value);
         }
+        self.shadow_param_form(param_form::Route::Given, crossing, form);
         Ok(match form {
             Form::Handle => Expr::call_helper("$ptrTo", vec![value]),
             Form::Box => {
@@ -1035,6 +1037,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.form_differs(form, crossing) {
             return value;
         }
+        self.shadow_param_form(param_form::Route::Back, crossing, form);
         match form {
             Form::Handle | Form::Box => box_back(value),
             Form::Placed => self.placed_shape(crossing).expect("a placed crossing").back(value),

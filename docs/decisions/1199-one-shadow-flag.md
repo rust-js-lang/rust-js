@@ -145,3 +145,13 @@ tells apart. A counted borrow the proof passes loses its count at a flip:
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; a shadow changes
 no output. Held by test/cell-form-shadow.test.ts and the mutations of
 `cell_form.rs`, `cell_borrows.rs` and `cell_borrows/unproven.rs`.
+
+## Amendment: the `param-form` kind (2026-11-25, #2539)
+
+Campaign 6's step 0 adds the `param-form` shadow ([1203](1203-a-generic-instance-s-view-of-its-type-parameters-is-one-record.md)).
+Its `site` lines give, for each value converted where it crosses into or
+out of generic code, the form taken beside every form that differs there.
+Its `iterated` lines give, for each answer of whether generic code holds
+an iterator as it is, the bounds that read its value.
+`bun scripts/param-form-shadow.ts` counts them over the corpus or a
+port's files.

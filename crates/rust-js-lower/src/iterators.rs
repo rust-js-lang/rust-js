@@ -9,6 +9,7 @@ mod compiled_steps;
 mod dictionaries;
 mod eager;
 mod ends;
+mod held_shadow;
 mod hint_asks;
 mod hint_knowing;
 mod in_place;
@@ -209,6 +210,12 @@ fn is_held_into_iter(tcx: ty::TyCtxt<'_>, id: DefId, param: ty::ParamTy) -> bool
 /// `$intoIter`'s, whose `IntoIter` is that JS iterator. Any other trait's
 /// that it bounds by `Iterator`, always (`assoc_iterator_as_it_is`).
 pub(crate) fn projection_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, ty: Ty<'tcx>) -> bool {
+    let as_it_is = projection_as_it_is_of(tcx, id, ty);
+    held_shadow::shadow_held(tcx, "projection", id, ty, as_it_is);
+    as_it_is
+}
+
+fn projection_as_it_is_of<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, ty: Ty<'tcx>) -> bool {
     let ty::Alias(
         _,
         ty::AliasTy {
@@ -296,6 +303,7 @@ pub(crate) fn given_as_it_is<'tcx>(
 ) -> bool {
     let as_it_is = given_as_it_is_of(tcx, (id, args), param);
     rust_js_program::decisions::record("iterator-given", if as_it_is { "as-it-is" } else { "js-iterator" });
+    held_shadow::shadow_held(tcx, "given", id, Ty::new_param(tcx, param.index, param.name), as_it_is);
     as_it_is
 }
 
