@@ -747,8 +747,11 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         }
         // A `collect()` into an `Option` or a `Result` of a collection whose
         // `from_iter` runs code gives it the iterator, in std's
-        // `GenericShunt`, its to drop or keep, nothing after (#1588).
-        if method == Some(IterMethod::Collect) && self.try_processed_into(output, receiver)?.is_some() {
+        // `GenericShunt`, its to drop or keep, nothing after (#1588); one
+        // that closes it drops it there, nothing after (#2561).
+        if method == Some(IterMethod::Collect)
+            && (self.try_processed_into(output, receiver)?.is_some() || self.fallible_collect_closes(output, receiver))
+        {
             return Ok(false);
         }
         // What the crate's own `fold` is called by: it takes the iterator

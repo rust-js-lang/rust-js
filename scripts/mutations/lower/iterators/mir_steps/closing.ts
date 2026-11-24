@@ -317,11 +317,11 @@ export const mutations: Mutation[] = [
   {
     name: "closing-closes-again",
     breaks:
-      "a value its consumer closed already is closed again, so the crate's iterator with a `Drop` a `collect()` into an `Option` closes is dropped twice and its items read as `undefined` (#1144)",
+      "a value its consumer closed already is closed again: generic code's `collect()` into an `Option` of a type parameter's iterator of items that drop, closed by its consumer and by the fallible collect, `$closing($closing(..))`, drops it twice and loses what it collected (#1144, #2561)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        if crate::iterators::closed_parts(&it).is_some() {\n            return Ok(it);\n        }\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_comparisons_drop_as_std.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^generic_fallible_collect_drops_its_iterator_once.rs$"],
   },
   {
     name: "cmp-argument-unclosed",

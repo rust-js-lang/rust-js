@@ -134,6 +134,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.closes_to_drop(iter_ty)
     }
 
+    /// Whether a `collect()` of an `iter_ty` into an `output`, an `Option`
+    /// or a `Result`, closes it, so what's left of it is dropped where it
+    /// stops and nothing's dropped after the call (`dropped_after`): the
+    /// one answer of who drops it: of what closing drops
+    /// (`closes_to_drop`), a type parameter's or one that owns items with a
+    /// destructor. Not the crate's own iterator, closed where its consumer
+    /// closes it (`consumer_closes`) or dropped after the call; nor a
+    /// compiled std adapter's struct, which closing leaves as it is, dropped
+    /// after. Closed and dropped after too, a type parameter's was dropped
+    /// twice (#2561).
+    pub fn fallible_collect_closes(&self, output: Ty<'tcx>, iter_ty: Ty<'tcx>) -> bool {
+        (self.option_of(output).is_some() || self.recognition().is_result(output))
+            && !self.is_user_iterator(iter_ty)
+            && self.closes_to_drop(iter_ty)
+    }
+
     /// Whether std's fold of a `ty` may reach an adapter that holds a
     /// function with a destructor its fold moves into the fold it asks of
     /// what it steps (`held_function_folded`), which drops it before what's

@@ -188,8 +188,8 @@ export const mutations: Mutation[] = [  {
     breaks:
       "a `collect` into a `Result` that stops at an `Err` leaves what's left of its source undropped",
     file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
-    find: "                Some(iter_ty) if !self.is_user_iterator(iter_ty) => self.closing(it, iter_ty, span)?,\n",
-    replace: "                Some(iter_ty) if false => self.closing(it, iter_ty, span)?,\n",
+    find: "                Some(iter_ty) if self.fallible_collect_closes(output, iter_ty) => self.closing(it, iter_ty, span)?,\n",
+    replace: "                Some(iter_ty) if false && self.fallible_collect_closes(output, iter_ty) => self.closing(it, iter_ty, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^drops_of_consumed_iterators.rs$"],
   },
   {
@@ -738,7 +738,7 @@ export const mutations: Mutation[] = [  {
     name: "fallible-collect-closes-own-iterator-twice",
     breaks: "the crate's iterator with a `Drop`, of items that drop nothing, collected into an `Option` of a `Vec`, is closed by the collect and dropped again after it, `drop Source` twice (#1647)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
-    find: "                Some(iter_ty) if !self.is_user_iterator(iter_ty) => self.closing(it, iter_ty, span)?,\n",
+    find: "                Some(iter_ty) if self.fallible_collect_closes(output, iter_ty) => self.closing(it, iter_ty, span)?,\n",
     replace: "                Some(iter_ty) => self.closing(it, iter_ty, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^fallible_collect_drops_its_iterator_once.rs$"],
   },

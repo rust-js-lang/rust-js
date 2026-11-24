@@ -785,8 +785,8 @@ export const mutations: Mutation[] = [
     name: "try-processed-dropped-after",
     breaks: "what a fallible `collect()` gives the crate's `from_iter` is dropped after it in the build of std's bodies, though that `from_iter` kept or forgot it (#1588)",
     file: "crates/rust-js-mir/src/iter.rs",
-    find: "        if method == Some(IterMethod::Collect) && self.try_processed_into(output, receiver)?.is_some() {\n",
-    replace: "        if false && method == Some(IterMethod::Collect) && self.try_processed_into(output, receiver)?.is_some() {\n",
+    find: "            && (self.try_processed_into(output, receiver)?.is_some() || self.fallible_collect_closes(output, receiver))\n",
+    replace: "            && (false || self.fallible_collect_closes(output, receiver))\n",
     tests: ["test/iterator-forms.test.ts", "-t", "fallible_collect_into_own_from_iter with std"],
   },
   {
@@ -874,5 +874,14 @@ export const mutations: Mutation[] = [
     find: "            return Ok(Expr::call_located(Expr::helper(\"$count\"), given, repeats));",
     replace: "            return Ok(Expr::call_located(Expr::helper(\"$count\"), given, false && repeats));",
     tests: ["test/binaries.test.ts", "-t", "a `Repeat`'s `count` and `last` name where they're called"],
+  },
+  {
+    name: "fallible-collect-closed-and-dropped-after",
+    breaks:
+      "generic code's `collect()` into an `Option` or a `Result` of a type parameter's iterator, closed by the collect, is dropped after the call too, twice (#2561)",
+    file: "crates/rust-js-mir/src/iter.rs",
+    find: "            && (self.try_processed_into(output, receiver)?.is_some() || self.fallible_collect_closes(output, receiver))\n",
+    replace: "            && self.try_processed_into(output, receiver)?.is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fallible_collect_drops_its_iterator_once.rs$"],
   },
 ];

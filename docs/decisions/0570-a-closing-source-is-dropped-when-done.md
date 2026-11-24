@@ -586,3 +586,34 @@ five generic boxed rows now run as native: `inspect | fold`, `chain | fold`,
 `last` and `sum` against native Rust in both builds, beside a
 `next_back` of the same adapter type. Mutations `fold-by-unheld` and
 `boxed-lend-hold-stops`.
+
+## Amendment: a fallible collect's closing is the one answer of who drops (2026-11-25, #2561)
+
+A `collect()` into an `Option` or a `Result` closed what it steps unless
+it was the crate's own iterator (#1647). `dropped_after`, which says
+whether the iterator is dropped after the call, asked `consumer_closes`
+instead, and that answered no for a type parameter's iterator whose items
+drop nothing. So generic code's `i.collect::<Option<Vec<u32>>>()` of the
+crate's iterator with a `Drop` closed it and dropped it again after the
+call: `drop at 3` twice where native prints it once, a `Result` collect
+too.
+
+`fallible_collect_closes(output, iter_ty)` (closing.rs, beside `consumer_closes`) is now the one
+answer. It's true where closing drops something, which is what
+`closes_to_drop` says: a type parameter's iterator, or one that owns
+items with a destructor. The crate's own iterator is excluded, as before,
+and so is a compiled std adapter's struct, which closing leaves as it is.
+The collect closes where it says so, and `dropped_after` drops nothing
+after. Of items that drop, a type parameter's is closed by its consumer
+and by the collect. `closing` gives a value that's closed already back as
+it is, and `closing-closes-again`, a nightly survivor since 2026-11-22, is
+caught by this case.
+
+`test/corpus/generic_fallible_collect_drops_its_iterator_once.rs` holds
+an `Option` collect, one of a `take(2)`, a `Result` collect, and items
+that drop, of the crate's iterators and a `Vec`'s, against native. The
+whole corpus's JS is unchanged otherwise. Its `loud-drop` rewrite finds
+#2564, which is on main without this change: a panic in the iterator's
+`Drop` as the collect closes it leaves what was collected undropped. It's
+listed known in test/known/metamorphic/2564.txt. Mutation
+`fallible-collect-closed-and-dropped-after`.
