@@ -1167,8 +1167,11 @@ jobs:
   # All of the twin net (test/twin-net.ts, #1205): each table's cases in the
   # plain build, the runtime's hand-written helpers, against the build of
   # std's own bodies, no native run; and each helper both builds import is
-  # one test/twin-net.ts's `shared` says why of, none it lists pitted now or
-  # imported by none. A push runs each table's slice.
+  # one test/twin-net.ts's lists name, each `pitted` names pitted still.
+  # Its lists' drift alone, a helper pitted now that `pitted` doesn't name
+  # or one `shared` names that's pitted or imported by none, fails nothing:
+  # it's blessed, `bless-twin-net`, for `bun run ci:bless nightly` (ADR
+  # 1122, amended). A push runs each table's slice.
   twins:
     name: twin net
     needs: neighbours
@@ -1190,6 +1193,21 @@ jobs:
         env:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/iteratorSlice.ts run twinsAll 4
+      - name: Bless its lists' drift
+        id: drift
+        run: |
+          BLESS=1 bun test/twin-net.ts helpers
+          git diff --binary -- test/twin-net.ts > bless.patch
+          if [ -s bless.patch ]; then
+            echo "drift=1" >> "$GITHUB_OUTPUT"
+            echo "The twin net's lists drifted, no coverage lost: \`bun run ci:bless nightly\` applies \`bless-twin-net\`." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - if: steps.drift.outputs.drift == '1'
+        uses: actions/upload-artifact@v7
+        with:
+          name: bless-twin-net
+          path: bless.patch
+          retention-days: 7
       - if: failure()
         uses: actions/upload-artifact@v7
         with:

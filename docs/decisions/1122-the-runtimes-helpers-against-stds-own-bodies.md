@@ -133,3 +133,45 @@ Rust (the lead's decision for the user, (b)).
 **Amended (2026-11-19, #1569):** `$repeating` is pitted now, std's
 `Repeat` compiled in the build of std's bodies (ADR 0932, amended), its
 `last` and `count`'s literal panic lowered.
+
+## Amendment (2026-11-25): a run fails on a gap, and its lists' drift is blessed
+
+Case: none of [0262](0262-when-rust-and-js-disagree.md)'s: no program
+changes.
+
+The nightly's twin net was red four nights running to 2026-11-24, each
+fixed by hand the next morning, and each red was bookkeeping: `$tryOf`,
+`$unfused`, `$unfusedUnless`, `$someItems` and `$somes` pitted now where
+`pitted` didn't list them (940546b9b, 27a6b6134, d277c6c8d), and
+`$panicMessage`, `$panicString` and `$stringPayload` on `shared` though no
+case imports them now (27a6b6134). None was coverage lost; each red
+looked like one that was, and a red that's always bookkeeping is read as
+bookkeeping.
+
+A run now fails on a gap alone (`twinVerdict`, test/twin-net.ts):
+
+- a helper both builds import that neither list names, of a slice too, as
+  before;
+- of a whole run, a helper `pitted` names that no case pits now, coverage
+  lost: both builds import it now, or none does. Each is a person's call,
+  pit it again or say in `shared` why it can't be, as `$lazyRangeBack`'s
+  (d277c6c8d) and `$roomFor`'s (ecd9590ad) were.
+
+The rest is drift, which fails nothing and is said beside the run: a
+helper a case pits now that `pitted` doesn't list goes on it, from
+`shared` where that listed it, and one `shared` lists that no case imports
+comes off. None hides a gap: a helper pitted now and unlisted that a later
+change stops pitting is then one neither list names, a gap. `BLESS=1 bun
+test/twin-net.ts helpers` writes the drift into the lists, `blessedLists`,
+of a whole run that passed alone (`target/twin-net-run.json`, which the
+runner writes), since a slice's or a failed run's helpers aren't every
+case's. `pitted` is kept in its names' order, which the bless writes.
+
+The nightly's `twins` job blesses its drift and uploads the patch,
+`bless-twin-net`; `bun run ci:status` names a nightly's bless patches, and
+`bun run ci:bless nightly` applies them, `nightly` the name status gives
+the nightly's row. A push's slice still fails on a gap it can see.
+
+Rejected: running the whole catalogue check in a push's check of the
+runtime and iterators' code, which would move the red from the night to
+each such push, 9 minutes of a machine each, for the same bookkeeping.

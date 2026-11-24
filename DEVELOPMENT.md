@@ -1045,6 +1045,13 @@ git diff --cached           # review every snapshot change, as always
 git commit -m "chore(rust-js): bless"; git push
 ```
 
+The nightly offers one more, green or red: its twin net's lists' drift, a
+helper pitted now that `pitted` doesn't name, or one `shared` names that's
+pitted or imported by none, which fails nothing and is blessed as
+`bless-twin-net` (ADR 1122, amended). `bun run ci:status` names a run's
+bless patches under its row, and `bun run ci:bless nightly` applies the
+latest nightly's.
+
 ## Day to day
 
 ```bash

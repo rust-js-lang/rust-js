@@ -3,7 +3,7 @@
 //
 //   bun run ci:check [branch] [--shards=4] [--since=<rev>]  # check a branch as it's pushed; main's push checks it already
 //   bun run ci:status                       # each branch's latest run, and what failed, and the nightly's
-//   bun run ci:bless [branch]               # apply its latest run's bless patches
+//   bun run ci:bless [branch]               # apply its latest run's bless patches; `nightly`, the latest nightly's
 //   bun scripts/ci.ts test-timings <times>  # in CI: the test files' times `plan` gave every shard, for them to balance by
 //   bun scripts/ci.ts mutation-timings <times>   # in CI: the mutations' times `plan` gave every shard, for them to balance by
 //   TIMES=<times> bun scripts/ci.ts merge-mutation-timings <ran>  # in CI: those and this run's shards' merged, for the next plan
@@ -217,6 +217,12 @@ function status() {
       failed = jobs.filter((job) => job.conclusion === "failure").map((job) => job.name).join(", ");
     }
     console.log([run.headBranch, result, failed, `gh run view ${run.databaseId}`].filter(Boolean).join("\t"));
+    // A nightly's bless patches, green or red: its twin net's lists' drift
+    // is blessed, not failed (ADR 1122, amended); and a failed check's.
+    if (run.status === "completed" && (run.headBranch === "nightly" || run.conclusion === "failure")) {
+      const patches = blessPatchesOf(run.databaseId);
+      if (patches.length > 0) console.log(`  bless patches ${patches.join(", ")}: bun run ci:bless ${run.headBranch}`);
+    }
     // What broke what, where a failed check attributed it (scripts/attribute.ts).
     if (run.conclusion === "failure") for (const name of ["attribution", "attribution-mutations"]) for (const line of attributionOf(run.databaseId, name)) console.log(`  ${line}`);
   }
@@ -965,9 +971,26 @@ async function pruneCache(dryRun: boolean) {
   console.log(`${entries.length} entries, ${gb(entries)} GB; ${dryRun ? "would remove" : "removed"} ${past.length - failed}, ${gb(past)} GB, past each family's newest ${keptCacheEntries}${failed ? `; ${failed} not removed` : ""}`);
 }
 
+/** The run whose bless patches `bun run ci:bless <branch>` applies: the
+ * branch's latest check that's done, or of `nightly`, status's name for
+ * it, the latest nightly of `main` that's done, whose twin net blesses its
+ * lists' drift (ADR 1122, amended) and whose suite blesses as a check's. */
+function blessRun(branch: string): Run {
+  const run =
+    branch === "nightly"
+      ? runs("nightly.yml", 10).find((r) => r.status === "completed")
+      : latestRuns(runs()).find((r) => r.headBranch === branch && r.status === "completed");
+  if (!run) throw new Error(branch === "nightly" ? "no completed nightly.yml run" : `no completed ${workflow} run of ${branch}`);
+  return run;
+}
+
+/** The names of a run's bless patches, its `bless-*` artifacts. */
+function blessPatchesOf(run: number): string[] {
+  return (JSON.parse(gh(["api", `repos/{owner}/{repo}/actions/runs/${run}/artifacts?per_page=100`, "--jq", "[.artifacts[].name]"])) as string[]).filter((name) => name.startsWith("bless-"));
+}
+
 function bless(branch: string) {
-  const run = latestRuns(runs()).find((r) => r.headBranch === branch && r.status === "completed");
-  if (!run) throw new Error(`no completed ${workflow} run of ${branch}`);
+  const run = blessRun(branch);
   const dir = join(root, "target", "ci-bless", String(run.databaseId));
   const got = downloaded(run.databaseId, ["--pattern=bless-*"], dir);
   const patches = readdirSync(dir, { recursive: true, withFileTypes: true })

@@ -52,7 +52,7 @@ import { budgetOf, noteRate, pick, type Picked } from "./iteratorRows";
 import { lines } from "./parts";
 import { caseParts } from "./shard";
 import { twinHelpers } from "../test/iterator-matrix";
-import { helpersOf, sharedProblems } from "../test/twin-net";
+import { helpersOf, sayVerdict, twinRun, twinVerdict } from "../test/twin-net";
 import { machine } from "./shard";
 
 const root = join(import.meta.dir, "..");
@@ -591,7 +591,10 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
     parts = Math.min(parts, cases.length);
   }
   // The twin net's helpers, each batch's, of this run alone (#1205).
-  if (of === "twins" || of === "twinsAll") rmSync(twinHelpers, { recursive: true, force: true });
+  if (of === "twins" || of === "twinsAll") {
+    rmSync(twinHelpers, { recursive: true, force: true });
+    rmSync(twinRun, { force: true });
+  }
   let passed = true;
   const each: Run[] = of === "rows" ? changeRows(parts) : [...runs[of]];
   for (const { name, file, env, rate } of each) {
@@ -621,12 +624,16 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
     if (rate !== undefined && rate.rows > 0) noteRate({ ...rate, rows: Math.round(rate.rows / shard.count), seconds, parts });
     passed &&= ok;
   }
-  // Each helper both builds import is one `shared` says why of; and of the
-  // whole net, none it lists is pitted now or imported by none.
+  // Each helper both builds import is one a list names; and of the whole
+  // net, every helper `pitted` lists is pitted still. Its lists' drift
+  // alone fails nothing: it's said, for `BLESS=1 bun test/twin-net.ts
+  // helpers` to write, which the nightly offers as a patch (ADR 1122,
+  // amended).
   if ((of === "twins" || of === "twinsAll") && list === undefined) {
-    const problems = sharedProblems(helpersOf(), of === "twinsAll");
-    for (const problem of problems) console.log(problem);
-    passed &&= problems.length === 0;
+    const whole = of === "twinsAll" && shard.count === 1;
+    passed &&= sayVerdict(twinVerdict(helpersOf(), whole));
+    mkdirSync(dirname(twinRun), { recursive: true });
+    writeFileSync(twinRun, JSON.stringify({ whole, passed }));
   }
   return passed;
 }

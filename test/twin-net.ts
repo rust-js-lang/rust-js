@@ -12,12 +12,15 @@
 // A helper is pitted where a case's plain build imports it and its std
 // build doesn't: std's body ran in its place. Each other helper the plain
 // build imports, the std build imports too, so no case pits it: `shared`
-// says why, by its kind. A run fails on a helper neither pitted nor
-// listed, and a whole one on one listed that's pitted now or that nothing
-// imports; `bun test/twin-net.ts helpers` asks it of the last run's.
+// says why, by its kind. A run fails on a gap alone, a helper neither
+// pitted nor listed, and of a whole run one `pitted` lists that no case
+// pits now, coverage lost; a list out of date with no gap is drift, which
+// `BLESS=1 bun test/twin-net.ts helpers` writes into the lists, and the
+// nightly offers as a patch, `bun run ci:bless nightly` (ADR 1122,
+// amended). `bun test/twin-net.ts helpers` asks it of the last run's.
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 import { twinHelpers } from "./iterator-matrix";
 
@@ -45,12 +48,10 @@ const why = {
 /** Each helper a whole run pits against std's body: a slice may see one
  * only where both builds import it. */
 export const pitted: string[] = [
-  "$repeatingN",
-  "$repeating",
-  "$cycleOf",
   "$clone",
   "$collectDropping",
   "$consume",
+  "$cycleOf",
   "$enumerate",
   "$exactLen",
   "$filterDropping",
@@ -75,6 +76,8 @@ export const pitted: string[] = [
   "$range",
   "$rangeLen",
   "$rangeNextBack",
+  "$repeating",
+  "$repeatingN",
   "$rev",
   "$skipping",
   "$some",
@@ -390,34 +393,95 @@ export function helpersOf(dir = twinHelpers): { pitted: Set<string>; unpitted: S
   return { pitted, unpitted: new Set([...used].filter((helper) => !pitted.has(helper))), judged, of };
 }
 
-/** What's wrong with `pitted` and `shared`, of a run's helpers: a helper
- * both builds import that neither lists; and of a whole run, `whole`, one
- * `shared` lists that's pitted now or that nothing imports, and one
- * `pitted` lists that no case pits now, or one pitted that it doesn't,
- * which a slice can't say. */
-export function sharedProblems(run: { pitted: Set<string>; unpitted: Set<string> }, whole = true): string[] {
+/** What a run says of `pitted` and `shared` (ADR 1122, amended).
+ * - `gaps`, which fail it: a helper both builds import that neither list
+ *   names; and of a whole run, `whole`, one `pitted` lists that no case
+ *   pits now, coverage lost, which a slice can't say.
+ * - `drift`, of a whole run alone: a list out of date that hides no gap,
+ *   which fails nothing and `blessedLists` writes. Each helper a case pits
+ *   that `pitted` doesn't list goes on it, `pit`; each `shared` lists that
+ *   a case pits now, or that nothing imports, comes off it, `unshare`.
+ *
+ * The nightly's twin net was red four nights running to 2026-11-24 of
+ * drift alone, each fixed by hand the next morning. */
+export function twinVerdict(run: { pitted: Set<string>; unpitted: Set<string> }, whole: boolean): { gaps: string[]; drift: string[]; pit: string[]; unshare: string[] } {
   const listed = new Set(pitted);
-  const problems = [...run.unpitted]
+  const gaps = [...run.unpitted]
     .filter((helper) => shared[helper] === undefined && !listed.has(helper))
     .map((helper) => `${helper}: both builds import it and \`shared\` doesn't say why std's build has no body of its own in its place`);
-  if (whole) {
-    const off = (helpers: string[], list: string, said: string) => helpers.map((helper) => `${helper}: ${said}: take it off \`${list}\``);
-    problems.push(
-      ...off(Object.keys(shared).filter((helper) => run.pitted.has(helper)), "shared", "a case pits it against std's body now"),
-      ...off(Object.keys(shared).filter((helper) => !run.pitted.has(helper) && !run.unpitted.has(helper)), "shared", "no case imports it now"),
-      ...off(pitted.filter((helper) => !run.pitted.has(helper)), "pitted", "no case pits it now"),
-      ...[...run.pitted].filter((helper) => !listed.has(helper)).map((helper) => `${helper}: a case pits it against std's body: add it to \`pitted\``),
+  if (!whole) return { gaps: gaps.sort(), drift: [], pit: [], unshare: [] };
+  for (const helper of pitted.filter((helper) => !run.pitted.has(helper))) {
+    gaps.push(
+      run.unpitted.has(helper)
+        ? `${helper}: \`pitted\` lists it and both builds import it now, so no case pits it against std's body: coverage lost: pit it again, or move it to \`shared\` saying why`
+        : `${helper}: \`pitted\` lists it and no case imports it now: coverage lost: give a table a case that reaches it, or take it off \`pitted\` where nothing makes it`,
     );
   }
-  return problems.sort();
+  const pit = [...run.pitted].filter((helper) => !listed.has(helper)).sort();
+  const unshare = Object.keys(shared).filter((helper) => run.pitted.has(helper) || !run.unpitted.has(helper)).sort();
+  const drift = [
+    ...pit.map((helper) => (shared[helper] === undefined ? `${helper}: a case pits it against std's body: onto \`pitted\`` : `${helper}: a case pits it against std's body now: from \`shared\` to \`pitted\``)),
+    ...unshare.filter((helper) => !run.pitted.has(helper)).map((helper) => `${helper}: no case imports it now: off \`shared\``),
+  ];
+  return { gaps: gaps.sort(), drift: drift.sort(), pit, unshare };
+}
+
+/** This file's text, `source`, with a whole run's drift written into its
+ * lists: `pitted` in its order, each of `pit` on it once, and each line of
+ * `shared` that `unshare` names gone, every other line as it was. */
+export function blessedLists(source: string, { pit, unshare }: { pit: string[]; unshare: string[] }): string {
+  const head = "export const pitted: string[] = [\n";
+  const start = source.indexOf(head) + head.length;
+  const end = source.indexOf("];\n", start);
+  if (start < head.length || end < 0) throw new Error("test/twin-net.ts has no `pitted` list to bless");
+  const lines = new Set(source.slice(start, end).split("\n").filter(Boolean));
+  for (const helper of pit) lines.add(`  "${helper}",`);
+  const sorted = [...lines].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  const off = new Set(unshare.map((helper) => `  "${helper}": `));
+  const rest = source
+    .slice(end)
+    .split("\n")
+    .filter((line) => ![...off].some((prefix) => line.startsWith(prefix)))
+    .join("\n");
+  return `${source.slice(0, start)}${sorted.join("\n")}\n${rest}`;
+}
+
+/** Where a run of the twin net says what it ran (`scripts/iteratorSlice.ts`):
+ * whether it was the whole net, and passed, which alone its lists are blessed of. */
+export const twinRun = join(dirname(twinHelpers), "twin-net-run.json");
+
+/** Says a run's verdict: its gaps, and its drift with how to bless it.
+ * Whether it has no gap. */
+export function sayVerdict(verdict: { gaps: string[]; drift: string[] }): boolean {
+  for (const gap of verdict.gaps) console.log(gap);
+  if (verdict.drift.length > 0) {
+    console.log(`the twin net's lists drifted, no coverage lost: \`BLESS=1 bun test/twin-net.ts helpers\` writes them; the nightly's \`bless-twin-net\`, \`bun run ci:bless nightly\``);
+    for (const drift of verdict.drift) console.log(`  ${drift}`);
+  }
+  return verdict.gaps.length === 0;
+}
+
+/** `bun test/twin-net.ts helpers`: the last run's verdict, said, and with
+ * `bless`, `BLESS=1`, its drift written into `file`'s lists, of a whole
+ * run that passed alone. Whether it has no gap. */
+export function helpersCommand({ dir = twinHelpers, ran = twinRun, file = join(import.meta.dir, "twin-net.ts"), bless = false } = {}): boolean {
+  const helpers = helpersOf(dir);
+  if (helpers.of === 0) throw new Error(`no run's helpers in ${dir}: run \`bun scripts/iteratorSlice.ts run twins\``);
+  const { whole, passed }: { whole: boolean; passed: boolean } = existsSync(ran) ? JSON.parse(readFileSync(ran, "utf8")) : { whole: false, passed: false };
+  console.log(`${helpers.judged} of ${helpers.of} cases judged against std's bodies, ${whole ? "the whole net" : "a slice"}; ${helpers.pitted.size} helpers pitted: ${[...helpers.pitted].sort().join(" ")}`);
+  const verdict = twinVerdict(helpers, whole);
+  const ok = sayVerdict(verdict);
+  if (bless && verdict.drift.length > 0) {
+    // A slice's or a failed run's helpers aren't every case's: blessed,
+    // they'd take off what the rest pit or import.
+    if (!whole || !passed) throw new Error("only a whole run that passed is blessed: `bun scripts/iteratorSlice.ts run twinsAll`");
+    writeFileSync(file, blessedLists(readFileSync(file, "utf8"), verdict));
+    console.log(`blessed: ${verdict.drift.length} of the lists' lines, in ${file}`);
+  }
+  return ok;
 }
 
 if (import.meta.main) {
-  if (process.argv[2] !== "helpers") throw new Error("usage: bun test/twin-net.ts helpers");
-  const helpers = helpersOf();
-  if (helpers.of === 0) throw new Error(`no run's helpers in ${twinHelpers}: run \`bun scripts/iteratorSlice.ts run twins\``);
-  console.log(`${helpers.judged} of ${helpers.of} cases judged against std's bodies; ${helpers.pitted.size} helpers pitted: ${[...helpers.pitted].sort().join(" ")}`);
-  const problems = sharedProblems(helpers);
-  for (const problem of problems) console.log(problem);
-  process.exit(problems.length === 0 ? 0 : 1);
+  if (process.argv[2] !== "helpers") throw new Error("usage: [BLESS=1] bun test/twin-net.ts helpers");
+  process.exit(helpersCommand({ bless: Boolean(process.env.BLESS) }) ? 0 : 1);
 }
