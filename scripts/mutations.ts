@@ -1707,25 +1707,54 @@ async function retirePhase<T>(label: string, step: () => Promise<T>): Promise<T>
   }
 }
 
+/** A retirement's controls, the compiler as it is, in the order they run:
+ * its build; then React's port at its pin, which refuses the whole run
+ * where the port doesn't regenerate as it committed, the control a compiler
+ * change most often fails, so it goes before the unit tests' and the crate
+ * corpus's minutes, not after (a retirement ran 6 min, then refused on the
+ * pin, #2525); then those two. Each step throws where its control fails. */
+export async function retireControls<U, C>(steps: {
+  build: () => Promise<string>;
+  port: (compiler: string) => Promise<void>;
+  units: () => Promise<U>;
+  crates: (compiler: string) => Promise<C>;
+}): Promise<{ compiler: string; units: U; crates: C }> {
+  const compiler = await steps.build();
+  await steps.port(compiler);
+  const units = await steps.units();
+  const crates = await steps.crates(compiler);
+  return { compiler, units, crates };
+}
+
 async function retire(chosen: Mutation[]): Promise<void> {
   const names = chosen.map((m) => m.name).join(", ");
   const low = belowFloor(freeBytes(root));
   if (low) throw new Error(`--retire of ${names} judges nothing: ${low}`);
-  const unitControl = await retirePhase("control: unit tests", () => everyUnit(undefined, "the unit tests as the crate is"));
-  // React's port, as the compiler is: what each mutant's regen is held to.
-  const asItIs = await retirePhase("control: compiler build", () => build());
-  if (typeof asItIs !== "string") throw new Error(`the compiler as it is ${asItIs.problem}`);
   const portControl = join(work, "bin", "retire-port-control");
-  mkdirSync(dirname(portControl), { recursive: true });
-  rmSync(portControl, { force: true });
-  cpSync(asItIs, portControl);
-  const controlDiffers = await retirePhase("control: port", () => portDiffers(portControl));
-  if (controlDiffers.length > 0) throw new Error(`port control fails: ${controlDiffers.join(", ")}; fix the pin first: React's port at its pin regenerates otherwise than it committed with the compiler as it is, so it says nothing of ${names}`);
-  // The crate corpus as the compiler is, held to its rows' bars: what each
-  // mutant's verdicts are held to.
-  const crateControl = await retirePhase("control: crate corpus", () => crateVerdicts(portControl, true));
-  rmSync(portControl, { force: true });
-  if (typeof crateControl === "string") throw new Error(`crate corpus control fails: ${crateControl}; fix it first: crates.io's corpus isn't what docs/crate-corpus.md says with the compiler as it is, so it says nothing of ${names}`);
+  const { compiler: asItIs, units: unitControl, crates: crateControl } = await retireControls({
+    build: async () => {
+      const built = await retirePhase("control: compiler build", () => build());
+      if (typeof built !== "string") throw new Error(`the compiler as it is ${built.problem}`);
+      return built;
+    },
+    // React's port, as the compiler is: what each mutant's regen is held to.
+    port: async (compiler) => {
+      mkdirSync(dirname(portControl), { recursive: true });
+      rmSync(portControl, { force: true });
+      cpSync(compiler, portControl);
+      const differs = await retirePhase("control: port", () => portDiffers(portControl));
+      if (differs.length > 0) throw new Error(`port control fails: ${differs.join(", ")}; fix the pin first: React's port at its pin regenerates otherwise than it committed with the compiler as it is, so it says nothing of ${names}`);
+    },
+    units: () => retirePhase("control: unit tests", () => everyUnit(undefined, "the unit tests as the crate is")),
+    // The crate corpus as the compiler is, held to its rows' bars: what each
+    // mutant's verdicts are held to.
+    crates: async () => {
+      const verdicts = await retirePhase("control: crate corpus", () => crateVerdicts(portControl, true));
+      rmSync(portControl, { force: true });
+      if (typeof verdicts === "string") throw new Error(`crate corpus control fails: ${verdicts}; fix it first: crates.io's corpus isn't what docs/crate-corpus.md says with the compiler as it is, so it says nothing of ${names}`);
+      return verdicts;
+    },
+  });
   const trailers: string[] = [];
   // One mutant that says nothing, its build or a run of its tests, leaves
   // the others' verdicts as they are.

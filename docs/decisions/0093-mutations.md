@@ -1589,3 +1589,21 @@ Mutations: `base-run-unnamed-its-map`, `named-map-unread`,
 `named-map-of-a-commit-unhad`, `named-map-of-another-version`,
 `unmapped-taken-for-a-survivor`, `unmapped-judged-a-survivor`,
 `judging-throw-ends-the-run` and `inconclusive-uncounted`.
+
+## Amendment: a retirement checks React's port at its pin first (2026-11-24, #2525)
+
+A retirement's controls ran the compiler's unit tests first, then built
+the compiler and regenerated React's port at its pin. Where the port
+doesn't regenerate as its pin committed, the whole run is refused, and
+that's the control a compiler change most often fails: a run spent 6 min
+on the unit tests and the build, then refused on the pin. Now the order
+is `retireControls`': the compiler's build, the port's control, then the
+unit tests and the crate corpus. A pin to fix is said after the build and
+one regen.
+
+The regen also says its time as it ends, `port regen <s> (usual <s>)`,
+and keeps it with the checkout's steps' times (scripts/timing.ts),
+whether it's run alone, by a retirement or by a push. Before, only a
+regen run alone wrote its time, to the machine's log.
+
+Mutation `retire-port-control-late`.

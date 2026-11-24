@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, Answers, heartbeat, failingOf, bySnapshots, inconclusiveSaid, judgedApart, unplaced, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, timedOut, lists, unitsAsItIs, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
+import { againstWholeCorpus, Answers, heartbeat, failingOf, bySnapshots, inconclusiveSaid, judgedApart, unplaced, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, timedOut, lists, unitsAsItIs, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, removedOfCrate, retireControls, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
 import type { ControlPart } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { cratePairParts, partOf } from "../scripts/shard";
@@ -364,6 +364,27 @@ test("no mutation names the whole corpus: each names its catching cases by `-t`"
 test("a mutation runs a matrix's rows by a pattern of their ids, not by an issue's", () => {
   const byIssue = mutations.filter((m) => /^#/.test(m.env?.ITERATOR_MATRIX ?? "")).map((m) => `${m.name}: ITERATOR_MATRIX=${m.env!.ITERATOR_MATRIX}, name its rows by a pattern of their ids, /<regex>/`);
   expect(byIssue).toEqual([]);
+});
+
+// A retirement's port control, which refuses the whole run where the port
+// doesn't regenerate as its pin committed, runs right after the compiler's
+// build, before the unit tests' and the crate corpus's minutes: a run spent
+// 6 min on them, then refused on the pin (#2525).
+test("a retirement checks React's port at its pin before its other controls", async () => {
+  const ran: string[] = [];
+  const steps = (portFails: boolean) => ({
+    build: async () => (ran.push("build"), "rust-js"),
+    port: async (compiler: string) => {
+      ran.push(`port of ${compiler}`);
+      if (portFails) throw new Error("port control fails");
+    },
+    units: async () => (ran.push("units"), 900),
+    crates: async (compiler: string) => (ran.push(`crates of ${compiler}`), new Map()),
+  });
+  expect(await retireControls(steps(false))).toEqual({ compiler: "rust-js", units: 900, crates: new Map() });
+  expect(ran.splice(0)).toEqual(["build", "port of rust-js", "units", "crates of rust-js"]);
+  await expect(retireControls(steps(true))).rejects.toThrow("port control fails");
+  expect(ran).toEqual(["build", "port of rust-js"]);
 });
 
 // A mutation of the crate is retired with `--retire`'s evidence (ADR 0093,

@@ -299,6 +299,14 @@ export const mutations: Mutation[] = [
     tests: ["test/mutations.test.ts", "-t", "each mutation's name is the catalog's once"],
   },
   {
+    name: "retire-port-control-late",
+    breaks: "a retirement runs the unit tests' control before React's port's, so a pin the compiler no longer regenerates refuses it only after their minutes (#2525)",
+    file: "scripts/mutations.ts",
+    find: "  await steps.port(compiler);\n  const units = await steps.units();\n",
+    replace: "  const units = await steps.units();\n  await steps.port(compiler);\n",
+    tests: ["test/mutations.test.ts", "-t", "checks React's port at its pin before"],
+  },
+  {
     name: "retire-lost-names-unsaid",
     breaks: "a retirement that judged fewer names than asked ends saying nothing of those its build or a run lost, its trailers read as if it judged them all (#2272)",
     file: "scripts/mutations.ts",
