@@ -1,3 +1,4 @@
+//@ library-differs
 // A function written in a function's body, generic, called with two types
 // in that body: one function, given each type's dictionary, its declaration
 // and both its reads one name, the item's, made by two lowerings, its own

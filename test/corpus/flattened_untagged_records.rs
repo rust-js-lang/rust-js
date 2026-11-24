@@ -1,3 +1,4 @@
+//@ library-differs
 // An untagged enum each of whose variants holds a record, flattened into
 // the event that carries it (#1818), as a UI kit's numeric keyboard takes a
 // key and its modifiers together with a composition event, direct or

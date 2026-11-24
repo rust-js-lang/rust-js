@@ -2,27 +2,42 @@
 
 // The fib.js milestone: integers, `if`, loops, `match`, and simple enums.
 
-import { $div } from "@rust-js/std";
+import { $checkI32, $checkOneOf, $checkU32, $checks, $div } from "@rust-js/std";
 
 /** Recursive, with `if` as an expression. */
 export function fib(n) {
-  return n < 2 ? n : (fib(n - 1) + fib(n - 2)) >>> 0;
+  $checkU32(n, "fib(n)");
+  return fib$(n);
+}
+
+function fib$(n) {
+  return n < 2 ? n : (fib$(n - 1) + fib$(n - 2)) >>> 0;
 }
 
 /** Recursive, with `match` on integers. */
 export function fibMatch(n) {
+  $checkU32(n, "fibMatch(n)");
+  return fibMatch$(n);
+}
+
+function fibMatch$(n) {
   switch (n) {
     case 0:
       return 0;
     case 1:
       return 1;
     default:
-      return (fibMatch(n - 1) + fibMatch(n - 2)) >>> 0;
+      return (fibMatch$(n - 1) + fibMatch$(n - 2)) >>> 0;
   }
 }
 
 /** Iterative, with `while` and mutable locals. */
 export function fibIter(n) {
+  $checkU32(n, "fibIter(n)");
+  return fibIter$(n);
+}
+
+function fibIter$(n) {
   let a = 0;
   let b = 1;
   for (let i = 0; i < n; i++) {
@@ -35,6 +50,7 @@ export function fibIter(n) {
 
 /** `loop` with `break value`. */
 export function fibLoop(n) {
+  $checkU32(n, "fibLoop(n)");
   let a = 0;
   let b = 1;
   let i = 0;
@@ -51,16 +67,20 @@ export function fibLoop(n) {
 
 /** Simple enum + `match`. */
 export function nth(order, n) {
-  return order === "Ascending" ? fibIter(n) : fibIter((20 - n) >>> 0);
+  $checkOneOf(order, ["Ascending", "Descending"], "nth(order)");
+  $checkU32(n, "nth(n)");
+  return order === "Ascending" ? fibIter$(n) : fibIter$((20 - n) >>> 0);
 }
 
 /** Signed wrapping arithmetic. */
 export function wrapDemo(x) {
+  $checkI32(x, "wrapDemo(x)");
   return (((x * 3) | 0) - 7) | 0;
 }
 
 /** Integer division panics on zero (and on `i32::MIN / -1`), just like Rust. */
 export function ratio(a, b) {
+  $checks("ratio(a, b)", a, $checkI32, b, $checkI32);
   return $div(a, b, "examples/fib.rs:67:5", -2147483648) | 0;
 }
 //# sourceMappingURL=fib.js.map

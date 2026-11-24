@@ -14,6 +14,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -33,7 +34,7 @@ async function compiled(name: string, source: string) {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), source);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")) };
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), lib: await import(join(dir, "lib.js")) };
 }
 
 test("a memo whose maker runs only a regex reads its cache plainly", async () => {
@@ -342,7 +343,8 @@ test("a read of the program's own struct a JS caller gives, cast to a JS value, 
   expect(js).toContain("$borrowMut");
   const seen = lib.Seen.new();
   expect(lib.Seen.note(seen, { reason: "x" })).toBe(1);
-  // A getter that notes again meets the held borrow, as Rust's would.
+  // A getter that notes again meets the held borrow, as Rust's would: its
+  // check leaves an accessor's value to the body (ADR 1194, amended).
   const forged = {
     get reason() {
       return lib.Seen.note(seen, { reason: "y" });

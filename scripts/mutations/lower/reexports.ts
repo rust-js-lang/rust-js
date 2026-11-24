@@ -588,4 +588,20 @@ export const mutations: Mutation[] = [
     replace: "                of(child.ident.name, Namespace::ValueNS).filter(|_| false),\n",
     tests: ["test/declarations-type-reexports.test.ts"],
   },
+  {
+    name: "library-reexport-unrecorded",
+    breaks: "a library's function a module re-exports by name isn't recorded, so no forwarder of the module's checks what JS gives it (#2403 (Y))",
+    file: "crates/rust-js-lower/src/reexports.rs",
+    find: "                    let alias = alias(&imported.name);\n                    reached.library.push((module, def_id, alias.clone()));\n",
+    replace: "                    let alias = alias(&imported.name);\n",
+    tests: ["test/boundary-reach.test.ts", "-t", "re-exports by name is its own checked forwarder"],
+  },
+  {
+    name: "unchecked-namespace-unrecorded",
+    breaks: "a library's module of unchecked functions re-exported as a namespace JS may call isn't recorded, so no module of the crate's checks them, `export * as ns` giving JS each unchecked (#2403 (Y), #2536)",
+    file: "crates/rust-js-lower/src/reexports.rs",
+    find: "                    if !named.is_local() {\n                        reached\n                            .namespaces\n                            .push((module, named, alias.clone(), ident.to_string()));\n                    }\n",
+    replace: "",
+    tests: ["test/boundary-reach.test.ts", "-t", "re-exports as a namespace is a module of its own"],
+  },
 ];

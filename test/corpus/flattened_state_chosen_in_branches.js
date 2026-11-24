@@ -6,7 +6,7 @@
 // twice, so no one handle is known to be what it holds, and each lend sets
 // the keys of the object the branch taken chose (#2429, ADR 0791).
 
-import { $live, $main, $traitImpl, $unwindsOn } from "@rust-js/std";
+import { $checkStr, $live, $main, $traitImpl, $unwindsOn } from "@rust-js/std";
 
 function statusDebug_fmt(status) {
   if (status.status === "pending") {
@@ -17,6 +17,7 @@ function statusDebug_fmt(status) {
 
 export class Task {
   constructor(status, tries, name) {
+    $checkStr(name, "Task.new(name)");
     this.status = status;
     this.tries = tries;
     this.name = name;

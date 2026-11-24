@@ -518,11 +518,17 @@ pub async fn get_static_paths(_: GetStaticPathsContext) -> GetStaticPathsResult<
 
 ```jsx
 // pages/posts/[slug].jsx
+import { $checkShape, $checkStr, $checkWhole } from "@rust-js/std";
+
+const checkParams = /* @__PURE__ */ $checkShape(() => ({ slug: $checkStr }));
+
 function Post({ title }) {
+  $checkStr(title, "Post(props.title)");
   return <h1>{title}</h1>;
 }
 
 export async function getStaticProps({ params }) {
+  $checkWhole(checkParams, params, "getStaticProps(__arg0.params)", "nullish");
   return params != null ? { props: { title: params.slug } } : { notFound: true };
 }
 

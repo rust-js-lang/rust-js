@@ -9,6 +9,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, installStd, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -50,7 +51,7 @@ pub fn each(children: Option<&'static Unknown>, callback: &dyn Fn(Option<&'stati
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("    // All of the above are perceived as null.\n    children = null;\n");
   expect(js).toContain("  walk(children, callback);\n  walk(null, callback);\n");
   // A call's \`Option\` as it is, which the body reads either way.
@@ -108,7 +109,7 @@ pub fn make(dev: bool) -> SharedStateClient {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const internals = { H: null };");
   expect(js).not.toContain("{}.value");
   expect(js).not.toContain("$dispose");
@@ -153,7 +154,7 @@ pub fn pick(h: &mut Holder, given: Option<u32>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  h.done = noop;\n");
   expect(js).toContain("  h.picked = given != null ? noop : null;\n");
   const lib = await import(join(dir, "lib.js"));
@@ -234,7 +235,7 @@ pub fn take_banner(props: &Props) -> Option<String> {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // The program's name for it, not the field's own (ADR 0866, amended).
   expect(js).toContain("  const returnFiber = node.return;\n  sibling.return = returnFiber;\n");
   expect(js).toContain("  const claimed = root.transitionTypes;\n  root.transitionTypes = null;\n  return claimed;\n");
@@ -301,7 +302,7 @@ pub fn changed(node: &Fiber, clear: &dyn Fn(&Fiber)) -> String {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const sibling = node.sibling;\n");
   expect(js).toContain("const sibling = $unwrap(node.sibling, \"lib.rs:28:53\");\n");
   const lib = await import(join(dir, "lib.js"));
@@ -329,7 +330,7 @@ pub fn ref_or(props: Option<&'static js::Unknown>, other: Option<&'static js::Un
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  if (refProp === undefined) {\n    return refProp ?? null;\n  }\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.refOr({} as never, 4 as never), lib.refOr({ ref: 3 } as never, 4 as never)]).toEqual([null, 4]);
@@ -393,7 +394,7 @@ pub fn read(dependency: &ContextDependency<Option<u32>>) -> Option<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function createCursor(defaultValue) {\n  return { current: defaultValue };\n}");
   expect(js).toContain("  return { current: null };\n");
   expect(js).toContain("  cursor.current = null;\n");

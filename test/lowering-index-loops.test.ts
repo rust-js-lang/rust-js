@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target, bunTest } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -36,7 +37,7 @@ pub fn rest_mut(v: Vec<Vec<u32>>) -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  for (let i = 0; i < v.length; i++) {\n    const row = v[i];\n    row.push(0);");
   expect(js).toContain("  for (const row of it) {\n    row.push(0);");
   expect(js).not.toContain("let row;");
@@ -80,7 +81,7 @@ pub fn found(root: &Element) -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  for (let i = 0; i < list.length; i++) {\n    const element = list[i];\n    out.push(element.tagName);\n");
   expect(js).toContain("  for (let i = 0; i < list.length; i++) {\n    const element = list[i];\n    out.push(element.tagName);\n    element.remove();\n");
   expect(js).toContain('  for (const _ of root.querySelectorAll("b")) {\n');
@@ -170,7 +171,7 @@ pub fn huge(n: usize) -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  // Each image, in order.\n  for (let i = 0; i < list.length; i++) {\n    images.push(list[i]);\n  }\n");
   // Of a slice's iterator made here, the slice's; of a slice or a `Vec`
   // given whole, as the call's own type for what it's given says, the
@@ -229,7 +230,7 @@ pub fn set_initial(tag: &str) -> Vec<String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(
     "      // We listen to these events in case to ensure emulated bubble\n      // listeners still fire for all the media events.\n      for (let i = 0; i < mediaEventTypes.length; i++) {\n        const mediaEventType = mediaEventTypes[i];\n",
   );
@@ -288,7 +289,7 @@ pub fn blocked() -> Vec<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function retry(unblocked, queue) {\n  for (let i = 0; i < targets.length; i++) {\n");
   expect(js).toContain("  if (queue != null) {\n    let i = 0;\n    while (i < queue.length) {\n");
   expect(js).not.toContain("let i;");
@@ -346,7 +347,7 @@ pub fn shrinking(v: &[u32]) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("    for (let i = 1; i < v.length; i++) {\n      const x = v[i];\n");
   expect(js).toContain("    for (let i = 0; i < 2; i++) {\n      const x = v[i];\n");
   expect(js).toContain("    for (let i = 1; i < 2; i++) {\n      const x = v[i];\n");
@@ -389,7 +390,7 @@ pub fn equal(next: &[u32], prev: &[u32]) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // In a closure, its reads keep their checks: the parent's relations
   // aren't carried into a closure's captures yet (#1701).
   expect(js).toContain("same($index(next, i, \"lib.rs:15:33\"), $index(prev, i, \"lib.rs:15:43\"))");

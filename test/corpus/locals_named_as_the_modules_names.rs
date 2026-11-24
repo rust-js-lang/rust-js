@@ -1,3 +1,4 @@
+//@ library-differs
 // A local named as one of its module's names: an imported function's,
 // `parse`, read before the local takes its name and called again in
 // another function, and the module's own `cmp`, beside the `$cmp` a

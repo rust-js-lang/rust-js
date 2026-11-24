@@ -6,10 +6,11 @@
 // constants the prototype's, its functions of no `self` the constructor's.
 // What Rust does with it is what it does natively.
 
-import { $lazyRange, $main } from "@rust-js/std";
+import { $checkU32, $lazyRange, $main } from "@rust-js/std";
 
 export class Counter {
   constructor(step) {
+    $checkU32(step, "Counter.new(step)");
     if (step === 0) {
       this.count = 0;
       this.step = 1;
@@ -44,6 +45,7 @@ export class Counter {
   }
 
   reset(to) {
+    $checkU32(to, "Counter.reset(to)");
     const before = this.current();
     this.count = to;
     this.history.push(before);

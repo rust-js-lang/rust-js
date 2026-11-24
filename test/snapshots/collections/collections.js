@@ -8,6 +8,9 @@ import {
   $add,
   $at,
   $btreeMap,
+  $checkI32,
+  $checkStr,
+  $checkU32,
   $cmp,
   $cmpIn,
   $cmpItems,
@@ -27,6 +30,7 @@ import {
 
 /** A range, counted with `for (let i = ..; i < ..; i++)`. */
 export function sumTo(n) {
+  $checkU32(n, "sumTo(n)");
   let total = 0;
   for (let i = 0; i < n; i++) {
     total = (total + i) >>> 0;
@@ -39,6 +43,7 @@ export function sumTo(n) {
  * make it run longer.
  */
 export function endOnce(n) {
+  $checkI32(n, "endOnce(n)");
   let times = 0;
   const end = n;
   for (let i = 0; i < end; i++) {
@@ -50,6 +55,7 @@ export function endOnce(n) {
 
 /** A `mut` loop variable is a copy: changing it doesn't move the loop on. */
 export function mutCounter(n) {
+  $checkI32(n, "mutCounter(n)");
   let total = 0;
   const iter = { start: 0, end: n };
   let value;
@@ -63,6 +69,11 @@ export function mutCounter(n) {
 
 /** A `Vec` is a JS array. */
 export function evens(n) {
+  $checkU32(n, "evens(n)");
+  return evens$(n);
+}
+
+function evens$(n) {
   const v = [];
   for (let i = 0; i < n; i++) {
     if (i % 2 === 0) {
@@ -73,13 +84,15 @@ export function evens(n) {
 }
 
 export function keepOver(limit) {
+  $checkI32(limit, "keepOver(limit)");
   const v = [5, 1, 8, 3, 9, 2];
   $retain(v, (x) => x > limit);
   return v;
 }
 
 export function lengths(n) {
-  const v = evens(n);
+  $checkU32(n, "lengths(n)");
+  const v = evens$(n);
   const before = v.length;
   v.length = 0;
   return [before, v.length === 0];
@@ -87,7 +100,8 @@ export function lengths(n) {
 
 /** Iterating by reference, by `iter()`, and over an array of tuples. */
 export function iterate(n) {
-  const v = evens(n);
+  $checkU32(n, "iterate(n)");
+  const v = evens$(n);
   let total = 0;
   for (let i = 0; i < v.length; i++) {
     const x = v[i];
@@ -108,6 +122,7 @@ export function iterate(n) {
 
 /** `break` and `continue`, including to an outer loop. */
 export function labeled(n) {
+  $checkU32(n, "labeled(n)");
   let found = 0;
   outer: for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
@@ -133,6 +148,7 @@ function toggle(todos, id) {
 }
 
 export function toggled(n) {
+  $checkU32(n, "toggled(n)");
   const todos = [];
   for (let id = 0; id < n; id++) {
     todos.push({ id, done: id % 3 === 0 });
@@ -160,6 +176,7 @@ export function toggled(n) {
  * `*c.borrow_mut() += 1` changes it.
  */
 export function cell(times) {
+  $checkI32(times, "cell(times)");
   let c = 0;
   for (let i = 0; i < times; i++) {
     c = (c + 2) | 0;
@@ -169,6 +186,7 @@ export function cell(times) {
 
 /** Shared through an `Rc`, a `RefCell<Vec<_>>` is one array everyone changes. */
 export function shared(times) {
+  $checkI32(times, "shared(times)");
   const log = [];
   for (let i = 0; i < times; i++) {
     log.push(Math.imul(i, i));
@@ -184,6 +202,7 @@ export function shared(times) {
 
 /** Strings: `trim`, `is_empty`, `==`, `String::from`. */
 export function words(s) {
+  $checkStr(s, "words(s)");
   const owned = s;
   const trimmed = $trim(owned);
   return [trimmed, trimmed === "", trimmed === "hi"];
@@ -195,6 +214,7 @@ export function words(s) {
  * `v[$at(v, i)] = x`, since JS would make the array longer.
  */
 export function indexed(i) {
+  $checkU32(i, "indexed(i)");
   const v = [10, 20, 30];
   const read = $index(v, i, "examples/collections.rs:168:17");
   v[i] = (read + 1) >>> 0;
@@ -206,6 +226,7 @@ export function indexed(i) {
 
 /** An element's fields are written in place, and a copy of one is its own. */
 export function elementFields(i) {
+  $checkU32(i, "elementFields(i)");
   const cells = [{ hits: 0 }, { hits: 0 }];
   const cell2 = $index(cells, i, "examples/collections.rs:184:10");
   cell2.hits = (cell2.hits + 1) >>> 0;
@@ -221,6 +242,7 @@ export function elementFields(i) {
 
 /** An array changed in place is copied when it's copied. */
 export function arrays(i) {
+  $checkU32(i, "arrays(i)");
   const a = [1, 2, 3];
   const b = a.slice();
   a[$at(a, i, "examples/collections.rs:195:5")] = 9;
@@ -233,6 +255,7 @@ export function arrays(i) {
  * so these sort what they take out.
  */
 export function wordCounts(text) {
+  $checkStr(text, "wordCounts(text)");
   const counts = new Map();
   for (const word of text.split(" ")) {
     const current = $orInsert(counts, word, 0);
@@ -244,6 +267,7 @@ export function wordCounts(text) {
 }
 
 export function mapBasics(n) {
+  $checkU32(n, "mapBasics(n)");
   const m = new Map();
   m.set("a", n);
   const old = $insert(m, "a", (n + 1) >>> 0);
@@ -267,6 +291,7 @@ export function mapBasics(n) {
 }
 
 export function setBasics(n) {
+  $checkU32(n, "setBasics(n)");
   const s = new Set([3, 1, 2]);
   const new$ = $add(s, n);
   const again = $add(s, n);
@@ -291,6 +316,7 @@ export function setBasics(n) {
  * keeps its own `Vec`s.
  */
 export function grouped(n) {
+  $checkU32(n, "grouped(n)");
   const groups = new Map();
   for (let i = 1; i < n; i++) {
     const key = i % 3;
@@ -310,6 +336,7 @@ export function grouped(n) {
 }
 
 export function sortedMaps(text) {
+  $checkStr(text, "sortedMaps(text)");
   const counts = new $BTreeMap();
   for (const word of text.split(" ")) {
     const current = $orInsert(counts, word, 0);

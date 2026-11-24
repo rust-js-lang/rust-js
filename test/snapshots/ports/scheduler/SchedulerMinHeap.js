@@ -5,6 +5,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+import { $checkF64, $checkResult } from "@rust-js/std";
+
 export function push(heap, node) {
   const index = heap.length;
   heap.push(node);
@@ -73,7 +75,11 @@ function siftDown(heap, i) {
 
 function compare(a, b) {
   // Compare sort index first, then task id.
-  const diff = a.sortIndex - b.sortIndex;
-  return diff !== 0 ? diff : a.id - b.id;
+  const diff =
+    $checkResult(a.sortIndex, "get sortIndex", $checkF64) -
+    $checkResult(b.sortIndex, "get sortIndex", $checkF64);
+  return diff !== 0
+    ? diff
+    : $checkResult(a.id, "get id", $checkF64) - $checkResult(b.id, "get id", $checkF64);
 }
 //# sourceMappingURL=SchedulerMinHeap.js.map

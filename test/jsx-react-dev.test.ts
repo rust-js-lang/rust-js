@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -218,7 +219,7 @@ pub fn SidebarLink(
     "cn.js": "export default (...classes) => classes.filter(Boolean).join(\" \");\n",
   });
   run([...args, "--extern", `js=${join(target, "libjs.rmeta")}`]);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).not.toMatch(/const \w+ = cn\(/);
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.SidebarLink, { href: "https://x", selected: true, title: "T", level: 0, version: "major", isPending: false }))).toContain('<a href="https://x" class="p-2 pe-2');
@@ -266,7 +267,7 @@ pub fn Preview(is_expanded: bool, rawError: Option<&'static ErrorType>) -> JSX::
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("{error != null && (");
   expect(jsx).not.toContain("const condition");
   const lib = await import(join(dir, "lib.jsx"));
@@ -296,7 +297,7 @@ pub fn Shown() -> JSX::Element {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("      <input disabled={!hidden} />\n");
   expect(jsx).not.toContain("const disabled");
   const lib = await import(join(dir, "lib.jsx"));
@@ -335,7 +336,7 @@ pub fn Page(cleaned_path: &str) -> JSX::Element {
 }
 `, { "head.js": 'import { createElement } from "react"; export default function Head({ children }) { return createElement("head", null, children); }\n' });
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("{(isHomePage || isBlogIndex) && (");
   expect(jsx).not.toContain("const condition");
   const lib = await import(join(dir, "lib.jsx"));
@@ -395,7 +396,7 @@ pub fn NavigationBar(activeFile: &'static str, visibleFiles: &'static [String], 
 }
 `, { "listbox.js": 'import { createElement } from "react"; export function Listbox({ children }) { return createElement("div", null, children); } Listbox.Options = function Options({ className, children }) { return createElement("ul", { className }, children); };\n' });
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain('{isMultiFile && showDropdown && (\n          <Listbox.Options className="absolute mt-0.5">');
   expect(jsx).not.toContain("let Component");
   const lib = await import(join(dir, "lib.jsx"));
@@ -490,7 +491,7 @@ pub fn Diagram(
 }
 `, { "image.js": 'import { createElement } from "react"; export default function Image({ src, alt, width, height }) { return createElement("i", { "data-src": src, title: alt, "data-size": `${width}x${height}` }); }\n' });
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("src={withBasePath(`/images/docs/diagrams/${name}.dark.png`)}");
   expect(jsx).toContain('{(captionPosition == null || captionPosition === "bottom") && <Caption text={children} />}');
   expect(jsx).not.toContain("let tmp");
@@ -569,7 +570,7 @@ pub fn SandboxShell(SandboxShellProps { is_expandable }: SandboxShellProps) -> J
 }
 `, { "sandpack.js": 'import { createElement } from "react"; export function SandpackLayout({ className, children }) { return createElement("div", { className }, children); }\n' });
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("{(isExpandable || isExpanded) && (\n        <button");
   expect(jsx).toContain('<IconChevron className="inline" displayDirection={isExpanded ? "up" : "down"} />\n            {isExpanded ? "Show less" : "Show more"}');
   expect(jsx).not.toContain("const condition");
@@ -671,7 +672,7 @@ fn InlineTocItem(InlineTocItemProps { items }: InlineTocItemProps) -> JSX::Eleme
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   // Across lines, as its literal is, and react.dev's (ADR 0835).
   expect(jsx).toContain("const root = { children: [] };");
   expect(jsx).toContain("currentParent.children.push(node);");
@@ -729,7 +730,7 @@ pub fn Callout<C: ReactNode>(CalloutProps { children, wip }: CalloutProps<C>) ->
 }
 `, { "cn.js": "export default (...classes) => classes.filter(Boolean).join(\" \");\n" });
   run([...args, "--extern", `js=${join(target, "libjs.rmeta")}`]);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).not.toContain("const className");
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Callout, { wip: false }, "x"))).toBe('<div class="callout bg-green"><h3 class="title text-green"><i class="icon text-green">i</i>Note</h3><div>x</div></div>');
@@ -779,7 +780,7 @@ pub fn Kinds<C: ReactNode>(children: C) -> JSX::Element {
 `);
   args.push("--extern", `js=${join(target, "libjs.rmeta")}`);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("if (!isValidElement(child)) {\n      content.push(child);\n      return;\n    }");
   const lib = await import(join(dir, "lib.jsx"));
   const Hint = Object.assign(() => null, { mdxName: "Hint" });
@@ -817,7 +818,7 @@ pub fn Page(toc: &'static [TocItem], home: bool) -> JSX::Element {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("{showToc && toc.length !== 0 && <span>");
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.Page([{ text: null }], false))).toBe('<div class=""><p class="p"></p><span>1</span></div>');
@@ -861,7 +862,7 @@ pub fn Nav() -> JSX::Element {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).not.toMatch(/const (className|value|_\d+) =/);
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Nav))).toBe('<div class="narrow"><button class="menu"><i></i></button><svg class="logo"></svg></div>');
@@ -910,7 +911,7 @@ thread_local! {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("<Glimmer code={activeCode} />");
   const lib = await import(join(dir, "lib.jsx"));
   const props = { snips: [{ code: "a" }, { code: "b" }], active: [1] };
@@ -950,7 +951,7 @@ pub fn Looped() -> JSX::Element {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain('const href = made("h");');
   // One held from a block is where the block's value is written, after its
   // loop: a `const` there, not a `let` the loop's way out sets (#434).
@@ -998,7 +999,7 @@ pub fn App(deep: bool) -> JSX::Element {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain(`<details open={isExpanded} className={cn(["my-12", deep ? "purple" : undefined])}>`);
   expect(jsx).toContain(`        <span>{isExpanded ? "up" : "down"}</span>\n`);
   const lib = await import(join(dir, "lib.jsx"));

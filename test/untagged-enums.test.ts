@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { buildCompiler, buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(() => {
   buildCompiler();
@@ -35,7 +36,7 @@ test("an untagged enum is its payload, told apart by its runtime kind", async ()
   expect([untagged.label("Recap"), untagged.label(["a", {}])]).toEqual(["Link for Recap", "Link for this heading"]);
   expect([untagged.isOther(["x"]), untagged.isOther(3), untagged.isOther("s")]).toEqual([true, true, false]);
 
-  const js = await Bun.file(join(target, "untagged.js")).text();
+  const js = withoutBoundary(await Bun.file(join(target, "untagged.js")).text());
   expect(js).not.toContain("instanceof");
   expect(js).toContain('  if (Array.isArray(src)) {\n    return `names ${src.join("+")}`;\n  }\n  switch (typeof src) {\n    case "object":\n');
   expect(js).toContain("export function text(s) {\n  return s;\n}");
@@ -127,7 +128,7 @@ pub fn drawn(drawn: Drawn) -> String {
   );
   const crates = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...crates]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("instanceof");
   expect(js).toContain('typeof drawn === "object" && !Array.isArray(drawn)');
   // A type that declares no class is an object, tested in its arm's place.
@@ -184,7 +185,7 @@ pub fn is_class(made: Made<'_>) -> bool {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('return typeof made === "function";');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.isClass(class Point {}), lib.isClass("Point")]).toEqual([true, false]);
@@ -237,7 +238,7 @@ pub fn first(m: &RegExpMatch) -> String {
 `,
   );
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return Array.isArray(found);");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.isMatch(/b(c)/.exec("abc")), lib.isMatch("abc")]).toEqual([true, false]);

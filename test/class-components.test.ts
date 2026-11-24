@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target, bunTest } from "./support";
 import { underLoad } from "../scripts/timing";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -20,7 +21,7 @@ function compiled(name: string, rust: string): { js: string; ts: string; dir: st
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, ...flags(dir)]);
-  return { js: readFileSync(join(dir, "lib.jsx"), "utf8"), ts: readFileSync(join(dir, "lib.d.ts"), "utf8"), dir };
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8")), ts: readFileSync(join(dir, "lib.d.ts"), "utf8"), dir };
 }
 
 /** What the compiler says of `rust`, which it refuses. */
@@ -312,7 +313,7 @@ test("a class component is in the module its impl is, which imports what it exte
 }
 `);
   run([compiler, ...flags(dir)]);
-  expect(readFileSync(join(dir, "alone.jsx"), "utf8")).toContain(
+  expect(withoutBoundary(readFileSync(join(dir, "alone.jsx"), "utf8"))).toContain(
     'import { Component } from "react";\n\nexport class Alone extends Component {\n  render() {\n    return <hr />;\n  }\n}',
   );
   // Of one that writes its constructor, where that is.
@@ -448,7 +449,7 @@ pub mod app {
 }
 `);
   run([compiler, ...flags(dir)]);
-  const app = readFileSync(join(dir, "app.jsx"), "utf8");
+  const app = withoutBoundary(readFileSync(join(dir, "app.jsx"), "utf8"));
   expect(app).toContain('import { Label, Rule, Surface } from "./shapes.jsx";');
   expect(app).toContain(`      <Surface width={2} />
       <Surface width={3} title="big" />

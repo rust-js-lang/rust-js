@@ -27,16 +27,22 @@ pub fn describe(text: &str) -> String {
 
 ```js
 import { Either } from "../rust-js/crates/either-1.15.0/src/lib.js";
-import { $parseInt } from "@rust-js/std";
+import { $checkStr, $parseInt } from "@rust-js/std";
 
 export function parse(text) {
-  const parse = $parseInt(text, 0, 4294967295);
-  return parse.TAG === "Ok" ? { TAG: "Left", _0: parse._0 } : { TAG: "Right", _0: text };
+  $checkStr(text, "parse(text)");
+  return parse$(text);
+}
+
+function parse$(text) {
+  const value = $parseInt(text, 0, 4294967295);
+  return value.TAG === "Ok" ? { TAG: "Left", _0: value._0 } : { TAG: "Right", _0: text };
 }
 
 export function describe(text) {
+  $checkStr(text, "describe(text)");
   return Either.either(
-    parse(text),
+    parse$(text),
     (n) => `number ${n}`,
     (s) => `text ${s}`,
   );
@@ -144,13 +150,19 @@ pub fn counts(words: &[&str]) -> indexmap::IndexMap<String, u32> {
 ```
 
 ```js
-import { $memchr, $orInsert } from "@rust-js/std";
+import { $checkArray, $checkStr, $checkU8, $checks, $memchr, $orInsert } from "@rust-js/std";
 
 export function firstComma(text) {
+  $checks("firstComma(text)", text, (value, where, none) =>
+    $checkArray(value, where, none, $checkU8),
+  );
   return $memchr(text, [44]) ?? undefined;
 }
 
 export function counts(words) {
+  $checks("counts(words)", words, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   const counts = new Map();
   for (let i = 0; i < words.length; i++) {
     const word = words[i];

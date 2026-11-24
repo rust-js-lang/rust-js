@@ -1,3 +1,4 @@
+//@ library-differs
 // An or-pattern whose alternatives move parts no variant tells apart,
 // `(Some(t), _) | (_, Some(t))`: `t` is the part that matched, and the
 // other is dropped.

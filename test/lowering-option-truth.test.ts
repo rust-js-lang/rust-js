@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -59,7 +60,7 @@ pub fn symbol(value: Option<&Symbol>) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   for (const written of ["return value != null;", "return value == null;", "return value != null ? 1 : 0;", "if (value == null) {\n    return;\n  }",
     ".filter((item) => item != null)"]) {
     expect(js).toContain(written);
@@ -111,7 +112,7 @@ pub fn noded(n: Option<&Node>) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function counted(n) {\n  return n != null;\n}");
   expect(js).toContain("export function placed(p) {\n  return p == null;\n}");
   expect(js).toContain("export function moded(m) {\n  return m != null;\n}");
@@ -142,7 +143,7 @@ pub fn Shown(ShownProps { value }: ShownProps) -> JSX::Element {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("react", "js")]);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("hidden={value == null}");
   expect(jsx).toContain("{value != null && <b>there</b>}");
   // Of its truth, `!!value`, a `bool`: `value && ..` would render `0`.
@@ -191,7 +192,7 @@ pub fn Preview(is_expanded: bool, rawHeight: Option<f64>) -> JSX::Element {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("react")]);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("{height != null && (");
   expect(jsx).not.toContain("const condition");
   const lib = await import(join(dir, "lib.jsx"));
@@ -232,7 +233,7 @@ pub fn text(s: Option<&str>, out: &mut Out) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("out.x = p?.x;");
   expect(js).toContain("out.name = p?.name;");
   expect(js).toContain("out.x = s != null ?");
@@ -314,7 +315,7 @@ pub fn cleared(log: &mut Vec<String>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const componentNameMessage = componentName\n    ? `An error occurred in the <${componentName}> component.`\n    : \"An error occurred in one of your React components.\";\n");
   expect(js).toContain("  const name = componentName;\n  const shout = name ? clearedName(name) : \"\";\n");
   const lib = await import(join(dir, "lib.js"));
@@ -357,7 +358,7 @@ pub fn masked(r#type: &Unknown) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const contextTypes = type.contextTypes;\n  if (!contextTypes) {\n    return 0;\n  }\n");
   const lib = await import(join(dir, "lib.js"));
   const masked = [{ contextTypes: { a: 1, b: 2 } }, { contextTypes: 0 }, { contextTypes: "" }, { contextTypes: null }, {}].map(lib.masked);
@@ -383,7 +384,7 @@ test("each text a list filters by its truth is tested by its truth", async () =>
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  if (msg) {\n");
   expect(js).toContain("  if (stack) {\n");
   expect(js).toContain("  if (component) {\n");
@@ -415,7 +416,7 @@ pub fn either(a: Option<&Unknown>, b: Option<&Unknown>) -> bool {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  return !!(prototype && prototype.isReactComponent);\n");
   expect(js).toContain("  return !!(a || b);\n");
   const lib = await import(join(dir, "lib.js"));
@@ -440,7 +441,7 @@ pub fn counted(found: Option<u32>) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  return found != null ? `\\n  ${found}` : "";\n');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.named("a"), lib.named(undefined), lib.counted(1), lib.counted(undefined)]).toEqual(["\n  a", "", 2, 7]);
@@ -460,7 +461,7 @@ test("a place a typeof test says is a function needs no test that it's there", a
 pub struct Callback(Box<dyn FnMut(bool) -> Option<Callback>>);
 
 pub struct Task {
-    callback: RefCell<Option<Callback>>,
+    pub callback: RefCell<Option<Callback>>,
 }
 
 pub fn run(task: &Task) -> bool {
@@ -483,7 +484,7 @@ pub fn text_there(v: Option<&'static js::Unknown>) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`  return typeof v === "object" && v != null;`);
   expect(js).toContain(`  return typeof v === "string";`);
   expect(js).toContain(`  if (typeof task.callback === "function") {\n    const callback = task.callback;\n    task.callback = undefined;\n`);
@@ -564,7 +565,7 @@ pub fn matched(pattern: &js::RegExp, text: &str) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs("webapi", "js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const currentEvent = window.event;\n  if (currentEvent === undefined) {\n    return 32;\n  }\n");
   expect(js).toContain("  const text = node.textContent;\n  return text !== null ? $byteLen(text) : 0;\n");
   expect(js).toContain("  return node.textContent !== null;\n");
@@ -599,7 +600,7 @@ test("a map of a value unwrapped or given a default is its test's choice", async
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  return name != null ? `\\n  ${name}` : \"\";\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.named("x"), lib.named(undefined)]).toEqual(["\n  x", ""]);

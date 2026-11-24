@@ -745,7 +745,7 @@ pub fn App() -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   // Its props as written, as JSX's are, not in its struct's order (ADR 0203).
-  expect(jsx).toContain("export function Card({ title, children }) {\n  return (\n    <Frame tags={[\"card\"]} title={title}>\n      {children}\n    </Frame>\n  );\n}");
+  expect(jsx).toContain("export function Card({ title, children }) {\n  $checkStr(title, \"Card(props.title)\");\n  return (\n    <Frame tags={[\"card\"]} title={title}>\n      {children}\n    </Frame>\n  );\n}");
   const { App, Card } = await import(join(dir, "lib.jsx"));
   const { createElement } = await import("react");
   expect(renderToStaticMarkup(App())).toBe('<section title="t" data-tags="card">kid<b>!</b></section>');
@@ -967,7 +967,8 @@ pub fn Keyed(props: &'static PanelProps<'static>) -> JSX::Element {
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("<Panel {...props} wide />");
   expect(jsx).toContain("but the index is 0`,\n      \"lib.rs:22:22\",\n    );\n  }\n  return <Panel {...posts[0]} />;");
-  expect(jsx).toContain("export function First(posts) {\n  return <Panel {...posts[0]} />;\n}");
+  // What JS gives it checked first (#2403, ADR 1194).
+  expect(jsx).toContain("export function First(posts) {\n  $checks(\"First(posts)\", posts, (value, where, none) =>\n    $checkArray(value, where, none, checkPanelProps),\n  );\n  return <Panel {...posts[0]} />;\n}");
   // The key MIR holds is named as it's given, `key`.
   expect(jsx).toContain("<Panel key={key} {...props} wide />");
   const { Again, Alone } = await import(join(dir, "lib.jsx"));

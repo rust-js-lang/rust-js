@@ -479,6 +479,9 @@ impl OutputPlan {
                 js_path.display()
             ));
         }
+        // Each brand marked on a literal, the call that brands it (#2403,
+        // ADR 1196), as one of the helpers it reads.
+        rust_js_program::js::brands::printed(&mut js_module);
         // Of the helpers it asked for, and what they use, the names its
         // prepared tree reads (ADR 0103).
         js_module.helpers = rust_js_program::runtime::imported_helpers(helper_sources, &js_module.read_helpers());
@@ -1127,14 +1130,21 @@ fn entry_is_root(package: &rust_js_program::packages::Package, module: &program:
 /// of its own, which the glob doesn't see, or a name a private `use` here
 /// shadows, is one of `m`'s that isn't the glob's, and the names stay
 /// listed. Of a library's module, what its manifest says its file
-/// exports (#629).
+/// exports (#629), but the bodies its split functions' entries call.
 fn every_export(reexport: &program::Reexport, exported: &IndexMap<Vec<String>, BTreeSet<String>>) -> bool {
     let all = match &reexport.from {
         js::ImportFrom::Module(from) => exported.get(from),
         js::ImportFrom::Specifier(_) => reexport.file_exports.as_ref(),
     };
     let names: BTreeSet<&str> = reexport.named.iter().map(|(_, alias)| alias.as_str()).collect();
-    reexport.glob && all.is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))
+    // But a split function's body, `f$` beside its entry `f`, which no Rust
+    // name is (#2403, ADR 1193): `export *` re-exports it too.
+    reexport.glob
+        && all.is_some_and(|all| {
+            let items = (all.iter().map(String::as_str))
+                .filter(|n| !n.strip_suffix('$').is_some_and(|entry| all.contains(entry)));
+            items.eq(names.iter().copied())
+        })
 }
 
 /// What `module` exports, by name, as it's printed: its exported functions,

@@ -100,11 +100,15 @@ pub fn search_link(query: &str) -> String {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function setTitle(title) {
+  $checkStr(title, "setTitle(title)");
   document.title = title;
 }
 
 export function searchLink(query) {
+  $checkStr(query, "searchLink(query)");
   return `/search?q=${encodeURIComponent(query)}`;
 }
 ```
@@ -141,8 +145,10 @@ pub fn slug(title: &str) -> String {
 
 ```js
 import { strToKebabCase } from "../rust-js/crates/heck-0.5.0/src/kebab.js";
+import { $checkStr } from "@rust-js/std";
 
 export function slug(title) {
+  $checkStr(title, "slug(title)");
   return strToKebabCase.toKebabCase(title);
 }
 ```
@@ -205,7 +211,9 @@ pub fn to_json(contact: &Contact) -> String {
 ```
 
 ```js
-import { $toJson } from "@rust-js/std";
+import { $checkShape, $checkStr, $checks, $toJson } from "@rust-js/std";
+
+const checkContact = /* @__PURE__ */ $checkShape(() => ({ name: $checkStr, email: $checkStr }));
 
 function contactSerialize_serialize(contact, json) {
   json.beginObject();
@@ -217,6 +225,7 @@ function contactSerialize_serialize(contact, json) {
 }
 
 export function toJson(contact) {
+  $checks("toJson(contact)", contact, checkContact);
   const result = $toJson(contact, contactSerialize_serialize, false);
   return result.TAG === "Ok" ? result._0 : "";
 }

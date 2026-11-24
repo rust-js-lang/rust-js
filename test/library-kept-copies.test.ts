@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { chain, triples } from "./crates";
 import { buildReact, compiler, fixture, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -25,7 +26,7 @@ test("a library's kept value given by JS to another library that changes it is a
   mid.shift(read);
   expect([read, dep.read(store)]).toEqual([{ x: 0, y: 10 }, { x: 0, y: 0 }]);
   // What it stores, of which only a number leaves: as it is.
-  const depJs = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  const depJs = withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"));
   expect(depJs.slice(depJs.indexOf("export function gotN")).split("\n}")[0]).not.toContain("...");
   // And `mid`'s, given by JS a function of `dep`'s to call.
   expect([mid.withSpot(dep.origin), dep.origin()]).toEqual([{ x: 0, y: 3 }, { x: 0, y: 0 }]);
@@ -65,7 +66,7 @@ pub fn posted() {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "out", "lib.js"), "--library", "--manifest", join(dir, "out", "lib.manifest.json"),
     "--", "--crate-name", "kept", "--crate-type=lib", "--edition=2024",
     "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "out", "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "out", "lib.js"), "utf8"));
   expect(js).toContain("decoder.decode(undefined, STREAMING)");
   expect(js).toContain("postMessage({ ...SAVED })");
 }, underLoad(300_000));
@@ -135,7 +136,7 @@ pub fn lent() -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "out", "lib.js"), "--library", "--manifest", join(dir, "out", "lib.manifest.json"),
     "--", "--crate-name", "unshared", "--crate-type=lib", "--edition=2024"]);
-  const js = readFileSync(join(dir, "out", "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "out", "lib.js"), "utf8"));
   const body = (name: string) => js.slice(js.indexOf(`export function ${name}(`)).split("\n}")[0]!;
   expect([body("joined"), body("bytes"), body("boxed")].filter((text) => /\.slice\(\)|\.\.\./.test(text))).toEqual([]);
   const lib = await import(join(dir, "out", "lib.js"));

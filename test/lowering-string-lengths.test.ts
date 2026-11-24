@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, fixture, target, wrapsProved } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -116,7 +117,7 @@ pub fn upto(n: u8) -> u8 {
 }
 `);
   expect(wrapsProved(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual(["proved-wrap count", "proved-wrap count", "proved-wrap count", "proved-wrap count", "proved-wrap pairs", "proved-wrap pairs", "proved-wrap pairs", "proved-wrap placeholders", "proved-wrap placeholders", "proved-wrap placeholders", "proved-wrap skips", "proved-wrap skips", "proved-wrap skips", "proved-wrap tail", "proved-wrap tail", "proved-wrap tail", "proved-wrap upto", "proved-wrap upto"]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // \`i + 1 < n\` puts \`i\` below \`n - 1\`, at most 253 of a \`u8\`: its \`+= 1\`
   // can't wrap, and it settles round the loop at most 254.
   expect(js).toContain("  while (i + 1 < n) {\n    i++;\n  }\n");
@@ -171,7 +172,7 @@ pub fn last(s: &str) -> u32 {
 }
 `);
   expect(wrapsProved(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual(["proved-wrap short", "proved-wrap three", "proved-wrap total"]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  return substr.length < 10 && str.length + substr.length < 40;\n");
   expect(js).toContain("  return a.length + b.length;\n");
   expect(js).toContain("  return (a.length + b.length + c.length) >>> 0;\n");

@@ -431,4 +431,28 @@ export const mutations: Mutation[] = [
     replace: "            Some(&target) if module_of(def_id) == Some(self.module) => target,\n",
     tests: ["test/method-forwarding.test.ts", "-t", "a namespace's method that only passes its parameters on to its module's function"],
   },
+  {
+    name: "split-body-uncalled",
+    breaks: "a Rust call of the crate's split function calls its entry, paying the checks of what JS gives it (#2403, ADR 1193)",
+    file: "crates/rust-js-lower/src/calls.rs",
+    find: "                (named.and_then(|named| self.unchecked_named(def_id, named))).or_else(|| self.unchecked_ref(def_id))\n",
+    replace: "                None::<js::Expr>\n",
+    tests: ["test/boundary-split.test.ts", "-t", "its entry, which checks, and its body"],
+  },
+  {
+    name: "library-body-named-apart",
+    breaks: "a consumer's call of a library's split function through its module, `dep::double(n)`, imports the body by name, `double$`, where its entry reads `Dep.double` (#2403, ADR 1193)",
+    file: "crates/rust-js-lower/src/calls.rs",
+    find: "                (named.and_then(|named| self.unchecked_named(def_id, named))).or_else(|| self.unchecked_ref(def_id))\n",
+    replace: "                self.unchecked_ref(def_id)\n",
+    tests: ["test/boundary-split.test.ts", "-t", "a consumer's direct call"],
+  },
+  {
+    name: "namespace-method-call-of-its-entry",
+    breaks: "a Rust call of a split namespace method calls its entry, `Perms.fromBitsRetain(3)`, paying its checks (#2403 lever (3))",
+    file: "crates/rust-js-lower/src/calls.rs",
+    find: "            true => self.namespaced(def_id, callee),\n",
+    replace: "            true => callee,\n",
+    tests: ["test/boundary-reach.test.ts", "-t", "a namespace's method JS may call splits"],
+  },
 ];

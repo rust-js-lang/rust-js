@@ -6,7 +6,7 @@
 // sets fields on a flag and reads them, and an early return gives it too.
 // What Rust reads of it is what it does natively.
 
-import { $debugF64, $main } from "@rust-js/std";
+import { $checkBool, $checkU8, $checks, $debugF64, $main } from "@rust-js/std";
 
 function bump(count) {
   count.value = (count.value + 1) >>> 0;
@@ -15,6 +15,7 @@ function bump(count) {
 export class Fiber {
   constructor(tag, profiled) {
     const fiber = this;
+    $checks("Fiber.new(tag, profiled)", tag, $checkU8, profiled, $checkBool);
     this.tag = tag;
     this.actualDuration = undefined;
     this.reads = 0;

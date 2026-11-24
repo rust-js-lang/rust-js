@@ -6,6 +6,9 @@
 //! never }` (ADR 1187). Split by concept from declarations.rs at its cap.
 
 use rustc_hir as hir;
+use std::rc::Rc;
+
+use rust_js_program::collections::IndexSet;
 use rustc_middle::ty;
 use rustc_span::def_id::{DefId, LocalModId};
 use serde_json::{Value, json};
@@ -509,9 +512,13 @@ fn holds_a_value(tcx: rustc_middle::ty::TyCtxt<'_>, did: DefId) -> bool {
 /// nor a class, nor a binding's type, whose `#[rust_js::types]` names JS's,
 /// nor one that holds no value, a unit struct or a handle of `PhantomData`,
 /// each JS's to make.
-pub(super) fn sealed(tcx: rustc_middle::ty::TyCtxt<'_>, did: DefId) -> bool {
+pub(crate) fn sealed(tcx: rustc_middle::ty::TyCtxt<'_>, did: DefId) -> bool {
     let variant = tcx.adt_def(did).non_enum_variant();
+    // Not one React makes, a component's props or what's flattened into
+    // them, of JSX's attributes: no brand, the declarations' or the
+    // runtime's, may refuse those (#2403).
     tcx.visibility(did).is_public()
+        && !props_types(tcx).contains(&did)
         && (variant.is_field_list_non_exhaustive() || variant.fields.iter().any(|field| !field.vis.is_public()))
         && holds_a_value(tcx, did)
         && !crate::classes::is_class(tcx, did)
@@ -526,4 +533,45 @@ pub(super) fn declared(tcx: rustc_middle::ty::TyCtxt<'_>, did: DefId) -> bool {
     tcx.adt_def(did).non_enum_variant().ctor.is_none()
         || super::named_unit(tcx, did).is_some()
         || holds_a_value(tcx, did)
+}
+
+/// The crate's structs React makes a value of: each component's props
+/// (`bindings::is_component`), and each struct flattened into them, in
+/// turn (ADR 0204), whose keys are the props' own. Found once a session.
+pub(crate) fn props_types(tcx: rustc_middle::ty::TyCtxt<'_>) -> Rc<IndexSet<DefId>> {
+    let caches = crate::session::caches(tcx);
+    let found = caches.props_types.get_or_init(|| {
+        let mut found = IndexSet::default();
+        let mut work: Vec<DefId> = (tcx.hir_crate_items(()).definitions())
+            .map(|id| id.to_def_id())
+            .filter(|&id| crate::bindings::is_component(tcx, id))
+            .filter_map(|id| {
+                let sig = tcx
+                    .instantiate_bound_regions_with_erased(tcx.fn_sig(id).instantiate_identity().skip_normalization());
+                let props = sig.inputs().first()?.peel_refs();
+                matches!(props.kind(), ty::Adt(adt, _) if adt.is_struct()).then(|| props.ty_adt_def().unwrap().did())
+            })
+            .collect();
+        while let Some(did) = work.pop() {
+            if !found.insert(did) {
+                continue;
+            }
+            let props = tcx.type_of(did).instantiate_identity().skip_normalization();
+            for (at, field) in tcx.adt_def(did).non_enum_variant().fields.iter().enumerate() {
+                let field_ty = tcx
+                    .type_of(field.did)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .peel_refs();
+                if crate::bindings::is_flatten_field(tcx, props, at)
+                    && let ty::Adt(adt, _) = field_ty.kind()
+                    && adt.is_struct()
+                {
+                    work.push(adt.did());
+                }
+            }
+        }
+        Rc::new(found)
+    });
+    found.clone()
 }

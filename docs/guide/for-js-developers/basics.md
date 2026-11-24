@@ -62,7 +62,16 @@ pub fn total(prices: &[f64], tax: f64) -> f64 {
 ```
 
 ```js
+import { $checkArray, $checkF64, $checks } from "@rust-js/std";
+
 export function total(prices, tax) {
+  $checks(
+    "total(prices, tax)",
+    prices,
+    (value, where, none) => $checkArray(value, where, none, $checkF64),
+    tax,
+    $checkF64,
+  );
   const rate = 1 + tax;
   let sum = 0;
   for (let i = 0; i < prices.length; i++) {
@@ -89,10 +98,13 @@ pub fn banner(count: usize) -> String {
 ```
 
 ```js
+import { $checkU32 } from "@rust-js/std";
+
 export const MAX_USERS = 100;
 const GREETING = "Welcome";
 
 export function banner(count) {
+  $checkU32(count, "banner(count)");
   const left = (MAX_USERS - count) >>> 0;
   return `${GREETING}! ${left} seats left`;
 }
@@ -150,10 +162,13 @@ pub fn includes_blocking_lane(lanes: i32) -> bool {
 ```
 
 ```js
+import { $checkI32 } from "@rust-js/std";
+
 export const SYNC_LANE = 0b0010;
 export const DEFAULT_LANE = 0b1000;
 
 export function includesBlockingLane(lanes) {
+  $checkI32(lanes, "includesBlockingLane(lanes)");
   const BLOCKING_LANES = SYNC_LANE | DEFAULT_LANE;
   return (lanes & BLOCKING_LANES) !== 0;
 }
@@ -182,9 +197,10 @@ pub fn counted(start: u32) -> (u32, u32) {
 ```
 
 ```js
-import { $toUppercase, $trim } from "@rust-js/std";
+import { $checkStr, $checkU32, $toUppercase, $trim } from "@rust-js/std";
 
 export function label(input) {
+  $checkStr(input, "label(input)");
   let label = $trim(input);
   label = $toUppercase(label);
   label += "!";
@@ -192,6 +208,7 @@ export function label(input) {
 }
 
 export function counted(start) {
+  $checkU32(start, "counted(start)");
   const count = start;
   const read = () => count;
   const count$1 = (count + 1) >>> 0;
@@ -239,27 +256,35 @@ pub fn percent(part: u32, whole: u32) -> f64 {
 ```
 
 ```js
+import { $checkArray, $checkF64, $checkI32, $checkU32, $checkU64, $checks } from "@rust-js/std";
+
 export function average(xs) {
+  $checks("average(xs)", xs, (value, where, none) => $checkArray(value, where, none, $checkF64));
   return xs.reduce((a, b) => a + b, -0) / xs.length;
 }
 
 export function nextId(id) {
+  $checkU32(id, "nextId(id)");
   return (id + 1) >>> 0;
 }
 
 export function score(hits, bonus) {
+  $checks("score(hits, bonus)", hits, $checkI32, bonus, $checkI32);
   return (((hits * 10) | 0) + bonus) | 0;
 }
 
 export function half(n) {
+  $checkI32(n, "half(n)");
   return (n / 2) | 0;
 }
 
 export function big(n) {
+  $checkU64(n, "big(n)");
   return BigInt.asUintN(64, n * 1000000n);
 }
 
 export function percent(part, whole) {
+  $checks("percent(part, whole)", part, $checkU32, whole, $checkU32);
   return (part / whole) * 100;
 }
 ```
@@ -296,25 +321,41 @@ pub fn ways(stairs: i32) -> usize {
 ```
 
 ```js
-import { $checked, $f64ToInt, $parseInt, $trim } from "@rust-js/std";
+import {
+  $checkF64,
+  $checkI32,
+  $checkStr,
+  $checkU32,
+  $checkU8,
+  $checked,
+  $checks,
+  $f64ToInt,
+  $parseInt,
+  $trim,
+} from "@rust-js/std";
 
 export function checked(a, b) {
+  $checks("checked(a, b)", a, $checkU32, b, $checkU32);
   return $checked(a + b, 0, 4294967295);
 }
 
 export function saturating(a, b) {
+  $checks("saturating(a, b)", a, $checkU8, b, $checkU8);
   return Math.max(a - b, 0);
 }
 
 export function toByte(f) {
+  $checkF64(f, "toByte(f)");
   return $f64ToInt(f, 0, 255);
 }
 
 export function parseAge(s) {
+  $checkStr(s, "parseAge(s)");
   return $parseInt($trim(s), 0, 255);
 }
 
 export function ways(stairs) {
+  $checkI32(stairs, "ways(stairs)");
   if (stairs < 0) {
     return 0;
   }
@@ -387,7 +428,16 @@ pub fn fits(str: &str, substr: &str) -> bool {
 ```
 
 ```js
+import { $checkArray, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
 export function countBelow(xs, limit) {
+  $checks(
+    "countBelow(xs, limit)",
+    xs,
+    (value, where, none) => $checkArray(value, where, none, $checkU32),
+    limit,
+    $checkU32,
+  );
   let i = 0;
   while (i < xs.length && xs[i] < limit) {
     i++;
@@ -396,6 +446,7 @@ export function countBelow(xs, limit) {
 }
 
 export function placeholders(format) {
+  $checkStr(format, "placeholders(format)");
   let n = 0;
   let i = 0;
   while (i + 1 < format.length) {
@@ -409,6 +460,7 @@ export function placeholders(format) {
 }
 
 export function fits(str, substr) {
+  $checks("fits(str, substr)", str, $checkStr, substr, $checkStr);
   return substr.length < 10 && str.length + substr.length < 40;
 }
 ```
@@ -473,32 +525,41 @@ pub fn count_lanes(mut lanes: i32) -> u32 {
 ```
 
 ```js
+import { $checkI32, $checkShape, $checkU32, $checks } from "@rust-js/std";
+
 export function removeLane(lanes, lane) {
+  $checks("removeLane(lanes, lane)", lanes, $checkI32, lane, $checkI32);
   lanes &= ~lane;
   return lanes;
 }
 
 export function markUpdated(root, lane) {
+  $checks("markUpdated(root, lane)", root, checkRoot, lane, $checkI32);
   root.pendingLanes |= lane;
 }
 
 export function laneOf(index) {
+  $checkU32(index, "laneOf(index)");
   return 1 << index;
 }
 
 export function highestPriorityLane(lanes) {
+  $checkI32(lanes, "highestPriorityLane(lanes)");
   return lanes & -lanes;
 }
 
 export const SYNC_LANE = 0b10;
+const checkRoot = /* @__PURE__ */ $checkShape(() => ({}));
 
 export function labelForLane(lane) {
+  $checkI32(lane, "labelForLane(lane)");
   if (lane & SYNC_LANE) {
     return "Sync";
   }
 }
 
 export function countLanes(lanes) {
+  $checkI32(lanes, "countLanes(lanes)");
   let count = 0;
   while (lanes) {
     lanes &= lanes - 1;
@@ -522,9 +583,12 @@ pub fn low_byte(n: u32) -> u32 {
 ```
 
 ```js
+import { $checkU32 } from "@rust-js/std";
+
 export const OWNER_STACK_LIMIT = 1e4;
 
 export function lowByte(n) {
+  $checkU32(n, "lowByte(n)");
   return n & 0xff;
 }
 ```
@@ -566,21 +630,25 @@ pub fn log_user(name: &str, age: u8) {
 ```
 
 ```js
-import { $toUppercase } from "@rust-js/std";
+import { $checkStr, $checkU32, $checkU8, $checks, $toUppercase } from "@rust-js/std";
 
 export function label(name, count) {
+  $checks("label(name, count)", name, $checkStr, count, $checkU32);
   return `${name} has ${count} items`;
 }
 
 export function price(cents) {
+  $checkU32(cents, "price(cents)");
   return `$${(cents / 100) >>> 0}.${String(cents % 100).padStart(2, "0")}`;
 }
 
 export function shout(s) {
+  $checkStr(s, "shout(s)");
   return $toUppercase(s) + "!";
 }
 
 export function logUser(name, age) {
+  $checks("logUser(name, age)", name, $checkStr, age, $checkU8);
   console.log(`user ${name}, age ${age}`);
 }
 ```
@@ -652,6 +720,8 @@ pub fn format_prod_error_message(code: u32, url: &str) -> String {
 ```
 
 ```js
+import { $checkStr, $checkU32, $checks } from "@rust-js/std";
+
 export const OMITTED_PROP_ERROR =
   "This object has been omitted by React in the console log " +
   "to avoid sending too much data from the server. Try logging smaller " +
@@ -671,6 +741,7 @@ export function version() {
 }
 
 export function formatProdErrorMessage(code, url) {
+  $checks("formatProdErrorMessage(code, url)", code, $checkU32, url, $checkStr);
   return (
     `Minified React error #${code}; visit ${url} for the full message or ` +
     "use the non-minified dev environment for full errors and additional " +
@@ -737,11 +808,15 @@ pub fn apply_twice(x: i32) -> i32 {
 ```
 
 ```js
+import { $checkI32, $checks } from "@rust-js/std";
+
 export function add(a, b) {
+  $checks("add(a, b)", a, $checkI32, b, $checkI32);
   return (a + b) | 0;
 }
 
 export function applyTwice(x) {
+  $checkI32(x, "applyTwice(x)");
   const double = (n) => (n * 2) | 0;
   return double(double(x));
 }
@@ -781,6 +856,8 @@ pub fn run(seen: &RefCell<Vec<u32>>) {
 ```
 
 ```js
+import { $checkArray, $checkU32, $checks } from "@rust-js/std";
+
 function log(seen, n) {
   seen.push(n);
 }
@@ -790,6 +867,7 @@ function later(f) {
 }
 
 export function run(seen) {
+  $checks("run(seen)", seen, (value, where, none) => $checkArray(value, where, none, $checkU32));
   later(() => log(seen, 1));
   later(() =>
     // Logged second.
@@ -832,14 +910,17 @@ pub fn repeat(text: &str, times: Option<usize>) -> String {
 ```
 
 ```js
-import { $repeatText } from "@rust-js/std";
+import { $checkStr, $checkU32, $repeatText } from "@rust-js/std";
 
 export function greeting(name) {
+  $checkStr(name, "greeting(name)", "nullish");
   name ??= "stranger";
   return `Hello, ${name}`;
 }
 
 export function repeat(text, times) {
+  $checkStr(text, "repeat(text)");
+  $checkU32(times, "repeat(times)", "nullish");
   return $repeatText(text, times ?? 1);
 }
 ```
@@ -881,7 +962,7 @@ pub fn twice_by(repeat: &dyn Fn(&str, Option<usize>) -> String) -> String {
 ```
 
 ```js
-import { $repeatText } from "@rust-js/std";
+import { $checkCallback, $checkStr, $checkU32, $repeatText } from "@rust-js/std";
 
 const DISPATCHER = { repeat };
 
@@ -890,9 +971,12 @@ export function twice() {
 }
 
 export function twiceBy(repeat) {
+  repeat = $checkCallback(repeat, "twiceBy(repeat)", $checkStr);
   return repeat("ab");
 }
 export function repeat(text, times) {
+  $checkStr(text, "repeat(text)");
+  $checkU32(times, "repeat(times)", "nullish");
   return $repeatText(text, times ?? 1);
 }
 ```
@@ -938,19 +1022,26 @@ pub fn moved(p: &Point, dx: f64) -> Point {
 ```
 
 ```js
+import { $checkF64, $checkShape, $checks } from "@rust-js/std";
+
+const checkPoint = /* @__PURE__ */ $checkShape(() => ({ x: $checkF64, y: $checkF64 }));
+
 export function origin() {
   return { x: 0, y: 0 };
 }
 
 export function make(x, y) {
+  $checks("make(x, y)", x, $checkF64, y, $checkF64);
   return { x, y };
 }
 
 export function shift(p, dy) {
+  $checks("shift(p, dy)", p, checkPoint, dy, $checkF64);
   p.y += dy;
 }
 
 export function moved(p, dx) {
+  $checks("moved(p, dx)", p, checkPoint, dx, $checkF64);
   return {
     x: p.x + dx,
     y: { ...p }.y,
@@ -1031,21 +1122,46 @@ pub fn first_two(items: &[String]) -> Option<String> {
 ```
 
 ```js
+import {
+  $checkArray,
+  $checkI32,
+  $checkShape,
+  $checkStr,
+  $checkTuple,
+  $checkU32,
+  $checks,
+} from "@rust-js/std";
+
+const checkUser = /* @__PURE__ */ $checkShape(() => ({
+  name: $checkStr,
+  age: $checkU32,
+  email: [$checkStr, "nullish"],
+}));
+
 export function describe(user) {
+  $checks("describe(user)", user, checkUser);
   const { name, age } = user;
   return `${name} (${age})`;
 }
 
 export function contact({ name, email }) {
+  $checkStr(name, "contact(props.name)");
+  $checkStr(email, "contact(props.email)", "nullish");
   return email != null ? `${name} <${email}>` : name;
 }
 
 export function swap(pair) {
+  $checks("swap(pair)", pair, (value, where, none) =>
+    $checkTuple(value, where, none, [$checkI32, $checkI32]),
+  );
   const [a, b] = pair;
   return [b, a];
 }
 
 export function firstTwo(items) {
+  $checks("firstTwo(items)", items, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   if (items.length < 2) {
     return;
   }
@@ -1101,11 +1217,15 @@ pub fn fee(member: bool, amount: f64) -> f64 {
 ```
 
 ```js
+import { $checkBool, $checkF64, $checkI32, $checks } from "@rust-js/std";
+
 export function sign(n) {
+  $checkI32(n, "sign(n)");
   return n < 0 ? "negative" : n === 0 ? "zero" : "positive";
 }
 
 export function fee(member, amount) {
+  $checks("fee(member, amount)", member, $checkBool, amount, $checkF64);
   const rate = member ? 0.01 : 0.03;
   return amount * rate;
 }
@@ -1176,13 +1296,17 @@ pub fn measured(clones: Option<&Vec<u32>>) -> usize {
 ```
 
 ```js
+import { $checkArray, $checkBool, $checkF64, $checkU32, $checkWhole, $checks } from "@rust-js/std";
+
 export function color(duration) {
+  $checkF64(duration, "color(duration)");
   const color =
     duration < 5 ? "light" : duration < 10 ? "plain" : duration < 100 ? "dark" : "error";
   return `${color}!`;
 }
 
 export function shade(duration, hydrated) {
+  $checks("shade(duration, hydrated)", duration, $checkF64, hydrated, $checkBool);
   let shade;
   if (duration < 5) {
     shade = hydrated ? "tertiary" : "primary";
@@ -1195,12 +1319,25 @@ export function shade(duration, hydrated) {
 }
 
 export function reason(blocking, snapshot) {
+  $checks(
+    "reason(blocking, snapshot)",
+    blocking,
+    (value, where, none) => $checkArray(value, where, none, $checkU32),
+    snapshot,
+    $checkU32,
+  );
   const reason =
     snapshot > 0 ? (blocking.length > snapshot ? "fonts and images" : "fonts") : "images";
   return `waiting on ${reason}`;
 }
 
 export function measured(clones) {
+  $checkWhole(
+    (value, where, none) => $checkArray(value, where, none, $checkU32),
+    clones,
+    "measured(clones)",
+    "nullish",
+  );
   let previous;
   if (clones == null) {
     previous = undefined;
@@ -1277,6 +1414,8 @@ pub fn total(member: bool, code: &str, amount: f64) -> f64 {
 ```
 
 ```js
+import { $checkBool, $checkF64, $checkStr, $checks } from "@rust-js/std";
+
 function discount(code) {
   if (code === "SAVE10") {
     return 0.1;
@@ -1284,6 +1423,7 @@ function discount(code) {
 }
 
 export function total(member, code, amount) {
+  $checks("total(member, code, amount)", member, $checkBool, code, $checkStr, amount, $checkF64);
   const rate = member ? discount(code) : undefined;
   const saved = rate != null ? amount * rate : 0;
   return amount - saved;
@@ -1407,7 +1547,10 @@ pub fn place(tag: u8, log: &mut Vec<u8>) {
 ```
 
 ```js
+import { $checkArray, $checkBool, $checkU32, $checkU8, $checks } from "@rust-js/std";
+
 export function describe(kind, ready, dev) {
+  $checks("describe(kind, ready, dev)", kind, $checkU32, ready, $checkBool, dev, $checkBool);
   let label;
   if (kind === 1) {
     label = "element";
@@ -1422,6 +1565,9 @@ export function describe(kind, ready, dev) {
 }
 
 export function place(tag, log) {
+  $checks("place(tag, log)", tag, $checkU8, log, (value, where, none) =>
+    $checkArray(value, where, none, $checkU8),
+  );
   if (tag === 5) {
     log.push(tag);
     return;
@@ -1458,6 +1604,8 @@ pub fn doubled(n: Option<u32>) -> u32 {
 ```
 
 ```js
+import { $checkU32 } from "@rust-js/std";
+
 export function lanes(current, wip) {
   if (current == null) {
     if (wip.value === 1) {
@@ -1471,6 +1619,7 @@ export function lanes(current, wip) {
 }
 
 export function doubled(n) {
+  $checkU32(n, "doubled(n)", "nullish");
   return n != null ? (n * 2) >>> 0 : 1;
 }
 ```
@@ -1490,7 +1639,13 @@ pub fn logged(depth: u32, value: Option<u32>, out: &mut Vec<u32>) {
 ```
 
 ```js
+import { $checkArray, $checkU32, $checks } from "@rust-js/std";
+
 export function logged(depth, value, out) {
+  $checks("logged(depth, out)", depth, $checkU32, out, (value, where, none) =>
+    $checkArray(value, where, none, $checkU32),
+  );
+  $checkU32(value, "logged(value)", "nullish");
   if (depth >= 3) {
     // Too deep: logged by the caller.
   } else if (value != null) {
@@ -1515,7 +1670,24 @@ pub fn reported(r: Result<(), u32>, out: &mut Vec<u32>) {
 ```
 
 ```js
+import { $checkArray, $checkField, $checkTag, $checkU32, $checkUnit, $checks } from "@rust-js/std";
+
 export function reported(r, out) {
+  $checks(
+    "reported(r, out)",
+    r,
+    (value) => {
+      const tag = $checkTag(value, "TAG", ["Ok", "Err"], []);
+      if (tag === "Ok") {
+        $checkField(value, "_0", $checkUnit);
+      }
+      if (tag === "Err") {
+        $checkField(value, "_0", $checkU32);
+      }
+    },
+    out,
+    (value, where, none) => $checkArray(value, where, none, $checkU32),
+  );
   if (r.TAG === "Err") {
     out.push(r._0);
   } else {
@@ -1542,7 +1714,12 @@ pub fn found(n: u32, out: &mut Vec<u32>) -> Option<u32> {
 ```
 
 ```js
+import { $checkArray, $checkU32, $checks } from "@rust-js/std";
+
 export function found(n, out) {
+  $checks("found(n, out)", n, $checkU32, out, (value, where, none) =>
+    $checkArray(value, where, none, $checkU32),
+  );
   if (n > 3) {
     out.push(n);
     // Logged; found.
@@ -1572,7 +1749,16 @@ pub fn sorted(pair: (u32, u32), log: &mut Vec<u32>) {
 ```
 
 ```js
+import { $checkArray, $checkTuple, $checkU32, $checks } from "@rust-js/std";
+
 export function sorted(pair, log) {
+  $checks(
+    "sorted(pair, log)",
+    pair,
+    (value, where, none) => $checkTuple(value, where, none, [$checkU32, $checkU32]),
+    log,
+    (value, where, none) => $checkArray(value, where, none, $checkU32),
+  );
   if (pair[0] === 1 || pair[1] === 1) {
     log.push(1);
   } else if (pair[0] === 2 && pair[1] === 2) {
@@ -1606,9 +1792,10 @@ pub fn checked(f: fn(u32) -> u32) -> u32 {
 ```
 
 ```js
-import { $catchable } from "@rust-js/std";
+import { $catchable, $checkCallback, $checkU32 } from "@rust-js/std";
 
 export function checked(f) {
+  f = $checkCallback(f, "checked(f)", $checkU32);
   try {
     f(1);
     f(2);
@@ -1653,9 +1840,11 @@ pub fn render(reason: u8, work: fn(u8)) -> u8 {
 ```
 
 ```js
-import { $catchable } from "@rust-js/std";
+import { $catchable, $checkCallback, $checkU8 } from "@rust-js/std";
 
 export function render(reason, work) {
+  $checkU8(reason, "render(reason)");
+  $checkCallback(work, "render(work)");
   let status = 0;
   outer: while (true) {
     try {
@@ -1724,9 +1913,10 @@ pub fn http_status(code: u16) -> String {
 ```
 
 ```js
-import { $stringPanic } from "@rust-js/std";
+import { $checkU16, $checkU8, $stringPanic } from "@rust-js/std";
 
 export function dayName(day) {
+  $checkU8(day, "dayName(day)");
   switch (day) {
     case 0:
       return "Sunday";
@@ -1744,6 +1934,7 @@ export function dayName(day) {
 }
 
 export function weekend(day) {
+  $checkU8(day, "weekend(day)");
   if (day === 0 || day === 6) {
     return true;
   }
@@ -1754,6 +1945,7 @@ export function weekend(day) {
 }
 
 export function httpStatus(code) {
+  $checkU16(code, "httpStatus(code)");
   if (code === 200 || code === 204) {
     return "ok";
   }
@@ -1861,10 +2053,13 @@ pub fn settled(status: Option<&str>) -> u32 {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 const INITIALIZED = "fulfilled";
 const ERRORED = "rejected";
 
 export function settled(status) {
+  $checkStr(status, "settled(status)", "nullish");
   switch (status) {
     case INITIALIZED:
       return 1;
@@ -1895,10 +2090,13 @@ pub fn timeout(level: u8) -> f64 {
 ```
 
 ```js
+import { $checkU8 } from "@rust-js/std";
+
 export const IMMEDIATE = 1;
 export const IDLE = 5;
 
 export function timeout(level) {
+  $checkU8(level, "timeout(level)");
   switch (level) {
     case IMMEDIATE:
       // Times out immediately
@@ -1945,7 +2143,12 @@ pub fn unchecked(names: &[&str]) -> usize {
 ```
 
 ```js
+import { $checkArray, $checkStr, $checks } from "@rust-js/std";
+
 export function unchecked(names) {
+  $checks("unchecked(names)", names, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   let found = 0;
   for (let i = 0; i < names.length; i++) {
     const name = names[i];
@@ -1993,7 +2196,18 @@ pub fn extract(name: &str, skip: bool, log: &mut Vec<u32>) {
 ```
 
 ```js
+import { $checkArray, $checkBool, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
 export function extract(name, skip, log) {
+  $checks(
+    "extract(name, skip, log)",
+    name,
+    $checkStr,
+    skip,
+    $checkBool,
+    log,
+    (value, where, none) => $checkArray(value, where, none, $checkU32),
+  );
   switch (name) {
     // Track the input node that has focus.
     case "focusin":
@@ -2042,7 +2256,11 @@ pub fn resolve(status: Option<&str>, log: &mut Vec<String>) -> u32 {
 ```
 
 ```js
+import { $checkArray, $checkStr, $checks } from "@rust-js/std";
+
 export function resolve(status, log) {
+  $checkStr(status, "resolve(status)", "nullish");
+  $checks("resolve(log)", log, (value, where, none) => $checkArray(value, where, none, $checkStr));
   switch (status) {
     case "fulfilled":
       return 1;
@@ -2083,7 +2301,11 @@ pub fn update(error: Option<bool>, log: &mut Vec<u32>) {
 ```
 
 ```js
+import { $checkArray, $checkBool, $checkU32, $checks } from "@rust-js/std";
+
 export function update(error, log) {
+  $checkBool(error, "update(error)", "nullish");
+  $checks("update(log)", log, (value, where, none) => $checkArray(value, where, none, $checkU32));
   switch (error) {
     case false:
       log.push(1);
@@ -2118,11 +2340,14 @@ pub fn name(kind: u8, tracing: bool) -> Option<&'static str> {
 ```
 
 ```js
+import { $checkBool, $checkU8, $checks } from "@rust-js/std";
+
 export const FRAGMENT = 1;
 export const PROFILER = 2;
 export const TRACING_MARKER = 3;
 
 export function name(kind, tracing) {
+  $checks("name(kind, tracing)", kind, $checkU8, tracing, $checkBool);
   switch (kind) {
     case FRAGMENT:
       return "Fragment";
@@ -2167,11 +2392,24 @@ pub fn name(tag: u8, ty: &str, view_transitions: bool, legacy_off: bool) -> Opti
 ```
 
 ```js
+import { $checkBool, $checkStr, $checkU8, $checks } from "@rust-js/std";
+
 export const VIEW_TRANSITION = 1;
 export const INCOMPLETE_CLASS = 2;
 export const CLASS = 3;
 
 export function name(tag, ty, viewTransitions, legacyOff) {
+  $checks(
+    "name(tag, ty, viewTransitions, legacyOff)",
+    tag,
+    $checkU8,
+    ty,
+    $checkStr,
+    viewTransitions,
+    $checkBool,
+    legacyOff,
+    $checkBool,
+  );
   switch (tag) {
     case VIEW_TRANSITION:
       if (viewTransitions) {
@@ -2223,15 +2461,19 @@ pub fn early_bailout(fiber: &Fiber, on_b: bool, on_c: bool) -> u32 {
 ```
 
 ```js
+import { $checkBool, $checkShape, $checks } from "@rust-js/std";
+
 export const A = 1;
 export const B = 2;
 export const C = 3;
+const checkFiber = /* @__PURE__ */ $checkShape(() => ({}));
 
 function bailout(fiber) {
   return fiber.lanes;
 }
 
 export function earlyBailout(fiber, onB, onC) {
+  $checks("earlyBailout(fiber, onB, onC)", fiber, checkFiber, onB, $checkBool, onC, $checkBool);
   switch (fiber.tag) {
     case A:
       fiber.lanes = 1;
@@ -2284,7 +2526,16 @@ pub fn kept(names: &[&str], out: &mut Vec<u32>) {
 ```
 
 ```js
+import { $checkArray, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
 export function kept(names, out) {
+  $checks(
+    "kept(names, out)",
+    names,
+    (value, where, none) => $checkArray(value, where, none, $checkStr),
+    out,
+    (value, where, none) => $checkArray(value, where, none, $checkU32),
+  );
   for (let i = 0; i < names.length; i++) {
     const name = names[i];
     switch (name) {
@@ -2324,11 +2575,14 @@ pub fn frame(tag: u8, view_transitions: bool) -> String {
 ```
 
 ```js
+import { $checkBool, $checkU8, $checks } from "@rust-js/std";
+
 export const HOST = 1;
 export const LAZY = 2;
 export const VIEW_TRANSITION = 3;
 
 export function frame(tag, viewTransitions) {
+  $checks("frame(tag, viewTransitions)", tag, $checkU8, viewTransitions, $checkBool);
   switch (tag) {
     case HOST:
       return "host";
@@ -2378,10 +2632,13 @@ pub fn event_kind(name: &str) -> u32 {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 const ANIMATION_END = "animationend";
 const ANIMATION_START = "animationstart";
 
 export function eventKind(name) {
+  $checkStr(name, "eventKind(name)");
   switch (name) {
     case "click":
     case "auxclick":
@@ -2427,7 +2684,10 @@ pub fn count(s: &str) -> u32 {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function count(s) {
+  $checkStr(s, "count(s)");
   let n = 0;
   for (const c of s) {
     if (c === "a" || c === "e") {
@@ -2479,18 +2739,34 @@ pub fn count(codes: &mut Codes, limit: u32) -> u32 {
 ```
 
 ```js
+import { $checkArray, $checkShape, $checkU32, $checks } from "@rust-js/std";
+
 export const Codes = {
   nextCode(codes) {
+    $checks("Codes.nextCode(codes)", codes, checkCodes);
+    return Codes.nextCode$(codes);
+  },
+  nextCode$(codes) {
     codes.at = (codes.at + 1) >>> 0;
     return codes.codes[(codes.at - 1) >>> 0] ?? 0;
   },
 };
 
+const checkCodes = /* @__PURE__ */ $checkShape(
+  () => ({
+    at: $checkU32,
+    codes: (value, where, none) => $checkArray(value, where, none, $checkU32),
+  }),
+  "example#7ebd57e3c80d9be4::Codes",
+  "a Codes",
+);
+
 export function count(codes, limit) {
+  $checks("count(codes, limit)", codes, checkCodes, limit, $checkU32);
   let n = 0;
   while (true) {
     n = (n + 1) >>> 0;
-    const nextCode = Codes.nextCode(codes);
+    const nextCode = Codes.nextCode$(codes);
     if (nextCode === 0) {
       break;
     }
@@ -2640,7 +2916,10 @@ pub fn unit() -> Shape {
 ```
 
 ```js
+import { $checkF64, $checkField, $checkOneOf, $checkTag, $checks } from "@rust-js/std";
+
 export function next(light) {
+  $checkOneOf(light, ["Red", "Yellow", "Green"], "next(light)");
   switch (light) {
     case "Red":
       return "Green";
@@ -2651,7 +2930,19 @@ export function next(light) {
   }
 }
 
+function checkShape(value) {
+  const tag = $checkTag(value, "TAG", ["Circle", "Rect"], []);
+  if (tag === "Circle") {
+    $checkField(value, "radius", $checkF64);
+  }
+  if (tag === "Rect") {
+    $checkField(value, "width", $checkF64);
+    $checkField(value, "height", $checkF64);
+  }
+}
+
 export function area(shape) {
+  $checks("area(shape)", shape, checkShape);
   return shape.TAG === "Circle"
     ? Math.PI * shape.radius * shape.radius
     : shape.width * shape.height;
@@ -2697,12 +2988,29 @@ pub fn grow(shape: &mut Shape) {
 ```
 
 ```js
+import { $checkF64, $checkField, $checkTag, $checks } from "@rust-js/std";
+
+function checkShape(value) {
+  const tag = $checkTag(value, "TAG", ["Circle", "Square", "Ring"], []);
+  if (tag === "Circle") {
+    $checkField(value, "r", $checkF64);
+  }
+  if (tag === "Square") {
+    $checkField(value, "r", $checkF64);
+  }
+  if (tag === "Ring") {
+    $checkField(value, "_0", $checkF64);
+  }
+}
+
 export function size(shape) {
+  $checks("size(shape)", shape, checkShape);
   const kind = shape.TAG;
   return kind === "Circle" || kind === "Square" ? shape.r : -shape._0;
 }
 
 export function grow(shape) {
+  $checks("grow(shape)", shape, checkShape);
   const kind = shape.TAG;
   if (kind === "Circle" || kind === "Square") {
     shape.r++;
@@ -2753,8 +3061,12 @@ pub fn report(task: &RefCell<Task>, done: &dyn Fn(f64), failed: &dyn Fn(&str)) {
 ```
 
 ```js
+import { $checkCallback } from "@rust-js/std";
+
 export function report(task, done, failed) {
   // Called back once `task` is no longer borrowed, as each may read it.
+  $checkCallback(done, "report(done)");
+  $checkCallback(failed, "report(failed)");
   const value = task.value;
   if (value === "Waiting") {
     return;
@@ -2831,7 +3143,12 @@ pub fn find_pair(grid: &[Vec<i32>], target: i32) -> Option<(usize, usize)> {
 ```
 
 ```js
+import { $checkArray, $checkI32, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
 export function printAll(names) {
+  $checks("printAll(names)", names, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   for (let i = 0; i < names.length; i++) {
     const name = names[i];
     console.log(`${name}`);
@@ -2839,12 +3156,16 @@ export function printAll(names) {
 }
 
 export function numbered(names) {
+  $checks("numbered(names)", names, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   for (const [i, name] of names.entries()) {
     console.log(`${i}: ${name}`);
   }
 }
 
 export function countdown(n) {
+  $checkU32(n, "countdown(n)");
   while (n > 0) {
     console.log(`${n}`);
     n--;
@@ -2852,6 +3173,7 @@ export function countdown(n) {
 }
 
 export function firstSquareOver(limit) {
+  $checkU32(limit, "firstSquareOver(limit)");
   let n = 1;
   let square;
   while (true) {
@@ -2865,6 +3187,16 @@ export function firstSquareOver(limit) {
 }
 
 export function findPair(grid, target) {
+  $checks(
+    "findPair(grid, target)",
+    grid,
+    (value, where, none) =>
+      $checkArray(value, where, none, (value, where, none) =>
+        $checkArray(value, where, none, $checkI32),
+      ),
+    target,
+    $checkI32,
+  );
   for (const [r, row] of grid.entries()) {
     for (const [c, cell] of row.entries()) {
       if (cell === target) {
@@ -2897,7 +3229,12 @@ pub fn last_named(names: &[String]) -> Option<&String> {
 ```
 
 ```js
+import { $checkArray, $checkStr, $checks } from "@rust-js/std";
+
 export function lastNamed(names) {
+  $checks("lastNamed(names)", names, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   for (let i = names.length - 1; i >= 0; i--) {
     const name = names[i];
     if (name !== "") {
@@ -2928,7 +3265,12 @@ pub fn completed(batch: &[u32]) -> u32 {
 ```
 
 ```js
+import { $checkArray, $checkU32, $checks } from "@rust-js/std";
+
 export function completed(batch) {
+  $checks("completed(batch)", batch, (value, where, none) =>
+    $checkArray(value, where, none, $checkU32),
+  );
   let sum = 0;
   for (let i = 0; i < batch.length; i += 2) {
     const id = batch[i];
@@ -2955,7 +3297,10 @@ pub fn pairs(v: &[u32]) -> u32 {
 ```
 
 ```js
+import { $checkArray, $checkU32, $checks } from "@rust-js/std";
+
 export function pairs(v) {
+  $checks("pairs(v)", v, (value, where, none) => $checkArray(value, where, none, $checkU32));
   let total = 0;
   for (let i = 0; i < v.length; i += 2) {
     total = (total + (Math.imul(v[i], v[i + 1] ?? 1) >>> 0)) >>> 0;
@@ -3052,7 +3397,16 @@ pub fn until_tag(words: &[&str], tags: &mut Vec<String>) -> usize {
 ```
 
 ```js
+import { $checkArray, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
 export function sentence(words, limit) {
+  $checks(
+    "sentence(words, limit)",
+    words,
+    (value, where, none) => $checkArray(value, where, none, $checkStr),
+    limit,
+    $checkU32,
+  );
   let i = 0;
   while (i < words.length) {
     if (words[i] === "" || i === limit) {
@@ -3065,6 +3419,13 @@ export function sentence(words, limit) {
 }
 
 export function untilTag(words, tags) {
+  $checks(
+    "untilTag(words, tags)",
+    words,
+    (value, where, none) => $checkArray(value, where, none, $checkStr),
+    tags,
+    (value, where, none) => $checkArray(value, where, none, $checkStr),
+  );
   let i = 0;
   let word;
   while ((word = words[i]) != null) {
@@ -3162,6 +3523,14 @@ pub fn count_skipping(mut child: Option<Rc<Fiber>>, skip: &Rc<Fiber>) -> u32 {
 ```
 
 ```js
+import { $checkF64, $checkShape, $checkWhole, $checks } from "@rust-js/std";
+
+const checkFiber = /* @__PURE__ */ $checkShape(() => ({
+  duration: $checkF64,
+  child: [checkFiber, "nullish"],
+  sibling: [checkFiber, "nullish"],
+}));
+
 export function callAll(callbacks) {
   for (let i = 0; i < callbacks.length; i++) {
     (0, callbacks[i])();
@@ -3169,6 +3538,7 @@ export function callAll(callbacks) {
 }
 
 export function selfTime(fiber) {
+  $checks("selfTime(fiber)", fiber, checkFiber);
   let total = fiber.duration;
   let child = fiber.child;
   while (child != null) {
@@ -3179,6 +3549,8 @@ export function selfTime(fiber) {
 }
 
 export function countSkipping(child, skip) {
+  $checkWhole(checkFiber, child, "countSkipping(child)", "nullish");
+  $checks("countSkipping(skip)", skip, checkFiber);
   let n = 0;
   while (child != null) {
     if (child === skip) {
@@ -3237,7 +3609,12 @@ pub fn sum(first: &Rc<Update>, skip: u32) -> u32 {
 ```
 
 ```js
+import { $checkShape, $checkU32, $checks } from "@rust-js/std";
+
+const checkUpdate = /* @__PURE__ */ $checkShape(() => ({ lane: $checkU32 }));
+
 export function sum(first, skip) {
+  $checks("sum(first, skip)", first, checkUpdate, skip, $checkU32);
   let total = 0;
   let update = first;
   do {
@@ -3290,7 +3667,10 @@ pub fn below_zero(mut n: i32, by: i32) -> i32 {
 ```
 
 ```js
+import { $checkI32, $checkU32, $checks } from "@rust-js/std";
+
 export function digits(n) {
+  $checkU32(n, "digits(n)");
   let count = 0;
   do {
     count = (count + 1) >>> 0;
@@ -3300,6 +3680,7 @@ export function digits(n) {
 }
 
 export function belowZero(n, by) {
+  $checks("belowZero(n, by)", n, $checkI32, by, $checkI32);
   do {
     n = (n - by) | 0;
   } while (n >= 0);
@@ -3347,18 +3728,26 @@ pub fn is_adult(p: &Profile) -> bool {
 ```
 
 ```js
-import { $next } from "@rust-js/std";
+import { $checkShape, $checkStr, $checkU32, $checks, $next } from "@rust-js/std";
+
+const checkProfile = /* @__PURE__ */ $checkShape(() => ({
+  nickname: [$checkStr, "nullish"],
+  age: [$checkU32, "nullish"],
+}));
 
 export function displayName(p) {
+  $checks("displayName(p)", p, checkProfile);
   return p.nickname ?? "anonymous";
 }
 
 export function ageNextYear(p) {
+  $checks("ageNextYear(p)", p, checkProfile);
   const a = p.age;
   return (a != null ? (a + 1) >>> 0 : undefined) ?? undefined;
 }
 
 export function initial(p) {
+  $checks("initial(p)", p, checkProfile);
   const value = p.nickname;
   if (value == null) {
     return;
@@ -3367,6 +3756,7 @@ export function initial(p) {
 }
 
 export function isAdult(p) {
+  $checks("isAdult(p)", p, checkProfile);
   return p.age != null && p.age >= 18;
 }
 ```
@@ -3542,11 +3932,14 @@ pub fn label(text: Option<&str>) -> &str {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function nameOf(ty) {
   return ty.displayName || ty.name || null;
 }
 
 export function label(text) {
+  $checkStr(text, "label(text)", "nullish");
   return text || "untitled";
 }
 ```
@@ -3629,25 +4022,44 @@ pub fn is_first(points: &[Point], p: &Point) -> bool {
 ```
 
 ```js
-import { $eq, $index } from "@rust-js/std";
+import { $checkArray, $checkI32, $checkShape, $checkStr, $checks, $eq, $index } from "@rust-js/std";
+
+const checkPoint = /* @__PURE__ */ $checkShape(() => ({ x: $checkI32, y: $checkI32 }));
 
 export function sameName(a, b) {
+  $checks("sameName(a, b)", a, $checkStr, b, $checkStr);
   return a === b;
 }
 
 export function samePoint(a, b) {
+  $checks("samePoint(a, b)", a, checkPoint, b, checkPoint);
   return $eq(a, b);
 }
 
 export function sameList(a, b) {
+  $checks(
+    "sameList(a, b)",
+    a,
+    (value, where, none) => $checkArray(value, where, none, $checkI32),
+    b,
+    (value, where, none) => $checkArray(value, where, none, $checkI32),
+  );
   return $eq(a, b);
 }
 
 export function sameRef(a, b) {
+  $checks("sameRef(a, b)", a, checkPoint, b, checkPoint);
   return a === b;
 }
 
 export function isFirst(points, p) {
+  $checks(
+    "isFirst(points, p)",
+    points,
+    (value, where, none) => $checkArray(value, where, none, checkPoint),
+    p,
+    checkPoint,
+  );
   return $index(points, 0, "lib.rs:24:19") === p;
 }
 ```
@@ -3686,9 +4098,32 @@ pub fn describe(v: &Value) -> String {
 ```
 
 ```js
-import { $debugStr, $displayF64 } from "@rust-js/std";
+import {
+  $checkBool,
+  $checkF64,
+  $checkField,
+  $checkStr,
+  $checkTag,
+  $checks,
+  $debugStr,
+  $displayF64,
+} from "@rust-js/std";
+
+function checkValue(value) {
+  const tag = $checkTag(value, "TAG", ["Number", "Text", "Flag"], []);
+  if (tag === "Number") {
+    $checkField(value, "_0", $checkF64);
+  }
+  if (tag === "Text") {
+    $checkField(value, "_0", $checkStr);
+  }
+  if (tag === "Flag") {
+    $checkField(value, "_0", $checkBool);
+  }
+}
 
 export function describe(v) {
+  $checks("describe(v)", v, checkValue);
   const kind = v.TAG;
   if (kind === "Number") {
     return `number ${$displayF64(v._0)}`;
@@ -3788,8 +4223,10 @@ pub fn format_price(cents: u32) -> String {
 ```js
 // lib.js
 import { formatPrice } from "./money.js";
+import { $checkStr, $checkU32, $checks } from "@rust-js/std";
 
 export function receipt(item, cents) {
+  $checks("receipt(item, cents)", item, $checkStr, cents, $checkU32);
   const arg = formatPrice(cents);
   return `${item}: ${arg}`;
 }

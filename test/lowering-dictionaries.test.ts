@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildCompiler, compiler, fixture, run } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -83,7 +84,7 @@ pub fn shown(n: u32) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("var ");
   expect(js).toContain("export const squareShape = { area: squareShape_area };");
   expect(js).toContain("const $wrapperDisplay = new WeakMap();");
@@ -169,8 +170,8 @@ pub fn shown(n: u32) -> String {
 }
 `);
   run([compiler, join(quiet, "lib.rs"), "-o", join(quiet, "lib.js")]);
-  expect(readFileSync(join(quiet, "wrapped.js"), "utf8")).toContain("const $wrappedDisplay = new WeakMap();");
-  expect(readFileSync(join(quiet, "wrapped.js"), "utf8")).toContain("labeled(undefined, tagDisplay)");
+  expect(withoutBoundary(readFileSync(join(quiet, "wrapped.js"), "utf8"))).toContain("const $wrappedDisplay = new WeakMap();");
+  expect(withoutBoundary(readFileSync(join(quiet, "wrapped.js"), "utf8"))).toContain("labeled(undefined, tagDisplay)");
   expect((await import(join(quiet, "lib.js"))).shown(4)).toBe("([4] <tag>)");
 
   // `counts`' thread-local is made where it's first used, so its load runs
@@ -322,7 +323,7 @@ pub mod delta {
 }
 `);
   run([compiler, join(numbers, "lib.rs"), "-o", join(numbers, "lib.js")]);
-  const delta = readFileSync(join(numbers, "delta.js"), "utf8");
+  const delta = withoutBoundary(readFileSync(join(numbers, "delta.js"), "utf8"));
   expect(delta).toContain("const MIN = {\n  secs: BigInt.asIntN(64, -9223372036854775807n / MILLIS_PER_SEC - 1n),\n");
   expect(delta).not.toContain("attempt to negate with overflow");
   expect((await import(join(numbers, "delta.js"))).first()).toBe("193000000 -9223372036854772");
@@ -403,7 +404,7 @@ pub mod hidden {
   const dir = fixture("identity-eq-in-a-load-cycle");
   writeFileSync(join(dir, "lib.rs"), program);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const queue = readFileSync(join(dir, "queue.js"), "utf8");
+  const queue = withoutBoundary(readFileSync(join(dir, "queue.js"), "utf8"));
   expect(queue).toContain("return a != b;");
   expect(queue).toContain("return a === b && Hidden.has([a], b, $partialEq({ eq: (a, b) => a === b }));");
   expect(queue).toContain("export function values(a, b) {\n  return a === b;\n}");
@@ -418,7 +419,7 @@ pub mod hidden {
   // As the program's, but its formatted types, which a library publishes,
   // its writer framed, as a consumer may write one into a writer a piece at
   // a time (ADR 1135).
-  const libraryQueue = readFileSync(join(library, "queue.js"), "utf8");
+  const libraryQueue = withoutBoundary(readFileSync(join(library, "queue.js"), "utf8"));
   for (const line of [
     "return a != b;",
     "return a === b && Hidden.has([a], b, $partialEq({ eq: (a, b) => a === b }));",
@@ -488,7 +489,7 @@ pub fn pairs() -> (bool, bool) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export const oddPartialOrd = $partialOrd({\n  PartialEq: () => $partialEq({ eq: $eq }),\n  partialCmp: oddPartialOrd_partialCmp,\n  lt: oddPartialOrd_lt,\n});");
   expect(js).toContain("export const oddOrd = $ord({ PartialOrd: () => oddPartialOrd, cmp: oddOrd_cmp });");
   expect(js).toContain("function same(a, b, TOrd) {\n  return TOrd.PartialOrd().PartialEq().eq(a, b);");
@@ -591,7 +592,7 @@ pub fn clamps() -> (u32, char, bool, String) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export const apartPartialEq = $partialEq({ eq: apartPartialEq_eq, ne: apartPartialEq_ne });");
   expect(js).toContain("export const firstOrd = $ord({\n  PartialOrd: () => firstPartialOrd,\n  cmp: firstOrd_cmp,\n  max: firstOrd_max,\n});");
   expect(js).toContain("function differ(a, b, TPartialEq) {\n  return TPartialEq.ne(a, b);");

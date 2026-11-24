@@ -387,8 +387,8 @@ export const mutations: Mutation[] = [
     name: "glob-every-never",
     breaks: "a glob of every name its module's file exports lists them, `export { TWO, one } from`, where upstream writes `export * from` (#593)",
     file: "crates/rust-js-emit/src/output.rs",
-    find: "    reexport.glob && all.is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))\n",
-    replace: "    false && all.is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))\n",
+    find: "    reexport.glob\n        && all.is_some_and(|all| {\n",
+    replace: "    false\n        && all.is_some_and(|all| {\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
   },
   {
@@ -396,8 +396,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a glob of some of its module's file's names is `export * from`, which re-exports a private item that module exports for another, `helper`, and a name a private `use` shadows, `five` (#593, a wrong answer)",
     file: "crates/rust-js-emit/src/output.rs",
-    find: "    reexport.glob && all.is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))\n",
-    replace: "    reexport.glob && all.is_some()\n",
+    find: "            items.eq(names.iter().copied())\n",
+    replace: "            items.count() > 0 || names.is_empty() || true\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
   },
   {
@@ -455,5 +455,13 @@ export const mutations: Mutation[] = [
     find: "            false => absolute(&self.input)\n                .ok()\n                .and_then(|input| input.parent().map(Path::to_path_buf)),\n",
     replace: "            false => None,\n",
     tests: ["test/emission.test.ts", "-t", "no absolute path of the build"],
+  },
+  {
+    name: "glob-counts-bodies",
+    breaks: "a glob of a module whose split functions' bodies its file exports too, `bindToConsole$`, is a list of its names, not `export * from` (#2403, ADR 1193)",
+    file: "crates/rust-js-emit/src/output.rs",
+    find: "                .filter(|n| !n.strip_suffix('$').is_some_and(|entry| all.contains(entry)));\n",
+    replace: "                .filter(|n| !n.is_empty());\n",
+    tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module of every name its file exports"],
   },
 ];

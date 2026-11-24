@@ -254,4 +254,12 @@ export const mutations: Mutation[] = [
     replace: "        js::each_expr_mut(&mut folded, &mut |e| {\n            if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {\n                e.kind = ExprKind::Var(js::Name::declared(of.word().to_string()));\n            }\n        });\n        js::each_block_mut(&mut folded, &mut |stmts| {\n            stmts.retain(|s| {\n",
     tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments is a function of the parameters left"],
   },
+  {
+    name: "copy-counts-what-ran-before",
+    breaks: "a module's variable read into a local after a parameter's check keeps its local, `let fallbackText$1 = fallbackText`, as the check before the copy is taken to run between it and its reads (#2403, ADR 0277)",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
+    find: "            StmtKind::Let(name, Some(_)) if name == alias => {\n                *ran = false;\n",
+    replace: "            StmtKind::Let(name, Some(_)) if name == alias => {\n",
+    tests: ["test/lowering-shadows.test.ts", "-t", "a module's variable read into a local and stored again is the variable"],
+  },
 ];

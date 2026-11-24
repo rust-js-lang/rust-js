@@ -13,6 +13,7 @@ import { join } from "node:path";
 
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -49,7 +50,7 @@ function compile(name: string, source: string): { js: string; dir: string; code:
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), source);
   const out = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs], dir, 120_000);
-  return { js: out.code === 0 ? readFileSync(join(dir, "lib.js"), "utf8") : "", dir, code: out.code ?? -1, stderr: out.stderr };
+  return { js: out.code === 0 ? withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")) : "", dir, code: out.code ?? -1, stderr: out.stderr };
 }
 
 type Global = { reenter?: () => number };

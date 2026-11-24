@@ -492,4 +492,12 @@ export const mutations: Mutation[] = [
     replace: "                let _ = name;\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "on_load bodies that bind one name"],
   },
+  {
+    name: "parameter-checks-unplaced",
+    breaks: "what a JS caller gives isn't checked where the parameters are final, so an `async fn`'s `u32` of -1 reaches Rust and its promise resolves (#2403)",
+    file: "crates/rust-js-mir/src/lib.rs",
+    find: "        out.splice(0..0, checks);",
+    replace: "        let _ = checks;",
+    tests: ["test/boundary-async.test.ts","-t","an async fn's parameter"],
+  },
 ];

@@ -64,3 +64,25 @@ export function typeChecked(dir: string, files: string | string[], ...settings: 
   each.slice(1).forEach((errors, at) => expect({ [`setting ${at + 1}`]: where(errors) }).toEqual({ [`setting ${at + 1}`]: where(each[0]!) }));
   return each[0]!;
 }
+
+/** Whether every name `module`'s JS exports, as JS imports it (`export *`'s
+ * and a namespace's too), is declared in its `.d.ts` as a value: a file of
+ * `dir` importing and reading each, which TypeScript refuses where the
+ * `.d.ts` lacks one; but a split function's body, `f$`, never declared. A checked forwarder in a re-export's place, or a
+ * module of the crate's in a namespace's, declares what the JS exports
+ * still (#2403 (Y), #2536): `[]` where each is. */
+export async function exportsDeclared(dir: string, module: string, ...settings: Setting[]): Promise<Checked> {
+  // But a split function's body, `f$` beside its entry `f`, which a Rust
+  // call of another module calls and TypeScript never sees, its entry by its
+  // name or the module's default (ADR 1193).
+  const loaded: Record<string, unknown> = await import(join(dir, module));
+  const all = Object.keys(loaded);
+  const entry = (name: string) => all.includes(name) || (loaded.default as { name?: string } | undefined)?.name === name;
+  const exported = all.filter((name) => !(name.endsWith("$") && entry(name.slice(0, -1))));
+  const named = exported.filter((name) => name !== "default");
+  const file = `exports-of-${module.replaceAll("/", "-").replace(/\.jsx?$/, "")}.ts`;
+  const imported = [...(exported.includes("default") ? ["theDefault"] : []), ...(named.length > 0 ? [`{ ${named.join(", ")} }`] : [])];
+  const read = [...(exported.includes("default") ? ["theDefault"] : []), ...named];
+  writeFileSync(join(dir, file), `import ${imported.join(", ")} from "./${module}";\n\nexport const all = [${read.join(", ")}];\n`);
+  return typeChecked(dir, file, ...(settings.length > 0 ? settings : [es2022]));
+}

@@ -6,7 +6,7 @@
 // as its own, as ReactFlightReplyClient's processReply takes its
 // `resolve`/`reject` callbacks as `impl Fn`.
 
-import { $main, $some, $someValue } from "@rust-js/std";
+import { $checkBool, $checkCallback, $main, $some, $someValue } from "@rust-js/std";
 
 function process(root, onDone, onPart, TDisplay) {
   let nextId = 1;
@@ -45,6 +45,7 @@ function process(root, onDone, onPart, TDisplay) {
  * the counter's `add`.
  */
 export function countSome(items, keep) {
+  keep = $checkCallback(keep, "countSome(keep)", $checkBool);
   let count = 0;
 
   function add(n) {

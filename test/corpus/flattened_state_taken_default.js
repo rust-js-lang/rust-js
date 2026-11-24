@@ -7,7 +7,7 @@
 // that borrows the same state, read and written, through a thread-local:
 // no borrow of it is held while it runs, so neither panics (#699, ADR 1044).
 
-import { $debugStr, $main } from "@rust-js/std";
+import { $checkStr, $debugStr, $main } from "@rust-js/std";
 
 function plainDebug_fmt(plain) {
   if (plain.kind === "a") {
@@ -32,6 +32,7 @@ export class Slot {
 
 export class Task {
   constructor(status, tries, value, name) {
+    $checkStr(name, "Task.new(name)");
     this.status = status;
     this.tries = tries;
     this.value = value;

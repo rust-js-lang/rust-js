@@ -1,3 +1,4 @@
+//@ library-differs
 // A field of a function type, filled by a tuple struct's constructor,
 // `make: Loud`: its parameters, declared, named by none of what fills it,
 // as a constructor names none, where asking rustc its names crashed

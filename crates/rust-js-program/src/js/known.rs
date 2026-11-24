@@ -31,6 +31,10 @@ knowns! {
     /// `s.startsWith(t)`, which only reads it and throws nothing: never a
     /// crate's or a binding's of the same name, `P.at(p)`.
     Read,
+    /// A call that makes a value and does nothing else as it runs, printed
+    /// `/* @__PURE__ */` so a bundler drops it where nothing reads what it
+    /// makes: a struct's checker made of its table (#2403, the lead's (B)).
+    PureCall,
     /// The value `js::shown(value)` was given where it's text, a number or
     /// a `bool` by its Rust type, which a template shows running nothing,
     /// \`${value}\`; any other, whose `toString` may run anything, is
@@ -376,6 +380,7 @@ impl Known {
     pub fn role(self) -> Role {
         match self {
             Known::Read
+            | Known::PureCall
             | Known::BuiltIn
             | Known::Plain
             | Known::Lasting

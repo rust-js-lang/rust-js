@@ -1,3 +1,4 @@
+//@ library-differs
 // An or-pattern alternative no value reaches, `(_, 1, 1)` after `(_, _, 1)`
 // or `(1, _, 0)` after `(1, _, _)`, which rustc only warns of
 // (`unreachable_patterns`), compiles (#694): MIR still tests it, and where

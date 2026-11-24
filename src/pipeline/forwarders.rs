@@ -127,7 +127,8 @@ fn in_place<'tcx>(
 /// functions re-exported in place of its `forwarders` whose JS is their
 /// call alone, those taken out of its `functions`; and what its
 /// declarations re-export, its `pub use`s' alone, as a forwarder is
-/// declared as written; and what only those functions' calls read, which
+/// declared as written, and a library's function its checked forwarder
+/// takes the place of in its JS (`declared_too`); and what only those functions' calls read, which
 /// it needn't import.
 pub(super) struct InPlace {
     pub(super) reexports: Vec<Reexport>,
@@ -146,7 +147,8 @@ pub(super) fn reexported<'tcx>(
     ),
     default_export: Option<DefId>,
     aliased: &[(DefId, (String, String))],
-    (found, sources): (
+    (found, declared_too, sources): (
+        Vec<rust_js_lower::reexports::Named>,
         Vec<rust_js_lower::reexports::Named>,
         &rust_js_lower::sources::CapturedSources,
     ),
@@ -160,8 +162,18 @@ pub(super) fn reexported<'tcx>(
         aliased,
     );
     let named = rust_js_lower::reexports::forwarded_functions(tcx, module, &confirmed, (fns, foreign), paths, sources);
+    // A forwarded one back in its place among its statement's names, as
+    // they're written: react-dom's `useFormState` before `useFormStatus`.
+    let mut declared: Vec<rust_js_lower::reexports::Named> = found.iter().cloned().chain(declared_too).collect();
+    declared.sort_by_key(|((at, leaf), ..)| {
+        let written = match leaf {
+            rust_js_lower::reexports::Leaf::Written(name, _) => Some(name.lo()),
+            _ => None,
+        };
+        (at.lo(), written)
+    });
     InPlace {
-        declared: rust_js_lower::reexports::assembled(found.clone(), sources, foreign),
+        declared: rust_js_lower::reexports::assembled(declared, sources, foreign),
         reexports: (rust_js_lower::reexports::assembled(found.into_iter().chain(named).collect(), sources, foreign))
             .into_iter()
             .map(|(_, reexport)| reexport)

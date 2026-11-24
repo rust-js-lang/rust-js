@@ -19,7 +19,15 @@ import {
   $bigRem,
   $bigRemEuclid,
   $bigTrailingZeros,
+  $checkArray,
+  $checkI64,
+  $checkStr,
+  $checkTuple,
+  $checkU16,
+  $checkU32,
+  $checkU64,
   $checkedPow,
+  $checks,
   $cmp,
   $debugJsonError,
   $debugParseError,
@@ -55,6 +63,18 @@ export const Id = {
   EPOCH: 1288834974657n,
 
   new(millis, worker, sequence) {
+    $checks(
+      "Id.new(millis, worker, sequence)",
+      millis,
+      $checkU64,
+      worker,
+      $checkU16,
+      sequence,
+      $checkU16,
+    );
+    return Id.new$(millis, worker, sequence);
+  },
+  new$(millis, worker, sequence) {
     worker = BigInt(worker & 0x3ff);
     sequence = BigInt(sequence & 0xfff);
     return [
@@ -64,18 +84,35 @@ export const Id = {
     ];
   },
   millis(id) {
+    $checks("Id.millis(id)", id, checkId);
+    return Id.millis$(id);
+  },
+  millis$(id) {
     return BigInt.asUintN(64, (id[0] >> 22n) + 1288834974657n);
   },
   worker(id) {
+    $checks("Id.worker(id)", id, checkId);
+    return Id.worker$(id);
+  },
+  worker$(id) {
     return Number((id[0] >> 12n) & 1023n);
   },
   sequence(id) {
+    $checks("Id.sequence(id)", id, checkId);
+    return Id.sequence$(id);
+  },
+  sequence$(id) {
     return Number(id[0] & 4095n);
   },
 };
 
 /** FNV-1a: a multiply that wraps at every character. */
 export function fnv1a(text) {
+  $checkStr(text, "fnv1a(text)");
+  return fnv1a$(text);
+}
+
+function fnv1a$(text) {
   let hash = 14695981039346656037n;
   for (const c of text) {
     hash ^= BigInt(c.codePointAt(0));
@@ -113,6 +150,15 @@ function paymentDeserialize_deserialize(json) {
 
 /** Each account's total, in cents. */
 export function balances(entries) {
+  $checks("balances(entries)", entries, (value, where, none) =>
+    $checkArray(value, where, none, (value, where, none) =>
+      $checkTuple(value, where, none, [$checkStr, $checkI64]),
+    ),
+  );
+  return balances$(entries);
+}
+
+function balances$(entries) {
   const totals = new $BTreeMap();
   for (let i = 0; i < entries.length; i++) {
     const [account, cents] = entries[i];
@@ -123,24 +169,33 @@ export function balances(entries) {
 }
 
 export function dollars(cents) {
+  $checkI64(cents, "dollars(cents)");
+  return dollars$(cents);
+}
+
+function dollars$(cents) {
   const sign = cents < 0n ? "-" : "";
   cents = $bigAbs(cents);
   return `${sign}$${cents / 100n}.${String(cents % 100n).padStart(2, "0")}`;
 }
 
+function checkId(value) {
+  $checkTuple(value, undefined, undefined, [$checkU64]);
+}
+
 export function report() {
   let out = "";
 
-  const id = Id.new(1700000000123n, 5, 42);
-  const millis = Id.millis(id);
-  const worker = Id.worker(id);
-  const sequence = Id.sequence(id);
+  const id = Id.new$(1700000000123n, 5, 42);
+  const millis = Id.millis$(id);
+  const worker = Id.worker$(id);
+  const sequence = Id.sequence$(id);
   out += `${idDebug_fmt(id)} ${millis} ${worker} ${sequence}\n`;
-  const later = Id.new(1700000000124n, 1, 0);
+  const later = Id.new$(1700000000124n, 1, 0);
   out += `${$cmp(id[0], later[0]) < 0} ${$bigMax(id[0], later[0]) === later[0]}\n`;
 
   for (const text of ["", "a", "rust-js"]) {
-    out += `${fnv1a(text).toString(16).padStart(16, "0")} `;
+    out += `${fnv1a$(text).toString(16).padStart(16, "0")} `;
   }
   out += "\n";
 
@@ -150,8 +205,8 @@ export function report() {
     ["rent", -25000000n],
     ["big", 9223372036854775807n / 2n],
   ];
-  for (const [account, cents] of $sortedEntries(balances(entries), $cmp)) {
-    const arg = dollars(cents);
+  for (const [account, cents] of $sortedEntries(balances$(entries), $cmp)) {
+    const arg = dollars$(cents);
     out += `${account} ${arg} `;
   }
   out += "\n";
@@ -224,6 +279,7 @@ export function report() {
 
 /** An `i64` in and out, each past what a double holds to the digit. */
 export function scaled(n) {
+  $checkI64(n, "scaled(n)");
   return BigInt.asIntN(64, n * 3n);
 }
 
@@ -232,6 +288,7 @@ export function scaled(n) {
  * `i64` can't hold, even in release.
  */
 export function panics(i) {
+  $checkU32(i, "panics(i)");
   const zero = BigInt.asIntN(64, BigInt(i) - BigInt(i));
   switch (i) {
     case 0:

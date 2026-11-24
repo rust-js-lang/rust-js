@@ -6,13 +6,14 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 /** `rust` compiled in a fixture of `name`: its JS and its module. */
 async function compiled(name: string, rust: string): Promise<{ js: string; lib: Record<string, unknown> }> {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   return { js, lib: await import(join(dir, "lib.js")) };
 }
 
@@ -274,7 +275,7 @@ pub fn doubled(n: &Cell<f64>) -> f64 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const bound = readFileSync(join(dir, "lib.js"), "utf8");
+  const bound = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(bound).toContain('// Doubled by JS.\nimport { twice } from "./math.js";\n');
   // One \`use\` of two, above the first printed; one of a module, above
   // what's imported of a module in it.
@@ -584,7 +585,7 @@ pub mod inner {
   const binding = (name: string) => `#[cfg_attr(rust_js, rust_js::link_name = "./host.js#${name}")]\npub fn ${name}() -> u32 {\n    unreachable!()\n}\n`;
   writeFileSync(join(dir, "config.rs"), ["create", "update", "destroy"].map(binding).join("\n"));
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--manifest", join(dir, "manifest.json")]);
-  const js = readFileSync(join(dir, "commit.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "commit.js"), "utf8"));
   expect(js).toContain(`import { create, update } from "./host.js";
 import { lane, merge } from "./lanes.js";
 
@@ -664,8 +665,9 @@ pub use crate::tree::immediate as unstable_immediate;
 `);
   expect(js).toContain('import { closest, detach, idle, immediate, mark, read } from "./tree.js";\n');
   expect(js.match(/^import /gm)?.length).toBe(1);
-  expect(js).toContain("\nexport { detach };\n");
-  expect(js).toContain("\nexport { closest as getInstanceFromNode };\n");
+  // A split function's, whose import is its body's, from its file (#2403).
+  expect(js).toContain('\nexport { detach } from "./tree.js";\n');
+  expect(js).toContain('\nexport { closest as getInstanceFromNode } from "./tree.js";\n');
   expect(js).toContain('\nexport { read, unread } from "./tree.js";\n');
   expect(js).toContain("\nexport { idle as unstableIdle, immediate as unstableImmediate };\n");
   const exports = lib as Record<string, (n?: number) => number>;
@@ -712,7 +714,7 @@ pub fn named() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`/**
  * Where the app is: its URL's hash,
  * followed as it changes.
@@ -721,7 +723,7 @@ pub fn named() -> u32 {
 import { lane } from "./lanes.js";
 `);
   expect(js).not.toContain("//!");
-  const lanes = readFileSync(join(dir, "lanes.js"), "utf8");
+  const lanes = withoutBoundary(readFileSync(join(dir, "lanes.js"), "utf8"));
   expect(lanes).toContain("/** The lanes. */\n\nexport function lane() {");
   expect(lanes).not.toContain("/*!");
   expect((await import(join(dir, "lib.js"))).named()).toBe(2);
@@ -766,13 +768,13 @@ pub fn show() -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("/** A header comment, above a trait and its impl. */\n\nexport const upperLetter = {");
   expect(js.split("A header comment").length).toBe(2);
   expect(js).not.toContain("The lanes.");
   expect(js).not.toContain("The struct's.");
   expect((await import(join(dir, "lib.js"))).show()).toBe("65");
-  const lanes = readFileSync(join(dir, "lanes.js"), "utf8");
+  const lanes = withoutBoundary(readFileSync(join(dir, "lanes.js"), "utf8"));
   expect(lanes).toContain("/** The lanes. */\n\n// Above the function.\nexport function lane() {");
   expect(lanes).not.toContain("No JS.");
   // Above a type's `use`, which makes no import, and an enum's methods.
@@ -810,9 +812,9 @@ impl Shade {
 `);
   run([compiler, join(typed, "lib.rs"), "-o", join(typed, "lib.js")]);
   const doc = "/**\n * A type's `use` first.\n *\n * Then the enum.\n */\n\nimport { lane } from \"./lanes.js\";\n";
-  expect(readFileSync(join(typed, "lib.js"), "utf8")).toContain(doc);
+  expect(withoutBoundary(readFileSync(join(typed, "lib.js"), "utf8"))).toContain(doc);
   // Once, the import's comments none of them.
-  expect(readFileSync(join(typed, "lib.js"), "utf8").split("Then the enum.").length).toBe(2);
+  expect(withoutBoundary(readFileSync(join(typed, "lib.js"), "utf8")).split("Then the enum.").length).toBe(2);
   // Right above its first `use`, no blank line between.
   const above = fixture("inner-doc-right-above-a-use");
   writeFileSync(join(above, "lib.rs"), `//! Right above.
@@ -830,7 +832,7 @@ pub fn named() -> u32 {
 }
 `);
   run([compiler, join(above, "lib.rs"), "-o", join(above, "lib.js")]);
-  const right = readFileSync(join(above, "lib.js"), "utf8");
+  const right = withoutBoundary(readFileSync(join(above, "lib.js"), "utf8"));
   expect(right).toContain(`/** Right above. */\nimport { lane } from "./lanes.js";\n`);
   expect(right.split("Right above.").length).toBe(2);
   expect(right).toContain("  // A function's own, in its body.\n  return");
@@ -869,7 +871,7 @@ pub fn named() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`// Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
@@ -885,7 +887,7 @@ import { lane } from "./lanes.js";
 `);
   expect(js).toContain("  // A function's own, plain.\n  return");
   expect((await import(join(dir, "lib.js"))).named()).toBe(2);
-  expect(readFileSync(join(dir, "lanes.js"), "utf8")).toContain("/** The lanes. */\n\nexport function lane() {");
+  expect(withoutBoundary(readFileSync(join(dir, "lanes.js"), "utf8"))).toContain("/** The lanes. */\n\nexport function lane() {");
 });
 
 // React's EventRegistry.registerDirectEvent: a blank line, then
@@ -1025,12 +1027,13 @@ pub fn bumped(mut v: Vec<i32>, by: i32) -> Vec<i32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  bump(\n    $view(v, 1, \"lib.rs:9:15\"), // the tail\n    by,\n  );");
   const lib = await import(join(dir, "lib.js"));
   expect((lib.bumped as (v: number[], by: number) => number[])([1, 2, 3], 2)).toEqual([1, 4, 5]);
   const { decodeMappings } = await import("./sourcemap");
-  const at = js.split("\n").findIndex((line) => line.includes("$view(v, 1, "));
+  // The file as it is, whose lines its map counts, its checks too.
+  const at = readFileSync(join(dir, "lib.js"), "utf8").split("\n").findIndex((line) => line.includes("$view(v, 1, "));
   const map = JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8"));
   // Its end, at line 9, 1-based, of `&mut v[1..], // the tail`, the `]`.
   const mapped = decodeMappings(map.mappings).filter((s) => s.jsLine === at).map((s) => [s.srcLine + 1, s.srcCol]);
@@ -1069,7 +1072,7 @@ js::import!("./panel.js");
   writeFileSync(join(dir, "runtime.js"), "globalThis.runtimeLoaded = true;\n");
   writeFileSync(join(dir, "panel.js"), "");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`import { lane } from "./lanes.js";
 
 // Imports are resolved statically by the closure compiler in release bundles
@@ -1101,7 +1104,7 @@ pub fn first() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('import { lane } from "./lanes.js";\nimport "./panel.js";\n\nexport function first() {');
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain('import { lane } from "./lanes.js";\nimport "./panel.js";\n\nexport function first() {');
 }, 600_000);
 
 // React Native's ReactFeatureFlags.native-fb writes two comments above
@@ -1174,7 +1177,7 @@ pub fn sum() -> f64 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`// Re-export dynamic flags from the internal module.
 // Intentionally using * because this import is compiled to a \`require\` call.
 import * as flagsUntyped from "./flags.js";
@@ -1228,7 +1231,7 @@ pub fn shown() -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function first() {
   return 1;
 }
@@ -1281,7 +1284,7 @@ pub fn shown() -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function first() {
   return 1;
 }

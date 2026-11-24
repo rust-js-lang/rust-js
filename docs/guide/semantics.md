@@ -698,7 +698,12 @@ pub fn run(task: &Task) -> u32 {
 ```
 
 ```js
+import { $checkShape, $checkU32, $checks } from "@rust-js/std";
+
+const checkTask = /* @__PURE__ */ $checkShape(() => ({ id: $checkU32 }));
+
 export function run(task) {
+  $checks("run(task)", task, checkTask);
   if (task.callback != null) {
     const f = task.callback;
     task.callback = undefined;
@@ -750,9 +755,12 @@ pub fn queued() -> usize {
 ```
 
 ```js
+import { $checkU32 } from "@rust-js/std";
+
 const taskQueue = [];
 
 export function pushTask(id) {
+  $checkU32(id, "pushTask(id)");
   taskQueue.push(id);
 }
 
@@ -1422,6 +1430,10 @@ pub fn line_count(text: &str) -> usize {
 
 ```js
 import {
+  $checkArray,
+  $checkStr,
+  $checkU8,
+  $checks,
   $cursorReader,
   $iterator,
   $sliceReader,
@@ -1432,6 +1444,7 @@ import {
 } from "@rust-js/std";
 
 export function magic(bytes) {
+  $checks("magic(bytes)", bytes, (value, where, none) => $checkArray(value, where, none, $checkU8));
   try {
     let src = bytes;
     const magic = [0, 0, 0, 0];
@@ -1453,6 +1466,7 @@ export function magic(bytes) {
 }
 
 export function lineCount(text) {
+  $checkStr(text, "lineCount(text)");
   const cursorReader = $cursorReader({ asRef: (value) => $utf8Bytes(value) });
   return $iterator(
     bufRead_lines({ inner: text, pos: 0n }, cursorReader, cursorReader),
@@ -1522,9 +1536,10 @@ pub fn size(path: &str) -> io::Result<usize> {
 ```
 
 ```js
-import { $fileWriter, $fsRead, $ioThrow, $openOptions } from "@rust-js/std";
+import { $checkStr, $checks, $fileWriter, $fsRead, $ioThrow, $openOptions } from "@rust-js/std";
 
 export function log(path, line) {
+  $checks("log(path, line)", path, $checkStr, line, $checkStr);
   const result = $openOptions().append(true).create(true).open(path);
   if (result.TAG === "Err") {
     return $ioThrow(result._0);
@@ -1534,6 +1549,7 @@ export function log(path, line) {
 }
 
 export function size(path) {
+  $checkStr(path, "size(path)");
   const result = $fsRead(path);
   if (result.TAG === "Err") {
     return result;
@@ -1646,9 +1662,25 @@ pub fn copies(items: &[Loud]) -> Vec<Loud> {
 ```
 
 ```js
-import { $madeEach, $madeInTurn, $panic } from "@rust-js/std";
+import {
+  $checkArray,
+  $checkShape,
+  $checkTuple,
+  $checkU32,
+  $checks,
+  $madeEach,
+  $madeInTurn,
+  $panic,
+} from "@rust-js/std";
+
+const checkPair = /* @__PURE__ */ $checkShape(() => ({ first: checkLoud, second: checkLoud }));
 
 export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
+
+function checkLoud(value) {
+  $checkTuple(value, undefined, undefined, [$checkU32]);
+}
+
 function loudClone_clone(loud) {
   if (loud[0] <= 0) {
     throw $panic("no clone of zero", "lib.rs:5:9");
@@ -1661,6 +1693,7 @@ function loudDrop_drop(loud) {
 }
 
 export function copy(pair) {
+  $checks("copy(pair)", pair, checkPair);
   return $madeInTurn((made) => ({
     ...pair,
     first: made(loudClone_clone(pair.first), loudDrop_drop),
@@ -1669,6 +1702,9 @@ export function copy(pair) {
 }
 
 export function copies(items) {
+  $checks("copies(items)", items, (value, where, none) =>
+    $checkArray(value, where, none, checkLoud),
+  );
   return $madeEach(items, (item) => loudClone_clone(item), loudDrop_drop);
 }
 ```
@@ -1750,6 +1786,13 @@ pub fn assign_items(into: &mut Vec<Loud>, from: &Vec<Loud>) {
 import {
   $apart,
   $cellOf,
+  $checkArray,
+  $checkCell,
+  $checkMap,
+  $checkOption,
+  $checkTuple,
+  $checkU32,
+  $checks,
   $cloneIntoDeque,
   $cloneIntoVec,
   $cmp,
@@ -1762,6 +1805,11 @@ import {
 } from "@rust-js/std";
 
 export const loudClone = { clone: loudClone_clone, $drop: loudDrop_drop };
+
+function checkLoud(value) {
+  $checkTuple(value, undefined, undefined, [$checkU32]);
+}
+
 function loudClone_clone(loud) {
   return [loud[0]];
 }
@@ -1773,6 +1821,9 @@ function loudDrop_drop(loud) {
 }
 
 export function empty(map) {
+  $checks("empty(map)", map, (value, where, none) =>
+    $checkMap(value, where, none, $checkU32, checkLoud),
+  );
   try {
     $dropItems($sortedEntries(map, $cmp), ([, value]) => {
       loudDrop_drop(value);
@@ -1787,6 +1838,14 @@ export function empty(map) {
 }
 
 export function replace(slot, value) {
+  $checks(
+    "replace(slot, value)",
+    slot,
+    (value, where, none) =>
+      $checkCell(value, where, none, (value, where) => $checkOption(value, where, checkLoud)),
+    value,
+    checkLoud,
+  );
   try {
     if (slot.value != null) {
       loudDrop_drop(slot.value);
@@ -1802,6 +1861,13 @@ export function replace(slot, value) {
 }
 
 export function copyInto(into, from) {
+  $checks(
+    "copyInto(into, from)",
+    into,
+    (value, where, none) => $checkArray(value, where, none, checkLoud),
+    from,
+    (value, where, none) => $checkArray(value, where, none, checkLoud),
+  );
   $cloneIntoVec(into, from, (item) => loudClone_clone(item), undefined, loudDrop_drop);
 }
 
@@ -1820,6 +1886,13 @@ function assign(dest, source, TClone, dropT) {
 }
 
 export function assignItems(into, from) {
+  $checks(
+    "assignItems(into, from)",
+    into,
+    (value, where, none) => $checkArray(value, where, none, checkLoud),
+    from,
+    (value, where, none) => $checkArray(value, where, none, checkLoud),
+  );
   assign(
     $cellOf(into),
     from,
@@ -2229,7 +2302,10 @@ pub fn defined(value: Option<&'static js::Unknown>) -> Option<&'static js::Unkno
 ```
 
 ```js
+import { $checkArray, $checkU32, $checks } from "@rust-js/std";
+
 export function first(v) {
+  $checks("first(v)", v, (value, where, none) => $checkArray(value, where, none, $checkU32));
   return v[0] ?? null;
 }
 
@@ -2780,3 +2856,13 @@ React and JSX are [their own pages](README.md#react).
     built and changed and rust-js's map, a sorted array, doesn't keep. The
     panic, its message and payload are Rust's; only the hook's line of such
     an entry differs (ADR 0262, Tu's decision, 2026-11-24, #2509).
+66. A check of what JS gives Rust reads each field of an object by its
+    descriptor, never running a getter: a field an accessor gives, a
+    class's `get` or one `Object.defineProperty` makes, isn't checked, and
+    the body reads it once, as Rust reads it. Only its data properties are
+    checked, its own or its prototypes', so a `Proxy` is checked by what
+    its target holds, which a `get` trap that answers otherwise passes
+    (ADR 0262, the user's decision of #1908, the lead's of 2026-11-24,
+    #2403; [ADR 1194](../decisions/1194-a-value-that-holds-others-is-checked-whole.md),
+    amended; [ADR 1022](../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md),
+    amended).

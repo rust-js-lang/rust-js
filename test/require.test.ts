@@ -11,6 +11,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -95,7 +96,7 @@ pub fn shadowed() -> String {
   });
   expect(ran.stderr).toBe("");
   expect(ran.code).toBe(0);
-  const out = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "app", "lib.js"), "utf8"));
   expect(out).not.toMatch(/^import /m);
   expect(out).toContain('return require("../dep/element.js").createElement(tag());');
   expect(out).toContain('require("../dep/element.js").createElement("a") +\n    require("../dep/element.js").createElement("b")');
@@ -103,7 +104,7 @@ pub fn shadowed() -> String {
   expect(out).toContain('return require("../dep/element.js").createElement("t");');
   expect(out).toMatch(/const (require\$1|require_) = "r";\n  return require\("..\/dep\/element.js"\).createElement\(require(\$1|_)\);/);
   // Another module's \`use\` of it, unmarked, imports it.
-  expect(readFileSync(join(dir, "app", "plain.js"), "utf8")).toContain('import { createElement } from "../dep/element.js";');
+  expect(withoutBoundary(readFileSync(join(dir, "app", "plain.js"), "utf8"))).toContain('import { createElement } from "../dep/element.js";');
   // The library's module, each load of it counted, which a test's
   // `jest.resetModules()` loads anew: loaded where it's called, not where
   // the consumer loads, and anew at each call once its cache is cleared.

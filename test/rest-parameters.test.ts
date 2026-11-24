@@ -11,6 +11,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -96,7 +97,7 @@ pub fn sums(v: &[f64]) -> Vec<f64> {
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(out).toContain("export default function formatProdErrorMessage(code, ...args) {");
   expect(out).toContain("export function total(...xs) {");
   expect(out).toContain("moved(point, ...by) {");
@@ -139,11 +140,11 @@ test("a library's rest function is called with the slice spread", async () => {
   writeFileSync(join(dir, "dep.rs"), "pub fn total(#[cfg_attr(rust_js, rust_js::rest)] xs: &[f64]) -> f64 {\n    xs.iter().sum()\n}\n");
   run([compiler, join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
     "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`]);
-  expect(readFileSync(join(dir, "dep", "lib.js"), "utf8")).toContain("export function total(...xs) {");
+  expect(withoutBoundary(readFileSync(join(dir, "dep", "lib.js"), "utf8"))).toContain("export function total(...xs) {");
   writeFileSync(join(dir, "app.rs"), "pub fn sums(v: &[f64]) -> Vec<f64> {\n    let f: fn(&[f64]) -> f64 = dep::total;\n    vec![dep::total(&[1.0, 2.0]), dep::total(v), f(v)]\n}\n");
   run([compiler, join(dir, "app.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
     "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir]);
-  const out = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "app", "lib.js"), "utf8"));
   expect(out).toContain("Dep.total(1, 2), Dep.total(...v)");
   const { sums } = await import(join(dir, "app", "lib.js"));
   expect(sums([4, 5])).toEqual([3, 9, 9]);
@@ -217,7 +218,7 @@ pub fn offset_bound(by: f64) -> f64 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
     "--", ...js, "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(out).toContain("return signalOper.bind(null, this$);");
   expect(out).toContain("`bound ${signalOper.name}`");
   expect(out).toContain("return total.name;");
@@ -303,7 +304,7 @@ pub fn plain_name() -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(out).toContain("return signalOper.bind(null, this$);");
   expect(out).toContain("`bound ${signalOper.name}`");
   expect(out).not.toContain("signalOperUnboxed");
@@ -602,7 +603,7 @@ pub fn cache(r#fn: &'static Function) -> impl Fn(&dyn Rest<dyn IntoUnknown>) -> 
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(out).toContain("  return (...args) => {\n");
   expect(out).toContain("      return fn.apply(null, args);\n");
   expect(out).toContain("    for (let i = 0; i < args.length; i++) {\n      const arg = args[i];\n");
@@ -663,7 +664,7 @@ pub fn named(names: &[&str]) -> (String, String) {
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(out).toContain("const count = (...args) => args.length;");
   expect(out).toContain("    count(1, \"a\", 2),\n    count(),\n    count(...v),\n    held(\"a\"),\n    boxed($index(v, 0, \"lib.rs:27:17\"), $index(v, 1, \"lib.rs:27:23\")),\n    pointer(...v),\n");
   expect(out).toContain("  return f(1, 2);");
@@ -744,7 +745,7 @@ pub fn used() -> (Option<Rc<String>>, f64, f64, Option<u8>, bool, usize) {
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // A rest function of them is JS's, its value the function itself.
   expect(out).toContain("function signalOper(this$, ...value) {\n  if (value.length !== 0) {\n    this$.current = value[0];\n");
   expect(out).toContain("return signalOper.bind(null, this$);");
@@ -805,7 +806,7 @@ pub fn ends_of_slice(#[cfg_attr(rust_js, rust_js::rest)] value: &[f64]) -> f64 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(out).toContain("return (...value) => (value.length === 0 ? 0 : value[0]);");
   expect(out).toContain("return (...value) => (value.length > 2 ? value[value.length - 1] + value[1] : -1);");
   expect(out).toContain("return (...value) => (value.length === 0 ? 0 : $index(value, 1, \"lib.rs:18:64\"));");

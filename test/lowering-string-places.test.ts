@@ -8,6 +8,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -16,7 +17,7 @@ async function compiled(name: string, source: string): Promise<{ js: string; lib
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), source);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   return { js, lib: await import(join(dir, "lib.js")) };
 }
 

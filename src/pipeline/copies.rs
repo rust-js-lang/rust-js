@@ -142,12 +142,17 @@ fn refuse_through_unlike(tcx: rustc_middle::ty::TyCtxt<'_>, through: &[ThroughCo
 }
 
 /// `function` as it reads apart from its name and its export, of a module's
-/// `module`, each copy `renamed` named as what it's alike.
+/// `module`, each copy `renamed` named as what it's alike; and apart from
+/// the checks of what JS gives it it starts with, which a copy, only Rust's
+/// to call, never has: a copy alike the function but them is the function,
+/// whose Rust callers pay them, as of an unsplit one (#2403, ADR 1192).
 fn alike(function: &js::Function, module: LocalModId, renamed: &IndexMap<Named, Renamed>) -> js::Function {
     let mut function = function.clone();
     rename(&mut function, module, renamed);
     function.name = Name::default();
     function.export = false;
+    let checks = rust_js_lower::boundary::split::leading_checks(&function.body);
+    function.body.drain(..checks);
     function
 }
 
@@ -247,13 +252,41 @@ pub(super) fn gather(
 ) {
     let all = std::iter::once(&mut lowered.dependencies).chain(copies.iter_mut().map(|c| &mut c.dependencies));
     for dependencies in all {
+        absorb(pass, module, dependencies);
+    }
+    if copies.iter().any(|copy| copy.jsx) {
+        pass.jsx.insert(module);
+    }
+}
+
+/// What a function of `module`'s uses, `dependencies`, into `pass`: what it
+/// imports and the checkers its checks call.
+pub(super) fn absorb(pass: &mut super::Pass, module: LocalModId, dependencies: &mut rust_js_lower::Dependencies) {
+    {
         pass.references.extend(dependencies.references.drain(..));
         pass.package_uses.extend(dependencies.package_uses.drain(..));
         pass.held.extend(dependencies.held.drain(..));
         pass.reexporters.extend(dependencies.reexporters.drain(..));
         pass.copy_references.extend(dependencies.copy_references.drain(..));
-    }
-    if copies.iter().any(|copy| copy.jsx) {
-        pass.jsx.insert(module);
+        pass.unchecked_references
+            .extend(dependencies.unchecked_references.drain(..));
+        // Each struct's checker its checks call, its module's once (ADR
+        // 1194): a function, or its table's constant (#2403, the lead's (B)).
+        for checker in dependencies.checkers.drain(..).filter_map(|(_, checker)| checker) {
+            match checker {
+                rust_js_lower::Checker::Function(checker) => {
+                    let functions = pass.functions.entry(module).or_default();
+                    if !functions.iter().any(|f| f.name == checker.name) {
+                        functions.push(checker);
+                    }
+                }
+                rust_js_lower::Checker::Shape(checker) => {
+                    let consts = pass.local_consts.entry(module).or_default();
+                    if !consts.iter().any(|c| c.name == checker.name) {
+                        consts.push(checker);
+                    }
+                }
+            }
+        }
     }
 }

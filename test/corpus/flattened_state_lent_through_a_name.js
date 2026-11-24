@@ -10,7 +10,7 @@
 // to a function as itself, `touch(r)`, it's the guard's `&mut`, whose
 // handle is on it.
 
-import { $debugStr, $main } from "@rust-js/std";
+import { $checkStr, $debugStr, $main } from "@rust-js/std";
 
 function statusDebug_fmt(status) {
   if (status.status === "pending") {
@@ -24,6 +24,7 @@ function statusDebug_fmt(status) {
 
 export class Task {
   constructor(status, tries, value, name) {
+    $checkStr(name, "Task.new(name)");
     this.status = status;
     this.tries = tries;
     this.value = value;

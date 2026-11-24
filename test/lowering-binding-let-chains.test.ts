@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -100,7 +101,7 @@ pub fn text_of(value: &Unknown) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function requestedUrl(value) {
   const request = value.request;
   if (request != null) {
@@ -187,7 +188,7 @@ pub fn task(name: &str) -> Option<&'static ConsoleTask> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`const createTask = (() => {
   // eslint-disable-next-line react-internal/no-production-logging
   const createTask = DEV ? console.createTask : undefined;
@@ -243,7 +244,7 @@ pub fn first() -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`const FIRST = (() => {\n  const rustJsLabel = DEV ? $find("ab", "b") : undefined;\n  return rustJsLabel ?? 0;\n})();\n`);
   expect(js).toContain("  return rustJsLabel();\n");
   const globals = globalThis as { rustJsLabel?: () => number };

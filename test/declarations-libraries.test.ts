@@ -7,7 +7,8 @@ import { beforeAll, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
-import { type Setting, typeChecked } from "./type-checked";
+import { exportsDeclared, type Setting, typeChecked } from "./type-checked";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -354,36 +355,44 @@ pub fn generic<M: ?Sized>(body: u32, manifest: &M) -> u32 {
     action::decode(body, manifest)
 }
 `);
-  const server = readFileSync(join(dir, "dep", "server.js"), "utf8");
+  // No JS of the library may call `server::decode`, which checks nothing:
+  // a re-export of the one it calls, as before the checks (#2403 lever (3)).
+  const server = withoutBoundary(readFileSync(join(dir, "dep", "server.js"), "utf8"));
   expect(server).toContain('/** Decodes with the server\'s manifest. */\nexport { decode } from "./action.js";\n');
   expect(server).not.toContain("function");
   expect(readFileSync(join(dir, "dep", "server.d.ts"), "utf8")).toContain("export function decode(body: number, manifest: Manifest): number;");
-  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(dir, "app", "lib.js"), "utf8"));
   // A run of them, from one module, one statement; a library's forwarder
   // from its own file, which re-exports it.
   // The library's module's import where its `use` is, first, then the
   // runtime's, with the imports, before the re-export placed there too
   // (rd725).
-  expect(app).toContain('import * as Action from "../dep/action.js";\nimport { $cellOf } from "@rust-js/std";\nexport { decode as decodeAction');
-  expect(app).toContain(`export { decode as decodeAction, decode as decodeFormState, ping } from "../dep/action.js";\n`);
-  // One no \`use\` places where its function is, after the \`Drop\` impl's
-  // function written above it (ADR 1069).
-  expect(app).toContain(`}
-
-export { decode as serverDecode } from "../dep/server.js";
-`);
+  // And the library's `server`, which its forwarder calls (#2403 (Y)).
+  expect(app).toContain('import * as Action from "../dep/action.js";\nimport * as Server from "../dep/server.js";\nimport { $cellOf } from "@rust-js/std";\n');
+  // Of a generic one, whose `M` is any value, each checks its own
+  // `ServerManifest`: a function of its own (#2403, ADR 1192).
+  expect(app).toContain("export function decodeAction(body, serverManifest) {\n  return Action.decode(body, serverManifest);\n}");
+  expect(app).toContain("export function decodeFormState(body, serverManifest) {\n  return Action.decode(body, serverManifest);\n}");
+  // So is `ping`, which forwards to the library's unchecked `action::ping`:
+  // its own function, which checks (#2403 (Y)).
+  expect(app).toContain("export function ping(n) {\n  Action.ping(n);\n}");
+  // The app gives JS the library's `server::decode`, which the library's
+  // own JS doesn't check: its own forwarder in its re-export's place, which
+  // checks, the library's `Manifest` too, by its own checker (#2403 (Y)).
+  expect(readFileSync(join(dir, "app", "lib.js"), "utf8")).toContain(
+    'export function serverDecode(body, manifest) {\n  $checks("serverDecode(body, manifest)", body, $checkU32, manifest, checkManifest);\n  return Server.decode(body, manifest);\n}',
+  );
   for (const kept of ["swapped(a, b)", "wraps(x)", "logs(n)", "holds(guard)", "holdsPlain(n)", "nested(x)", "counted(first)", "shows(n)", "bumped(point)", "discards(n)", "generic(body, manifest)"]) {
     expect(app).toContain(`export function ${kept} {`);
   }
-  expect(app).not.toMatch(/function (decodeAction|decodeFormState|ping|serverDecode)\b/);
-  // What only a re-exported function read isn't imported.
-  expect(app).not.toContain("import * as Server");
   const declarations = readFileSync(join(dir, "app", "lib.d.ts"), "utf8");
   expect(declarations).toContain("export function decodeAction(body: number, serverManifest: ServerManifest): number;");
   expect(declarations).toContain("export function ping(n: number): void;");
   expect(declarations).toContain('import type { Manifest } from "../dep/server.js";\n');
   expect(declarations).toContain("export function serverDecode(body: number, manifest: Manifest): number;");
   expect(declarations).not.toContain("export {");
+  // Each name its JS exports, a forwarder's too, its `.d.ts` declares (#2403 (Y)).
+  expect(await exportsDeclared(dir, "app/lib.js")).toEqual([]);
   writeFileSync(join(dir, "caller.ts"), `import { decodeAction, serverDecode } from "./app/lib.js";
 
 decodeAction(1, { id: 2 });
@@ -396,11 +405,15 @@ decodeAction(1, "manifest");
   const module = await import(join(dir, "app", "lib.js"));
   const action = await import(join(dir, "dep", "action.js"));
   expect([module.decodeAction(1, { id: 2 }), module.decodeFormState(2, { id: 2 }), module.serverDecode(5, { id: 1 })]).toEqual([2, 3, 6]);
-  expect([module.decodeAction, module.decodeFormState, module.serverDecode]).toEqual([action.decode, action.decode, action.decode]);
-  expect(module.ping).toBe(action.ping);
-  expect([module.swapped(1, 2), module.wraps(3), module.holds({ 0: 4 }), module.shows(5), module.generic(6, {})]).toEqual([21, true, 1, "<5>", 7]);
-  // What a JS caller gives past their parameters, none of theirs.
-  expect([module.holdsPlain(4, 5), module.counted(), module.nested({ value: undefined })]).toEqual([1, 1, true]);
+  const serverModule = await import(join(dir, "dep", "server.js"));
+  // Each its own checked function, no longer the library's (#2403 (Y)).
+  expect(module.serverDecode).not.toBe(serverModule.decode);
+  expect(module.ping).not.toBe(action.ping);
+  expect(() => module.serverDecode(5, { id: -1 })).toThrow("serverDecode(manifest.id): expected a u32");
+  expect([module.swapped(1, 2), module.wraps(3), module.holds([4]), module.shows(5), module.generic(6, {})]).toEqual([21, true, 1, "<5>", 7]);
+  // What a JS caller gives past their parameters, none of theirs; `Some(None)`
+  // as Rust's box of it is, `{ $someNone: 0 }`, which the check takes (#2403).
+  expect([module.holdsPlain(4, 5), module.counted(), module.nested({ $someNone: 0 })]).toEqual([1, 1, true]);
 });
 
 // React's Flight clients re-export react-client's `TemporaryReferenceSet`,

@@ -12,6 +12,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 import { es2022, type Setting, typeChecked } from "./type-checked";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -45,7 +46,7 @@ test("a js::Is is upstream's predicate, its JS and its declaration", async () =>
   const dir = fixture("js-predicates");
   writeFileSync(join(dir, "lib.rs"), program);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('export function isISODate(value) {\n  return typeof value === "string" && year(value) != null;\n}');
   expect(js).toContain("isISODate(value)");
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
@@ -135,9 +136,9 @@ pub fn is_selection(value: &str) -> js::Is<Selection> {
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function isSelection(value: string): value is Selection;");
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).not.toContain("typeof value");
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).not.toContain("typeof value");
   const {isSelection} = await import(join(dir, "lib.js"));
-  expect(["primary", "secondary", "other", null].map(isSelection)).toEqual([true, true, false, false]);
+  expect(["primary", "secondary", "other"].map(isSelection)).toEqual([true, true, false]);
   writeFileSync(join(dir, "consumer.ts"), `import {isSelection, type Selection} from "./lib.js";
 declare const value: "primary" | "secondary" | "other";
 if (isSelection(value)) {

@@ -9,7 +9,7 @@
 // state that's no class's, a variable of its own, lent the same; and its
 // cell's own `replace`.
 
-import { $debugStr, $main } from "@rust-js/std";
+import { $checkStr, $debugStr, $main } from "@rust-js/std";
 
 function statusDebug_fmt(status) {
   if (status.status === "pending") {
@@ -23,6 +23,7 @@ function statusDebug_fmt(status) {
 
 export class Task {
   constructor(status, tries, value, name) {
+    $checkStr(name, "Task.new(name)");
     this.status = status;
     this.tries = tries;
     this.value = value;

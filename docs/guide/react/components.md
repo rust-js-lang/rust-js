@@ -83,7 +83,19 @@ pub fn Team() -> JSX::Element {
 ```
 
 ```jsx
+import { $checkStr, $checkU32, $checks } from "@rust-js/std";
+
 export function Avatar({ name, imageUrl, size = 48, caption }) {
+  $checks(
+    "Avatar(props.name, props.imageUrl, props.size)",
+    name,
+    $checkStr,
+    imageUrl,
+    $checkStr,
+    size,
+    $checkU32,
+  );
+  $checkStr(caption, "Avatar(props.caption)", "nullish");
   return (
     <figure>
       <img src={imageUrl} alt={name} width={size} height={size} />
@@ -184,11 +196,17 @@ pub fn Page(props: TitleProps) -> JSX::Element {
 ```
 
 ```jsx
+import { $checkShape, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
+const checkTitleProps = /* @__PURE__ */ $checkShape(() => ({ text: $checkStr, level: $checkU32 }));
+
 export function Title(props) {
+  $checks("Title(props)", props, checkTitleProps);
   return <h1 data-level={props.level}>{props.text}</h1>;
 }
 
 export function Page(props) {
+  $checks("Page(props)", props, checkTitleProps);
   return (
     <main>
       <Title {...props} />
@@ -245,7 +263,10 @@ pub fn Profile() -> JSX::Element {
 ```
 
 ```jsx
+import { $checkStr } from "@rust-js/std";
+
 export function Card({ title, children }) {
+  $checkStr(title, "Card(props.title)");
   return (
     <section className="card">
       <h2>{title}</h2>
@@ -293,7 +314,10 @@ pub fn Button(ButtonProps { label, rest }: ButtonProps) -> JSX::Element {
 ```
 
 ```jsx
+import { $checkStr } from "@rust-js/std";
+
 export function Button({ label, ...rest }) {
+  $checkStr(label, "Button(props.label)");
   return (
     <button className="button" {...rest}>
       {label}
@@ -337,7 +361,10 @@ pub fn Toolbar() -> JSX::Element {
 ```
 
 ```jsx
+import { $checkStr } from "@rust-js/std";
+
 export function Button({ label, ...button }) {
+  $checkStr(label, "Button(props.label)");
   return (
     <button className="button" {...button}>
       {label}
@@ -405,8 +432,18 @@ pub fn People(PeopleProps { people }: PeopleProps) -> JSX::Element {
 
 ```jsx
 import { useState } from "react";
+import { $checkArray, $checkBool, $checkShape, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
+const checkPerson = /* @__PURE__ */ $checkShape(() => ({
+  id: $checkU32,
+  name: $checkStr,
+  admin: $checkBool,
+}));
 
 export function People({ people }) {
+  $checks("People(props.people)", people, (value, where, none) =>
+    $checkArray(value, where, none, checkPerson),
+  );
   const [selected, setSelected] = useState(undefined);
   const items = people.map((person) => {
     const id = person.id;
@@ -454,7 +491,18 @@ pub fn Names(PeopleProps { people }: PeopleProps) -> JSX::Element {
 ```
 
 ```jsx
+import { $checkArray, $checkBool, $checkShape, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
+const checkPerson = /* @__PURE__ */ $checkShape(() => ({
+  id: $checkU32,
+  name: $checkStr,
+  admin: $checkBool,
+}));
+
 export function Names({ people }) {
+  $checks("Names(props.people)", people, (value, where, none) =>
+    $checkArray(value, where, none, checkPerson),
+  );
   return (
     <ul>
       {people.map((person) => (
@@ -504,7 +552,10 @@ pub fn Score(ScoreProps { points }: ScoreProps) -> JSX::Element {
 ```
 
 ```jsx
+import { $checkU32 } from "@rust-js/std";
+
 export function Score({ points }) {
+  $checkU32(points, "Score(props.points)");
   let label;
   switch (points) {
     case 0:
@@ -538,7 +589,10 @@ pub fn Banner(BannerProps { message }: BannerProps) -> Option<JSX::Element> {
 ```
 
 ```jsx
+import { $checkStr } from "@rust-js/std";
+
 export function Banner({ message }) {
+  $checkStr(message, "Banner(props.message)", "nullish");
   if (message == null) {
     return;
   }
@@ -598,12 +652,16 @@ pub fn Panel() -> JSX::Element {
 
 ```jsx
 import { useState } from "react";
+import { $checkCallback, $checkStr } from "@rust-js/std";
 
 export function Button({ label, onClick }) {
+  $checkStr(label, "Button(props.label)");
+  $checkCallback(onClick, "Button(props.onClick)");
   return <button onClick={onClick}>{label}</button>;
 }
 
 export function SizePicker({ onPick }) {
+  $checkCallback(onPick, "SizePicker(props.onPick)");
   return (
     <select onChange={(e) => onPick(e.target.value)}>
       <option value="s">Small</option>

@@ -8,28 +8,52 @@
 // and loading the module threw, "Cannot access 'UNSUPPORTED' before
 // initialization", where Rust runs.
 
-import { $eq, $main } from "@rust-js/std";
+import { $brand, $checkBrand, $checkTuple, $checkU32, $checks, $eq, $main } from "@rust-js/std";
 
 function codeDebug_fmt(code) {
   return `Code(${code[0]})`;
 }
 
-const UNSUPPORTED = [2147483652];
+const UNSUPPORTED = $brand(
+  "associated_const_of_a_later_const#f9a12797c1c79a91::Code",
+  [2147483652],
+);
 
 export const Code = {
   UNKNOWN: UNSUPPORTED,
   BASE: 2147483648,
 
   raw(code) {
+    $checks("Code.raw(code)", code, checkCode);
+    return Code.raw$(code);
+  },
+  raw$(code) {
     return code[0];
   },
 };
 
 $main(main);
 
+function checkCode(value) {
+  $checkBrand(
+    value,
+    undefined,
+    undefined,
+    "associated_const_of_a_later_const#f9a12797c1c79a91::Code",
+    "a Code",
+  );
+  $checkTuple(value, undefined, undefined, [$checkU32]);
+}
+
 function main() {
-  const raw = Code.raw([2147483652]);
-  console.log(`${codeDebug_fmt([2147483652])} ${raw}`);
-  console.log(`${$eq(UNSUPPORTED, [2147483652])}`);
+  const raw = Code.raw$(
+    $brand("associated_const_of_a_later_const#f9a12797c1c79a91::Code", [2147483652]),
+  );
+  console.log(
+    `${codeDebug_fmt($brand("associated_const_of_a_later_const#f9a12797c1c79a91::Code", [2147483652]))} ${raw}`,
+  );
+  console.log(
+    `${$eq(UNSUPPORTED, $brand("associated_const_of_a_later_const#f9a12797c1c79a91::Code", [2147483652]))}`,
+  );
 }
 //# sourceMappingURL=case.js.map

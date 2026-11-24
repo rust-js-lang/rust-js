@@ -11,7 +11,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compileJsLibrary } from "./programs";
-import { buildCompiler, outsideFixture } from "./support";
+import { buildCompiler, compiler, outsideFixture, run } from "./support";
 import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler, 600_000);
@@ -192,6 +192,65 @@ for (const [name, bundle] of Object.entries(bundlers)) {
     writeFileSync(join(dir, "entry.js"), `import "./lib/lib.js";\nglobalThis.out = 1;\n`);
     writeFileSync(join(dir, "bare.js"), `globalThis.out = 1;\n`);
     expect(await bundle(dir, "entry.js")).toBe(await bundle(dir, "bare.js"));
+  }, underLoad(120_000));
+
+  // A struct's checker is its table's constant, marked pure (#2403, the
+  // lead's (B)): of an export the app doesn't import, dropped; its field's
+  // key, which no minifier renames, shows it. Of one it does, kept.
+  test(`${name}: an unused export's checker is dropped`, async () => {
+    const dir = outsideFixture(`tree-shaking-checker-${name}`);
+    compiledAs(dir, "tickets", "pub struct Ticket {\n    pub seat_number_marker: u32,\n}\n\npub fn book(ticket: &Ticket) -> u32 {\n    ticket.seat_number_marker\n}\n\npub fn double(n: u32) -> u32 {\n    n * 2\n}\n");
+    writeFileSync(join(dir, "entry.js"), `import { double } from "./tickets/lib.js";\nglobalThis.out = double(21);\n`);
+    writeFileSync(join(dir, "booked.js"), `import { book } from "./tickets/lib.js";\nglobalThis.out = book({ seatNumberMarker: 1 });\n`);
+    expect(await bundle(dir, "entry.js")).not.toContain("seatNumberMarker");
+    expect(await bundle(dir, "booked.js")).toContain("seatNumberMarker");
+  }, underLoad(120_000));
+
+  // A check's message names its function and parameter by strings, which
+  // a minifier keeps, so a minified bundle's failure reads as the
+  // unminified one's (#2403, ADR 1192, amended).
+  test(`${name}: a check's message survives minification`, async () => {
+    const dir = outsideFixture(`tree-shaking-message-${name}`);
+    compiledAs(dir, "checked", "pub fn double(n: u32) -> u32 {\n    n * 2\n}\n");
+    writeFileSync(
+      join(dir, "entry.js"),
+      `import { double } from "./checked/lib.js";\ntry { double(-1); } catch (error) { globalThis.out = String(error); }\n`,
+    );
+    writeFileSync(join(dir, "bundle.js"), await bundle(dir, "entry.js"));
+    await import(join(dir, "bundle.js"));
+    expect((globalThis as { out?: string }).out).toBe("RangeError: rust-js: double(n): expected a u32, got -1");
+  }, underLoad(120_000));
+
+  // A type no other crate can make is branded where Rust makes it; the
+  // registry of brands, a module's top's, is dropped where nothing the app
+  // uses brands or checks one: its key, which no minifier renames, shows it.
+  test(`${name}: an unused export's brands are dropped`, async () => {
+    const dir = outsideFixture(`tree-shaking-brands-${name}`);
+    compiledAs(dir, "sealed", "pub struct Email(String);\n\npub fn make(text: &str) -> Email {\n    Email(text.to_string())\n}\n\npub fn domain(email: &Email) -> usize {\n    email.0.len()\n}\n\npub fn double(n: u32) -> u32 {\n    n * 2\n}\n");
+    writeFileSync(join(dir, "entry.js"), `import { double } from "./sealed/lib.js";\nglobalThis.out = double(21);\n`);
+    writeFileSync(join(dir, "branded.js"), `import { domain, make } from "./sealed/lib.js";\nglobalThis.out = domain(make("a@b"));\n`);
+    const key = "the brand sets of the types no other crate can make";
+    expect(await bundle(dir, "entry.js")).not.toContain(key);
+    expect(await bundle(dir, "branded.js")).toContain(key);
+  }, underLoad(120_000));
+
+  // A library's module of functions its own JS doesn't check, which an app
+  // re-exports as a namespace: a module of the app's in its place, `export *
+  // from` it and a checked forwarder of each, its own export shadowing the
+  // star's (#2536). Bundled, a member the app reads is the checked one, and
+  // one it doesn't is dropped, its body's text gone.
+  test(`${name}: a namespace of a library's unchecked functions keeps its checks and drops what's unused`, async () => {
+    const dir = outsideFixture(`tree-shaking-namespace-${name}`);
+    compiledAs(dir, "dep", "pub mod m {\n    pub fn used(n: u32) -> u32 {\n        n + 1\n    }\n\n    pub fn unused_member_marker(n: u32) -> u32 {\n        n * 7919\n    }\n}\n");
+    writeFileSync(join(dir, "app.rs"), "pub use dep::m as ns;\n\npub fn one() -> u32 {\n    ns::used(0)\n}\n");
+    run([compiler, join(dir, "app.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
+      "--", "--crate-name", "app", "--edition=2024", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir]);
+    writeFileSync(join(dir, "entry.js"), `import { ns } from "./app/lib.js";\ntry { ns.used(-1); } catch (error) { globalThis.out = String(error); }\n`);
+    const code = await bundle(dir, "entry.js");
+    expect(code).not.toContain("7919");
+    writeFileSync(join(dir, "bundle.js"), code);
+    await import(join(dir, "bundle.js"));
+    expect((globalThis as { out?: string }).out).toBe("RangeError: rust-js: used(n): expected a u32, got -1");
   }, underLoad(120_000));
 
   // A class is an ES class, its members in its body: a declaration a

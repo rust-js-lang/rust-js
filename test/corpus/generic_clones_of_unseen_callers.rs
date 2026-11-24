@@ -1,3 +1,4 @@
+//@ library-differs
 // Generic code whose callers aren't all seen, a `pub` function's, clones
 // what its parameters may be, any type: its `cycle()` of an `I` is no
 // `map` or `filter` it isn't given, and the `map` and `filter` it gives

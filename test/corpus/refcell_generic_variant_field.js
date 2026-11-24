@@ -7,13 +7,17 @@
 // (ADR 0863, amended, #503): a `RefCell<Vec<i32>>` elsewhere, lent and
 // borrowed, is the array.
 
-import { $main } from "@rust-js/std";
+import { $checkTag, $main } from "@rust-js/std";
 
 export function full(value) {
   return {
     TAG: "Full",
     current: value,
   };
+}
+
+function checkSlot(value, T) {
+  const tag = $checkTag(value, "TAG", ["Full"], ["Empty"]);
 }
 
 export function put(slot, value) {

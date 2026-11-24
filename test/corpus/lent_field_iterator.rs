@@ -1,3 +1,4 @@
+//@ library-differs
 // An iterator in a struct's field, lent as a `&mut` to a generic function:
 // each call steps the field on.
 pub struct P { pub v: std::vec::IntoIter<u32> }

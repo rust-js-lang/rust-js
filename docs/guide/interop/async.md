@@ -34,7 +34,10 @@ async fn half_later(n: u32) -> u32 {
 ```
 
 ```js
+import { $checkU32 } from "@rust-js/std";
+
 export async function doubleLater(n) {
+  $checkU32(n, "doubleLater(n)");
   const half = await halfLater(n);
   return (half * 4) >>> 0;
 }
@@ -134,9 +137,10 @@ pub async fn rename(id: u32) -> String {
 
 ```js
 import { loadUser, saveUser } from "./api.js";
-import { $settle } from "@rust-js/std";
+import { $checkU32, $settle } from "@rust-js/std";
 
 export async function rename(id) {
+  $checkU32(id, "rename(id)");
   const name = await loadUser(id);
   const value = await $settle(saveUser(name));
   if (value.TAG === "Ok") {
@@ -226,7 +230,10 @@ pub fn tagged(tag: &'static str) -> Promise<u32> {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function tagged(tag) {
+  $checkStr(tag, "tagged(tag)");
   let resolve;
   const tagged = new Promise((res) => {
     resolve = (value) => {
@@ -259,9 +266,10 @@ pub async fn load_text(url: &str) -> Result<String, &'static JsError> {
 ```
 
 ```js
-import { $settle } from "@rust-js/std";
+import { $checkStr, $settle } from "@rust-js/std";
 
 export async function loadText(url) {
+  $checkStr(url, "loadText(url)");
   const result = await $settle(window.fetch(url));
   if (result.TAG === "Err") {
     return result;
@@ -303,7 +311,14 @@ pub async fn countdown() {
 ```
 
 ```js
+import { $checkF64 } from "@rust-js/std";
+
 export function delay(ms) {
+  $checkF64(ms, "delay(ms)");
+  return delay$(ms);
+}
+
+function delay$(ms) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       resolve();
@@ -314,7 +329,7 @@ export function delay(ms) {
 export async function countdown() {
   for (let n = 3; n > 0; n--) {
     console.log(`${n}`);
-    await delay(1000);
+    await delay$(1000);
   }
   console.log("liftoff");
 }
@@ -360,7 +375,14 @@ pub fn hold(lease: Lease) {
 ```
 
 ```js
+import { $checkStr, $checkTuple, $checks } from "@rust-js/std";
+
+function checkLease(value) {
+  $checkTuple(value, undefined, undefined, [$checkStr]);
+}
+
 export function hold(lease) {
+  $checks("hold(lease)", lease, checkLease);
   setTimeout(() => {
     const held = lease;
     console.log(`holding ${held[0]}`);
@@ -390,9 +412,12 @@ pub fn ping_later(code: &str) {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export const scheduleTimeout = typeof setTimeout === "function" ? setTimeout : undefined;
 
 export function pingLater(code) {
+  $checkStr(code, "pingLater(code)");
   setTimeout(code, 10);
 }
 ```
@@ -509,12 +534,17 @@ pub fn suspend_on(state: &'static SuspendedState, loading: Promise<()>, preload:
 ```
 
 ```js
+import { $checkShape, $checks } from "@rust-js/std";
+
 function onUnsuspend() {
   // Safety: it's only called bound to a suspended state.
   this.count--;
 }
 
+const checkSuspendedState = /* @__PURE__ */ $checkShape(() => ({}));
+
 export function suspendOn(state, loading, preload) {
+  $checks("suspendOn(state)", state, checkSuspendedState);
   const ping = onUnsuspend.bind(state);
   loading.then(ping, ping);
   preload.addEventListener("load", ping);
@@ -608,7 +638,10 @@ pub async fn total(ids: Vec<u32>) -> u32 {
 ```
 
 ```js
+import { $checkArray, $checkU32, $checks } from "@rust-js/std";
+
 export async function total(ids) {
+  $checks("total(ids)", ids, (value, where, none) => $checkArray(value, where, none, $checkU32));
   const load = async (id) => (id * 10) >>> 0;
   const all = await Promise.all(ids.map((id) => load(id)));
   return all.reduce((a, b) => (a + b) >>> 0, 0);
@@ -641,7 +674,10 @@ pub async fn count_chunks(url: &str) -> u32 {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export async function countChunks(url) {
+  $checkStr(url, "countChunks(url)");
   const response = await window.fetch(url);
   const body = response.body;
   if (body === null) {

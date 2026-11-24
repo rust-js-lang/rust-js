@@ -9,7 +9,7 @@ export function putBack(iterable, IIntoIterator, dropIItem) {
   } catch (error) {
     throw error;
   }
-  return { iter };
+  return $brand("itertools#<hash>::adaptors::PutBack", { iter });
 }
 
 /**
@@ -63,11 +63,11 @@ export function interleave(
     }, error);
     throw error;
   }
-  return {
+  return $brand("itertools#<hash>::adaptors::Interleave", {
     i: fuse,
     j: tmp,
     nextComingFromJ: false,
-  };
+  });
 }
 
 function whileSomeIterator_next(whileSome, IIterator, dropI, dropA) {

@@ -64,6 +64,8 @@ pub fn exports<'tcx>(
         cloned_closures,
         owned_by_return,
         nulled_params,
+        split,
+        js_reached,
     } = contracts;
     let crate_name = tcx.crate_name(LOCAL_CRATE);
     // What its module exports it by: its type's object's name, a
@@ -94,6 +96,8 @@ pub fn exports<'tcx>(
                 .then(|| crate::default_exports::exported_as(tcx, id, info.exported()))
                 .filter(|exported| *exported != info.name),
             internal: false,
+            unchecked: split.unchecked(id).map(str::to_owned),
+            checked: id.as_local().is_some_and(|local| js_reached.may_call(tcx, local)),
             calling: rust_js_program::library::Calling {
                 params: type_params(tcx, id, contracts),
                 facts: [
@@ -148,6 +152,8 @@ pub fn exports<'tcx>(
                 member: None,
                 exported_as: alias.clone(),
                 internal: true,
+                unchecked: None,
+                checked: false,
                 calling: rust_js_program::library::Calling {
                     facts: [
                         (

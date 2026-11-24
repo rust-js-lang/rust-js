@@ -1,3 +1,4 @@
+//@ library-differs
 // A loop's `match` whose arm ends `if c { a } else { b } continue;` keeps
 // the `if`/`else` as written, with one `continue` after it, as React's
 // ReactFlightClient processBinaryChunk writes its ROW_ID, ROW_TAG and

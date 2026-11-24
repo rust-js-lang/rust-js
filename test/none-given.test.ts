@@ -20,6 +20,7 @@ import { join } from "node:path";
 import { chromium } from "playwright";
 import { buildReact, compiler, fixture, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -263,7 +264,7 @@ test("a None leaving for JS as undefined alone is Rust's, in Bun and in Chromium
   const dir = fixture("none-given");
   writeFileSync(join(dir, "lib.rs"), program);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--edition=2024", ...js]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Each exit of what JS may have given: a binding's optional argument,
   // what a function JS calls returns, a field written, a callback's.
   expect(out).toContain("export function digits(value) {\n  return value != null ? (1.25).toPrecision(value) : (1.25).toPrecision();\n}");
@@ -336,7 +337,7 @@ test("a library's function a consumer gives JS's None gives a binding Rust's", a
   writeFileSync(join(dir, "app", "lib.rs"), "pub fn shown(value: Option<f64>) -> String {\n    dep::digits(value)\n}\n");
   run([compiler, join(dir, "app", "lib.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
     "--", "--crate-name", "app", "--edition=2024", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js]);
-  expect(readFileSync(join(dir, "dep", "lib.js"), "utf8")).toContain("value != null ? (1.25).toPrecision(value) : (1.25).toPrecision()");
+  expect(withoutBoundary(readFileSync(join(dir, "dep", "lib.js"), "utf8"))).toContain("value != null ? (1.25).toPrecision(value) : (1.25).toPrecision()");
   const app = await import(join(dir, "app", "lib.js"));
   expect([app.shown(null), app.shown(undefined)]).toEqual(["1.25", "1.25"]);
 }, underLoad(120_000));
@@ -421,7 +422,7 @@ test("a binding's trailing None is no argument, dynamic or literal, in Bun and i
   const dir = fixture("none-trailing");
   writeFileSync(join(dir, "lib.rs"), trailing);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--edition=2024", ...js]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(out).toContain("  return month != null ? date.setFullYear(2026, month) : date.setFullYear(2026);\n");
   expect(out).toContain("(value != null ? new Date(value) : new Date()).getTime()");
   // A `Some`'s value never `undefined`, `Some(at - 1.0)`'s, is there.
@@ -499,7 +500,7 @@ test("a WebIDL operation's trailing None is undefined, no ladder, in Bun and in 
   writeFileSync(join(dir, "lib.rs"), webidl);
   const web = ["--extern", `webapi=${join(target, "libwebapi.rmeta")}`];
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--edition=2024", ...web, ...js]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   const [marked, unmarked] = out.split("export function yielded");
   // But a dyn Fn's call, which may be JS's, of each count (#1876).
   expect(marked.split("export function commented")[0]).not.toContain("!= null");
@@ -790,7 +791,7 @@ test("a function value's trailing None is no argument, a bound one's too, in Bun
   const dir = fixture("none-values");
   writeFileSync(join(dir, "lib.rs"), values);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--edition=2024", ...js]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(out).toContain("  return b != null ? f(a, b) : f(a);\n");
   // A Some where it's given is there.
   expect(out).toContain("export function someCalled(f, a, b) {\n  return f(a, b);\n}");
@@ -845,7 +846,7 @@ pub fn found(has_entry: bool, x: f64) -> Option<f64> {
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
-  const output = readFileSync(join(dir, "lib.js"), "utf8");
+  const output = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(output).toContain("  return value;\n}");
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toMatch(/removed\([^;]+\): number \| null \| undefined;/);
@@ -885,7 +886,7 @@ pub fn is_missing(has_entry: bool, post_lookup: fn()) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
-  const output = readFileSync(join(dir, "lib.js"), "utf8");
+  const output = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(output).toContain("  return value;\n}");
   const lib = await import(join(dir, "lib.js"));
   const lookup = globalThis as typeof globalThis & { testLookup?: () => unknown };
@@ -963,7 +964,7 @@ pub fn send_null(callback: &dyn Fn(Option<f64>)) {
   // is given it, never Rust's `None` (#2167).
   sendNull(callback);
   expect(received).toEqual([[null], [null], [3], [], [], [3], [null]]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("callback(value ?? null)");
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain("callback(value ?? null)");
 });
 
 // A local whose `None` is `null` alone, a `js::null()` it's made of,
@@ -998,6 +999,6 @@ pub fn shown_through(flag: bool) -> String {
   expect([shown(true), shown(false), shownThrough(true), shownThrough(false)]).toEqual(["2", "", "2", ""]);
   // A `dyn Fn` may be JS's own function, so its call is the one of each
   // count too.
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return held != null ? f(held) : f();");
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain("return held != null ? f(held) : f();");
 });
 

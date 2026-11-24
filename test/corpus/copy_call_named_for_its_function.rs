@@ -1,3 +1,4 @@
+//@ library-differs
 // A function JS calls, generic, whose call of the crate's own generic
 // function is of a copy that turns out alike it, `parseInternalUnboxed`
 // then `parseInternal`, its result named for the call (ADR 0569): the

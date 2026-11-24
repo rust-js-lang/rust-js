@@ -7,6 +7,7 @@ import { chromium } from "playwright";
 
 import { buildReact, compiler, fixture, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
+import { withoutBoundary } from "./without-boundary";
 
 // The js crate it compiles against, in `target` (`buildReact`).
 beforeAll(buildReact, 600_000);
@@ -35,7 +36,7 @@ pub fn fill_view(view: &DataView) -> &DataView {
 `);
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function fill(bytes) {\n  return crypto.getRandomValues(bytes);\n}");
   expect(js).toContain("const words = crypto.getRandomValues(new Uint32Array(length));\n  return words.length;");
   // Each gives back the array itself, filled: 64 bytes all zero is a

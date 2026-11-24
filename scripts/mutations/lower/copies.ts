@@ -637,4 +637,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^type_constant_of_a_module_constant\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "copy-unbranded",
+    breaks: "a copy of a sealed struct, `{ ...p }`, isn't branded, so Rust refuses its own moved `Point` (#2403 step 2c)",
+    file: "crates/rust-js-lower/src/copies.rs",
+    find: "        self.branded(ty, made)\n    }",
+    replace: "        made\n    }",
+    tests: ["test/boundary-brands.test.ts", "-t", "a copy's and a const's"],
+  },
 ];

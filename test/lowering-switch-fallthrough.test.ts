@@ -8,6 +8,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -98,7 +99,7 @@ pub fn apart(n: u32, on: bool) -> u32 {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Upstream's, but for its \`typeof type\`'s test, the comment written
   // before the arm fallen to before its \`// falls through\` (ADR 0905, amended).
   expect(js).toContain(`  switch (tag) {
@@ -260,7 +261,7 @@ pub fn owner_stack(tag: u8, owned: bool, view_transitions: bool) -> String {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`  let info = "";
   switch (tag) {
     case HOST_COMPONENT:
@@ -357,7 +358,7 @@ pub fn between(tag: u8, view_transitions: bool) -> u32 {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`  switch (tag) {
     case HOST_COMPONENT:
       return "host";
@@ -465,7 +466,7 @@ pub fn tag_of(r#type: Option<&Unknown>) -> &'static str {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`      case REACT_SCOPE_TYPE:
         if (ENABLE_SCOPE_API) {
           return "scope";
@@ -532,7 +533,7 @@ pub fn validate(name: &str, value: Option<&Unknown>, dev: bool, warned: &mut Vec
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`        if (value === "false" || value === "true") {
           switch (name) {
             case "checked":

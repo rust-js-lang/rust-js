@@ -10,6 +10,8 @@
 // (#1318).
 
 import {
+  $checkCallback,
+  $checkI32,
   $cleanup,
   $collectDropping,
   $collectOptions,
@@ -31,6 +33,7 @@ import {
 } from "@rust-js/std";
 
 export function cycled(items, f, IIterator, IClone, FClone) {
+  f = $checkCallback(f, "cycled(f)", $checkI32);
   return $collectDropping(
     $roomForHint(
       iterator_take(

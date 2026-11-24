@@ -37,6 +37,11 @@ pub trait JsModules {
     /// or why they can't be said, a file not found or not read, its path
     /// named.
     fn css_module_keys(&self, specifier: &str) -> Result<Exported, String>;
+
+    /// Of `modules`, by their places in it, each a hand-written JS file of
+    /// the program or its workspace imports: what JS may call of the
+    /// crate's besides what its root gives (#2403 lever (3)).
+    fn hand_imported(&self, modules: &[ModuleAt]) -> IndexSet<usize>;
 }
 
 /// A CSS Module's keys, as the parity fixture finds the bundlers export

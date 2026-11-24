@@ -1,3 +1,4 @@
+//@ library-differs
 // A block the program labeled around a loop, `'done: { for &x in row {
 // if x == 7 { break 'done; } } .. }`, in a loop of its own: MIR's
 // structure put the block in the inner loop, `const iter = row.values();

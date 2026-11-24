@@ -2,34 +2,63 @@
 
 // Structs and tuples: plain JS objects and arrays (ADR 0020).
 
-import { $div, $rem, $unwrap } from "@rust-js/std";
+import {
+  $checkI32,
+  $checkShape,
+  $checkTuple,
+  $checkU32,
+  $checks,
+  $div,
+  $rem,
+  $unwrap,
+} from "@rust-js/std";
+
+const checkPoint = /* @__PURE__ */ $checkShape(() => ({ x: $checkI32, y: $checkI32 }));
+const checkRect = /* @__PURE__ */ $checkShape(() => ({ origin: checkPoint, size: checkSize }));
 
 export function point(x, y) {
+  $checks("point(x, y)", x, $checkI32, y, $checkI32);
+  return point$(x, y);
+}
+
+function point$(x, y) {
   return { x, y };
 }
 
 export function rect(x, y, w, h) {
+  $checks("rect(x, y, w, h)", x, $checkI32, y, $checkI32, w, $checkU32, h, $checkU32);
+  return rect$(x, y, w, h);
+}
+
+function rect$(x, y, w, h) {
   return { origin: { x, y }, size: [w, h] };
+}
+
+function checkSize(value) {
+  $checkTuple(value, undefined, undefined, [$checkU32, $checkU32]);
 }
 
 /** Fields are read with `.`, and a tuple's with `[i]`. */
 export function area(r) {
+  $checks("area(r)", r, checkRect);
   return Math.imul(r.size[0], r.size[1]) >>> 0;
 }
 
 /** Changing a field in place: `p.x += dx`. */
 export function moved(x, y, dx) {
-  const p = point(x, y);
+  $checks("moved(x, y, dx)", x, $checkI32, y, $checkI32, dx, $checkI32);
+  const p = point$(x, y);
   p.x = (p.x + dx) | 0;
   return p;
 }
 
 /** Nested fields, read and written. */
 export function grow(w, h, by) {
-  const r = rect(0, 0, w, h);
+  $checks("grow(w, h, by)", w, $checkU32, h, $checkU32, by, $checkU32);
+  const r = rect$(0, 0, w, h);
   r.size[0] = (r.size[0] + by) >>> 0;
   r.size[1] = (r.size[1] * 2) >>> 0;
-  r.origin = point(-1, -1);
+  r.origin = point$(-1, -1);
   return r;
 }
 
@@ -38,7 +67,8 @@ export function grow(w, h, by) {
  * copies the JS object: changing `b` must leave `a` alone.
  */
 export function copiesAreSeparate(x) {
-  const a = point(x, 0);
+  $checkI32(x, "copiesAreSeparate(x)");
+  const a = point$(x, 0);
   const b = { ...a };
   b.x = (b.x + 1) | 0;
   return [a.x, b.x];
@@ -51,14 +81,16 @@ function bump(p) {
 }
 
 export function callerKeepsItsPoint(y) {
-  const a = point(0, y);
+  $checkI32(y, "callerKeepsItsPoint(y)");
+  const a = point$(0, y);
   const b = bump({ ...a });
   return [{ ...a }, { ...b }];
 }
 
 /** `Rect` moves, but the `Point` inside it was copied from `a`. */
 export function movesShareNothing(x) {
-  const a = point(x, x);
+  $checkI32(x, "movesShareNothing(x)");
+  const a = point$(x, x);
   const s = { origin: { ...a }, size: [1, 1] };
   s.origin.x = 0;
   return [a.x, s.origin.x];
@@ -69,7 +101,8 @@ export function movesShareNothing(x) {
  * came from is then moved and changed.
  */
 export function boundBeforeMove(x) {
-  const r = rect(x, x, 1, 1);
+  $checkI32(x, "boundBeforeMove(x)");
+  const r = rect$(x, x, 1, 1);
   const before = r.origin.x;
   const s = r;
   s.origin.x = 0;
@@ -85,7 +118,8 @@ function originOf(r) {
 }
 
 export function returnedCopyIsSeparate(x) {
-  const r = rect(x, x, 1, 1);
+  $checkI32(x, "returnedCopyIsSeparate(x)");
+  const r = rect$(x, x, 1, 1);
   const p = originOf(r);
   p.x = (p.x + 1) | 0;
   return [r.origin.x, p.x];
@@ -96,9 +130,10 @@ function marked(m) {
 }
 
 export function optionCopyIsSeparate(x) {
-  const m = { at: point(x, 0) };
+  $checkI32(x, "optionCopyIsSeparate(x)");
+  const m = { at: point$(x, 0) };
   const option = marked(m);
-  const fallback = point(0, 0);
+  const fallback = point$(0, 0);
   const p = option ?? fallback;
   p.x = (p.x + 1) | 0;
   let kept;
@@ -113,7 +148,8 @@ export function optionCopyIsSeparate(x) {
 
 /** `*r` of a reference a call returns is a copy too. */
 export function derefCopyIsSeparate(x) {
-  const points = [point(x, 0)];
+  $checkI32(x, "derefCopyIsSeparate(x)");
+  const points = [point$(x, 0)];
   const p = { ...$unwrap(points[0], "examples/structs.rs:125:33") };
   p.x = (p.x + 1) | 0;
   return [$unwrap(points[0], "examples/structs.rs:127:21").x, p.x];
@@ -121,7 +157,8 @@ export function derefCopyIsSeparate(x) {
 
 /** Struct update syntax: fields not written come from `base`. */
 export function withX(x, y) {
-  const base = point(0, y);
+  $checks("withX(x, y)", x, $checkI32, y, $checkI32);
+  const base = point$(0, y);
   return { x, y: base.y };
 }
 
@@ -131,6 +168,7 @@ export function withX(x, y) {
  * remainder does.
  */
 export function writtenOrder(a, b) {
+  $checks("writtenOrder(a, b)", a, $checkI32, b, $checkI32);
   return {
     y: $div(100, a, "examples/structs.rs:140:16", -2147483648) | 0,
     x: $rem(100, b, "examples/structs.rs:140:28", -2147483648) | 0,
@@ -139,6 +177,11 @@ export function writtenOrder(a, b) {
 
 /** Tuples: built, returned and taken apart. */
 export function divmod(a, b) {
+  $checks("divmod(a, b)", a, $checkU32, b, $checkU32);
+  return divmod$(a, b);
+}
+
+function divmod$(a, b) {
   return [
     $div(a, b, "examples/structs.rs:145:6") >>> 0,
     $rem(a, b, "examples/structs.rs:145:13") >>> 0,
@@ -146,12 +189,14 @@ export function divmod(a, b) {
 }
 
 export function divmodSum(a, b) {
-  const [q, r] = divmod(a, b);
+  $checks("divmodSum(a, b)", a, $checkU32, b, $checkU32);
+  const [q, r] = divmod$(a, b);
   return (q + r) >>> 0;
 }
 
 /** A pattern in a parameter, and `match` on a tuple of variables. */
 export function classify([a, b]) {
+  $checks("classify(props[0], props[1])", a, $checkI32, b, $checkI32);
   if (a === 0) {
     if (b === 0) {
       return 0;
@@ -173,7 +218,8 @@ export function classify([a, b]) {
 
 /** `match` on struct fields, with bindings. */
 export function quadrant(x, y) {
-  const value = point(x, y);
+  $checks("quadrant(x, y)", x, $checkI32, y, $checkI32);
+  const value = point$(x, y);
   if (value.x !== 0 && value.y !== 0) {
     let x = value.x;
     let y$1 = value.y;

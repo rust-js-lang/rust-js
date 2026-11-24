@@ -4,37 +4,37 @@
 // call's `gives` is native Rust's, which reads the field once: a getter
 // that answers another value the second time, `$reads`, would change it
 // where the JS read it twice. `scrubTo` is the SDK's, reduced.
-//@ call: map [{"snap": {"$reads": [{"threshold": 1, "points": [2]}, null]}}]
+//@ call: map [{"min": 0, "snap": {"$reads": [{"threshold": 1, "points": [2]}, null]}}]
 //@ gives: 1
 //@ logs: ["get call0.arg0.snap", "get call0.arg0.snap.threshold"]
-//@ call: mapOr [{"snap": {"$reads": [{"threshold": 1, "points": [2]}, null]}}]
+//@ call: mapOr [{"min": 0, "snap": {"$reads": [{"threshold": 1, "points": [2]}, null]}}]
 //@ gives: 1
 //@ logs: ["get call1.arg0.snap", "get call1.arg0.snap.threshold"]
-//@ call: mapOrElse [{"snap": {"$reads": [{"threshold": 1, "points": [2]}, null]}}]
+//@ call: mapOrElse [{"min": 0, "snap": {"$reads": [{"threshold": 1, "points": [2]}, null]}}]
 //@ gives: 2
 //@ logs: ["get call2.arg0.snap", "get call2.arg0.snap.threshold"]
-//@ call: andThen [{"snap": {"$reads": [{"threshold": 1, "points": [2]}, null]}}]
+//@ call: andThen [{"min": 0, "snap": {"$reads": [{"threshold": 1, "points": [2]}, null]}}]
 //@ gives: 2
 //@ logs: ["get call3.arg0.snap", "get call3.arg0.snap.points"]
-//@ call: unwrapOr [{"step": {"$reads": [0.25, null]}}]
+//@ call: unwrapOr [{"min": 0, "step": {"$reads": [0.25, null]}}]
 //@ gives: 0.25
 //@ logs: ["get call4.arg0.step"]
 //@ call: unwrapOrElse [{"min": 3, "step": {"$reads": [0.25, null]}}]
 //@ gives: 0.25
 //@ logs: ["get call5.arg0.step"]
-//@ call: isSomeAnd [{"step": {"$reads": [0.75, 0.25]}}]
+//@ call: isSomeAnd [{"min": 0, "step": {"$reads": [0.75, 0.25]}}]
 //@ gives: true
 //@ logs: ["get call6.arg0.step"]
-//@ call: isNoneOr [{"step": {"$reads": [0.25, null]}}]
+//@ call: isNoneOr [{"min": 0, "step": {"$reads": [0.25, null]}}]
 //@ gives: false
 //@ logs: ["get call7.arg0.step"]
-//@ call: filter [{"step": {"$reads": [0.75, 0.25]}}]
+//@ call: filter [{"min": 0, "step": {"$reads": [0.75, 0.25]}}]
 //@ gives: 0.75
 //@ logs: ["get call8.arg0.step"]
-//@ call: okOr [{"step": {"$reads": [0.75, null]}}]
+//@ call: okOr [{"min": 0, "step": {"$reads": [0.75, null]}}]
 //@ gives: {"TAG":"Ok","_0":0.75}
 //@ logs: ["get call9.arg0.step"]
-//@ call: labelLen [{"label": {"$reads": ["four", null]}}]
+//@ call: labelLen [{"min": 0, "label": {"$reads": ["four", null]}}]
 //@ gives: 4
 //@ logs: ["get call10.arg0.label"]
 //@ call: scrubTo [1.3, {"min": 0, "step": 1, "snap": {"$reads": [{"threshold": 1, "points": [2]}, {"threshold": 0.01, "points": [2]}]}}]

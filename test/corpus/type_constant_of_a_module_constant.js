@@ -5,9 +5,10 @@
 // MIN: TimeDelta` (#513's regression): each is its own JS constant, the
 // type's its object's, and neither reads itself.
 
-import { $main } from "@rust-js/std";
+import { $checkI32, $checkI64, $checkShape, $checks, $main } from "@rust-js/std";
 
 const MILLIS_PER_SEC = 1000n;
+const checkTimeDelta = /* @__PURE__ */ $checkShape(() => ({ secs: $checkI64, nanos: $checkI32 }));
 
 const MIN = {
   secs: BigInt.asIntN(64, -9223372036854775807n / MILLIS_PER_SEC - 1n),
@@ -28,6 +29,10 @@ export const TimeDelta = {
   },
 
   inRange(timeDelta) {
+    $checks("TimeDelta.inRange(timeDelta)", timeDelta, checkTimeDelta);
+    return TimeDelta.inRange$(timeDelta);
+  },
+  inRange$(timeDelta) {
     return timeDelta.secs >= MIN.secs && timeDelta.secs <= MAX.secs;
   },
 };
@@ -39,11 +44,11 @@ function main() {
   const max = { secs: 9223372036854775n, nanos: 9 };
   const lowest = TimeDelta.minValue();
   console.log(`${min.secs} ${min.nanos} ${max.secs} ${max.nanos}`);
-  console.log(`${lowest.secs} ${TimeDelta.inRange(lowest)}`);
+  console.log(`${lowest.secs} ${TimeDelta.inRange$(lowest)}`);
   const outside = {
     secs: BigInt.asIntN(64, max.secs + 1n),
     nanos: 0,
   };
-  console.log(`${TimeDelta.inRange(outside)}`);
+  console.log(`${TimeDelta.inRange$(outside)}`);
 }
 //# sourceMappingURL=case.js.map

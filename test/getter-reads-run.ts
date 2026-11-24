@@ -75,6 +75,15 @@ function counted(value: unknown, path: string): unknown {
     return items;
   }
   const keys = Object.keys(value);
+  // Each `{ "$reads": [..] }` property a getter of its object, as JS writes
+  // one, so what reads it by its descriptor, a boundary check, sees an
+  // accessor, not the answers (#2403); each read through the proxy runs it.
+  for (const k of keys) {
+    const spec = (value as Record<string, unknown>)[k];
+    if (typeof spec === "object" && spec !== null && Array.isArray((spec as { $reads?: unknown }).$reads)) {
+      Object.defineProperty(value, k, { get: () => answered(spec), enumerable: true, configurable: true });
+    }
+  }
   const target =
     keys.length === 1 && keys[0] === "$fn"
       ? Object.assign(

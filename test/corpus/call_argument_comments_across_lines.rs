@@ -1,3 +1,4 @@
+//@ library-differs
 // A call whose arguments rustfmt writes a line each keeps its comments
 // where they're written, as React's preinitModuleForSSR has them: a block
 // comment ending the line of a link of its callee's chain, `.d() /*

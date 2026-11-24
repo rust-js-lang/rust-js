@@ -7,6 +7,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -61,7 +62,7 @@ pub fn shown(text: &str) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), ...withJs]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toMatch(/return String\((match\._0|error)\);/);
   // A `match` of what it threw, whose `Ok` only keeps the value and
   // whose `Err` reads no error, is JS's `try` (ADR 0035).
@@ -137,7 +138,7 @@ pub fn restacked(from: &JsError, frames: bool) -> &'static Error {
   expect(declarations).toContain("export function thrown(value: unknown): string;");
   expect(declarations).toContain("export function made(message: string): Error;");
   expect(declarations).toContain("export function all(): AggregateError;");
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  const error = made("boom");');
   const lib = await import(join(dir, "lib.js"));
   expect(lib.named()).toBe("Error boom every one");
@@ -184,7 +185,7 @@ pub fn thrown_again(node: &Node) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("node.v = error;");
   const lib = await import(join(dir, "lib.js"));
   for (const thrown of [new Error("e"), { at: 1 }, "x", 0, "", undefined, null]) {
@@ -248,7 +249,7 @@ pub fn named(errors: Vec<Option<&'static Unknown>>) -> (String, String, usize, b
 js::export_default!(INTERNALS);
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return new AggregateError(errors);");
   expect(js).toContain('const e = new AggregateError(errors, "several");');
   expect(js).toContain("e.errors.length");
@@ -311,7 +312,7 @@ pub fn each() -> Vec<Option<&'static Unknown>> {
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('throw new RangeError("invalid target buffer length");');
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("export function make(message?: string | null | undefined): RangeError;");
@@ -414,7 +415,7 @@ pub fn by_match(source: &str, d: &'static JsError) -> Option<&'static Unknown> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).not.toContain("held !== undefined");
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).not.toContain("held !== undefined");
   const lib = await import(join(dir, "lib.js"));
   const d = new Error("d");
   for (const source of ["throw null", "throw undefined", "1"]) {

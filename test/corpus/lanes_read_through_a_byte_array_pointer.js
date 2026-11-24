@@ -7,6 +7,7 @@
 
 import {
   $assertFailed,
+  $brand,
   $debugInt,
   $formatted,
   $fromBytes,
@@ -45,15 +46,15 @@ function readLe(input) {
     );
   }
   const value = $ptrRetyped($ptr(input, 0), 16, "bytes").value.slice();
-  const x = [
+  const x = $brand("lanes_read_through_a_byte_array_pointer#f52d34de56389d6c::U32x4", [
     [
       $fromBytes(value.slice(0, 4), 4, true, false),
       $fromBytes(value.slice(4, 8), 4, true, false),
       $fromBytes(value.slice(8, 12), 4, true, false),
       $fromBytes(value.slice(12, 16), 4, true, false),
     ],
-  ];
-  return [x[0].slice()];
+  ]);
+  return $brand("lanes_read_through_a_byte_array_pointer#f52d34de56389d6c::U32x4", [x[0].slice()]);
 }
 
 function readBe(input) {
@@ -66,15 +67,17 @@ function readBe(input) {
     );
   }
   const value = $ptrRetyped($ptr(input, 0), 16, "bytes").value.slice();
-  const x = [
+  const x = $brand("lanes_read_through_a_byte_array_pointer#f52d34de56389d6c::U32x4", [
     [
       $fromBytes(value.slice(0, 4), 4, true, false),
       $fromBytes(value.slice(4, 8), 4, true, false),
       $fromBytes(value.slice(8, 12), 4, true, false),
       $fromBytes(value.slice(12, 16), 4, true, false),
     ],
-  ];
-  return [x[0].slice().map((x) => $swapBytes(x, 32, false))];
+  ]);
+  return $brand("lanes_read_through_a_byte_array_pointer#f52d34de56389d6c::U32x4", [
+    x[0].slice().map((x) => $swapBytes(x, 32, false)),
+  ]);
 }
 
 function writeLe(x, out) {
@@ -122,10 +125,10 @@ function readWideLe(input) {
     );
   }
   const value = $ptrRetyped($ptr(input, 0), 16, "bytes").value.slice();
-  const x = [
+  const x = $brand("lanes_read_through_a_byte_array_pointer#f52d34de56389d6c::U64x2", [
     [$fromBytes(value.slice(0, 8), 8, true, false), $fromBytes(value.slice(8, 16), 8, true, false)],
-  ];
-  return [x[0]];
+  ]);
+  return $brand("lanes_read_through_a_byte_array_pointer#f52d34de56389d6c::U64x2", [x[0]]);
 }
 
 function writeWideBe(x, out) {

@@ -2,6 +2,7 @@
 //! of the crate's bodies, and, for a library none of whose bodies asked
 //! what its `RefCell`s are, the one its contract's facts are found in.
 
+use rust_js_lower::boundary::split::Split;
 use rust_js_lower::{Body, BodyFrame, CrateFacts, FnCx, Locals, Settled, body_queries::BodyFacts};
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::thir::Thir;
@@ -101,6 +102,7 @@ pub(super) fn fn_cx<'a, 'tcx>(
         scope_functions,
         scope_copies: IndexMap::default(),
         scope_self: None,
+        param_origins: Vec::new(),
         scope_values: Vec::new(),
         telling_arms: Default::default(),
         made_into: None,
@@ -108,4 +110,229 @@ pub(super) fn fn_cx<'a, 'tcx>(
         asking_made: std::cell::Cell::new(false),
         seen_through: std::cell::Cell::new(None),
     }
+}
+
+/// The crate's split functions (#2403 step 2b(a), ADR 1193), found where
+/// no body asked first, in a context of the crate's first function, as
+/// `own_callbacks` are; each written in two in `functions`, its JS entry
+/// and its body, which another module's call of, `references`, exports.
+pub(super) fn split_written<'s, 'tcx>(
+    shared: &Shared<'_, 'tcx>,
+    (found, bodies): (&'s rust_js_lower::crate_facts::Lazy<Split>, &[&Body<'tcx>]),
+    (fns, references): (&IndexMap<DefId, rust_js_lower::FnInfo>, &IndexSet<(LocalModId, DefId)>),
+    functions: rust_js_lower::boundary::split::Written<'_>,
+) -> &'s Split {
+    if let Some(local) = bodies.iter().find_map(|body| body.def_id.as_local()) {
+        let (settled, names): (Settled, IndexSet<String>) = Default::default();
+        let module = shared.tcx.parent_module_from_def_id(local);
+        item_cx((shared, &settled), local.to_def_id(), (module, &names)).split();
+    }
+    let split = found.get_or_init_default();
+    rust_js_lower::boundary::split::written((split, shared.krate.library), fns, references, functions);
+    split
+}
+
+/// Each library function a module JS may call re-exports, whose own JS
+/// checks nothing JS gives it (`Item::checked`): the module's own checked
+/// forwarder in its re-export's place, the re-export dropped, what the
+/// forwarder imports and checks with into `pass` (#2403 (Y), the lead's
+/// decision).
+pub(super) fn library_forwarders<'tcx, D>(
+    shared: &Shared<'_, 'tcx>,
+    js_reached: &rust_js_lower::reexports::JsReached,
+    reexported: &mut IndexMap<LocalModId, (D, Vec<rust_js_lower::reexports::Named>)>,
+    pass: &mut super::Pass,
+) {
+    for (module, def_id, alias) in &js_reached.library {
+        // A function's, not a constant's or a static's, which JS reads, never calls.
+        if shared.tcx.def_kind(*def_id) != rustc_hir::def::DefKind::Fn {
+            continue;
+        }
+        let Some(item) = shared.krate.foreign.item(*def_id) else {
+            continue;
+        };
+        if item.checked {
+            continue;
+        }
+        // Named apart where its module imports the library's function by
+        // that name, `f$1`, which the module exports as `f`: its imports
+        // were named before it was made.
+        let imported =
+            (shared.krate.imports.get(module)).is_some_and(|imports| imports.values().any(|local| local == alias));
+        let local = match imported {
+            true => {
+                let mut taken: IndexSet<String> = (shared.krate.imports.get(module).into_iter())
+                    .flat_map(|imports| imports.values().cloned())
+                    .collect();
+                rust_js_program::names::fresh_apart(&mut taken, alias)
+            }
+            false => alias.clone(),
+        };
+        let (settled, names): (Settled, IndexSet<String>) = Default::default();
+        let cx = item_cx((shared, &settled), *def_id, (*module, &names));
+        let Some(function) = cx.library_forwarder(*def_id, (&local, alias), None) else {
+            continue;
+        };
+        if let Some((_, named)) = reexported.get_mut(module) {
+            let (taken, kept) = std::mem::take(named)
+                .into_iter()
+                .partition(|(_, _, (_, given))| given == alias);
+            *named = kept;
+            pass.forwarded_declared
+                .entry(*module)
+                .or_default()
+                .extend::<Vec<_>>(taken);
+        }
+        super::copies::absorb(pass, *module, &mut cx.dependencies.borrow_mut());
+        if imported {
+            (pass.forwarder_aliases.entry(*module).or_default()).push((local, alias.clone()));
+        }
+        pass.functions.entry(*module).or_default().push(function);
+    }
+}
+
+/// Each library module a module JS may call re-exports as a namespace,
+/// `pub use dep::m as ns`, that has a function its own JS doesn't check
+/// (`Item::checked`): a module of the crate's in its place, beside the module,
+/// `ns.js`, which re-exports the library's every name, `export * from`, and
+/// writes a checked forwarder of each unchecked one by its own name, which
+/// shadows the star's (#2536, the lead's design), the module's `export * as
+/// ns from` its; else the library's file, as before. A bundler still drops
+/// what nothing reads of it.
+pub(super) fn library_namespaces<'tcx, D>(
+    shared: &Shared<'_, 'tcx>,
+    js_reached: &rust_js_lower::reexports::JsReached,
+    reexported: &mut IndexMap<LocalModId, (D, Vec<rust_js_lower::reexports::Named>)>,
+    paths: &IndexMap<LocalModId, Vec<String>>,
+) -> Vec<rust_js_program::program::UnlinkedModule> {
+    use rust_js_program::js;
+    let (tcx, foreign) = (shared.tcx, shared.krate.foreign);
+    let mut made = Vec::new();
+    for (module, named, alias, ident) in &js_reached.namespaces {
+        let unchecked: Vec<(DefId, String)> = (tcx.module_children(*named).iter())
+            .filter_map(|child| match child.res {
+                rustc_hir::def::Res::Def(rustc_hir::def::DefKind::Fn, id) => (foreign.item(id))
+                    .filter(|item| !item.checked && item.member.is_none())
+                    .map(|item| (id, item.export.clone())),
+                _ => None,
+            })
+            .collect();
+        if unchecked.is_empty() {
+            continue;
+        }
+        let Some((_, list)) = reexported.get_mut(module) else {
+            continue;
+        };
+        let Some(entry) = list
+            .iter_mut()
+            .find(|(_, _, (export, given))| export == "*" && given == alias)
+        else {
+            continue;
+        };
+        let js::ImportFrom::Specifier(specifier) = entry.1.clone() else {
+            continue;
+        };
+        let Some(file_exports) = foreign.file_exports(&specifier).cloned() else {
+            continue;
+        };
+        let mut path = paths[module].clone();
+        path.push(ident.clone());
+        // The library's file as the crate's root's JS names it, as every
+        // library's specifier is: the output places it from the module's
+        // own file, a directory deeper than its owner's, in its JS and in
+        // its `.d.ts` alike (`linked_specifier`).
+        let from = specifier.clone();
+        let namespace = rust_js_program::casing::namespace_name(ident);
+        let mut items: Vec<js::Item> = Vec::new();
+        for (def_id, export) in &unchecked {
+            let (settled, names): (Settled, IndexSet<String>) = Default::default();
+            let cx = item_cx((shared, &settled), *def_id, (*module, &names));
+            let callee = js::Expr::member(js::Expr::var(js::Name::module(&namespace)), export);
+            let Some(function) = cx.library_forwarder(*def_id, (export, export), Some(callee)) else {
+                continue;
+            };
+            for checker in cx
+                .dependencies
+                .borrow_mut()
+                .checkers
+                .drain(..)
+                .filter_map(|(_, checker)| checker)
+            {
+                match checker {
+                    rust_js_lower::Checker::Function(checker) => {
+                        if !items
+                            .iter()
+                            .any(|item| matches!(item, js::Item::Function(f) if f.name == checker.name))
+                        {
+                            items.push(js::Item::Function(checker));
+                        }
+                    }
+                    rust_js_lower::Checker::Shape(checker) => {
+                        if !items
+                            .iter()
+                            .any(|item| matches!(item, js::Item::Const(c) if c.name == checker.name))
+                        {
+                            items.push(js::Item::Const(checker));
+                        }
+                    }
+                }
+            }
+            items.push(js::Item::Function(function));
+        }
+        entry.1 = js::ImportFrom::Module(path.clone());
+        let names: Vec<(String, String)> = (file_exports.iter())
+            .filter(|name| *name != "default")
+            .map(|name| (name.clone(), name.clone()))
+            .collect();
+        let lowered = rust_js_program::program::LoweredModule {
+            path,
+            file: rust_js_lower::module_file(tcx, *module).name.clone().into_local_path(),
+            code: js::Span::NONE,
+            unprinted: Vec::new(),
+            directives: Vec::new(),
+            packages: vec![js::Package {
+                from: from.clone(),
+                default: None,
+                named: Vec::new(),
+                namespace: Some(namespace.clone()),
+                span: js::Span::NONE,
+                named_at: js::Span::NONE,
+            }],
+            imports: Vec::new(),
+            import_names: js::ImportNames::default(),
+            taken_into: Vec::new(),
+            reexports: vec![rust_js_program::program::Reexport {
+                from: js::ImportFrom::Specifier(from.clone()),
+                written: vec![(js::Span::NONE, js::Span::NONE); names.len()],
+                named: names,
+                span: js::Span::NONE,
+                at: js::Span::NONE,
+                glob: true,
+                file_exports: Some(file_exports),
+            }],
+            aliases: Vec::new(),
+            items,
+            default_export: None,
+            default_declared: false,
+            // Its types the library's, each forwarder's its function's too:
+            // `export * from` its file, which TypeScript finds the `.d.ts` of.
+            declarations: Some(serde_json::json!({
+                "declarations": [{ "kind": "export", "specifier": from, "names": [["*", "*"]] }],
+            })),
+            runtime: Vec::new(),
+            jsx: false,
+            located: false,
+            types_only: false,
+            reexports_alone: false,
+        };
+        let reserved = std::iter::once(namespace)
+            .chain(unchecked.into_iter().map(|(_, export)| export))
+            .collect();
+        made.push(rust_js_program::program::UnlinkedModule {
+            module: lowered,
+            imports: Vec::new(),
+            reserved_names: reserved,
+        });
+    }
+    made
 }

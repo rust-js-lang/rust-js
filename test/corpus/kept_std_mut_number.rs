@@ -1,3 +1,4 @@
+//@ library-differs
 // A `&mut` to a map's number, `get_mut`'s, bound to a variable, kept past
 // the `match` and written through: the map's value changes.
 use std::collections::HashMap;

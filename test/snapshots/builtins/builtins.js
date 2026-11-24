@@ -6,6 +6,12 @@
  */
 
 import {
+  $checkBool,
+  $checkCallback,
+  $checkF64,
+  $checkStr,
+  $checkU32,
+  $checks,
   $f64Max,
   $f64Min,
   $roomFor,
@@ -22,6 +28,7 @@ import {
  * react.dev's errors page revives its elements.
  */
 export function revived(text) {
+  $checkStr(text, "revived(text)");
   return JSON.parse(text, hidden);
 }
 
@@ -30,6 +37,7 @@ export function revived(text) {
  * as react.dev's errors page asks of its MDX components.
  */
 export function holds(value, key) {
+  $checkStr(key, "holds(key)");
   return key in value;
 }
 
@@ -64,6 +72,7 @@ export function wrapped(children) {
  * as react.dev's createFileMap shows a code block's children.
  */
 export function asUnknown(text) {
+  $checkStr(text, "asUnknown(text)", "nullish");
   return text;
 }
 
@@ -86,11 +95,23 @@ function hidden(key, value) {
 
 /** A string's JSON text, which is a JS string literal too. */
 export function quoted(text) {
+  $checkStr(text, "quoted(text)");
   return JSON.stringify(text);
 }
 
 /** `pattern`'s matches replaced with `with`, in which `$1` is the first group. */
 export function replaced(text, pattern, flags, with$) {
+  $checks(
+    "replaced(text, pattern, flags, with)",
+    text,
+    $checkStr,
+    pattern,
+    $checkStr,
+    flags,
+    $checkStr,
+    with$,
+    $checkStr,
+  );
   return text.replace(new RegExp(pattern, flags), with$);
 }
 
@@ -99,6 +120,7 @@ export function replaced(text, pattern, flags, with$) {
  * reads its strings: each part of `text`, and where `part` is in it.
  */
 export function parts(text, part) {
+  $checks("parts(text, part)", text, $checkStr, part, $checkStr);
   const parts = [
     text.slice(1, -1),
     text.slice(-2),
@@ -124,6 +146,7 @@ export function parts(text, part) {
  * it is `+ 1`.
  */
 export function fileName(path) {
+  $checkStr(path, "fileName(path)");
   return path.slice(path.lastIndexOf("/") + 1);
 }
 
@@ -132,6 +155,7 @@ export function fileName(path) {
  * `str::replace` replaces each.
  */
 export function replacedFirst(text, from, to) {
+  $checks("replacedFirst(text, from, to)", text, $checkStr, from, $checkStr, to, $checkStr);
   return text.replace(from, to);
 }
 
@@ -140,11 +164,13 @@ export function replacedFirst(text, from, to) {
  * react.dev's pages take a path's query and hash off, `/[\?\#]/`.
  */
 export function splitParts(text) {
+  $checkStr(text, "splitParts(text)");
   return [text.split(","), text.split(/[,;]/)];
 }
 
 /** Each UTF-16 code unit of `text`, by JS's `charAt`: an emoji's two halves. */
 export function units(text) {
+  $checkStr(text, "units(text)");
   const n = text.length;
   $roomFor(n, 12);
   return Array.from({ length: n }, (_, i) => text.charAt(i));
@@ -152,11 +178,13 @@ export function units(text) {
 
 /** A JS object of these keys and values, as an API taking a dictionary wants. */
 export function attributes(label, level) {
+  $checks("attributes(label, level)", label, $checkStr, level, $checkU32);
   return { "aria-label": label, "aria-level": String(level) };
 }
 
 /** `Object.is`: the same object, or the same value, NaN too. */
 export function identical(same) {
+  $checkBool(same, "identical(same)");
   const a = { k: 1 };
   const b = same ? a : { k: 1 };
   return [Object.is(a, b), Object.is(NaN, NaN)];
@@ -176,6 +204,7 @@ export async function thrown() {
 
 /** `x.toFixed(digits)`, as JS rounds, and `format!`'s, as Rust does. */
 export function fixed(x, digits) {
+  $checks("fixed(x, digits)", x, $checkF64, digits, $checkU32);
   return [x.toFixed(digits), $toFixed(x, digits)];
 }
 
@@ -184,6 +213,7 @@ export function fixed(x, digits) {
  * does, a half away from zero.
  */
 export function rounded(x) {
+  $checkF64(x, "rounded(x)");
   return [Math.round(x), $round(x)];
 }
 
@@ -192,11 +222,13 @@ export function rounded(x) {
  * other number.
  */
 export function bounds(a, b) {
+  $checks("bounds(a, b)", a, $checkF64, b, $checkF64);
   return [Math.max(a, b), $f64Max(a, b), Math.min(a, b), $f64Min(a, b)];
 }
 
 /** `Math.sign(x)`, `0` of a zero, and `x.signum()`, `1` of `0`. */
 export function signs(x) {
+  $checkF64(x, "signs(x)");
   return [Math.sign(x), $signum(x)];
 }
 
@@ -207,22 +239,29 @@ export function random() {
 
 /** `done` after `ms`. */
 export function after(ms, done) {
+  $checkF64(ms, "after(ms)");
+  $checkCallback(done, "after(done)");
   setTimeout(done, ms);
 }
 
 /** `done` as soon as it can be, its delay left out, as JS leaves it. */
 export function soon(done) {
+  $checkCallback(done, "soon(done)");
   setTimeout(done);
 }
 
 /** `never` after `ms`, cleared first: it doesn't run. */
 export function cancelled(ms, never) {
+  $checkF64(ms, "cancelled(ms)");
+  $checkCallback(never, "cancelled(never)");
   const id = setTimeout(never, ms);
   clearTimeout(id);
 }
 
 /** `tick` every `ms`, until `stop` of what this gives. */
 export function every(ms, tick) {
+  $checkF64(ms, "every(ms)");
+  $checkCallback(tick, "every(tick)");
   return setInterval(tick, ms);
 }
 
@@ -235,6 +274,8 @@ export function stop(id) {
  * until then as it is, as react.dev's clock waits for the next minute.
  */
 export function at(at, done) {
+  $checkF64(at, "at(at)");
+  $checkCallback(done, "at(done)");
   setTimeout(done, at - Date.now());
 }
 
@@ -247,6 +288,7 @@ async function doubled(n) {
  * promise is given, as react.dev's "Copy page" gives `ClipboardItem` one.
  */
 export async function promised(n) {
+  $checkU32(n, "promised(n)");
   const pending = doubled(n);
   const result = await $settle(pending);
   return result.TAG === "Ok" ? result._0 : 0;

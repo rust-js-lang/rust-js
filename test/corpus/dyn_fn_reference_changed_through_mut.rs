@@ -1,3 +1,4 @@
+//@ library-differs
 // A `&dyn Fn` variable given by `&mut` to a function that points it at
 // another closure: the call is given a box of the variable, and the
 // variable calls the closure the function set (#460). Once rust-js

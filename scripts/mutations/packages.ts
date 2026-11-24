@@ -121,4 +121,12 @@ export const mutations: Mutation[] = [
     replace: "        .filter(|dir| dir.join(\"package.json\").is_file())\n        .last()\n",
     tests: ["test/libraries.test.ts", "-t", "another package"],
   },
+  {
+    name: "workspace-exclude-unread",
+    breaks: "a package a workspace's `exclude` names is called its member, its hand-written JS scanned with the workspace's (#2403 lever (3))",
+    file: "crates/rust-js-program/src/packages.rs",
+    find: "    names(\"members\").iter().any(matches) && !names(\"exclude\").iter().any(matches)\n",
+    replace: "    names(\"members\").iter().any(matches)\n",
+    unitTests: "packages::workspace_tests::a_package_is_its_workspaces_where_its_members_name_it",
+  },
 ];

@@ -9,6 +9,8 @@
 
 import {
   $catchUnwind,
+  $checkCallback,
+  $checkU32,
   $cleanup,
   $index,
   $live,
@@ -62,6 +64,7 @@ function work(n) {
 }
 
 export function nested(work) {
+  work = $checkCallback(work, "nested(work)", $checkU32);
   const previous = depth;
   depth = (previous + 1) >>> 0;
   try {

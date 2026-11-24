@@ -1,3 +1,4 @@
+//@ library-differs
 // An or-pattern over `Option`s or enums, `(None, _) | (_, 1)`, tests each
 // alternative's parts in the order written (#674): `x === 0 && n === 0`
 // of `(Some(0), 0)`, not MIR's `n === 0 && x === 0`, its `x != null`

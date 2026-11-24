@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -119,7 +120,7 @@ pub fn made(target: &EventTarget) {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(
     'function startReading(target, onEnd) {\n  target.addEventListener("end", onEnd);\n}\n',
   );
@@ -176,7 +177,7 @@ pub fn parsed(items: &[u32]) -> Vec<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return items.map(measure);");
   expect(js).toContain("return items.map((item) => parseItem(item));");
   Object.assign(globalThis, {

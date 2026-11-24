@@ -43,6 +43,9 @@ pub enum Leaf {
 
 const NO_LEAF: Leaf = Leaf::Unwritten;
 
+mod js_reached;
+pub use js_reached::{JsReached, js_reached};
+
 /// What `module` re-exports, each name of each `pub use` statement's
 /// `export { .. } from`, which `assembled` orders, by where it's from (ADR
 /// 0240, amended):
@@ -64,6 +67,7 @@ pub fn reexports(
     ),
     paths: &IndexMap<LocalModId, Vec<String>>,
     (default_from, held): (Option<(DefId, rustc_span::Span)>, &[super::bindings::HeldBinding]),
+    reached: &mut JsReached,
 ) -> Vec<Named> {
     // Each name, where it's written: the statement, its `use` item's span,
     // which each of a tree's leaves shares; and where it's from.
@@ -98,17 +102,26 @@ pub fn reexports(
         && let Some(from) = paths.get(&info.module)
     {
         let export = super::default_exports::exported_as(tcx, function, info.exported());
+        reached.functions.insert(function);
         found.push((
             (span, NO_LEAF),
             js::ImportFrom::Module(from.clone()),
             (export, "default".to_string()),
         ));
     }
+    // The leaf before, what it resolved to, given JS where it wrote an export.
+    let mut pending = None;
     for leaf in super::uses::module_leaves(tcx, module) {
+        reached.settle(tcx, &mut pending, found.len());
         let path = &leaf.path;
         if !tcx.visibility(leaf.def_id).is_public() {
             continue;
         }
+        pending = match (path.res.value_ns, path.res.type_ns) {
+            (Some(Res::Def(DefKind::Fn, id)), _) => Some((found.len(), DefKind::Fn, id)),
+            (_, Some(Res::Def(kind @ (DefKind::Mod | DefKind::Struct), id))) => Some((found.len(), kind, id)),
+            _ => None,
+        };
         let statement = statement_of(&leaf);
         let super::uses::Leaf::Single(ident) = leaf.kind else {
             // `pub use m::*;` of what has JS: each name it gives the module,
@@ -119,7 +132,7 @@ pub fn reexports(
                 (module, leaf.def_id.to_def_id(), statement),
                 (fns, foreign),
                 paths,
-                &mut found,
+                (&mut found, &mut *reached),
             );
             continue;
         };
@@ -189,12 +202,15 @@ pub fn reexports(
                     && let Some(from) = paths.get(&through)
                 {
                     let alias = through_alias(&export);
+                    reached.library.push((module, def_id, alias.clone()));
                     found.push((written, js::ImportFrom::Module(from.clone()), (export, alias)));
                     continue;
                 }
                 if let Some((from, export)) = foreign.import_key(def_id, module) {
                     let from = js::ImportFrom::Specifier(from);
-                    found.push((written, from, (export, alias(&imported.name))));
+                    let alias = alias(&imported.name);
+                    reached.library.push((module, def_id, alias.clone()));
+                    found.push((written, from, (export, alias)));
                     continue;
                 }
             }
@@ -228,6 +244,11 @@ pub fn reexports(
                 // alone, a binding crate's or std's, nothing.
                 if let Some(from) = namespace_file(foreign, paths, named) {
                     let alias = super::bindings::alias_name(tcx, leaf.def_id.to_def_id(), ident.name);
+                    if !named.is_local() {
+                        reached
+                            .namespaces
+                            .push((module, named, alias.clone(), ident.to_string()));
+                    }
                     found.push((written, from, ("*".to_string(), alias)));
                 }
             }
@@ -274,6 +295,7 @@ pub fn reexports(
             _ => {}
         }
     }
+    reached.settle(tcx, &mut pending, found.len());
     forwarded_methods(tcx, module, (fns, foreign, forwarded), paths, &mut found);
     for ((at, _), _, (export, alias)) in &found {
         super::bindings::then_export_refused(tcx, *at, &format!("a `pub use` of `{export}`"), alias);
@@ -635,19 +657,22 @@ fn globbed(
     (module, glob, statement): (LocalModId, DefId, rustc_span::Span),
     (fns, foreign): (&IndexMap<DefId, FnInfo>, &super::library::Foreign<'_, '_>),
     paths: &IndexMap<LocalModId, Vec<String>>,
-    found: &mut Vec<Named>,
+    (found, reached): (&mut Vec<Named>, &mut JsReached),
 ) {
     use rustc_middle::middle::resolve::Reexport as Via;
+    let mut pending = None;
     // A glob writes no name's leaf.
     let written = (statement, Leaf::Glob);
     let refuse = |what: String, why: &str| {
         super::refusal::refuse(tcx, statement, super::refusal::Refused::Because(&what, why));
     };
     for child in tcx.module_children_local(module.to_local_def_id()) {
+        reached.settle(tcx, &mut pending, found.len());
         if !matches!(child.reexport_chain.first(), Some(Via::Glob(used)) if *used == glob) {
             continue;
         }
         let Res::Def(kind, id) = child.res else { continue };
+        pending = Some((found.len(), kind, id));
         let name = child.ident.to_string();
         // Another crate's item no JS module of rust-js's has, std's, that
         // the glob gives only within the crate, of a private `use` it
@@ -673,6 +698,9 @@ fn globbed(
                     && let Some((source, export)) = glob_export(tcx, (fns, foreign), glob, (child.ident.name, id))
                     && let Some(from) = paths.get(&source)
                 {
+                    if library_item {
+                        reached.library.push((module, id, export.clone()));
+                    }
                     found.push((written, js::ImportFrom::Module(from.clone()), (export.clone(), export)));
                 } else if library_item
                     && child.ident.name == tcx.item_name(id)
@@ -680,6 +708,7 @@ fn globbed(
                     && let Some(imported) = foreign.item(id)
                 {
                     // Of a library's module, from its file, by its own name.
+                    reached.library.push((module, id, imported.name.clone()));
                     found.push((
                         written,
                         js::ImportFrom::Specifier(from),
@@ -696,6 +725,10 @@ fn globbed(
             // `pub use` of it by its name gives it (#1102, #1420).
             DefKind::Mod => {
                 if let Some(from) = namespace_file(foreign, paths, id) {
+                    if !id.is_local() {
+                        let alias = rust_js_program::casing::camel_case(&name);
+                        reached.namespaces.push((module, id, alias, name.clone()));
+                    }
                     found.push((
                         written,
                         from,
@@ -713,6 +746,7 @@ fn globbed(
             _ => {}
         }
     }
+    reached.settle(tcx, &mut pending, found.len());
 }
 
 /// Whether `id` is std's and in no JS module, `core::mem::forget` or

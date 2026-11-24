@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -20,7 +21,7 @@ function compiled(name: string, source: string): { dir: string; js: string; dts:
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), source);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  return { dir, js: readFileSync(join(dir, "lib.js"), "utf8"), dts: readFileSync(join(dir, "lib.d.ts"), "utf8") };
+  return { dir, js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), dts: readFileSync(join(dir, "lib.d.ts"), "utf8") };
 }
 
 function ran(dir: string, script: string, ...args: string[]): string {
@@ -70,7 +71,9 @@ pub fn cleaned() -> Vec<String> {
     'const finalizationRegistry =\n  typeof FinalizationRegistry !== "undefined" ? new FinalizationRegistry(cleanup) : undefined;\n',
   );
   expect(js).toContain("    finalizationRegistry.register(target, held);\n");
-  const script = `if (process.argv[2] === "none") delete globalThis.FinalizationRegistry;
+  // `@rust-js/std` loaded first, as the host has it: the checks' runtime (#2403).
+  const script = `await import("@rust-js/std");
+if (process.argv[2] === "none") delete globalThis.FinalizationRegistry;
 const lib = await import("./lib.js");
 const registered = lib.register({}, "a");
 if (registered) {

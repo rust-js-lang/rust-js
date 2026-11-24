@@ -8,6 +8,10 @@
 
 import * as Tests from "./tests.js";
 import {
+  $checkField,
+  $checkShape,
+  $checkTag,
+  $checkWhole,
   $cleanup,
   $collectDropping,
   $dispose,
@@ -21,11 +25,18 @@ import {
   $unwindsOn,
 } from "@rust-js/std";
 
+const checkUndoStackOptions = /* @__PURE__ */ $checkShape(() => ({}));
+
 /**
  * State snapshots are shared: undo and redo return the exact recorded state.
  * A settings getter is read on every edit, so later changes apply.
  */
 export function createUndoStack(initial, options) {
+  $checkWhole(checkUndoStackSettings, options, "createUndoStack(options)", "nullish");
+  return createUndoStack$(initial, options);
+}
+
+export function createUndoStack$(initial, options) {
   const history = {
     value: {
       entries: [initial],
@@ -382,6 +393,13 @@ export function createUndoStack(initial, options) {
 }
 
 $main(main);
+
+function checkUndoStackSettings(value) {
+  const tag = $checkTag(value, "TAG", ["Options", "Getter"], []);
+  if (tag === "Options") {
+    $checkField(value, "_0", checkUndoStackOptions);
+  }
+}
 
 function main() {
   Tests.groupingSealAndBranchingPreserveHistory();

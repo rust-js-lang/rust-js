@@ -12,6 +12,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { compiler, fixture, run } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 test("a value whose JS has a callable `then` is given as it is where it's awaited", async () => {
   const dir = fixture("async-thenable-methods");
@@ -109,7 +110,7 @@ pub async fn report() -> String {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("$unsettled(await chunk(3))");
   // One adopted never resolves: a second on, it's taken for hung.
   const hung = new Promise((resolve) => setTimeout(() => resolve("hung"), 1000));

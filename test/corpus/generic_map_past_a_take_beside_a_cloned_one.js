@@ -15,6 +15,8 @@
 // The other `map`, past a `take()`, is std's compiled struct (ADR 1136).
 
 import {
+  $checkCallback,
+  $checkI32,
   $cleanup,
   $clone,
   $cloning,
@@ -40,6 +42,7 @@ import {
 } from "@rust-js/std";
 
 export function cycled(items, f, IIterator, IClone, FClone, IFused) {
+  f = $checkCallback(f, "cycled(f)", $checkI32);
   const makeMap = (it, f) =>
     $cloning(
       it.map((item) => f(item)),

@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -18,7 +19,7 @@ function compiled(name: string, rust: string): { js: string; dir: string } {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), dir };
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), dir };
 }
 
 // React's throwAndUnwindWorkLoop, `try { const didFatal = throwException(..);
@@ -1131,7 +1132,8 @@ pub fn again(n: u32) -> u32 {
 `,
   );
   const { decodeMappings } = await import("./sourcemap");
-  const lines = js.split("\n");
+  // The file as it is, whose lines its map counts, its checks too.
+  const lines = readFileSync(join(dir, "lib.js"), "utf8").split("\n");
   const at = lines.findIndex((line) => line.includes("return inner(n);"));
   expect(at).toBeGreaterThan(0);
   const map = JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8"));
@@ -1169,7 +1171,8 @@ pub fn assigned(code: &str) -> Option<&'static Unknown> {
   writeFileSync(join(dir, "host.js"), "export const log = [];\nexport function note(v) { log.push(v); }\n");
   expect(js).toContain("  let value;\n  try {\n    value = (0, eval)(code);\n  } catch {\n    value = undefined;\n  }\n");
   const { decodeMappings } = await import("./sourcemap");
-  const lines = js.split("\n");
+  // The file as it is, whose lines its map counts, its checks too.
+  const lines = readFileSync(join(dir, "lib.js"), "utf8").split("\n");
   const at = lines.findIndex((line) => line.includes("value = (0, eval)(code);"));
   const map = JSON.parse(readFileSync(join(dir, "lib.js.map"), "utf8"));
   const column = lines[at].indexOf("value");

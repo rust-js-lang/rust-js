@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { exportsDeclared } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 
@@ -434,41 +435,74 @@ pub fn total() -> u32 {
   expect([p.code, p.stderr]).toEqual([0, ""]);
   // Of types alone, `shapes`'s file is its declarations'.
   expect(readFileSync(join(dir, "dep", "shapes.d.ts"), "utf8")).toContain("export type Seed = number;");
-  expect(readFileSync(join(dir, "app", "lib.d.ts"), "utf8")).toContain('export * as rng from "../dep/rng.js";\n');
+  // A library's root, every function of which its own JS checks, as JS may
+  // call it there: its namespace, its file's, as rand_chacha's `pub use
+  // rand_core;`. A module of functions its own JS doesn't check, as no JS of
+  // the library may call them: a module of the app's in its place, beside
+  // it, which re-exports the library's every name and checks each such
+  // function itself, by its name, shadowing the star's (#2403 (Y), #2536).
+  expect(readFileSync(join(dir, "app", "lib.d.ts"), "utf8")).toContain('export * as rng from "./rng.js";\n');
+  expect(readFileSync(join(dir, "app", "rng.d.ts"), "utf8")).toContain('export * from "../dep/rng.js";\n');
   const lib = readFileSync(join(dir, "app", "lib.js"), "utf8");
   expect(lib).toContain('export * as dep from "../dep/lib.js";\n');
-  expect(lib).toContain('export * as rng from "../dep/rng.js";\n');
-  expect(lib).toContain('export * as inner from "../dep/outer/inner.js";\n');
+  expect(lib).toContain('export * as rng from "./rng.js";\n');
+  expect(lib).toContain('export * as inner from "./inner.js";\n');
   expect(lib).not.toContain("shapes");
+  const rng = readFileSync(join(dir, "app", "rng.js"), "utf8");
+  expect(rng).toContain('export * from "../dep/rng.js";\n');
+  expect(rng).toContain('export function next(n) {\n  $checkU32(n, "next(n)");\n  return Rng.next(n);\n}');
   const app = await import(join(dir, "app", "lib.js"));
   expect([app.total(), app.dep.seed(), app.rng.next(2), app.inner.twice(4)]).toEqual([18, 5, 7, 8]);
+  expect(() => app.rng.next(-1)).toThrow("next(n): expected a u32, got -1");
+  expect(() => app.inner.twice(1.5)).toThrow("twice(n): expected a u32, got 1.5");
+  // What each module's JS exports, its `.d.ts` declares.
+  for (const module of ["app/lib.js", "app/rng.js", "app/inner.js"]) expect(await exportsDeclared(dir, module)).toEqual([]);
 });
 
 // A module whose only item re-exports a library's module, a root's or one
 // of its modules, by name or by a glob, wrote no file: its re-export by the
 // root, `pub use inline as i;`, gave JS no `i`, a path Rust has that JS
 // hadn't, as nothing was said (#2544). Each is a file of its own, its
-// namespace's `export * as`, and JS reads through each what Rust does.
+// namespace's `export * as`, and JS reads through each what Rust does. A
+// library's module of functions its own JS doesn't check is a module of the
+// app's in its place, beside its owner's file, a directory deeper (#2403
+// (Y), #2536): its import of the library's file is from there, one module
+// deep, two, or of a glob's, which named one `../` too many (the JS threw
+// "Cannot find module").
 test("a module whose only item re-exports a library's module is a file, which the root re-exports", async () => {
   const dir = fixture("reexport-library-module-alone");
   writeFileSync(join(dir, "dep.rs"), "pub mod rng {\n    pub fn next(n: u32) -> u32 {\n        n * 3 + 1\n    }\n}\n\npub mod outer {\n    pub mod inner {\n        pub fn twice(n: u32) -> u32 {\n            n * 2\n        }\n    }\n}\n\npub fn seed() -> u32 {\n    5\n}\n");
   run([compiler, "--declarations", join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
     "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`, ...js]);
-  writeFileSync(join(dir, "app.rs"), "pub mod root_alone {\n    pub use dep as d;\n}\n\npub mod rng_alone {\n    pub use dep::rng;\n}\n\npub mod filed;\n\npub use filed as f;\npub use rng_alone as r;\npub use root_alone as i;\n\npub fn total() -> u32 {\n    i::d::seed() + r::rng::next(1) + f::inner::twice(2)\n}\n");
+  writeFileSync(join(dir, "app.rs"), "pub mod root_alone {\n    pub use dep as d;\n}\n\npub mod rng_alone {\n    pub use dep::rng;\n}\n\npub mod deep {\n    pub mod er {\n        pub use dep::rng;\n    }\n}\n\npub mod filed;\n\npub use deep::er as e;\npub use filed as f;\npub use rng_alone as r;\npub use root_alone as i;\n\npub fn total() -> u32 {\n    i::d::seed() + r::rng::next(1) + f::inner::twice(2)\n}\n");
   writeFileSync(join(dir, "filed.rs"), "pub use dep::outer::*;\n");
   const p = runSync([compiler, "--declarations", join(dir, "app.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
     "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js], root, 60_000);
   expect([p.code, p.stderr]).toEqual([0, ""]);
   const read = (file: string) => readFileSync(join(dir, "app", file), "utf8");
-  for (const [module, alias] of [["root_alone", "i"], ["rng_alone", "r"], ["filed", "f"]]) {
+  for (const [module, alias] of [["root_alone", "i"], ["rng_alone", "r"], ["filed", "f"], ["deep/er", "e"]]) {
     expect(read("lib.js")).toContain(`export * as ${alias} from "./${module}.js";\n`);
     expect(read("lib.d.ts")).toContain(`export * as ${alias} from "./${module}.js";\n`);
   }
+  // The library's root, every function of which its own JS checks: its file.
   expect(read("root_alone.js")).toContain('export * as d from "../dep/lib.js";\n');
-  expect(read("rng_alone.js")).toContain('export * as rng from "../dep/rng.js";\n');
-  expect(read("filed.js")).toContain('export * as inner from "../dep/outer/inner.js";\n');
   expect(read("root_alone.d.ts")).toContain('export * as d from "../dep/lib.js";\n');
-  // What Rust gives, `total()`'s 5 + 4 + 4, JS gives through each path.
+  // Each module of unchecked functions: the app's, beside its owner's file.
+  for (const [owner, name, library] of [["rng_alone", "rng", "rng"], ["deep/er", "rng", "rng"], ["filed", "inner", "outer/inner"]]) {
+    const up = "../".repeat(owner.split("/").length + 1);
+    expect(read(`${owner}.js`)).toContain(`export * as ${name} from "./${owner.split("/").pop()}/${name}.js";\n`);
+    expect(read(`${owner}/${name}.js`)).toContain(`export * from "${up}dep/${library}.js";\n`);
+    expect(read(`${owner}/${name}.d.ts`)).toContain(`export * from "${up}dep/${library}.js";\n`);
+  }
+  expect(read("rng_alone/rng.js")).toContain('import * as Rng from "../../dep/rng.js";\n');
+  expect(read("deep/er/rng.js")).toContain('import * as Rng from "../../../dep/rng.js";\n');
+  // What Rust gives, `total()`'s 5 + 4 + 4, JS gives through each path,
+  // each library function JS gives checked where JS calls it.
   const app = await import(join(dir, "app", "lib.js"));
   expect([app.total(), app.i.d.seed(), app.r.rng.next(1), app.f.inner.twice(2)]).toEqual([13, 5, 4, 4]);
+  expect(app.e.rng.next(2)).toBe(7);
+  expect(() => app.r.rng.next(-1)).toThrow("next(n): expected a u32, got -1");
+  expect(() => app.e.rng.next(-1)).toThrow("next(n): expected a u32, got -1");
+  expect(() => app.f.inner.twice(1.5)).toThrow("twice(n): expected a u32, got 1.5");
+  for (const module of ["rng_alone/rng.js", "deep/er/rng.js", "filed/inner.js"]) expect(await exportsDeclared(dir, `app/${module}`)).toEqual([]);
 });

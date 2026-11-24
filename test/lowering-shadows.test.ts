@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildNode } from "./node-crate";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 // React's `formatOwnerStack` (packages/shared/ReactOwnerStackFrames.js), as
 // its port writes it. Its JS was
@@ -55,7 +56,7 @@ pub fn format_owner_stack(error: &JsError) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`  let stack = error.stack ?? "";
   Error.prepareStackTrace = prevPrepareStackTrace;
   if (stack.startsWith("Error: react-stack-top-frame\\n")) {
@@ -179,7 +180,7 @@ pub fn chained(s: &str) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Each turn reads the parameter anew.
   expect(js).toContain("    const x$1 = (x + i) >>> 0;\n    out.push(x$1);\n");
   // Read by a closure made before.
@@ -251,7 +252,7 @@ fn seen() {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`      if (typeof arg === "function" || (typeof arg === "object" && arg !== null)) {
         seen();
         total += map.get(arg) ?? 1;
@@ -276,7 +277,7 @@ test("a binding of what take() gives names it", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const hiddenUpdatesForLane = hiddenUpdates[index];\n  hiddenUpdates[index] = undefined;\n  if (hiddenUpdatesForLane != null) {\n    for (let i = 0; i < hiddenUpdatesForLane.length; i++) {\n      const update = hiddenUpdatesForLane[i];\n");
   expect(js).not.toContain("old");
   const lib = await import(join(dir, "lib.js"));
@@ -334,7 +335,7 @@ pub fn swapped(lanes: &[i32]) -> i32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("    if (newLast == null) {\n      newLast = clone;\n    } else {\n      newLast.next = clone;\n      newLast = clone;\n    }\n");
   expect(js).toContain("      const last = held;\n");
   const lib = await import(join(dir, "lib.js"));
@@ -368,7 +369,7 @@ pub fn root_tag(fiber: &Rc<Fiber>) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  while (parent != null) {\n    node = parent;\n    parent = node.return;\n  }\n");
   const lib = await import(join(dir, "lib.js"));
   const root = { return: null, tag: 3 };
@@ -437,7 +438,7 @@ pub fn counted() -> f64 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  if (lastFiber != null && lastFiber.index === fiber.index) {\n    lastFiber = null;\n    return true;\n  }\n");
   expect(js).toContain("const last = lastFiber;");
   expect(js).toContain("const count$1 = count;");
@@ -490,7 +491,7 @@ pub fn popped(items: &mut Vec<u32>) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const thenable = suspendedThenable;\n  suspendedThenable = null;\n  if (thenable == null) {\n");
   expect(js).toContain("  return thenable;\n");
   expect(js).not.toContain("old");
@@ -569,7 +570,7 @@ pub fn reset() {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function needsRemount(fiber, alternate) {
   if (
     failedBoundaries != null &&
@@ -639,7 +640,7 @@ pub fn reset() {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function needsRemount(fiber, alternate) {
   if (
     failedBoundaries != null &&
@@ -698,7 +699,7 @@ pub fn labelled_made() -> usize {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const label$1 = label;\n  if (label$1 != null && set.has(label$1)) {\n    return $byteLen(label$1);\n");
   expect(js).toContain("  set.add(\"x\");\n  if (label != null && set.has(label)) {\n    return $byteLen(label);\n");
   const lib = await import(join(dir, "lib.js"));
@@ -769,7 +770,7 @@ pub fn flush(a: &[usize], b: &[usize]) -> usize {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/fiber\$|sortedNames\$/);
   expect(js).toContain("  for (let i = 0; i < b.length; i++) {\n    const fiber = b[i];\n");
   expect(js).toContain("    const sortedNames = b.length;\n");
@@ -844,7 +845,7 @@ pub fn set_then_matched() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const read = () => count$1;\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.readLater(), lib.readAfterSet(), lib.setTwice(), lib.setThenTested(), lib.setThenMatched()]).toEqual([
@@ -915,7 +916,7 @@ pub fn current() -> Option<String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function getData(endValue) {\n  if (fallbackText) {\n    return fallbackText;\n  }\n  fallbackText = $strSlice(endValue, 1, \"lib.rs:15:34\");\n  return fallbackText;\n}");
   expect(js).toContain("  let fallbackText$1 = fallbackText;\n  if (fallbackText$1) {\n    reset();\n    return fallbackText$1;\n  }\n");
   // One set and never stored keeps its local, the variable unchanged.
@@ -978,7 +979,7 @@ pub fn named_then_stopped() -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  if (activeElement == null) {\n    return;\n  }\n  activeElement.detachEvent("onpropertychange");\n  activeElement = null;\n');
   expect(js).toContain("  const activeElement$1 = activeElement;\n");
   const lib = await import(join(dir, "lib.js"));

@@ -1,3 +1,4 @@
+//@ library-differs
 // React's performWorkOnRoot: a loop's `if .. { ..; break; } else { .. }`
 // then the `break` the program wrote after it, each where it's written,
 // the `then`'s `break` and none at the `else`'s end, as upstream's `do {

@@ -11,6 +11,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -77,7 +78,7 @@ pub fn Example() -> JSX::Element {
     "--", "--crate-name", "ui", `--emit=metadata=${join(dir, "ui/js/libui.rmeta")}`, ...react]);
   run([compiler, join(dir, "app/lib.rs"), "-o", join(dir, "app/js/lib.jsx"), "--dependency", join(dir, "ui/js/lib.manifest.json"),
     "--", "--crate-name", "app", "--extern", `ui=${join(dir, "ui/js/libui.rmeta")}`, ...react]);
-  const jsx = readFileSync(join(dir, "app/js/lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "app/js/lib.jsx"), "utf8"));
   expect(jsx).toContain('<DeferredPicture src="/example.png" alt="Example" fill fetchPriority="low" />');
   expect(jsx).toContain("<Picture {...props} />");
 });

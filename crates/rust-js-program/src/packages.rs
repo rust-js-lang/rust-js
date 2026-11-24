@@ -438,6 +438,58 @@ fn reexported(dir: &Path, entry: &Entry, modules: &[Module<'_>]) -> BTreeMap<(Ve
     found
 }
 
+/// The Cargo workspace whose member the package at `dir` is, as Cargo
+/// finds it: the first directory up from it whose `Cargo.toml` has a
+/// `[workspace]`, where its `members` name `dir`, by its path or a
+/// pattern's, `packages/*`, and its `exclude` doesn't; else none, a
+/// package of its own. Natively only, as a crate's settings are read: the
+/// playground has no workspace.
+#[cfg(not(target_os = "wasi"))]
+pub fn workspace_of(dir: &Path) -> Option<PathBuf> {
+    let dir = crate::paths::absolute(dir).ok()?;
+    let (root, workspace) = (dir.ancestors()).find_map(|root| {
+        let text = std::fs::read_to_string(root.join("Cargo.toml")).ok()?;
+        let manifest: toml::Table = text.parse().ok()?;
+        Some((root.to_path_buf(), manifest.get("workspace")?.as_table()?.clone()))
+    })?;
+    if root == dir {
+        return Some(root);
+    }
+    is_member(&workspace, dir.strip_prefix(&root).ok()?).then_some(root)
+}
+
+/// Whether the package at `relative`, from its workspace's root, is a
+/// member of `workspace`, its `[workspace]` table: one its `members` name,
+/// by its path or a pattern's, `packages/*`, and its `exclude` doesn't.
+#[cfg(not(target_os = "wasi"))]
+fn is_member(workspace: &toml::Table, relative: &Path) -> bool {
+    let names = |key: &str| -> Vec<String> {
+        (workspace.get(key).and_then(toml::Value::as_array).into_iter().flatten())
+            .filter_map(|member| Some(member.as_str()?.trim_end_matches('/').to_string()))
+            .collect()
+    };
+    let matches = |pattern: &String| {
+        let (parts, given): (Vec<&str>, Vec<_>) = (pattern.split('/').collect(), relative.components().collect());
+        parts.len() == given.len()
+            && (parts.iter().zip(&given)).all(|(part, given)| {
+                let given = given.as_os_str().to_string_lossy();
+                match part.split_once('*') {
+                    Some((before, after)) => {
+                        given.len() >= before.len() + after.len() && given.starts_with(before) && given.ends_with(after)
+                    }
+                    None => *part == given,
+                }
+            })
+    };
+    names("members").iter().any(matches) && !names("exclude").iter().any(matches)
+}
+
+/// `workspace_of`'s, of the playground, which has none.
+#[cfg(target_os = "wasi")]
+pub fn workspace_of(_dir: &Path) -> Option<PathBuf> {
+    None
+}
+
 /// Where Node finds package `name` from `dir`, as a bare specifier of a
 /// file there imports it: the first `node_modules/<name>` with a
 /// `package.json`, from `dir` up, through its links. As `tooling/patch.js`'s
@@ -461,4 +513,22 @@ pub fn reexports_each(package: &Package, reexports: &[(Vec<String>, String, Stri
         (package.exports.iter())
             .any(|export| &export.module == from && &export.export == name && &export.entry == alias)
     })
+}
+
+#[cfg(all(test, not(target_os = "wasi")))]
+mod workspace_tests {
+    use super::is_member;
+    use std::path::Path;
+
+    #[test]
+    fn a_package_is_its_workspaces_where_its_members_name_it() {
+        let workspace: toml::Table = "members = [\"packages/*\", \"tools/b\"]\nexclude = [\"packages/excluded\"]\n"
+            .parse()
+            .unwrap();
+        assert!(is_member(&workspace, Path::new("packages/a")));
+        assert!(is_member(&workspace, Path::new("tools/b")));
+        assert!(!is_member(&workspace, Path::new("packages/excluded")));
+        assert!(!is_member(&workspace, Path::new("tools/c")));
+        assert!(!is_member(&workspace, Path::new("packages/a/nested")));
+    }
 }

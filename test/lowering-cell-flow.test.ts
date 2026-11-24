@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -151,7 +152,7 @@ pub mod batch {
   // so `i` stays below the length it read (ADR 1168, #1948). Its end is
   // read each turn, as of a slice the body only reads: the range's own
   // borrow, held the whole loop, lets nothing change it.
-  expect(fn(readFileSync(join(dir, "batch.js"), "utf8"), "reveal")).toBe(`export function reveal(batch) {
+  expect(fn(withoutBoundary(readFileSync(join(dir, "batch.js"), "utf8")), "reveal")).toBe(`export function reveal(batch) {
   let total = 0;
   for (let i = 0; i < batch.length; i += 2) {
     total = (total + batch[i]) >>> 0;
@@ -159,7 +160,7 @@ pub mod batch {
   batch.length = 0;
   return total;`);
   // The tag cache's, held while a getter runs: checked.
-  expect(fn(readFileSync(join(dir, "hoist.js"), "utf8"), "hydrate")).toContain("$borrowMut(nodes, \"lib.rs:40:31\", true)");
+  expect(fn(withoutBoundary(readFileSync(join(dir, "hoist.js"), "utf8")), "hydrate")).toContain("$borrowMut(nodes, \"lib.rs:40:31\", true)");
   const lib = { ...(await import(join(dir, "batch.js"))), ...(await import(join(dir, "hoist.js"))) };
   const globals = globalThis as any;
   try {
@@ -212,7 +213,7 @@ pub fn reveal_pending() -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(fn(js, "revealPending")).toContain("if (globalThis.$RB.borrows < 0) {\n    $alreadyMutablyBorrowed(\"lib.rs:23:8\");");
   const lib = await import(join(dir, "lib.js"));
   const globals = globalThis as any;
@@ -267,7 +268,7 @@ pub fn bump() -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(fn(js, "bump")).toContain("if (cell.borrows < 0) {\n    $alreadyMutablyBorrowed(\"lib.rs:31:10\");");
   const lib = await import(join(dir, "lib.js"));
   const globals = globalThis as any;

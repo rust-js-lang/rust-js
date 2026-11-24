@@ -1,3 +1,4 @@
+//@ library-differs
 // A later arm of a tuple's or-pattern, `// c\n (2, 3) | (3, 2) => {`
 // (#617): the arms are a chain in the order written, `if (a === 1 || b ===
 // 1) { .. } else if (..) {`, not MIR's `if (a !== 1 && b !== 1)` of the

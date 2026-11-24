@@ -8,6 +8,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -48,7 +49,7 @@ pub fn all(items: &[u32], i: usize) -> u32 {
 `);
   buildReact();
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const top = readFileSync(join(dir, "lib.js"), "utf8");
+  const top = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   const imports = top.split("\n").filter((line) => line.startsWith("import") || line === "").slice(1, 8).join("\n");
   expect(imports).toBe(`import { zeta } from "zeta";
 import { local } from "./local";
@@ -128,7 +129,7 @@ pub fn area(circle: &Circle) -> f64 {
   writeFileSync(join(dir, "math.js"), "export const pi = 3;\n");
   writeFileSync(join(dir, "index.rs"), "pub use crate::runtime as rt;\n");
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Its import where its own `use` is, after the `pub use`s before it, a
   // blank line between as the Rust has (ADR 1069).
   expect(js).toContain('export * as math from "./math.js";\n\nimport { area as _areaDEV } from "./shapes.js";\n');
@@ -142,7 +143,7 @@ export { half, double as unstable_double } from "./runtime.js";
 `);
   expect(js).toContain('// DEV-only\nexport * as math from "./math.js";\n');
   // A module of only a namespace's re-export is a file of it.
-  expect(readFileSync(join(dir, "index.js"), "utf8")).toContain('export * as rt from "./runtime.js";\n');
+  expect(withoutBoundary(readFileSync(join(dir, "index.js"), "utf8"))).toContain('export * as rt from "./runtime.js";\n');
   const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(dts).toContain('export * as __COMPILER_RUNTIME from "./runtime.js";');
   expect(dts).toContain('export { cache, unstable_cache } from "./cache_server.js";');
@@ -179,7 +180,7 @@ pub fn yielded(value: u32) {
   const compile = (first: string, second: string) => {
     writeFileSync(join(dir, "lib.rs"), source(first, second));
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-    return readFileSync(join(dir, "lib.js"), "utf8");
+    return withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   };
   // Named PascalCase by what it's imported from where no path names it, as
   // every namespace is (rd114b, ADR 1018).
@@ -231,7 +232,7 @@ pub fn initial() -> Option<&'static Unknown> {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   writeFileSync(join(dir, "lib.rs"), source("pingHost", "./config.js#ping"));
   compile();
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('import { NotPendingTransition as NoPendingHostTransition, ping as pingHost } from "./config.js";\n');
   expect(js).toContain("  pingHost();\n  return NoPendingHostTransition;\n");
   // Another module's binding of it, with no name, its own import: React's
@@ -255,8 +256,8 @@ pub fn reset() -> Option<&'static Unknown> {
 `,
   );
   compile();
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("import { NotPendingTransition as NoPendingHostTransition, ping as pingHost }");
-  expect(readFileSync(join(dir, "host.js"), "utf8")).toContain('import { NotPendingTransition } from "./config.js";\n');
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain("import { NotPendingTransition as NoPendingHostTransition, ping as pingHost }");
+  expect(withoutBoundary(readFileSync(join(dir, "host.js"), "utf8"))).toContain('import { NotPendingTransition } from "./config.js";\n');
   for (const [name, path, error] of [
     ["pingHost", "globalPing", "is a global's, which is read by its own name"],
     ["pingHost", "./config.js#host.ping", "imports no export of its own name"],
@@ -306,10 +307,10 @@ pub mod nested {
   writeFileSync(join(dir, "plugins.rs"), "pub use crate::shared::doubled;\npub use crate::shared::doubled as twice;\npub(crate) use crate::shared::doubled as paired;\n");
   writeFileSync(join(dir, "shared.rs"), "pub fn doubled(n: u32) -> u32 {\n    n * 2\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "out", "lib.js")]);
-  const nested = readFileSync(join(dir, "out", "plugin", "nested.js"), "utf8");
+  const nested = withoutBoundary(readFileSync(join(dir, "out", "plugin", "nested.js"), "utf8"));
   expect(nested).toContain('import { base } from "../lib.js";\nimport { extractEvents } from "../plugin.js";\nimport * as Plugin from "../plugin.js";\n');
   expect(nested).toContain("return (((extractEvents(1) + Plugin.extractEvents(2)) >>> 0) + base()) >>> 0;");
-  const lib = readFileSync(join(dir, "out", "lib.js"), "utf8");
+  const lib = withoutBoundary(readFileSync(join(dir, "out", "lib.js"), "utf8"));
   expect(lib).toContain('import * as Plugins from "./plugins.js";\n');
   // One its file doesn't re-export, `pub(crate) use`, is its own module's.
   expect(lib).toContain('import { doubled } from "./shared.js";\n');

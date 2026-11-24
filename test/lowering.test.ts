@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { underLoad } from "../scripts/timing";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -22,7 +23,7 @@ test("an Rc of a dyn none of whose implementors drops is its value", () => {
   const dir = fixture("uncounted-dyn-rc");
   writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/rc_dyn_listeners.rs"), "utf8").replace("fn main()", "pub fn main()"));
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const logger = { value: { seen: [] } };");
   expect(js).not.toContain("$rcClone(logger)");
 });
@@ -34,7 +35,7 @@ test("a generic count of items no caller gives a drop for drops none", () => {
   const dir = fixture("ungiven-item-slot");
   writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/yielded_item_drops.rs"), "utf8").replace("fn main()", "pub fn main()"));
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('return $count($given(IClone.clone(iter), IIterator, true), undefined, "lib.rs:90:18");');
   expect(js).not.toContain("IIterator.$dropItem");
 });
@@ -54,7 +55,7 @@ pub fn made() {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function made() {\n  loud(1);\n  loud(3);\n  loud(4);\n}");
 });
 
@@ -101,7 +102,7 @@ pub fn sample(n: u32) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  try {\n    const [sampleStack, controlStack] = determineComponentFrameRoot(n);\n    if (");
   // One part, the program's: `const [sample] = ..`, as where no guard is.
   expect(js).toContain("  try {\n    const [sample] = determineComponentFrameRoot(n);\n");
@@ -145,7 +146,7 @@ pub fn frame_of(r#fn: &js::Function, line: &str) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(
     '    let frame = `\\n${line.replace(" at new ", " at ")}`;\n\n' +
       "    // If our component frame is labeled \"<anonymous>\"\n" +
@@ -175,7 +176,7 @@ test("a value moved before anything can leave needs no drop of its scope", async
   const dir = fixture("moved-first");
   writeFileSync(join(dir, "lib.rs"), 'pub struct Loud(pub u32);\nimpl Drop for Loud {\n    fn drop(&mut self) {\n        println!("drop {}", self.0);\n    }\n}\npub struct Holder {\n    pub l: Loud,\n}\npub fn hold(l: Loud) -> Holder {\n    Holder { l }\n}\npub fn checked(l: Loud, n: u32) -> Holder {\n    assert!(n > 0);\n    Holder { l }\n}\n');
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function hold(l) {\n  return { l };\n}");
   // Dropped where the assertion fails, then the panic: no flag, as it's
   // known there, and no \`try\` of a \`throw\` (ADR 0372); its one drop its
@@ -351,7 +352,7 @@ pub fn shows(n: u32) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function run(n) {\n  const previous = depth;\n  depth = n;\n  note(n);\n  try {\n    return work(n);\n  } catch (error) {\n    throw $unwindsOn(error);\n  } finally {\n    if ($live()) {\n      depth = previous;\n    }\n  }\n}");
   expect(js).not.toContain("restoreDrop_drop");
   expect(js).not.toContain("loudDrop_drop");
@@ -376,7 +377,7 @@ pub fn shows(n: u32) -> u32 {
   expect(lib.current()).toBe(0);
   expect(lib.shown(3)).toBe(3);
   // Dropped once in its module and once in another: a function both call.
-  expect(readFileSync(join(dir, "lock.js"), "utf8")).toContain("export function heldDrop_drop(held)");
+  expect(withoutBoundary(readFileSync(join(dir, "lock.js"), "utf8"))).toContain("export function heldDrop_drop(held)");
   lib.there();
   (await import(join(dir, "lock.js"))).here();
 });
@@ -434,7 +435,7 @@ pub fn current() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("finishDrop_drop");
   expect(js).toContain("  try {\n    scope();\n  } catch (thrown) {\n");
   expect(js).toContain("  } finally {\n    if ($live()) {\n      warn(previous, current);\n      const shared = (current + previous) >>> 0;\n");
@@ -647,7 +648,7 @@ pub fn cloned(r: &NumberRange) -> StepRange {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return { min: range.min, max: range.max };");
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain("return { min: range.min, max: range.max };");
   const lib = await import(join(dir, "lib.js"));
   const parent = { min: 0, max: 9, largeStep: 3 };
   expect([lib.copied(parent), lib.read(parent), lib.cloned(parent)]).toEqual([{ min: 0, max: 9 }, { min: 0, max: 9 }, { min: 0, max: 9 }]);
@@ -727,7 +728,7 @@ pub fn moved(placed: Placed) -> f64 {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("range.range");
   const lib = await import(join(dir, "lib.js"));
   const reads: Record<string, number> = {};
@@ -746,6 +747,7 @@ pub fn moved(placed: Placed) -> f64 {
     });
   }
   expect(lib.smallStep(1.3, range)).toBe(1.25);
+  // Its check leaves an accessor's value to the body (ADR 1194, amended).
   expect(reads).toEqual({ min: 1, max: 1, step: 1, smallStep: 2 });
   const copy = lib.cloned(range);
   expect(Object.keys(copy).sort()).toEqual(["max", "min", "smallStep", "step"]);
@@ -1071,7 +1073,7 @@ pub fn tag(kind: Kind) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  const variant = MAP[kind];\n");
   // Taken apart, as react.dev's Tag takes its variant's name and classes.
   expect(js).toContain("  const { name, classes } = LOOKS[kind];\n");
@@ -1136,7 +1138,7 @@ pub fn main() {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const a = bump($cellOf(parser), mutParserBorrowMut);");
   expect(js).toContain("const c = bump({ depth: 0 }, parserBorrowMut);");
 });
@@ -1159,7 +1161,7 @@ test("a million short-lived addresses run in a bounded heap", () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("$exposeAddresses");
   const ran = Bun.spawnSync(["node", "--max-old-space-size=64", "--input-type=module", "-e", `const m = await import(${JSON.stringify(join(dir, "lib.js"))}); m.main();`]);
   expect([ran.exitCode, ran.stdout.toString()]).toEqual([0, "4800000\n"]);

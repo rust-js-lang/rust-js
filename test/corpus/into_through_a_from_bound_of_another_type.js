@@ -5,18 +5,22 @@
 // where the bound is `Storage: From<W>`, a `From` of another type, made of
 // each half.
 
-import { $main } from "@rust-js/std";
+import { $brand, $main } from "@rust-js/std";
 
 function storageDebug_fmt(storage) {
   return `Storage([${storage[0].join(", ")}])`;
 }
 
 function storageFromLanes_from(x) {
-  return [[x[0][3], x[0][2], x[0][1], x[0][0]]];
+  return $brand("into_through_a_from_bound_of_another_type#c8feab0b02cd6d2c::Storage", [
+    [x[0][3], x[0][2], x[0][1], x[0][0]],
+  ]);
 }
 
 function storageFromU32_from(x) {
-  return [new Array(4).fill(x)];
+  return $brand("into_through_a_from_bound_of_another_type#c8feab0b02cd6d2c::Storage", [
+    new Array(4).fill(x),
+  ]);
 }
 
 function wideDebug_fmt(wide) {
@@ -24,12 +28,12 @@ function wideDebug_fmt(wide) {
 }
 
 function wideFromX2_from(x, WCopy, StorageFromW) {
-  return [
+  return $brand("into_through_a_from_bound_of_another_type#c8feab0b02cd6d2c::Wide", [
     [
       StorageFromW.from(WCopy ? WCopy.copy(x[0][0]) : x[0][0]),
       StorageFromW.from(WCopy ? WCopy.copy(x[0][1]) : x[0][1]),
     ],
-  ];
+  ]);
 }
 
 $main(main);

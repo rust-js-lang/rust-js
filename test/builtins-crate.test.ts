@@ -8,6 +8,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { buildCompiler, buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 let builtins: Record<string, (...args: any[]) => any>;
 let builtinsJs = "";
@@ -51,7 +52,7 @@ test("the builtins crate's string functions are JS's string methods", () => {
   expect(builtins.replacedFirst("a-b-c", "-", "+")).toBe("a+b-c");
   expect(builtins.splitParts("a,b;c,")).toEqual([["a", "b;c", ""], ["a", "b", "c", ""]]);
   expect(builtins.revived('{"a":1,"secret":2,"b":{"secret":3}}')).toEqual({ a: 1, b: {} });
-  const js = readFileSync(builtinsJs, "utf8");
+  const js = withoutBoundary(readFileSync(builtinsJs, "utf8"));
   expect(js).toContain('return [text.split(","), text.split(/[,;]/)];');
   expect(js).toContain("return JSON.parse(text, hidden);");
   expect(js).toContain("  if (key in value) {\n    return value[key];\n  }");

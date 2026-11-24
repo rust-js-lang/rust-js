@@ -917,8 +917,13 @@ fn rereadable(e: &Expr) -> bool {
 }
 
 /// Whether `e` reads a variable, or a path of properties from one, `a.b`,
-/// `a?.b` too.
+/// `a?.b` too, checked or not.
 fn read_of_a_path(e: &Expr) -> bool {
+    // Its read checked where a binding gives it, `$checkResult(current.data,
+    // ..)`, still that read, once (#2403, ADR 1195).
+    if let Some(value) = e.helper_call_of("$checkResult").and_then(|call| call.arg("result")) {
+        return read_of_a_path(value);
+    }
     match &e.kind {
         ExprKind::Var(_) | ExprKind::Symbol(_) => true,
         ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => read_of_a_path(object),

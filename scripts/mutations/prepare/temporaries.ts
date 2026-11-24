@@ -97,4 +97,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^scope_struct_generic.rs$"],
     snapshots: true,
   },
+  {
+    name: "local-takes-its-entry-word",
+    breaks: "a local holding what a split function's body gives is named for its entry, `const checkedDiv = checkedDiv$(a, b)`, shadowing the module's own `checkedDiv`, not `value` (#2403, ADR 1193)",
+    file: "crates/rust-js-program/src/prepare/temporaries.rs",
+    find: ".filter(|to| !crate::names::kept_word(to) && !entries_read.contains(to))",
+    replace: ".filter(|to| !crate::names::kept_word(to) && (entries_read.is_empty() || !entries_read.is_empty()))",
+    tests: ["test/compiler.test.ts", "-t", "enums with fields are tagged objects"],
+  },
 ];

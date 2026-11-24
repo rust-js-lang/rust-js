@@ -9,6 +9,7 @@ import { join } from "node:path";
 
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -20,7 +21,7 @@ async function compiled(name: string, source: string): Promise<{ js: string; lib
   writeFileSync(join(dir, "lib.rs"), source);
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")) };
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), lib: await import(join(dir, "lib.js")) };
 }
 
 /** What rust-js says of `source`, which it refuses. */
@@ -989,7 +990,7 @@ pub fn shown() -> bool {
   );
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return defaultIndicator;");
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain("return defaultIndicator;");
   const lib = await import(join(dir, "lib.js"));
   const { defaultIndicator } = await import(join(dir, "indicator.js"));
   expect([lib.indicator() === defaultIndicator, lib.shown()]).toEqual([true, true]);
@@ -1232,7 +1233,7 @@ pub fn saved() -> (String, String) {
 `);
   const built = runSync([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  return typeof value === "function" ? value() : value;');
   expect(js).toContain("  return value.call(undefined, props);");
   expect(js).toContain("  return [saveModule(twice), saveModule((n) => (n * 3) >>> 0)];");

@@ -1,3 +1,4 @@
+//@ library-differs
 // What a function gives copies of, of items it borrows, each a value of
 // its own: a copy changed leaves the item it was made of as it was. In
 // the metamorphic net's `library` rewrite these functions are a library's,

@@ -8,6 +8,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -29,7 +30,7 @@ test("a `let` from MIR is declared where it's first named", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain(`export function label(path, crumbs, force) {
   const selected = path === "x";
   let item;
@@ -56,7 +57,7 @@ test("a let of an Option's ? from MIR is named as the program names it", async (
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  const f = xs.find((x) => x % 2 === 0);\n  if (f == null) {\n    return;\n  }\n  return (f * 10) | 0;\n");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.firstEven([1, 4]), lib.firstEven([1])]).toEqual([40, undefined]);
@@ -77,7 +78,7 @@ test("a `let` a loop's body makes, from MIR, is declared in the body", async () 
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  for (let j = 0; j < ends.length; j++) {\n    const end = ends[j];\n    let start = 0;\n");
   const lib = await import(join(dir, "mir.js"));
   expect(lib.starts(["ab", "c"], [1, 2])).toEqual([3, 5]);
@@ -107,7 +108,7 @@ pub fn label(section: Section) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  asStr(section) {\n    return section;\n  },\n");
   const lib = await import(join(dir, "mir.js"));
   expect(lib.label("home")).toBe("og-home");
@@ -142,7 +143,7 @@ pub fn ids() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  next(reply) {\n    const id = reply.nextPartId;\n");
   expect(js).toContain("  boxed(reply) {\n");
   const lib = await import(join(dir, "mir.js"));
@@ -178,7 +179,7 @@ pub fn fixed(given: Option<&'static Error>, lint: Option<&'static Error>) -> Opt
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('  if (raw != null && raw.title === "Runtime Exception") {\n    raw.title = "Runtime Error";\n  }');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.fixed({ title: "Runtime Exception" }, undefined), lib.fixed(undefined, { title: "x" })]).toEqual(["Runtime Error", "x"]);
@@ -199,7 +200,7 @@ pub fn lines(meta: &str) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  const find = globalThis.find(meta);\n  if (find == null) {");
   const lib = await import(join(dir, "mir.js"));
   (globalThis as any).find = (text: string) => (text ? [text, "ab"] : undefined);
@@ -239,7 +240,7 @@ pub fn widths(entries: &[&Unknown], log: impl Fn(f64)) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("      const contentBoxSize = Array.isArray(size) ? size[0] : size;");
   const lib = await import(join(dir, "mir.js"));
   const widths: number[] = [];
@@ -279,7 +280,7 @@ pub fn grouped(items: &[u32]) -> Vec<Section> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("    current.pages.push(item);");
   const lib = await import(join(dir, "mir.js"));
   expect(lib.grouped([1, 0, 2, 3, 0, 4])).toEqual([{ pages: [2, 3] }, { pages: [4] }]);
@@ -302,7 +303,7 @@ pub fn shown(infos: &[Info]) -> Vec<String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("const caption = info.caption || undefined;");
   const lib = await import(join(dir, "mir.js"));
   expect(lib.shown([{ caption: "a" }, { caption: "" }, {}])).toEqual(["<a>", "", ""]);
@@ -327,6 +328,6 @@ test("a let each turn assigns from MIR is the loop body's", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("  for (let i = 0; i < v.length; i++) {\n    const x = v[i];\n    let y;\n");
+  expect(withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"))).toContain("  for (let i = 0; i < v.length; i++) {\n    const x = v[i];\n    let y;\n");
   expect((await import(join(dir, "mir.js"))).named([0, 1, 7])).toEqual(["one", "7"]);
 });

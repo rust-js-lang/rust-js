@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { oneLine, withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -76,7 +77,7 @@ pub fn dated() -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('export function canPreventExtensions() {\n  return typeof Object.preventExtensions === "function";\n}');
   expect(js).toContain('export function hasPreventExtensions() {\n  return typeof Object.preventExtensions !== "undefined";\n}');
   expect(js).toContain('typeof rustJsCallable === "function"');
@@ -161,7 +162,7 @@ pub fn bitmaps() -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('export function available() {\n  return typeof optionalHostFunction !== "undefined";\n}');
   expect(js).toContain('export function copied() {\n  return typeof optionalHostFunction !== "undefined";\n}');
   expect(js).toContain('export function callable() {\n  return typeof optionalHostFunction === "function";\n}');
@@ -227,7 +228,7 @@ pub fn ratio() -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('return typeof rustJsWidth === "number" ? rustJsWidth : 1;');
   expect(js).toContain('return typeof rustJsMeter !== "undefined" && typeof rustJsMeter.ratio === "number";');
   const global = globalThis as Record<string, unknown>;
@@ -277,7 +278,7 @@ pub fn listened() -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('if (typeof rustJsNavigation !== "object") {');
   const global = globalThis as Record<string, unknown>;
   const lib = await import(join(dir, "lib.js"));
@@ -367,7 +368,7 @@ pub fn symbol_defines_for() -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('if (typeof Symbol === "function" && typeof Symbol.for === "function") {\n  const symbolFor = Symbol.for;\n  COMPONENT_TYPE = symbolFor("selector.component");\n}');
   expect(js).toContain('export function hasSymbolFor() {\n  return typeof Symbol !== "undefined" && typeof Symbol.for === "function";\n}');
   const lib = await import(join(dir, "lib.js"));
@@ -410,7 +411,7 @@ pub fn supports() -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`const SUPPORTS_USER_TIMING =
   ENABLE_PROFILER_TIMER &&
   // Some hosts have no console
@@ -462,7 +463,7 @@ pub fn maybe(callback: &Option<Callback>) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('if (typeof callback === "function") {\n    return callback(didTimeout) ?? undefined;\n  }');
   expect(js).toContain('export function pointer(f) {\n  return typeof f === "function";\n}');
   expect(js).toContain('export function lent(f) {\n  return typeof f === "function";\n}');
@@ -521,7 +522,7 @@ pub fn hide_element(element: &webapi::HTMLElement) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('if (typeof selection.extend !== "function" && start > end) {');
   expect(js).toContain('return typeof selection.extend !== "undefined";');
   expect(js).toContain('export function hideElement(element) {\n  const style = element.style;\n  if (typeof style.setProperty === "function") {');
@@ -602,7 +603,7 @@ pub fn either(a: f64) -> f64 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  (element.focus || HTMLElement.prototype.focus).call(element, focusOptions);\n");
   expect(js).toContain("const fallback = globalThis.counted();\n  return a || fallback;");
   // The method read in the guard's \`try\`, where its call is (rd233).
@@ -744,11 +745,11 @@ pub fn summed(listener: &'static Unknown, n: u32) -> Option<&'static Unknown> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function apply(instance, props) {\n  instance._applyProps(instance, props);\n}");
   expect(js).toContain("  instance._subscriptions[type]();\n");
   expect(js).toContain("listener.handleEvent(event)");
-  expect(js).toContain("  return listener.handleEvent(globalThis.counted(), \"x\");\n");
+  expect(oneLine(js)).toContain('return listener.handleEvent(globalThis.counted(), "x");');
   expect(js).toContain("export function focus(element, options) {\n  element.focus(options);\n}");
   expect(js).toContain("  element.focus.call(other);\n");
   expect(js).toContain("  element = other;\n  focus.call(element);\n");
@@ -899,7 +900,7 @@ pub fn other_this(elements: &'static Unknown, other: &'static HTMLElement, optio
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function applyFill(props, instance) {\n  props.fill.applyFill(instance);\n}");
   expect(js).toContain("export function unsubscribe(instance, type) {\n  instance._subscriptions[type]();\n}");
   expect(js).toContain('  props.fill[globalThis.noted("key")](globalThis.noted("argument"));\n');
@@ -1006,7 +1007,7 @@ pub fn focus_apart(a: &HTMLElement, b: &HTMLElement) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function focusBoth(a, b) {\n  a.focus(undefined);\n  b.focus(undefined);\n}");
   expect(js).toContain("export function focusApart(a, b) {\n  a.focus.call(a, undefined);\n  a.focus.call(b, undefined);\n}");
   const calls: unknown[] = [];
@@ -1056,7 +1057,7 @@ pub fn resolved() -> Option<Promise<Option<&'static Unknown>>> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('const localPromise = typeof Promise === "function" ? Promise : undefined;\n');
   expect(js).toContain(".resolve(null)");
   expect(js).not.toContain("Promise.resolve");
@@ -1117,7 +1118,7 @@ pub fn held() -> &'static WeakMap<JsObject, f64> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const weak = new PossiblyWeakMap();");
   expect(js).toContain("const strong = new PossiblyWeakMap();");
   const lib = await import(join(dir, "lib.js"));

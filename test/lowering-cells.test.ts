@@ -6,6 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -162,7 +163,7 @@ pub fn derived(n: i32) -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("{ children: [] }");
   expect(js).toContain("parent.children.push(node);");
   expect(js.slice(js.indexOf("export function nested"), js.indexOf("export function both"))).not.toContain("$borrow");
@@ -207,7 +208,7 @@ pub fn cache(key: &str, n: u32) -> Option<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  liked.add(id);\n");
   expect(js).toContain("  CACHE.set(key, n);\n");
   expect(js).not.toContain("@rust-js/std");
@@ -250,7 +251,7 @@ pub fn escaping() -> Rc<Cell<u32>> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  let n = 1;\n  n = (n + 1) >>> 0;\n  return n;");
   expect(js).toContain("  let n = 0;\n  each(() => {\n    n = (n + 1) >>> 0;\n  });\n  return n;");
   expect(js).toContain("  let timeout;\n  listen((n) => {\n    timeout = n;\n  });\n  return () => timeout;");
@@ -370,7 +371,7 @@ pub fn named_alike(a: &'static str, b: &'static str, hits: u32) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('return { label: "a", count: 1 };');
   expect(js).toContain('return { label: "n", count: n };');
   expect(js).toContain("  c.count = (c.count + 1) >>> 0;\n  return c.count;");
@@ -440,7 +441,7 @@ pub fn log_twice() -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const timerQueue = [];\nconst taskQueue = [];");
   expect(js).not.toMatch(/\$withBorrow(Mut)?\((timerQueue|taskQueue)/);
   // A `RefCell` of an array is the array, borrowed while what it's given
@@ -499,7 +500,7 @@ pub fn last() {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function schedule(n) {\n  timerQueue.push(n);\n}");
   expect(js).toContain("  let seen = 0;\n  // Count each timer.\n  let t;\n  while ((t = timerQueue.pop()) != null) {\n");
   expect(js).toContain("    if (t > limit) {\n      break;\n    }\n");
@@ -596,7 +597,7 @@ pub fn deferred(key: &'static str) -> impl Fn() {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("\nif (ENABLED) {\n  Internals.G = null;\n}\n");
   expect(js).toContain("\nInternals.count = 1;\n");
   expect(js).toContain("((internals) => {\n  if (internals.count > 5) {\n    return;\n  }\n");
@@ -651,7 +652,7 @@ pub fn counted() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("((report) =>");
   expect(js).toContain("  if (n > 0) {\n    report(n);\n  }\n");
   const logged: unknown[] = [];
@@ -704,7 +705,7 @@ pub fn meters() -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function same(a, b) {\n  return a === b;\n}");
   expect(js).toContain("export function task(id) {\n  return { id };\n}");
   expect(js).toContain("strong: 1");
@@ -777,7 +778,7 @@ pub fn emptied(bag: &Bag) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Taken where it's set, the field tested (ADR 0996).
   expect(js).toContain("  if (task.callback != null) {\n    const callback = task.callback;\n    task.callback = undefined;\n");
   expect(js).toContain("export function cancel(task) {\n  task.callback = undefined;\n}");
@@ -828,7 +829,7 @@ pub fn clash() -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("let current;");
   expect(js).toContain("export function active() {\n  return current;\n}");
   expect(js).toContain("$withBorrow(log, grow, $stdSites.localKeyWithBorrow[0], true)");
@@ -859,7 +860,7 @@ pub fn cancel() -> Option<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("let timeout;");
   expect(js).toContain("export function cancel() {\n  const old = timeout;\n  timeout = undefined;\n  return old;\n}");
   const lib = await import(join(dir, "lib.js"));
@@ -907,7 +908,7 @@ pub fn pick() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('let PICK;\nif (typeof rustJsFast !== "undefined") {\n  PICK = () => rustJsFast();\n} else if');
   expect(js).toContain("} else if (Math.random() < 2) {\n  const n = 2;\n");
   // Its `const`s and then its value stay its closure's, their names its
@@ -1011,7 +1012,7 @@ pub fn rebound_set(error: &Failure, other: &Failure) -> Option<&'static str> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const { message, title } = error;");
   expect(js.match(/const \{ title \} = /g)).toBeNull();
   const lib = await import(join(dir, "lib.js"));
@@ -1040,7 +1041,7 @@ pub fn logged() {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function logged() {\n  globalThis.seen.push(logger.prefix);\n}");
   (globalThis as { seen?: string[] }).seen = [];
   const lib = await import(join(dir, "lib.js"));
@@ -1100,7 +1101,7 @@ pub fn summed(v: &[u32]) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("let running = false;");
   expect(js).toContain("  let total = 0;\n  v.forEach((x) => {\n    total = (total + x) >>> 0;\n  });\n");
   expect(js).not.toContain(".value");
@@ -1150,7 +1151,7 @@ pub fn values() -> Option<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("let cache;\nif (Math.random() < 2) {\n");
   expect(js).toContain("let noneFirst;\nif (!(Math.random() > 2)) {\n");
   expect(js).toContain("const VALUES = Math.random() > 2 ? undefined : 1;\n");
@@ -1187,7 +1188,7 @@ pub fn cached(key: &JsObject) -> Option<String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(
     'const componentFrameCache = __DEV__\n  ? typeof WeakMap !== "undefined"\n    ? new WeakMap()\n    : new Map()\n  : undefined;\n',
   );
@@ -1209,7 +1210,7 @@ thread_local! {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export const AREA = Math.random() < 2 ? area : undefined;\n");
   expect(js).toContain("export const noneFirst = Math.random() > 2 ? undefined : 1;\n");
   expect(js).not.toContain("(() =>");
@@ -1262,7 +1263,7 @@ pub fn busy() -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  if (cache != null) {\n");
   expect(js).not.toContain("=> cache");
   const lib = await import(join(dir, "lib.js"));
@@ -1316,7 +1317,7 @@ pub fn measured() -> usize {
 js::export_default!(LOG);
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("$borrow(log.calls");
   expect(js).toContain("return globalThis.measure(log.quiet);");
   expect(js).not.toContain("$borrow(log.quiet");

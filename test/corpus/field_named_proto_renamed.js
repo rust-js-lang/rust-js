@@ -6,7 +6,7 @@
 // (rd754). A `HashMap`'s `"__proto__"` key is a `Map`'s, and a tuple's
 // fields are indexes.
 
-import { $assign, $eq, $main, $unionField, $unionSet } from "@rust-js/std";
+import { $assign, $checkU32, $eq, $main, $unionField, $unionSet } from "@rust-js/std";
 
 function optionalDebug_fmt(optional) {
   return `Optional { __proto__: ${optional.proto == null ? "None" : `Some(${optional.proto})`}, others: [${optional.others.join(", ")}] }`;
@@ -21,6 +21,7 @@ function shapeDebug_fmt(shape) {
 
 export class Chained {
   constructor(proto) {
+    $checkU32(proto, "Chained.new(proto)", "nullish");
     this.link = proto ?? undefined;
   }
 
@@ -29,6 +30,7 @@ export class Chained {
   }
 
   set(proto) {
+    $checkU32(proto, "Chained.set(proto)", "nullish");
     this.link = proto ?? undefined;
   }
 }

@@ -13,6 +13,7 @@ import { underLoad } from "../scripts/timing";
 import { stdBuild } from "../scripts/std";
 import { runSync } from "./child";
 import { typeChecked } from "./type-checked";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -108,11 +109,11 @@ test("a Peekable is made by std's own peekable, imported from @rust-js/std, and 
   const file = join(dir, "lib.rs");
   Bun.write(file, "pub fn first(v: &[u32]) -> Option<u32> { let mut p = v.iter().copied().peekable(); p.next() }\n");
   run([compiler, file, "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('import { $iter, $next, iterator_peekable } from "@rust-js/std";');
   expect(js).toContain("$next(p)");
   expect(js).not.toContain("peekableIterator_next");
-  const std = readFileSync(join(stdDir, "iter.js"), "utf8");
+  const std = withoutBoundary(readFileSync(join(stdDir, "iter.js"), "utf8"));
   expect(std).toContain("return $stdIterator(\n    { iter: self },\n    {\n      next(iterator) {");
   // Its hint asks what it steps by the dictionary it's given (ADR 0561).
   expect(std).toContain("hint(peekable) {\n        return $peekableHint(peekable, SelfIterator);\n      },");
@@ -129,7 +130,7 @@ test("a compiled step table's `count` and `last` take the iterator, and where st
     for (const [, name, params] of std.matchAll(/^ {6}(count|last)\(([^)]*)\) \{$/gm)) entries.add(`${name}(${params})`);
   }
   expect([...entries].sort()).toEqual(["count(iterator)", "count(iterator, location)", "last(iterator)", "last(iterator, location)"]);
-  const std = readFileSync(join(stdDir, "iter.js"), "utf8");
+  const std = withoutBoundary(readFileSync(join(stdDir, "iter.js"), "utf8"));
   expect(std).toContain("last(iterator, location) {\n        return repeatIterator_last(iterator, location, TClone, dropT);");
 });
 
@@ -138,7 +139,7 @@ test("a compiled step table's `count` and `last` take the iterator, and where st
 // its early return of it, which can't hold, is gone, as is a `bool`
 // temporary tested once, and a tail written into two branches.
 test("a std body's JS has no test its early return decided, no once-read bool, no tail written twice", () => {
-  const std = readFileSync(join(stdDir, "iter.js"), "utf8");
+  const std = withoutBoundary(readFileSync(join(stdDir, "iter.js"), "utf8"));
   const nextBack = std.slice(std.indexOf("export function peekableDoubleEndedIterator_nextBack("), std.indexOf("export function peekableDoubleEndedIterator_rfold("));
   // Its `or_else`, which a `core` built to unwind keeps a call of, its
   // closure's unwinding too costly to inline (#424): `??` of it, the

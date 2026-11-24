@@ -14,6 +14,7 @@ import { join } from "node:path";
 
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -26,7 +27,7 @@ async function compiled(name: string, source: string): Promise<{ js: string; lib
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
   const warnings = built.stderr.split("\n").filter((line) => line.startsWith("warning:") && !/warnings? emitted/.test(line));
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")), warnings, dir };
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), lib: await import(join(dir, "lib.js")), warnings, dir };
 }
 
 // ADR 0719, amended (React port gap rd71): `keys_in` takes any value, an

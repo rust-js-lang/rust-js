@@ -8,6 +8,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -83,7 +84,7 @@ pub fn count() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`const queueSeveralMicrotasks =
   typeof queueMicrotask !== "undefined"
     ? (callback) => {`);
@@ -181,7 +182,7 @@ pub fn run() -> Vec<f64> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const { link, unlink: unlinkDep } = createReactiveSystem(1000);\n");
   expect(js).not.toContain("function link(");
   expect(js).not.toContain("function unlinkDep(");
@@ -277,7 +278,7 @@ pub fn go(n: u32) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(
     "\n// The run's own.\n/** Runs it. */\n// Above.\n// The next one.\n// After.\nconst run = (n) => (n + 1) >>> 0;\n",
   );
@@ -439,7 +440,7 @@ pub fn some<T>(x: Option<T>) -> bool {
   writeFileSync(join(dir, "bound.rs"), '#[cfg_attr(rust_js, rust_js::link_name = "./math.js#half")]\npub fn half(n: f64) -> f64 {\n    let _ = n;\n    unreachable!()\n}\n');
   writeFileSync(join(dir, "math.js"), "export function half(n, by = 2) {\n  return n / by;\n}\n");
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('export { helper, helper as triple } from "./inner.js";\n');
   expect(js).toContain('export { plusOne } from "./caller.js";\n');
   expect(js).toContain(
@@ -451,7 +452,7 @@ pub fn some<T>(x: Option<T>) -> bool {
   expect(js).toContain("function renamed(n) {");
   expect(js).toContain("function defaulted(n) {");
   expect(js).not.toMatch(/function (helper|tripled|triple|plusOne|commented)\b/);
-  expect(readFileSync(join(dir, "caller.js"), "utf8")).toContain('import { helper } from "./lib.js";\n');
+  expect(withoutBoundary(readFileSync(join(dir, "caller.js"), "utf8"))).toContain('import { helper } from "./lib.js";\n');
   const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(dts).toContain("export function helper(n: number): number;");
   expect(dts).toContain("export function triple(n: number): number;");
@@ -461,7 +462,7 @@ pub fn some<T>(x: Option<T>) -> bool {
   expect([lib.helper, lib.triple, lib.plusOne(2)]).toEqual([inner.helper, inner.helper, 7]);
   expect([lib.calledHere(1), lib.twice(1), lib.otherName(1), lib.apart(1), lib.commented(1), lib.default(1)]).toEqual([3, 6, 3, 3, 3, 3]);
   // What a JS caller gives past their parameters, none of theirs.
-  expect([lib.twin(1), lib.count({ n: 4 }), lib.halved(8, 4), lib.held(5, 6), lib.counted(), lib.nested({ value: undefined })]).toEqual([3, 4, 4, 1, 1, true]);
+  expect([lib.twin(1), lib.count({ n: 4 }), lib.halved(8, 4), lib.held(5, 6), lib.counted(), lib.nested({ $someNone: 0 })]).toEqual([3, 4, 4, 1, 1, true]);
 });
 
 // ADR 0610, amended (#561): React's noop Flight client makes one instance
@@ -558,7 +559,7 @@ pub fn swapped() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const { createContainer, updateContainer } = make({ base: 100 });\n");
   expect(js).toContain("  return (createContainer(4) + updateContainer(1)) >>> 0;\n");
   expect(js).toContain("  return updateContainer(n);\n");
@@ -567,7 +568,7 @@ pub fn swapped() -> u32 {
   // Another's of a name the first took.
   expect(js).toContain("const SECOND = make({ base: 400 });\n");
   expect(js).toContain("  return SECOND.createContainer(5);\n");
-  const other = readFileSync(join(dir, "other.js"), "utf8");
+  const other = withoutBoundary(readFileSync(join(dir, "other.js"), "utf8"));
   expect(other).toContain("const KEPT = make({ base: 200 });\n");
   expect(other).toContain("  return [KEPT.createContainer(1), KEPT];\n");
   expect(other).toContain("const NAMED = make({ base: 300 });\n");
@@ -639,7 +640,7 @@ pub fn hosted() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const { createContainer } = createReconciler({ base: 100 });\n");
   expect(js).toContain("const Host = {\n  createContainer(tag) {\n    return (createContainer(tag) + 1) >>> 0;\n  },\n};\n");
   const lib = await import(join(dir, "lib.js"));
@@ -670,7 +671,7 @@ pub fn stack() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("const CREATE_FAKE_CALL_STACK = {\n");
   expect(js).toContain("  return CREATE_FAKE_CALL_STACK.reactStackBottomFrame(unknownOwner);\n");
   const lib = await import(join(dir, "lib.js"));

@@ -79,4 +79,12 @@ export const mutations: Mutation[] = [
     replace: "                _ if to_js => given.iter().map(|_| true).collect(),",
     tests: ["test/library-kept-copies.test.ts", "-t", "stored dictionary given to WebIDL"],
   },
+  {
+    name: "checked-call-unbranded",
+    breaks: "a value a Rust caller gives a function whose JS entry checks it, a library's class member, isn't branded, so the check refuses what Rust made: `Writer.text(writer): expected a Writer Rust made` (#2403, ADR 1196)",
+    file,
+    find: "                _ if checked => vec![true; arg_places.len()],\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "a library's private type's impl is given to its generic code by a consumer"],
+  },
 ];

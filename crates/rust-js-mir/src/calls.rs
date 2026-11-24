@@ -534,6 +534,12 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             _ => Vec::new(),
         };
         let made = self.binding_values((def_id, generic_args), (exprs, &present), (js_span, named), span, out)?;
+        // The crate's own binding's result, checked where it returns (#2403,
+        // ADR 1195), but one its body type-tests first, whose test is its check.
+        let made = match self.binding_result_tested(state.body, state.at, def_id) {
+            true => made,
+            false => self.checked_binding_result(def_id, made),
+        };
         // Of a `dyn Iterator`, JS's own, marked so (#1359).
         let output = self
             .tcx

@@ -8,7 +8,7 @@
 // `K` the impl's own, and `M` numbered after the impl's, where `M` had the
 // number of the impl's `K` (ADR 0135, #803, #804).
 
-import { $main, $traitImpl } from "@rust-js/std";
+import { $brand, $main, $traitImpl } from "@rust-js/std";
 
 const $sScaled = new Map();
 
@@ -27,8 +27,14 @@ $main(main);
 
 function main() {
   const SScaled = sScaled(4);
-  console.log(`${SScaled.scaled([1, undefined])}`);
-  console.log(`${sScaled(5).scaled(["x", 2])}`);
-  console.log(`${SScaled.times([1, undefined], 7)}`);
+  console.log(
+    `${SScaled.scaled($brand("default_const_numbered_as_the_impls#0e96ddd8da13543e::S", [1, undefined]))}`,
+  );
+  console.log(
+    `${sScaled(5).scaled($brand("default_const_numbered_as_the_impls#0e96ddd8da13543e::S", ["x", 2]))}`,
+  );
+  console.log(
+    `${SScaled.times($brand("default_const_numbered_as_the_impls#0e96ddd8da13543e::S", [1, undefined]), 7)}`,
+  );
 }
 //# sourceMappingURL=case.js.map

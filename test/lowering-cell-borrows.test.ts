@@ -9,6 +9,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -69,7 +70,7 @@ pub fn touch(root: &Root) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const expirationTimes = root.expirationTimes;\n");
   expect(js).toContain("  return $index(root.expirationTimes, index, \"lib.rs:30:35\");\n");
   expect(js).not.toContain("$borrowMut(root.expirationTimes");
@@ -136,7 +137,7 @@ pub fn rendered(chunks: Vec<String>) -> Promise<String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('    let buffer = "";\n');
   expect(js).toContain("          resolve(buffer);\n");
   expect(js).not.toContain("$borrow");
@@ -179,7 +180,7 @@ pub fn touched(text: &RefCell<String>) {
 }
 `);
   run([compiler, join(counted, "lib.rs"), "-o", join(counted, "lib.js"), ...withBindings]);
-  const out = readFileSync(join(counted, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(counted, "lib.js"), "utf8"));
   const of = (name: string) => out.slice(out.indexOf(`export function ${name}(`), out.indexOf("\n}\n", out.indexOf(`export function ${name}(`)));
   expect(["tagged", "reassigned", "settled"].filter((name) => !/\$borrow\(text, "lib\.rs:\d+:\d+", true\)/.test(of(name)))).toEqual([]);
   const lib = await import(join(counted, "lib.js"));
@@ -251,7 +252,7 @@ pub fn touch(root: &Root) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const entanglements = root.entanglements;\n");
   expect(js).not.toContain("$borrow(root.entanglements");
   // What JS calls `apply` with may be any function: counted.
@@ -329,7 +330,7 @@ pub fn touch(root: &Root) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function expire(root, lanes) {\n  const times = root.times;\n  const index = clz32(lanes);\n");
   // What a fn pointer JS gives returns may be any function: counted.
   expect(js).toContain("$borrow(root.given, \"lib.rs:44:28\", true)");
@@ -390,7 +391,7 @@ pub fn first(parent: &Node) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("function push(siblings, child) {\n  siblings.push(child);\n}");
   expect(js).toContain("$withBorrow(\n    commitHooks,");
   const lib = await import(join(dir, "lib.js"));
@@ -456,7 +457,7 @@ pub fn first(parent: &Node) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("function push(siblings, child) {\n  siblings.push(child);\n}");
   expect(js).toContain("export function first(parent) {\n  return $index(parent.children, 0, \"lib.rs:44:29\").name;\n}");
   expect(js).toContain("const hooks = $borrow(root.hooks, \"lib.rs:20:16\", true);");
@@ -507,7 +508,7 @@ pub fn before_update(current: &Fiber) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function beforeUpdate(current) {\n  const measurements = [];\n  current.memoizedState = measurements;\n  collect(measurements, 1);\n}");
   const lib = await import(join(dir, "lib.js"));
   const f = lib.fiber();
@@ -596,7 +597,7 @@ pub fn lent(f: &dyn Fn()) -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("let onMountInDev = null;\n");
   expect(js).toContain("if (__DEV__) {\n  onMountInDev = { useA: (n) => (n + 1) >>> 0 };\n}\n");
   expect(js).toContain("export function render(setH) {\n  onMountInDev != null ? setH(onMountInDev) : setH();\n}");
@@ -666,7 +667,7 @@ pub fn take_hooks() -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("      listeners.push(listener);\n");
   expect(js).not.toContain("listeners.borrows");
   // A listener may change the cell, so `count`, read before the loop, bounds
@@ -730,7 +731,7 @@ pub fn listened(listener: Rc<dyn Fn()>) -> usize {
   const borrowed = await import(join(lent, "lib.js"));
   borrowed.addHook(() => borrowed.clearHooks());
   expect(() => borrowed.runHooks()).toThrow("already borrowed");
-  expect(readFileSync(join(lent, "lib.js"), "utf8")).toContain("if (listeners.borrows) {\n    $alreadyBorrowed(\"lib.rs:26:15\");");
+  expect(withoutBoundary(readFileSync(join(lent, "lib.js"), "utf8"))).toContain("if (listeners.borrows) {\n    $alreadyBorrowed(\"lib.rs:26:15\");");
 });
 
 // React's update clone, `{ .., gesture: update.gesture, .., next: null }`: a
@@ -765,7 +766,7 @@ pub fn write(update: &Update, gesture: &Rc<G>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("$fieldCell");
   expect(js).toContain("  update.gesture = gesture;\n");
   const lib = await import(join(dir, "lib.js"));
@@ -814,7 +815,7 @@ pub fn render() {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function render() {\n  nested != null ? globalThis.setH(nested) : globalThis.setH();\n}");
   const lib = await import(join(dir, "lib.js"));
   const seen: unknown[] = [];
@@ -857,7 +858,7 @@ pub fn push_hook(hook: fn() -> u32) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("let pending = null;");
   expect(js).toContain("  pending ??= [];\n  pending.push(event);\n");
   // \`first_hooks\` borrows HOOKS while \`get_or_insert_with\` holds it.
@@ -939,7 +940,7 @@ pub fn grab() -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function last(node) {\n  let next;\n  while ((next = node.next) != null) {\n    node = next;\n  }\n  return node;\n}");
   expect(js).toContain('const item = $borrow($fieldCell(slot, "item"), "lib.rs:43:15", true);');
   const lib = await import(join(dir, "lib.js"));
@@ -983,7 +984,7 @@ pub fn find(cache: &RefCell<Vec<&'static Element>>, props: &Unknown) -> Option<u
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`      if (
         node.getAttribute("href") !==
           (props.href == null || props.href === "" ? null : props.href) ||
@@ -1038,7 +1039,7 @@ pub fn later(queue: RefCell<Vec<u32>>) -> impl Fn() -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return queue.splice(0);");
   expect(js).toContain("const taken = items.splice(0);");
   expect(js).not.toContain("$take(");
@@ -1096,7 +1097,7 @@ pub fn flush(segment: &Segment, destination: &Destination) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("$borrow");
   expect(js).toContain("segment.chunks.push(chunk);");
   const lib = await import(join(dir, "lib.js"));
@@ -1150,7 +1151,7 @@ pub fn forget(key: &Rc<RefCell<Option<String>>>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("$borrow");
   const lib = await import(join(dir, "lib.js"));
   const form = new FormData();

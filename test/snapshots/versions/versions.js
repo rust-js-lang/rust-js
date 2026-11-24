@@ -5,6 +5,7 @@
 // `split_off`, `total_cmp`, `char::from_digit`, and `{:e}` (ADR 0076).
 
 import {
+  $checkU32,
   $cmp,
   $debugF64,
   $debugStr,
@@ -205,6 +206,7 @@ export function edges() {
 }
 
 export function panics(i) {
+  $checkU32(i, "panics(i)");
   const v = [1, 2, 3];
   switch (i) {
     case 0:

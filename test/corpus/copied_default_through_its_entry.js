@@ -12,6 +12,7 @@
 
 import {
   $assign,
+  $brand,
   $cellOf,
   $live,
   $main,
@@ -104,7 +105,7 @@ function clicksTouch_touchSome(clicks, other) {
   }
 }
 function clicksTouch_fresh() {
-  return { n: 99 };
+  return $brand("copied_default_through_its_entry#0a4fd850133ebdef::Clicks", { n: 99 });
 }
 function clicksTouch_lastOf(items) {
   return $unwrap(items.at(-1), "test/corpus/copied_default_through_its_entry.rs:87:26");
@@ -302,7 +303,7 @@ function holderTouch_touchSome(holder, other, TTouch) {
   }
 }
 function holderTouch_fresh(TTouch) {
-  return { t: TTouch.fresh() };
+  return $brand("copied_default_through_its_entry#0a4fd850133ebdef::Holder", { t: TTouch.fresh() });
 }
 function holderTouch_lastOf(items, TTouch) {
   return $unwrap(items.at(-1), "test/corpus/copied_default_through_its_entry.rs:143:26");

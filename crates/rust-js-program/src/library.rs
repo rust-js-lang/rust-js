@@ -135,7 +135,11 @@ pub use dependencies::Dependencies;
 /// whose calls its bodies don't say, which a binary that links it is
 /// refused for (#2335): an older library, listing none, would be read as
 /// having none.
-pub const VERSION: u32 = 47;
+/// 48: `unchecked`, the name a split function's JS exports its body by,
+/// past the checks its entry makes of what JS gives it, which a consumer's
+/// direct call calls (#2403 step 2b(a), ADR 1193): an older library,
+/// listing none, would have its consumers pay its checks.
+pub const VERSION: u32 = 49;
 
 /// What begins the name a library's JS exports its private state by, for
 /// its consumers' compiles of its functions, `$$LIMIT` of `LIMIT` (#2017,
@@ -180,6 +184,17 @@ pub struct Item {
     /// its library's public one, by its facts.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub internal: bool,
+    /// Where it's split, the name its file exports its body by, `f$`, past
+    /// the checks its entry makes of what JS gives it: what a consumer's
+    /// direct call calls (#2403 step 2b(a), ADR 1193).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unchecked: Option<String>,
+    /// Whether its own JS checks what JS gives it, as JS may call it there
+    /// (`JsReached::may_call`): where it doesn't, a consumer that gives it to
+    /// JS, `pub use dep::server::decode`, checks it in its own forwarder
+    /// (#2403 (Y), the lead's decision).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub checked: bool,
     /// What a consumer's call of it gives it and checks.
     #[serde(flatten)]
     pub calling: Calling,
@@ -931,6 +946,12 @@ pub struct Imported {
     /// root re-exports it from its module, which it's imported by where the
     /// crate's Rust names it through the library's root (ADR 1008, amended).
     pub rooted: Option<(String, String)>,
+    /// Its body past its checks, by what its file exports it as, `f$`,
+    /// where it's split (`Item::unchecked`).
+    pub unchecked: Option<String>,
+    /// Whether its own JS checks what JS gives it (`Item::checked`): where it
+    /// doesn't, a consumer that gives it to JS checks it in its own forwarder.
+    pub checked: bool,
 }
 
 /// A binding a library's module holds as a consumer imports it: from a JS

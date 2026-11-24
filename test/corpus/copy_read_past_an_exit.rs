@@ -1,3 +1,4 @@
+//@ library-differs
 // A copy of a module's variable, a `let` named as the thread-local it
 // reads, is the variable where each of its reads is before anything that
 // may run code; a way that ends, a `let else`'s panic, runs nothing what

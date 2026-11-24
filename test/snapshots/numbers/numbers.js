@@ -8,8 +8,15 @@
 import {
   $at,
   $binarySearch,
+  $checkF64,
+  $checkI32,
+  $checkI8,
+  $checkShape,
+  $checkU32,
+  $checkU8,
   $checked,
   $checkedDiv,
+  $checks,
   $countOnes,
   $debugF64,
   $debugStr,
@@ -34,24 +41,34 @@ function vec2Debug_fmt(vec2) {
 export const Vec2 = {
   ZERO: { x: 0, y: 0 },
   new(x, y) {
+    $checks("Vec2.new(x, y)", x, $checkF64, y, $checkF64);
+    return Vec2.new$(x, y);
+  },
+  new$(x, y) {
     return { x, y };
   },
   len(vec2) {
+    $checks("Vec2.len(vec2)", vec2, checkVec2);
+    return Vec2.len$(vec2);
+  },
+  len$(vec2) {
     return Math.sqrt(vec2.x * vec2.x + vec2.y * vec2.y);
   },
 };
 
+const checkVec2 = /* @__PURE__ */ $checkShape(() => ({ x: $checkF64, y: $checkF64 }));
+
 function vec2Add_add(vec2, o) {
-  return Vec2.new(vec2.x + o.x, vec2.y + o.y);
+  return Vec2.new$(vec2.x + o.x, vec2.y + o.y);
 }
 function vec2Sub_sub(vec2, o) {
-  return Vec2.new(vec2.x - o.x, vec2.y - o.y);
+  return Vec2.new$(vec2.x - o.x, vec2.y - o.y);
 }
 function vec2MulF64_mul(vec2, k) {
-  return Vec2.new(vec2.x * k, vec2.y * k);
+  return Vec2.new$(vec2.x * k, vec2.y * k);
 }
 function vec2Neg_neg(vec2) {
-  return Vec2.new(-vec2.x, -vec2.y);
+  return Vec2.new$(-vec2.x, -vec2.y);
 }
 function vec2AddAssign_addAssign(vec2, o) {
   vec2.x += o.x;
@@ -59,19 +76,24 @@ function vec2AddAssign_addAssign(vec2, o) {
 }
 
 export function vectors() {
-  const a = Vec2.new(3, 4);
-  const b = Vec2.new(1, -2);
+  const a = Vec2.new$(3, 4);
+  const b = Vec2.new$(1, -2);
   const c = vec2Add_add(vec2Sub_sub(vec2Add_add({ ...a }, vec2MulF64_mul(b, 2)), vec2Neg_neg(a)), {
     x: 0,
     y: 0,
   });
   vec2AddAssign_addAssign(c, b);
-  const len = Vec2.len(a);
-  const value = Vec2.len(vec2Sub_sub(a, b));
+  const len = Vec2.len$(a);
+  const value = Vec2.len$(vec2Sub_sub(a, b));
   return `${vec2Debug_fmt(c)} ${$displayF64(len)} ${$debugF64(value)} ${$displayF64(0)}`;
 }
 
 export function integers(a, b) {
+  $checks("integers(a, b)", a, $checkI32, b, $checkU32);
+  return integers$(a, b);
+}
+
+function integers$(a, b) {
   const abs = Math.abs(a) | 0;
   const pow = $pow(a, 2);
   const remEuclid = $remEuclid(a, 7, "examples/numbers.rs:69:11", -2147483648);
@@ -84,10 +106,20 @@ export function integers(a, b) {
 }
 
 export function narrow(a, b) {
+  $checks("narrow(a, b)", a, $checkI8, b, $checkU8);
+  return narrow$(a, b);
+}
+
+function narrow$(a, b) {
   return `${($pow(a, 3) << 24) >> 24} ${$pow(b, 3) & 255} ${(Math.abs(a) << 24) >> 24} ${Math.clz32(a & 255) - 24} ${$countOnes(a & 255)} ${$trailingZeros(b, 8)} ${b !== 0 && (b & (b - 1)) === 0} ${$remEuclid(a, -3, "examples/numbers.rs:98:11", -128)}`;
 }
 
 export function floats(x) {
+  $checkF64(x, "floats(x)");
+  return floats$(x);
+}
+
+function floats$(x) {
   const floor = Math.floor(x);
   const ceil = Math.ceil(x);
   const round = $round(x);
@@ -101,7 +133,12 @@ export function floats(x) {
 }
 
 export function gcd(a, b) {
-  return b === 0 ? a : gcd(b, $rem(a, b, "examples/numbers.rs:121:35") >>> 0);
+  $checks("gcd(a, b)", a, $checkU32, b, $checkU32);
+  return gcd$(a, b);
+}
+
+function gcd$(a, b) {
+  return b === 0 ? a : gcd$(b, $rem(a, b, "examples/numbers.rs:121:35") >>> 0);
 }
 
 function cell2Debug_fmt(cell2) {
@@ -109,6 +146,11 @@ function cell2Debug_fmt(cell2) {
 }
 
 export function grids(n) {
+  $checkU32(n, "grids(n)");
+  return grids$(n);
+}
+
+function grids$(n) {
   $roomFor(n, 4);
   const item = new Array(n).fill(0);
   $roomFor(n, 12);
@@ -150,6 +192,11 @@ export function searches() {
 
 // Integers are never -0, which `%`, `/` and `*` can make in JS: `1 / x` tells.
 export function zeros(a) {
+  $checkI32(a, "zeros(a)");
+  return zeros$(a);
+}
+
+function zeros$(a) {
   const parts = [
     $remEuclid(a, 7, "examples/numbers.rs:163:11", -2147483648),
     $divEuclid(a, -9, "examples/numbers.rs:164:11", -2147483648),
@@ -161,6 +208,7 @@ export function zeros(a) {
 }
 
 export function panics(i) {
+  $checkU32(i, "panics(i)");
   const d = ((i | 0) - 1) | 0;
   return $remEuclid([7, -2147483648][i % 2], d, "examples/numbers.rs:174:38", -2147483648);
 }
@@ -175,7 +223,7 @@ export function report() {
     [-1, (1 << 31) >>> 0],
     [-14, 1],
   ]) {
-    out += `${integers(a, b)}\n`;
+    out += `${integers$(a, b)}\n`;
   }
   for (const [a, b] of [
     [-5, 7],
@@ -183,18 +231,18 @@ export function report() {
     [-128, 0],
     [6, 64],
   ]) {
-    out += `${narrow(a, b)}\n`;
+    out += `${narrow$(a, b)}\n`;
   }
   for (const x of [2.5, -2.5, 0.49999999999999994, -1.25, 9, -0, 1e21, NaN, Infinity]) {
-    out += `${floats(x)}\n`;
+    out += `${floats$(x)}\n`;
   }
-  out += `${gcd(48, 18)} ${$displayF64(2.220446049250313e-16)} ${$displayF64(0.30000000000000004)}\n`;
-  out += `[${zeros(-14)
+  out += `${gcd$(48, 18)} ${$displayF64(2.220446049250313e-16)} ${$displayF64(0.30000000000000004)}\n`;
+  out += `[${zeros$(-14)
     .map((item) => $debugF64(item))
-    .join(", ")}] [${zeros(0)
+    .join(", ")}] [${zeros$(0)
     .map((item) => $debugF64(item))
     .join(", ")}]\n`;
-  const value = grids(3);
+  const value = grids$(3);
   out += `([${value[0].map((item) => `[${item.join(", ")}]`).join(", ")}], [${value[1].join(", ")}], ${$debugStr(value[2])})\n${searches()}\n`;
   return out;
 }
