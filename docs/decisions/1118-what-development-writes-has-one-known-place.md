@@ -240,3 +240,75 @@ native run below the disk's floor it's given is run, not kept"; mutations
 `disk-floor-fixed`, `disk-floor-unbounded`, `disk-native-cap-fixed`,
 `sccache-config-overwritten`, `native-run-kept-past-given-floor`,
 `keep-run-real-disk`.
+
+## Amendment: a store's cap is its working set and what it keeps past it (#2483, 2026-11-25)
+
+The amendment of #2344 said a store's cap is what it keeps past its
+working set; the code held a cap of the whole, the stale going until the
+whole was under it. So a store whose working set had grown past its cap
+kept nothing stale, was said past its cap by `bun run disk` whatever it
+held, and its index made it due a walk every hour (#2498's `walkDue`). On
+the M5 Pro (2026-11-25), every entry of each used in the last day:
+
+| Store | In use | Cap of the whole |
+|---|---|---|
+| native-cache | 22.07 GiB | 18.4 GiB |
+| std-reach | 438 MiB | 64 MiB |
+| native-outcomes | 400 MiB | 256 MiB |
+| test-maps | 1.22 GiB | 512 MiB |
+
+Now each store of things made once and used again whole keeps its working
+set and `past` bytes beside it, and its cap is the two, measured at each
+walk and kept in its index (`.walked.json`'s `working`), which `bun run
+disk` says beside its size. `holdKept` takes `past`, the stale's room,
+where it took a cap and the bytes beside it; `holdToBudget` gives it the
+budget less the rest and the working set, as it did. A store's index makes
+it due an hour on only where more of it is stale than it keeps past its
+working set; a working set, however large, isn't a walk's reason. The
+stores with no bound of their own that hold things, the check logs, the
+job times, the tasks, the sanity runs, Rustlantis' build and the temp
+root, are held so too (`holdEntries`, scripts/disk.ts). The test maps,
+each superseded by the next commit's, keep their count; their cap is that
+many of the newest one's size (`mapsCap`, scripts/testMap.ts), not 64 MiB
+a map.
+
+A store of builds, each entry a Cargo target built in again, the crate
+corpus's projects, the Crater's, the kept apps', the mutants', isn't: its
+entry in use grows a copy of its dependencies with each build of the
+compiler (25 GB of the crate corpus's before #1213), so its working set
+says nothing of what it needs, and it's held to its cap whole until
+Cargo's own units bound it (#2483's third item). The compile cache keeps
+its own rule, another build's dropped whole, its 2 GB past what a day of
+one build keeps (87 to 592 MiB measured).
+
+Each store's cap by the machine, the working sets the M5 Pro's (the
+floor and what the native builds keep past theirs, `diskProfile`):
+
+| | 228 GiB (simulated) | 460 GiB (the M5 Pro) | 931 GiB (1 TB) |
+|---|---|---|---|
+| Floor | 20 GiB | 36.8 GiB | 40 GiB |
+| native-cache: 22.07 GiB in use and 4%, at least 8 GiB | 31.2 GiB | 40.5 GiB | 59.3 GiB |
+| verified-runs: 287 MiB and 512 | 799 MiB | 799 MiB | 799 MiB |
+| std-reach: 438 MiB and 64 | 502 MiB | 502 MiB | 502 MiB |
+| native-outcomes: 400 MiB and 256 | 656 MiB | 656 MiB | 656 MiB |
+| native-sources: 30 MiB and 64 | 94 MiB | 94 MiB | 94 MiB |
+| the temp root: 739 MiB and 2 GiB | 2.7 GiB | 2.7 GiB | 2.7 GiB |
+| test-maps: 8 of 164 MiB | 1.28 GiB | 1.28 GiB | 1.28 GiB |
+| The checkouts' budget | 39.1 GiB | 48.4 GiB | 67.2 GiB |
+
+On a 256 GB Mac the floor is what binds: thor's Mac mini, at 42 GiB free
+(#2505), has 22 GiB above its 20 GiB floor, about the M5 Pro's
+native-cache in use alone, so a working set that size takes it to the
+floor, where `holdKept` takes the least recently used of the working set,
+as it did, and nothing more is kept; the cap never decides there. On the
+M5 Pro and a 1 TB machine the working set stays whole, and a night's
+builds of the net stay past it.
+
+Held by test/support.test.ts' "a kept store's cap is its working set and
+what it keeps past it, and only stale builds go", "a store is walked again
+only once its index says a walk is due", "a store of things keeps its
+working set and what it keeps past it, and its cap says both" and "a
+checkout past the budget keeps its working set"; mutations
+`kept-past-less-the-working-set`, `store-walked-for-its-working-set`,
+`disk-budget-working-set-uncounted`, `things-store-held-whole`,
+`things-store-cap-without-its-working-set`, `test-maps-cap-a-constant`.

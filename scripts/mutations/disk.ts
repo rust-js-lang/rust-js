@@ -55,4 +55,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/support.test.ts", "-t", "sccache's cap is the disk's"],
   },
+  {
+    name: "disk-budget-working-set-uncounted",
+    breaks: "the stale kept past a budget take the room the working set uses, so the stores inside the checkouts keep that much past it",
+    file,
+    find: "  const left = holdKept(kept, { past: held - rest - workingBytes(kept, since), free, since });",
+    replace: "  const left = holdKept(kept, { past: held - rest, free, since });",
+    tests: ["test/support.test.ts", "-t", "a checkout past the budget keeps its working set"],
+  },
+  {
+    name: "things-store-held-whole",
+    breaks: "a store of things with no bound of its own, the check logs' or the temp root's, is held to its cap whole, its entries in use evicted as native-cache's were (#2344, #2483)",
+    file,
+    find: "  return holdKept(entriesOf(dir), { past, free, since });",
+    replace: "  return evict(entriesOf(dir), { cap: past, free, floor: floorBytes });",
+    tests: ["test/support.test.ts", "-t", "a store of things keeps its working set and what it keeps past it"],
+  },
+  {
+    name: "things-store-cap-without-its-working-set",
+    breaks: "`bun run disk` says a store of things' cap is what it keeps past its working set alone, so a store in use past it, std-reach's 438 MiB, reads as past its cap (#2483)",
+    file,
+    find: "  return { inUse, cap: inUse + store.past };",
+    replace: "  return { inUse, cap: store.past };",
+    tests: ["test/support.test.ts", "-t", "a store of things keeps its working set and what it keeps past it"],
+  },
 ];

@@ -17,7 +17,7 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 // `free` (or `room`, `floorBytes`, a `KeptApp`'s `keep`); the one test of
 // the real disk itself (#963) is named so.
 test("a test of what a store keeps gives it the disk's answer", () => {
-  const asks = /\b(record|mayKeep|pruneKept|pruneKeptApps|pruneKeptStores|prune|bound|boundCrateProjects|boundEntries|keptCompile|new KeptApp|runNative|nativeCratesOutput|keepRun|reached|makeSourceWorkspace)\(/g;
+  const asks = /\b(record|mayKeep|pruneKept|pruneKeptApps|pruneKeptStores|prune|bound|boundCrateProjects|boundEntries|holdEntries|holdKept|keptCompile|new KeptApp|runNative|nativeCratesOutput|keepRun|reached|makeSourceWorkspace)\(/g;
   const answered = /\bfree\b|\broom\b|\broomy\b|floorBytes|POSITIVE_INFINITY\)$|, true\)$/;
   const unanswered: string[] = [];
   // The stores' own tests, and those of what keeps a native run, a reach

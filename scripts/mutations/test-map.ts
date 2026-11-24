@@ -521,4 +521,12 @@ export const mutations: Mutation[] = [
     replace: "  if (map.toolchain !== toolchain) return undefined;\n  const now = Date.now() / 1000;\n  utimesSync(path, now, now);\n  return map;\n}\n\n/** What each test map CI",
     tests: ["test/test-map.test.ts", "-t", "a worktree reads the map"],
   },
+  {
+    name: "test-maps-cap-a-constant",
+    breaks: "the test maps' cap is a constant 64 MiB a map, which v4's 165 MiB maps sat 2.5 times past, so `bun run disk` said them past their cap whatever they kept (#2483)",
+    file: "scripts/testMap.ts",
+    find: "  return keptMaps * (newest?.size ?? 0);",
+    replace: "  return keptMaps * 64 * 2 ** 20;",
+    tests: ["test/support.test.ts", "-t", "a store of things keeps its working set and what it keeps past it"],
+  },
 ];

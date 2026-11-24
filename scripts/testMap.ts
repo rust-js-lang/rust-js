@@ -72,9 +72,22 @@ export const mapDir = join(root, "target", "test-map");
 export const mapStore = join(machineStore, "test-maps");
 /** The layout's version, which a change to it or to what's recorded bumps. */
 export const mapVersion = 4;
-/** The most maps kept: each about 22 MB, one a commit of `main` CI
- * records (ADR 1101, amended). */
+/** The most maps kept: one a commit of `main` CI records (ADR 1101,
+ * amended), each superseded by the next, so held by their count. */
 export const keptMaps = 8;
+
+/** What the maps in `dir` take at most, by their count: that many of the
+ * newest one's size, measured, as each map is as large as the compiler's
+ * functions and the suite's tests make it, 22 MB once, 165 MiB at v4,
+ * which a constant's 64 MiB a map sat under (#2483). */
+export function mapsCap(dir = mapStore): number {
+  const maps = existsSync(dir) ? readdirSync(dir).filter((name) => name.endsWith(".json")) : [];
+  const newest = maps
+    .map((name) => statSync(join(dir, name), { throwIfNoEntry: false }))
+    .filter((seen) => seen !== undefined)
+    .sort((a, b) => b!.mtimeMs - a!.mtimeMs)[0];
+  return keptMaps * (newest?.size ?? 0);
+}
 
 /** Each of the compiler's functions, by its index: the file it's in and the
  * line spans of its counted code; and of each test, the functions it ran,

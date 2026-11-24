@@ -9,13 +9,13 @@ import { basename, dirname, join, relative } from "node:path";
 
 import { bytesOf, volumeBytes } from "../tooling/bounded.js";
 import { disk, diskProfile, floorBytes, mainCheckoutOf } from "./bounded";
-import { boundEntries, budgetBytes, entriesOf, holdToBudget, overBudget, pinnedToolchains, sccacheConfigText, sccacheWritten, sizeSccache, unpinnedToolchains, type Store } from "../scripts/disk";
+import { boundEntries, budgetBytes, capOf, entriesOf, holdEntries, holdToBudget, overBudget, pinnedToolchains, sccacheConfigText, sccacheWritten, sizeSccache, unpinnedToolchains, type Store } from "../scripts/disk";
 import { adoptRetiredStores, holdKept, indexedSize, keptAppsCap, keptStores, mayKeep, nativeCache, nativeSources, noteKept, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, verifiedRuns, walkDue, workingSetMs, workingSetSince } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
 import { boundCrateProjects } from "../scripts/crate-corpus";
 import { boundCrater } from "../scripts/crater";
-import { pruneMaps } from "../scripts/testMap";
+import { keptMaps, mapsCap, pruneMaps } from "../scripts/testMap";
 import { keptSerdeFlags } from "./serde-kept";
 import { runSync } from "./child";
 import { cargoApp } from "./cargo-app";
@@ -309,14 +309,14 @@ test("a kept cache is held to its cap, the least recently used first, and to the
   expect(each).toBeGreaterThanOrEqual(64 * 1024);
   // Each build stale here: a store's working set is the next test's.
   const since = Date.now();
-  expect(pruneKept(cache, { now, cap: 2 * each, free: () => Number.POSITIVE_INFINITY, since })).toEqual({ removed: 2, size: 2 * each });
+  expect(pruneKept(cache, { now, past: 2 * each, free: () => Number.POSITIVE_INFINITY, since })).toEqual({ removed: 2, size: 2 * each });
   expect([oldest, older, newer, newest].map(existsSync)).toEqual([false, false, true, true]);
   expect(existsSync(join(cache, "q"))).toBe(false);
   // Under the floor: pruned until it's back, here once one more is gone.
-  expect(pruneKept(cache, { now, cap: 2 * each, free: () => (existsSync(newer) ? floorBytes - 1 : floorBytes), since })).toEqual({ removed: 1, size: each });
+  expect(pruneKept(cache, { now, past: 2 * each, free: () => (existsSync(newer) ? floorBytes - 1 : floorBytes), since })).toEqual({ removed: 1, size: each });
   expect([newer, newest].map(existsSync)).toEqual([false, true]);
-  // Each store's cap.
-  expect(keptStores.map(({ dir, cap }) => [basename(dir), cap / 2 ** 20])).toEqual([
+  // What each store keeps past its working set.
+  expect(keptStores.map(({ dir, past }) => [basename(dir), past / 2 ** 20])).toEqual([
     ["native-cache", disk.nativeCache / 2 ** 20],
     ["native-sources", 64],
     [basename(verifiedRuns), 512],
@@ -325,14 +325,16 @@ test("a kept cache is held to its cap, the least recently used first, and to the
   ]);
 });
 
-// A store's cap never takes its working set, what the machine's runs used
-// since this checkout's last check or in the last day: native-cache's 10 GiB
-// sat below the 11.5 GiB the Mac mini's checks used, so a prune evicted
-// builds in use, and the next check's every corpus part stopped at its
-// limit, a 1,018 s re-warm (#2344). The least a store keeps is what's
-// measured in use; past its cap only the stale go, and the disk's floor
-// takes from the rest, the least recently used first.
-test("a kept store past its cap keeps its working set, and only stale builds go", () => {
+// A store's cap is its working set, what the machine's runs used since
+// this checkout's last check or in the last day, and what it keeps past
+// it: native-cache's 10 GiB sat below the 11.5 GiB the Mac mini's checks
+// used, so a prune evicted builds in use, and the next check's every corpus
+// part stopped at its limit, a 1,018 s re-warm (#2344); 22 GiB in use on
+// the M5 Pro sat past its 18.4, std-reach's 438 MiB past 64, and each such
+// store was walked every hour for being past its cap (#2483). Only the
+// stale go, past what it keeps of them, and the disk's floor takes from
+// the rest, the least recently used first.
+test("a kept store's cap is its working set and what it keeps past it, and only stale builds go", () => {
   const cache = fixture("native-working-set");
   const now = Date.now() / 1000;
   const hour = 3600;
@@ -349,12 +351,17 @@ test("a kept store past its cap keeps its working set, and only stale builds go"
   const staler = entry("staler", 4 * 24 * hour);
   const each = bytesOf(used);
   const since = Date.now() - workingSetMs;
-  // Its cap one build, its working set two: the stale go, the working set stays.
-  expect(pruneKept(cache, { now, cap: each, free: () => Number.POSITIVE_INFINITY, since })).toEqual({ removed: 2, size: 2 * each });
-  expect([used, usedLater, stale, staler].map(existsSync)).toEqual([true, true, false, false]);
+  // Its working set two builds, and one kept past it: the staler goes, the
+  // working set and the newer stale one stay, its cap three.
+  expect(pruneKept(cache, { now, past: each, free: () => Number.POSITIVE_INFINITY, since })).toEqual({ removed: 1, size: 3 * each });
+  expect([used, usedLater, stale, staler].map(existsSync)).toEqual([true, true, true, false]);
+  expect(indexedSize(cache)).toEqual({ walked: now, bytes: 3 * each, working: 2 * each });
+  // None kept past it: the stale go, the working set stays, however large.
+  expect(pruneKept(cache, { now: now + 24 * hour, past: 0, free: () => Number.POSITIVE_INFINITY, since })).toEqual({ removed: 1, size: 2 * each });
+  expect([used, usedLater, stale].map(existsSync)).toEqual([true, true, false]);
   // The disk at its floor takes from it, the least recently used first.
   // Below it till one's gone: asked again before the walk, whether it's due.
-  expect(pruneKept(cache, { now, cap: each, free: () => (existsSync(used) ? floorBytes - 1 : floorBytes), since })).toEqual({ removed: 1, size: each });
+  expect(pruneKept(cache, { now: now + 24 * hour, past: 0, free: () => (existsSync(used) ? floorBytes - 1 : floorBytes), since })).toEqual({ removed: 1, size: each });
   expect([used, usedLater].map(existsSync)).toEqual([false, true]);
 });
 
@@ -362,8 +369,9 @@ test("a kept store past its cap keeps its working set, and only stale builds go"
 // the five stores' 9 s quiet and 14–24 s of a core beside a check's jobs
 // (#2498). Each walk is kept in the store's index, with what's kept since,
 // and the next is made only where it's due: a day on, so what's a week
-// unused goes within a day of it; with the disk below its floor; or past
-// its cap, an hour on, as a working set past it is kept by a walk anyway.
+// unused goes within a day of it; with the disk below its floor; or with
+// more stale than it keeps past its working set, an hour on. A working set
+// is its cap's, however large, never a reason to walk (#2483).
 test("a store is walked again only once its index says a walk is due", () => {
   const cache = fixture("native-indexed");
   const now = Date.now() / 1000;
@@ -379,27 +387,34 @@ test("a store is walked again only once its index says a walk is due", () => {
   const each = bytesOf(used);
   const room = () => Number.POSITIVE_INFINITY;
   const since = Date.now() - workingSetMs;
-  const cap = 3 * each;
-  expect(pruneKept(cache, { now, cap, free: room, since })).toEqual({ removed: 0, size: each });
-  expect(indexedSize(cache)).toEqual({ walked: now, bytes: each });
+  const past = 0;
+  expect(pruneKept(cache, { now, past, free: room, since })).toEqual({ removed: 0, size: each });
+  expect(indexedSize(cache)).toEqual({ walked: now, bytes: each, working: each });
   // A week unused, made where no walk saw it: it's not listed till one's due.
   const stale = entry("stale", 8 * day);
-  expect(pruneKept(cache, { now: now + 60, cap, free: room, since })).toEqual({ removed: 0, size: each });
+  expect(pruneKept(cache, { now: now + 60, past, free: room, since })).toEqual({ removed: 0, size: each });
   expect(existsSync(stale)).toBe(true);
   // A day on, it's walked, and the week-old entry goes.
-  expect(pruneKept(cache, { now: now + day, cap, free: room, since })).toEqual({ removed: 1, size: each });
+  expect(pruneKept(cache, { now: now + day, past, free: room, since })).toEqual({ removed: 1, size: each });
   expect(existsSync(stale)).toBe(false);
   expect(existsSync(join(cache, ".kept"))).toBe(false);
-  // What's kept since counts: past the cap, it's walked an hour after the
-  // last walk, not before.
+  // What's kept since counts, in use: however much, it's no walk's reason.
   for (const name of ["a", "b", "c"]) noteKept(cache, entry(name, 0));
-  expect(indexedSize(cache)).toEqual({ walked: now + day, bytes: 4 * each });
-  expect(walkDue(cache, { cap, free: room, now: now + day + 60 })).toBe(false);
-  expect(walkDue(cache, { cap: 4 * each, free: room, now: now + day + 3600 })).toBe(false);
-  expect(walkDue(cache, { cap, free: room, now: now + day + 3600 })).toBe(true);
+  expect(indexedSize(cache)).toEqual({ walked: now + day, bytes: 4 * each, working: 4 * each });
+  expect(walkDue(cache, { past, free: room, now: now + day + 3600 })).toBe(false);
+  // More stale than it keeps past its working set, as a walk kept them,
+  // given more room: walked an hour after the last walk, not before.
+  const unused = entry("unused two days", 2 * day);
+  expect(pruneKept(cache, { now: now + 2 * day, past: Number.POSITIVE_INFINITY, free: room, since })).toEqual({ removed: 0, size: 5 * each });
+  expect(indexedSize(cache)).toEqual({ walked: now + 2 * day, bytes: 5 * each, working: 4 * each });
+  expect(walkDue(cache, { past, free: room, now: now + 2 * day + 60 })).toBe(false);
+  expect(walkDue(cache, { past: each, free: room, now: now + 2 * day + 3600 })).toBe(false);
+  expect(walkDue(cache, { past, free: room, now: now + 2 * day + 3600 })).toBe(true);
+  expect(pruneKept(cache, { now: now + 2 * day + 3600, past, free: room, since })).toEqual({ removed: 1, size: 4 * each });
+  expect(existsSync(unused)).toBe(false);
   // Below the disk's floor, at once.
-  expect(walkDue(cache, { cap: Number.POSITIVE_INFINITY, free: () => floorBytes - 1, now: now + day + 60 })).toBe(true);
-  expect(walkDue(cache, { cap: Number.POSITIVE_INFINITY, free: room, now: now + day + 60 })).toBe(false);
+  expect(walkDue(cache, { past: Number.POSITIVE_INFINITY, free: () => floorBytes - 1, now: now + 2 * day + 3660 })).toBe(true);
+  expect(walkDue(cache, { past: Number.POSITIVE_INFINITY, free: room, now: now + 2 * day + 3660 })).toBe(false);
 });
 
 // A check's prune runs beside its jobs (#2498), so a build its walk listed
@@ -421,7 +436,7 @@ test("a kept entry used after the prune listed it stays", () => {
   const now = new Date();
   utimesSync(listed[0]!.path, now, now);
   const since = Date.now() - day;
-  expect(holdKept(listed, { cap: 0, free: () => Number.POSITIVE_INFINITY, since })).toEqual({ removed: 1, size: listed[0]!.bytes });
+  expect(holdKept(listed, { past: 0, free: () => Number.POSITIVE_INFINITY, since })).toEqual({ removed: 1, size: listed[0]!.bytes, working: 0 });
   expect(listed.map(({ path }) => existsSync(path))).toEqual([true, false]);
 });
 
@@ -514,7 +529,7 @@ test("a store keeps nothing below the disk's floor, and a retired store is remov
   // (#2498). Pruning them is the prune's tests' and every check's.
   const store = join(dir, "store");
   mkdirSync(join(store, "program", "build"), { recursive: true });
-  pruneKeptStores(() => floorBytes, [{ dir: store, cap: Number.POSITIVE_INFINITY }]);
+  pruneKeptStores(() => floorBytes, [{ dir: store, past: Number.POSITIVE_INFINITY }]);
   expect(retiredStores.map(existsSync)).toEqual([false, false]);
   expect(existsSync(join(store, "program", "build"))).toBe(true);
 }, underLoad(60_000));
@@ -669,8 +684,42 @@ test("an old pin's toolchain is one to remove, a floating channel's never", () =
   expect(pinnedToolchains().has("1.100.0")).toBe(true);
 });
 
-// A store with no bound of its own, the temp root's, is held by its
-// entries, the least recently changed first, and to the disk's floor.
+// A store of things with no bound of its own, the temp root's or the check
+// logs', is held by its entries as a kept store is: its working set, what
+// changed since this checkout's last check or in the last day, and what it
+// keeps past it, the least recently changed going first, and to the disk's
+// floor (#2483). Its cap, as `bun run disk` says it, is the two; a store of
+// builds says its own; the test maps', by their count, that many of the
+// newest one's size.
+test("a store of things keeps its working set and what it keeps past it, and its cap says both", () => {
+  const dir = fixture("entries-working");
+  const hour = 3600 * 1000;
+  for (const [name, ago] of [["stale", 3 * workingSetMs], ["staler", 4 * workingSetMs], ["used", hour], ["used later", hour / 60]] as const) {
+    writeFileSync(join(dir, name), Buffer.alloc(64 * 1024));
+    const when = (Date.now() - ago) / 1000;
+    utimesSync(join(dir, name), when, when);
+  }
+  const each = bytesOf(join(dir, "used"));
+  const since = Date.now() - workingSetMs;
+  const things: Store = { name: "things", dir, past: each };
+  expect(capOf(things, since)).toEqual({ inUse: 2 * each, cap: 3 * each });
+  expect(holdEntries(dir, each, () => floorBytes, since)).toEqual({ removed: 1, size: 3 * each, working: 2 * each });
+  expect(readdirSync(dir).sort()).toEqual(["stale", "used", "used later"]);
+  expect(holdEntries(dir, 0, () => floorBytes, since).removed).toBe(1);
+  expect(readdirSync(dir).sort()).toEqual(["used", "used later"]);
+  expect(capOf({ name: "a build's", dir, cap: 5 }, since)).toEqual({ cap: 5 });
+  const maps = fixture("maps-capped");
+  expect(mapsCap(maps)).toBe(0);
+  writeFileSync(join(maps, "old-v4.json"), Buffer.alloc(1000));
+  const when = Date.now() / 1000 - 60;
+  utimesSync(join(maps, "old-v4.json"), when, when);
+  writeFileSync(join(maps, "new-v4.json"), Buffer.alloc(3000));
+  writeFileSync(join(maps, "recording.tmp"), Buffer.alloc(9000));
+  expect(mapsCap(maps)).toBe(keptMaps * 3000);
+});
+
+// A store of builds with no bound of its own, the mutants', is held by its
+// entries whole, the least recently changed first, and to the disk's floor.
 test("a store's entries are held to its cap and the floor", () => {
   const dir = fixture("entries");
   for (const [name, age] of [["old", 300], ["new", 100]] as const) {
@@ -760,11 +809,15 @@ test("a checkout past the budget keeps its working set, and only stale entries g
   const since = workingSetSince(Date.now(), last);
   expect(since).toBeLessThan(Date.now() - workingSetMs);
   expect(workingSetSince(Date.now(), join(mark, "never checked"))).toBeLessThanOrEqual(Date.now() - workingSetMs);
-  // The build alone is past what it's held to: the stale go, the working set stays.
+  // Held to the build, the working set and one more: the staler goes, as
+  // what's in use takes its room first.
   const total = 4 * each + bytesOf(build);
+  expect(holdToBudget(stores, total, { held: bytesOf(build) + 3 * each, free: () => floorBytes, since })).toEqual({ removed: 1, size: 3 * each + bytesOf(build) });
+  expect(readdirSync(kept).sort()).toEqual(["stale", "used an hour ago", "used by the last check"]);
+  // The build alone is past what it's held to: the stale go, the working set stays.
   const held = 2 * each;
-  const result = holdToBudget(stores, total, { held, free: () => floorBytes, since });
-  expect(result).toEqual({ removed: 2, size: 2 * each + bytesOf(build) });
+  const result = holdToBudget(stores, total - each, { held, free: () => floorBytes, since });
+  expect(result).toEqual({ removed: 1, size: 2 * each + bytesOf(build) });
   expect(readdirSync(kept).sort()).toEqual(["used an hour ago", "used by the last check"]);
   expect(result.size).toBeGreaterThan(held);
   // The disk at its floor takes from it, the least recently used first.
@@ -907,7 +960,7 @@ test("the disk's floor and its stores' caps are sized by the volume", () => {
   // This machine's, of the volume the checkout is on, is what the stores use.
   expect(disk).toEqual(diskProfile(volumeBytes(root)));
   expect(floorBytes).toBe(disk.floor);
-  expect(keptStores.find((store) => store.dir === nativeCache)?.cap).toBe(disk.nativeCache);
+  expect(keptStores.find((store) => store.dir === nativeCache)?.past).toBe(disk.nativeCache);
   expect(budgetBytes).toBe(disk.budget);
 });
 

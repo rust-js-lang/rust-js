@@ -35,11 +35,11 @@ import { worktreeRoots } from "./strays";
 import { sanityRunsCap, sanityRunsStore } from "./select";
 import { jobTimesCap, jobTimesStore } from "./jobTimes";
 import { compileCache, capBytes as compileCap, prune as pruneCompiles } from "../test/compiles";
-import { holdKept, keptAppsCap, keptBuilds, keptStores, lastCheckMark, pruneKeptStores, rustlantisCap, rustlantisStore, workingSetSince } from "../test/kept";
+import { holdKept, keptAppsCap, keptBuilds, keptStores, lastCheckMark, pruneKeptStores, rustlantisCap, rustlantisStore, workingBytes, workingSetSince } from "../test/kept";
 import { boundCrateProjects, crateProjectsCap, crateProjectsKept } from "./crate-corpus";
 import { boundCrater, craterCap, craterKept } from "./crater";
 import { bound as boundPorts, ports, portsCap } from "./react-in-rust";
-import { keptMaps, mapStore, pruneMaps } from "./testMap";
+import { keptMaps, mapStore, mapsCap, pruneMaps } from "./testMap";
 
 const GiB = 2 ** 30;
 
@@ -50,12 +50,20 @@ const GiB = 2 ** 30;
  * (`diskProfile`, #2505). `check:fast` warns past 90% of it. */
 export const budgetBytes = disk.budget;
 
-/** A store: where it is, the most it keeps (`undefined` of one that's a
- * build, which a build replaces, held only by the budget), and how it's held
- * to that, given the disk's free bytes. */
+/** A store: where it is, the most it keeps, and how it's held to that,
+ * given the disk's free bytes. A store of things each made once and used
+ * again whole, a native build, a verified run, a log, keeps its working
+ * set, what the machine's runs used since this checkout's last check or in
+ * the last day, and `past` bytes beside it, so its cap is what's in use,
+ * measured, and that (`holdKept`, #2483). One of builds, a Cargo target
+ * each entry, which grows as it's built again in, is held to `cap` whole,
+ * the least recently used first, till Cargo's own units bound it (#2483's
+ * third item); a build, which a build replaces, has neither, held only by
+ * the budget. */
 export type Store = {
   name: string;
   dir: string;
+  past?: number;
   cap?: number;
   bound?: (free: () => number) => void;
   outside?: true;
@@ -68,8 +76,17 @@ export type Store = {
   kept?: () => Kept[];
 };
 
-/** Each entry of `dir` held to `cap`, the least recently changed first, and
- * nothing kept below the disk's floor: a store with no bound of its own. */
+/** Each entry of `dir`, a thing made once and kept, held to its working
+ * set, what was changed since `since`, and `past` bytes beside it, the
+ * least recently changed first, and nothing kept below the disk's floor
+ * (`holdKept`): a store of things with no bound of its own. */
+export function holdEntries(dir: string, past: number, free: () => number, since = workingSetSince()) {
+  return holdKept(entriesOf(dir), { past, free, since });
+}
+
+/** Each entry of `dir`, a build's, held to `cap` whole, the least recently
+ * changed first, and nothing kept below the disk's floor: a store of
+ * builds with no bound of its own, `target/mutants`. */
 export function boundEntries(dir: string, cap: number, free: () => number) {
   return evict(entriesOf(dir), { cap, free, floor: floorBytes });
 }
@@ -125,7 +142,7 @@ export function holdToBudget(
   if (total <= held) return { removed: 0, size: total };
   const kept = stores.filter((store) => !store.outside).flatMap((store) => store.kept?.() ?? []);
   const rest = total - kept.reduce((n, entry) => n + entry.bytes, 0);
-  const left = holdKept(kept, { cap: held, free, since, rest });
+  const left = holdKept(kept, { past: held - rest - workingBytes(kept, since), free, since });
   return { removed: left.removed, size: rest + left.size };
 }
 
@@ -223,14 +240,18 @@ export function stores(): Store[] {
     ...keptStores
       .filter(({ dir }) => dir.startsWith(machineStore))
       // Held by `pruneKeptStores`, with the kept apps.
-      .map(({ dir, cap }) => ({ name: `.cache/${dir.slice(machineStore.length + 1)}`, dir, cap, kept: () => keptBuilds(dir) })),
-    { name: ".cache/test-maps", dir: mapStore, cap: keptMaps * 64 * 2 ** 20, bound: (free) => void pruneMaps(mapStore, keptMaps, free) },
-    { name: ".cache/tasks", dir: join(machineStore, "tasks"), cap: 16 * 2 ** 20, bound: (free) => void boundEntries(join(machineStore, "tasks"), 16 * 2 ** 20, free), kept: () => entriesOf(join(machineStore, "tasks")) },
-    { name: ".cache/job-times", dir: jobTimesStore, cap: jobTimesCap, bound: (free) => void boundEntries(jobTimesStore, jobTimesCap, free), kept: () => entriesOf(jobTimesStore) },
-    { name: ".cache/check-logs", dir: checkLogsStore, cap: checkLogsCap, bound: (free) => void boundEntries(checkLogsStore, checkLogsCap, free), kept: () => entriesOf(checkLogsStore) },
-    { name: ".cache/sanity-runs", dir: sanityRunsStore, cap: sanityRunsCap, bound: (free) => void boundEntries(sanityRunsStore, sanityRunsCap, free), kept: () => entriesOf(sanityRunsStore) },
-    { name: ".cache/rustlantis", dir: rustlantisStore, cap: rustlantisCap, bound: (free) => void boundEntries(rustlantisStore, rustlantisCap, free), kept: () => entriesOf(rustlantisStore) },
-    { name: "the temp root", dir: tempRoot, cap: tempCap, bound: (free) => void boundEntries(tempRoot, tempCap, free) },
+      .map(({ dir, past }) => ({ name: `.cache/${dir.slice(machineStore.length + 1)}`, dir, past, kept: () => keptBuilds(dir) })),
+    // Held by their count, a map a commit of `main`'s, each superseded by
+    // the next: its cap is what that many of the newest one's size take.
+    { name: ".cache/test-maps", dir: mapStore, cap: mapsCap(mapStore), bound: (free) => void pruneMaps(mapStore, keptMaps, free) },
+    ...[
+      { name: ".cache/tasks", dir: join(machineStore, "tasks"), past: 16 * 2 ** 20 },
+      { name: ".cache/job-times", dir: jobTimesStore, past: jobTimesCap },
+      { name: ".cache/check-logs", dir: checkLogsStore, past: checkLogsCap },
+      { name: ".cache/sanity-runs", dir: sanityRunsStore, past: sanityRunsCap },
+      { name: ".cache/rustlantis", dir: rustlantisStore, past: rustlantisCap },
+    ].map(({ name, dir, past }): Store => ({ name, dir, past, bound: (free) => void holdEntries(dir, past, free), kept: () => entriesOf(dir) })),
+    { name: "the temp root", dir: tempRoot, past: tempCap, bound: (free) => void holdEntries(tempRoot, tempCap, free) },
   ];
   // What rustc writes of a long type's name, or of its own crash, where it
   // runs, the checkout's root: kept a day, for a crash's reader. The loop
@@ -264,10 +285,10 @@ export function stores(): Store[] {
       { name: label("kept-apps"), dir: at("kept-apps"), cap: keptAppsCap },
       { name: label("compile-cache"), dir: at("compile-cache"), cap: compileCap(), bound: own ? (free) => void pruneCompiles({ root: compileCache, free }) : undefined },
       mutantsStore(tree, label("mutants"), bounded),
-      { name: label("native-sources"), dir: at("native-sources"), cap: 64 * 2 ** 20 },
+      { name: label("native-sources"), dir: at("native-sources"), past: 64 * 2 ** 20 },
       // The npm crates' packs, one key's, which their packer keeps alone
       // (scripts/package-npm-crates.ts): under 1 MiB.
-      { name: label("npm-crates"), dir: at("npm-crates"), cap: 16 * 2 ** 20 },
+      { name: label("npm-crates"), dir: at("npm-crates"), past: 16 * 2 ** 20 },
       { name: label("the build"), dir: join(tree, "target"), entries: (name) => !storedIn.has(name) },
     );
   }
@@ -318,6 +339,15 @@ export function bytesOfStore(store: Store): number {
   if (!existsSync(store.dir)) return 0;
   if (!store.entries) return bytesOf(store.dir);
   return readdirSync(store.dir).filter(store.entries).reduce((n, name) => n + bytesOf(join(store.dir, name)), 0);
+}
+
+/** What of `store` is in use, its working set since `since`, and its cap:
+ * of a store of things, that and what it keeps past it (`holdKept`); of
+ * one of builds, its `cap`, what's in use unsaid. */
+export function capOf(store: Store, since: number): { inUse?: number; cap?: number } {
+  if (store.past === undefined) return { cap: store.cap };
+  const inUse = workingBytes(store.kept?.() ?? entriesOf(store.dir), since);
+  return { inUse, cap: inUse + store.past };
 }
 
 /** The last measure of the stores inside the checkouts, `--measure`'s. */
@@ -392,8 +422,12 @@ if (import.meta.main) {
   writeFileSync(measured, JSON.stringify({ total, at: new Date().toISOString(), ...(over === undefined ? {} : { over }) }));
   if (measure) process.exit(0);
   const sized = all.map((store) => ({ store, bytes: bytesOfStore(store) }));
-  const rows = sized.map(({ store, bytes }) => [store.name, size(bytes), store.cap === undefined ? (store.outside ? "-" : "a build") : size(store.cap), oldest(store), store.outside ? "outside" : ""]);
-  for (const row of [["store", "size", "cap", "oldest", ""], ...rows]) console.log(row.map((cell, i) => (i ? cell.padStart(10) : cell.padEnd(32))).join(""));
+  const since = workingSetSince();
+  const rows = sized.map(({ store, bytes }) => {
+    const { inUse, cap } = capOf(store, since);
+    return [store.name, size(bytes), inUse === undefined ? "-" : size(inUse), cap === undefined ? (store.outside ? "-" : "a build") : size(cap), oldest(store), store.outside ? "outside" : ""];
+  });
+  for (const row of [["store", "size", "in use", "cap", "oldest", ""], ...rows]) console.log(row.map((cell, i) => (i ? cell.padStart(10) : cell.padEnd(32))).join(""));
   console.log(`\ninside the checkouts: ${size(sized.filter(({ store }) => !store.outside).reduce((n, { bytes }) => n + bytes, 0))} of the ${size(budgetBytes)} budget; the disk has ${size(freeBytes(checkout))} free, its floor ${size(floorBytes)}, of its ${size(disk.volume)}`);
   if (over !== undefined) console.log(over);
 }

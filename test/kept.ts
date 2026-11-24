@@ -52,22 +52,26 @@ export const verifiedRuns = target === checkoutTarget ? machineVerifiedRuns : jo
 export const stdReach = target === checkoutTarget ? join(machineStore, "std-reach") : join(target, "std-reach");
 
 /** The stores of what the tests keep, and the most each keeps past its
- * working set (`holdKept`), which is what the machine's runs measure
- * themselves: a `check:fast --all` from nothing keeps about 1 GB of native
- * programs, which a change to the compiler keeps, and the metamorphic
- * net's every rewrite of every case about 7 GB more, the machine's
- * (#1047), 11.5 GiB of them in use on the Mac mini, past the cap, which
- * evicted them for a 1,018 s re-warm (#2344), so their cap is the disk's
- * (`diskProfile`: 4% of it, at least 8 GiB); 8 MB of their wrappers, the
- * checkout's whichever target the tests run in (#875); and the corpus's
+ * working set, `past` (`holdKept`): each one's cap is what the machine's
+ * runs use of it, measured, and that (#2483). A `check:fast --all` from
+ * nothing keeps about 1 GB of native programs, which a change to the
+ * compiler keeps, and the metamorphic net's every rewrite of every case
+ * about 7 GB more, the machine's (#1047): 11.5 GiB of them in use on the
+ * Mac mini, and 22 GiB on the M5 Pro (2026-11-25), each past the cap that
+ * held them whole, 10 GiB, then 4% of the disk (#2344, #2505), so the
+ * native builds keep the disk's past theirs in use (`diskProfile`: 4% of
+ * it, at least 8 GiB), a night's net run again; 8 MB of their wrappers,
+ * the checkout's whichever target the tests run in (#875); the corpus's
  * verified runs, about 8 MB for each build of it, a week of builds about
- * 500 MB (#914), and the net's about 100 MB more. */
+ * 500 MB (#914), and the net's about 100 MB more; and what of std a run's
+ * JS reaches and the native runs, 438 and 400 MiB in use on the M5 Pro,
+ * past the 64 and 256 that held them whole. */
 export const keptStores = [
-  { dir: nativeCache, cap: disk.nativeCache },
-  { dir: nativeSources, cap: 64 * 2 ** 20 },
-  { dir: verifiedRuns, cap: 512 * 2 ** 20 },
-  { dir: stdReach, cap: 64 * 2 ** 20 },
-  { dir: nativeOutcomes, cap: 256 * 2 ** 20 },
+  { dir: nativeCache, past: disk.nativeCache },
+  { dir: nativeSources, past: 64 * 2 ** 20 },
+  { dir: verifiedRuns, past: 512 * 2 ** 20 },
+  { dir: stdReach, past: 64 * 2 ** 20 },
+  { dir: nativeOutcomes, past: 256 * 2 ** 20 },
 ];
 
 /** The least a working set is: what was used in the last day. */
@@ -85,33 +89,50 @@ export function workingSetSince(now = Date.now(), mark = lastCheckMark): number 
   return Math.min(last, now - workingSetMs);
 }
 
-/** `kept`, entries a store keeps, held to `cap` with `rest` bytes beside
- * them that nothing here removes: the stale, unused since `since`, the
- * least recently used first, until the whole is under it or none is left;
- * the working set, what was used since, never for the cap, so what the
- * machine's runs use is the least a store keeps, measured, not a constant
- * below it (#2163 of the budget, #2344 of a store's cap). Only the disk's
- * floor takes from it, the least recently used first. What it removed,
- * and the size of the entries left. The one rule of both.
+/** `kept`, entries a store keeps, held to its working set and `past`
+ * bytes beside it: the working set, what was used since `since`, is always
+ * kept, so a store's cap is what the machine's runs use of it, measured,
+ * and `past`, never a constant below it (#2163 of the budget, #2344 and
+ * #2483 of a store's cap); the stale, unused since, go the least recently
+ * used first until they're `past` or less, or none is left. Only the
+ * disk's floor takes from the working set, the least recently used first.
+ * Each goes by `remove`, where a store's entries may be another's to give,
+ * which says whether it went; else whole. What it removed, the size of
+ * the entries left, and of their working set. The one rule of every store
+ * of things made and used again, and of the budget (scripts/disk.ts'
+ * `holdToBudget`).
  *
  * A stale entry is looked at again as it goes: one a run used since it was
  * listed is the working set's, and stays. A check's prune runs beside its
  * jobs (scripts/checkFast.ts' `startup`, #2498), and every checkout's
  * beside the others' runs, so the store's walk, seconds of it, is no
  * longer the last word on what's in use. */
-export function holdKept(kept: Kept[], { cap, free, since, rest = 0 }: { cap: number; free: () => number; since: number; rest?: number }): { removed: number; size: number } {
+export function holdKept(
+  kept: Kept[],
+  { past, free, since, remove = removeWhole }: { past: number; free: () => number; since: number; remove?: (entry: Kept) => boolean },
+): { removed: number; size: number; working: number } {
   const stale = kept.filter((entry) => entry.used < since);
   const working = kept.filter((entry) => entry.used >= since);
-  const workingBytes = working.reduce((n, entry) => n + entry.bytes, 0);
-  const remove = ({ path }: Kept) => {
-    const used = statSync(path, { throwIfNoEntry: false })?.mtimeMs;
+  const unused = (entry: Kept) => {
+    const used = statSync(entry.path, { throwIfNoEntry: false })?.mtimeMs;
     if (used !== undefined && used >= since) return false;
-    rmSync(path, { recursive: true, force: true });
-    return true;
+    return remove(entry);
   };
-  const old = evict(stale, { cap: Math.max(0, cap - rest - workingBytes), free, floor: floorBytes, remove });
-  const floored = evict(working, { cap: Number.POSITIVE_INFINITY, free, floor: floorBytes });
-  return { removed: old.removed + floored.removed, size: old.size + floored.size };
+  const old = evict(stale, { cap: Math.max(0, past), free, floor: floorBytes, remove: unused });
+  const floored = evict(working, { cap: Number.POSITIVE_INFINITY, free, floor: floorBytes, remove });
+  return { removed: old.removed + floored.removed, size: old.size + floored.size, working: floored.size };
+}
+
+/** How `holdKept` removes an entry where its store says nothing else:
+ * whole. */
+function removeWhole({ path }: Kept): boolean {
+  rmSync(path, { recursive: true, force: true });
+  return true;
+}
+
+/** The size of `kept`'s working set, what was used since `since`. */
+export function workingBytes(kept: Kept[], since: number): number {
+  return kept.filter((entry) => entry.used >= since).reduce((n, entry) => n + entry.bytes, 0);
 }
 
 /** Mark `entry`, a kept one, used now: what's used stays. */
@@ -123,7 +144,8 @@ export function markUsed(entry: string) {
 }
 
 /** A store's index (#2498): beside it, `.walked.json`, when `pruneKept`
- * last walked it and the size of what it left; and `.kept`, a line for
+ * last walked it, the size of what it left and of its working set then;
+ * and `.kept`, a line for
  * each entry kept in it since, its size and its path in the store, which
  * what keeps one appends (`noteKept`). Its size between walks is the two together: never less
  * than it is, as a removal by another checkout's prune only makes it
@@ -151,35 +173,41 @@ export function keptSince(store: string): number {
   return since;
 }
 
-/** `store`'s size by its index: its last walk's and what was kept since;
- * none where it has no last walk. */
-export function indexedSize(store: string): { walked: number; bytes: number } | undefined {
-  let last: { walked?: unknown; bytes?: unknown };
+/** `store`'s size by its index, and its working set's: its last walk's,
+ * and what was kept since, in use as it's kept; none where it has no last
+ * walk, or one that didn't count its working set. Its cap is that working
+ * set and what it keeps past it (`holdKept`), which `bun run disk` says. */
+export function indexedSize(store: string): { walked: number; bytes: number; working: number } | undefined {
+  let last: { walked?: unknown; bytes?: unknown; working?: unknown };
   try {
     last = JSON.parse(readFileSync(walkedOf(store), "utf8"));
   } catch {
     return undefined;
   }
-  if (typeof last.walked !== "number" || typeof last.bytes !== "number") return undefined;
-  return { walked: last.walked, bytes: last.bytes + keptSince(store) };
+  if (typeof last.walked !== "number" || typeof last.bytes !== "number" || typeof last.working !== "number") return undefined;
+  const since = keptSince(store);
+  return { walked: last.walked, bytes: last.bytes + since, working: last.working + since };
 }
 
 /** Whether `store` is walked now, or its index says what a walk would
  * remove is nothing: walked where it has no index; a day after its last
  * walk, so what's unused for a week goes within a day of it; with the
- * disk below its floor; or with its size past `cap` an hour after its
- * last walk, as a working set past its cap, which a walk keeps, is
- * walked once an hour, not by every check. `now` is in seconds. */
-export function walkDue(store: string, { cap, free, now }: { cap: number; free: () => number; now: number }): boolean {
+ * disk below its floor; or with more of it stale than `past`, what it
+ * keeps past its working set, an hour after its last walk. A working set,
+ * however large, is in its cap, never a reason to walk: past a constant
+ * cap, native-cache's 33,000 builds in use were walked every hour (#2483).
+ * `now` is in seconds. */
+export function walkDue(store: string, { past, free, now }: { past: number; free: () => number; now: number }): boolean {
   const index = indexedSize(store);
   if (index === undefined || free() < floorBytes) return true;
   const ago = now - index.walked;
-  return ago < 0 || ago >= day || (index.bytes > cap && ago >= 60 * 60);
+  return ago < 0 || ago >= day || (index.bytes - index.working > past && ago >= 60 * 60);
 }
 
 /** Drop the entries in `cache` unused for `days`, and those a crash left
- * half made, `.building-*`, an hour on; then held to `cap`, its working
- * set, used since `since` (ms), kept, and to the disk's `free` space above
+ * half made, `.building-*`, an hour on; then held to its working set,
+ * used since `since` (ms), and `past` bytes beside it, and to the disk's
+ * `free` space above
  * its floor (`holdKept`); then a thing with none left. Each walk is kept
  * in the store's index, which says when the next is due (`walkDue`): till
  * then, nothing's listed. `now` is in seconds. What it removed, and the
@@ -189,12 +217,12 @@ export function pruneKept(
   {
     now = Date.now() / 1000,
     days = 7,
-    cap = Number.POSITIVE_INFINITY,
+    past = Number.POSITIVE_INFINITY,
     free = () => freeBytes(cache),
     since = workingSetSince(),
-  }: { now?: number; days?: number; cap?: number; free?: () => number; since?: number } = {},
+  }: { now?: number; days?: number; past?: number; free?: () => number; since?: number } = {},
 ): { removed: number; size: number } {
-  if (!walkDue(cache, { cap, free, now })) return { removed: 0, size: indexedSize(cache)!.bytes };
+  if (!walkDue(cache, { past, free, now })) return { removed: 0, size: indexedSize(cache)!.bytes };
   let programs: string[];
   try {
     programs = readdirSync(cache).filter((name) => !name.startsWith("."));
@@ -228,7 +256,7 @@ export function pruneKept(
       }
     }
   }
-  const evicted = holdKept(keptBuilds(cache), { cap, free, since });
+  const evicted = holdKept(keptBuilds(cache), { past, free, since });
   for (const program of programs) {
     try {
       if (readdirSync(join(cache, program)).length === 0) rmSync(join(cache, program), { recursive: true, force: true });
@@ -236,7 +264,7 @@ export function pruneKept(
   }
   const writing = `${walkedOf(cache)}.${process.pid}`;
   try {
-    writeFileSync(writing, JSON.stringify({ walked: now, bytes: evicted.size }));
+    writeFileSync(writing, JSON.stringify({ walked: now, bytes: evicted.size, working: evicted.working }));
     renameSync(writing, walkedOf(cache));
   } catch {}
   rmSync(taken, { force: true });
@@ -312,13 +340,14 @@ function mergeInto(from: string, to: string) {
 }
 
 /** Each store of `stores`, `keptStores` unless a test gives its own,
- * pruned, each to its cap and, where `free` says the disk is below its
- * floor, to above it, each retired store removed whole, and the machine's
- * stores where they were moved where they are. */
-export function pruneKeptStores(free?: () => number, stores: { dir: string; cap: number }[] = keptStores) {
+ * pruned, each to its working set and what it keeps past it and, where
+ * `free` says the disk is below its floor, to above it, each retired store
+ * removed whole, and the machine's stores where they were moved where they
+ * are. */
+export function pruneKeptStores(free?: () => number, stores: { dir: string; past: number }[] = keptStores) {
   adoptRetiredStores();
   for (const dir of retiredStores) if (dir !== verifiedRuns) rmSync(dir, { recursive: true, force: true });
-  for (const { dir, cap } of stores) pruneKept(dir, free ? { cap, free } : { cap });
+  for (const { dir, past } of stores) pruneKept(dir, free ? { past, free } : { past });
   pruneKeptApps(free ? { free } : {});
 }
 

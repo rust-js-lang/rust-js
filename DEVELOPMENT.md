@@ -261,12 +261,21 @@ hash>/<name>_<n>`), so the same test compiles the same thing there.
 
 Every cache is bounded: a cap, the least recently used going first past
 it, what's stale pruned, nothing kept below the disk's floor, a test
-that holds it, and its cap here. The floor and the caps that grow with
-the disk are the volume's, as a run's width is the cores' (`diskProfile`,
-#2505): the floor 8% of it, at least 20 GiB and at most 40 (20 on a 256 GB
-Mac's 228 GiB, 36.8 on the Mac mini's 460); the native builds' cap and
-sccache's 4%, at least 8 GiB (9.1 and 18.4); the checkouts' budget the
-native builds' cap and 30 GiB (39.1 and 48.4). `bun run disk` says them.
+that holds it, and its cap here. A store of things each made once and
+used again whole, a native build, a verified run, a log, keeps its working
+set, and its cap is that, measured, and what it keeps past it (`holdKept`,
+#2483): with caps of the whole, native-cache's 22 GiB in use on the M5 Pro
+sat past its 18.4, std-reach's 438 MiB past 64 and native-outcomes' 400
+past 256, each said past its cap and walked every hour for it. A store of
+builds, a Cargo target each entry, which grows as it's built in again, is
+held to its cap whole until Cargo's own units bound it (#2483). The floor
+and the caps that grow with the disk are the volume's, as a run's width is
+the cores' (`diskProfile`, #2505): the floor 8% of it, at least 20 GiB and
+at most 40 (20 on a 256 GB Mac's 228 GiB, 36.8 on the Mac mini's 460),
+which on a 256 GB Mac is what binds; what the native builds keep past
+their working set, and sccache's cap, 4%, at least 8 GiB (9.1 and 18.4);
+the checkouts' budget that and 30 GiB (39.1 and 48.4). `bun run disk`
+says them, and each store's working set.
 `test/bounded.ts` is the loop's floor, and
 `tooling/bounded.js` the one way a store is held to its cap, an app's
 cache's too (#1057); each store says what its things are, and its floor.
@@ -286,7 +295,8 @@ Everything development writes has one known place (#1213, ADR 1118):
   a plain `cargo` in the checkout would use `~` whatever the repo set;
   they're held by their own commands instead.
 
-`bun run disk` lists every store, its size, cap and oldest entry, and the
+`bun run disk` lists every store, its size, what of it is in use, its cap
+and oldest entry, and the
 total inside the checkouts against its budget; `bun run disk
 --prune` holds each to its cap, the tools' by `rustup toolchain uninstall`
 of an old pin, Cargo's GC and `bun pm cache rm`, and then the stores
@@ -300,7 +310,7 @@ the disk above its floor (`holdKept`, test/kept.ts): idle worktrees'
 builds past the budget once made every check's measure remove every
 corpus run it was about to reuse, and native-cache's 10 GiB cap, below
 the 11.5 GiB the Mac mini's checks used, evicted builds in use (#2344).
-A kept store's cap is what it keeps past its working set. `check:fast` prunes the stores inside the
+A kept store's cap is its working set and what it keeps past it. `check:fast` prunes the stores inside the
 checkouts as it starts, beside its build and then its jobs (#2498), and its measure made apart holds them to the
 budget so; past it with all they may lose gone, it names the largest
 holders, a stale worktree's build mostly, for someone to remove.
@@ -310,20 +320,20 @@ that no other script makes a path in the user's home.
 | What | Where | Bound | Held by |
 |---|---|---|---|
 | The tests' compiles to JS (above) | `target/compile-cache/` | 2 GB; another build's dropped as a run starts; nothing written below the floor | `test/compiles.test.ts` |
-| Native programs' builds | `.cache/native-cache/`, the machine's, every worktree's and whatever `RUST_JS_TARGET` a mutant's or the test map's tests run in (#875, #1047), keyed by what they're built from said from the checkout's root | The disk's (4%, at least 8 GiB), the corpus's and the metamorphic net's about 8 GB, and a week unused; nothing kept below the floor, a build there used from a fixture; pruned as each `check:fast` (beside its build and jobs) and `bun run test` starts, and below the floor until it's back | `test/support.test.ts` |
-| Native programs' wrappers | `target/native-sources/`, the checkout's likewise | 64 MB, and a week unused, the same way: about 8 MB | `test/support.test.ts` |
-| A corpus case's and a metamorphic rewrite's verified runs (ADR 0567) | `.cache/verified-runs/`, the machine's (#1047); a mutant's tests', their target's `corpus-cache/` | 512 MB, a week unused, the same way: about 8 MB a build of the compiler of the corpus, 100 MB of the net | `test/support.test.ts` |
-| Native programs' runs, kept by what they were built from (ADR 0567, amended) | `.cache/native-outcomes/`, the machine's, keyed as their builds are; what CI's jobs restore and `main`'s save (`.github/actions/native-outcomes`) | 256 MB, a week unused, the same way: about 3 MB of a corpus part of 324 cases | `test/support.test.ts`, `test/native-outcomes.test.ts` |
+| Native programs' builds | `.cache/native-cache/`, the machine's, every worktree's and whatever `RUST_JS_TARGET` a mutant's or the test map's tests run in (#875, #1047), keyed by what they're built from said from the checkout's root | Its working set and the disk's 4% past it, at least 8 GiB: the corpus's and the metamorphic net's about 8 GB, 22 GiB in use on the M5 Pro (2026-11-25); a week unused; nothing kept below the floor, a build there used from a fixture; pruned as each `check:fast` (beside its build and jobs) and `bun run test` starts, and below the floor until it's back | `test/support.test.ts` |
+| Native programs' wrappers | `target/native-sources/`, the checkout's likewise | Its working set and 64 MB past it, and a week unused, the same way: about 8 MB | `test/support.test.ts` |
+| A corpus case's and a metamorphic rewrite's verified runs (ADR 0567) | `.cache/verified-runs/`, the machine's (#1047); a mutant's tests', their target's `corpus-cache/` | Its working set and 512 MB past it, a week unused, the same way: about 8 MB a build of the compiler of the corpus, 100 MB of the net | `test/support.test.ts` |
+| Native programs' runs, kept by what they were built from (ADR 0567, amended) | `.cache/native-outcomes/`, the machine's, keyed as their builds are; what CI's jobs restore and `main`'s save (`.github/actions/native-outcomes`) | Its working set and 256 MB past it, a week unused, the same way: about 3 MB of a corpus part of 324 cases, 400 MiB in use on the M5 Pro | `test/support.test.ts`, `test/native-outcomes.test.ts` |
 | A test's fixtures | `target/fixtures/`, `$TMPDIR/rust-js-dev/rust-js-fixtures/` | Removed as its file's tests end (`test/setup.ts`'s `afterAll`; Bun's test runner never emits `exit`) or a script exits; one a killed process left, by the next process's first claim. `RUST_JS_KEEP_FIXTURES=1` keeps a run's to look at, until another process's first claim sweeps it, its own process gone (#2422) | `test/support.test.ts` |
 | The apps' Cargo targets' seed, the binding crates checked (#1005) | `target/check-fast/<pid>/apps-seed/`, `check:fast`'s run's; else a fixture of the file that asks | One a run, about 330 MB, 260 of it rustc's incremental state, which the targets made of it don't take; gone as `check:fast` exits, or with the file's fixtures; one a killed run left, by the next `check:fast` | `test/support.test.ts` |
 | The crate corpus's Cargo projects (#1213) | `target/crate-corpus/<crate>/` | 2 GiB, the least recently measured crate first: 600 MB from nothing, each build of the compiler adding a copy of every crate's dependencies (25 GB before) | `test/support.test.ts` |
 | The mutations' worktree and builds | `target/mutants/` | 4 GiB, its entries the least recently changed first | `test/support.test.ts` (`boundEntries`) |
-| The temp root (#1213) | `$TMPDIR/rust-js-dev/` | 2 GiB, its entries the least recently changed first: Vitest's `<id>/ssr/` of each run, which it never removes (740 of them, 1.5 GB, before), tests' `mkdtemp`s | `test/support.test.ts` (`boundEntries`) |
+| The temp root (#1213) | `$TMPDIR/rust-js-dev/` | Its working set and 2 GiB past it, its entries the least recently changed first: Vitest's `<id>/ssr/` of each run, which it never removes (740 of them, 1.5 GB, before), tests' `mkdtemp`s | `test/support.test.ts` (`holdEntries`) |
 | The guide's examples, `bun run docs` | `target/fixtures/<docs.ts's>/docs-<page>-<n>_<k>` | Each a fixture its run claims, so two runs in one checkout compile apart (#2198), removed once its output's read; an app's Cargo build there is 290 MB | |
 | The Rustlantis net's generator (ADR 1125) | `.cache/rustlantis/`, the machine's | Its build of the pinned commit and patch, about 120 MB; another removed as a build starts; 512 MB the store | `scripts/disk.ts` |
 | check:fast's job times (#1364) | `.cache/job-times/`, the machine's, which every worktree's pool reads | Each job's last 5 runs, a sized job's sizes beside them, of at most 1,000 jobs, the least recently run dropped first; 1 MiB the store; nothing written below the floor: about 30 KB | `test/timing.test.ts` |
 | check:fast's failing jobs' output (#1622) | `.cache/check-logs/`, the machine's, a directory each run, whose path the summary prints | Each failing job's whole output, a file each, so a flake under load keeps its evidence past the next run; the oldest runs dropped first; 64 MiB the store | `test/timing.test.ts` |
-| The test map's maps (ADR 1101) | `.cache/test-maps/`, the machine's, which every worktree reads (#932), CI's fetched there by `bun run push` | 8, about 22 MB each, the least recently used going first, each touched as a check reads it; one of another toolchain or layout removed as a recording ends; none kept below the floor | `test/test-map.test.ts` |
+| The test map's maps (ADR 1101) | `.cache/test-maps/`, the machine's, which every worktree reads (#932), CI's fetched there by `bun run push` | 8, about 165 MiB each at v4, its cap 8 of the newest one's size, the least recently used going first, each touched as a check reads it; one of another toolchain or layout removed as a recording ends; none kept below the floor | `test/test-map.test.ts` |
 | React's port, `bun scripts/react-in-rust.ts` | `$TMPDIR/react-in-rust-<checkout's hash>/` | 4 GB together; one whose checkout is gone removed as any run starts; then, of those no run used in the last hour, the least recently used past the cap or below the floor, never the run's own. Its build is of one build of the compiler, another's removed, and without rustc's incremental cache: about 215 MB after a regen | `test/support.test.ts` |
 | An app's cache, `rust-js build`'s, the examples' and every user's (#1057) | `<app>/node_modules/.cache/rust-js/`: a Cargo target for each of `target`, `editor`, `clippy` and `test` | 2 GB together, the least recently used target first, never the one in use, and none but it kept below 5 GB free; a target another build of the compiler made emptied as a build starts, but what its builds wrote in source (`holdTarget`); about 500 MB the Vite example's. `CARGO_TARGET_DIR`'s, the user's, isn't held | `test/in-source.test.ts` |
 
