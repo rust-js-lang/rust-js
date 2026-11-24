@@ -44,3 +44,15 @@ test("a consumer reading a library's public field of an iterator its generic cod
   ]);
   expect(native).toBe("Green\n");
 }, 300_000);
+
+// A library's trait default that holds its own `J` in a place of its own and
+// is given values of it as its `Self`'s items, which come bare, is refused at
+// the call, as one crate refuses it (#2534, #2508's form 5): never run with
+// the items read as places, `[Some(0), Some(-1), Some(-1)]`.
+test("a consumer giving a library's default a placed iterator as its items too is refused", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "library_default_holds_its_selfs_items_in_place", ["dep", "app"], [
+    "which it's also given as `Self`'s items, as their caller holds them (#2534, #2535)",
+    "app.rs:27:",
+  ]);
+  expect(native).toBe("held_with [Some(0), Some(1), Some(0)] [Some(1), Some(0), Some(1)]\n");
+}, 300_000);

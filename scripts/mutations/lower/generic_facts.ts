@@ -3,6 +3,24 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "placed-item-unrefused",
+    breaks:
+      "a type parameter generic code holds in a place of its own, also given as another iterator's items, `S: Iterator<Item = I>`, compiles: the items come bare and its `next` reads `.value` of a string, `Some(-1)` (#2534)",
+    file: "crates/rust-js-lower/src/generic_facts.rs",
+    find: "        self.refuse_placed_item((id, args), span)\n",
+    replace: "        Ok(())\n",
+    tests: ["test/corpus.test.ts", "-t", "^placed_iterator_also_another_iterators_item\\.rs$"],
+  },
+  {
+    name: "placed-item-refused-unplaced",
+    breaks:
+      "a call whose type parameter is another iterator's items, `fn gather<T, I: Iterator<Item = T>>`, is refused whatever it's given, held in a place or not (#2534)",
+    file: "crates/rust-js-lower/src/generic_facts.rs",
+    find: "                if self.holds_in_place((id, param, instantiated)) {\n",
+    replace: "                if true || self.holds_in_place((id, param, instantiated)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_code_right_for_every_instance\\.rs$"],
+  },
+  {
     name: "fn-bound-least-taken",
     breaks: "of a parameter's `Fn` bounds, `F: Fn`'s with its supertraits, the least is taken, `FnOnce`, so a function value it calls through `Fn::call` names `call_once`'s line (#2335)",
     file: "crates/rust-js-lower/src/generic_facts.rs",

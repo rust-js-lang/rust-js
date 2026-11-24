@@ -584,6 +584,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ));
             }
         }
+        self.refuse_placed_item((id, args), span)
+    }
+
+    /// A call of generic code `id`, its instance of `args`, refused where a
+    /// type parameter it holds in a place of its own (`holds_in_place`) is
+    /// also another's items, `S: Iterator<Item = I>`, `Self: Iterator<Item
+    /// = J>`, an `IntoIterator`'s, or a part of them, `Item = (I, u8)`:
+    /// those come as their caller holds them, never in a place, where its
+    /// dictionaries read the place, `.value` of a bare string (#2534), until
+    /// each item is made a place where it crosses (#2535).
+    fn refuse_placed_item(&self, (id, args): (DefId, ty::GenericArgsRef<'tcx>), span: Span) -> R<()> {
+        let tcx = self.tcx;
+        let items = [StdItem::Iterator, StdItem::IntoIterator]
+            .map(|item| crate::recognition::trait_method(tcx, crate::recognition::std_item(tcx, item), "Item"));
+        for (clause, _) in tcx.clauses_of(id).instantiate_identity(tcx) {
+            let Some(p) = clause.skip_normalization().as_projection_clause() else {
+                continue;
+            };
+            let p = p.skip_binder();
+            let Some(term) = p.term.as_type() else { continue };
+            if !items.contains(&p.def_id()) {
+                continue;
+            }
+            // Its type parameters, not one a projection names, `I::Item`,
+            // nor the one whose items they are.
+            let mut walk = term.walk();
+            while let Some(part) = walk.next() {
+                let Some(param) = part.as_type() else { continue };
+                if matches!(param.kind(), ty::Alias(..)) {
+                    walk.skip_current_subtree();
+                    continue;
+                }
+                if !matches!(param.kind(), ty::Param(_)) || param == p.self_ty() {
+                    continue;
+                }
+                let instantiated = self.instantiated(param, args);
+                if self.holds_in_place((id, param, instantiated)) {
+                    return Err(self.unsupported(
+                        span,
+                        &format!(
+                            "a `{instantiated}` generic code holds in a place of its own, `{{ value }}`, as its `{param}`, which it's also given as `{}`'s items, as their caller holds them (#2534, #2535)",
+                            p.self_ty()
+                        ),
+                    ));
+                }
+            }
+        }
         Ok(())
     }
 

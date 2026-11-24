@@ -538,3 +538,43 @@ struct's iterator, lazy, and a fieldless enum's, stepped), itertools'
 Crater (`tests/laziness.rs::multi_cartesian_product` as native, its line
 gone from `scripts/crater-decided.txt`), and the mutation
 `own-bound-unplaced`.
+
+## Amendment: a placed parameter's values given as another iterator's items are refused (2026-11-24, #2534)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, and
+Rust's behavior can't be kept yet, so this is a compile error. It is a
+stopgap, which the lead approved.
+
+Generic code holds a type parameter `I` in a place of its own when `I` is
+an iterator JS holds as no object (#2255). It may also be given values of
+`I` as another type's items:
+- `fn item_or<S: Iterator<Item = I>, I: Iterator>(s: S, or: I) -> I`;
+- `Self: Iterator<Item = J>`;
+- an `IntoIterator`'s items.
+
+Those items come as their caller holds them, a bare string, while the
+dictionaries read a place. `item_or([Light::Green].into_iter(),
+Light::Red).next()` printed `Some(-1)` for native's `Some(1)`. #2508's
+form 5, a trait default's `Self` items in a library's struct, is this
+shape too.
+
+`generic_facts.rs`' `refuse_placed_within` is a call's one check of what
+crosses in a place. It now also refuses such a call (`refuse_placed_item`):
+- a clause equates `Iterator`'s or `IntoIterator`'s `Item` of another
+  type to a type that holds the parameter, not under a projection;
+- and `holds_in_place` answers yes for this call's type.
+
+An iterator of a field, held as it is, still compiles.
+
+Measured by grep before the change: besides the case, the refusal reaches
+no program of the corpus, the crate corpus or the React port. Two of the
+100 crates, bitflags' tests and regex-automata, define the shape, but
+neither is given a placed iterator.
+
+The full fix is #2535: each item made a place where it crosses. A JS
+iterator's items are `$inPlace`d. A dictionary's entries that give one,
+an `Option<I>`, get a new shape.
+
+Corpus case `placed_iterator_also_another_iterators_item`
+(`compile-fail`) and the guide's limitations. Mutations
+`placed-item-unrefused` and `placed-item-refused-unplaced`.
