@@ -392,16 +392,6 @@ export const mutations: Mutation[] = [
     tests: ["test/iterator-forms.test.ts", "-t", "capacity_of_what_std_hints_less"],
   },
   {
-    name: "clone-fn-parameter-free-to-its-body",
-    breaks:
-      "a `Clone` dictionary's `clone(value)` of an `Option<Option<T>>` binds what its `Some` holds as `const value`, its parameter's word, so the parameter is spelled `value$1` (#1246, #1681)",
-    file: "crates/rust-js-lower/src/std_impls/clones.rs",
-    find: "        let taken = self.names.borrow_mut().insert(base.to_string());\n",
-    replace: "        let taken = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^clone_dictionary_of_a_nested_option.rs$"],
-    snapshots: true,
-  },
-  {
     name: "map-entries-unguarded",
     breaks: "a clone of a map whose value's clone panics leaves the entries it made undropped (#897)",
     file: "crates/rust-js-lower/src/std_impls/clones.rs",

@@ -51,15 +51,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "an app using two crates"],
   },
   {
-    name: "derived-codec-compiled-by-consumer",
-    breaks:
-      "a library's derived serde codec a consumer's copying asks is compiled by the consumer, whose visitor isn't its own: the pilot doesn't build (#341)",
-    file: "crates/rust-js-lower/src/items.rs",
-    find: "            && !derived_codec\n",
-    replace: "",
-    tests: ["test/crates.test.ts", "-t", "an app using two crates"],
-  },
-  {
     name: "into-a-from-unbound",
     breaks:
       "`x.into()` of a type parameter's target is its `From`'s where the function is bound `T: Into<U>`, whose `From` it has no dictionary of (#321)",

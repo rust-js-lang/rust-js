@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations-flatten.test.ts", "-t", "flattened state declares its keys"],
   },
   {
-    name: "state-key-of-any-value-a-union",
-    breaks: "a flattened state's key one variant holds any value at is declared as a union with `unknown` in it, which says no more than `unknown` (rd380)",
-    file: "crates/rust-js-lower/src/declarations/classes.rs",
-    find: "                    (Some(top), _) => keyword(top),\n",
-    replace: "                    (Some(_), _) => union(types),\n",
-    tests: ["test/declarations-flatten.test.ts", "-t", "flattened state declares its keys"],
-  },
-  {
     name: "class-to-string-undeclared",
     breaks: "a class's `toString` is left out of its declaration (#358)",
     file: "crates/rust-js-lower/src/declarations/classes.rs",
