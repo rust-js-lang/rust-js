@@ -437,10 +437,15 @@ test("a store keeps nothing below the disk's floor, and a retired store is remov
   expect(mayKeep(dir, () => floorBytes)).toBe(true);
   expect(mayKeep(dir, () => floorBytes - 1)).toBe(false);
   for (const retired of retiredStores) mkdirSync(join(retired, "left"), { recursive: true });
-  // Of the machine's stores as they are: some 18,000 native builds, 10 GB,
-  // each one's size read, 6 s on the Mac (2026-11-09).
-  pruneKeptStores(() => floorBytes);
+  // Of a store of its own, not the machine's: pruning theirs read each of
+  // some 40,000 entries' sizes, 44 s alone on the Mac mini and 142.8 s
+  // under a push's load, past its limit, failing the Mac mini's pushes
+  // (#2498). Pruning them is the prune's tests' and every check's.
+  const store = join(dir, "store");
+  mkdirSync(join(store, "program", "build"), { recursive: true });
+  pruneKeptStores(() => floorBytes, [{ dir: store, cap: Number.POSITIVE_INFINITY }]);
   expect(retiredStores.map(existsSync)).toEqual([false, false]);
+  expect(existsSync(join(store, "program", "build"))).toBe(true);
 }, underLoad(60_000));
 
 // Each fixture a test claims is removed once its file's tests end

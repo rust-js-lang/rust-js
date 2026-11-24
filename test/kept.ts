@@ -237,14 +237,14 @@ function mergeInto(from: string, to: string) {
   }
 }
 
-/** Each store of `keptStores` pruned, each to its cap and, where `free`
- * says the disk is below its floor, to above it, each retired store
- * removed whole, and the machine's stores where they were moved where they
- * are. */
-export function pruneKeptStores(free?: () => number) {
+/** Each store of `stores`, `keptStores` unless a test gives its own,
+ * pruned, each to its cap and, where `free` says the disk is below its
+ * floor, to above it, each retired store removed whole, and the machine's
+ * stores where they were moved where they are. */
+export function pruneKeptStores(free?: () => number, stores: { dir: string; cap: number }[] = keptStores) {
   adoptRetiredStores();
   for (const dir of retiredStores) if (dir !== verifiedRuns) rmSync(dir, { recursive: true, force: true });
-  for (const { dir, cap } of keptStores) pruneKept(dir, free ? { cap, free } : { cap });
+  for (const { dir, cap } of stores) pruneKept(dir, free ? { cap, free } : { cap });
   pruneKeptApps(free ? { free } : {});
 }
 
