@@ -108,3 +108,18 @@ cell `Crossing::TaggedWithin`. The cell is lifted by #2568, split from
 #1416 because no two cells share an issue (#1416 stays
 `TaggedArgument`'s), and #2568 converts at that boundary. Their words
 name #2568 now. There are now 18 cells and 37 refusals.
+
+## Amendment: the facts only a caller knows are a cell (2026-11-25, #2570)
+
+Tu decided on 2026-11-25 that the facts of a type or a const only a caller
+knows are Campaign 6's, as a step 7 after step 6, measured by the
+refusals it lifts. They're one cell, `Crossing::TypeFact`, lifted by
+#2570. It has nine refusals: an array of a generic length, a chunk's
+length, `mem::discriminant`, `type_name`, `size_of`/`align_of` of a type
+parameter, a map's class, an unstable and a stable sort's layout, and an
+own provided method given a const (#2421).
+
+A type parameter's `TypeId` isn't in it: it's a `TypeFact` asked through
+the dictionary, `Crossing::FactDictionary`'s. "The `TypeId` of this `dyn`"
+isn't either, because it's of a `dyn` without `Any`, which no caller can
+give. The words of each refusal are as they were.

@@ -75,9 +75,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let ty::Array(item, len) = *target.peel_refs().kind() else {
                     unreachable!("recognized as an array")
                 };
-                let len = len
-                    .try_to_target_usize(self.tcx)
-                    .ok_or_else(|| self.unsupported(span, "an array of a generic length here"))?;
+                let len = len.try_to_target_usize(self.tcx).ok_or_else(|| {
+                    self.unconverted(
+                        span,
+                        crate::refusal::Crossing::TypeFact,
+                        "an array of a generic length here",
+                    )
+                })?;
                 let slice = arg();
                 // An array of its own, `[T; N]`, is a copy, as a write to the
                 // slice's after doesn't change it; of an array made here, a
@@ -601,7 +605,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::Param(param) => self.given_type_fact(param.index, TypeFact::Name),
                 _ => self.known_fact_of(part, TypeFact::Name),
             };
-            parts.push(name.ok_or_else(|| self.unsupported(span, &format!("`type_name` of `{part}`")))?);
+            parts.push(name.ok_or_else(|| {
+                self.unconverted(
+                    span,
+                    crate::refusal::Crossing::TypeFact,
+                    &format!("`type_name` of `{part}`"),
+                )
+            })?);
             text = &rest[digits + 1..];
         }
         parts.push(Expr::str(text));
@@ -637,7 +647,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .then(|| self.tcx.layout_of(self.typing_env.as_query_input(of)).ok())
             .flatten();
         if of_params && generic.is_none() {
-            return Err(self.unsupported(span, &format!("`{name}` of a type parameter")));
+            return Err(self.unconverted(
+                span,
+                crate::refusal::Crossing::TypeFact,
+                &format!("`{name}` of a type parameter"),
+            ));
         }
         if !of.is_sized(self.tcx, self.typing_env) {
             return Err(self.unsupported(span, &format!("`{name}` of a value without one size")));

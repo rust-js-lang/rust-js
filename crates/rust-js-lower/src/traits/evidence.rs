@@ -150,7 +150,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // evidence (`provided_fact_convention`).
                 Slot::Fact(..) => continue,
                 Slot::Const(_) => {
-                    return Err(self.unsupported(span, "an own provided method given a const (#2421)"));
+                    return Err(self.unconverted(
+                        span,
+                        crate::refusal::Crossing::TypeFact,
+                        "an own provided method given a const (#2421)",
+                    ));
                 }
             };
             params.push(name);

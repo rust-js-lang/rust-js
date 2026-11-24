@@ -325,7 +325,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .consts()
             .next()
             .and_then(|n| n.try_to_target_usize(self.tcx))
-            .ok_or_else(|| self.unsupported(span, "a chunk of a length only a caller knows"))
+            .ok_or_else(|| {
+                self.unconverted(
+                    span,
+                    crate::refusal::Crossing::TypeFact,
+                    "a chunk of a length only a caller knows",
+                )
+            })
     }
 
     /// `v.extract_if(range, f)`: the items `f` holds of, from `start` to `end`,

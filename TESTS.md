@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2570, ADR 1201 amended): test/architecture-stopgaps.test.ts counts 46 stopgap refusals, the nine of Campaign 6's step 7, `Crossing::TypeFact`, among them.
+
 Changed on 2026-11-25 (Campaign 5 step 2a, ADR 1202 amended): test/twin-net.test.ts gains two tests, the runtime's exports the catalog doesn't name yet (1,183, at most) and a whole run keeps a model outside the tables no case imports; its measure falls to 207; each form is named by its row; a unit test of raised.rs, the catalog's rows are written; six mutations, two moved to scripts/mutations/lower/recognition/models/rows.ts.
 
 Changed on 2026-11-25 (Campaign 5 step 1, ADR 1202, ADR 1122 amended): test/architecture-models.test.ts, new, two tests (no second list of the runtime's models); test/twin-net.test.ts reads the catalog `rust-js --std-models` prints, gains its measure (220 models stand for no std item yet, at most), and its bless tests write models.rs; five mutations.

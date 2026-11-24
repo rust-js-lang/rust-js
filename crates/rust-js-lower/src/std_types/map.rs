@@ -393,8 +393,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::Param(param) => self.given_type_fact(param.index, fact),
                 _ => self.given_fact_of(key, fact),
             };
-            return given
-                .ok_or_else(|| self.unsupported(span, &format!("a map of `{key}` keys, whose class isn't given")));
+            return given.ok_or_else(|| {
+                self.unconverted(
+                    span,
+                    crate::refusal::Crossing::TypeFact,
+                    &format!("a map of `{key}` keys, whose class isn't given"),
+                )
+            });
         }
         // One made of a type parameter: of a tuple, `(usize, T)`, its parts'
         // classes, each given or known here, composed where it's made, as

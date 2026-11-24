@@ -83,6 +83,10 @@ pub enum Crossing {
     /// A fact a library's contract can't say: a type nested past its
     /// templates, or a layout.
     FactBoundary,
+    /// A type's or a const's fact only a caller knows, of a type or a
+    /// const parameter: its name, size, discriminant, a map's class, a
+    /// sort's layout, a length (Campaign 6's step 7).
+    TypeFact,
 }
 
 impl Crossing {
@@ -109,6 +113,7 @@ impl Crossing {
             Crossing::FactArgument => 2554,
             Crossing::FactDictionary => 2555,
             Crossing::FactBoundary => 2556,
+            Crossing::TypeFact => 2570,
         }
     }
 }

@@ -18,8 +18,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// than 96 bytes. A type parameter's is its caller's (ADR 0471).
     pub(crate) fn sort_kind(&self, item: ty::Ty<'tcx>, span: Span) -> R<&'static str> {
         if item.has_param() {
-            return Err(self.unsupported(
+            return Err(self.unconverted(
                 span,
+                crate::refusal::Crossing::TypeFact,
                 "an unstable sort of items that hold a type parameter, whose order std's algorithm picks by their layout",
             ));
         }
@@ -46,8 +47,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `TStableSort`.
     pub(crate) fn stable_sort_kind(&self, item: ty::Ty<'tcx>, span: Span) -> R<&'static str> {
         if item.has_param() {
-            return Err(self.unsupported(
+            return Err(self.unconverted(
                 span,
+                crate::refusal::Crossing::TypeFact,
                 "a stable sort of items that hold a type parameter, whose comparison can be seen, which std's algorithm picks by their type",
             ));
         }

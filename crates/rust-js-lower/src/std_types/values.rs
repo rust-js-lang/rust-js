@@ -649,7 +649,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // constant `0` of a type that isn't an enum would say of
                 // every one (#1014, ADR 0262's refusal; #1040).
                 if self.is_unknown(of) {
-                    return Err(self.unsupported(call.span, "`mem::discriminant` of a type only a caller knows"));
+                    return Err(self.unconverted(
+                        call.span,
+                        crate::refusal::Crossing::TypeFact,
+                        "`mem::discriminant` of a type only a caller knows",
+                    ));
                 }
                 // A BigInt of a 64-bit or wider `repr`, `discriminant_value`'s
                 // and a `Discriminant`'s alike (#1131).

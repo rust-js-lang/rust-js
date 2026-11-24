@@ -42,9 +42,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an unstable sort of items that hold a type parameter asks rustc their layout, which it can't give",
     file: "crates/rust-js-lower/src/std_types/sorts.rs",
-    find: '        if item.has_param() {\n            return Err(self.unsupported(\n                span,\n                "an unstable sort of items that hold a type parameter, whose order std\'s algorithm picks by their layout",\n',
+    find: '        if item.has_param() {\n            return Err(self.unconverted(\n                span,\n                crate::refusal::Crossing::TypeFact,\n                "an unstable sort of items that hold a type parameter, whose order std\'s algorithm picks by their layout",\n',
     replace:
-      '        if false {\n            return Err(self.unsupported(\n                span,\n                "an unstable sort of items that hold a type parameter, whose order std\'s algorithm picks by their layout",\n',
+      '        if false {\n            return Err(self.unconverted(\n                span,\n                crate::refusal::Crossing::TypeFact,\n                "an unstable sort of items that hold a type parameter, whose order std\'s algorithm picks by their layout",\n',
     tests: [
       "test/diagnostics.test.ts",
       "-t",

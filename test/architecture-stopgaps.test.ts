@@ -36,7 +36,7 @@ test("each stopgap cell is a refusal's, and they're counted", () => {
     .flatMap((file) => [...read(file).matchAll(/\bCrossing::(\w+)/g)].map((m) => m[1]));
   expect(declared.filter((crossing) => !uses.includes(crossing))).toEqual([]);
   expect(uses.filter((crossing) => !declared.includes(crossing))).toEqual([]);
-  expect(uses.length).toBe(37);
+  expect(uses.length).toBe(46);
 });
 
 // A stopgap is said as what it refuses is: `Unconverted` wraps the words
