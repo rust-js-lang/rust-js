@@ -38,6 +38,11 @@ let kept: Kept | undefined;
 let answeredBy: number | undefined;
 /** The job before, which the next waits for. */
 let queue: Promise<unknown> = Promise.resolve();
+/** Why each build of the last job was compiled apart, where it was: the
+ * worker's own word, or how it gave no answer, which the nightly's run of
+ * every case had to say: 45309220022 ran 4 builds of each of two parts
+ * apart, and its failure named none. */
+let apartWhy: (string | undefined)[] = [];
 
 function stop() {
   if (kept === undefined) return;
@@ -114,27 +119,36 @@ async function answered(cmds: string[][], cwd: string, timeout: number, env: Rec
   kept ??= start(program, cwd, env, key);
   const worker = kept;
   const none = cmds.map(() => undefined);
+  const noneBecause = (why: string) => {
+    apartWhy = cmds.map(() => why);
+    return none;
+  };
   try {
     worker.proc.stdin.write(`${JSON.stringify({ builds: cmds.map((cmd) => cmd.slice(1)) })}\n`);
     worker.proc.stdin.flush();
   } catch {
     stop();
-    return none;
+    return noneBecause("its stdin was closed");
   }
   const text = await line(worker, Date.now() + timeout * cmds.length);
   answeredBy = worker.proc.pid;
-  let answer: Answered | undefined;
-  try {
-    answer = text === undefined ? undefined : JSON.parse(text);
-  } catch {
-    answer = undefined;
-  }
-  if (answer === undefined) {
+  if (text === undefined) {
+    // Ended, or late: which, as its exit says a moment after.
+    await Promise.race([worker.proc.exited, Bun.sleep(1000)]);
+    const ended = worker.proc.exitCode ?? worker.proc.signalCode;
     stop();
-    return none;
+    return noneBecause(ended === null ? `it gave no answer in ${timeout * cmds.length} ms` : `it ended (${ended})`);
+  }
+  let answer: Answered;
+  try {
+    answer = JSON.parse(text);
+  } catch {
+    stop();
+    return noneBecause(`its answer wasn't JSON: ${text.slice(0, 200)}`);
   }
   if ("error" in answer) throw new Error(`the worker refused a job: ${answer.error}`);
-  if (answer.builds.length !== cmds.length) return none;
+  if (answer.builds.length !== cmds.length) return noneBecause(`it answered ${answer.builds.length} builds of ${cmds.length}`);
+  apartWhy = answer.builds.map((build) => ("apart" in build ? build.apart : undefined));
   return answer.builds.map((build) => {
     if (!("code" in build)) return undefined;
     const bytes = { stdout: Buffer.from(build.stdout), stderr: Buffer.from(build.stderr) };
@@ -145,3 +159,6 @@ async function answered(cmds: string[][], cwd: string, timeout: number, env: Rec
 /** The pid of the worker the last job went to: a test's, of whether jobs
  * share one. */
 export const workerPid = (): number | undefined => answeredBy;
+
+/** Why each build of the last job ran apart, `undefined` of one answered. */
+export const workerApart = (): (string | undefined)[] => apartWhy;

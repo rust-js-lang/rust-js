@@ -24,7 +24,7 @@ import { cases, corpus, directives } from "./corpus-cases";
 import { partSetting } from "./part-settings";
 import { compileCommand } from "./programs";
 import { root } from "./support";
-import { measureKept, workerJob, workerPid } from "./workers";
+import { measureKept, workerApart, workerJob, workerPid } from "./workers";
 
 const SAMPLE = 24;
 const [part, parts] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);
@@ -67,8 +67,10 @@ function emptied(dir: string) {
   for (const name of readdirSync(dir)) if (name !== "lib.rs") rmSync(join(dir, name), { recursive: true, force: true });
 }
 
-/** How often a build of a job was run apart, of those the rows compiled. */
-const apart = { builds: 0, of: 0 };
+/** How often a build of a job was run apart, of those the rows compiled,
+ * and each that was, but a refused library's program after it: its case,
+ * the job's order, the build and why. */
+const apart = { builds: 0, of: 0, unexplained: [] as string[] };
 
 /** The worker each row's jobs went to. */
 const pids = new Set<number | undefined>();
@@ -85,12 +87,17 @@ test.each(mine.map((c) => [c.name, c] as const))("%s: a job's builds are their o
       // Kept whatever it holds: the rows hold the worker's reuse, the
       // last row its replacement past its share.
       const answered = await workerJob(order.map((i) => builds[i]), root, timeout, env, Infinity);
+      const why = workerApart();
       pids.add(workerPid());
       apart.of += order.length;
       order.forEach((build, k) => {
         const answer = answered[k];
         if (answer === undefined) {
           apart.builds++;
+          // Of the sample, only a refused library, given first, prints: the
+          // program after it runs apart.
+          const printed = c.refused && order[0] === 1 && build === 0 && why[k] === "an earlier build printed";
+          if (!printed) apart.unexplained.push(`${c.name}, ${order[0] === 0 ? "program first" : "library first"}, its ${build === 0 ? "program" : "library"}: ${why[k]}`);
           return;
         }
         expect(done(answer)).toEqual(alone[build]);
@@ -107,10 +114,9 @@ test.each(mine.map((c) => [c.name, c] as const))("%s: a job's builds are their o
 });
 
 test("the worker's jobs ran apart only where a build before printed", () => {
-  // Of the sample, only a refused library, given first, prints: the
-  // program after it runs apart.
-  const refusedFirst = mine.filter((c) => c.refused).length;
-  expect(apart.builds).toBeLessThanOrEqual(refusedFirst);
+  // Each build run apart, but a refused library's program, by its case,
+  // its job's order and the worker's reason.
+  expect(apart.unexplained).toEqual([]);
   if (apart.of > 0) console.log(`worker: ${apart.builds} of ${apart.of} builds ran apart`);
   // And every row's jobs went to one worker, kept between them.
   if (mine.length > 0) expect([...pids].length).toBe(1);
