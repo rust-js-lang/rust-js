@@ -747,6 +747,9 @@ export const harness = [
   "RUSTLANTIS_START",
   "RUST_JS_APPS_SEED",
   "RUST_JS_CASES",
+  // How long a command tooling runs goes before it's said to be unfinished
+  // (test/setup.ts, #2441).
+  "RUST_JS_COMMAND_NOTICE_MS",
   "RUST_JS_COMPILE_CACHE_MB",
   "RUST_JS_COMPILE_TIMEOUT",
   "RUST_JS_COMPILER",
