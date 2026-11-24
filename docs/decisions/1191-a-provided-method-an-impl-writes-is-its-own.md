@@ -301,3 +301,32 @@ until generic code's dispatch gives an override those too (#2449, the
 lead's decision). Held by
 `iterator_own_collect_asking_its_outputs_size_refused.rs` and the mutation
 `provided-entry-own-parameters-fact-unrefused`.
+
+## Amended: an override is given what it asks of the method's own parameters (2026-11-24, #2449)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): an own `collect`
+that asks `size_of::<B>()` was refused, where Rust runs it.
+
+The calling convention holds, after the method's own fact slots some
+override asks, each fact an override in reach asks of a type built of the
+method's own type parameters alone, `B` of `collect<B>`
+(`recognition::given_by_dispatch`), which only the call knows. Its facts
+trail the call's own evidence, before its drops, as `Expr::optional_args`
+lays them out, and every entry takes them there: one position rule, of
+which the own-slot facts are part, no longer passed in their slots. The
+call gives each of what it instantiates, `$provided(it, "ownCollect",
+[BFromIteratorU8, BSize], ..)`; and the facts analysis asks a caller each
+fact a dispatched call (`dispatched_call`) gives an override of its own
+types, so a generic caller whose `B` it is takes `BSize` too. Which
+overrides are in reach is one list, `recognition::overrides_in_reach`, of
+the convention's and the analysis's. #2430's refusal of it goes: the
+convention now holds every such fact of every override in reach.
+
+No program's JS but the case's moved. Held by
+`iterator_own_collect_asking_its_outputs_size.rs` (concrete and generic
+callers, a `map` of it running std's, and an impl of no parameters'
+`max`, whose instance's arguments are none: each override's impl type is
+its own, `Override::self_ty`, never read from them, which a first version
+did and panicked on), against native, and the mutations
+`given-by-dispatch-none`, `dispatched-overrides-unrelayed`,
+`convention-own-parameters-dropped` and `override-self-from-its-instance`.

@@ -30,7 +30,9 @@ mod open_calls;
 pub use methods::keeps_each;
 pub(crate) use wrappers::{IntNewtype, PinTarget, pin_pointer};
 mod overrides;
-pub(crate) use overrides::{dispatched_call, dispatched_override, overridden_in_reach};
+pub(crate) use overrides::{
+    Override, dispatched_call, dispatched_override, given_by_dispatch, overridden_in_reach, overrides_in_reach,
+};
 mod own_steps;
 mod std_steps;
 pub(crate) use chars::{TextIter, reaches_text_iter};

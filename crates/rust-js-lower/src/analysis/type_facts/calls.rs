@@ -114,6 +114,17 @@ impl<'tcx> Asking<'tcx> {
         callee: DefId,
         args: ty::GenericArgsRef<'tcx>,
     ) {
+        // A call that dispatches, generic code's `it.collect()` of a type
+        // parameter: each override in reach, whose asks of the method's own
+        // parameters the call gives its entry, followed once all are read
+        // (`dispatched`, #2449).
+        if let Some(this) = args.types().next()
+            && crate::recognition::dispatched_call(tcx, callee, this)
+        {
+            for each in crate::recognition::overrides_in_reach(tcx, callee) {
+                self.dispatched.push((caller, each, (callee, args)));
+            }
+        }
         let facts = type_facts(tcx, callee);
         for &fact in facts {
             // `size_of_val` of an unsized `T` is the value's, not the type's:

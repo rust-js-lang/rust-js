@@ -59,3 +59,70 @@ pub(crate) fn dispatched_override(tcx: TyCtxt<'_>, provided: DefId) -> bool {
 pub(crate) fn dispatched_call<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, self_ty: rustc_middle::ty::Ty<'tcx>) -> bool {
     crate::generic_facts::is_type_parameter(self_ty) && dispatched_override(tcx, id)
 }
+
+/// Whether `ty`, of which an override of `provided` asks a fact, in the
+/// terms of `provided`'s own parameters, is built of the method's own type
+/// parameters alone, `B` of `collect<B>`'s `size_of::<B>()`, which only a
+/// call knows: a fact of it is the dispatched call's to give the override's
+/// entry (`provided_fact_convention`), and its caller's to give the call
+/// where it's the caller's own (the facts analysis's, #2449). Not one that
+/// names the impl's own parameters too, which the entry's maker gives.
+pub(crate) fn given_by_dispatch<'tcx>(tcx: TyCtxt<'tcx>, provided: DefId, ty: rustc_middle::ty::Ty<'tcx>) -> bool {
+    let generics = tcx.generics_of(provided);
+    let own: Vec<rustc_middle::ty::Ty<'tcx>> = (generics.own_params.iter())
+        .filter_map(|param| tcx.mk_param_from_def(param).as_type())
+        .collect();
+    let params: Vec<rustc_middle::ty::Ty<'tcx>> = (ty.walk())
+        .filter_map(|part| part.as_type())
+        .filter(|part| crate::generic_facts::is_type_parameter(*part))
+        .collect();
+    !params.is_empty() && params.iter().all(|param| own.contains(param))
+}
+
+/// An override in reach of a trait's provided method (`overrides_in_reach`):
+/// its method, its impl's type, and its instance's arguments.
+#[derive(Clone, Copy)]
+pub(crate) struct Override<'tcx> {
+    pub(crate) method: DefId,
+    pub(crate) self_ty: rustc_middle::ty::Ty<'tcx>,
+    pub(crate) args: rustc_middle::ty::GenericArgsRef<'tcx>,
+}
+
+/// Each override in reach of `provided`, a trait's provided method: each
+/// impl not std's that writes it, its method, the impl's type, and the
+/// instance's arguments `provided` resolves to of that type, the method's
+/// own parameters as `provided`'s, so what the method asks of them is in
+/// `provided`'s own terms. The one list of the lowering's calling convention
+/// (`provided_fact_convention`) and of the facts analysis's relay of what
+/// a dispatched call gives its overrides (#2449).
+pub(crate) fn overrides_in_reach<'tcx>(tcx: TyCtxt<'tcx>, provided: DefId) -> Vec<Override<'tcx>> {
+    use rustc_middle::ty;
+    let Some(trait_id) = tcx.trait_of_assoc(provided) else {
+        return Vec::new();
+    };
+    let mut found = Vec::new();
+    for imp in tcx.all_impls(trait_id) {
+        if super::is_std_crate(tcx, imp) {
+            continue;
+        }
+        let Some(&method) = tcx.impl_item_implementor_ids(imp).get(&provided) else {
+            continue;
+        };
+        let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+        let args = ty::GenericArgs::for_item(tcx, provided, |param, _| match param.kind {
+            ty::GenericParamDefKind::Lifetime => tcx.lifetimes.re_erased.into(),
+            _ if param.index == 0 => self_ty.into(),
+            _ => tcx.mk_param_from_def(param),
+        });
+        if let Ok(Some(instance)) =
+            crate::traits::resolve(tcx, ty::TypingEnv::non_body_analysis(tcx, method), provided, args)
+        {
+            found.push(Override {
+                method,
+                self_ty,
+                args: instance.args,
+            });
+        }
+    }
+    found
+}

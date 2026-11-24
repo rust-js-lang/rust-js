@@ -191,4 +191,12 @@ export const mutations: Mutation[] = [
     replace: "            if let Some(evidence) = evidence_impl(tcx, typing_env, bound).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_held_by_generic_code_asking_trusted_len.rs$"],
   },
+  {
+    name: "dispatched-overrides-unrelayed",
+    breaks: "a dispatched call's overrides' asks of the method's own parameters aren't relayed to its caller, so a generic caller whose `B` an own `collect` sizes isn't given `BSize` and is refused it (#2449)",
+    file: "crates/rust-js-lower/src/analysis/type_facts/calls.rs",
+    find: "                self.dispatched.push((caller, each, (callee, args)));\n",
+    replace: "                let _ = (each, caller);\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_own_collect_asking_its_outputs_size.rs$"],
+  },
 ];

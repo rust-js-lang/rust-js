@@ -27,4 +27,12 @@ export const mutations: Mutation[] = [
     replace: "    crate::generic_facts::is_type_parameter(self_ty.peel_refs()) && dispatched_override(tcx, id)\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_overrides_std_lowers_itself.rs$"],
   },
+  {
+    name: "given-by-dispatch-none",
+    breaks: "no fact an override asks is of the method's own type parameters, so an own `collect`'s `size_of::<B>()` is in no calling convention and its entry can't be given it (#2449)",
+    file: "crates/rust-js-lower/src/recognition/overrides.rs",
+    find: "    !params.is_empty() && params.iter().all(|param| own.contains(param))\n",
+    replace: "    false && !params.is_empty() && params.iter().all(|param| own.contains(param))\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_own_collect_asking_its_outputs_size.rs$"],
+  },
 ];

@@ -336,6 +336,7 @@ pub(super) fn type_fact_params<'tcx>(
         mut passed,
         calls,
         carried_super,
+        dispatched,
     } = asking;
     // Of a library's trait, only what its dictionaries carry; and each the
     // crate's impls of one carry, as the library's code reads it of them
@@ -583,6 +584,38 @@ pub(super) fn type_fact_params<'tcx>(
                             changed |= ask((&mut asked, &mut built, &mut carried), imp, each);
                         }
                     }
+                }
+            }
+        }
+        // What a dispatched call gives its overrides' entries of the method's
+        // own parameters, `BSize` of an own `collect`'s `size_of::<B>()`: of
+        // the call's types, its caller's where they're its own (#2449).
+        for &(
+            caller,
+            crate::recognition::Override {
+                method,
+                args: instance_args,
+                ..
+            },
+            (callee, call_args),
+        ) in &dispatched
+        {
+            let typing_env = ty::TypingEnv::non_body_analysis(tcx, caller);
+            let method_env = ty::TypingEnv::non_body_analysis(tcx, method);
+            let no_built = Default::default();
+            for &(index, fact) in asked_by.get(&method).into_iter().flatten() {
+                let slot = crate::traits::drop_slot(tcx, (foreign, &no_built), method, index);
+                let of = ty::EarlyBinder::bind(tcx, slot)
+                    .instantiate(tcx, instance_args)
+                    .skip_normalization();
+                let of = (tcx.try_normalize_erasing_regions(method_env, ty::Unnormalized::new_wip(of))).unwrap_or(of);
+                if !crate::recognition::given_by_dispatch(tcx, callee, of) {
+                    continue;
+                }
+                let relayed = asked_of_caller(tcx, foreign, typing_env, (caller, call_args), (of, fact));
+                for each in relayed {
+                    let new = ask((&mut asked, &mut built, &mut carried), caller, each);
+                    changed |= new;
                 }
             }
         }
@@ -880,6 +913,14 @@ fn eq_asks<'tcx>(
         .collect()
 }
 
+/// A dispatched call's override, by the call's caller, with the call
+/// (`Asking::dispatched`, #2449).
+type Dispatched<'tcx> = (
+    DefId,
+    crate::recognition::Override<'tcx>,
+    (DefId, ty::GenericArgsRef<'tcx>),
+);
+
 /// What the bodies ask, as they're read.
 #[derive(Default)]
 struct Asking<'tcx> {
@@ -899,6 +940,12 @@ struct Asking<'tcx> {
     /// of a slot, instantiated, is of the caller's own where it's one of its
     /// slots, `Self::Item` of `self.map(f).counts()`'s `K` (ADR 0466).
     calls: Vec<(DefId, DefId, ty::GenericArgsRef<'tcx>)>,
+    /// A call that dispatches, by its caller, each override in reach of its
+    /// callee with the instance's arguments, and the call: what each
+    /// override asks of a type built of the method's own parameters, the
+    /// call gives its entry, so its caller asks it, in the call's terms
+    /// (`given_by_dispatch`, #2449).
+    dispatched: Vec<Dispatched<'tcx>>,
 }
 
 impl<'tcx> Asking<'tcx> {

@@ -850,23 +850,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // The facts its overrides' entries take, each named where it's
         // called, or refused there, naming the override that asks it (#934,
         // #2430).
-        let convention = self.provided_fact_convention(id);
-        for &((index, fact), method) in &convention {
-            let of = self.drop_slot_of(id, index, args);
-            if self.type_fact_value(of, fact, span).is_err() {
-                let what = format!(
-                    "{} of `{of}`, which `{}` asks of its own `{}` and generic code here can't name, as its caller's dictionary doesn't carry it (#2442)",
-                    fact.text(),
-                    self.tcx.def_path_str(method),
-                    self.tcx.item_name(id),
-                );
-                return Err(self.unsupported(span, &what));
+        let mut given = Vec::new();
+        for (of, fact, method) in self.provided_fact_convention(id) {
+            let of = ty::EarlyBinder::bind(self.tcx, of)
+                .instantiate(self.tcx, args)
+                .skip_normalization();
+            match self.type_fact_value(of, fact, span) {
+                Ok(value) => given.push(value),
+                Err(_) => {
+                    let what = format!(
+                        "{} of `{of}`, which `{}` asks of its own `{}` and generic code here can't name, as its caller's dictionary doesn't carry it (#2442)",
+                        fact.text(),
+                        self.tcx.def_path_str(method),
+                        self.tcx.item_name(id),
+                    );
+                    return Err(self.unsupported(span, &what));
+                }
             }
         }
-        let kept =
-            |index: u32, fact: crate::recognition::TypeFact| convention.iter().any(|&(at, _)| at == (index, fact));
         let mut entry = values;
-        entry.extend(self.own_evidence_keeping(id, args, (Some(location), None), &kept, span)?);
+        entry.extend(self.own_evidence_keeping(id, args, (Some(location), None), (&|_, _| false, given), span)?);
         Ok(provided_call(
             steps,
             crate::iterators::own_provided_key(self.tcx, id),
@@ -997,18 +1000,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         closed: Option<Ty<'tcx>>,
         span: Span,
     ) -> R<Vec<Expr>> {
-        self.own_evidence_keeping(id, generic_args, (location, closed), &|_, _| true, span)
+        self.own_evidence_keeping(id, generic_args, (location, closed), (&|_, _| true, Vec::new()), span)
     }
 
-    /// `own_evidence`, of its fact slots those `keep` keeps alone: the
-    /// calling convention of an override's entry (`provided_fact_convention`,
-    /// #2430).
+    /// `own_evidence`, of its fact slots those `keep` keeps alone, and
+    /// `given` after them, before its drops: the calling convention of an
+    /// override's entry, which keeps none and is given its facts
+    /// (`provided_fact_convention`, #2430, #2449).
     pub(crate) fn own_evidence_keeping(
         &mut self,
         id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
         (location, closed): (Option<Expr>, Option<Ty<'tcx>>),
-        keep: &dyn Fn(u32, crate::recognition::TypeFact) -> bool,
+        (keep, given): (&dyn Fn(u32, crate::recognition::TypeFact) -> bool, Vec<Expr>),
         span: Span,
     ) -> R<Vec<Expr>> {
         // Each of its own `evidence_slots`', of the types given for them:
@@ -1070,6 +1074,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
+        values.extend(given);
         Ok(Expr::optional_args(values, drops))
     }
 
