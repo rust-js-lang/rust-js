@@ -2,10 +2,12 @@
 // A write's result given back by a trait's method whose signature gives a
 // type parameter, called through a dictionary: the value, `Err` or `Ok`,
 // as Rust gives it, whether the impl holds it as a value or writes it, and
-// `?` of it goes on with its `Err` (#1634). A generic function's
-// associated type that's an `io::Result<()>` too.
+// `?` of it goes on with its `Err` (#1634). Where the bound names a type
+// parameter or an associated type, `W: Is<T>`, `M::Out`, generic code
+// holds it as a value, which is refused until the entry gives it as one
+// (#2559, #2565: `valued_made_by_an_entry_of_a_trait_parameter`,
+// `valued_made_by_an_entry_as_self_out`).
 use std::fmt::{self, Write};
-use std::io;
 
 struct Failing;
 
@@ -37,20 +39,6 @@ impl Is<fmt::Result> for Writes {
     }
 }
 
-trait Make {
-    type Out;
-    fn make(&self) -> Self::Out;
-}
-
-struct Maker;
-
-impl Make for Maker {
-    type Out = io::Result<()>;
-    fn make(&self) -> io::Result<()> {
-        Err(io::Error::other("made"))
-    }
-}
-
 fn kept(written: impl Is<fmt::Result>) -> bool {
     let again = written.is();
     again.is_err()
@@ -67,10 +55,6 @@ fn checked(written: impl Is<fmt::Result>) -> fmt::Result {
     Ok(())
 }
 
-fn made<M: Make>(maker: &M) -> M::Out {
-    maker.make()
-}
-
 fn main() {
     let mut text = String::new();
     let written = write!(text, "{:?}", Failing);
@@ -82,7 +66,5 @@ fn main() {
     println!("checked {:?} {:?}", checked(written), checked(Writes(false)));
     println!("static {:?}", Is::<fmt::Result>::is(written));
     println!("static writes {:?}", <Writes as Is<fmt::Result>>::is(Writes(true)));
-    let out = made(&Maker);
-    println!("made {:?}", out.map_err(|e| e.to_string()));
     println!("end");
 }

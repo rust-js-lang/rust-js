@@ -402,4 +402,31 @@ export const mutations: Mutation[] = [
     replace: ".filter(|&(other, _)| other != at || other == at)",
     tests: ["test/corpus.test.ts", "-t", "^generic_deref_mut.rs$"],
   },
+  {
+    name: "valued-entry-unnormalized",
+    breaks:
+      "an impl's method written `-> Self::Out`, an `io::Result<()>`, which it's compiled as and throws, isn't seen as a write's result: generic code holding `M::Out` as a value is given it (#2559)",
+    file: "crates/rust-js-lower/src/generic_facts.rs",
+    find: "            (tcx.try_normalize_erasing_regions(env, ty::Unnormalized::new_wip(output))).unwrap_or(output)\n",
+    replace: "            output\n",
+    tests: ["test/corpus.test.ts", "-t", "^valued_made_by_an_entry_as_self_out\\.rs$"],
+  },
+  {
+    name: "valued-entry-whatever-its-trait-gives",
+    breaks:
+      "an impl's method giving a write's result is refused wherever its trait's signature gives one too, `Result<(), Self::E>`'s entry, which gives it tagged (#2057, #2559)",
+    file: "crates/rust-js-lower/src/generic_facts.rs",
+    find: "                valued_where(tcx, viewed(item.def_id), made).then_some((own, made))\n",
+    replace: "                crate::recognition::is_write_result_type(tcx, made).then_some((own, made))\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_results_generic_code_holds_as_given\\.rs$"],
+  },
+  {
+    name: "valued-entry-viewed-as-its-trait-declares",
+    breaks:
+      "an impl's method giving a write's result is refused where the bound its dictionary is given for names the write's result, `impl Is<fmt::Result>`'s `-> T`, whose generic code calls it as a write (#1634, #2559)",
+    file: "crates/rust-js-lower/src/generic_facts.rs",
+    find: ".rebase_onto(tcx, tr.def_id, tr.args);\n",
+    replace: ";\n",
+    tests: ["test/corpus.test.ts", "-t", "^write_result_through_a_dictionary\\.rs$"],
+  },
 ];

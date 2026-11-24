@@ -123,3 +123,34 @@ A type parameter's `TypeId` isn't in it: it's a `TypeFact` asked through
 the dictionary, `Crossing::FactDictionary`'s. "The `TypeId` of this `dyn`"
 isn't either, because it's of a `dyn` without `Any`, which no caller can
 give. The words of each refusal are as they were.
+
+## Amended 2026-11-25: a write's result an impl's dictionary gives (#2559)
+
+Another wrong answer of Campaign 6's matrix was closed by a stopgap, a
+cell of its own. `Crossing::ValuedDictionary` (#2565): an impl whose
+method gives a write's result, `fn make(&self) -> fmt::Result`, where
+the trait's signature, as the bound the dictionary is given for names
+it, gives a type parameter or an associated type, `Self::Out`. The
+method throws its error (ADR 0187), and generic code calling it through
+the dictionary holds `M::Out` as a value (`Form::Valued`, #1410), so
+`made_twice(&Bad)` threw `$FmtError` (#2559). `generic_facts.rs`'
+`impl_entry_valued` says which method: the impl's own signature as it's
+compiled, `-> Self::Out` normalized, against the trait's instantiated
+with the bound's arguments. `generic_facts/refusals.rs`'
+`refuse_valued_entry` asks it twice. `impl_dictionary` asks it of the
+bound as its caller names it, `Bad: Make`, wherever the dictionary is
+made, a `dyn`'s and a supertrait's too. Each call's evidence asks it of
+the bound as generic code declares it, `W: Is<T>`, whose `T` it holds as
+a value. Where the bound names the write's result, `impl
+Is<fmt::Result>`, generic code calls the method as a write and catches
+its error (#1634), so that compiles. Two shapes that ran right are
+refused now, as nothing at the crossing tells them apart: a `dyn
+Make<Out = fmt::Result>` only concrete code calls, and generic code that
+gives `M::Out` straight back, `fn made<M: Make>(m: &M) -> M::Out`, whose
+caller catches the error the method throws
+(`write_result_through_a_dictionary` lost its `made`). Lifting the cell
+gives the entry's result as a value, as `entry_writes_tagged` gives
+`Form::Tagged`'s.
+
+It follows ADR 0262's last row too. There are now 20 cells and 47
+refusals.

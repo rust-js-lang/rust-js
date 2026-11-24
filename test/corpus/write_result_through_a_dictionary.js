@@ -4,22 +4,13 @@
 // A write's result given back by a trait's method whose signature gives a
 // type parameter, called through a dictionary: the value, `Err` or `Ok`,
 // as Rust gives it, whether the impl holds it as a value or writes it, and
-// `?` of it goes on with its `Err` (#1634). A generic function's
-// associated type that's an `io::Result<()>` too.
+// `?` of it goes on with its `Err` (#1634). Where the bound names a type
+// parameter or an associated type, `W: Is<T>`, `M::Out`, generic code
+// holds it as a value, which is refused until the entry gives it as one
+// (#2559, #2565: `valued_made_by_an_entry_of_a_trait_parameter`,
+// `valued_made_by_an_entry_as_self_out`).
 
-import {
-  $IoError,
-  $debugStr,
-  $fmtError,
-  $fmtPartial,
-  $fmtWritten,
-  $ioErrorDisplay,
-  $ioThrow,
-  $main,
-  $stringError,
-  $writeCheck,
-  $writeTry,
-} from "@rust-js/std";
+import { $fmtError, $fmtPartial, $fmtWritten, $main, $writeCheck, $writeTry } from "@rust-js/std";
 
 export const failingDebug = { fmt: failingDebug_fmt };
 function failingDebug_fmt(failing) {
@@ -46,11 +37,6 @@ function writesIsResult_is(writes) {
   }
 }
 
-const makerMake = { make: makerMake_make };
-function makerMake_make(maker) {
-  return $ioThrow(new $IoError("Other", { value: "made", impl: $stringError() }));
-}
-
 function kept(written, IsResult) {
   const again = $writeTry(() => $writeCheck(IsResult.is(written)));
   return again !== undefined;
@@ -64,10 +50,6 @@ function dropped(written, IsResult) {
 function checked(written, IsResult) {
   $writeCheck(IsResult.is(written));
   console.log("checked on");
-}
-
-function made(maker, MMake) {
-  return MMake.make(maker);
 }
 
 $main(main);
@@ -96,9 +78,6 @@ function main() {
   console.log(
     `static writes ${$writeTry(() => writesIsResult_is([true])) === undefined ? "Ok(())" : "Err(Error)"}`,
   );
-  const out = $writeTry(() => $writeCheck(made(undefined, makerMake)));
-  const value = out === undefined ? { TAG: "Ok" } : { TAG: "Err", _0: $ioErrorDisplay(out) };
-  console.log(`made ${value.TAG === "Ok" ? "Ok(())" : `Err(${$debugStr(value._0)})`}`);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

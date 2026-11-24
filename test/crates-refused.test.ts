@@ -145,6 +145,19 @@ for (const [name, line, printed] of [
   }, 300_000);
 }
 
+// #2559 across crates: a consumer's impl of a library's trait whose method
+// gives a write's result where the trait gives `Self::Out`, its dictionary
+// given to the library's generic code, which holds it as a value: refused
+// where the dictionary is given, as one crate refuses it, until the entry
+// gives its result as a value (#2565).
+test("a consumer's impl giving a library's generic code a write's result as its Self::Out is refused", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "library_valued_made_by_a_consumers_entry", ["dep", "app"], [
+    "gives through its impl's dictionary, which generic code, given it or a `dyn` of it, holds as a value",
+    "app.rs:19:",
+  ]);
+  expect(native).toBe("Err(Error) Err(Error) true\n");
+}, 300_000);
+
 // #2560 across crates: write results as the items of an iterator given to
 // a library's generic code that reads them as `Result`s of its type
 // parameters: refused at the call, as one crate refuses it, until each item

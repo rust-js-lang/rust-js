@@ -740,4 +740,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_bytes_stepped_by_next.rs$"],
   },
+  {
+    name: "valued-entry-of-the-declared-bound-unasked",
+    breaks:
+      "an impl whose method gives a write's result given where generic code's bound names the trait's type parameter as its own, `W: Is<T>`, which holds it as a value: the method's error escapes, `$FmtError` (#2559)",
+    file: "crates/rust-js-lower/src/traits/calls.rs",
+    find: "                        self.refuse_valued_entry(impl_id, declared, span)?;\n",
+    replace: "                        self.refuse_valued_entry(impl_id, bound, span)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^valued_made_by_an_entry_of_a_trait_parameter\\.rs$"],
+  },
 ];

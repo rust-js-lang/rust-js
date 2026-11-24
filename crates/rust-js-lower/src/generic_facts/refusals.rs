@@ -4,9 +4,11 @@
 //! holds as no object, which it holds in a place of its own, inside what
 //! it takes or gives or among another iterator's items (#2255, #2534),
 //! and write results among an iterator's items it reads as `Result`s of
-//! its type parameters (#2560). Each route of a call asks
-//! `refuse_unconverted_call`; `crossing_into` asks
-//! `refuse_guard_written_whole`. Each is a stopgap, its cell a
+//! its type parameters (#2560); and an impl's dictionary whose method gives
+//! a write's result generic code holds as a value (#2559). Each route of a
+//! call asks `refuse_unconverted_call`; `crossing_into` asks
+//! `refuse_guard_written_whole`; a dictionary's making and a call's
+//! evidence ask `refuse_valued_entry`. Each is a stopgap, its cell a
 //! `refusal::Crossing` the issue it names lifts (ADR 1201).
 
 use super::writes_through_its_box;
@@ -130,6 +132,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok(())
+    }
+
+    /// A dictionary of `impl_id` refused where a method of it gives a
+    /// write's result that generic code holds as a value, as `view`, the
+    /// bound it's given for, names what it gives (`impl_entry_valued`,
+    /// #2559): of the bound as its caller names it, `Bad: Make`'s
+    /// `Self::Out`, wherever it's made, a `dyn`'s too; and as generic code
+    /// declares it, `W: Is<T>`'s `T`, where a call gives it
+    /// (`evidence_args_given`), until the entry gives its result as a value
+    /// (#2565).
+    pub fn refuse_valued_entry(&self, impl_id: DefId, view: ty::TraitRef<'tcx>, span: Span) -> R<()> {
+        match self.impl_entry_valued(impl_id, view) {
+            Some(entry) => {
+                let what = super::valued_entry(self.tcx, entry);
+                Err(self.unconverted(span, crate::refusal::Crossing::ValuedDictionary, &what))
+            }
+            None => Ok(()),
+        }
     }
 
     /// A call of generic code `id`, its instance of `args`, refused where

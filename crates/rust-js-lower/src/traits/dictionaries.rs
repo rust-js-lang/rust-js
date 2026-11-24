@@ -1229,6 +1229,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ),
             ));
         }
+        // A write's result its method gives where generic code holds a value (#2559).
+        self.refuse_valued_entry(impl_id, tr, span)?;
         let callee = self.fn_ref(impl_id);
         let args = self.evidence_args(impl_id, impl_args, span)?;
         // One that takes nothing, its module's `const`, `circleShape` (ADR 0592).

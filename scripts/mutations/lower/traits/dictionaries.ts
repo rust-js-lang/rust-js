@@ -960,4 +960,13 @@ export const mutations: Mutation[] = [
     replace: "&& clone.is_none() {",
     tests: ["test/corpus.test.ts", "-t", "^into_iterator_another_bound_reads\\.rs$"],
   },
+  {
+    name: "valued-entry-dictionary-unrefused",
+    breaks:
+      "an impl whose method gives a write's result as its trait's `Self::Out` is made a `dyn` generic code holds as `dyn Make<Out = T>`, which holds it as a value: the method's error escapes, `$FmtError` (#2559)",
+    file: "crates/rust-js-lower/src/traits/dictionaries.rs",
+    find: "        self.refuse_valued_entry(impl_id, tr, span)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^valued_made_by_an_entry_through_a_dyn\\.rs$"],
+  },
 ];

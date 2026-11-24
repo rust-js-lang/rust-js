@@ -198,6 +198,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .skip_normalization();
                     let erased = self.tcx.erase_and_anonymize_regions(bound);
                     let crossing = (id, declared.self_ty(), bound.self_ty());
+                    // A write's result its impl's method gives where this
+                    // bound, as generic code declares it, `W: Is<T>`, holds
+                    // a value (#2559).
+                    if let Some((impl_id, _)) = evidence_impl(self.tcx, self.typing_env, bound) {
+                        self.refuse_valued_entry(impl_id, declared, span)?;
+                    }
                     // A type parameter bound by `IntoIterator` given a `&C`
                     // or a `&mut C`, `zip`'s `U`, held as it is, never in a
                     // box (ADR 0976), as `ref_held` says; not one another

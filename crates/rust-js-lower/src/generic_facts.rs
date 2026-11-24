@@ -673,6 +673,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .any(|tr| tr.self_ty() == declared && tr.args.types().skip(1).any(generic_result))
     }
 
+    /// The method of `impl_id`, and the write's result it gives, where its
+    /// own signature gives one, `fn make(&self) -> fmt::Result`, as a
+    /// write's, its error thrown (ADR 0187), and its trait's, as `tr`, the
+    /// bound its dictionary is given for, names it, a type parameter or an
+    /// associated type, `-> Self::Out`, that generic code calling it
+    /// through the dictionary holds as a value: `Form::Valued`'s place
+    /// (#1410), which no entry converts yet, so the error escaped generic
+    /// code where Rust gives it back (#2559, #2565). Not where the bound
+    /// names the write's result, `impl Is<fmt::Result>`'s `-> T`, whose
+    /// generic code calls it as it calls a write (#1634); nor std's `impl<T,
+    /// E> Clone for Result<T, E>`, whose own signature gives a `Result` of
+    /// its type parameters.
+    pub(crate) fn impl_entry_valued(&self, impl_id: DefId, tr: ty::TraitRef<'tcx>) -> Option<(DefId, Ty<'tcx>)> {
+        let tcx = self.tcx;
+        let output = |id: DefId, args: ty::GenericArgsRef<'tcx>| {
+            let sig = tcx.fn_sig(id).instantiate(tcx, args).skip_normalization();
+            tcx.instantiate_bound_regions_with_erased(sig).output()
+        };
+        // Of the impl's own, as it's compiled, `-> Self::Out` normalized.
+        let made = |id: DefId| {
+            let output = output(id, ty::GenericArgs::identity_for_item(tcx, id));
+            let env = ty::TypingEnv::post_analysis(tcx, id);
+            (tcx.try_normalize_erasing_regions(env, ty::Unnormalized::new_wip(output))).unwrap_or(output)
+        };
+        // Of the trait's, as the bound names it, an associated type left
+        // as generic code has it, `<Bad as Make>::Out`.
+        let viewed = |id: DefId| {
+            let args = ty::GenericArgs::identity_for_item(tcx, id).rebase_onto(tcx, tr.def_id, tr.args);
+            output(id, args)
+        };
+        (tcx.associated_items(tr.def_id).in_definition_order())
+            .filter(|item| item.is_fn())
+            .find_map(|item| {
+                let own = *tcx.impl_item_implementor_ids(impl_id).get(&item.def_id)?;
+                let made = made(own);
+                valued_where(tcx, viewed(item.def_id), made).then_some((own, made))
+            })
+    }
+
     /// The write's result of `instantiated` held where `declared` has a
     /// `Result` of its type parameters, at or below the top.
     fn tagged_below(&self, declared: Ty<'tcx>, instantiated: Ty<'tcx>) -> Option<Ty<'tcx>> {
@@ -1066,6 +1105,17 @@ pub(crate) fn valued_where<'tcx>(
 pub fn held_write_result(held: Ty<'_>) -> String {
     format!(
         "a write's result, `{held}`, held inside what generic code has as a `Result` of its type parameters, `{{ TAG }}` there (#2568)"
+    )
+}
+
+/// What's refused of an impl's dictionary whose `method` gives a write's
+/// result, `made`, that generic code holds as a value (`impl_entry_valued`,
+/// #2559): given to generic code, or as a `dyn`'s, which generic code may
+/// hold as `dyn Make<Out = T>`.
+pub fn valued_entry(tcx: rustc_middle::ty::TyCtxt<'_>, (method, made): (DefId, Ty<'_>)) -> String {
+    format!(
+        "a write's result, `{made}`, that `{}` gives through its impl's dictionary, which generic code, given it or a `dyn` of it, holds as a value, where the method throws its error (#2559)",
+        tcx.def_path_str(method)
     )
 }
 

@@ -69,6 +69,10 @@ pub enum Crossing {
     /// Write results as the items of an iterator given to generic code that
     /// reads them as a `Result` of its type parameters (#2560).
     TaggedItem,
+    /// A write's result an impl's method gives where its trait's signature
+    /// has a type parameter or an associated type, given by its dictionary
+    /// (#2559).
+    ValuedDictionary,
     /// A `TrustedRandomAccess` or `TrustedLen` fact std's zip or `eq` is
     /// picked by, at any crossing.
     TrustedLen,
@@ -107,6 +111,7 @@ impl Crossing {
             Crossing::TaggedArgument => 1416,
             Crossing::TaggedWithin => 2568,
             Crossing::TaggedItem => 2566,
+            Crossing::ValuedDictionary => 2565,
             Crossing::TrustedLen => 2546,
             Crossing::HintArgument => 2553,
             Crossing::HintBoundary => 1562,
