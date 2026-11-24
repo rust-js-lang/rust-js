@@ -730,6 +730,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/calls.rs",
     find: "                    let made = match self.placed_dictionary(id, (bound, instantiated), span)? {\n",
     replace: "                    let made = match None::<Expr> {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_trait_default_into_iters_items_held_as_no_object"],
+    tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_trait_default_into_iters_items_held_as_no_object"],
   },
 ];
