@@ -7,7 +7,9 @@ import {
   $dropEach,
   $foldToArray,
   $intoIter,
+  $iter,
   $lazyRange,
+  $mapEnds,
   $rangeInclusiveNext,
   $stringPanic,
   iterator_map,
@@ -45,7 +47,7 @@ function gathered(iter, IIntoIterVecCollect) {
 }
 
 function ofVec(v) {
-  return $foldToArray(v.values().map(made), dDrop_drop);
+  return $foldToArray($mapEnds($iter(v), made), dDrop_drop);
 }
 
 function panicked(f, dropT) {
@@ -78,7 +80,7 @@ function main() {
   );
   console.log(
     `${panicked(
-      () => gathered([1, 2, 3, 4].values().map(made), { inPlace: 4 }),
+      () => gathered($mapEnds($iter([1, 2, 3, 4]), made), { inPlace: 4 }),
       $dropEach(dDrop_drop),
     )}`,
   );

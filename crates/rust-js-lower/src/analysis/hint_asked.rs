@@ -189,7 +189,7 @@ pub(super) fn of_crate<'tcx>(
             }
             // What asks the hint of a type of its type parameters, asked of
             // what its callers give, each instance below (`AsksHint`).
-            if let Some(of) = asks.of_params(callee, args) {
+            if let Some(of) = asks.of_params(tcx, ty::TypingEnv::post_analysis(tcx, body.def_id), (callee, args)) {
                 of_params.push((tcx.typeck_root_def_id(body.def_id), tcx.erase_and_anonymize_regions(of)));
             }
             // Not what's given a library's function, whose hint its body asks
@@ -271,6 +271,26 @@ pub(super) fn of_crate<'tcx>(
             };
             let mut of_items = false;
             for instance in instances {
+                // An instance of what a `from_iter` steps, `<T as
+                // IntoIterator>::IntoIter` of what's given as `T`: the
+                // iterator it names (#2463). Only that projection, as an
+                // instance whose parts rustc spells otherwise is marked as
+                // it's spelled (#2468).
+                let instance = match *instance.kind() {
+                    ty::Alias(
+                        _,
+                        ty::AliasTy {
+                            kind: ty::Projection { def_id },
+                            ..
+                        },
+                    ) if def_id == asks.into_iter => tcx
+                        .try_normalize_erasing_regions(
+                            ty::TypingEnv::fully_monomorphized(),
+                            ty::Unnormalized::new_wip(instance),
+                        )
+                        .unwrap_or(instance),
+                    _ => instance,
+                };
                 of_items |= mark_given(tcx, recognition, (owner, instance), keeps_capacity, &mut asked);
             }
             if of_items {
@@ -416,11 +436,9 @@ pub(crate) fn asked_of_own<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[Body<'tcx>]) -> In
         let before = asked.len();
         for body in bodies {
             let owner = tcx.typeck_root_def_id(body.def_id);
-            let asks = body.thir.exprs.iter().any(|expr| {
-                let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
-                    return false;
-                };
-                asks_hint.of_params(callee, args).is_some()
+            let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
+            let asks = calls_of(tcx, body).into_iter().any(|(callee, args)| {
+                asks_hint.of_params(tcx, typing_env, (callee, args)).is_some()
                     || asked.contains(&callee)
                         && args
                             .types()
@@ -438,12 +456,16 @@ pub(crate) fn asked_of_own<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[Body<'tcx>]) -> In
 
 /// The calls that ask the hint of an iterator of their function's type
 /// parameters: `size_hint()`, and a `collect()`, which std's `SpecFromIter`
-/// asks as the `Vec` it makes grows (#1239). The one answer, of what each
+/// asks as the `Vec` it makes grows (#1239), or a `B::from_iter(it)`, the
+/// call a `collect()` is, of its argument's `IntoIter` (#2463). The one answer, of what each
 /// instance is made knowing (`of_crate`) and of which functions ask the
 /// hint of what they're given (`asked_of_own`, #1327).
 struct AsksHint {
     size_hint: DefId,
     collect: DefId,
+    from_iter: DefId,
+    /// `IntoIterator::IntoIter`, what a `from_iter` steps of what it's given.
+    into_iter: DefId,
 }
 
 impl AsksHint {
@@ -452,15 +474,37 @@ impl AsksHint {
         AsksHint {
             size_hint: crate::recognition::trait_method(tcx, iterator, "size_hint"),
             collect: crate::recognition::trait_method(tcx, iterator, "collect"),
+            from_iter: crate::recognition::trait_method(
+                tcx,
+                crate::recognition::std_item(tcx, crate::recognition::StdItem::FromIterator),
+                "from_iter",
+            ),
+            into_iter: crate::recognition::trait_method(
+                tcx,
+                crate::recognition::std_item(tcx, crate::recognition::StdItem::IntoIterator),
+                "IntoIter",
+            ),
         }
     }
 
     /// Of a call of `callee` with `args` that asks it, the iterator's type,
     /// where it's of its function's type parameters.
-    fn of_params<'tcx>(&self, callee: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Ty<'tcx>> {
-        let of = args.types().next()?.peel_refs();
-        ((callee == self.size_hint || callee == self.collect) && rustc_middle::ty::TypeVisitableExt::has_param(&of))
-            .then_some(of)
+    fn of_params<'tcx>(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        typing_env: ty::TypingEnv<'tcx>,
+        (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+    ) -> Option<Ty<'tcx>> {
+        let of = match callee {
+            // `<B as FromIterator<A>>::from_iter::<T>`: what it steps is
+            // `T`'s `IntoIter`.
+            _ if callee == self.from_iter => {
+                crate::recognition::iterator_type_of(tcx, typing_env, args.types().nth(2)?).peel_refs()
+            }
+            _ if callee == self.size_hint || callee == self.collect => args.types().next()?.peel_refs(),
+            _ => return None,
+        };
+        rustc_middle::ty::TypeVisitableExt::has_param(&of).then_some(of)
     }
 }
 

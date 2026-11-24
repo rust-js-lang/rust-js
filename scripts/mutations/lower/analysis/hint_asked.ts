@@ -3,6 +3,24 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "from-iter-asks-no-hint",
+    breaks:
+      "generic code's `Vec::from_iter(it)` asks no hint of what its callers give: a chain of two takes of a set's items is JS's own `values().take(n)`, which know no hint, and the `Vec`'s capacity is 8 where std's is 7 (#2463)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "            _ if callee == self.from_iter => {",
+    replace: "            _ if false && callee == self.from_iter => {",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_in_generic_code_asks_its_hint\\.rs$"],
+  },
+  {
+    name: "from-iter-instances-unnormalized",
+    breaks:
+      "an instance of what generic code's `from_iter` of an `I: IntoIterator` steps is left `<Copied<Chain<..>> as IntoIterator>::IntoIter`, so the chain a caller gives isn't made knowing its hint: capacity 8 where std's is 7 (#2463)",
+    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
+    find: "if def_id == asks.into_iter =>",
+    replace: "if false && def_id == asks.into_iter =>",
+    tests: ["test/corpus.test.ts", "-t", "^from_iter_in_generic_code_asks_its_hint\\.rs$"],
+  },
+  {
     name: "compiled-library-body-calls-unread",
     breaks:
       "a library's generic `collect` the consumer compiles itself, given a chain of two takes of a set's items, reads none of its calls, its body's MIR alone: the takes are JS's own `values().take(n)`, which know no hint, and the `Vec`'s capacity is 8 where std's is 7 (#2456)",
@@ -74,7 +92,7 @@ export const mutations: Mutation[] = [
     name: "hint-asked-of-no-param",
     breaks: "a function that asks `size_hint()` of what it's given, or collects it, isn't known to: a flatten given it is JS's own `flatMap`, `(0, None)` where std's counts its items' constant size (#1323)",
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "                asks_hint.of_params(callee, args).is_some()\n                    || asked.contains(&callee)\n",
+    find: "                asks_hint.of_params(tcx, typing_env, (callee, args)).is_some()\n                    || asked.contains(&callee)\n",
     replace: "                false\n                    || asked.contains(&callee)\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
   },
@@ -82,8 +100,8 @@ export const mutations: Mutation[] = [
     name: "hint-asked-not-relayed",
     breaks: "a function that gives what it's given on to one that asks its hint isn't known to ask it: `relayed(it)` of `hint(it)` (#1323)",
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "                asks_hint.of_params(callee, args).is_some()\n                    || asked.contains(&callee)\n",
-    replace: "                asks_hint.of_params(callee, args).is_some()\n                    || false\n",
+    find: "                asks_hint.of_params(tcx, typing_env, (callee, args)).is_some()\n                    || asked.contains(&callee)\n",
+    replace: "                asks_hint.of_params(tcx, typing_env, (callee, args)).is_some()\n                    || false\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
   },
   {
@@ -91,8 +109,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a flatten given to generic code that collects it is made in place, as no collect is said to ask its hint, so the `Vec` std's `SpecFromIter` grows asks it again (#1239, #1327)",
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "        ((callee == self.size_hint || callee == self.collect) && rustc_middle::ty::TypeVisitableExt::has_param(&of))\n",
-    replace: "        (callee == self.size_hint && rustc_middle::ty::TypeVisitableExt::has_param(&of))\n",
+    find: "            _ if callee == self.size_hint || callee == self.collect => args.types().next()?.peel_refs(),\n",
+    replace: "            _ if callee == self.size_hint => args.types().next()?.peel_refs(),\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_an_associated_types_items.rs$"],
     snapshots: true,
   },

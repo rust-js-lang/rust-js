@@ -1228,3 +1228,37 @@ marking had also hidden, which fail in one crate as well, are their own
 issues: `B::from_iter(it)` is not taken for the `collect` it is (#2463),
 and a generic `extend` by such a chain refuses its `capacity()` at run
 time (#2464).
+
+## Amendment (2026-11-24, #2463): `B::from_iter(it)` asks the hint a `collect()` does
+
+`it.collect::<B>()` is `B::from_iter(it)`, and std's `Vec` collects either
+by the same `SpecFromIter`. The hint scan took only `Iterator::collect`
+and `size_hint` for asks of a type parameter's hint (`AsksHint`), so
+generic code's `Vec::from_iter(it)` asked none: a chain of two takes of a
+set's items its caller gave it was JS's own `values().take(n)`, and the
+`Vec`'s capacity 8 where std's is 7, in one crate, and across crates
+since #2456's amendment's gap closed. `AsksHint::of_params` now takes
+`FromIterator::from_iter` as the `collect()` it is, of its argument's
+`IntoIterator::IntoIter`; an instance its callers give that is that
+projection is normalized before it's marked, so `<Copied<Chain<..>> as
+IntoIterator>::IntoIter` of an `I: IntoIterator` is the chain itself.
+Only that projection: normalizing every instance marked ones whose
+hint nothing reads, in-place collects' and those of a crate that reads
+no capacity, which #2468 decides by what's observable. `asked_of_own`, which says
+which functions ask the hint of what they're given, reads a body's calls
+by the same `calls_of`. This follows ADR 0262's "results change" case.
+
+One snapshot moves: collect_panic_drops_collected's generic
+`Vec::from_iter` gives the JS a `.collect()` there gives, two adapters
+made knowing their hint, `$mapEnds($iter(v), made)`, so `$iter`'s share in
+docs/readability.txt grows, 89.1 to 89.2 in 10,000 lines. Their hint is
+read by nothing, as the case reads no capacity; #2468 decides a collect's
+ask by what's observable, which returns them, and every collect's alike,
+to JS's own adapters.
+
+Tests: corpus `from_iter_in_generic_code_asks_its_hint` (a `Vec`'s and a
+`VecDeque`'s, through `IntoIterator` and `Iterator` bounds and a generic
+`B`, of chains, a skip, a filter, a `Vec` and a range) and the pair
+`library_from_iter_asks_the_hint_of_what_its_consumer_gives`, against
+native. New mutations: `from-iter-asks-no-hint` and
+`from-iter-instances-unnormalized`.

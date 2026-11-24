@@ -1031,7 +1031,10 @@ What's refused is in [the limitations](limitations.md).
 - **`C::from_iter(items)` is `items.collect::<C>()`,** which is what
   `collect` calls: the same JS, of a std collection and any `items`, the
   crate's own iterator in generic code too
-  ([0160](../decisions/0160-user-collections.md), amended).
+  ([0160](../decisions/0160-user-collections.md), amended), and in
+  generic code it asks the hint of what its callers give as a `collect()`
+  does, a `Vec`'s capacity std's
+  ([0419](../decisions/0419-a-vecs-capacity-kept-where-asked.md), amended, #2463).
 - **A collection of the crate's is its own impls':** `for` over it calls
   its `IntoIterator`, `collect()` its `FromIterator`, `extend` its
   `Extend`, `sum()` its `Sum` ([0160](../decisions/0160-user-collections.md)).
