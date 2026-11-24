@@ -347,7 +347,7 @@ test("every architecture test reads the compiler's sources, so runs on every cha
 });
 
 test("check:fast runs what the selection selected: its files, its cases in parts, and lint; everything where it's none", () => {
-  const plain = { all: false, changed: ["crates/rust-js-lower/src/drops.rs"], branch: [], added: [], extra: [], cores: 12 };
+  const plain = { all: false, changed: ["crates/rust-js-lower/src/drops.rs"], branch: [], extra: [], cores: 12 };
   const given = { caseList: "/cases.txt", formsList: "/forms.txt" };
   const selected = jobs({ ...plain, picked: { ...given, files: new Set(["test/lowering-cells.test.ts", "test/jsx.test.ts"]), cases: ["a.rs", "b.rs"], forms: [] } }).jobs;
   const testJobs = (list: typeof selected) => list.filter((job) => job.cmd[0] === "bun" && job.cmd[1] === "test").map((job) => job.name);
@@ -382,7 +382,7 @@ test("check:fast runs what the selection selected: its files, its cases in parts
 });
 
 test("bun run push says its selection on its line, and runs the check and the port only where they can differ", () => {
-  expect(pushPhases).toEqual(["turn", "rebase", "gate", "fast", "build", "std", "mutants", "check", "sanity", "react", "files", "push"]);
+  expect(pushPhases).toEqual(["turn", "rebase", "gate", "fast", "build", "std", "mutants", "check", "sanity", "react", "judged", "files", "push"]);
   expect(onlyPushedFiles(["a.rs", "b.rs"], ["a.rs"])).toEqual(["b.rs"]);
   const line = timesLine({ at: new Date("2026-11-16T08:00:00Z"), machine: "m", agent: "a", kind: "push", sha: "abc", total: 61.4, phases: [["check", 300]], selection: "some (3 files, 12 cases)", load: [1, 2, 3], ok: true, note: "" });
   expect(line).toBe("2026-11-16T08:00:00Z | m | a | push | abc | total 61s | check 300s | select some (3 files, 12 cases) | load 1.00/2.00/3.00 | ok | ");

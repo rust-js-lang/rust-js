@@ -426,8 +426,10 @@ What keeps them there:
   change touches JSX, the snapshot and diagnostic tests where it touches
   `src/` or the runtime, and with them the guide's examples, std's package
   and the readability ratchet, which a lowering change turned `main` red
-  with when only CI ran them; the mutations, those the change adds or
-  changes; CI runs the rest. **`--all` runs what a push's check runs**
+  with when only CI ran them; the mutations CI's check judges of the
+  change (`changedSince`), but those judged on its tree already
+  (scripts/judged.ts, #2485), a survivor at the change's base latent as
+  on CI; CI runs the rest. **`--all` runs what a push's check runs**
   that can run here, so the check before a push is it and the change's
   mutations, no list beside it: typecheck, fmt and clippy, `cargo test`
   (its own timeout, 600 s, as its build waits on clippy's lock of
@@ -776,6 +778,11 @@ checked:
   `crates/rust-js-lower` as `crate::iterators`. It says what it can't
   write, a path into the binary or into a crate this one doesn't depend
   on. A no-arguments run is the mover's, after `git mv`.
+- **Split a test file, rewrite its mutations' paths**: `bun scripts/mutations.ts
+  --remap` writes, in each mutation's list, the one other file with a test
+  its pattern names where its own names none, and names each it can't
+  place; test/mutations.test.ts' refusal says where each went (ADR 1200,
+  amended).
 - **See the rebase finish before checking**: `git status` says `rebasing`
   while it waits on a conflict, and checks run then test a half-applied
   branch, which passes or fails for no reason of its own.
@@ -884,7 +891,7 @@ checked:
 | `check:fast --all`, now bound by its CPU, not by its cores idle (2026-11-07) | On the 12-core M6, about 1,800 CPU-seconds with no change, 900 of them the 200 files besides the corpus (the longest `crates`, `libraries`, `snapshots`, `cargo-workspace` and `compiler`, 45–80 s each), 350 the corpus's compiles, whose runs are cached; with an iterator change about 3,500, 1,270 of them the rows it names and the corpus with std's iterator structs. Its cores 90% busy, half of them efficiency cores. Measured by #874: rust-js's processes are 1,780 of its CPU-seconds, 9,050 calls: 380 the corpus's, 350 the fixtures' compiles, 260 the rest, and Cargo's builds of crates, which #885 measured again apart from the rustc each one runs: about 590, of which the binding crates are 140 (`webapi` 114 s, built 31 times, at 3.4–4.1 s each under load, 1.8 s alone; `react` and `js` 11 s each), the `-vV` probes 75 (about 590 a run, 0.13 s each, every one a Node session that asks which Prettier the app has), and the rest the crates the tests and the crate corpus compile. The file compiles are kept now, where the build is the same (1 min 39–50 s with no change); after a change to `src/` none is (3 min 4 s) | Less work, not more parallel. Not native Rust's outputs kept, under 2% of any job's CPU (dropped, docs/dev-loop.md, #875). Not the binding crates in a target the tests share, which can't share them: Cargo's `-vV` line names each app's crate directories, by which Prettier they find (ADR 1003), so `webapi`'s `-C metadata` differs in every app in the checkout, 31 keys for 31 builds (dropped, docs/dev-loop.md, #885; what would let them share, #892) |
 | Every mutation on the Mac, `bun run nightly mutations` | 65 min for 8,047 on the M3 Max (2026-10-30), the CPU 86% busy and its 16 GB full: 6.6 GB compressed, 1.3 GB swapped, 35% of the CPU the system's, each mutant's run starting bun, rust-js and Node | More memory, or a mutant's tests run in a process kept warm, as `bun test` with its compiler swapped, not started again for each |
 | A mutant's serde, shipped-crates and bound-maps tests (145 mutations) | Each builds its native program again in the mutant's own target, its wrapper `include!`ing a file beside it in a fixture there, so the path, and the kept build's key, is the mutant's; a serde build links serde's rlibs. The corpus's wrappers are kept by content in the checkout's target (#875) | The wrapper and the files it includes written to a `contentDirectory` of the checkout's, as `runNative` writes the corpus's |
-| `bun scripts/mutations.ts --changed=origin/main` of a large change | More than five minutes even in three shards, so it's left to CI | Shards picked to fit, by each mutation's usual time: CI's shards are dealt by it now (ADR 0093, amended), their count still by how many |
+| `bun scripts/mutations.ts --changed=origin/main` of a large change, which a push judges since #2485 (check:fast's job, its `judged` phase) | More than five minutes even in three shards; CI's shards took 1 to 74 runner-minutes a push (2026-11-24's last ten checks), each round of a push past a moved `main` a new tree to judge | Shards picked to fit, by each mutation's usual time: CI's shards are dealt by it now (ADR 0093, amended), their count still by how many |
 | The nightly's wall, 2 h 48 min (nightly 43650311159, 2026-11-15), before it held 14 runners in lanes (ADR 0093, amended, 2026-11-17), its wall since to be measured | 91 jobs, 2,231 runner-minutes against the Free plan's 20 at once, so from minute 30 to 90 every slot is held and jobs wait: the mutation shards started 16 to 45 min in. GitHub's start, about 4 h after the cron's 19:00 UTC, is outside our control: from 2026-11-14 to 11-22 the scheduled runs started 22:52 to 02:17 UTC, 3.9 to 7.3 h late, and 11-23's never came; lisa agent dispatched it by hand at 02:00 UTC (45309220022). Moving the cron earlier only moves the queue; a night with no scheduled run by 02:00 UTC is dispatched by hand, `gh workflow run nightly.yml --ref main` | Fewer runner-minutes, below: the five longest jobs are the next five rows |
 | The nightly's mutations, 16 shards, 13–136 min each | 67% of the night's runner-minutes. Of the 10,410 mutations timed, the 210 whose site isn't in a function (`site`) are built alone, 600 of the 2,012 build-minutes, each a whole compile of the crate on CI until it was built incrementally (ADR 0093's amendment of 2026-11-16, #1959); about two a shard aren't caught by their tests and fell back to every corpus snapshot, 15 min each, without a test map on CI (`lent-string-iterator-kept`'s 709 s), each now judged by the cases CI's `test-map` job's map says reach it (ADR 0093, amended). Dealt by time since ADR 0093's amendment | A batch that can hold a site outside a function |
 | The nightly's metamorphic net, 3 machines, ~104 min each | 853 cases a machine, a median of 27 s each, 405 min summed in 4 parts: each rewrite of each case built natively again every night, as nothing native is kept between CI runs. Locally the corpus's part 1/8 is 236 s with the native and verified-run stores cold, 44.8 s with the natives warm, 5.6 s with both (Mac mini, load 2.0) | Kept since ADR 0567's amendment: a native program's run by its build's key beside what the build read, a few MB that CI caches, so a rewrite unchanged since the last night is neither built nor run. To measure: the first night with them |
@@ -936,7 +943,11 @@ checked:
   push's line, CI's check of the push running every test), refuses where
   the React port differs at its pin, of a change
   to what compiles it (a change the port takes moves
-  `ports/react-in-rust.pin` in the same push), refuses where `git diff
+  `ports/react-in-rust.pin` in the same push), judges each mutation CI's
+  check judges of the change on the tree it pushes, or refuses, naming it
+  (its `judged` phase: check:fast's job judges them and records them by
+  the tree, scripts/judged.ts; any not on record are judged there, as of a
+  skipped check, #2485), refuses where `git diff
   origin/main` holds a file no pushed commit changes, and pushes. It first
   fetches CI's test map of the nearest commit of `main` where it's nearer
   than the machine's. Where `main` moved while it checked, it rebases again

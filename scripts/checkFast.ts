@@ -1,7 +1,7 @@
 // What a change is checked by before it's pushed, all at once: lint, the
 // test files and corpus cases the selector says the change can affect
 // (scripts/select.ts, ADR 1101, amended), each net its paths run, and the
-// mutations it adds or changes; everything a push's check runs where the
+// mutations CI's check judges of it (scripts/judged.ts); everything a push's check runs where the
 // selector can't say. `bun run push` runs it. CI's suite runs the same
 // selection after each push (DEVELOPMENT.md).
 //
@@ -153,7 +153,10 @@ export type Scope = {
   all: boolean;
   changed: string[];
   branch: string[];
-  added: string[];
+  /** The change's mutations CI's check judges not yet judged on its tree,
+   * and the commit it left `main` at, where a survivor there too is latent
+   * (scripts/judged.ts, #2485). */
+  mutations?: { names: string[]; base: string };
   extra: string[];
   cores: number;
   picked?: { files: Set<string>; cases: string[]; caseList: string; forms: string[]; formsList: string };
@@ -231,7 +234,7 @@ export const leftToCi: { run: string; why: string }[] = [
   },
   {
     run: "uses: ./.github/workflows/rustc-tests.yml",
-    why: "rustc's whole suite on 6 machines, and the mutations of all a check's changes: here `bun run test:rustc <dirs>`, and the mutations the change adds",
+    why: "rustc's whole suite on 6 machines, and the mutations of all a check's changes: here `bun run test:rustc <dirs>`, and the change's own, CI's set of it, judged on its tree (scripts/judged.ts)",
   },
 ];
 
@@ -269,7 +272,7 @@ export const variantFamilies: Record<Family, (files: string[]) => boolean> = {
 /** The check's jobs, through the pool at once: of `--all`, or a change the
  * selector can't say, what a push's check runs (check.yml); else the test
  * files and cases it selected, and the nets and builds its paths run. */
-export function jobs({ all, changed, branch, added, extra, cores, picked, forms, rows, capped }: Scope): { jobs: Job[] } {
+export function jobs({ all, changed, branch, mutations, extra, cores, picked, forms, rows, capped }: Scope): { jobs: Job[] } {
   // What the change touches, the working tree's and what the branch
   // committed since `main`: of the working tree's alone, a change committed
   // before its check, as one on `main` is, touched nothing, and its JSX,
@@ -589,14 +592,14 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
             }),
           ]
         : []),
-      ...(added.length > 0
+      ...(mutations !== undefined && mutations.names.length > 0
         ? [
-            job("mutations the change adds", ["bun", "scripts/mutations.ts", `--jobs=${builds}`, ...new Set(added)], {
+            job("the change's mutations", ["bun", "scripts/mutations.ts", `--jobs=${builds}`, `--base=${mutations.base}`, ...new Set(mutations.names)], {
               weight: builds,
               memory: builds * peakGB.compilerBuild,
               // Sized by the mutations it runs (#1364).
-              size: new Set(added).size,
-              ran: listKey("mutations", [added]),
+              size: new Set(mutations.names).size,
+              ran: listKey("mutations", [mutations.names]),
             }),
           ]
         : []),
@@ -936,11 +939,15 @@ if (import.meta.main) {
   const since = git(["merge-base", "HEAD", "origin/main"])[0];
   const branch = since === undefined ? [] : git(["diff", "--name-only", since, "HEAD"]);
 
-  // The mutations the change adds or edits, by the runner's own rule: one
-  // whose `find` alone changed is the change's too, where a diff's `name`
-  // lines missed it (#923).
-  const { ownSince } = await import("./mutations");
-  const added = (await ownSince("HEAD")).map((m) => m.name);
+  // The change's mutations CI's check judges (`changedSince`, its one
+  // selection: those it adds or edits, by the runner's own rule, #923, and
+  // those whose code or tests it touches), but those judged on this tree
+  // already (scripts/judged.ts): what `bun run push` asks of the tree it
+  // pushes, where before only those added or edited and not committed ran,
+  // none of a push's (#2485).
+  const { unjudgedSince } = await import("./judged");
+  const unjudged = since === undefined ? undefined : await unjudgedSince(root, since);
+  const mutations = unjudged === undefined ? undefined : { names: unjudged.names, base: since! };
 
   // The install matches the manifests before anything runs (#1817): a
   // rebase over a package or workspace change, `@rust-js/webapi`'s, left
@@ -1042,7 +1049,7 @@ if (import.meta.main) {
   const rows = touchesIterators([...changed, ...branch])
     ? changePicks(caseParts(machine().cores)).reduce((sum, p) => sum + p.rows, 0)
     : undefined;
-  const check = jobs({ all, changed, branch, added, extra, cores: machine().cores, picked, forms, rows, capped });
+  const check = jobs({ all, changed, branch, mutations, extra, cores: machine().cores, picked, forms, rows, capped });
   const cores = machine().cores;
   const clock: Clock = { began: Date.now(), samples: [] };
   const logs = checkLogRun();

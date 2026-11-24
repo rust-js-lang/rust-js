@@ -88,4 +88,12 @@ export const mutations: Mutation[] = [
     replace: "  return results.map((r) => [r.job.name, (r.end - r.start) / 1000]);\n",
     tests: ["test/select.test.ts", "-t", "says its selection on its line"],
   },
+  {
+    name: "check-fast-mutations-without-base",
+    breaks: "check:fast judges the change's mutations with no base, so a survivor there too, latent, which CI's shards pass, fails the check and the push",
+    file: "scripts/checkFast.ts",
+    find: "`--base=${mutations.base}`, ",
+    replace: "",
+    tests: ["test/ci.test.ts", "-t", "check:fast judges the change's mutations as CI's check does"],
+  },
 ];

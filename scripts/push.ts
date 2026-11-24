@@ -46,6 +46,11 @@
 //             it once the check ends. It runs the round's own link of the
 //             compiler built (`portRegen`), which no build in the check
 //             takes from under it (#2317)
+//   judged    each mutation CI's check judges of the change (`changedSince`)
+//             judged on the tree it pushes, caught or latent at its base:
+//             check:fast's job judges them and records them by the tree
+//             (scripts/judged.ts); any not on record are judged here, and
+//             one still not refuses the push, naming it (#2485)
 //   files     `git diff origin/main` holds only the pushed commits' files
 //   files     the diff against origin/main its commits' alone; and the
 //             tree as the round checked it: a file written since the round
@@ -77,9 +82,10 @@ import { selectionFile } from "./select";
 import { devTimes, ownsTimes } from "./devTimes";
 import { PORT_DOES_NOT_COMPILE, touchesPort } from "./iteratorSlice";
 import { refusal, undone } from "./push-guard";
+import { unjudgedSince } from "./judged";
 
 /** The phases, in the order they run. */
-export const phases = ["turn", "rebase", "gate", "fast", "build", "std", "mutants", "check", "sanity", "react", "files", "push"] as const;
+export const phases = ["turn", "rebase", "gate", "fast", "build", "std", "mutants", "check", "sanity", "react", "judged", "files", "push"] as const;
 
 /** The `fast` phase's tests: the mutation catalog's file whole, whose
  * failure, a `find` its code moved past, a test renamed or moved, or a
@@ -604,6 +610,21 @@ async function main() {
         checked = git("rev-parse", "HEAD").out.trim();
         checkedBase = base;
       }
+      // Each mutation CI's check judges of the change (`changedSince`, its
+      // one selection) judged on the tree it pushes, by the round's
+      // check:fast or here; one neither caught nor latent refuses the push,
+      // naming it (scripts/judged.ts): #2512 landed with its rule changed
+      // twice during its push, its mutations never run again on the tree
+      // pushed, and none of a push's ran (#2485).
+      const unjudged = await unjudgedSince(process.cwd(), base);
+      if (unjudged.wasm.length > 0) console.log(`push: CI's wasm job judges the change's mutations that read rust-js.wasm: ${unjudged.wasm.join(", ")}`);
+      if (unjudged.names.length > 0) {
+        console.log(`push: the change's mutations not judged on the tree it pushes, judged: ${unjudged.names.join(", ")}`);
+        run("judged", ["bun", "scripts/mutations.ts", `--base=${base}`, ...unjudged.names]);
+        const left = (await unjudgedSince(process.cwd(), base)).names;
+        if (left.length > 0) throw new Refused(judgedRefusal(left));
+      }
+      phase("judged");
       // Of the commit it was rebased onto and checked over, `base`, not
       // `origin/main` as it is now: a fetch while it was checked, a test's or
       // another worktree's, moved it, and its new commits' files were said
@@ -757,6 +778,12 @@ export function gateRebase(
     }
   }
   return { ran: gates };
+}
+
+/** Why a push is refused whose mutations `left` weren't judged on the tree
+ * it pushes, though it judged them: the tree changed while they ran. */
+export function judgedRefusal(left: string[]): string {
+  return `the change's mutations ${left.join(", ")} aren't judged on the tree it pushes: it changed while they ran (scripts/judged.ts). Leave the checkout alone during a push, then push again`;
 }
 
 function run(name: Phase, cmd: string[]) {

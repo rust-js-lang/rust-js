@@ -212,3 +212,40 @@ caught by its test (mutations `native-build-unnoted`, `native-run-unnoted`,
 `verified-run-unnoted`, `reach-unnoted`, `native-sources-unnoted`); bytes
 missed, as a sources directory's files written after it's made, are found
 by the next day's walk.
+
+## Amendment: a push judges the change's mutations CI's check judges, on the tree it pushes (2026-11-25, #2485)
+
+A push judged none of its change's mutations. check:fast's job ran those
+the change adds or edits and hasn't committed (`ownSince("HEAD")`), and a
+push's change is committed, so the job was empty. CI's check judges
+another set, every mutation whose code, list or tests the change touches
+(`changedSince`). So agents ran CI's set by hand before pushing, and where
+they didn't, #2512 landed with its rule changed twice during its push, its
+13 mutations never run again on the tree pushed; #2408's survivors reached
+`main` the same way.
+
+The lead's rule (issuecomment-7133196620): a push judges, itself, each
+mutation CI's check judges of the change, on the tree it pushes, or it
+refuses, naming them. CI's selection, `changedSince`, is the one; no second
+is built.
+
+- **check:fast's job** judges `changedSince` of where the change left
+  `main`, less those on record for the tree (below), with `--base` of that
+  commit: a survivor there too is latent, and passes, as CI's shards rule.
+- **The record** (scripts/judged.ts): each mutation run records what it
+  judged, caught or latent, by the tree it judged, `treeOf`, the files a
+  mutant's workspace is made of (`sourceFilesOf`) written as a git tree, an
+  untracked test the change hasn't committed among them. A run whose tree
+  changed while it ran records nothing. It's `target/mutants/judged.json`,
+  the newest 16 trees.
+- **The push's `judged` phase**, each round, after the check: CI's set of
+  the change since `origin/main`, less the record of the tree it pushes. Any
+  left, where the check was skipped or the tree changed under it, are judged
+  there; one still not on record refuses the push. Those that read
+  rust-js.wasm are said, and left to CI's wasm job, which judges them.
+
+The cost is CI's set judged on this machine once per tree: a rebase onto a
+moved `main` is a new tree, so a push's sanity round judges them again. CI's
+mutation shards took 1 to 74 runner-minutes a push over 2026-11-24's last
+ten checks, on 4-core machines; here they run in check:fast's pool beside
+its tests.

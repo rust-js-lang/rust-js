@@ -81,3 +81,14 @@ export function namesATest(file: string, pattern: string | undefined, listed?: R
   if (known !== undefined) return known.some((name) => matching.test(name));
   return !complete || names.some((name) => matching.test(name));
 }
+
+/** Where the tests `pattern` names went, of a mutation whose `file` names
+ * none: the one other file of `files` with a literal name it matches, as
+ * a split before the cap moves some of a file's tests to a new one; none
+ * where no file or several do (#2485). `bun scripts/mutations.ts --remap`
+ * rewrites each such mutation's lists so. */
+export function movedTo(file: string, pattern: string, files: string[]): string | undefined {
+  const matching = new RegExp(pattern);
+  const found = files.filter((other) => other !== file && testNamesOf(other).names.some((name) => matching.test(name)));
+  return found.length === 1 ? found[0] : undefined;
+}

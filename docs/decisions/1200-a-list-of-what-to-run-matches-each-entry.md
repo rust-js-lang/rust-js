@@ -82,3 +82,21 @@ runner's controls' to judge, as before: listing every one, 54 files, took
 9 s of the 18 cores on each run. It's test/mutations.test.ts, which
 `bun run push` runs in its first seconds, `fast`, so a push that takes
 away a test a mutation names stops there, naming the mutation.
+
+## Amendment (2026-11-25, #2485): a test that moved is found by its name, and `--remap` writes where
+
+A test file near the cap is split by concept, and some of its tests go to
+a new file. `bun scripts/move-paths.ts` rewrites a whole file's move, but a
+split is no pair of paths: each mutation naming a test that went is left
+naming the file it left, and 163 broke at once so. A test's name says where
+it went: `movedTo` (test/test-names.ts), the one other test file with a
+literal name the pattern matches; none where no file or several do, which
+is left to a hand.
+
+`bun scripts/mutations.ts --remap` writes it in each such mutation's list,
+as the literal is written, on one line or Prettier's several (`remapTests`),
+says each one it moved, and fails naming each it couldn't. The catalogue's
+test adds to its refusal where each refused mutation's test went and that
+`--remap` writes it. Nothing resolves a moved test as a run reads its
+mutation: a fallback would be a second way to name a test, and the list
+would never say where it is.

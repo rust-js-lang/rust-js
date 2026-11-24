@@ -31,4 +31,12 @@ export const mutations: Mutation[] = [
     replace: "!/^\\s*(?:test|it)(?:\\.\\w+)?\\(\\s*[^\"\\s`]/m.test(source)",
     tests,
   },
+  {
+    name: "test-moved-to-the-first-of-several",
+    breaks: "a test whose name several other files have is said to have moved to the first of them, and `--remap` writes a guess into its lists",
+    file: "test/test-names.ts",
+    find: "  return found.length === 1 ? found[0] : undefined;\n",
+    replace: "  return found[0];\n",
+    tests: ["test/mutations.test.ts", "-t", "a test moved to another file is found by its name"],
+  },
 ];

@@ -83,7 +83,7 @@ test("each push's lint job checks std/ is what its sources make, after the compi
 // alone, went red on `main` unseen (801d40c55, 336984bff).
 // Of a change to the iterators' code, the formatting code, the numbers' and the pointers', whose
 // jobs check.yml runs where its change is one (scripts/iteratorSlice.ts).
-const checkJobs = jobs({ all: true, changed: [], branch: ["crates/rust-js-program/src/runtime/steps.js", "crates/rust-js-program/src/runtime/pad.js", "crates/rust-js-program/src/runtime/div.js", "crates/rust-js-emit/src/typescript.rs", "crates/rust-js-lower/src/analysis/awaits.rs", "crates/rust-js-lower/src/unions.rs", "crates/rust-js-lower/src/analysis/intervals/state.rs", "test/corpus/array_map.rs"], added: [], extra: [], cores: 4 });
+const checkJobs = jobs({ all: true, changed: [], branch: ["crates/rust-js-program/src/runtime/steps.js", "crates/rust-js-program/src/runtime/pad.js", "crates/rust-js-program/src/runtime/div.js", "crates/rust-js-emit/src/typescript.rs", "crates/rust-js-lower/src/analysis/awaits.rs", "crates/rust-js-lower/src/unions.rs", "crates/rust-js-lower/src/analysis/intervals/state.rs", "test/corpus/array_map.rs"], extra: [], cores: 4 });
 const ranHere = checkJobs.jobs;
 
 // The readability passes' oracles run of a change to tidy, preparation or
@@ -93,7 +93,7 @@ test("the readability passes run where readability-passes.yml's paths say, of --
   const paths = readabilityPaths();
   expect(paths).toEqual(expect.arrayContaining(["crates/rust-js-program/src/prepare/**", "crates/rust-js-mir/src/tidy/**", "crates/rust-js-lower/src/mut_refs/**", "crates/rust-js-lower/src/noted/**", "test/getter-reads/**", ".github/workflows/readability-passes.yml"]));
   const named = (scope: { all: boolean; changed: string[]; branch: string[] }) =>
-    jobs({ ...scope, added: [], extra: [], cores: 12 }).jobs.some((job) => job.name === "readability passes");
+    jobs({ ...scope, extra: [], cores: 12 }).jobs.some((job) => job.name === "readability passes");
   expect(named({ all: true, changed: ["crates/rust-js-lower/src/copies.rs"], branch: [] })).toBe(false);
   expect(named({ all: true, changed: [], branch: ["crates/rust-js-mir/src/tidy/exits.rs"] })).toBe(true);
   expect(named({ all: false, changed: ["crates/rust-js-program/src/prepare.rs"], branch: [] })).toBe(true);
@@ -106,7 +106,7 @@ test("the readability passes run where readability-passes.yml's paths say, of --
 // intervals' of a change to the facts MIR's intervals keep or to what
 // writes past them, never of tidy's, nor tidy's of theirs (#2112 B).
 test("the intervals' variant runs where intervalsPaths say, and the readability passes don't", () => {
-  const named = (changed: string[]) => jobs({ all: true, changed, branch: [], added: [], extra: [], cores: 12 }).jobs.map((job) => job.name);
+  const named = (changed: string[]) => jobs({ all: true, changed, branch: [], extra: [], cores: 12 }).jobs.map((job) => job.name);
   const intervals = named(["crates/rust-js-lower/src/analysis/intervals/state.rs"]);
   expect(intervals).toContain("the intervals' variant");
   expect(intervals).not.toContain("readability passes");
@@ -124,7 +124,7 @@ test("the intervals' variant runs where intervalsPaths say, and the readability 
 // the whole file beside them.
 test("--all runs the metamorphic sample in parts, each once, and never the whole file beside them", () => {
   const sample = (cores: number) =>
-    jobs({ all: true, changed: [], branch: [], added: [], extra: [], cores }).jobs.filter((job) => job.cmd.join(" ") === "bun test test/metamorphic.test.ts");
+    jobs({ all: true, changed: [], branch: [], extra: [], cores }).jobs.filter((job) => job.cmd.join(" ") === "bun test test/metamorphic.test.ts");
   for (const cores of [4, 12]) {
     const parts = pooledParts(cores);
     expect(sample(cores).map((job) => job.env.RUST_JS_CASES)).toEqual(Array.from({ length: parts }, (_, i) => `${i + 1}/${parts}`));
@@ -137,7 +137,7 @@ test("--all runs the metamorphic sample in parts, each once, and never the whole
 test("the crate corpus runs where its paths say, of plain check:fast too", () => {
   const none = { files: new Set<string>(), cases: [], caseList: "/c.txt", forms: [], formsList: "/f.txt" };
   const named = (scope: { all: boolean; changed: string[]; branch: string[] }) =>
-    jobs({ ...scope, added: [], extra: [], cores: 12, picked: none }).jobs.some((job) => job.name === "the crate corpus");
+    jobs({ ...scope, extra: [], cores: 12, picked: none }).jobs.some((job) => job.name === "the crate corpus");
   expect(named({ all: false, changed: ["crates/rust-js-lower/src/iterators/mir_steps/closing.rs"], branch: [] })).toBe(true);
   expect(named({ all: false, changed: [], branch: ["crates/rust-js-program/src/runtime/byte_len.js"] })).toBe(true);
   expect(named({ all: false, changed: ["scripts/crate-corpus/itertools.rs"], branch: [] })).toBe(true);
@@ -569,7 +569,7 @@ test("a change adding or editing a corpus case runs each of its rewrites", () =>
     "new_case.rs",
   ]);
   const ofCases = (scope: { all: boolean; changed: string[]; branch: string[] }) =>
-    jobs({ ...scope, added: [], extra: [], cores: 12 }).jobs.filter((job) => job.name === runs.metamorphic[0].name);
+    jobs({ ...scope, extra: [], cores: 12 }).jobs.filter((job) => job.name === runs.metamorphic[0].name);
   for (const all of [false, true]) {
     const [rewrites] = ofCases({ all, changed: ["test/corpus/new_case.rs"], branch: [] });
     expect(rewrites.cmd).toEqual(["bun", "scripts/iteratorSlice.ts", "run", "metamorphic", "1"]);
@@ -588,22 +588,30 @@ test("a change adding or editing a corpus case runs each of its rewrites", () =>
 test("a job whose work the change sizes says its size", () => {
   const sized = (scope: Partial<Scope>) =>
     Object.fromEntries(
-      jobs({ all: true, changed: [], branch: [], added: [], extra: [], cores: 12, ...scope })
+      jobs({ all: true, changed: [], branch: [], extra: [], cores: 12, ...scope })
         .jobs.filter((job) => job.size !== undefined)
         .map((job) => [job.name, job.size]),
     );
   const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs")).length;
-  expect(sized({ branch: ["crates/rust-js-lower/src/iterators/clones.rs", "test/corpus/a.rs", "test/corpus/b.rs"], added: ["m", "m", "n"], rows: 9175 })).toEqual({
+  expect(sized({ branch: ["crates/rust-js-lower/src/iterators/clones.rs", "test/corpus/a.rs", "test/corpus/b.rs"], mutations: { names: ["m", "m", "n"], base: "b" }, rows: 9175 })).toEqual({
     "the rows the change names": 9175,
     [runs.forms[0].name]: cases,
     [runs.metamorphic[0].name]: 2,
-    "mutations the change adds": 2,
+    "the change's mutations": 2,
   });
   expect(sized({ branch: ["crates/rust-js-lower/src/iterators/clones.rs"], rows: 0, forms: { forms: ["a.rs", "b.rs", "c.rs"], formsList: "forms.txt" } })).toEqual({
     "the rows the change names": 0,
     [runs.forms[0].name]: 3,
   });
   expect(sized({ branch: ["crates/rust-js-mir/src/lib.rs"] })).toEqual({});
+});
+
+// check:fast judges the change's mutations CI's check judges, those not on
+// record for its tree, each survivor at the commit the change left `main`
+// at latent there too, as CI's shards judge it (#2485, scripts/judged.ts).
+test("check:fast judges the change's mutations as CI's check does, a survivor at its base latent", () => {
+  const judging = jobs({ all: true, changed: [], branch: [], mutations: { names: ["m", "n"], base: "abc" }, extra: [], cores: 12 }).jobs.find((job) => job.name === "the change's mutations");
+  expect(judging?.cmd.slice(1).filter((arg) => !arg.startsWith("--jobs="))).toEqual(["scripts/mutations.ts", "--base=abc", "m", "n"]);
 });
 
 // A push's check asks every row but the top crates by downloads', and of

@@ -1607,3 +1607,20 @@ whether it's run alone, by a retirement or by a push. Before, only a
 regen run alone wrote its time, to the machine's log.
 
 Mutation `retire-port-control-late`.
+
+## Amendment: a retirement's controls run at once and are kept for their tree (2026-11-25, #2485)
+
+After the port's control, the compiler's unit tests and the crate corpus
+ran one after the other: 103–116 s and 89–98 s on the M5 Pro
+(`retirePhases`, 2026-11-24's retirements), and again for every
+retirement of the same tree, though nothing they read had changed. They
+build and run nothing they share, so they now run at once
+(`retireControls`); the port's still goes first, alone, so a pin to fix
+refuses the run after one regen (#2525).
+
+Their verdicts, the unit tests that fail as the crate is and the crate
+corpus's rows, are kept in `target/mutants/retire-controls.json` with the
+tree they passed on (`keptControls`; scripts/judged.ts' `treeOf`, the
+files a mutant's workspace is made of). Each control is of that tree alone,
+its compiler, its pin and its rows, so a second retirement of it builds the
+compiler and asks none of them again. Another tree's are none.

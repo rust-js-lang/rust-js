@@ -11,6 +11,7 @@
 //   bun scripts/mutations.ts --batch=1        # each built alone, not 32 to a build
 //   bun scripts/mutations.ts --corpus a b ..  # each named against the whole corpus, its snapshots compared
 //   bun scripts/mutations.ts --typecheck=origin/main  # a change's files' mutants type-checked, none run
+//   bun scripts/mutations.ts --remap          # each whose test went to another file, its list rewritten to name it
 //
 // The mutations themselves are in `mutations/`, one list for each source
 // file. Each builds natively a few test programs: on macOS, with the app
@@ -39,6 +40,7 @@ import { latentSurvivors, type Results } from "./latent-survivors";
 import { binaryHash, builtBinary, freshShare, unapplied, verdictKind } from "./mutant-builds";
 import { resultsFile, verdictOf, type Result as CrateResult, type Verdict } from "./crate-corpus";
 import { devTimes, ownsTimes } from "./devTimes";
+import { recordJudged, treeOf } from "./judged";
 import { floorBytes } from "../test/bounded";
 import { freeBytes } from "../tooling/bounded.js";
 import { refuseUnmatched } from "../test/case-lists";
@@ -242,8 +244,48 @@ export function ownMutations(now: Mutation[], base: Mutation[]): Mutation[] {
   return now.filter((m) => !was.has(JSON.stringify(m)));
 }
 
+/** `text`, a list's source, with each mutation's tests of `from` and
+ * `pattern` naming `to` in its place, as the literal is written, on one
+ * line or Prettier's several; and whether one was there to rewrite. */
+export function remapTests(text: string, from: string, pattern: string, to: string): { text: string; found: boolean } {
+  const literal = (s: string) => JSON.stringify(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const at = new RegExp(`${literal(from)}(,\\s*"-t",\\s*${literal(pattern)})`, "g");
+  return { text: text.replace(at, `${JSON.stringify(to)}$1`), found: text.match(at) !== null };
+}
+
+/** `--remap`: each mutation whose file names no test its pattern names, the
+ * one test file that does written in its list in its place (`movedTo`,
+ * `remapTests`), as a split before the cap leaves a mutation naming a test
+ * where it was (#2485, the 163 a move broke), said one by one; one it can't
+ * place said for a hand to fix, and the run fails. */
+async function remap() {
+  const { movedTo, namesATest } = await import("../test/test-names");
+  const files = [...new Bun.Glob("test/**/*.test.ts").scanSync(root)];
+  let unplaced = 0;
+  for (const { path, mutations: listed } of lists) {
+    const list = join(import.meta.dir, "mutations", path);
+    let text = readFileSync(list, "utf8");
+    for (const m of listed) {
+      const [from, ...args] = m.tests ?? [];
+      const pattern = args[args.indexOf("-t") + 1];
+      if (from === undefined || !args.includes("-t") || pattern === undefined || namesATest(from, pattern)) continue;
+      const to = movedTo(from, pattern, files);
+      const rewritten = to === undefined ? undefined : remapTests(text, from, pattern, to);
+      if (rewritten?.found !== true) {
+        console.log(`${m.name}: ${from} names no test of -t ${pattern}, and ${to === undefined ? "no one other test file does" : `${to} does, but scripts/mutations/${path} doesn't write it as one literal`}: fix it by hand`);
+        unplaced++;
+        continue;
+      }
+      text = rewritten.text;
+      console.log(`${m.name}: moved, ${from} → ${to}`);
+    }
+    writeFileSync(list, text);
+  }
+  if (unplaced > 0) process.exitCode = 1;
+}
+
 /** The mutations a change since where this branch left `base` adds or
- * edits (`ownMutations`): check:fast's, of what isn't committed, `HEAD`. */
+ * edits (`ownMutations`): those whose tests test/mutations.test.ts lists. */
 export async function ownSince(base: string): Promise<Mutation[]> {
   return ownMutations(mutations, (await since(base)).mutations);
 }
@@ -417,6 +459,10 @@ async function since(base: string): Promise<{ from: string; files: string[]; cha
 // the crate, remade for each mutation, and one target, so only rust-js is
 // built again.
 const work = join(root, "target", "mutants");
+
+/** What the runs in this checkout judged, by the tree each judged
+ * (scripts/judged.ts): what `bun run push` asks of the tree it pushes. */
+export const judgedFile = join(work, "judged.json");
 // And `std/`, whose manifest the compiler builds in (ADR 0561), and
 // `vendor/`, the crates Cargo.toml patches in by path (ADR 1121); and each
 // file the crate includes from beyond them, its unit tests' table of std's
@@ -1418,7 +1464,7 @@ function writeResults(results: Map<string, string>, caughtBy: Map<string, string
 let leftToTheWasmJob: string[] = [];
 
 /** The flags `main` takes alone. */
-const alone = ["--list", "--browser", "--corpus", "--wasm", "--build-only"];
+const alone = ["--list", "--browser", "--corpus", "--wasm", "--build-only", "--remap"];
 
 /** The flags `main` takes with `=` and a value, each with the form it's
  * given in. */
@@ -1723,21 +1769,53 @@ async function retirePhase<T>(label: string, step: () => Promise<T>): Promise<T>
  * where the port doesn't regenerate as it committed, the control a compiler
  * change most often fails, so it goes before the unit tests' and the crate
  * corpus's minutes, not after (a retirement ran 6 min, then refused on the
- * pin, #2525); then those two. Each step throws where its control fails. */
-export async function retireControls<U, C>(steps: {
-  build: () => Promise<string>;
-  port: (compiler: string) => Promise<void>;
-  units: () => Promise<U>;
-  crates: (compiler: string) => Promise<C>;
-}): Promise<{ compiler: string; units: U; crates: C }> {
+ * pin, #2525); then those two at once, which build and run nothing they
+ * share: 103–116 s and 89–98 s on the M5 Pro one after the other (#2485).
+ * Each step throws where its control fails. Of a tree whose controls
+ * passed, `kept`'s, the build alone: the port, the unit tests and the crate
+ * corpus are what they were. */
+export async function retireControls<U, C>(
+  steps: {
+    build: () => Promise<string>;
+    port: (compiler: string) => Promise<void>;
+    units: () => Promise<U>;
+    crates: (compiler: string) => Promise<C>;
+  },
+  kept?: { get: () => { units: U; crates: C } | undefined; set: (controls: { units: U; crates: C }) => void },
+): Promise<{ compiler: string; units: U; crates: C }> {
   const compiler = await steps.build();
+  const was = kept?.get();
+  if (was !== undefined) return { compiler, ...was };
   await steps.port(compiler);
-  const units = await steps.units();
-  const crates = await steps.crates(compiler);
+  const [units, crates] = await Promise.all([steps.units(), steps.crates(compiler)]);
+  kept?.set({ units, crates });
   return { compiler, units, crates };
 }
 
-async function retire(chosen: Mutation[]): Promise<void> {
+/** A retirement's controls kept in `file` of the tree they passed on,
+ * `tree` (scripts/judged.ts' `treeOf`): its compiler's, the port's pin's
+ * and the crate corpus's rows' are all of the tree, so a second retirement
+ * of it asks none of them again (#2485). Another tree's are none. */
+export function keptControls(file: string, tree: string): { get: () => { units: { failed: Set<string>; passed: number }; crates: Map<string, Verdict> } | undefined; set: (controls: { units: { failed: Set<string>; passed: number }; crates: Map<string, Verdict> }) => void } {
+  type Kept = { tree: string; units: { failed: string[]; passed: number }; crates: [string, Verdict][] };
+  return {
+    get: () => {
+      let was: Kept;
+      try {
+        was = JSON.parse(readFileSync(file, "utf8")) as Kept;
+      } catch {
+        return undefined;
+      }
+      return was.tree === tree ? { units: { failed: new Set(was.units.failed), passed: was.units.passed }, crates: new Map(was.crates) } : undefined;
+    },
+    set: ({ units, crates }) => {
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, JSON.stringify({ tree, units: { failed: [...units.failed], passed: units.passed }, crates: [...crates] } satisfies Kept) + "\n");
+    },
+  };
+}
+
+async function retire(chosen: Mutation[], tree: string): Promise<void> {
   const names = chosen.map((m) => m.name).join(", ");
   const low = belowFloor(freeBytes(root));
   if (low) throw new Error(`--retire of ${names} judges nothing: ${low}`);
@@ -1765,7 +1843,7 @@ async function retire(chosen: Mutation[]): Promise<void> {
       if (typeof verdicts === "string") throw new Error(`crate corpus control fails: ${verdicts}; fix it first: crates.io's corpus isn't what docs/crate-corpus.md says with the compiler as it is, so it says nothing of ${names}`);
       return verdicts;
     },
-  });
+  }, keptControls(join(work, "retire-controls.json"), tree));
   const trailers: string[] = [];
   // One mutant that says nothing, its build or a run of its tests, leaves
   // the others' verdicts as they are.
@@ -2294,6 +2372,11 @@ async function main() {
     return;
   }
   // Which would run, each its name and file, and none run.
+  // Each whose tests went to another file, its list rewritten (#2485).
+  if (args.includes("--remap")) {
+    if (args.length > 1) throw new Error("--remap runs alone: no mutation named, no other flag");
+    return remap();
+  }
   if (args.includes("--list")) {
     for (const m of chosen) console.log(`${m.name}\t${m.file}`);
     console.log(`${chosen.length} mutations chosen${harness ? ", and the corpus harness's mutants" : ""}`);
@@ -2319,6 +2402,9 @@ async function main() {
     waiting: "waiting for this checkout's other mutation run, which builds in target/mutants",
   });
   if (!released) throw new Error("this checkout's other mutation run held target/mutants for 6 hours");
+  // The tree it judges, as the run begins: what it judged is recorded as of
+  // it where it's the same as the run ends (scripts/judged.ts, #2485).
+  const judging = treeOf(root);
   const sourceWorkspaces = join(work, "sources");
   rmSync(sourceWorkspaces, {recursive: true, force: true});
   process.on("exit", () => {
@@ -2340,7 +2426,7 @@ async function main() {
   const given = resolve(process.env.RUST_JS_COMPILER ?? join(root, "target/debug/rust-js"));
   const buildsItself = buildsUnmutated({ crate: chosen.some(m => !sources.has(m)), harness, given: existsSync(given) });
   if (buildsItself || buildOnly) snapshotCrate(join(work, "snapshot"));
-  if (retiring !== undefined) return retire(chosen);
+  if (retiring !== undefined) return retire(chosen, judging);
   phaseEnded("setup");
   // The checkout's own build, where it's the one, is the run's own link of
   // it (scripts/own-compiler.ts): the agent's next edit builds it again.
@@ -2854,6 +2940,12 @@ async function main() {
   writeFileSync(join(work, "phases.json"), JSON.stringify(phases, null, 2) + "\n");
   for (const { phase, seconds } of phases) console.log(`phase\t${phase}\t${shown(seconds)}`);
   const missed = rows.filter(([mutation, result]) => result !== "caught" && !latent.includes(mutation.name));
+  // Each caught, or latent, recorded as judged on the tree it judged, which
+  // `bun run push` asks of the tree it pushes; not where the tree changed
+  // while it ran, as of neither (scripts/judged.ts, #2485).
+  const judged = rows.filter(([mutation]) => !missed.some(([m]) => m === mutation)).map(([mutation]) => mutation.name);
+  if (judged.length > 0 && treeOf(root) === judging) recordJudged(judging, judged, judgedFile);
+  else if (judged.length > 0) console.log("the tree changed while the run judged it: what it judged isn't recorded as judged on it (scripts/judged.ts)");
   // Said last, where a `tail` of the run sees it: the rows above may be
   // more than it shows (#923).
   console.log(`${rows.filter(([, r]) => r === "caught").length} of ${rows.length} mutations caught${latent.length > 0 ? `, ${latent.length} latent` : ""}${inconclusiveSaid(rows.map(([, r]) => r))}${missed.length > 0 ? `; not: ${missed.map(([m]) => m.name).join(", ")}` : ""}`);

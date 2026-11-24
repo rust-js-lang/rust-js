@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { dirname, join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, Answers, heartbeat, failingOf, bySnapshots, inconclusiveSaid, judgedApart, unplaced, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, timedOut, lists, unitsAsItIs, mutate, mutations, ownSince, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, snapshotParts, removedOfCrate, retireControls, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
+import { againstWholeCorpus, Answers, heartbeat, failingOf, bySnapshots, inconclusiveSaid, judgedApart, unplaced, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, timedOut, lists, unitsAsItIs, mutate, mutations, ownSince, remapTests, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, snapshotParts, removedOfCrate, keptControls, retireControls, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
 import type { ControlPart } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
@@ -19,7 +19,8 @@ import { node } from "./programs";
 import { limitations } from "./limitations-of";
 import { fixture, root, run } from "./support";
 import { refuseUnmatched } from "./case-lists";
-import { listedTests, namesATest, testNamesOf } from "./test-names";
+import { listedTests, movedTo, namesATest, testNamesOf } from "./test-names";
+import type { Verdict } from "../scripts/crate-corpus";
 import { compilerRustFiles, crateOf, isCompilerSource } from "../scripts/compiler-crates";
 
 // What the crate includes from beyond `src/`, `include_str!("../../../test/
@@ -296,6 +297,13 @@ test("each mutation's tests are a file there and a test of it its pattern names"
     refuseUnmatched([...said.keys()], (entry) => said.has(entry) && namesATest(...said.get(entry)!, listed), { list: "the mutations' `tests`", what: "a file there and a test of it" });
   } catch (error) {
     refused = (error as Error).message;
+    // Where each went, the one other file with a test it names (#2485).
+    const files = [...new Bun.Glob("test/**/*.test.ts").scanSync(root)];
+    const moved = [...said].flatMap(([entry, [file, pattern]]) => {
+      const to = pattern === undefined || namesATest(file, pattern, listed) ? undefined : movedTo(file, pattern, files);
+      return to === undefined ? [] : [`${entry} → ${to}`];
+    });
+    if (moved.length > 0) refused += `\nmoved, which \`bun scripts/mutations.ts --remap\` writes in their lists: ${moved.join(", ")}`;
   }
   expect(refused).toBe("");
 }, underLoad(60_000));
@@ -313,6 +321,26 @@ test("a pattern names a test of a file by its literal names, of one named otherw
   const gone = relative(root, join(dir, "gone.test.ts"));
   expect([namesATest(gone, undefined), namesATest(gone, "x")]).toEqual([false, false]);
 }, underLoad(60_000));
+
+// A test split away from its file, as one near the cap is split by concept,
+// leaves each mutation naming it where it was: 163 at once (#2485). Its name
+// says where it went, the one other file with a test it names, and
+// `bun scripts/mutations.ts --remap` writes that file in its lists, as the
+// literal is written on one line or Prettier's several.
+test("a test moved to another file is found by its name, and --remap writes where it went in its list", () => {
+  const dir = fixture("tests-moved");
+  const at = (name: string) => relative(root, join(dir, name));
+  writeFileSync(join(dir, "was.test.ts"), 'test("stays", () => {});\n');
+  writeFileSync(join(dir, "split.test.ts"), 'test("went away", () => {});\ntest("went twice", () => {});\n');
+  writeFileSync(join(dir, "other.test.ts"), 'test("went twice", () => {});\n');
+  const files = ["was.test.ts", "split.test.ts", "other.test.ts"].map(at);
+  expect([movedTo(at("was.test.ts"), "went away", files), movedTo(at("was.test.ts"), "went twice", files), movedTo(at("was.test.ts"), "never", files)]).toEqual([at("split.test.ts"), undefined, undefined]);
+  const list = `const shared = ["a.test.ts", "-t", "went away"];\n  { tests: ["a.test.ts", "-t", "went away"] },\n  { tests: [\n      "a.test.ts",\n      "-t",\n      "went away",\n    ] },\n  { tests: ["a.test.ts", "-t", "stays"] },\n`;
+  const remapped = remapTests(list, "a.test.ts", "went away", "b.test.ts");
+  expect(remapped).toEqual({ text: list.replace(/"a\.test\.ts"(?=,\s*"-t",\s*"went away")/g, '"b.test.ts"'), found: true });
+  expect(remapped.text.match(/"b\.test\.ts"/g)?.length).toBe(3);
+  expect(remapTests(list, "a.test.ts", "gone", "b.test.ts").found).toBe(false);
+});
 
 // A test failing as the compiler is leaves its own mutations unjudged, and
 // only those: nightly 44963035271's shards 5, 9, 10 and 12 judged none of
@@ -382,8 +410,10 @@ test("a mutation runs a matrix's rows by a pattern of their ids, not by an issue
 // A retirement's port control, which refuses the whole run where the port
 // doesn't regenerate as its pin committed, runs right after the compiler's
 // build, before the unit tests' and the crate corpus's minutes: a run spent
-// 6 min on them, then refused on the pin (#2525).
-test("a retirement checks React's port at its pin before its other controls", async () => {
+// 6 min on them, then refused on the pin (#2525). Those two run at once,
+// and a tree's passed controls are kept: a second retirement of it builds
+// alone (#2485).
+test("a retirement checks React's port at its pin before its other controls, which run at once, kept for its tree", async () => {
   const ran: string[] = [];
   const steps = (portFails: boolean) => ({
     build: async () => (ran.push("build"), "rust-js"),
@@ -391,12 +421,22 @@ test("a retirement checks React's port at its pin before its other controls", as
       ran.push(`port of ${compiler}`);
       if (portFails) throw new Error("port control fails");
     },
-    units: async () => (ran.push("units"), 900),
-    crates: async (compiler: string) => (ran.push(`crates of ${compiler}`), new Map()),
+    units: async () => {
+      ran.push("units");
+      await Bun.sleep(5);
+      ran.push("units ended");
+      return { failed: new Set(["a::b"]), passed: 900 };
+    },
+    crates: async (compiler: string) => (ran.push(`crates of ${compiler}`), new Map<string, Verdict>([["either", "runs"]])),
   });
-  expect(await retireControls(steps(false))).toEqual({ compiler: "rust-js", units: 900, crates: new Map() });
-  expect(ran.splice(0)).toEqual(["build", "port of rust-js", "units", "crates of rust-js"]);
-  await expect(retireControls(steps(true))).rejects.toThrow("port control fails");
+  const file = join(fixture("retire-controls"), "kept.json");
+  expect(await retireControls(steps(false), keptControls(file, "t1"))).toEqual({ compiler: "rust-js", units: { failed: new Set(["a::b"]), passed: 900 }, crates: new Map([["either", "runs"]]) });
+  expect(ran.splice(0)).toEqual(["build", "port of rust-js", "units", "crates of rust-js", "units ended"]);
+  // Of the same tree, kept: the build alone.
+  expect(await retireControls(steps(true), keptControls(file, "t1"))).toEqual({ compiler: "rust-js", units: { failed: new Set(["a::b"]), passed: 900 }, crates: new Map([["either", "runs"]]) });
+  expect(ran.splice(0)).toEqual(["build"]);
+  // Of another, none kept, and its port refuses it first.
+  await expect(retireControls(steps(true), keptControls(file, "t2"))).rejects.toThrow("port control fails");
   expect(ran).toEqual(["build", "port of rust-js"]);
 });
 
@@ -987,7 +1027,7 @@ test("a flag that takes a value, given none, is refused with its form", () => {
   expect(refusedFlags(["--changed"])).toEqual(["--changed takes a value: --changed=<base>"]);
   expect(refusedFlags(["--base="])).toEqual(["--base takes a value: --base=<commit>"]);
   expect(refusedFlags(["--changed=origin/main", "--list", "--browser", "--shard=2/16", "a-mutation"])).toEqual([]);
-  expect(refusedFlags(["--bogus"])[0]).toStartWith("no flag --bogus; there are --list, --browser, --corpus, --wasm, --build-only, --changed=<base>");
+  expect(refusedFlags(["--bogus"])[0]).toStartWith("no flag --bogus; there are --list, --browser, --corpus, --wasm, --build-only, --remap, --changed=<base>");
   // A list's flag given `=` and nothing is an empty list: check.yml's form,
   // `--also={retry}` where none is retried; bare, it's refused.
   expect(refusedFlags(["--changed=0123abc", "--also=", "--base=0123abc"])).toEqual([]);

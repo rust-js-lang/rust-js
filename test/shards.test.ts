@@ -276,8 +276,8 @@ test("the compiler's builds at once are as many as the cores and the memory hold
   for (const [cores, total, free] of [[8, 16, 14], [8, 16, 9], [4, 16, 14], [12, 32, 27]]) {
     expect(compilerBuilds(cores, total * gb, free * gb) * peakGB.compilerBuild + cores * peakGB.test).toBeLessThanOrEqual(memoryBudget(total * gb, free * gb));
   }
-  const check = jobs({ all: true, changed: [], branch: [], added: ["dictionary-uncached"], extra: [], cores: 8 }).jobs;
-  const mutations = check.find((job) => job.name === "mutations the change adds")!;
+  const check = jobs({ all: true, changed: [], branch: [], mutations: { names: ["dictionary-uncached"], base: "b" }, extra: [], cores: 8 }).jobs;
+  const mutations = check.find((job) => job.name === "the change's mutations")!;
   expect(mutations.cmd).toContain(`--jobs=${compilerBuilds(8)}`);
   expect(mutations.memory).toBe(compilerBuilds(8) * peakGB.compilerBuild);
   expect(check.find((job) => job.name === "clippy")!.memory).toBe(peakGB.compilerCheck);
@@ -394,7 +394,7 @@ test("each shard runs its share of a file of cases' parts, each part once", () =
   expect(caseParts(1)).toBe(2);
   expect(pooledParts(12)).toBe(12);
   expect(pooledParts(1)).toBe(2);
-  expect(jobs({ all: true, changed: [], branch: [], added: [], extra: [], cores: 12 }).jobs.filter((job) => job.name.startsWith("corpus ")).map((job) => job.env.RUST_JS_CASES)).toEqual(
+  expect(jobs({ all: true, changed: [], branch: [], extra: [], cores: 12 }).jobs.filter((job) => job.name.startsWith("corpus ")).map((job) => job.env.RUST_JS_CASES)).toEqual(
     Array.from({ length: 12 }, (_, i) => `${i + 1}/12`),
   );
   expect(caseShardParts(1, 1, 6)).toEqual(["1/6", "2/6", "3/6", "4/6", "5/6", "6/6"]);
