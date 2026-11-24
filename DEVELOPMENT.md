@@ -861,7 +861,11 @@ checked:
   build", runs `check:fast`, which runs what the test selector says the change can
   affect (`scripts/select.ts`, ADR 1101, amended; everything where it
   can't say, none of a change nothing reads that isn't code, straight to
-  the push), refuses where the React port differs at its pin, of a change
+  the push; none with `--skip-check=<why>`, given where the pusher is sure
+  the change can't move what the selected tests test, a workflow's comment
+  or a test's own wording, said with the selection on the push's line, CI's
+  check of the push running every test, which a red one asks fixed at
+  once), refuses where the React port differs at its pin, of a change
   to what compiles it (a change the port takes moves
   `ports/react-in-rust.pin` in the same push), refuses where `git diff
   origin/main` holds a file no pushed commit changes, and pushes. It first

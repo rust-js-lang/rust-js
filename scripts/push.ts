@@ -21,7 +21,10 @@
 //             `replace` written against what the change changed, which
 //             CI's shards can't build, refused by name
 //   check     `check:fast`: the test files and cases the selector says the
-//             change can affect (scripts/select.ts, ADR 1101, amended),
+//             change can affect (scripts/select.ts, ADR 1101, amended); none
+//             with `--skip-check=<why>`, which a pusher sure the change can't
+//             move them gives, said with the selection on the push's line,
+//             CI's check of the push running every test,
 //             everything where it can't say; none at all, of a change
 //             nothing reads that isn't code (a doc's), straight to the push.
 //             Past a rebase that brought commits, `sanity`, `check:fast
@@ -326,6 +329,17 @@ class Refused extends Error {}
 
 async function main() {
   const bless = process.argv.includes("--bless-readability");
+  // `--skip-check=<why>`: the check phase's tests not run, where the pusher
+  // is sure the change can't move what they test (a workflow's comment, a
+  // test's own wording); said, with what the selector would have run, on
+  // the push's line. Every other phase runs, and CI's check of the push
+  // runs every test whole (Tu's call, 2026-11-24).
+  const skipArg = process.argv.find((arg) => arg.startsWith("--skip-check"));
+  const skipCheck = skipArg?.startsWith("--skip-check=") ? skipArg.slice("--skip-check=".length).trim() : undefined;
+  if (skipArg !== undefined && !skipCheck) {
+    console.error("push: --skip-check needs its reason, --skip-check=<why the selected tests can't be moved by the change>");
+    process.exit(2);
+  }
   const started = performance.now();
   const timed: [string, number][] = [];
   let mark = performance.now();
@@ -481,6 +495,9 @@ async function main() {
         } else if (said === "none" && !code) {
           selection = "none";
           console.log(`push: the selection is none, and nothing changed is code: no check`);
+        } else if (skipCheck !== undefined) {
+          selection = `skipped (${skipCheck}), where it would run ${said}`;
+          console.log(`push: the check skipped, as asked: ${skipCheck}; CI's check of the push runs every test`);
         } else {
           rmSync(selectionFile, { force: true });
           run(name, ["bun", "run", "check:fast", ...asked]);
