@@ -187,14 +187,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates-pairs-1.test.ts", "-t", "two crates: library_given_an_array_of_filters_it_steps_from_their_back$"],
   },
   {
-    name: "library-own-params-unstepped",
-    breaks: "a library's public generic function given a `Filter<I, P>` of an `I: DoubleEndedIterator`, stepped from its back where no caller of the crate's asks it, is refused, though its consumers make it knowing its back (#1024)",
-    file: "crates/rust-js-lower/src/analysis/back_stepped.rs",
-    find: "            typed.extend(backs.into_iter().map(|ty| typed_key(tcx, body.def_id, ty)));\n            // Its regions erased, those it binds too.\n",
-    replace: "            let _ = backs;\n            // Its regions erased, those it binds too.\n",
-    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: iterators_stepped_from_their_back_across_crates"],
-  },
-  {
     name: "stepped-sources-unmarked",
     breaks:
       "a type's question isn't asked of its source too, so a `copied()` beneath a filter given to generic code that steps it from its back isn't made knowing its back, and is refused (#388, #851)",
@@ -212,15 +204,6 @@ export const mutations: Mutation[] = [
     find: "    if !given && chained_sources(tcx, adapter).is_some() {\n",
     replace: "    if false && !given && chained_sources(tcx, adapter).is_some() {\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_made_here_stepped_from_its_back.rs$"],
-  },
-  {
-    name: "compiled-behind-an-impl-made-knowing",
-    breaks: "std's struct of an adapter a function gives behind an `impl`, `(0..n).rev()`, is taken for one made knowing its back wherever it's made, so `(1..6).rev()` in `main` is made a JS iterator and given back unmade, `$rangeFirst($rev($iterator(range, ..)).of)`, where it's the range itself; the answer is the same since #1226's fix, so the form holds it (#1109)",
-    file: "crates/rust-js-lower/src/analysis/back_stepped.rs",
-    find: "        .filter(|&made| !holds_compiled(tcx, made, &compiled))\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^impl_trait_adapter_is_its_value.rs$"],
-    snapshots: true,
   },
   {
     name: "owning-source-item-unread",

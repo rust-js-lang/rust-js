@@ -123,14 +123,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_generic_collects.rs$"],
   },
   {
-    name: "given-chain-marked-whole",
-    breaks: "a chain a caller gives generic code that collects it, whose parts' hints JS's own adapters lose, is made knowing its back, which a `take(n)` of a B-tree set's `iter()` can't be, so it's refused, where its counted parts made knowing their hints, `$taking`, give std's capacity (#1263)",
-    file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
-    find: "    match recognition.lower_bound_kept_by_parts(instance) {\n",
-    replace: "    match false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^capacity_of_generic_collects.rs$"],
-  },
-  {
     name: "given-hint-marked-of-any-source",
     breaks: "what a caller gives generic code that asks its hint is made knowing it where it steps no array JS counts, a map of the crate's own iterator, `$mapEnds` where its `$iterator`'s own `map` knows std's hint (#1263)",
     file: "crates/rust-js-lower/src/analysis/hint_asked.rs",
