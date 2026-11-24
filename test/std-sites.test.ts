@@ -3,13 +3,14 @@
 // std's MIR makes (#2292, ADR 1184): `bun run std` writes it, and one a
 // change to the walk would move is caught here.
 import { expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { runSync } from "./child";
-import { builtRlibs, raisedBuild, stdSites, stdSitesFile } from "../scripts/std";
+import { builtRlibs, linkedSysroot, raisedBuild, stdSites, stdSitesFile } from "../scripts/std";
 import { compiler, fixture, root, run } from "./support";
+import { underLoad } from "../scripts/timing";
 
 // A path into a machine's own copy of std's source or its home, which no
 // JS rust-js writes may hold: std's sites are `/rustc/<commit>/library/..`
@@ -66,3 +67,46 @@ test("std's build's libraries are each linked once, and two of one name that dif
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// The sysroot is made whole beside where it goes and moved in, so runs at
+// once, a mutation run's controls, each find it whole: one removed it as
+// another linked into it (`EEXIST`, #2459). Twelve processes at once.
+test("std's sysroot made by many runs at once is whole in each", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "rust-js-sysroots-"));
+  try {
+    const rlibs = new Map<string, string>();
+    // Enough that linking them takes longer than the runs take to start.
+    const names = ["libcore-a1.rlib", "liballoc-b2.rlib", "libstd-c3.rlib", ...Array.from({ length: 3000 }, (_, i) => `libdep${i}-d4.rlib`)];
+    for (const name of names) {
+      writeFileSync(join(dir, name), name);
+      rlibs.set(name, join(dir, name));
+    }
+    // Each says the sysroot it was given and how many libraries it held
+    // then, as a reader finds it.
+    const script = [
+      `import { readdirSync } from "node:fs";`,
+      `import { linkedSysroot } from ${JSON.stringify(join(root, "scripts", "std.ts"))};`,
+      `const sysroot = linkedSysroot(${JSON.stringify(dir)}, "wasm32-unknown-unknown", new Map(${JSON.stringify([...rlibs])}));`,
+      `console.log(sysroot + " " + readdirSync(sysroot + "/lib/rustlib/wasm32-unknown-unknown/lib").length);`,
+    ].join("\n");
+    writeFileSync(join(dir, "make.ts"), script);
+    const runs = await Promise.all(
+      Array.from({ length: 12 }, async () => {
+        const p = Bun.spawn([process.execPath, join(dir, "make.ts")], { stdout: "pipe", stderr: "pipe" });
+        const [out, err, code] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text(), p.exited]);
+        return { out: out.trim(), err, code };
+      }),
+    );
+    expect(runs.filter((r) => r.code !== 0).map((r) => r.err)).toEqual([]);
+    const sysroot = runs[0]!.out.split(" ")[0]!;
+    expect(new Set(runs.map((r) => r.out))).toEqual(new Set([`${sysroot} ${names.length}`]));
+    expect(sysroot).toBe(linkedSysroot(dir, "wasm32-unknown-unknown", rlibs));
+    const lib = join(sysroot, "lib", "rustlib", "wasm32-unknown-unknown", "lib");
+    expect(readdirSync(lib).sort()).toEqual([...names].sort());
+    expect(readlinkSync(join(lib, "libstd-c3.rlib"))).toBe(join(dir, "libstd-c3.rlib"));
+    expect(readdirSync(dir).filter((name) => name.startsWith(".sysroot-"))).toEqual([]);
+    expect(existsSync(join(dir, "sysroot"))).toBe(false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}, underLoad(60_000));

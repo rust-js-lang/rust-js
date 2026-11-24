@@ -12,7 +12,7 @@
 // it. Its manifest's crate hash is of its inputs alone, the same wherever and
 // however it's built (`Manifest::of_its_inputs`, #1094).
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 
@@ -42,14 +42,34 @@ export function wholeStd(root: string): { sysroot: string } | { error: string } 
     env: { ...process.env, RUSTC_BOOTSTRAP: "1", RUSTC_WRAPPER: "", RUSTFLAGS: "-Zalways-encode-mir" },
   });
   if (built.status !== 0) return { error: built.stderr };
-  // Its crates, where Cargo builds each, as a sysroot's library.
-  const lib = join(dir, "sysroot", "lib", "rustlib", target, "lib");
-  rmSync(join(dir, "sysroot"), { recursive: true, force: true });
-  mkdirSync(lib, { recursive: true });
   const rlibs = builtRlibs(join(dir, "target", target, "release"));
   if (typeof rlibs === "string") return { error: rlibs };
-  for (const rlib of rlibs.values()) symlinkSync(rlib, join(lib, basename(rlib)));
-  return { sysroot: join(dir, "sysroot") };
+  return { sysroot: linkedSysroot(dir, target, rlibs) };
+}
+
+/** A sysroot in `dir` whose library for `target` is `rlibs`, Cargo's
+ * crates where it built each, linked: named for them, `sysroot-<hash>`,
+ * and made whole beside it, then moved in, so two runs at once, a
+ * mutation run's controls, each find it whole, the first's or the
+ * other's, where one removed it as the other linked into it (`EEXIST`,
+ * #2459). */
+export function linkedSysroot(dir: string, target: string, rlibs: Map<string, string>): string {
+  const paths = [...rlibs.values()].sort();
+  const sysroot = join(dir, `sysroot-${new Bun.CryptoHasher("sha256").update(JSON.stringify([target, paths])).digest("hex").slice(0, 16)}`);
+  if (existsSync(sysroot)) return sysroot;
+  mkdirSync(dir, { recursive: true });
+  const making = mkdtempSync(join(dir, ".sysroot-"));
+  const lib = join(making, "lib", "rustlib", target, "lib");
+  mkdirSync(lib, { recursive: true });
+  for (const rlib of paths) symlinkSync(rlib, join(lib, basename(rlib)));
+  try {
+    renameSync(making, sysroot);
+  } catch (e) {
+    rmSync(making, { recursive: true, force: true });
+    // Another run moved its own in first: the same links.
+    if (!existsSync(sysroot)) throw e;
+  }
+  return sysroot;
 }
 
 /** Each library Cargo built under `at`, by its file's name, `libstd_detect-
