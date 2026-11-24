@@ -35,11 +35,12 @@ test("the crate's facts are read alike by each body: no cell but those still to 
 // `RefCell`s' (drops/ref_cells.rs), at about 2% of a compile (ADR 1148).
 test("each of the crate's facts a body finds the first time it asks is a Lazy, of one finder", () => {
   const finders = lowering.filter((file) => /\.get_or_find\(/.test(read(file)));
-  expect(finders).toEqual(["crates/rust-js-lower/src/drops/ref_cells.rs"]);
+  expect(finders).toEqual(["crates/rust-js-lower/src/boundary/split.rs", "crates/rust-js-lower/src/drops/ref_cells.rs"]);
   const source = read("crates/rust-js-lower/src/crate_facts.rs");
   const start = source.indexOf("pub struct CrateFacts");
   const struct = source.slice(start, source.indexOf("\n}\n", start));
-  expect([...struct.matchAll(/pub (\w+): &'a Lazy</g)].map((m) => m[1])).toEqual(["ref_cells"]);
+  // The checked functions split (#2403, ADR 1193), and the `RefCell`s'.
+  expect([...struct.matchAll(/pub (\w+): &'a Lazy</g)].map((m) => m[1])).toEqual(["ref_cells", "split"]);
 });
 
 test("what the bodies lowered before settled is the pipeline's to write, a body's to read", () => {

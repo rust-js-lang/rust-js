@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
 import { buildReact, compiler, fixture, root, run, helpersModule, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -18,7 +19,7 @@ function compiled(name: string, rust: string, flags: string[] = []): { js: strin
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target, ...flags]);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), dir };
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), dir };
 }
 
 // React's `getIODescription` (shared/ReactIODescription.js) describes any
@@ -199,7 +200,7 @@ pub fn owner_stack(info: &Info) -> String {
   expect([lib.describe({ url: "u" }), lib.describe(throwing), lib.describe({})]).toEqual(["u", "", ""]);
   const root = { name: "Root", owner: undefined, debugStack: { message: "at Root" } };
   const child = { name: "Child", owner: root, debugStack: { message: "at Child" } };
-  const broken = { name: "Broken", owner: { debugStack: { get message() { throw new RangeError("lost"); } } } };
+  const broken = { name: "Broken", owner: { name: "Owner", debugStack: { get message() { throw new RangeError("lost"); } } } };
   expect([lib.ownerStack(root), lib.ownerStack(child), lib.ownerStack(broken)]).toEqual([
     "Root",
     "\nat Root",

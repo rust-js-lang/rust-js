@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { underLoad } from "../scripts/timing";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target, bunTest } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -200,7 +201,7 @@ test("what React keeps and gives again is copied where it's changed, Rust's answ
   const dir = fixture("react-kept");
   writeFileSync(join(dir, "lib.rs"), program);
   run([compiler, ...flags(dir)]);
-  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   // A part moved out and changed, its copy where it's moved, as a clone.
   expect(js).toContain("export function Moved(props) {\n  const at = { ...props.at };\n  at.x++;\n");
   // Changed itself: its copy first.
@@ -281,7 +282,7 @@ pub fn Ranged(mut props: RangedProps) -> JSX::Element {
 `,
   );
   run([compiler, ...flags(dir)]);
-  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(js).toContain("props = { ...props, depth: { ...props.depth } };");
   expect(js).not.toContain("props.range");
   const lib = await import(join(dir, "lib.jsx"));
@@ -310,7 +311,7 @@ test("a component's props a library changes in place are copied first", async ()
   run([compiler, join(dir, "app.rs"), "-o", join(out("app"), "lib.js"), "--dependency", join(out("dep"), "lib.manifest.json"),
     "--", "--crate-name", "app", "--extern", `dep=${join(out("dep"), "libdep.rmeta")}`, "-L", `dependency=${out("dep")}`,
     "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(out("app"), "lib.jsx"), "utf8");
+  const js = withoutBoundary(readFileSync(join(out("app"), "lib.jsx"), "utf8"));
   expect(js).toContain("tagged(props.names.slice())");
   const lib = await import(join(out("app"), "lib.jsx"));
   const props = { names: ["a"] };
@@ -395,7 +396,7 @@ pub fn Shown() -> JSX::Element {
   );
   const ran = runSync([compiler, ...flags(dir)], root, underLoad(30_000));
   expect(ran.code, ran.stderr).toBe(0);
-  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(js).toContain("function copyRow(row) {");
   writeFileSync(
     join(dir, "driver.test.jsx"),

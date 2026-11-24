@@ -8,6 +8,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, fixture, run } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 test("a binding's nullable parameter is given what's null or a value already as it is", async () => {
   const dir = fixture("nullable-param-nulled");
@@ -39,7 +40,7 @@ pub fn of_a_field(items: &[u32], settings: &Settings) -> String {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return JSON.stringify(items, chosen(all), 0);");
   expect(js).toContain("return JSON.stringify(items, settings.keys, 0);");
   const lib = await import(join(dir, "lib.js"));

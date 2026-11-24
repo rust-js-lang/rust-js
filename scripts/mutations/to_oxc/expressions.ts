@@ -543,4 +543,12 @@ export const mutations: Mutation[] = [
     replace: "                        js::OnlyNone::Undefined => js::Expr::null(),\n",
     tests: ["test/lowering-written-branches.test.ts", "test/lowering-bindings.test.ts", "test/none-given.test.ts"],
   },
+  {
+    name: "pure-call-unmarked",
+    breaks: "a pure call prints no `/* @__PURE__ */`, so a bundler keeps a struct's checker table nothing reads (#2403, Tu's tooling condition)",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
+    find: "                let pure = e.facts.has(js::Known::PureCall);\n",
+    replace: "                let pure = false;\n",
+    tests: ["test/boundary-deep.test.ts", "-t", "a struct's checker is its module's table"],
+  },
 ];

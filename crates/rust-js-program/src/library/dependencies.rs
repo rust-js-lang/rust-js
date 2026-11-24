@@ -132,6 +132,8 @@ impl Dependencies {
                     member: item.member,
                     calling: item.calling,
                     rooted: None,
+                    unchecked: item.unchecked,
+                    checked: item.checked,
                 };
                 match rooted {
                     Some((name, entry)) if item.module.is_empty() => (imported.from, imported.export) = (name, entry),
@@ -224,6 +226,9 @@ impl Dependencies {
                 member: item.member,
                 calling: item.calling,
                 rooted: None,
+                unchecked: None,
+                // Only Rust calls std's, which no consumer gives JS.
+                checked: true,
             };
             if exports.items.insert(item.key, imported).is_some() {
                 return Err("duplicate std export".into());

@@ -7,6 +7,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildNode } from "./node-crate";
 import { compiler, fixture, root, run } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 // ADR 0702: a `while` whose test calls, `!lines[s].contains(..)` of a
 // `Vec`'s index, is `while (test) { .. }`, its test as written (ADR 0683),
@@ -76,7 +77,7 @@ pub fn scan(rows: &[Vec<i32>]) -> i32 {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  while (s < lines.length && !lines[s].includes("Root")) {\n    s++;\n  }\n');
   expect(js).toContain(
     "  while (s >= 1) {\n    if (a[s - 1] !== b[s - 1]) {\n      if (s > 1) {\n        found = s;\n      }\n      break;\n    }\n    s--;\n  }\n",
@@ -179,7 +180,7 @@ pub fn written(lines: &[&str]) -> usize {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Its drop's \`Cell::get\` isn't yet known not to throw (#861 (c)), so a call
   // that may throw in its scope is a \`try\` of its own, whose \`catch\` drops
   // it as a panic unwinds (#847): the loop's test is that call's \`tmp\`, until
@@ -234,7 +235,7 @@ pub fn root(lines: &[&str]) -> usize {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  while (s < lines.length && !lines[s].includes("Root")) {\n    s++;\n  }\n');
   expect(js).not.toContain("finally");
   const lib = await import(join(dir, "lib.js"));
@@ -300,7 +301,7 @@ pub fn args(tokens: &[i32]) -> Result<Vec<i32>, String> {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("    while (s >= 1) {\n");
   expect(js).not.toMatch(/\bbb\d+/);
   // A calculator's arguments: its `?` an early return, and no `continue`
@@ -322,7 +323,7 @@ test("React's describeNativeComponentFrame's loops are upstream's", () => {
   const out = fixture("component-stack-frame");
   const crates = ["js", "node", "webapi"].flatMap((lib) => ["--extern", `${lib}=${join(node, `lib${lib}.rmeta`)}`]);
   run([compiler, join(root, "test/ports/component-stack-frame/lib.rs"), "-o", join(out, "lib.js"), "--", ...crates, "-L", node]);
-  const js = readFileSync(join(out, "ReactComponentStackFrame.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(out, "ReactComponentStackFrame.js"), "utf8"));
   expect(js).toContain(
     '    while (s < sampleLines.length && !sampleLines[s].includes("DetermineComponentFrameRoot")) {\n      s++;\n    }\n',
   );
@@ -460,7 +461,7 @@ pub fn find_first_list(row: &Rc<Fiber>) -> Option<Rc<Fiber>> {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/\bbb\d+\b/);
   expect(js.match(/\n    while \(node\.sibling == null\) \{\n/g)?.length).toBe(2);
   expect(js).toContain(
@@ -552,7 +553,7 @@ pub fn blanks(words: &[&str]) -> usize {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  while (i < n) {\n    if (c && d) {\n      break;\n    }\n    i++;\n  }\n");
   expect(js).toContain("  while (i < n) {\n    if (c || d) {\n      break;\n    }\n    i++;\n  }\n");
   expect(js).toContain("  while (i < n) {\n    if (c) {\n      break;\n    }\n    if (d) {\n      break;\n    }\n    i++;\n  }\n");
@@ -622,7 +623,7 @@ pub fn ordered(mut k: usize) -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("    for (let j = i + 1; j < m.length; j++) {\n");
   // MIR proves the swap's indexes in bounds, so nothing in the body changes
   // `m`'s length and the loop reads it where it's tested (#1672 M3, step 5).
@@ -724,7 +725,7 @@ pub fn wide(batch: &[u32]) -> u32 {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  for (let i = 0; i < batch.length; i += 2) {\n    const id = batch[i];\n    const content = batch[i + 1] ?? 0;\n");
   expect(js).toContain("  for (let i = 1; i < batch.length; i++) {\n    const id = batch[i];\n");
   // An item that may be `None` itself, as it is, its `None` too (ADR 1029, amended).
@@ -764,6 +765,6 @@ pub fn pairs(batch: &RefCell<Vec<&'static Unknown>>) -> usize {
   );
   const node = buildNode();
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  for (let i = 0; i < batch.length; i += 2) {\n    const id = batch[i];\n");
 });

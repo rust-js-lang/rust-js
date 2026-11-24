@@ -12,6 +12,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 // The js crate, which the library tests compile against.
 beforeAll(buildReact, 600_000);
@@ -21,7 +22,12 @@ function compiled(name: string, files: Record<string, string>) {
   const dir = fixture(name);
   for (const [file, text] of Object.entries(files)) writeFileSync(join(dir, file), text);
   const p = runSync([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type", "lib", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 60_000);
-  const read = (file: string) => readFileSync(join(dir, file), "utf8");
+  // A module's JS as it reads without the boundary of what JS gives Rust,
+  // as a test of forwarding reads it (#2403); a `.d.ts` as it is.
+  const read = (file: string) => {
+    const text = readFileSync(join(dir, file), "utf8");
+    return file.endsWith(".js") ? withoutBoundary(text) : text;
+  };
   return { p, dir, read };
 }
 
@@ -276,8 +282,11 @@ pub fn run(n: f64) -> (f64, f64, Vec<f64>) {
   expect(p.stderr).not.toContain("error");
   expect(p.code).toBe(0);
   const js = read("lib.js");
-  expect(js).toContain("Object.defineProperty(HydrationRoot.prototype, \"unstable_scheduleHydration\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: scheduleHydration,\n");
-  expect(js).toContain("Object.defineProperty(HydrationRoot.prototype, \"twice\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: doubled,\n");
+  // A method JS calls checks what it's given where the function it passes
+  // it on to is the crate's private one, which checks nothing: so it's a
+  // function of its own, not that function (#2403, ADR 1192).
+  expect(js).toContain("Object.defineProperty(HydrationRoot.prototype, \"unstable_scheduleHydration\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: function (seen, target) {\n    scheduleHydration(seen, target);\n  },\n");
+  expect(js).toContain("Object.defineProperty(HydrationRoot.prototype, \"twice\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: function (n) {\n    return doubled(n);\n  },\n");
   expect(js).toContain("Object.defineProperty(HydrationRoot.prototype, \"offset\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: function (n) {");
   // Of `()`, its result isn't the function's.
   expect(js).toContain("Object.defineProperty(HydrationRoot.prototype, \"note\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: function (n) {");
@@ -350,8 +359,10 @@ pub fn ran(n: f64) -> f64 {
   expect(p.code).toBe(0);
   const js = read("lib.js");
   expect(js).toContain("Object.defineProperty(Root.prototype, \"thrice\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: function (n) {");
-  expect(js).toContain("Object.defineProperty(Root.prototype, \"run\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: runNow,\n");
-  expect(js).toContain("function runNow(n) {");
+  // A check of what JS gives `run`, as `run_now` is private, keeps it a
+  // function of its own (#2403, ADR 1192), whose call reads `runNow` as it
+  // runs, past the module's load.
+  expect(js).toContain("Object.defineProperty(Root.prototype, \"run\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: function (n) {\n    return runNow(n);\n  },\n");
   const ran = run(["node", "--input-type=module", "--eval", `
     import { ran } from ${JSON.stringify(join(dir, "lib.js"))};
     console.log(ran(2));
@@ -464,7 +475,7 @@ impl Client {
     "--", "--crate-name", "app", "--crate-type", "lib", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir], root, 60_000);
   expect(app.stderr).not.toContain("error");
   expect(app.code).toBe(0);
-  expect(readFileSync(join(dir, "app", "lib.js"), "utf8")).toContain("client.createResponse(null, 1).n");
+  expect(withoutBoundary(readFileSync(join(dir, "app", "lib.js"), "utf8"))).toContain("client.createResponse(null, 1).n");
   const ran = run(["node", "--input-type=module", "--eval", `
     import * as client from ${JSON.stringify(join(dir, "dep", "lib.js"))};
     import { through } from ${JSON.stringify(join(dir, "app", "lib.js"))};
@@ -485,7 +496,7 @@ function withLibrary(dir: string, dep: string, app: string): { dep: string; app:
   writeFileSync(join(dir, "app.rs"), app);
   run([compiler, join(dir, "app.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
     "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js]);
-  return { dep: readFileSync(join(dir, "dep", "lib.js"), "utf8"), app: readFileSync(join(dir, "app", "lib.js"), "utf8") };
+  return { dep: withoutBoundary(readFileSync(join(dir, "dep", "lib.js"), "utf8")), app: withoutBoundary(readFileSync(join(dir, "app", "lib.js"), "utf8")) };
 }
 
 // #601 (ADR 0861, amended): a namespace's method that's the function it

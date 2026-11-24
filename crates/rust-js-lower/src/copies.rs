@@ -94,8 +94,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `copy`, each part copied where `copied_part` says: of what a library
-    /// stores (`stored`), each that may be an object too (#1907).
+    /// stores (`stored`), each that may be an object too (#1907). A copy of
+    /// a type no other crate can make is a value Rust made, branded (#2403
+    /// step 2c, ADR 1196).
     fn copy_parts(&self, place: Expr, ty: Ty<'tcx>, stored: bool) -> Expr {
+        let made = self.copied_parts(place, ty, stored);
+        self.branded(ty, made)
+    }
+
+    /// `copy_parts`' copy, before its brand.
+    fn copied_parts(&self, place: Expr, ty: Ty<'tcx>, stored: bool) -> Expr {
         // A copied default's `Self` is the impl's type, a number say, which
         // needs no copy (ADR 0049).
         if self.is_unknown(ty)
@@ -1045,7 +1053,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether any type this function copies where it's cloned is one
     /// `matches` says (#2408).
     fn js_copies_of(&self, matches: &dyn Fn(Ty<'tcx>) -> bool) -> bool {
-        (self.krate.js_copies.get(&self.tcx.typeck_root_def_id(self.item)))
+        (self.krate.js_copies.copied.get(&self.tcx.typeck_root_def_id(self.item)))
             .is_some_and(|copied| copied.iter().any(|&copied| matches(copied)))
     }
 

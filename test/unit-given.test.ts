@@ -11,6 +11,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -63,7 +64,7 @@ pub fn given_as_value() -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("[]");
   expect(js).toContain("return x === undefined;");
   expect(js).toContain("return undefined === x;");
@@ -121,7 +122,7 @@ pub fn held() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('return globalThis.counted("a");');
   expect(js).toContain('return globalThis.counted("a", undefined);');
   expect(js).toContain('return globalThis.counted("b");');
@@ -147,7 +148,7 @@ pub fn Once() -> JSX::Element {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toMatch(/useEffect\([^;]*, \[\]\);/);
   expect(jsx).toMatch(/useMemo\([^;]*, \[\]\);/);
   expect(jsx).toMatch(/useCallback\([^;]*, \[\]\);/);

@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { oneLine, withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -22,7 +23,7 @@ test("an else of nothing is left out", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  if (flag) {\n    out.push(1);\n  }\n}");
   const out: number[] = [];
   (await import(join(dir, "lib.js"))).picked(true, out);
@@ -72,7 +73,7 @@ pub fn matched(a: Option<u32>) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("return a > 1 && b > 2;");
   expect(js).toContain("return a > 1 || b > 2;");
   expect(js).toContain('return n === "x";');
@@ -122,7 +123,7 @@ pub fn one(n: u32, v: &mut Vec<u32>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain(`export function explicit(x, v) {
   if (x) {
     return;
@@ -200,7 +201,7 @@ pub fn counted(n: i32) -> i32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Each `else` the program wrote, an `else if` chain as one (ADR 0237,
   // amended, the user's decision, 2026-10-28).
   expect(js).toContain(
@@ -270,7 +271,7 @@ pub fn owned(some: bool) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('const label = item != null && item.path != null ? item.path : "none";');
   expect(js).toContain('const v = r.TAG === "Ok" ? r._0 : (r._0 + 1) >>> 0;');
   expect(js).toContain('const label = item != null && item.path != null ? item.title : "untitled";');
@@ -375,7 +376,7 @@ pub fn dropped() -> &'static str {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('(kind ?? "Primary") === "Primary" ? "bg-link" : "text-primary"');
   // Of three cases, `0 | 1`'s two and `_`, a switch (ADR 0629).
   expect(js).toContain('  let size;\n  switch (x % 3) {\n    case 0:\n    case 1:\n      size = "low";\n      break;\n    default:\n      size = "high";\n      break;\n  }\n');
@@ -415,7 +416,7 @@ test("branches' values coerced to the result are returned where made", async () 
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function pick(now) {\n  if (now) {\n    return () => 1;\n  } else {\n");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.pick(true)(), lib.pick(false)()]).toEqual([1, 2]);
@@ -435,7 +436,7 @@ pub fn either(a: bool, b: bool, c: bool, d: bool) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  return (x === y && (x !== 0 || 1 / x === 1 / y)) || (Number.isNaN(x) && Number.isNaN(y));\n");
   expect(js).not.toContain("break");
   const lib = await import(join(dir, "lib.js"));
@@ -473,7 +474,7 @@ pub fn effect(on: bool) -> impl Fn() -> Option<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("return undefined;");
   // One at a function's end says nothing: it falls off its end there, a
   // closure's too, as a person ends one.
@@ -561,7 +562,7 @@ pub fn named<'a>(names: &[&'a str], blank: &'a str) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const current = state ?? blank;\n");
   expect(js).toContain("  const name = names.find((s) => $byteLen(s) < 2) ?? blank;\n");
   expect(js).toContain('  const text = find != null ? find[1] : "";\n');
@@ -593,7 +594,7 @@ pub fn both(a: u8, b: u8) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('  return op === "+" || op === "-" ? 1 : 2;\n');
   expect(js).toContain("return a > 1 && b > 1;");
   const lib = await import(join(dir, "mir.js"));
@@ -612,7 +613,7 @@ pub fn email(s: String) -> Result<Email, String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain('  return s.includes("@") ? { TAG: "Ok", _0: [s] } : { TAG: "Err", _0: `${s} is not an email` };');
+  expect(withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"))).toContain('  return s.includes("@") ? { TAG: "Ok", _0: [s] } : { TAG: "Err", _0: `${s} is not an email` };');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.email("a@b"), lib.email("x")]).toEqual([{ TAG: "Ok", _0: ["a@b"] }, { TAG: "Err", _0: "x is not an email" }]);
 });
@@ -633,7 +634,7 @@ test("branches that each add to a variable stay branches", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("out += `ok ${");
   expect(js).toContain("out += `err ${");
   const lib = await import(join(dir, "mir.js"));
@@ -695,7 +696,7 @@ pub fn colors(message: &str) -> &'static str {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain(`export function two(s) {
   return s === "a" ? 1 : 2;
 }`);
@@ -745,7 +746,7 @@ pub fn either(active: bool) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain(`export function guard(active, v) {
   if (!active) {
     v.push(0);
@@ -781,7 +782,7 @@ pub fn page_title(meta: &Meta, route: Option<&Route>) -> &'static str {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('  if (section === "learn" || (section === "blog" && !isBlogIndex)) {\n');
   expect(js).toContain('  return meta.title || route || "";\n');
   expect(js).toContain('  return route?.title || "";\n');
@@ -807,7 +808,7 @@ test("an `if … else if` given as a value from MIR is a conditional where it's 
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('  return `[${href.startsWith("https://") ? "ext" : href.startsWith("#") ? "hash" : href}]`;\n');
 });
 
@@ -825,7 +826,7 @@ test("a function's value from MIR that branches assign is returned from each, it
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain(`export function footer(href, children) {
   const classes = \`c\${children.length}\`;
   if (!href) {
@@ -877,7 +878,7 @@ pub fn logs(message: &Message, out: &mut Vec<u32>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   // A `bool`'s set and true is its truth; text's, its test that it isn't
   // empty, as the Rust says it (rd732).
   expect(js).not.toContain("firstLoad != null &&");
@@ -914,7 +915,7 @@ pub fn tail(message: &Message, out: &mut Vec<u32>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   const test = '  if ((message.TAG === "Start" && message.firstLoad === true) || message === "Refresh") {\n    out.push(1);\n  }\n';
   expect(js).toContain(`export function starts(message, out) {\n${test}  out.push(2);\n}`);
   expect(js).toContain(`export function tail(message, out) {\n${test}}`);
@@ -939,7 +940,7 @@ test("a guarded binding of an Option's string is its truth", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   // MIR's one value, as react.dev's original writes it.
   expect(js).toContain(
     'export function title(errorCode) {\n  return errorCode != null && errorCode !== ""\n    ? `Minified React error #${errorCode}`\n    : "Minified Error Decoder";\n}',
@@ -972,7 +973,7 @@ pub fn filtered(code: Option<&str>) -> Option<String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).not.toContain("?.toUpperCase()");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.held(""), lib.held("a"), lib.held(undefined), lib.upper(""), lib.upper("b")]).toEqual([undefined, "A", undefined, undefined, "B"]);
@@ -997,7 +998,7 @@ pub fn revive(val: Option<&'static Unknown>) -> Option<&'static Unknown> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('export function revive(val) {\n  if (Array.isArray(val) && val[0] === "$r") {\n    return val[1];\n  }\n  return val;\n}');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.revive(["$r", 1]), lib.revive(["x", 1]), lib.revive(undefined), lib.revive("$r")]).toEqual([1, ["x", 1], undefined, "$r"]);
@@ -1027,7 +1028,7 @@ pub fn handle(ev: &Ev, open: bool, out: &mut Vec<u32>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('  if (\n    (ev.keyCode === 27 && open) ||\n    (ev.key === "k" && (ev.meta || ev.ctrl)) ||\n    (!editing(ev) && ev.key === "/" && !open)\n  ) {\n    out.push(1);\n');
   const lib = await import(join(dir, "mir.js"));
   const pushed: number[] = [];
@@ -1062,7 +1063,7 @@ pub fn crumbs<'a>(path: &str, current: &'a Route, crumbs_so_far: Vec<&'a Route>)
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("    if (child.length !== 0) {\n      return child;\n    }\n  }\n  return [];\n}");
   const lib = await import(join(dir, "mir.js"));
   const tree = { path: "/", routes: [{ path: "/a", routes: [{ path: "/a/b" }] }] };
@@ -1092,7 +1093,7 @@ pub fn flagged(heading: bool, crumb: bool, expanded: bool) -> Option<&'static st
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("    home || meta.title === \"\"\n      ? `/images/og-${meta.path}.png`\n");
   expect(js).toContain('  return !heading && crumb && !expanded ? "on" : undefined;\n');
   const lib = await import(join(dir, "mir.js"));
@@ -1121,7 +1122,7 @@ pub fn heading(names: Vec<String>) -> Vec<String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('return element.editable || tagName === "INPUT" || tagName === "SELECT" || tagName === "TEXTAREA";');
   expect(js).toContain("const hide = error != null || height == null || height === 0 || !ready;");
   expect(js).toContain('names.filter((n) => n === "H1" || n === "H2" || n === "H3")');
@@ -1154,7 +1155,7 @@ pub fn kept(all: &[String], complete: bool, done: &[&str]) -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('return s !== "en" && (t ? s === "" : u);');
   expect(js).toContain('(code) => code !== "en" && (complete ? done.includes(code) : !done.includes(code))');
   expect(js).toContain("  return t ? (x + 1) >>> 0 : (x * 2) >>> 0;\n");
@@ -1220,7 +1221,7 @@ pub fn first_big(items: &[u32]) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Each index read is below the length once it's read (ADR 0881): its
   // swap JS's own.
   expect(js).toContain("      } else {\n        [heap[index], heap[left]] = [heap[left], heap[index]];");
@@ -1284,7 +1285,7 @@ pub fn chained(n: u32) -> fn(u32) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('const pick = typeof rustJsFast !== "undefined" ? rustJsFast : (n) => (n * 2) >>> 0;');
   expect(js).toContain("  const f = flag ? (n) => (n + 1) >>> 0 : (n) => (n * 3) >>> 0;\n");
   expect(js).toContain('  let f;\n  if (flag) {\n    console.log("one");\n');
@@ -1310,7 +1311,7 @@ pub fn before(s: &str) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  return c < "a";\n');
   expect(js).toContain('  return s < "m";\n');
   const lib = await import(join(dir, "lib.js"));

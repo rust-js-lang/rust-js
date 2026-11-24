@@ -5,6 +5,17 @@
 // in a map, closures that return closures, and `Rc<RefCell<..>>` (ADR 0067).
 
 import {
+  $brand,
+  $checkArray,
+  $checkF64,
+  $checkField,
+  $checkMap,
+  $checkShape,
+  $checkStr,
+  $checkTag,
+  $checkU32,
+  $checkU8,
+  $checks,
   $cmp,
   $debugF64,
   $debugStr,
@@ -49,8 +60,25 @@ function storeDisplay_fmt(store) {
   return f;
 }
 
+function checkEvent(value) {
+  const tag = $checkTag(value, "TAG", ["Restock", "Sale"], ["Audit"]);
+  if (tag === "Restock") {
+    $checkField(value, "item", $checkStr);
+    $checkField(value, "qty", $checkU32);
+  }
+  if (tag === "Sale") {
+    $checkField(value, "item", $checkStr);
+    $checkField(value, "qty", $checkU32);
+    $checkField(value, "price", $checkF64);
+  }
+}
+
 export const Store = {
   apply(store, e) {
+    $checks("Store.apply(store, e)", store, checkStore, e, checkEvent);
+    return Store.apply$(store, e);
+  },
+  apply$(store, e) {
     if (e.TAG === "Restock") {
       $orInsert(store.stock, e.item, 0);
       $mutGet(store.stock, e.item).value = ($mutGet(store.stock, e.item).value + e.qty) >>> 0;
@@ -70,6 +98,16 @@ export const Store = {
     return { TAG: "Ok" };
   },
 };
+
+const checkStore = /* @__PURE__ */ $checkShape(
+  () => ({
+    stock: (value, where, none) => $checkMap(value, where, none, $checkStr, $checkU32),
+    revenue: $checkF64,
+    log: (value, where, none) => $checkArray(value, where, none, $checkStr),
+  }),
+  "inventory#2a650c7f5ca2643e::Store",
+  "a Store",
+);
 
 function discount(pct) {
   return (p) => p * (1 - pct / 100);
@@ -94,7 +132,11 @@ function classify(n) {
 }
 
 export function report() {
-  const store = { stock: new Map(), revenue: 0, log: [] };
+  const store = $brand("inventory#2a650c7f5ca2643e::Store", {
+    stock: new Map(),
+    revenue: 0,
+    log: [],
+  });
   const events = [
     {
       TAG: "Restock",
@@ -129,7 +171,7 @@ export function report() {
   let out = "";
   for (let i = 0; i < events.length; i++) {
     const e = events[i];
-    const apply = Store.apply(store, e);
+    const apply = Store.apply$(store, e);
     if (apply.TAG === "Err") {
       out += `error: ${apply._0}\n`;
     }
@@ -184,9 +226,9 @@ export function report() {
     popped.push(top);
   }
   out += `[${popped.join(", ")}]\n`;
-  out += `[${tallies(["a", "b", "a", "b", "c"])
+  out += `[${tallies$(["a", "b", "a", "b", "c"])
     .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
-    .join(", ")}] [${bands([0, 3, 42, 150, 250])
+    .join(", ")}] [${bands$([0, 3, 42, 150, 250])
     .map((item) => $debugStr(item))
     .join(", ")}]\n`;
   return out;
@@ -194,6 +236,13 @@ export function report() {
 
 // A `&mut` to a map's number, from `get_mut`, and the count idiom with a `&u32`.
 export function tallies(words) {
+  $checks("tallies(words)", words, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
+  return tallies$(words);
+}
+
+function tallies$(words) {
   const counts = new Map();
   const one = 1;
   for (let i = 0; i < words.length; i++) {
@@ -211,6 +260,11 @@ export function tallies(words) {
 }
 
 export function bands(xs) {
+  $checks("bands(xs)", xs, (value, where, none) => $checkArray(value, where, none, $checkU8));
+  return bands$(xs);
+}
+
+function bands$(xs) {
   return xs.map((x) => {
     if (x === 0) {
       return "none";

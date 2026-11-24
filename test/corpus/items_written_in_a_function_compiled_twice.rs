@@ -1,3 +1,4 @@
+//@ library-differs
 // A function compiled twice, its JS for JS's callers and a copy its
 // crate's Rust calls (ADR 0051, amended), `evens` and `evensRevealed` of
 // an `impl Iterator` it gives back (#1999): each copy declares what its

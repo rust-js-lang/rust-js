@@ -11,6 +11,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -290,7 +291,7 @@ pub fn noop() -> u32 {
     dir,
     ...js,
   ]);
-  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(dir, "app", "lib.js"), "utf8"));
   const lib = await import(join(dir, "app", "lib.js"));
   expect(app).toContain(
     'import { createContainer } from "../dep/reconciler.js";\n',
@@ -342,7 +343,7 @@ pub fn held() -> u32 {
     dir,
     ...js,
   ]);
-  const named = readFileSync(join(dir, "named", "lib.js"), "utf8");
+  const named = withoutBoundary(readFileSync(join(dir, "named", "lib.js"), "utf8"));
   expect(named).toContain(
     'import { createContainer, updateContainer } from "../dep/reconciler.js";\n',
   );
@@ -585,7 +586,7 @@ impl Reconciler {
 `;
   writeFileSync(join(dir, "reconciler.rs"), reconciler("crate::work_loop::flush"));
   run([compiler, ...flags(dir)]);
-  const module = readFileSync(join(dir, "reconciler.js"), "utf8");
+  const module = withoutBoundary(readFileSync(join(dir, "reconciler.js"), "utf8"));
   expect(module.match(/export \{ flush \} from "\.\/work_loop\.js";/g)).toHaveLength(1);
   expect((await import(join(dir, "lib.js"))).run()).toBe(7);
   writeFileSync(join(dir, "reconciler.rs"), reconciler("crate::other::flush"));
@@ -644,7 +645,7 @@ pub fn noop(renderer: &Reconciler) -> bool {
     dir,
     ...js,
   ]);
-  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(dir, "app", "lib.js"), "utf8"));
   expect(app).toContain('import { batchedUpdates } from "../dep/reconciler.js";\n');
   expect(app).toContain("  return renderer.flushPassiveEffects();\n");
   const lib = await import(join(dir, "app", "lib.js"));
@@ -714,7 +715,7 @@ pub fn make(renderer: &'static Reconciler) -> Api {
 `,
   );
   run([compiler, ...flags(dir)]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(
     "  return {\n    batchedUpdates: renderer.batchedUpdates,\n    discreteUpdates: renderer.discreteUpdates,\n    // An \`Rc\`'s, whose pointer the crate never compares (rd313).\n    onError: renderer.discreteUpdates,\n    // Not all it's given: a function of its own.\n    updateContainer: (n) => renderer.discreteUpdates(n, 1),\n  };\n",
   );
@@ -770,9 +771,9 @@ test("a namespace's method through a value whose call needs a copy unlike its ow
   run([compiler, ...flags(dir)]);
   const lib = await import(join(dir, "lib.js"));
   const namespace = await import(join(dir, "reconciler.js"));
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("renderer.batchedUpdates(");
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain("renderer.batchedUpdates(");
   expect(lib.batched(namespace)).toBe(true);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("  return renderer.flushSync(f) ?? undefined;\n");
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain("  return renderer.flushSync(f) ?? undefined;\n");
   expect([lib.flattened(namespace, 0), lib.flattened(namespace, 1), lib.flattened(namespace, 2)]).toEqual([
     undefined,
     1,
@@ -911,7 +912,7 @@ pub fn nested(renderer: &Reconciler, given: u32) -> String {
 `,
   );
   expect(ran.stderr).toBe("");
-  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(dir, "app", "lib.js"), "utf8"));
   expect(app).toContain("  return renderer.flushSync(f) ?? undefined;\n");
   expect(app).not.toContain("DEPTH");
   const lib = await import(join(dir, "app", "lib.js"));
@@ -952,7 +953,7 @@ pub fn flusher() -> Box<dyn Fn(Option<&dyn Fn() -> Option<u32>>) -> Option<u32>>
 `,
   );
   expect(ran.stderr).toBe("");
-  const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(dir, "app", "lib.js"), "utf8"));
   expect(app).not.toContain("DEPTH");
   expect(app).toContain("  return flushSync(f) ?? undefined;\n");
   // The closure that only passes its argument on to it is it, as one

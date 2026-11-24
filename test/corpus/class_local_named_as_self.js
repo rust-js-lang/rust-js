@@ -6,19 +6,30 @@
 // (ADR 0761). A plain method's `self` is a parameter, `point`, which a
 // `let` read no more after it takes for its own (ADR 0650).
 
-import { $displayF64, $main } from "@rust-js/std";
+import {
+  $brand,
+  $checkF64,
+  $checkShape,
+  $checkWhole,
+  $checks,
+  $displayF64,
+  $main,
+} from "@rust-js/std";
 
 export class Point {
   constructor(x) {
+    $checkF64(x, "Point.new(x)");
     this.x = x;
   }
 
   moved(by) {
+    $checkF64(by, "Point.moved(by)");
     const point = new Point(this.x + by);
     return point.x;
   }
 
   either(other) {
+    $checkWhole(checkPoint, other, "Point.either(other)", "nullish");
     const point = other ?? new Point(this.x * 2);
     return point.x + this.x;
   }
@@ -26,10 +37,22 @@ export class Point {
 
 export const Plain = {
   moved(plain, by) {
+    $checks("Plain.moved(plain, by)", plain, checkPlain, by, $checkF64);
+    return Plain.moved$(plain, by);
+  },
+  moved$(plain, by) {
     const plain$1 = { x: plain.x + by };
     return plain$1.x;
   },
 };
+
+const checkPlain = /* @__PURE__ */ $checkShape(
+  () => ({ x: $checkF64 }),
+  "class_local_named_as_self#b71849e4197afe9a::Plain",
+  "a Plain",
+);
+
+const checkPoint = /* @__PURE__ */ $checkShape(() => ({ x: $checkF64 }));
 
 $main(main);
 
@@ -37,7 +60,7 @@ function main() {
   const point = new Point(1.5);
   console.log(`${$displayF64(point.moved(2))} ${$displayF64(point.x)}`);
   console.log(`${$displayF64(point.either())} ${$displayF64(point.either(new Point(10)))}`);
-  const plain = { x: 3 };
-  console.log(`${$displayF64(Plain.moved(plain, 1))} ${$displayF64(plain.x)}`);
+  const plain = $brand("class_local_named_as_self#b71849e4197afe9a::Plain", { x: 3 });
+  console.log(`${$displayF64(Plain.moved$(plain, 1))} ${$displayF64(plain.x)}`);
 }
 //# sourceMappingURL=case.js.map

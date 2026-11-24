@@ -1,3 +1,4 @@
+//@ library-differs
 // A value read out of a `RefCell` field's guard, `let Some(chunk) =
 // handler.chunk.borrow().clone() else ..`, is read while the guard is,
 // where Rust clones it, not where it's used after a call that writes the

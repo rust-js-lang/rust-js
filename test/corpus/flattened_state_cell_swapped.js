@@ -7,7 +7,7 @@
 // a write of one variant over another, whose earlier keys the object keeps;
 // and what's swapped in then changed, apart from what it came from.
 
-import { $debugStr, $main, $stdSites, $stringPanic } from "@rust-js/std";
+import { $checkStr, $debugStr, $main, $stdSites, $stringPanic } from "@rust-js/std";
 
 function statusDebug_fmt(status) {
   if (status.status === "pending") {
@@ -21,6 +21,7 @@ function statusDebug_fmt(status) {
 
 export class Task {
   constructor(status, tries, value, name) {
+    $checkStr(name, "Task.new(name)");
     this.status = status;
     this.tries = tries;
     this.value = value;

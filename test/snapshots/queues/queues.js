@@ -6,6 +6,16 @@
 
 import {
   $at,
+  $brand,
+  $checkArray,
+  $checkBrand,
+  $checkField,
+  $checkI32,
+  $checkObject,
+  $checkShape,
+  $checkTuple,
+  $checkU32,
+  $checks,
   $cmp,
   $debugStr,
   $displayF64,
@@ -30,7 +40,7 @@ import {
 
 export const Stack = {
   new(TDebug) {
-    return { items: [] };
+    return $brand("queues#b62104a05163bce2::Stack", { items: [] });
   },
   push(stack, x, TDebug) {
     stack.items.push(x);
@@ -64,6 +74,10 @@ function labeledDisplay_fmt(labeled, TDisplay) {
 
 export const Pipeline = {
   run(pipeline, x) {
+    $checks("Pipeline.run(pipeline, x)", pipeline, checkPipeline, x, $checkI32);
+    return Pipeline.run$(pipeline, x);
+  },
+  run$(pipeline, x) {
     return pipeline.steps.reduce((acc, f) => f(acc), x);
   },
 };
@@ -72,6 +86,12 @@ const reversePartialOrd = $partialOrd({
   PartialEq: () => $partialEq({ eq: $eq }),
   partialCmp: (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]),
 });
+
+const checkPipeline = /* @__PURE__ */ $checkShape(
+  () => ({}),
+  "queues#b62104a05163bce2::Pipeline",
+  "a Pipeline",
+);
 
 function firstEvenSquare(v) {
   const e = v.find((x) => x % 2 === 0);
@@ -82,6 +102,22 @@ function firstEvenSquare(v) {
 }
 
 export function dijkstra(edges, n, src) {
+  $checks(
+    "dijkstra(edges, n, src)",
+    edges,
+    (value, where, none) =>
+      $checkArray(value, where, none, (value, where, none) =>
+        $checkTuple(value, where, none, [$checkU32, $checkU32, $checkU32]),
+      ),
+    n,
+    $checkU32,
+    src,
+    $checkU32,
+  );
+  return dijkstra$(edges, n, src);
+}
+
+function dijkstra$(edges, n, src) {
   const item = [];
   $roomFor(n, 12);
   const adj = Array.from({ length: n }, () => item.slice());
@@ -116,6 +152,15 @@ export function dijkstra(edges, n, src) {
 }
 
 export function bfsOrder(n, edges) {
+  $checks("bfsOrder(n, edges)", n, $checkU32, edges, (value, where, none) =>
+    $checkArray(value, where, none, (value, where, none) =>
+      $checkTuple(value, where, none, [$checkU32, $checkU32]),
+    ),
+  );
+  return bfsOrder$(n, edges);
+}
+
+function bfsOrder$(n, edges) {
   $roomFor(n, 1);
   const seen = new Array(n).fill(false);
   const q = [];
@@ -203,6 +248,11 @@ export function deques() {
 }
 
 export function reverses(a, b) {
+  $checks("reverses(a, b)", a, $checkU32, b, $checkU32);
+  return reverses$(a, b);
+}
+
+function reverses$(a, b) {
   const x = [[a, 1]];
   const y = [[b, 2]];
   const p = x[0][0];
@@ -220,6 +270,12 @@ export function reverses(a, b) {
     `Reverse((${y[0][0]}, ${y[0][1]}))`,
     v,
   ];
+}
+
+function checkStack(value, T) {
+  $checkBrand(value, undefined, undefined, "queues#b62104a05163bce2::Stack", "a Stack");
+  $checkObject(value);
+  $checkField(value, "items", (value, where, none) => $checkArray(value, where, none, T));
 }
 
 export function report() {
@@ -248,12 +304,14 @@ export function report() {
     },
     { fmt: String },
   )}\n`;
-  const p = { steps: [(x) => (x + 1) | 0, (x) => (x * 10) | 0, (x) => (x - 3) | 0] };
-  const run = Pipeline.run(p, 4);
+  const p = $brand("queues#b62104a05163bce2::Pipeline", {
+    steps: [(x) => (x + 1) | 0, (x) => (x * 10) | 0, (x) => (x - 3) | 0],
+  });
+  const run = Pipeline.run$(p, 4);
   const value = firstEvenSquare([3, 5, 6, 8]);
   const value$1 = firstEvenSquare([1]);
   out += `${run} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}\n`;
-  out += `[${dijkstra(
+  out += `[${dijkstra$(
     [
       [0, 1, 4],
       [0, 2, 1],
@@ -265,7 +323,7 @@ export function report() {
   )
     .map((item) => (item == null ? "None" : `Some(${item})`))
     .join(", ")}]\n`;
-  out += `[${bfsOrder(5, [
+  out += `[${bfsOrder$(5, [
     [0, 1],
     [0, 2],
     [1, 3],
@@ -285,8 +343,8 @@ export function report() {
   out += `[${lens.join(", ")}] [${arg.map((item) => $debugStr(item)).join(", ")}]\n`;
   out += heaps();
   const value$2 = deques();
-  const value$3 = reverses(1, 2);
-  out += `${value$2}\n(${value$3[0]}, ${value$3[1]}, ${value$3[2]}, ${$debugStr(value$3[3])}, [${value$3[4].join(", ")}]) ${((tuple) => `(${tuple[0]}, ${tuple[1]}, ${tuple[2]}, ${$debugStr(tuple[3])}, [${tuple[4].join(", ")}])`)(reverses(5, 3))}\n`;
+  const value$3 = reverses$(1, 2);
+  out += `${value$2}\n(${value$3[0]}, ${value$3[1]}, ${value$3[2]}, ${$debugStr(value$3[3])}, [${value$3[4].join(", ")}]) ${((tuple) => `(${tuple[0]}, ${tuple[1]}, ${tuple[2]}, ${$debugStr(tuple[3])}, [${tuple[4].join(", ")}])`)(reverses$(5, 3))}\n`;
   return out;
 }
 //# sourceMappingURL=queues.js.map

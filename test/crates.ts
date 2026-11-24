@@ -9,6 +9,7 @@ import { nondeterministic } from "./corpus-cases";
 import { keepRun, keptRun, recheck, rechecked } from "./native-outcomes";
 import { node, type Run } from "./programs";
 import { compiler, fixture, nativeCrates, nativeCratesKey, programFlags, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 import { channel } from "../scripts/toolchain.ts";
 
 export const cargo = (manifest: string, ...args: string[]) => ["cargo", `+${channel}`, ...args, "--offline", "--quiet", "--manifest-path", manifest];
@@ -143,7 +144,9 @@ export function counting(out: string, source: string, uses = ["dep"]) {
 export const js = ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
 
 /** `dep`, a library, and `app`, a crate that uses it, compiled in `dir`:
- * each one's JS. */
+ * each one's JS, as it reads without the boundary of what JS gives Rust
+ * (`withoutBoundary`), as a test of another feature reads it; the files
+ * keep it, as what runs. */
 export function compiled(dir: string, dep: string, app: string): { dep: string; app: string } {
   writeFileSync(join(dir, "dep.rs"), dep);
   run([compiler, join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
@@ -151,5 +154,6 @@ export function compiled(dir: string, dep: string, app: string): { dep: string; 
   writeFileSync(join(dir, "app.rs"), app);
   run([compiler, join(dir, "app.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
     "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js]);
-  return { dep: readFileSync(join(dir, "dep", "lib.js"), "utf8"), app: readFileSync(join(dir, "app", "lib.js"), "utf8") };
+  const read = (crate: string) => withoutBoundary(readFileSync(join(dir, crate, "lib.js"), "utf8"));
+  return { dep: read("dep"), app: read("app") };
 }

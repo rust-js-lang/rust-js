@@ -213,8 +213,11 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// does, not as it's done (#392). Not std's struct, compiled, which
     /// steps what it holds as Rust does, and has no `hold()`.
     pub(super) fn parameters_first(&mut self, state: &State<'_, 'tcx>) -> R<Vec<Stmt>> {
+        // What a JS caller gives is checked where the parameters are final,
+        // after tidy (`parameter_checks`, #2403, ADR 1192, amended).
+        let mut out = Vec::new();
         // Each JS gives again that it changes, its copy (#1723).
-        let mut out = self.kept_starts(state.body, &state.parts, &|local| state.locals.names[local].clone())?;
+        out.extend(self.kept_starts(state.body, &state.parts, &|local| state.locals.names[local].clone())?);
         for local in state.body.args_iter() {
             let ty = state.body.local_decls[local].ty;
             if !rust_js_lower::recognition::is_compiled_std_iterator(self.tcx, ty)

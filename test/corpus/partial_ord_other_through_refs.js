@@ -7,7 +7,17 @@
 // &A` is its referents' order, the crate's `PartialOrd<At<Z2>> for
 // At<Z>` (#467).
 
-import { $cmp, $main, $partialEq, $partialOrd } from "@rust-js/std";
+import {
+  $brand,
+  $checkBrand,
+  $checkField,
+  $checkI64,
+  $checkObject,
+  $cmp,
+  $main,
+  $partialEq,
+  $partialOrd,
+} from "@rust-js/std";
 
 function utcDebug_fmt(utc) {
   return "Utc";
@@ -36,14 +46,20 @@ function atPartialOrdAt_partialCmp(at, other) {
   return $cmp(at.t, other.t);
 }
 
-const MIN = { t: 0n };
-const MAX = { t: 100n };
+const MIN = $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", { t: 0n });
+const MAX = $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", { t: 100n });
 
 export function inRange(at) {
   return (
     (at != null &&
-    atPartialOrdAt_partialCmp(at, { t: 0n }) >= 0 &&
-    atPartialOrdAt_partialCmp(at, { t: 100n }) <= 0
+    atPartialOrdAt_partialCmp(
+      at,
+      $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", { t: 0n }),
+    ) >= 0 &&
+    atPartialOrdAt_partialCmp(
+      at,
+      $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", { t: 100n }),
+    ) <= 0
       ? at
       : undefined) ?? undefined
   );
@@ -55,18 +71,58 @@ function before(a, b) {
 
 $main(main);
 
+function checkAt(value, Z) {
+  $checkBrand(
+    value,
+    undefined,
+    undefined,
+    "partial_ord_other_through_refs#c5cd274bfe7f7cb5::At",
+    "an At",
+  );
+  $checkObject(value);
+  $checkField(value, "t", $checkI64);
+  $checkField(value, "zone", Z);
+}
+
 function main() {
-  const kept = inRange({ t: 5n, zone: [1] });
+  const kept = inRange(
+    $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", {
+      t: 5n,
+      zone: $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::Fixed", [1]),
+    }),
+  );
   console.log(
     `${kept == null ? "None" : `Some(${atDebug_fmt(kept, fixedDebug)})`} ${kept?.zone[0] == null ? "None" : `Some(${kept?.zone[0]})`}`,
   );
-  const value = inRange({ t: -5n, zone: [2] });
+  const value = inRange(
+    $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", {
+      t: -5n,
+      zone: $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::Fixed", [2]),
+    }),
+  );
   console.log(`${value == null ? "None" : `Some(${atDebug_fmt(value, fixedDebug)})`}`);
-  const value$1 = inRange({ t: 500n, zone: [3] });
+  const value$1 = inRange(
+    $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", {
+      t: 500n,
+      zone: $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::Fixed", [3]),
+    }),
+  );
   console.log(`${value$1 == null ? "None" : `Some(${atDebug_fmt(value$1, fixedDebug)})`}`);
-  const value$2 = before({ t: 1n, zone: [4] }, MAX);
+  const value$2 = before(
+    $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", {
+      t: 1n,
+      zone: $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::Fixed", [4]),
+    }),
+    MAX,
+  );
   console.log(`(${value$2[0]}, ${value$2[1]})`);
-  const value$3 = before({ t: 101n, zone: [5] }, MAX);
+  const value$3 = before(
+    $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", {
+      t: 101n,
+      zone: $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::Fixed", [5]),
+    }),
+    MAX,
+  );
   console.log(`(${value$3[0]}, ${value$3[1]})`);
   console.log(`${utcDebug_fmt(MIN.zone)} ${utcDebug_fmt(MAX.zone)}`);
 }

@@ -1,3 +1,4 @@
+//@ library-differs
 // A function whose `Drop` guard is a `try { .. } finally { .. }` returns
 // early from inside an `if` as it's written, `if (task != null) {
 // run(task); return; }` in the `try`, whose `finally` still runs: no block

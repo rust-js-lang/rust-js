@@ -59,4 +59,12 @@ export const mutations: Mutation[] = [
     replace: "                    None => local.clone(),\n",
     tests: ["test/corpus.test.ts", "-t", "^reserved_named_function_called_across_modules.rs$"],
   },
+  {
+    name: "copy-unlike-for-its-checks",
+    breaks: "a copy only Rust calls is told apart from its function by the checks the function starts with, so a component's `Boxed` copy is made beside it (#2403)",
+    file: "src/pipeline/copies.rs",
+    find: "    function.body.drain(..checks);",
+    replace: "    let _ = checks;",
+    tests: ["test/jsx-props.test.ts","-t","JSX gives a flattened struct's fields as a component's own props"],
+  },
 ];

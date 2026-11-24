@@ -7,6 +7,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -40,7 +41,7 @@ pub fn shown(values: &[Option<u32>], plain: Option<u32>) -> String {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("if (last === null) {");
   expect(js).toContain("last !== undefined && plain == null");
 });
@@ -123,7 +124,7 @@ pub fn tested(values: &[Option<u32>]) -> bool {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("last = value ?? null;");
   expect(js).toContain("return last != null;");
   const lib = await import(join(dir, "lib.js"));
@@ -196,7 +197,7 @@ pub fn loaded(chunk_id: &str) {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("(chunkCache) => chunkCache.get(chunkId)");
   expect(js).toContain("if (entry === undefined) {");
   expect(js).toContain("promises.push(entry);");
@@ -279,7 +280,7 @@ pub fn mid(init: &RTCIceCandidateInit) -> String {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return entry.value !== undefined;");
   expect(js).toContain("return entry.value === null;");
   expect(js).toContain("export function valueOf(entry) {\n  return entry.value;\n}");
@@ -470,7 +471,7 @@ pub fn nothing() -> Option<&'static Unknown> {
 `,
   );
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return createResponse(options.serverConsumerManifest.serverModuleMap);");
   expect(js).toContain("return manifest.serverModuleMap !== null;");
   expect(js).toContain("return manifest.slot != null;");

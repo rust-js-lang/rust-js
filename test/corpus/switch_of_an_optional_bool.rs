@@ -1,3 +1,4 @@
+//@ library-differs
 // A `match` of an `Option<bool>` whose arms name `Some(false)` and
 // `Some(true)` is a `switch` of its value, `case false:` and `case true:`,
 // as React's updateClassComponent switches on `shouldError(..)` (#545):

@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { chromium } from "playwright";
 import { buildReact, compiler, fixture, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -85,7 +86,7 @@ pub fn listened() {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return p.then(ping, ping);");
   expect(js).toContain("return p.then(count, count);");
   expect(js).toContain("return p.then(shown, () => 0);");
@@ -163,7 +164,7 @@ pub fn dyn_mapped(xs: &[u32], f: &dyn Fn(&u32) -> u32) -> Vec<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("() => {\n      count();\n    },");
   expect(js).toContain("() => Number(),");
   expect(js).toContain("() => f(),");
@@ -218,7 +219,7 @@ pub fn later(queue: std::rc::Rc<&'static js::Unknown>, value: u32) -> impl Fn() 
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  runWith(commit, queue, value);\n");
   expect(js).toContain("  return twice((value) => doubled(value), value);\n");
   // Inside a closure, of what it captured: as it is.
@@ -291,7 +292,7 @@ pub fn call(dispatcher: &Dispatcher) -> (u32, u32, u32) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export const CONTEXT_ONLY = {
   useCallback: throwInvalidHookError,
   useId: throwInvalidHookError,
@@ -366,8 +367,8 @@ pub fn on_success(queue: String) -> Box<dyn Fn(u32)> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("    preload,\n");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
+  expect(js).toContain("preload,\n");
   expect(js).toContain("    count(n) {\n      counted(n);\n    },\n");
   const lib = await import(join(dir, "lib.js"));
   const dispatcher = lib.dispatcher();
@@ -421,7 +422,7 @@ pub fn totals(xs: &[f64]) -> Vec<f64> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export const cloneInstance = shim;\n");
   expect(js).toContain("export const afterFirst = (...args) => {\n  shim(...$slice(args, 1, \"lib.rs:17:48\"));\n};");
   expect(js).toContain("export const ofOne = (args) => {\n  shim(...args);\n};");
@@ -484,7 +485,7 @@ pub fn owned_apart() -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return render(transitionAwareHostComponent);");
   // Held by a `let`, the function where the variable is read (rd284).
   expect(js).toContain("export function renderHeld() {\n  return render(transitionAwareHostComponent);\n}");
@@ -568,7 +569,7 @@ pub fn tags(xs: Vec<u32>) -> Vec<String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return startTransition.bind(null, fiber, true);");
   expect(js).toContain("(callback, options) => startTransition(fiber, pending, callback, options)");
   expect(js).toContain("(callback, options) => startTransition(fiber, false, callback, options)");
@@ -785,7 +786,7 @@ pub fn shared(this: Rc<Node>) -> Rc<dyn Fn()> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return computedOper.bind(null, this$);");
   expect(js).toContain("return signalOper.bind(null, this$);");
   expect(js).toContain("return (...value) => counted(this$, value);");
@@ -911,7 +912,7 @@ fn record(n: u32) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  hostFieldJs = readFileSync(join(dir, "lib.js"), "utf8");
+  hostFieldJs = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   return hostFieldJs;
 };
 
@@ -967,7 +968,7 @@ pub fn made() -> Hooks {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  (0, hooks.swapped)();\n");
 });
 
@@ -1004,7 +1005,7 @@ fn record(n: u32) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export const SCHEDULE_TIMEOUT = setTimeout;");
   expect(js).toContain("export const SCHEDULE_MICROTASK = queueMicrotask;");
   expect(js).toContain("export const SCHEDULE_LOGGED = (callback) => {");
@@ -1075,7 +1076,7 @@ pub fn kept(target: &EventTarget) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  const ping = onUnsuspend.bind(state);\n  target.addEventListener("load", ping);\n  target.addEventListener("error", ping);\n  return loading.then(ping, ping);\n');
   expect(js).toContain('  target.addEventListener("layout", layoutCallback);\n');
   expect(js).toContain('  target.addEventListener("host", () => {\n    host();\n  });\n');
@@ -1149,7 +1150,7 @@ pub fn reporter(log: impl Fn(f64) -> f64 + 'static) -> Reporter {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...externs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("    getter,\n");
   expect(js).toContain("    double: (n) => scale(n * 2),\n");
   const lib = await import(join(dir, "lib.js"));

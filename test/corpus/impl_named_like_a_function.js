@@ -7,7 +7,7 @@
 // keeps apart: JS names them apart too, as any two names it gives, where it
 // refused the crate (#453).
 
-import { $displayF64, $eq, $main } from "@rust-js/std";
+import { $checkField, $checkI32, $checkTag, $checks, $displayF64, $eq, $main } from "@rust-js/std";
 
 export const circleShape$1 = { area: circleShape_area };
 function circleShape_area(circle) {
@@ -16,6 +16,17 @@ function circleShape_area(circle) {
 
 export function circleShape() {
   return 7;
+}
+
+function checkExpr(value) {
+  const tag = $checkTag(value, "TAG", ["Num", "Add"], []);
+  if (tag === "Num") {
+    $checkField(value, "_0", $checkI32);
+  }
+  if (tag === "Add") {
+    $checkField(value, "_0", checkExpr);
+    $checkField(value, "_1", checkExpr);
+  }
 }
 
 export function total(shapes) {
@@ -32,6 +43,11 @@ function exprDebug_fmt(expr) {
 }
 
 export function exprDebug(e) {
+  $checks("exprDebug(e)", e, checkExpr);
+  return exprDebug$(e);
+}
+
+function exprDebug$(e) {
   return exprDebug_fmt(e);
 }
 
@@ -60,7 +76,7 @@ function main() {
     )}`,
   );
   const e = { TAG: "Add", _0: { TAG: "Num", _0: 1 }, _1: { TAG: "Num", _0: 2 } };
-  console.log(`${exprDebug(e)}`);
+  console.log(`${exprDebug$(e)}`);
   console.log(`${$eq(exprClone(e), e)}`);
   console.log(`${shown({ value: e, impl: exprDebug$1 })}`);
 }

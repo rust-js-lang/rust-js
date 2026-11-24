@@ -11,6 +11,8 @@
 // form whose cloning is in question (#1780).
 
 import {
+  $checkCallback,
+  $checkI32,
   $cleanup,
   $clone,
   $cloning,
@@ -32,6 +34,7 @@ import {
 } from "@rust-js/std";
 
 export function cycled(items, f, label, IIterator, IClone, FClone, LDisplay, IFused) {
+  f = $checkCallback(f, "cycled(f)", $checkI32);
   console.log(`${LDisplay.fmt(label)}`);
   const makeMap = (it, f) =>
     $cloning(

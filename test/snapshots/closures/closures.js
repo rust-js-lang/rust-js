@@ -2,8 +2,11 @@
 
 // Closures: arrow functions, with Rust's capture rules (ADR 0022).
 
+import { $checkI32, $checks } from "@rust-js/std";
+
 /** Captured by reference: the closure changes the variable itself. */
 export function byReference(a, b) {
+  $checks("byReference(a, b)", a, $checkI32, b, $checkI32);
   let total = 0;
   function add(x) {
     total = (total + x) | 0;
@@ -18,6 +21,7 @@ export function byReference(a, b) {
  * change what the closure sees.
  */
 export function moveCopies(n) {
+  $checkI32(n, "moveCopies(n)");
   const captured = n;
   const get = () => captured;
   n = (n + 100) | 0;
@@ -26,6 +30,7 @@ export function moveCopies(n) {
 
 /** A `move` closure owns its copy and can change it between calls. */
 export function ownState(start) {
+  $checkI32(start, "ownState(start)");
   const count = start;
   let count$1 = count;
   function next() {
@@ -39,6 +44,7 @@ export function ownState(start) {
 
 /** Each time round the loop, a new closure takes a new copy of `n`. */
 export function freshCopyEachTime(times) {
+  $checkI32(times, "freshCopyEachTime(times)");
   const n = 0;
   let total = 0;
   for (let i = 0; i < times; i++) {
@@ -54,6 +60,7 @@ export function freshCopyEachTime(times) {
 
 /** A `Copy` struct, changed in place: the closure gets a real copy. */
 export function structCopy(x) {
+  $checkI32(x, "structCopy(x)");
   const p = { x, y: 0 };
   let captured = p.x;
   function shift() {
@@ -71,6 +78,7 @@ function adder(k) {
 }
 
 export function addBoth(a, b) {
+  $checks("addBoth(a, b)", a, $checkI32, b, $checkI32);
   const addA = adder(a);
   const addB = adder(b);
   return addA(addB(1));
@@ -82,6 +90,7 @@ function apply(f, a, b) {
 }
 
 export function patternParam(a, b) {
+  $checks("patternParam(a, b)", a, $checkI32, b, $checkI32);
   const scale = 3;
   return apply(([x, y]) => (Math.imul(x, scale) - y) | 0, a, b);
 }

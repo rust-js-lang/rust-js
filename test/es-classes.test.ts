@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -21,7 +22,7 @@ function compiled(name: string, rust: string): { js: string; ts: string; dir: st
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, ...flags(dir)]);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), ts: readFileSync(join(dir, "lib.d.ts"), "utf8"), dir };
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), ts: readFileSync(join(dir, "lib.d.ts"), "utf8"), dir };
 }
 
 /** What the compiler says of `rust`, which it refuses. */

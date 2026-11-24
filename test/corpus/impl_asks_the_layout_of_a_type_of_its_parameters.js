@@ -9,6 +9,7 @@ import {
   $BTreeMap,
   $KeyMap,
   $btreeMap,
+  $checkU32,
   $cloneIntoMap,
   $cloneIntoVec,
   $cloneOfClass,
@@ -288,6 +289,11 @@ function hashMapArbitrary_shrink(
 }
 
 export function made(n, AArbitrary) {
+  $checkU32(n, "made(n)");
+  return made$(n, AArbitrary);
+}
+
+function made$(n, AArbitrary) {
   return AArbitrary.arbitrary(n);
 }
 
@@ -296,7 +302,7 @@ $main(main);
 function main() {
   const VecArbitrary = vecArbitrary(u32Arbitrary, 4);
   const Tuple2Arbitrary = tuple2Arbitrary(u32Arbitrary, u32Arbitrary);
-  const m = made(
+  const m = made$(
     3,
     bTreeMapArbitrary(u32Arbitrary, $intsOrdered, u32Arbitrary, $BTreeMap, 8, "general8"),
   );
@@ -331,7 +337,7 @@ function main() {
       )
       .join(", ")}]`,
   );
-  const h = made(
+  const h = made$(
     4,
     hashMapArbitrary(
       u32Arbitrary,
@@ -359,7 +365,7 @@ function main() {
   console.log(
     `[${pairs.map((item) => `(${item[0]}, (${item[1][0]}, ${item[1][1]}))`).join(", ")}]`,
   );
-  const nested = made(
+  const nested = made$(
     2,
     bTreeMapArbitrary(
       Tuple2Arbitrary,

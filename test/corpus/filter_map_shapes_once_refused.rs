@@ -1,3 +1,4 @@
+//@ library-differs
 // A filter_map's shapes rust-js refused before the filter_map family's
 // flip, each std's compiled `FilterMap` now and run as native Rust runs it
 // (#1681's change 2): the hint of one generic code makes of a type

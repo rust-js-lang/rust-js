@@ -6,22 +6,35 @@
 // A third keeps its wrap, as does a `- 1`. The binding is the program's own,
 // counting UTF-16 units natively as JS's `length` does.
 
-import { $main, $repeatText } from "@rust-js/std";
+import { $checkResult, $checkU32, $main, $repeatText } from "@rust-js/std";
 
 function short(str, substr) {
-  return substr.length < 10 && str.length + substr.length < 40;
+  return (
+    $checkResult(substr.length, "get length", $checkU32) < 10 &&
+    $checkResult(str.length, "get length", $checkU32) +
+      $checkResult(substr.length, "get length", $checkU32) <
+      40
+  );
 }
 
 function total(a, b) {
-  return a.length + b.length;
+  return (
+    $checkResult(a.length, "get length", $checkU32) +
+    $checkResult(b.length, "get length", $checkU32)
+  );
 }
 
 function three(a, b, c) {
-  return (a.length + b.length + c.length) >>> 0;
+  return (
+    ($checkResult(a.length, "get length", $checkU32) +
+      $checkResult(b.length, "get length", $checkU32) +
+      $checkResult(c.length, "get length", $checkU32)) >>>
+    0
+  );
 }
 
 function last(s) {
-  return (s.length - 1) >>> 0;
+  return ($checkResult(s.length, "get length", $checkU32) - 1) >>> 0;
 }
 
 $main(main);

@@ -7,10 +7,14 @@
 // `Option`, its `None` is `null` where it's made and written, which every
 // read takes for `None` as Rust's does (ADR 0586, amended).
 
-import { $main, $pop, $someValue } from "@rust-js/std";
+import { $checkObject, $main, $pop, $someValue } from "@rust-js/std";
 
 export function createCursor(defaultValue) {
   return { current: defaultValue };
+}
+
+function checkStackCursor(value, T) {
+  $checkObject(value);
 }
 
 export function push(cursor, value, stack) {

@@ -14,6 +14,7 @@ import { join } from "node:path";
 import { contract, type Factory } from "./create-details/contract";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 import { type Setting, typeChecked } from "./type-checked";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -34,7 +35,7 @@ const checking: Setting = { target: "esnext", lib: ["esnext", "dom"], skipLibChe
 
 test("createDetails' JS is upstream's body, of its three arguments", () => {
   const dir = compiled();
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function createDetails(given, source, cancelable = true) {
   if (!cancelable) {
     return {

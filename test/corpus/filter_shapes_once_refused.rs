@@ -1,3 +1,4 @@
+//@ library-differs
 // A filter's shapes rust-js refused before the filter family's flip, each
 // std's compiled `Filter` now and run as native Rust runs it (#1681's
 // change 2): a held `rev()` of a filter of a `skip(1)` its hint asked

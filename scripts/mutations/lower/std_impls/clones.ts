@@ -603,6 +603,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refcell_field_cloned_while_borrowed.rs$"],
   },
   {
+    name: "clone-unbranded",
+    breaks: "a clone of a sealed struct isn't branded, so Rust refuses its own cloned `Temperature` (#2403 step 2c)",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "        Ok(self.branded(ty, made))",
+    replace: "        Ok(made)",
+    tests: ["test/boundary-brands.test.ts", "-t", "a derived Default's, a Clone's"],
+  },
+  {
     name: "clone-site-of-std-unread",
     breaks: "a std container's clone of a borrowed `RefCell` raises where it's called, not at the row `clonedAt` reads of the impl rustc resolves (#2509)",
     file: "crates/rust-js-lower/src/std_impls/clones.rs",

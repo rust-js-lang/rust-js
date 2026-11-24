@@ -535,7 +535,12 @@ fn synced_reads(stmts: &[Stmt], alias: &Name, of: &Name, ran: &mut bool) -> bool
                 *ran = false;
                 true
             }
-            StmtKind::Let(name, Some(_)) if name == alias => true,
+            // What ran before it, a parameter's check (#2403), ran before
+            // the copy it makes, which is the variable's then.
+            StmtKind::Let(name, Some(_)) if name == alias => {
+                *ran = false;
+                true
+            }
             StmtKind::Assign(target, value) if matches!(&target.kind, ExprKind::Var(t) if t == alias) => {
                 read_first(value, alias, ran)
             }

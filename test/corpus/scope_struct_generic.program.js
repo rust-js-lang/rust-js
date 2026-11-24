@@ -4,6 +4,8 @@ import {
   $alreadyBorrowed,
   $alreadyMutablyBorrowed,
   $borrow,
+  $checkBool,
+  $checkCallback,
   $some,
   $someValue,
   $unborrow,
@@ -62,6 +64,7 @@ function process(root, onDone, onPart, TDisplay) {
  * the counter's `add`.
  */
 export function countSome(items, keep) {
+  keep = $checkCallback(keep, "countSome(keep)", $checkBool);
   let count = 0;
 
   function add(n) {

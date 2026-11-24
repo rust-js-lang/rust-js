@@ -116,7 +116,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// changes in place, an atomic's or a `Cell`'s `{ value }` (ADR 0096),
     /// the import is one whose fields change, which tidy's plain reads
     /// never move past a write (`Dependencies::changing_imports`, #1028).
-    fn read_import_of(&self, def_id: DefId, local: &str) {
+    pub(crate) fn read_import_of(&self, def_id: DefId, local: &str) {
         if matches!(self.tcx.def_kind(def_id), rustc_hir::def::DefKind::Static { .. })
             && !(self.tcx.type_of(def_id).instantiate_identity().skip_normalization())
                 .is_freeze(self.tcx, self.typing_env)

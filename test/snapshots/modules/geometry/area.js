@@ -3,6 +3,7 @@
 import { clamp } from "../lib.js";
 import * as Util$1 from "../util.js";
 import * as Util from "./util.js";
+import { $checkU32 } from "@rust-js/std";
 
 /** Two levels deep: imports the root as `../lib.js`. */
 export function square(x) {
@@ -12,11 +13,21 @@ export function square(x) {
 
 /** Uses `crate::util` and `geometry::util`: both are called `util`. */
 export function mixed(x) {
+  $checkU32(x, "mixed(x)");
+  return mixed$(x);
+}
+
+function mixed$(x) {
   return (Util$1.double(x) + Util.triple(x)) >>> 0;
 }
 
 /** A local named like an import alias must not shadow the import. */
 export function shadowed(x) {
+  $checkU32(x, "shadowed(x)");
+  return shadowed$(x);
+}
+
+function shadowed$(x) {
   const util = (x + 1) >>> 0;
   return Util$1.double(util);
 }

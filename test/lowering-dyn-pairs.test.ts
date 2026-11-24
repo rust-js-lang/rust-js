@@ -9,6 +9,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildCompiler, compiler, fixture, run } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -17,7 +18,7 @@ async function compiled(name: string, rust: string): Promise<{ js: string; lib: 
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")) };
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), lib: await import(join(dir, "lib.js")) };
 }
 
 // #968: a blanket impl's `reset` writes `*self`, the pair's `value`; a pair

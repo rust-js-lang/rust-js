@@ -798,4 +798,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^let_read_in_its_fallback.rs$"],
     snapshots: true,
   },
+  {
+    name: "checked-read-off-a-path",
+    breaks: "a getter's value bound before an or of its tests, checked where its binding gives it, `$checkResult(current.data, ..)`, isn't a read of a path, so the test is negated with the `break` in an `else` (#2403, rd639)",
+    file: "crates/rust-js-mir/src/tidy/logicals.rs",
+    find: "    if let Some(value) = e.helper_call_of(\"$checkResult\").and_then(|call| call.arg(\"result\")) {\n        return read_of_a_path(value);\n",
+    replace: "    if let Some(value) = e.helper_call_of(\"$checkResult\").and_then(|call| call.arg(\"result\")) {\n        return read_of_a_path(value) && false;\n",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "a getter's value bound before an or of its tests is tested as written"],
+  },
 ];

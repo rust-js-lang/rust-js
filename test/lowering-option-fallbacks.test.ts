@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -124,7 +125,7 @@ pub fn tag_shown(value: &Unknown) -> (String, bool) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function displayName(t) {\n  return t.displayName || t.name || null;\n}");
   expect(js).toContain('export function functionName(inner) {\n  return inner.displayName || inner.name || "";\n}');
   expect(js).toContain('export function memoName(t) {\n  return componentName(t.type) || "Memo";\n}');
@@ -214,7 +215,7 @@ pub fn counted_name(value: Option<&Unknown>) -> (String, u32) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  const hasToStringTag = typeof Symbol !== "undefined" && typeof Symbol.toStringTag !== "undefined";\n  const type =\n    (hasToStringTag && value?.[Symbol.toStringTag]) || value?.constructor?.name || "Object";\n  return type;\n');
   expect(js).not.toContain("const toStringTag");
   // \`and_then\` of what \`value?.constructor\` gives is one chain: the
@@ -321,7 +322,7 @@ pub fn either(o: Option<String>) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function heading(error) {
   const name = error.name || "Error";
   const message = error.message;

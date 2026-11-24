@@ -4,6 +4,8 @@
 // wasm-bindgen programs keep JS values. JS runs a module on one thread, so a
 // thread-local is one of the module's variables: `const COUNT = { value: 0 };`.
 
+import { $checkStr } from "@rust-js/std";
+
 let count = 0;
 const log = [];
 const START = 10 * 4 + 2;
@@ -15,6 +17,7 @@ export function bump() {
 }
 
 export function record(line) {
+  $checkStr(line, "record(line)");
   log.push(line);
   return log.length;
 }

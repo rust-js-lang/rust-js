@@ -7,6 +7,9 @@
 
 import {
   $BTreeMap,
+  $checkArray,
+  $checkStr,
+  $checks,
   $cmp,
   $debugF64,
   $debugParseError,
@@ -100,6 +103,11 @@ function grade(score, age) {
 }
 
 export function table(input) {
+  $checkStr(input, "table(input)");
+  return table$(input);
+}
+
+function table$(input) {
   let out = "";
   const rows = [];
   for (const [i, line] of $lines(input).entries().drop(1)) {
@@ -159,6 +167,13 @@ export function parseErrors() {
 }
 
 export function functionValues(words) {
+  $checks("functionValues(words)", words, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
+  return functionValues$(words);
+}
+
+function functionValues$(words) {
   const upper = words.map((w) => $toUppercase(w));
   const spaces = Array.from("a b\tc"[Symbol.iterator]().map((c) => $isWhitespace(c)));
   const roots = [4, 2.25, 9].map((n) => Math.sqrt(n));
@@ -169,6 +184,6 @@ export function functionValues(words) {
 export function report() {
   const input =
     "name,team,score,age\nann, red, 91, 34\nbob,blue,78,25\ncy,red,78,45\n,blue,5,5\ndee,blue,x,3\neve,green,64,29\nfay,red\ngus, blue ,88,31\nßen,red,70,20\n";
-  return `${table(input)}${parseErrors()}\n${((tuple) => `([${tuple[0].map((item) => $debugStr(item)).join(", ")}], [${tuple[1].join(", ")}], [${tuple[2].map((item) => $debugF64(item)).join(", ")}], [${tuple[3].map((item) => $debugStr(item)).join(", ")}])`)(functionValues(["x", "é"]))}\n`;
+  return `${table$(input)}${parseErrors()}\n${((tuple) => `([${tuple[0].map((item) => $debugStr(item)).join(", ")}], [${tuple[1].join(", ")}], [${tuple[2].map((item) => $debugF64(item)).join(", ")}], [${tuple[3].map((item) => $debugStr(item)).join(", ")}])`)(functionValues$(["x", "é"]))}\n`;
 }
 //# sourceMappingURL=report.js.map

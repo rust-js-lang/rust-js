@@ -3,9 +3,14 @@
 // `Result` (ADR 0035): an enum like any other (ADR 0033), `{ TAG: "Ok", _0: v }`,
 // with `?` returning an `Err` or a `None` as it is, and the usual methods.
 
-import { $unwrapOk } from "@rust-js/std";
+import { $checkChar, $checkU32, $checks, $unwrapOk } from "@rust-js/std";
 
 export function parseDigit(c) {
+  $checkChar(c, "parseDigit(c)");
+  return parseDigit$(c);
+}
+
+function parseDigit$(c) {
   switch (c) {
     case "0":
       return { TAG: "Ok", _0: 0 };
@@ -22,12 +27,13 @@ export function parseDigit(c) {
 
 /** `?` on a `Result`: the first `Err` is the answer. */
 export function sumDigits(a, b) {
-  const result = parseDigit(a);
+  $checks("sumDigits(a, b)", a, $checkChar, b, $checkChar);
+  const result = parseDigit$(a);
   if (result.TAG === "Err") {
     return result;
   }
   const x = result._0;
-  const result$1 = parseDigit(b);
+  const result$1 = parseDigit$(b);
   if (result$1.TAG === "Err") {
     return result$1;
   }
@@ -37,6 +43,7 @@ export function sumDigits(a, b) {
 
 /** `?` on an `Option`. */
 export function halves(n) {
+  $checkU32(n, "halves(n)");
   const a = half(n);
   if (a == null) {
     return;
@@ -55,7 +62,8 @@ function half(n) {
 }
 
 export function methods(c) {
-  const r = parseDigit(c);
+  $checkChar(c, "methods(c)");
+  const r = parseDigit$(c);
   return [
     r.TAG === "Ok",
     r.TAG === "Err",
@@ -65,11 +73,13 @@ export function methods(c) {
 }
 
 export function unwrapped(c) {
-  return $unwrapOk(parseDigit(c), "examples/results.rs:38:20");
+  $checkChar(c, "unwrapped(c)");
+  return $unwrapOk(parseDigit$(c), "examples/results.rs:38:20");
 }
 
 export function expected(c) {
-  return $unwrapOk(parseDigit(c), "examples/results.rs:42:20", "a digit");
+  $checkChar(c, "expected(c)");
+  return $unwrapOk(parseDigit$(c), "examples/results.rs:42:20", "a digit");
 }
 
 function appErrorFromString_from(message) {
@@ -78,12 +88,12 @@ function appErrorFromString_from(message) {
 
 /** `?` converts the error with `From`: `Err(AppError::from(e))`. */
 function smallSum(a, b) {
-  const result = parseDigit(a);
+  const result = parseDigit$(a);
   if (result.TAG === "Err") {
     return { TAG: "Err", _0: appErrorFromString_from(result._0) };
   }
   const x = result._0;
-  const result$1 = parseDigit(b);
+  const result$1 = parseDigit$(b);
   if (result$1.TAG === "Err") {
     return { TAG: "Err", _0: appErrorFromString_from(result$1._0) };
   }
@@ -95,6 +105,7 @@ function smallSum(a, b) {
 }
 
 export function converted(a, b) {
+  $checks("converted(a, b)", a, $checkChar, b, $checkChar);
   const value = smallSum(a, b);
   if (value.TAG === "Ok") {
     return `ok ${value._0}`;

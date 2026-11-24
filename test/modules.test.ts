@@ -6,6 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { oneLine, withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -117,7 +118,7 @@ pub fn bump() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("let n = 0;\n\nexport function bump() {\n  n = (n + 1) >>> 0;\n  return n;\n}\n");
+  expect(withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"))).toContain("let n = 0;\n\nexport function bump() {\n  n = (n + 1) >>> 0;\n  return n;\n}\n");
   const { bump } = await import(join(dir, "mir.js"));
   expect([bump(), bump()]).toEqual([1, 2]);
 });
@@ -150,8 +151,8 @@ pub fn f() -> u32 {
 `);
   writeFileSync(join(dir, "data.js"), "export default 1;\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('import * as Y from "./x/[y].js";');
-  const y = readFileSync(join(dir, "x/[y].js"), "utf8");
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain('import * as Y from "./x/[y].js";');
+  const y = withoutBoundary(readFileSync(join(dir, "x/[y].js"), "utf8"));
   expect([y.includes('import { base } from "../lib.js";'), y.includes('import data from "../data.js";')]).toEqual([true, true]);
   const { top } = await import(join(dir, "lib.js"));
   expect(top()).toBe(42);
@@ -185,8 +186,8 @@ pub fn base() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('import * as Bridge from "./sandpack-rsc/bridge.js";');
-  expect(readFileSync(join(dir, "sandpack-rsc/bridge.js"), "utf8")).toContain('import { base } from "../lib.js";');
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain('import * as Bridge from "./sandpack-rsc/bridge.js";');
+  expect(withoutBoundary(readFileSync(join(dir, "sandpack-rsc/bridge.js"), "utf8"))).toContain('import { base } from "../lib.js";');
   const { top } = await import(join(dir, "lib.js"));
   expect(top()).toBe(42);
 });
@@ -244,7 +245,7 @@ pub fn tally_of_four() -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(join(dir, "mir"), "lib.js")]);
   const lib = await Bun.file(join(join(dir, "mir"), "lib.js")).text();
-  const shapes = await Bun.file(join(join(dir, "mir"), "shapes.js")).text();
+  const shapes = withoutBoundary(await Bun.file(join(join(dir, "mir"), "shapes.js")).text());
   // Its initializer runs the crate's code, of a module its own loads
   // first: made as its module loads (ADR 1006, amended).
   expect(lib).toContain("const side = Square.sideLength(Square.new(3));");
@@ -256,7 +257,8 @@ pub fn tally_of_four() -> u32 {
   // Laid out on lines of its own, a lone method still maps back to its Rust.
   const { decodeMappings, lookup } = await import("./sourcemap.ts");
   const segments = decodeMappings((await Bun.file(join(join(dir, "mir"), "shapes.js.map")).json()).mappings);
-  const jsLines = shapes.split("\n");
+  // The file as it is, whose lines its map counts, its checks too.
+  const jsLines = (await Bun.file(join(join(dir, "mir"), "shapes.js")).text()).split("\n");
   const rsLines = (await Bun.file(join(dir, "shapes.rs")).text()).split("\n");
   for (const [jsText, rustText] of [["return (tally[0] * 2)", "self.0 * 2"], ["(tally[0] * 2)", "self.0 * 2"], ["doubled(tally) {", "doubled(&self)"]]) {
     const line = jsLines.findIndex((l) => l.includes(jsText));
@@ -298,7 +300,7 @@ thread_local! {
   writeFileSync(join(dir, "helpers.rs"), "pub fn one() -> u32 {\n    1\n}\n");
   writeFileSync(join(dir, "editor.rs"), "pub fn open() -> u32 {\n    1\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const lib = await Bun.file(join(dir, "lib.js")).text();
+  const lib = withoutBoundary(await Bun.file(join(dir, "lib.js")).text());
   // Through their modules' namespaces, as their paths name them (ADR 1018).
   expect(lib).toContain('import * as Util from "./util.js";');
   expect(lib).not.toContain("editor.js");
@@ -316,7 +318,7 @@ test("js::import! imports a module where it's written, and writes nothing of its
   writeFileSync(join(dir, "lib.rs"), 'js::import!("./app.css");\npub mod panel {\n    js::import!("./panel.css");\n    pub fn f() -> u32 {\n        1\n    }\n}\n#[rust_js::import = "./direct.css"]\nconst _: () = ();\n');
   buildReact();
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const top = readFileSync(join(dir, "lib.js"), "utf8"), panel = readFileSync(join(dir, "panel.js"), "utf8");
+  const top = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), panel = withoutBoundary(readFileSync(join(dir, "panel.js"), "utf8"));
   expect([top.includes('import "./app.css";'), top.includes('import "./direct.css";'), panel.includes('import "./panel.css";')]).toEqual([true, true, true]);
   expect(top).not.toContain("const _");
   expect(panel).not.toContain("app.css");
@@ -331,7 +333,7 @@ test("a root of modules alone writes no JS, and a module's `js::import!` alone d
   buildReact();
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   expect([existsSync(join(dir, "lib.js")), existsSync(join(dir, "panel.js"))]).toEqual([false, true]);
-  expect(readFileSync(join(dir, "styles.js"), "utf8")).toContain('import "./styles.css";');
+  expect(withoutBoundary(readFileSync(join(dir, "styles.js"), "utf8"))).toContain('import "./styles.css";');
 });
 
 // `js::directive!("use client");` is the module's directive, its first
@@ -344,7 +346,7 @@ test("js::directive! and js::export_default! make a module a Next.js route", asy
   writeFileSync(join(dir, "lib.rs"), 'js::directive!("use client");\npub fn page() -> u32 {\n    about::about() + 1\n}\njs::export_default!(page);\npub mod about {\n    pub fn about() -> u32 {\n        2\n    }\n    js::export_default!(about);\n}\npub mod generic {\n    pub fn first<T>(items: Vec<T>) -> Option<T> {\n        items.into_iter().next()\n    }\n    js::export_default!(first);\n}\n');
   buildReact();
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const top = readFileSync(join(dir, "lib.js"), "utf8"), about = readFileSync(join(dir, "about.js"), "utf8");
+  const top = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), about = withoutBoundary(readFileSync(join(dir, "about.js"), "utf8"));
   const statements = (js: string) => js.split("\n").filter((line) => line && !line.startsWith("//"));
   expect(statements(top)[0]).toBe('"use client";');
   expect(statements(about)[0]).not.toBe('"use client";');
@@ -409,7 +411,7 @@ pub fn spawned() -> impl Fn() {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), ...extern]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   const statements = js.split("\n").filter((line) => line && !line.startsWith("//"));
   expect(statements[0]).toBe("export async function cached(n) {");
   expect(js).toContain('export async function cached(n) {\n  "use cache";\n  return (n + 1) >>> 0;\n}');
@@ -494,14 +496,14 @@ pub fn timed() -> u32 {
   writeFileSync(join(dir, "side.js"), "export function open() { return 4; }\n");
   writeFileSync(join(dir, "scheduler.js"), "export function unstable_now() { return 8; }\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('import * as ContextMenu from "./menu.js";');
-  expect(js).toContain("ContextMenu.Root({ modal: true }) + ContextMenu.Item()");
+  expect(oneLine(js)).toContain("ContextMenu.Root({modal: true}) + ContextMenu.Item()");
   // A module's name PascalCase, as every namespace is (rd114b, ADR 1018).
   expect(js).toContain('import * as SideMenu from "./side.js";');
   // A module of other code too, which only calls a member, names it by
   // what it's imported from, as the crate's root does (ADR 0256, amended).
-  expect(readFileSync(join(dir, "cache.js"), "utf8")).toContain('import * as Scheduler from "./scheduler.js";');
+  expect(withoutBoundary(readFileSync(join(dir, "cache.js"), "utf8"))).toContain('import * as Scheduler from "./scheduler.js";');
   // And one that holds another module's binding too.
   expect(js).toContain('import * as Timers from "./timers.js";');
   const lib = await import(join(dir, "lib.js"));
@@ -531,9 +533,9 @@ pub fn both() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('import Greeter from "./greeter.js";');
-  expect(js).toContain("Greeter.hello() + Greeter.bye()");
+  expect(oneLine(js)).toContain("Greeter.hello() + Greeter.bye()");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.both()).toBe(3);
 });
@@ -562,7 +564,7 @@ pub fn both() -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('import scale from "./scale.js";');
   const lib = await import(join(dir, "lib.js"));
   expect(lib.both()).toBe("6 abab");
@@ -576,7 +578,7 @@ test("a pub use of another module's function is re-exported from it", async () =
   writeFileSync(join(dir, "lib.rs"), "mod inner;\npub use inner::helper;\npub use inner::other as renamed;\nuse inner::other;\n\npub fn own() -> u32 {\n    other() + 1\n}\n");
   writeFileSync(join(dir, "inner.rs"), "pub fn helper() -> u32 {\n    1\n}\n\npub fn other() -> u32 {\n    2\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('export { helper, other as renamed } from "./inner.js";');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.helper(), lib.renamed(), lib.own()]).toEqual([1, 2, 3]);
@@ -619,7 +621,7 @@ pub fn to_array() -> [u32; 2] {
   expect(dts).toContain("\ndeclare function currentTime(): number;\n");
   expect(dts).toContain("\nexport function toArray(): number[];\n");
   expect(dts).toContain("export { currentTime as unstable_now, LIMIT as MAX_LIMIT, currentTime as timeNow };");
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('export { IMMEDIATE as unstable_ImmediatePriority, IDLE } from "./priorities.js";');
   expect(js).toContain("\nconst LIMIT = 9;\n");
   expect(js).toContain("\nfunction currentTime() {\n");
@@ -652,7 +654,7 @@ pub fn twice() -> f64 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("\nfunction console() {\n");
   expect(js).toContain("\nexport { console as log };\n");
   const lib = await import(join(dir, "lib.js"));
@@ -760,11 +762,11 @@ pub use bound::twice;
 `);
   writeFileSync(join(dir, "math.js"), "export const scale = 10;\n\nexport function twice(x) {\n  return x * 2;\n}\n\nexport default function half(x) {\n  return x / 2;\n}\n");
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "index.js"), "utf8")).toContain('export { default as Half, twice } from "./math.js";');
+  expect(withoutBoundary(readFileSync(join(dir, "index.js"), "utf8"))).toContain('export { default as Half, twice } from "./math.js";');
   expect(readFileSync(join(dir, "index.d.ts"), "utf8")).toContain('export { default as Half, twice } from "./math.js";');
   // A module of only a static's re-export is a file of it, its JS module
   // named from its folder, as ADR 0028 names an import.
-  expect(readFileSync(join(dir, "parts", "values.js"), "utf8")).toContain('export { scale } from "../math.js";');
+  expect(withoutBoundary(readFileSync(join(dir, "parts", "values.js"), "utf8"))).toContain('export { scale } from "../math.js";');
   expect(readFileSync(join(dir, "parts", "values.d.ts"), "utf8")).toContain('export { scale } from "../math.js";');
   const index = await import(join(dir, "index.js"));
   const lib = await import(join(dir, "lib.js"));
@@ -779,7 +781,7 @@ test("a use that renames another module's function imports it as that", async ()
   writeFileSync(join(dir, "lib.rs"), "mod inner;\nuse inner::client as sandpack;\nuse inner::other as second;\n\npub fn run() -> u32 {\n    sandpack() + second() + 1\n}\n");
   writeFileSync(join(dir, "inner.rs"), "pub fn client() -> u32 {\n    1\n}\n\npub fn other() -> u32 {\n    2\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('import { client as sandpack, other as second } from "./inner.js";');
   expect(js).toContain("sandpack() + second()");
   const lib = await import(join(dir, "lib.js"));
@@ -818,10 +820,10 @@ pub fn run(x: f64) -> f64 {
 `);
   writeFileSync(join(dir, "math.js"), "export function twice(x) {\n  return x * 2;\n}\n\nexport const tools = { scale: (x) => x * 10 };\n\nexport default function half(x) {\n  return x / 2;\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Of a member of an export, `tools.scale`, the export keeps its name.
   expect(js).toContain('import halve, { tools, twice as double } from "./math.js";');
-  expect(js).toContain("return tools.scale(double(halve(x)));");
+  expect(oneLine(js)).toContain("return tools.scale(double(halve(x)));");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.run(6)).toBe(60);
 });
@@ -866,7 +868,7 @@ pub fn both() -> u8 {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("ImmediatePriority as ImmediateSchedulerPriority,");
   expect(js).toContain("NormalPriority as NormalSchedulerPriority,");
   expect((await import(join(dir, "lib.js"))).both()).toBe(4);
@@ -895,7 +897,7 @@ test("a module of only pub uses is a file of re-exports", async () => {
   writeFileSync(join(dir, "index.rs"), "pub use super::inner::helper;\n");
   writeFileSync(join(dir, "inner.rs"), "pub fn helper() -> u32 {\n    1\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "index.js"), "utf8")).toContain('export { helper } from "./inner.js";');
+  expect(withoutBoundary(readFileSync(join(dir, "index.js"), "utf8"))).toContain('export { helper } from "./inner.js";');
   const index = await import(join(dir, "index.js"));
   expect(index.helper()).toBe(1);
 });
@@ -910,7 +912,7 @@ test("an import read only by a const is the import by its name", async () => {
   // Read twice: the import keeps its name.
   writeFileSync(join(dir, "twice.rs"), "use crate::is::IS;\n\npub fn both(a: f64, b: f64) -> bool {\n    let first = IS.with(|is| *is);\n    first(a, b) && IS.with(|is| is(b, a))\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('import same from "./is.js";');
   const twice = await import(join(dir, "twice.js"));
   expect([twice.both(1, 1), twice.both(1, 2)]).toEqual([true, false]);
@@ -929,8 +931,8 @@ test("a default export is the function's declaration where the macro holds it", 
   writeFileSync(join(dir, "noop.rs"), "js::export_default! {\n    pub(crate) fn noop() {}\n}\n");
   writeFileSync(join(dir, "recap.rs"), "pub(crate) fn recap() -> u32 {\n    1\n}\n\njs::export_default!(recap);\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  expect(readFileSync(join(dir, "noop.js"), "utf8")).toContain("export default function noop() {}");
-  const recap = readFileSync(join(dir, "recap.js"), "utf8");
+  expect(withoutBoundary(readFileSync(join(dir, "noop.js"), "utf8"))).toContain("export default function noop() {}");
+  const recap = withoutBoundary(readFileSync(join(dir, "recap.js"), "utf8"));
   expect(recap).toContain("function recap() {");
   expect(recap).toContain("\nexport default recap;\n");
   const lib = await import(join(dir, "lib.js"));
@@ -961,7 +963,7 @@ test("a default export is the constant's value where the macro holds it", async 
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   // TypeScript has no default `const`: it's declared, then exported.
   expect(readFileSync(join(dir, "version.d.ts"), "utf8")).toContain("declare const REACT_VERSION: string;\n\nexport default REACT_VERSION;\n");
-  const version = readFileSync(join(dir, "version.js"), "utf8");
+  const version = withoutBoundary(readFileSync(join(dir, "version.js"), "utf8"));
   expect(version).toContain('\nexport default "19.3.0";\n');
   expect(version).not.toContain("REACT_VERSION");
   expect((await import(join(dir, "version.js"))).default).toBe("19.3.0");
@@ -976,7 +978,7 @@ test("a default constant its own module reads is declared, then exported", async
   writeFileSync(join(dir, "lib.rs"), 'mod version;\n\npub fn shown() -> String {\n    format!("v{} {}", version::VERSION, version::length())\n}\n');
   writeFileSync(join(dir, "version.rs"), 'js::export_default! {\n    pub const VERSION: &str = "19.3.0";\n}\n\npub fn length() -> usize {\n    VERSION.len()\n}\n');
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const version = readFileSync(join(dir, "version.js"), "utf8");
+  const version = withoutBoundary(readFileSync(join(dir, "version.js"), "utf8"));
   expect(version).toContain('\nconst VERSION = "19.3.0";\n');
   expect(version).toContain("\nexport default VERSION;\n");
   expect(version).not.toContain("export const");
@@ -997,8 +999,8 @@ test("a module's default of another module's function is re-exported", async () 
   writeFileSync(join(dir, "only.rs"), "js::export_default!(super::page::page);\n");
   writeFileSync(join(dir, "page.rs"), "pub fn page() -> u32 {\n    1\n}\n\npub fn props() -> u32 {\n    2\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  expect(readFileSync(join(dir, "index.js"), "utf8")).toContain('export { props } from "./page.js";\n\nexport { page as default } from "./page.js";');
-  expect(readFileSync(join(dir, "only.js"), "utf8")).toContain('export { page as default } from "./page.js";');
+  expect(withoutBoundary(readFileSync(join(dir, "index.js"), "utf8"))).toContain('export { props } from "./page.js";\n\nexport { page as default } from "./page.js";');
+  expect(withoutBoundary(readFileSync(join(dir, "only.js"), "utf8"))).toContain('export { page as default } from "./page.js";');
   const index = await import(join(dir, "index.js"));
   expect([index.default(), index.props()]).toEqual([1, 2]);
 });
@@ -1018,12 +1020,12 @@ test("a module's default is called with whatever JS gives it", async () => {
   writeFileSync(join(dir, "page.rs"), "fn page(n: u32) -> u32 {\n    n * 5\n}\n\njs::export_default!(page);\n\npub fn fifteen() -> u32 {\n    page(3)\n}\n");
   writeFileSync(join(dir, "declared.rs"), "js::export_default! {\n    fn seven(n: u32) -> u32 {\n        n * 7\n    }\n}\n\npub fn fourteen() -> u32 {\n    seven(2)\n}\n");
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  expect(readFileSync(join(dir, "helpers.js"), "utf8")).toContain("export function twice(n) {\n  return (n * 2) >>> 0;\n}");
+  expect(withoutBoundary(readFileSync(join(dir, "helpers.js"), "utf8"))).toContain("export function twice(n) {\n  return (n * 2) >>> 0;\n}");
   // Its `use`'s name, beside the macro's `use fourfold as _;`, as written.
-  expect(readFileSync(join(dir, "fourfold.js"), "utf8")).toContain('import { fourfold } from "./helpers.js";\n');
-  expect(readFileSync(join(dir, "fourfold.js"), "utf8")).toContain("  return fourfold(2);\n");
-  expect(readFileSync(join(dir, "thrice.js"), "utf8")).toContain('import * as Helpers from "./helpers.js";\n');
-  expect(readFileSync(join(dir, "thrice.js"), "utf8")).toContain("  return Helpers.thrice(3);\n");
+  expect(withoutBoundary(readFileSync(join(dir, "fourfold.js"), "utf8"))).toContain('import { fourfold } from "./helpers.js";\n');
+  expect(withoutBoundary(readFileSync(join(dir, "fourfold.js"), "utf8"))).toContain("  return fourfold(2);\n");
+  expect(withoutBoundary(readFileSync(join(dir, "thrice.js"), "utf8"))).toContain('import * as Helpers from "./helpers.js";\n');
+  expect(withoutBoundary(readFileSync(join(dir, "thrice.js"), "utf8"))).toContain("  return Helpers.thrice(3);\n");
   // u32's product wraps, as Rust's without overflow checks does.
   const big = 4_000_000_000;
   const at = async (file: string) => (await import(join(dir, file))).default(big);
@@ -1054,7 +1056,7 @@ pub fn ready() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('\nglobalThis.loaded("module");\n');
   expect(js).toContain('import { $index } from "@rust-js/std";');
   expect(js).not.toContain("on_load");
@@ -1105,7 +1107,7 @@ pub fn values() -> [u32; 4] {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   const at = (text: string | RegExp) => {
     const index = typeof text === "string" ? js.indexOf(text) : js.search(text);
     expect(index).toBeGreaterThan(-1);
@@ -1170,7 +1172,7 @@ pub fn values(x: u32) -> [u32; 3] {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(
     '// TODO: This is pretty well supported by browsers. Maybe we can drop it.\n\nimport { $f64ToInt } from "@rust-js/std";\n\nexport const clz32 = typeof Math.clz32 !== "undefined" ? Math.clz32 : clz32Fallback;\n\n// Count leading zeros.\nconst log = Math.log;\nconst LN2 = Math.LN2;\nfunction clz32Fallback(x) {\n',
   );

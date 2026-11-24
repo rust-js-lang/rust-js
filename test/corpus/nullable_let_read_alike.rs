@@ -1,3 +1,4 @@
+//@ library-differs
 // rd632 (ADR 0861, amended, the user's decision (B)): a `let` that a
 // call may write `undefined`, React's `previousMeasurements = state.clones
 // ?.map(..)`, read by a nullable parameter of the crate's own, through

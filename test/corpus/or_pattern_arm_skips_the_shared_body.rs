@@ -1,3 +1,4 @@
+//@ library-differs
 // A `match` whose arms that meet go on to a body they share, and another
 // that goes on past it, inside an `if`: one test of the arms that meet,
 // whose branch holds what they share, and the other its `else`, as a person

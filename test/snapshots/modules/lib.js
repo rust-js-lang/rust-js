@@ -11,9 +11,11 @@
 import * as Area from "./geometry/area.js";
 import * as Stats from "./stats.js";
 import * as Util from "./util.js";
+import { $checkU32, $checks } from "@rust-js/std";
 
 /** Calls into two other files. */
 export function summary(a, b) {
+  $checks("summary(a, b)", a, $checkU32, b, $checkU32);
   return (Stats.mean(a, b) + Area.square(a)) >>> 0;
 }
 
@@ -26,6 +28,7 @@ export function clamp(x) {
 }
 
 export function doubledMean(a, b) {
+  $checks("doubledMean(a, b)", a, $checkU32, b, $checkU32);
   return Util.double(Stats.mean(a, b));
 }
 

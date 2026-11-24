@@ -5,7 +5,13 @@
 // then hands the rest of (ADR 0071).
 
 import {
+  $brand,
   $chars,
+  $checkArray,
+  $checkShape,
+  $checkStr,
+  $checkU32,
+  $checks,
   $debugStr,
   $isAlphanumeric,
   $isWhitespace,
@@ -35,10 +41,14 @@ function tokDebug_fmt(tok) {
 
 export const Lexer = {
   new(src) {
-    return {
+    $checkStr(src, "Lexer.new(src)");
+    return Lexer.new$(src);
+  },
+  new$(src) {
+    return $brand("lexer#24c57fb0877d26e1::Lexer", {
       chars: iterator_peekable($chars(src)),
       line: 1,
-    };
+    });
   },
   number(lexer, first) {
     let n = $unwrap($toDigit(first, 10), "examples/lexer.rs:29:40");
@@ -62,6 +72,10 @@ export const Lexer = {
     return w;
   },
   tokens(lexer) {
+    $checks("Lexer.tokens(lexer)", lexer, checkLexer);
+    return Lexer.tokens$(lexer);
+  },
+  tokens$(lexer) {
     const out = [];
     let c;
     while ((c = $next(lexer.chars)) != null) {
@@ -98,7 +112,18 @@ export const Lexer = {
   },
 };
 
+const checkLexer = /* @__PURE__ */ $checkShape(
+  () => ({ line: $checkU32 }),
+  "lexer#24c57fb0877d26e1::Lexer",
+  "a Lexer",
+);
+
 export function pairs(v) {
+  $checks("pairs(v)", v, (value, where, none) => $checkArray(value, where, none, $checkU32));
+  return pairs$(v);
+}
+
+function pairs$(v) {
   const it = $iter(v);
   const out = [];
   while (true) {
@@ -114,6 +139,11 @@ export function pairs(v) {
 }
 
 export function capitalize(s) {
+  $checkStr(s, "capitalize(s)");
+  return capitalize$(s);
+}
+
+function capitalize$(s) {
   const chars = $chars(s);
   const c = $next(chars);
   return c != null ? $toUppercase(c) + $restStr(chars) : "";
@@ -122,12 +152,12 @@ export function capitalize(s) {
 export function report() {
   let out = "";
   for (const src of ['let x_1 = 42 + y;\n// note\nprint("hi there") 7', 'a "open', "  "]) {
-    const value = Lexer.tokens(Lexer.new(src));
+    const value = Lexer.tokens$(Lexer.new$(src));
     out += `${value.TAG === "Ok" ? `Ok([${value._0.map((item) => tokDebug_fmt(item)).join(", ")}])` : `Err(${$debugStr(value._0)})`}\n`;
   }
-  const value = pairs([1, 2, 3, 4, 5]);
-  out += `([${value[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${value[1].join(", ")}]) ${((tuple) => `([${tuple[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${tuple[1].join(", ")}])`)(pairs([]))}\n`;
-  out += `${capitalize("hello")} ${capitalize("ßig")} ${$debugStr(capitalize(""))}\n`;
+  const value = pairs$([1, 2, 3, 4, 5]);
+  out += `([${value[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${value[1].join(", ")}]) ${((tuple) => `([${tuple[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${tuple[1].join(", ")}])`)(pairs$([]))}\n`;
+  out += `${capitalize$("hello")} ${capitalize$("ßig")} ${$debugStr(capitalize$(""))}\n`;
   const words = $iter("one two three four".split(" "));
   const first = $next(words);
   const rest = Array.from(words);

@@ -1,3 +1,4 @@
+//@ library-differs
 // Each comment of a `match`'s arms is kept where it's written (#574): a
 // block comment on a `_` pattern, `_ /* "{" */ => {`, of no `default:`, the
 // `match` gone or its arm an `else`, before the arm's first code, and of one

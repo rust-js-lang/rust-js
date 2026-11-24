@@ -61,9 +61,10 @@ pub fn later(name: String) {
 ```
 
 ```js
-import { $displayF64 } from "@rust-js/std";
+import { $checkStr, $displayF64 } from "@rust-js/std";
 
 export function describe(text) {
+  $checkStr(text, "describe(text)");
   let value;
   try {
     value = JSON.parse(text);
@@ -87,10 +88,12 @@ export function describe(text) {
 }
 
 export function isNumber(text) {
+  $checkStr(text, "isNumber(text)");
   return /^\d+$/.test(text);
 }
 
 export function later(name) {
+  $checkStr(name, "later(name)");
   setTimeout(() => {
     console.log(`hello, ${name}`);
   }, 100);
@@ -333,7 +336,7 @@ pub async fn load(url: &str) -> String {
 ```
 
 ```js
-import { $unwrap } from "@rust-js/std";
+import { $checkStr, $unwrap } from "@rust-js/std";
 
 export function mount() {
   const app = $unwrap(document.getElementById("app"), "lib.rs:6:51", "the page has an #app");
@@ -355,6 +358,7 @@ export function mount() {
 }
 
 export async function load(url) {
+  $checkStr(url, "load(url)");
   const response = await window.fetch(url);
   return await response.text();
 }
@@ -539,9 +543,10 @@ pub fn read_page(name: &str) -> Result<String, &'static js::JsError> {
 
 ```js
 import { readFileSync } from "fs";
-import { $try } from "@rust-js/std";
+import { $checkStr, $try } from "@rust-js/std";
 
 export function readPage(name) {
+  $checkStr(name, "readPage(name)");
   const root = process.cwd() + "/content";
   return $try(() => readFileSync(`${root}/${name}.md`, "utf8"));
 }
@@ -741,7 +746,22 @@ pub fn from_json(text: &str) -> Result<Order, serde_json::Error> {
 ```
 
 ```js
-import { $debugJsonError, $fromJson, $json, $toJson, $unwrapOk } from "@rust-js/std";
+import {
+  $checkShape,
+  $checkStr,
+  $checkU64,
+  $checks,
+  $debugJsonError,
+  $fromJson,
+  $json,
+  $toJson,
+  $unwrapOk,
+} from "@rust-js/std";
+
+const checkOrder = /* @__PURE__ */ $checkShape(() => ({
+  orderId: $checkU64,
+  note: [$checkStr, "nullish"],
+}));
 
 function orderSerialize_serialize(order, json) {
   json.beginObject();
@@ -766,6 +786,7 @@ function orderDeserialize_deserialize(json) {
 }
 
 export function toJson(order) {
+  $checks("toJson(order)", order, checkOrder);
   return $unwrapOk(
     $toJson(order, orderSerialize_serialize, false),
     "lib.rs:12:34",
@@ -775,6 +796,7 @@ export function toJson(order) {
 }
 
 export function fromJson(text) {
+  $checkStr(text, "fromJson(text)");
   return $fromJson(text, orderDeserialize_deserialize);
 }
 ```
@@ -830,7 +852,15 @@ pub fn area(shape: &Shape) -> f64 {
 ```
 
 ```js
-import { $fromJson, $json } from "@rust-js/std";
+import {
+  $checkF64,
+  $checkField,
+  $checkStr,
+  $checkTag,
+  $checks,
+  $fromJson,
+  $json,
+} from "@rust-js/std";
 
 function shapeDeserialize_deserialize(json) {
   return json.internallyTagged(
@@ -854,10 +884,22 @@ function shapeDeserialize_deserialize(json) {
 }
 
 export function parse(text) {
+  $checkStr(text, "parse(text)");
   return $fromJson(text, shapeDeserialize_deserialize);
 }
 
+function checkShape(value) {
+  const tag = $checkTag(value, "type", ["circle", "square"], []);
+  if (tag === "circle") {
+    $checkField(value, "radius", $checkF64);
+  }
+  if (tag === "square") {
+    $checkField(value, "side", $checkF64);
+  }
+}
+
 export function area(shape) {
+  $checks("area(shape)", shape, checkShape);
   return shape.type === "circle" ? Math.PI * shape.radius * shape.radius : shape.side * shape.side;
 }
 ```
@@ -925,7 +967,7 @@ pub fn parse(text: &str) -> Result<Order, String> {
 ```
 
 ```js
-import { $JsonReader, $displayJsonPathError, $json, $jsonPathRead } from "@rust-js/std";
+import { $JsonReader, $checkStr, $displayJsonPathError, $json, $jsonPathRead } from "@rust-js/std";
 
 function itemDeserialize_deserialize(json) {
   return json.struct("struct Item", [["qty", $json.u32]], ([qty]) => ({ qty }));
@@ -944,6 +986,7 @@ function orderDeserialize_deserialize(json) {
  * `{"items":[{"qty":1},{"qty":-1}]}`, `items[1].qty: invalid value: ..`.
  */
 export function parse(text) {
+  $checkStr(text, "parse(text)");
   const reader = new $JsonReader(text);
   const result = $jsonPathRead(reader, orderDeserialize_deserialize);
   return result.TAG === "Err" ? { TAG: "Err", _0: $displayJsonPathError(result._0) } : result;

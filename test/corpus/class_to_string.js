@@ -6,10 +6,17 @@
 // JS's text of it, `${p}`, and a `T: Display` shows it by `String`. What
 // Rust does with it is what it does natively.
 
-import { $byteLen, $main } from "@rust-js/std";
+import { $byteLen, $checkI32, $checks, $main } from "@rust-js/std";
 
 export class QueenPosition {
   constructor(rowIndex, columnIndex) {
+    $checks(
+      "QueenPosition.new(rowIndex, columnIndex)",
+      rowIndex,
+      $checkI32,
+      columnIndex,
+      $checkI32,
+    );
     this.rowIndex = rowIndex;
     this.columnIndex = columnIndex;
   }

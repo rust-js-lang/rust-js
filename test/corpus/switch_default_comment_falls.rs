@@ -1,3 +1,4 @@
+//@ library-differs
 // A comment above a last `_ => {}`, after a guarded arm that falls to the
 // next guarded arm of the same value, changes neither the `switch` nor
 // where what follows the `match` is: each case's `break;`, one tail after

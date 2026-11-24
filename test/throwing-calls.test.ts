@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { performanceTrack } from "./ports-of";
 import { buildReact, compiler, fixture, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -42,7 +43,7 @@ pub fn held(text: &str, first: bool) -> Option<&'static Unknown> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("function parsed(text) {\n  return JSON.parse(text);\n}");
   expect(js).toContain('function coerced(value) {\n  return "" + value;\n}');
   expect(js).toContain("async function awaited(p) {\n  return await p;\n}");
@@ -114,7 +115,7 @@ pub fn dropped(first: bool) -> Option<&'static Unknown> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return first ? JSON.parse(text) : JSON.parse(other);");
   expect(js).toContain('return (short ? JSON.stringify("…") : JSON.stringify(value)) ?? undefined;');
   expect(js.match(/\$unwrapOk\(/g)?.length).toBe(4);
@@ -239,7 +240,7 @@ pub fn relays(text: &str) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('function testStringCoercion(value) {\n  // For whoever follows the stack here.\n  return "" + value;\n}');
   expect(js).toContain("function willCoercionThrow(value) {\n  try {\n    testStringCoercion(value);\n    return false;\n  } catch {\n    return true;\n  }\n}");
   expect(js).toContain("    return testStringCoercion(value);\n");
@@ -309,8 +310,8 @@ pub fn through(text: &str) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('export { read } from "./inner.js";');
-  expect(readFileSync(join(dir, "inner.js"), "utf8")).toContain("return $try(() => JSON.parse(text));");
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain('export { read } from "./inner.js";');
+  expect(withoutBoundary(readFileSync(join(dir, "inner.js"), "utf8"))).toContain("return $try(() => JSON.parse(text));");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.direct("[1]"), lib.direct("{"), lib.through("[1]"), lib.through("{")]).toEqual([true, false, true, false]);
   expect(lib.parsing().read("[1]")).toEqual({ TAG: "Ok", _0: [1] });
@@ -369,10 +370,10 @@ pub fn load_ok(text: &str) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("export { read }");
   expect(js).toContain('export { load } from "./inner.js";');
-  expect(readFileSync(join(dir, "inner.js"), "utf8")).toContain("return $try(() => JSON.parse(text));");
+  expect(withoutBoundary(readFileSync(join(dir, "inner.js"), "utf8"))).toContain("return $try(() => JSON.parse(text));");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.read).toBeUndefined();
   expect([lib.readOk("[1]"), lib.readOk("{")]).toEqual([true, false]);

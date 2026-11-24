@@ -15,6 +15,7 @@ import { underLoad } from "../scripts/timing";
 import { buildCompiler, buildReact, compiler, fixture, nativeCrates, programFlags, root, run, target } from "./support";
 import { chain, contract, counting, pairs, printed, triples } from "./crates";
 import { node } from "./programs";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -142,7 +143,7 @@ test("a consumer given a library but not the libraries it uses is refused", () =
 // `fmtInto`, as nothing writes them a piece at a time (#1772, #1778).
 test("a program's derived Debug no library is given a dyn of writes as it is", () => {
   const out = chain(pairs, "derived_debug_beside_a_library_that_writes_a_dyn", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).not.toMatch(/fmtInto[:(]/);
   expect(app).not.toContain("$writingInto(");
 }, 300_000);
@@ -153,7 +154,7 @@ test("a program's derived Debug no library is given a dyn of writes as it is", (
 // (#1927).
 test("a library's impl cloning through a supertrait is its consumer's own where the consumer changes the type", () => {
   const out = chain(pairs, "library_clone_through_a_supertrait", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).not.toMatch(/import \{[^}]*point(Dup|Twice)/);
   expect(app).toContain("const pointDup = {");
   expect(app).toContain("const pointTwice = {");
@@ -164,7 +165,7 @@ test("a library's impl cloning through a supertrait is its consumer's own where 
 // (#1915).
 test("a library's unread bound is given no dictionary by its consumer", () => {
   const out = chain(pairs, "library_bound_given_where_read", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toMatch(/labeled\(\[1, 2\], "origin"\)/);
   expect(app).toMatch(/shown\(point, \w+\)/);
 }, 300_000);
@@ -175,7 +176,7 @@ test("a library's unread bound is given no dictionary by its consumer", () => {
 test("a library's untagged From that's the variant of its argument is its consumer's value", () => {
   const out = chain(pairs, "untagged_from_across_crates", ["dep", "app"]);
   expect(contract(out).gives_argument).toHaveLength(1);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain('const kept = "kept";');
   expect(app).toContain("const three = detailFromU32_from(3);");
 }, 300_000);
@@ -246,7 +247,7 @@ test("a library's traits carry the layouts of the associated types their impls c
 // past a guard's drop is returned after its `finally`, as the crate's own is.
 test("a library's function returned past a guard's drop is returned after its finally", () => {
   const out = chain(pairs, "returned_item", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain("      depth = previous;\n    }\n  }\n  return Dep.noop;\n}");
   // One its `use` names, by that name.
   expect(app).toContain("      depth = previous;\n    }\n  }\n  return idle;\n}");
@@ -259,7 +260,7 @@ test("a library's function returned past a guard's drop is returned after its fi
 // items that drop is refused since #2542 (test/crates-refused.test.ts).
 test("a zip of what's never random access asks no caller whether it is", () => {
   const out = chain(pairs, "library_zip_of_what_is_never_random_access", ["dep", "app"]);
-  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).not.toContain("RandomAccessNoCoerce");
+  expect(withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"))).not.toContain("RandomAccessNoCoerce");
 }, 300_000);
 
 // A library's default the crate's own impls copy is asked through them,
@@ -268,7 +269,7 @@ test("a zip of what's never random access asks no caller whether it is", () => {
 // read nowhere, as a fact the dictionary has is taken in its place (#1409).
 test("a library's default the crate's impls copy takes no fact of its own", () => {
   const out = chain(pairs, "library_default_item_layouts", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain("  collectVec: (self) => tools_collectVec(self, countdownTools,");
   expect(app).not.toContain("CountdownItemSize");
 }, 300_000);
@@ -280,11 +281,11 @@ test("a library's default the crate's impls copy takes no fact of its own", () =
 // may have a destructor counts, as that library does (`rc_generic_holder`).
 test("a library that reads no count counts no Rc, and a crate counting one it hands is refused", () => {
   const out = chain(pairs, "rc_uncounted", ["dep", "app"]);
-  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  const dep = withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"));
   expect(dep).toContain("  context.provider = context;\n  context.consumer = { context };\n  return context;\n");
   expect(dep).toContain("export function sharedCell(value) {\n  return { value };\n}");
   expect(dep).not.toContain("strong");
-  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).not.toContain("strong");
+  expect(withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"))).not.toContain("strong");
   expect(contract(out).counted_rcs).toBeUndefined();
   expect(() => counting(out, "pub fn main() {\n    let context = dep::create_context(1);\n    println!(\"{}\", std::rc::Rc::strong_count(&context));\n}\n"))
     .toThrow("this crate counts an `Rc<dep::Context>`, whose counts it reads, whose last owner runs a destructor, or that may be one that does, but `dep`, a rust-js library that counts none of them, hands it one");
@@ -309,7 +310,7 @@ test("a library's request that owns its callbacks alone is its consumer's callba
   const openRequest = item("dep::open_request");
   expect(openRequest.owned_by_return).toBeUndefined();
   expect(openRequest.quiet_by_return).toBeUndefined();
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain("  let request;\n  const onAllReady = () => {\n");
   expect(app).toContain("  request = createRequest(name, onAllReady, onShellReady);\n  return request;\n");
   // A callback the library may call before it returns, before the cell is
@@ -320,7 +321,7 @@ test("a library's request that owns its callbacks alone is its consumer's callba
   expect(app).toContain("  const onAllReady = () => {\n    startFlowing(request, \"quiet all\");\n  };\n");
   expect(app).toContain("  const onShellReady = () => {\n    startFlowing(request, \"quiet shell\");\n  };\n");
   expect(app).not.toContain("strong");
-  expect(readFileSync(join(out, "dep", "lib.js"), "utf8")).not.toContain("strong");
+  expect(withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"))).not.toContain("strong");
 }, 300_000);
 
 // #1608: a library's contract says which of its types' writers print and
@@ -332,7 +333,7 @@ test("a library's printing writers and unended line are its contract's, and its 
   const library = contract(out);
   expect(library.printing_types.length).toBe(5);
   expect(library.leaves_unended).toEqual([true, false]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain('$print("ended\\n")');
   expect(app).not.toContain("console.log");
 }, 300_000);
@@ -343,10 +344,10 @@ test("a library's printing writers and unended line are its contract's, and its 
 test("a library's checked cell of a Vec of dyn Fns is no consumer's cell of a Vec of its own", () => {
   const out = chain(pairs, "cell_dyn_apart", ["dep", "app"]);
   // Checked: the held borrow counted, the momentary one checked alone (3901c815a).
-  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  const dep = withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"));
   expect(dep).toContain("  if (hooks.list.borrows) {\n    $alreadyBorrowed(\"dep.rs:17:16\");\n  }\n  hooks.list.push(hook);\n");
   expect(dep).toContain("  const list = $borrow(hooks.list, \"dep.rs:21:28\", true);\n");
-  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).toContain("function push(siblings, child) {\n  siblings.push(child);\n}");
+  expect(withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"))).toContain("function push(siblings, child) {\n  siblings.push(child);\n}");
 }, 300_000);
 
 // ADR 0852: a library counts the `Rc`s of each type apart, and its contract
@@ -356,11 +357,11 @@ test("a library's checked cell of a Vec of dyn Fns is no consumer's cell of a Ve
 // counting its context, or a `String` a library that counts others hands it.
 test("a library counts each type's Rcs apart, and its consumer as it does", () => {
   const out = chain(pairs, "rc_per_type", ["dep", "app"]);
-  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  const dep = withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"));
   expect(dep).toContain("export function createContext(defaultValue) {\n  const context = {\n    value: defaultValue,\n    // These are circular\n    provider: null,\n    consumer: null,\n  };\n  context.provider = context;\n");
   expect(dep).toContain("export function useContext(context) {\n  const consumer = context.consumer;\n");
   expect(dep).toContain("  const slot = { value: { value }, strong: 1, weak: 0 };\n");
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   // The uncounted `Rc`'s clone is the context itself, read by its name
   // (rd616 A, ADR 0846 amended): `Rc::ptr_eq` of the two is `true`, as
   // `chain` checks against the native run's `2 true`.
@@ -387,7 +388,7 @@ test("a library counts each type's Rcs apart, and its consumer as it does", () =
 // where its own call gives one.
 test("a library counts another library's Rcs as that library does, refusing what would count one", () => {
   const out = chain(triples, "rc_context_read_generically", ["dep", "mid", "app"]);
-  const mid = readFileSync(join(out, "mid", "lib.js"), "utf8");
+  const mid = withoutBoundary(readFileSync(join(out, "mid", "lib.js"), "utf8"));
   expect(mid).toContain("export function readContext(context) {\n  const value = context.currentValue;\n  return value;\n}");
   expect(mid).not.toContain("strong");
   expect(JSON.parse(readFileSync(join(out, "mid", "lib.manifest.json"), "utf8")).library.counted_rcs).toBeUndefined();
@@ -443,7 +444,7 @@ test("a consumer lending a library's quiet field through a method that gives it 
 // (gap rd85).
 test("a library's generic function given what may look like None is its export where it makes no Some of it", () => {
   const out = chain(pairs, "generic_given_unit", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain(
     "import * as Dep from \"../dep/lib.js\";\n",
   );
@@ -461,7 +462,7 @@ test("a library's generic function given what may look like None is its export w
 test("a library's type equal only to itself keys its consumer's Set by itself", () => {
   const out = chain(pairs, "identity_keys", ["dep", "app"]);
   expect(contract(out).identities).toEqual([expect.any(String)]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain("function schedule(transition, fiber) {\n  if (transition.updatedFibers != null) {\n    transition.updatedFibers.add(fiber);\n");
   // A borrow held while `contains` runs: std's `Borrow` of a `&Fiber` is
   // its blanket impl, none of the library's, so it runs no code of `dep`'s.
@@ -481,7 +482,7 @@ test("a library's type equal only to itself keys its consumer's Set by itself", 
 // a derived struct of the library's holding one, by its parts.
 test("a consumer's == of what holds a library's type equal only to itself is never $eq", () => {
   const out = chain(pairs, "library_eq", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain("function sameInstance(previous, instance) {\n  const right = $some(instance);\n  return previous == null || right == null\n    ? previous == right\n    : $someValue(previous) == $someValue(right);\n}");
   expect(app).toMatch(/dispatch\.instance == (right\$\d+)\.instance && dispatch\.name === \1\.name/);
   // A local `Option<&Option<Rc<Fiber>>>` made and compared where it's held
@@ -503,8 +504,8 @@ test("a consumer's == of what holds a library's type equal only to itself is nev
 // `$id`, the library's map as its consumer's, never by what's in it.
 test("a key holding a library's type equal only to itself finds it by itself", () => {
   const out = chain(pairs, "identity_inside_keys", ["dep", "app"]);
-  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const dep = withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"));
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   const parts = "$keyMap((key) => ({ ...key, fiber: $id(key.fiber) }))";
   expect(dep).toContain(`new (${parts})()`);
   expect(app).toContain(`new (${parts})()`);
@@ -520,7 +521,7 @@ test("a key holding a library's type equal only to itself finds it by itself", (
 // plain field, or box what the library hands it as the object it holds.
 test("a library's RefCells are the values they hold, and its consumer agrees or is refused", () => {
   const out = chain(pairs, "ref_cells", ["dep", "app"]);
-  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  const dep = withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"));
   expect(dep).toContain("  const current = {\n    types: undefined,\n    seen: new Set(),\n  };\n  current.types = prev?.types;\n");
   expect(dep).toContain("    transition.types = [ty];\n  } else if (!types.includes(ty)) {\n    types.push(ty);\n");
   expect(dep).toContain("    return a === b;\n");
@@ -529,7 +530,7 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   // A transparent struct of a `RefCell` of an array, the array, on both
   // sides, as JS makes it (ADRs 0584, 0863).
   expect(dep).toContain("  queue.push(value);\n  return queue.length;\n");
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   // What it changes, a `Vec` through a `Ref` a library's function borrows
   // for a moment, is no `Vec` that function holds: it imports the library's
   // `add_type`, not a copy compiled of its own (ADR 0914, amended).
@@ -547,14 +548,14 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   // A consumer that only makes the library's struct makes its plain field
   // the value it holds, as the library reads it.
   counting(out, "use std::cell::RefCell;\n\npub fn main() {\n    let made = dep::Transition {\n        types: RefCell::new(None),\n        seen: None,\n    };\n    dep::add_type(&made, \"x\");\n    println!(\"{:?}\", dep::types(&made));\n}\n");
-  expect(readFileSync(join(out, "counting", "lib.js"), "utf8")).toContain("  const made = { types: undefined };\n");
+  expect(withoutBoundary(readFileSync(join(out, "counting", "lib.js"), "utf8"))).toContain("  const made = { types: undefined };\n");
   const facts = contract(out).ref_cells;
   expect([facts.unchecked.length, facts.counted, facts.boxed]).toEqual([3, undefined, undefined]);
   expect(contract(out).fields.map((field: { facts: string[] }) => field.facts)).toEqual([["quiet"]]);
   // A field it lists, borrowed for a moment, is the property its consumer
   // reads, whatever the consumer's own borrows of its type count.
   counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\npub struct Mine {\n    types: RefCell<Option<Rc<RefCell<Vec<String>>>>>,\n}\n\nfn count(mine: &Mine) -> usize {\n    mine.types.borrow().as_ref().map_or(0, |types| types.borrow().len())\n}\n\nfn maybe(mine: &Mine, go: bool) -> usize {\n    if go {\n        count(mine)\n    } else {\n        0\n    }\n}\n\nfn twice(mine: &Mine) -> usize {\n    let held = mine.types.borrow_mut();\n    maybe(mine, false) + held.as_ref().map_or(0, |types| types.borrow().len())\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let mine = Mine { types: RefCell::new(None) };\n    let n = t.types.borrow().as_ref().map_or(0, |types| types.borrow().len());\n    println!(\"{n} {}\", twice(&mine));\n}\n");
-  const reads = readFileSync(join(out, "counting", "lib.js"), "utf8");
+  const reads = withoutBoundary(readFileSync(join(out, "counting", "lib.js"), "utf8"));
   expect([/\$borrowMut\(\$fieldCell\(mine, "types"\), "[^"]*\.rs:\d+:\d+", true\)/.test(reads), reads.includes("$fieldCell(t")]).toEqual([true, false]);
   expect(() => counting(out, "pub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    let held = types.borrow_mut();\n    dep::add_type(&t, \"b\");\n    println!(\"{}\", held.len());\n}\n"))
     .toThrow("is held while code rust-js can't see runs, which may be `dep`'s");
@@ -576,24 +577,24 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
   // library's code reaches, so no borrow of it can meet the held one, of a
   // cell that code may reach, and nothing else runs while it's held:
   // neither is checked (#445, ADR 0863, amended; ADR 1058).
-  const copied = readFileSync(join(out, "counting", "lib.js"), "utf8");
+  const copied = withoutBoundary(readFileSync(join(out, "counting", "lib.js"), "utf8"));
   expect(copied).toContain("  for (let i = 0; i < from.length; i++) {\n    const t = from[i];\n    to.push(t);\n");
   expect(copied).not.toContain("$borrow(from");
   // Into another of the library's, a cell that may be the held one: the
   // held one counted, not refused, as a cell's borrow runs only its own
   // check.
   counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn copy(from: &Rc<RefCell<Vec<String>>>, to: &Rc<RefCell<Vec<String>>>) {\n    for t in from.borrow().iter() {\n        to.borrow_mut().push(t.clone());\n    }\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let u = dep::start(None);\n    dep::add_type(&u, \"b\");\n    let types = t.types.borrow().clone().unwrap();\n    let theirs = u.types.borrow().clone().unwrap();\n    copy(&types, &theirs);\n    println!(\"{}\", theirs.borrow().len());\n}\n");
-  expect(readFileSync(join(out, "counting", "lib.js"), "utf8")).toContain("const borrow = $borrow(from, \"counting.rs:5:19\", true);");
+  expect(withoutBoundary(readFileSync(join(out, "counting", "lib.js"), "utf8"))).toContain("const borrow = $borrow(from, \"counting.rs:5:19\", true);");
   // React's scheduleGesture, a type pushed only where it isn't there,
   // which it is where the two are one cell: neither borrow is counted.
   counting(out, "use std::cell::RefCell;\nuse std::rc::Rc;\n\nfn merge(types: &Rc<RefCell<Vec<String>>>, into: &Rc<RefCell<Vec<String>>>) {\n    for t in types.borrow().iter() {\n        if !into.borrow().contains(t) {\n            into.borrow_mut().push(t.clone());\n        }\n    }\n}\n\npub fn main() {\n    let t = dep::start(None);\n    dep::add_type(&t, \"a\");\n    let types = t.types.borrow().clone().unwrap();\n    merge(&types, &types);\n    println!(\"{}\", types.borrow().len());\n}\n");
-  expect(readFileSync(join(out, "counting", "lib.js"), "utf8")).toContain("  for (let i = 0; i < types.length; i++) {\n    const t = types[i];\n    if (!into.includes(t)) {\n      into.push(t);\n");
+  expect(withoutBoundary(readFileSync(join(out, "counting", "lib.js"), "utf8"))).toContain("  for (let i = 0; i < types.length; i++) {\n    const t = types[i];\n    if (!into.includes(t)) {\n      into.push(t);\n");
   // One whose generic code has a `RefCell<T>` of any `T` boxes each, and
   // one that holds a borrow while what it's given runs counts it: its
   // consumer boxes and checks them as it does.
   const counted = chain(pairs, "ref_cells_counted", ["dep", "app"]);
   expect([contract(counted).ref_cells.boxed, contract(counted).ref_cells.counted.length]).toEqual([[{}], 1]);
-  const consumer = readFileSync(join(counted, "app", "lib.js"), "utf8");
+  const consumer = withoutBoundary(readFileSync(join(counted, "app", "lib.js"), "utf8"));
   // Each momentary borrow checked alone (3901c815a), the library's held one
   // found by the closure's; its `Rc`, which the library's own calls don't
   // count, is the cell itself (#1234).
@@ -608,7 +609,7 @@ test("a library's RefCells are the values they hold, and its consumer agrees or 
 // refused, and the library checks that borrow.
 test("a library checks a cell its consumer may share as its type says", () => {
   const out = chain(pairs, "ref_cells_flow", ["dep", "app"]);
-  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  const dep = withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"));
   expect(dep).toContain("if (cell.borrows) {\n    $alreadyBorrowed(\"dep.rs:15:10\");\n  }\n  cell.push(1);");
   expect(contract(out).ref_cells.unchecked).toBeUndefined();
 }, 300_000);
@@ -622,7 +623,7 @@ test("a library checks a cell its consumer may share as its type says", () => {
 // refused.
 test("a library's cell only its own code and constants reach is its flow's, as a program's", () => {
   const out = chain(pairs, "ref_cells_flow_reach", ["dep", "app"]);
-  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  const dep = withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"));
   // Taken, given, a static's, or a struct's the consumer holds: checked.
   expect(dep).toContain("  if (cell.borrows) {\n    $alreadyBorrowed(\"dep.rs:20:10\");\n  }\n  cell.push(1);\n");
   expect(dep).toContain("  const cell = [];\n  if (cell.borrows) {\n    $alreadyBorrowed(\"dep.rs:26:10\");\n  }\n  cell.push(5);\n");
@@ -644,7 +645,7 @@ test("a library's cell only its own code and constants reach is its flow's, as a
 // the array, and only the generic value is a `{ value }`.
 test("a thread-local's RefCell is its own, whatever generic code's RefCell<T> is", () => {
   const out = chain(pairs, "thread_local_cell", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain("const valueStack = [];\nconst names = [\"first\"];\n");
   expect(app).toContain("export function cellOf(value) {\n  return { value };\n}");
   expect(app).toContain("  valueStack[$at(valueStack, 0, \"app.rs:29:58\")] = undefined;\n");
@@ -656,7 +657,7 @@ test("a thread-local's RefCell is its own, whatever generic code's RefCell<T> is
 // `supportsUserTiming`; and so is one of the count the library sets.
 test("a thread-local of a library's flag is made as its module loads", () => {
   const out = chain(pairs, "thread_local_reads_library", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   // Through the library's namespace, as their paths name them (ADR 1018),
   // each its own `const`: two of the library's items, no one value's
   // fields (#633).
@@ -674,7 +675,7 @@ test("a thread-local of a library's flag is made as its module loads", () => {
 // fn_pointer_of_a_library` runs it against native Rust.
 test("a library's field of its own functions is called as the crate's own", () => {
   const out = chain(pairs, "fn_pointer_of_a_library", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain('  Dep.children.forEach("ab", (i) => {\n');
   expect(app).toContain('${Dep.children.count("abc")}');
   expect(app).toContain("hooks.onEach(1)}");
@@ -705,7 +706,7 @@ test("a library that starts reading a count is what its consumers share once reb
 // against native Rust.
 test("a library's generic function takes the drops its body uses", () => {
   const out = chain(pairs, "drops_by_need", ["dep", "app"]);
-  const js = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(out, "dep", "lib.js"), "utf8"));
   const signatures = js.split("\n").filter((line) => line.startsWith("export function"));
   expect(signatures).toEqual([
     "export function keep(value) {",
@@ -730,7 +731,7 @@ test("a library's generic function takes the drops its body uses", () => {
   expect(js).toContain("return apply(keep, value);");
   // The consumer's own of those that drop what it gives, and the library's
   // of those that drop none.
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   expect(app).toContain('import * as Dep from "../dep/lib.js";');
   expect(app).toContain("\nfunction pick(a, b, dropB) {\n  dropB?.(b);\n  return a;\n}");
   expect(app).toContain("\nfunction discard(value, dropT) {\n  pick(undefined, value, dropT);\n}");
@@ -778,10 +779,10 @@ pub fn main() {
 `);
   run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
     "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
-  expect(readFileSync(join(lib, "lib.js"), "utf8")).toContain("export function second(a, b, dropT) {");
+  expect(withoutBoundary(readFileSync(join(lib, "lib.js"), "utf8"))).toContain("export function second(a, b, dropT) {");
   run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
     "--", "--crate-name", "app", "--crate-type=lib", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
-  const app = readFileSync(join(dir, "app.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(dir, "app.js"), "utf8"));
   expect(app).toContain('import * as Dep from "./dep/lib.js";');
   expect(app).not.toContain("function second(");
   expect(printed(join(dir, "app.js"))).toBe("second\ndropped 2\n3\ndropped 3\nafter\n");
@@ -796,7 +797,7 @@ test("a consumer refuses a library's generic code it can't compile yet, and neve
   const out = chain(pairs, "generic_boxed_drop", ["dep", "app"]);
   // Its optimized MIR's drop flags settled as rust-js's own: none of `t`
   // after `vec![t]` took it, nor a `try` of a `catch` it emptied (#381).
-  const copied = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const copied = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   // Each item dropped, the rest too after one that panics (a1a886ee4).
   expect(copied).toContain("  const result = v.length;\n  $dropItems(v, (item) => {\n    dropT?.(item);\n  });\n  return result;\n}");
   // A caller's drop may throw: after the \`try\`, and \`$cleanup\`'s as a panic unwinds (#847).
@@ -836,7 +837,7 @@ test("a consumer refuses a library's generic code it can't compile yet, and neve
 // ways, about 450 lines; it drops what it's given where Rust does.
 test("a consumer's copy of a library's generic function settles its cleanup's drop flags", () => {
   const out = chain(pairs, "generic_flags_given", ["dep", "app"]);
-  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
   const copy = app.slice(app.indexOf("function runWithFiberInDev("), app.indexOf("export function main("));
   expect(copy).not.toContain("if (");
   expect(copy.split("\n").length).toBeLessThan(30);
@@ -877,7 +878,7 @@ test("a library's generic function drops a consumer's iterator where Rust does",
   writeFileSync(join(dir, "app.rs"), "struct Loud(&'static str);\nimpl Drop for Loud {\n    fn drop(&mut self) {\n        println!(\"drop {}\", self.0);\n    }\n}\nstruct Count(u32);\nimpl Iterator for Count {\n    type Item = u32;\n    fn next(&mut self) -> Option<u32> {\n        self.0 += 1;\n        Some(self.0)\n    }\n}\nimpl Drop for Count {\n    fn drop(&mut self) {\n        println!(\"count dropped at {}\", self.0);\n    }\n}\npub fn main() {\n    let found = dep::first(vec![Loud(\"a\"), Loud(\"b\")]);\n    println!(\"{}\", found.map_or(\"none\", |l| l.0));\n    println!(\"{:?}\", dep::first(Count(4)));\n}\n");
   run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
     "--", "--crate-name", "dep", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
-  const js = readFileSync(join(lib, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(lib, "lib.js"), "utf8"));
   expect(js).toContain("export function first(items) {");
   // A trait's of the crate's, whose dictionary has its drop (ADR 0178), takes none.
   expect(js).toContain("export function hold(zone, ZZone) {");
@@ -898,10 +899,10 @@ test("a library's generic code drops a consumer's impl Trait by its dictionary",
   writeFileSync(join(dir, "app.rs"), "struct Loud(&'static str);\nimpl Drop for Loud {\n    fn drop(&mut self) {\n        println!(\"drop {}\", self.0);\n    }\n}\nstruct Tens;\nimpl dep::Source for Tens {\n    fn hidden(n: u32) -> impl DoubleEndedIterator<Item = u32> {\n        let guard = Loud(\"hidden\");\n        (0..n).map(move |x| {\n            let _ = &guard;\n            x * 10\n        })\n    }\n    fn loud(name: &'static str) -> impl Sized {\n        Loud(name)\n    }\n}\npub fn main() {\n    println!(\"{:?}\", dep::last_of::<Tens>());\n    dep::held::<Tens>();\n}\n");
   run([compiler, join(dir, "dep.rs"), "-o", join(lib, "lib.js"), "--library", "--manifest", join(lib, "lib.manifest.json"),
     "--", "--crate-name", "dep", "--edition=2024", `--emit=metadata=${join(lib, "libdep.rmeta")}`]);
-  expect(readFileSync(join(lib, "lib.js"), "utf8")).toContain("SSource.$dropHidden?.(it);");
+  expect(withoutBoundary(readFileSync(join(lib, "lib.js"), "utf8"))).toContain("SSource.$dropHidden?.(it);");
   run([compiler, join(dir, "app.rs"), "-o", join(dir, "app.js"), "--dependency", join(lib, "lib.manifest.json"),
     "--", "--crate-name", "app", "--crate-type=lib", "--edition=2024", "--extern", `dep=${join(lib, "libdep.rmeta")}`]);
-  expect(readFileSync(join(dir, "app.js"), "utf8")).toContain("$dropHidden(map) {");
+  expect(withoutBoundary(readFileSync(join(dir, "app.js"), "utf8"))).toContain("$dropHidden(map) {");
   expect(printed(join(dir, "app.js"))).toBe("stepped\ndrop hidden\nSome(20)\nholding\ndrop kept\n");
 }, 300_000);
 
@@ -1195,7 +1196,7 @@ test("a component of another crate is a JSX tag, on a stable release", () => {
     "--", "--crate-name", "ui", `--emit=metadata=${join(ui, "js", "libui.rmeta")}`, ...react]);
   built([join(app, "lib.rs"), "-o", join(app, "js", "lib.jsx"), "--dependency", join(ui, "js", "lib.manifest.json"),
     "--", "--crate-name", "app", "--extern", `ui=${join(ui, "js", "libui.rmeta")}`, ...react]);
-  expect(readFileSync(join(app, "js", "lib.jsx"), "utf8")).toContain('<Button label="go" />');
+  expect(withoutBoundary(readFileSync(join(app, "js", "lib.jsx"), "utf8"))).toContain('<Button label="go" />');
 }, underLoad(60_000));
 
 // A `#![no_std]` crate loads no `alloc`, so it has no `ToString`, which

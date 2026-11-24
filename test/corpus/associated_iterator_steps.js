@@ -7,6 +7,7 @@
 // type's, so it's given the parameter's (ADR 0527).
 
 import {
+  $brand,
   $foldOf,
   $iter,
   $iterator,
@@ -24,7 +25,10 @@ function wrapIterator_next(wrap, IIterator) {
 }
 
 function refWrapIntoIterator_intoIter(wrap, IClone) {
-  return { ...wrap, inner: IClone.clone(wrap.inner) };
+  return $brand("associated_iterator_steps#2c0eeb4c5b876983::Wrap", {
+    ...wrap,
+    inner: IClone.clone(wrap.inner),
+  });
 }
 
 const $markerFusedI = new WeakMap();
@@ -37,7 +41,9 @@ export function markerFusedI(IIterator, IClone, IFused) {
 }
 
 function wrapFromI_from(inner, IIterator, IClone, IFused) {
-  return { inner: iterator_fuse(inner, IIterator, IFused) };
+  return $brand("associated_iterator_steps#2c0eeb4c5b876983::Wrap", {
+    inner: iterator_fuse(inner, IIterator, IFused),
+  });
 }
 
 export function make(inner, MFusedI) {
@@ -45,7 +51,7 @@ export function make(inner, MFusedI) {
 }
 
 export function wrap(inner) {
-  return { inner };
+  return $brand("associated_iterator_steps#2c0eeb4c5b876983::Wrap", { inner });
 }
 
 $main(main);

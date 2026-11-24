@@ -49,7 +49,7 @@ async function call(url, init, ok) {
     }
     // Not the server's JSON: a proxy's page, say.
     const result = $fromJson(text, problemDeserialize_deserialize);
-    const problem = result.TAG === "Ok" ? result._0 : Problem.new(`the server answered ${status}`);
+    const problem = result.TAG === "Ok" ? result._0 : Problem.new$(`the server answered ${status}`);
     return { TAG: "Err", _0: { TAG: "Refused", _0: status, _1: problem } };
   }
   if (signal != null && signal.aborted) {
@@ -73,7 +73,7 @@ export async function contacts(query, signal) {
   return result$1.TAG === "Err"
     ? {
         TAG: "Err",
-        _0: { TAG: "Refused", _0: 200, _1: Problem.new($displayJsonError(result$1._0)) },
+        _0: { TAG: "Refused", _0: 200, _1: Problem.new$($displayJsonError(result$1._0)) },
       }
     : result$1;
 }
@@ -89,7 +89,7 @@ export async function contact(id, signal) {
   return result$1.TAG === "Err"
     ? {
         TAG: "Err",
-        _0: { TAG: "Refused", _0: 200, _1: Problem.new($displayJsonError(result$1._0)) },
+        _0: { TAG: "Refused", _0: 200, _1: Problem.new$($displayJsonError(result$1._0)) },
       }
     : result$1;
 }
@@ -118,7 +118,7 @@ export async function create(new$) {
   return result$1.TAG === "Err"
     ? {
         TAG: "Err",
-        _0: { TAG: "Refused", _0: 201, _1: Problem.new($displayJsonError(result$1._0)) },
+        _0: { TAG: "Refused", _0: 201, _1: Problem.new$($displayJsonError(result$1._0)) },
       }
     : result$1;
 }

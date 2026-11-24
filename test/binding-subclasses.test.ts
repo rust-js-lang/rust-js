@@ -10,6 +10,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -94,7 +95,7 @@ test("a getter of the binding's class a class extends is its class's getter", as
   bindings(dir, dependency);
   writeFileSync(join(dir, "lib.rs"), subclass);
   run([compiler, ...app(dir)]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   const ts = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(out).toContain('import { ModuleDependency } from "webpackish";');
   expect(out).toContain(`export class ClientReferenceDependency extends ModuleDependency {
@@ -183,7 +184,7 @@ pub fn given(_request: &dep::WebRequest) -> bool {
 }
 `);
   run([compiler, ...app(dir)]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   const ts = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(out).toContain('import ModuleDependency from "webpackish/lib/dependencies/ModuleDependency";');
   expect(out).toContain("export class ClientReferenceDependency extends ModuleDependency {");
@@ -217,7 +218,7 @@ test("a field of a class that extends a binding's class is set through its acces
       .replace("    pub fn new(_request: &str) -> Self {\n        ClientReferenceDependency {}", "    pub fn new(request: &str) -> Self {\n        ClientReferenceDependency {\n            tag: request.to_string(),\n        }"),
   );
   run([compiler, ...app(dir)]);
-  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const out = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(out).toContain("export class ClientReferenceDependency extends ModuleDependency {\n  constructor(request) {\n    super(request);\n    this.tag = request;\n  }");
   const lib = await import(join(dir, "lib.js"));
   expect(new lib.ClientReferenceDependency("client").tag).toBe("CLIENT");

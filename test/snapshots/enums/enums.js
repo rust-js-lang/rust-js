@@ -4,13 +4,15 @@
 // fields is its name, `"Empty"`, and one with fields is an object tagged
 // with its name, `{ TAG: "Circle", _0: 2 }` or `{ TAG: "Rect", w: 2, h: 3 }`.
 
-import { $div, $eq } from "@rust-js/std";
+import { $checkField, $checkI32, $checkTag, $checkU32, $checks, $div, $eq } from "@rust-js/std";
 
 export function circle(r) {
+  $checkI32(r, "circle(r)");
   return { TAG: "Circle", _0: r };
 }
 
 export function rect(w, h) {
+  $checks("rect(w, h)", w, $checkI32, h, $checkI32);
   return { TAG: "Rect", w, h };
 }
 
@@ -18,7 +20,19 @@ export function empty() {
   return "Empty";
 }
 
+function checkShape(value) {
+  const tag = $checkTag(value, "TAG", ["Circle", "Rect"], ["Empty"]);
+  if (tag === "Circle") {
+    $checkField(value, "_0", $checkI32);
+  }
+  if (tag === "Rect") {
+    $checkField(value, "w", $checkI32);
+    $checkField(value, "h", $checkI32);
+  }
+}
+
 export function area(s) {
+  $checks("area(s)", s, checkShape);
   if (s === "Empty") {
     return 0;
   }
@@ -30,6 +44,7 @@ export function area(s) {
 
 /** Patterns inside variants, guards, `|`, and `..`. */
 export function classify(s) {
+  $checks("classify(s)", s, checkShape);
   if (s.TAG !== "Circle") {
     if (s !== "Empty" && s.w !== 0) {
       return 1;
@@ -44,15 +59,18 @@ export function classify(s) {
 }
 
 export function isRound(s) {
+  $checks("isRound(s)", s, checkShape);
   return s.TAG === "Circle";
 }
 
 export function width(s) {
+  $checks("width(s)", s, checkShape);
   return s.TAG === "Rect" ? s.w : -1;
 }
 
 /** `==` compares variant and fields. */
 export function same(a, b) {
+  $checks("same(a, b)", a, checkShape, b, checkShape);
   return $eq(a, b);
 }
 
@@ -67,22 +85,30 @@ function sum(t) {
 }
 
 export function treeSum(depth) {
+  $checkU32(depth, "treeSum(depth)");
   return sum(build(depth));
 }
 
 /** `Result` is an enum like any other: `{ TAG: "Ok", _0: v }`, as in ReScript. */
 export function checkedDiv(a, b) {
+  $checks("checkedDiv(a, b)", a, $checkI32, b, $checkI32);
+  return checkedDiv$(a, b);
+}
+
+function checkedDiv$(a, b) {
   return b === 0
     ? { TAG: "Err", _0: "divide by zero" }
     : { TAG: "Ok", _0: $div(a, b, "examples/enums.rs:82:65", -2147483648) | 0 };
 }
 
 export function divOr(a, b, fallback) {
-  const value = checkedDiv(a, b);
+  $checks("divOr(a, b, fallback)", a, $checkI32, b, $checkI32, fallback, $checkI32);
+  const value = checkedDiv$(a, b);
   return value.TAG === "Ok" ? value._0 : fallback;
 }
 
 export function discriminants(i) {
+  $checkU32(i, "discriminants(i)");
   let level;
   switch (i % 3) {
     case 0:
@@ -131,6 +157,7 @@ function points(f) {
 }
 
 export function changedInPlace(r) {
+  $checkI32(r, "changedInPlace(r)");
   let poly = { TAG: "Poly", _0: [1] };
   const before =
     poly.TAG === "Poly"

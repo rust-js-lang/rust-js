@@ -1,3 +1,4 @@
+//@ library-differs
 // `len()` of a `Peekable`, with an item peeked, after `next()`, and of an
 // empty one.
 pub fn f(v: &[u32]) -> usize { let mut p = v.iter().peekable(); p.peek(); p.len() }

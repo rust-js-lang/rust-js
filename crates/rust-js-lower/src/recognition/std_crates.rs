@@ -81,3 +81,10 @@ pub(super) fn std_path(tcx: TyCtxt<'_>, id: DefId) -> &'static str {
     // 270 ms of React's reconciler's 4.8 s (#882).
     caches.std_paths.keep(id, Box::leak(path.into_boxed_str()))
 }
+
+/// Which crate `krate` is, one name for each build of it: its name and its
+/// disambiguator, `app#7e6d147c3a102184`, which tells two versions of one
+/// crate apart, as Rust does (a brand's key, ADR 1196).
+pub(crate) fn crate_identity(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> String {
+    format!("{}#{:016x}", tcx.crate_name(krate), tcx.stable_crate_id(krate).as_u64())
+}

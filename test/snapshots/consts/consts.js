@@ -3,6 +3,8 @@
 // `const` items (ADR 0031): rustc works out each value at compile time, and
 // the JS gives it a name: `const SIZE = 4096;`.
 
+import { $checkF64, $checkI32 } from "@rust-js/std";
+
 export const SIZE = 4 * 1024;
 const GREETING = "hello";
 const RATIO = 0.25;
@@ -22,6 +24,7 @@ export function greeting() {
 }
 
 export function quarter(x) {
+  $checkF64(x, "quarter(x)");
   return x * RATIO;
 }
 
@@ -34,6 +37,7 @@ export function on() {
  * next use as it was.
  */
 export function moved(dx) {
+  $checkI32(dx, "moved(dx)");
   const p = { ...ORIGIN };
   p.x = (p.x + dx) | 0;
   return [{ ...p }, { ...ORIGIN }];

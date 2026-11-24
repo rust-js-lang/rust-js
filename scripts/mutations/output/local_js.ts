@@ -66,4 +66,28 @@ export const mutations: Mutation[] = [
     replace: "        for root in [&self.output] {\n            let file = specifier_file(parent_dir(&absolute(root)?), specifier)?;\n",
     tests: ["test/css-modules.test.ts", "-t", "written elsewhere"],
   },
+  {
+    name: "hand-written-js-unscanned",
+    breaks: "no hand-written JS file is read, so a module one imports is called unreachable and JS calls its functions unchecked (#2403 lever (3))",
+    file: "crates/rust-js-emit/src/output/local_js.rs",
+    find: "        js_files(&scope, &mut files);\n",
+    replace: "        js_files(&scope.join(\"no hand-written JS here\"), &mut files);\n",
+    tests: ["test/boundary-reach.test.ts", "-t", "a module a hand-written JS file imports"],
+  },
+  {
+    name: "generated-js-read-as-hand-written",
+    breaks: "a file rust-js wrote is read as hand-written JS, so every module the crate's own JS imports is called one JS may call: all checked again (#2403 lever (3))",
+    file: "crates/rust-js-emit/src/output/local_js.rs",
+    find: "            if code.starts_with(GENERATED) {\n",
+    replace: "            if code.starts_with(GENERATED) && false {\n",
+    tests: ["test/boundary-reach.test.ts", "-t", "compiled again, a file rust-js wrote"],
+  },
+  {
+    name: "specifier-of-a-word-read",
+    breaks: "a word that only ends with `import`, `reimport(\"./g\")`, is read as one, its string a specifier (#2403 lever (3))",
+    file: "crates/rust-js-emit/src/output/local_js.rs",
+    find: "            if at > 0 && word(at - 1) {\n",
+    replace: "            if false {\n",
+    unitTests: "output::local_js::tests::specifiers_are_read_after_from_import_and_require",
+  },
 ];

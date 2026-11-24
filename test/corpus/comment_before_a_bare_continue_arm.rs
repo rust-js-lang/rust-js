@@ -1,3 +1,4 @@
+//@ library-differs
 // A comment above an arm that's only a `continue`, `// Skipped.\n 1 =>
 // continue,`, keeps that `continue` where it's written, the comment
 // before it, as an arm whose block holds them does (#610, the user's

@@ -5,7 +5,7 @@
 // are still its own (#687, ADR 1044); after a write of one variant over
 // another, whose earlier keys the object keeps.
 
-import { $debugStr, $main } from "@rust-js/std";
+import { $checkStr, $debugStr, $main } from "@rust-js/std";
 
 function statusDebug_fmt(status) {
   if (status.status === "pending") {
@@ -19,6 +19,7 @@ function statusDebug_fmt(status) {
 
 export class Task {
   constructor(status, tries, value, name) {
+    $checkStr(name, "Task.new(name)");
     this.status = status;
     this.tries = tries;
     this.value = value;

@@ -1,3 +1,4 @@
+//@ library-differs
 // Two thread-locals' `with` closures, each applied where it's called, each
 // declaring the program's `current`, and the second's `match` binding
 // `current` again in its arms: each closure's own is named apart from the

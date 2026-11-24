@@ -1,3 +1,4 @@
+//@ library-differs
 // A guarded or-pattern whose guard fails of some of its alternatives,
 // `(_, 2, 1, 0) | (_, 2, 0, 2) | (_, _, 1, 0) if b != 2`, compiles (#714):
 // MIR tests the guard after each alternative, and inside `if (b === 2)`

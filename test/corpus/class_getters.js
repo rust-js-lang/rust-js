@@ -6,10 +6,11 @@
 // side effects too; as a value, the arrow of its read. What Rust does with
 // it is what it does natively.
 
-import { $main } from "@rust-js/std";
+import { $checkI32, $checkShape, $checks, $main } from "@rust-js/std";
 
 export class Queen {
   constructor(row, column) {
+    $checks("Queen.new(row, column)", row, $checkI32, column, $checkI32);
     this.row = row;
     this.column = column;
     this.reads = 0;
@@ -32,6 +33,7 @@ export class Queen {
   }
 
   threatens(other) {
+    $checks("Queen.threatens(other)", other, checkQueen);
     return (
       this.row === other.row ||
       this.column === other.column ||
@@ -53,6 +55,7 @@ function noted(n) {
 /** A square of the board, of fields nothing changes once it's made. */
 export class Square {
   constructor(row) {
+    $checkI32(row, "Square.new(row)");
     this.row = row;
   }
 
@@ -65,6 +68,8 @@ export class Square {
     return this.row;
   }
 }
+
+const checkQueen = /* @__PURE__ */ $checkShape(() => ({ row: $checkI32, column: $checkI32 }));
 
 /**
  * A square's row, read before what's noted after it: the getter of a `&`

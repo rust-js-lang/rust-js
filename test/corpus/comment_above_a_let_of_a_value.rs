@@ -1,3 +1,4 @@
+//@ library-differs
 // A comment above a `let` whose value opens, `let listeners = match .. {`
 // or `let f = {`, is above the whole `let`'s first JS: the `let
 // listeners;` the `match`'s `if` sets, in the `try` of the `catch_unwind`

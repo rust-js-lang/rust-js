@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { copyFileSync } from "node:fs";
 import { root, target, run, buildCompiler, buildReact, compiler, bunTest } from "./support";
 import { underLoad } from "../scripts/timing";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -14,7 +15,7 @@ test("React components are hand-written JSX, and React runs them", () => {
   run([compiler, "test/components.rs", "-o", join(out, "components.js"),
     "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   // A module with JSX is a `.jsx` file.
-  const js = require("node:fs").readFileSync(join(out, "components.jsx"), "utf8");
+  const js = withoutBoundary(require("node:fs").readFileSync(join(out, "components.jsx"), "utf8"));
   expect(js).toContain("import {\n  createContext,\n  memo,\n  useContext,\n  useEffect,\n  useId,\n  useMemo,\n  useReducer,\n  useRef,\n  useState,\n} from \"react\";");
   // Props taken apart, as a component takes them; `children` as JSX children.
   expect(js).toContain("export function Card({ title, children }) {\n  return (\n    <div className=\"card\">\n      <h2>{title}</h2>\n      {children}\n    </div>\n  );\n}");
@@ -158,7 +159,7 @@ pub fn ComponentOrder() -> JSX::Element {
     expect(log.splice(0)).toEqual([9]);
     expect(components.props.children[0].type).toBe(result.First);
     expect(components.props.children[2].type).toBe(result.Second);
-    const code = await Bun.file(join(dir, "lib.jsx")).text();
+    const code = withoutBoundary(await Bun.file(join(dir, "lib.jsx")).text());
     const siblings = code.slice(code.indexOf("export function Siblings("), code.indexOf("export function SpreadOrder("));
     expect(siblings).not.toMatch(/(?:const\s+\S+|\b\w+)\s*=\s*\(?\s*</);
     const map = await Bun.file(join(dir, "lib.jsx.map")).json();
@@ -179,7 +180,7 @@ test("React's and React DOM's APIs are hand-written React, and they run", () => 
   const out = join(target, "react-apis");
   run([compiler, "test/apis.rs", "-o", join(out, "apis.js"),
     "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
-  const js = require("node:fs").readFileSync(join(out, "apis.jsx"), "utf8");
+  const js = withoutBoundary(require("node:fs").readFileSync(join(out, "apis.jsx"), "utf8"));
   // Built-in components are JSX tags, and `use` is `use`.
   expect(js).toContain("return (\n    <Suspense fallback={<p className=\"loading\">Loading</p>}>\n      <Greeting />\n    </Suspense>");
   expect(js).toContain("const text = use(globalThis.greeting);");
@@ -293,8 +294,8 @@ pub fn full_name(person: &Person) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
-  const lib = await Bun.file(join(dir, "lib.jsx")).text();
-  const people = await Bun.file(join(dir, "people.js")).text();
+  const lib = withoutBoundary(await Bun.file(join(dir, "lib.jsx")).text());
+  const people = withoutBoundary(await Bun.file(join(dir, "people.js")).text());
   // Rust's own: functions, across modules, and fields, of a struct and a variant.
   expect(lib).toContain('import * as People from "./people.js";');
   expect(lib).toContain("export function greet(firstName) {\n  return People.fullName(People.makePerson(firstName));");
@@ -354,7 +355,7 @@ pub fn Counter() -> JSX::Element {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("const [count, setCount] = useState(0);");
   expect(jsx).toContain("const [notes] = useState(load);");
   expect(jsx).toContain("useState(() => load().length);");
@@ -384,7 +385,7 @@ pub fn Form() -> JSX::Element {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("const [name] = useState(\"\");");
   expect(jsx).toContain("const [count] = useState(0);");
   expect(jsx).toContain("const [on] = useState(false);");
@@ -417,6 +418,6 @@ thread_local! {
 }
 `);
   run([compiler, input, "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
-  const js = require("node:fs").readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(require("node:fs").readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export const OnSave = createContext(() => {});\nexport const shouted = cache(shout);");
 }, underLoad(60_000));

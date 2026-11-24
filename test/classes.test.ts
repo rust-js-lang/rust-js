@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -21,7 +22,7 @@ function compiled(name: string, rust: string): { js: string; ts: string; dir: st
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, ...flags(dir)]);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), ts: readFileSync(join(dir, "lib.d.ts"), "utf8"), dir };
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), ts: readFileSync(join(dir, "lib.d.ts"), "utf8"), dir };
 }
 
 /** What the compiler says of `rust`, which it refuses. */
@@ -455,13 +456,13 @@ pub fn real(parts: Parts) -> Complex {
 }
 `);
   run([compiler, ...flags(dir)]);
-  const complex = readFileSync(join(dir, "complex.js"), "utf8");
+  const complex = withoutBoundary(readFileSync(join(dir, "complex.js"), "utf8"));
   expect(complex).toContain("\nexport default class Complex {\n  constructor(re, im) {\n");
   expect(complex).not.toContain("export function Complex");
   const declared = readFileSync(join(dir, "complex.d.ts"), "utf8");
   expect(declared).toContain("declare class Complex {\n");
   expect(declared).toContain("\nexport default Complex;\n");
-  const lib = readFileSync(join(dir, "lib.js"), "utf8");
+  const lib = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(lib).toContain('import Complex from "./complex.js";');
   expect(lib).toContain("new Complex(");
   expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain('import type Complex from "./complex.js";\nimport type { Parts } from "./complex.js";\n');
@@ -802,7 +803,7 @@ test("an object made in another module holds its impl's module's functions", asy
     "use crate::types::Scope;\n\n#[cfg_attr(rust_js, rust_js::object)]\nimpl Scope {\n    pub fn get(&self) -> u32 {\n        self.n + 1\n    }\n}\n",
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('import { get } from "./scope.js";\n');
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain('import { get } from "./scope.js";\n');
   const lib = await import(join(dir, "lib.js"));
   expect(lib.made().get()).toBe(2);
 });
@@ -1162,7 +1163,7 @@ pub fn run() -> String {
 }
 `,
   );
-  const model = readFileSync(join(dir, "model.js"), "utf8");
+  const model = withoutBoundary(readFileSync(join(dir, "model.js"), "utf8"));
   expect(model).toContain("export class Plugin {\n  constructor(name) {\n    this.name = name;\n  }\n  twice() {");
   expect(js).not.toContain("class Plugin");
   const lib = await import(join(dir, "lib.js"));

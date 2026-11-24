@@ -340,7 +340,7 @@ pub(super) fn numbered(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> bool {
 }
 
 /// A discriminated union's variant's `#[rust_js::name = true]` or `false`.
-fn given_bool(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
+pub(crate) fn given_bool(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
     let attr = tcx
         .get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), sym::name])
         .next()?;
@@ -1105,3 +1105,20 @@ const STEPS_METHODS: &[&str] = &[
     "ownNth",
     "ownLast",
 ];
+
+/// Whether a props field has a default, `#[rust_js::default]`, a literal's,
+/// its type's or a `const`'s (ADR 0212): one a JS caller may leave out,
+/// which the component it's passed to gives it.
+// helper: the props default's attribute, read by the checks of what JS gives
+pub(crate) fn has_field_default(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
+    field_default(tcx, field).is_some() || field_default_const(tcx, field).is_some()
+}
+
+/// Whether `did` is one of `js`'s type tests, `#[rust_js::type_test]`,
+/// `is_function`, `is_defined`, `is_number`, `is_object`: the one catalog of
+/// what a body asks of a value JS gave it, which may be anything (#2403).
+// helper: the catalog the checks of what JS gives read
+pub(crate) fn is_type_test(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("type_test")];
+    tcx.get_attrs_by_path(did, &path).next().is_some()
+}

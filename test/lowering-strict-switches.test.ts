@@ -6,6 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -150,7 +151,7 @@ pub fn tail(s: &'static Unknown, a: &'static Unknown, b: &'static Unknown, log: 
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function selectorToString(selector) {
   switch (selector.typeof) {
     case componentType:
@@ -311,7 +312,7 @@ pub fn guarded(s: &'static Unknown, a: &'static Unknown, b: &'static Unknown) ->
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("switch");
   const global = globalThis as Record<string, unknown>;
   const reads = [1, 2, 3, 7, 5];
@@ -372,7 +373,7 @@ pub fn mixed(v: Option<&Unknown>) -> u32 {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  switch (v) {\n    case "preload":\n      log.push(1);\n      break;\n    case "modulepreload":\n');
   // A switch's `===` tells a number from anything else: no `typeof v ===
   // "number"` around it.

@@ -72,8 +72,14 @@ pub fn scaled_area(side: f64) -> Meters {
 ```
 
 ```js
+import { $checkF64, $checkShape, $checks } from "@rust-js/std";
+
 export const Rect = {
   square(side) {
+    $checkF64(side, "Rect.square(side)");
+    return Rect.square$(side);
+  },
+  square$(side) {
     return {
       width: side,
       height: side,
@@ -81,19 +87,30 @@ export const Rect = {
   },
 
   area(rect) {
+    $checks("Rect.area(rect)", rect, checkRect);
+    return Rect.area$(rect);
+  },
+  area$(rect) {
     return rect.width * rect.height;
   },
 
   scale(rect, by) {
+    $checks("Rect.scale(rect, by)", rect, checkRect, by, $checkF64);
+    return Rect.scale$(rect, by);
+  },
+  scale$(rect, by) {
     rect.width *= by;
     rect.height *= by;
   },
 };
 
+const checkRect = /* @__PURE__ */ $checkShape(() => ({ width: $checkF64, height: $checkF64 }));
+
 export function scaledArea(side) {
-  const rect = Rect.square(side);
-  Rect.scale(rect, 2);
-  return [Rect.area(rect)];
+  $checkF64(side, "scaledArea(side)");
+  const rect = Rect.square$(side);
+  Rect.scale$(rect, 2);
+  return [Rect.area$(rect)];
 }
 ```
 
@@ -144,7 +161,10 @@ pub fn process_reply(depth: u32) -> String {
 ```
 
 ```js
+import { $checkU32 } from "@rust-js/std";
+
 export function processReply(depth) {
+  $checkU32(depth, "processReply(depth)");
   let nextId = 1;
 
   function part(depth) {
@@ -218,7 +238,10 @@ pub fn create_system<K: 'static>(notify: Box<dyn Fn(&K)>) -> Rc<dyn Fn(&K)> {
 ```
 
 ```js
+import { $checkCallback } from "@rust-js/std";
+
 export function createSystem(notify) {
+  $checkCallback(notify, "createSystem(notify)");
   let count = 0;
 
   function propagate(node) {
@@ -639,7 +662,10 @@ pub fn doubler() -> Doubler {
 ```
 
 ```js
+import { $checkU32 } from "@rust-js/std";
+
 export function thenable(k) {
+  $checkU32(k, "thenable(k)");
   return {
     then(n) {
       const sum = (n + k) >>> 0;
@@ -678,9 +704,15 @@ pub fn equal(a: &User, b: &User) -> bool {
 ```
 
 ```js
-import { $eq } from "@rust-js/std";
+import { $checkArray, $checkShape, $checkStr, $checks, $eq } from "@rust-js/std";
+
+const checkUser = /* @__PURE__ */ $checkShape(() => ({
+  name: $checkStr,
+  tags: (value, where, none) => $checkArray(value, where, none, $checkStr),
+}));
 
 export function renamed(user) {
+  $checks("renamed(user)", user, checkUser);
   const copy = { ...user, tags: user.tags.slice() };
   copy.name += "!";
   copy.tags.push("copy");
@@ -688,6 +720,7 @@ export function renamed(user) {
 }
 
 export function equal(a, b) {
+  $checks("equal(a, b)", a, checkUser, b, checkUser);
   return $eq(a, b);
 }
 ```
@@ -756,7 +789,9 @@ pub fn show(p: Point) -> String {
 ```
 
 ```js
-import { $debugF64, $displayF64 } from "@rust-js/std";
+import { $checkF64, $checkShape, $checks, $debugF64, $displayF64 } from "@rust-js/std";
+
+const checkPoint = /* @__PURE__ */ $checkShape(() => ({ x: $checkF64, y: $checkF64 }));
 
 function pointDebug_fmt(point) {
   return `Point { x: ${$debugF64(point.x)}, y: ${$debugF64(point.y)} }`;
@@ -775,12 +810,14 @@ function pointDisplay_fmt(point) {
 }
 
 export function moved(p) {
+  $checks("moved(p)", p, checkPoint);
   const q = { ...p };
   q.x++;
   return pointAdd_add({ ...q }, { x: 0, y: 0 });
 }
 
 export function show(p) {
+  $checks("show(p)", p, checkPoint);
   return `${pointDisplay_fmt(p)} is ${pointDebug_fmt(p)}`;
 }
 ```
@@ -820,9 +857,10 @@ pub fn work(fail: bool) -> u32 {
 ```
 
 ```js
-import { $live, $panic, $unwindsOn } from "@rust-js/std";
+import { $checkBool, $live, $panic, $unwindsOn } from "@rust-js/std";
 
 export function work(fail) {
+  $checkBool(fail, "work(fail)");
   const name = "outer";
   const name$1 = "inner";
   try {
@@ -873,11 +911,17 @@ pub fn close(connection: Connection) {
 ```
 
 ```js
+import { $checkShape, $checkU32, $checks } from "@rust-js/std";
+
+const checkConnection = /* @__PURE__ */ $checkShape(() => ({ id: $checkU32 }));
+
 export function open(id) {
+  $checkU32(id, "open(id)");
   return { id };
 }
 
 export function close(connection) {
+  $checks("close(connection)", connection, checkConnection);
   console.log(`closing ${connection.id}`);
   console.log(`closed ${connection.id}`);
 }
@@ -919,11 +963,12 @@ pub fn nested(work: impl FnOnce() -> u32) -> u32 {
 ```
 
 ```js
-import { $live, $unwindsOn } from "@rust-js/std";
+import { $checkCallback, $checkU32, $live, $unwindsOn } from "@rust-js/std";
 
 let depth = 0;
 
 export function nested(work) {
+  work = $checkCallback(work, "nested(work)", $checkU32);
   const previous = depth;
   depth = (previous + 1) >>> 0;
   try {
@@ -984,7 +1029,7 @@ pub fn evens(limit: u32) -> impl Iterator<Item = u32> {
 ```
 
 ```js
-import { $iterator, $rangeNext, iterator_filter } from "@rust-js/std";
+import { $checkU32, $iterator, $rangeNext, iterator_filter } from "@rust-js/std";
 
 function countdownIterator_next(countdown) {
   if (countdown.from === 0) {
@@ -1009,6 +1054,7 @@ export function sumCountdown() {
 }
 
 export function evens(limit) {
+  $checkU32(limit, "evens(limit)");
   return iterator_filter({ start: 0, end: limit }, (n) => n % 2 === 0, { next: $rangeNext });
 }
 ```

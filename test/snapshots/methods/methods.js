@@ -4,8 +4,14 @@
 // them named after the type (ADR 0047). `counter.tick()` is
 // `Counter.tick(counter)`.
 
+import { $checkI32, $checkOneOf, $checkShape, $checkTuple, $checkU32, $checks } from "@rust-js/std";
+
 export const Counter = {
   new(step) {
+    $checkU32(step, "Counter.new(step)");
+    return Counter.new$(step);
+  },
+  new$(step) {
     return { count: 0, step };
   },
 
@@ -15,19 +21,31 @@ export const Counter = {
 
   /** `&mut self`: the object itself changes. */
   tick(counter) {
+    $checks("Counter.tick(counter)", counter, checkCounter);
+    return Counter.tick$(counter);
+  },
+  tick$(counter) {
     counter.count = (counter.count + counter.step) >>> 0;
   },
 
   /** `&self`, and `Self` for the type. */
   ticked(counter, times) {
+    $checks("Counter.ticked(counter, times)", counter, checkCounter, times, $checkU32);
+    return Counter.ticked$(counter, times);
+  },
+  ticked$(counter, times) {
     const next = { count: counter.count, step: counter.step };
     for (let i = 0; i < times; i++) {
-      Counter.tick(next);
+      Counter.tick$(next);
     }
     return next;
   },
 
   value(counter) {
+    $checks("Counter.value(counter)", counter, checkCounter);
+    return Counter.value$(counter);
+  },
+  value$(counter) {
     return counter.count;
   },
 };
@@ -35,44 +53,70 @@ export const Counter = {
 export const Light = {
   /** `self` by value. */
   next(light) {
+    $checkOneOf(light, ["Red", "Green"], "Light.next(light)");
+    return Light.next$(light);
+  },
+  next$(light) {
     return light === "Red" ? "Green" : "Red";
   },
 
   isGo(light) {
+    $checkOneOf(light, ["Red", "Green"], "Light.isGo(light)");
+    return Light.isGo$(light);
+  },
+  isGo$(light) {
     return light === "Green";
   },
 };
 
 export const Pair = {
   new(a, b) {
+    $checks("Pair.new(a, b)", a, $checkI32, b, $checkI32);
+    return Pair.new$(a, b);
+  },
+  new$(a, b) {
     return [a, b];
   },
 
   sum(pair) {
+    $checks("Pair.sum(pair)", pair, checkPair);
+    return Pair.sum$(pair);
+  },
+  sum$(pair) {
     return (pair[0] + pair[1]) | 0;
   },
 };
 
+const checkCounter = /* @__PURE__ */ $checkShape(() => ({ count: $checkU32, step: $checkU32 }));
+
+function checkPair(value) {
+  $checkTuple(value, undefined, undefined, [$checkI32, $checkI32]);
+}
+
 export function counted(step, times) {
-  return Counter.value(Counter.ticked(Counter.new(step), times));
+  $checks("counted(step, times)", step, $checkU32, times, $checkU32);
+  return Counter.value$(Counter.ticked$(Counter.new$(step), times));
 }
 
 export function ticking(step) {
-  const counter = Counter.new(step);
-  Counter.tick(counter);
-  Counter.tick(counter);
-  return Counter.value(counter);
+  $checkU32(step, "ticking(step)");
+  const counter = Counter.new$(step);
+  Counter.tick$(counter);
+  Counter.tick$(counter);
+  return Counter.value$(counter);
 }
 
 export function lights(n) {
+  $checkU32(n, "lights(n)");
   let light = "Red";
   for (let i = 0; i < n; i++) {
-    light = Light.next(light);
+    light = Light.next$(light);
   }
-  return Light.isGo(light);
+  return Light.isGo$(light);
 }
 
 export function pairSum(a, b) {
-  return (Pair.sum(Pair.new(a, b)) + (Counter.defaultStep() | 0)) | 0;
+  $checks("pairSum(a, b)", a, $checkI32, b, $checkI32);
+  return (Pair.sum$(Pair.new$(a, b)) + (Counter.defaultStep() | 0)) | 0;
 }
 //# sourceMappingURL=methods.js.map

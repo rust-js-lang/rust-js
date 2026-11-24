@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target, wrapsProved } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -46,7 +47,7 @@ pub fn zeros() -> f64 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export const OWNER_STACK_LIMIT = 1e4;");
   expect(js).toContain("export const SEED = 0x811c9dc5;");
   expect(js).toContain("return n & 0xff;");
@@ -76,7 +77,7 @@ pub const BITS: u8 = 0b1 << 3 | 0x1;
 pub const ORDER: u32 = 1 | 2 << 2;
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export const IS_NON_DELEGATED = 1 << 1;");
   expect(js).toContain("export const IS_CAPTURE_PHASE = 1 << 2;");
   expect(js).toContain("export const HIGH = 2147483648;");
@@ -121,7 +122,7 @@ pub fn steps(items: &[u32], counter: &mut Counter, counts: &mut [f64], i: usize)
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("    j++;\n");
   expect(js).toContain("  t++;\n  t--;\n");
   expect(js).toContain("  counter.hits++;\n");
@@ -168,7 +169,7 @@ pub fn all(flags: &[bool]) -> Vec<i8> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return flag ? 1 : 0;");
   expect(js).toContain("return flag ? 1n : 0n;");
   expect(js).toContain("return c.codePointAt(0);");
@@ -229,7 +230,7 @@ pub fn lent(n: u8) -> u8 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  return index;\n}");
   expect(js).toContain("export function unchecked(line, word) {\n  const index = line.indexOf(word);\n  return $f64ToInt(index, 0, 4294967295);\n}");
   expect(js).toContain("  index = -1;\n  return $f64ToInt(index, 0, 4294967295);\n}");
@@ -316,7 +317,7 @@ pub fn shrunk(mut items: Vec<u32>) -> u32 {
 }
 `);
   expect(wrapsProved(dir)).toEqual([]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   for (const read of ["items[0]", "items[1]", "items[i]", "items[i] + items[0]"]) expect(js).toContain(read);
   expect(js).toContain("$index(items, 2, \"lib.rs:25:26\")");
   expect(js).toContain("$index(items, 0, \"lib.rs:33:10\")");
@@ -344,7 +345,7 @@ pub fn second(names: &Vec<String>) -> &str {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return xs[0];");
   expect(js).toContain("return names[1];");
   const lib = await import(join(dir, "lib.js"));
@@ -367,7 +368,7 @@ pub fn negated(x: i32) -> i32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("return (x / HALVES) >>> 0;");
   expect(js).toContain("$div(x, NEGATIVE, \"lib.rs:9:5\", -2147483648)");
   const lib = await import(join(dir, "mir.js"));
@@ -389,7 +390,7 @@ pub fn set(xs: &mut [u32], i: usize) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  return crumbs.length > 1 && crumbs[crumbs.length - 1].path == path;\n");
   expect(js).toContain("  return ($index(xs, 1, \"lib.rs:6:5\") + 1) >>> 0;\n");
   expect(js).toContain("  xs[$at(xs, i, \"lib.rs:9:5\")] = 3;\n");
@@ -416,7 +417,7 @@ pub fn code(c: Color) -> i32 {
   const lib = await import(join(dir, "mir.js"));
   expect([lib.order("abc", "abd"), lib.order("b", "a"), lib.code("Red"), lib.code("Green"), lib.code("Blue")]).toEqual([-1, 1, 0, 5, 6]);
   // The discriminant itself, not a test of each variant's.
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("return $cmp(a, b);");
   expect(js).toContain("return { Red: 0, Green: 5, Blue: 6 }[c];");
 });
@@ -478,7 +479,7 @@ pub fn bump(m: &mut Money) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("export function bump(m) {\n  m.cents = BigInt.asIntN(64, m.cents + 1n);\n}");
   const lib = await import(join(dir, "mir.js"));
   const m = { cents: 9223372036854775807n };
@@ -507,7 +508,7 @@ pub fn by(a: i32, b: i32) -> i32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain(`    if (i % 2 === 0) {
       continue;
     }
@@ -536,7 +537,7 @@ pub fn put(args: &mut Vec<String>, i: usize, made: impl Fn() -> String) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   // One the length's test shows in bounds is set as it is (ADR 0576).
   expect(js).toContain('    args[0] = "HTML";\n');
   expect(js).toMatch(/  args\[\$at\(args, i, "lib\.rs:7:9"\)\] = \w+;\n}/);
@@ -560,7 +561,7 @@ pub fn column(line: &str, substr: &str) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("return (index + substr.length) >>> 0;");
   const lib = await import(join(dir, "mir.js"));
   expect(lib.column("abcd", "cd")).toBe(4);
@@ -576,7 +577,7 @@ test("a slice to a computed end from MIR reads the end where it's used", async (
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("$copyOf(segments, 0, \"lib.rs:2:13\", Math.max(segments.length - 1, 0))");
+  expect(withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"))).toContain("$copyOf(segments, 0, \"lib.rs:2:13\", Math.max(segments.length - 1, 0))");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.crumbs(["a", "b", "c"]), lib.crumbs([])]).toEqual([["a", "b"], []]);
 });
@@ -617,7 +618,7 @@ pub fn popped(v: &mut Vec<u8>) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  if (n <= -1) {\n    return "negative";\n  }\n');
   expect(js).toContain("return n >= 200;");
   expect(js).toContain("return n <= -10n;");
@@ -645,7 +646,7 @@ test("a range pattern's bounds are one test", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  if (score >= 90 && score <= 100) {\n    return "A";\n  }\n  if (score >= 80 && score <= 89) {\n');
   const lib = await import(join(dir, "lib.js"));
   expect([100, 90, 89, 80, 79, 101].map(lib.grade)).toEqual(["A", "A", "B", "B", "F", "F"]);
@@ -702,7 +703,7 @@ pub fn reversed_less(a: Reversed, b: Reversed) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  return a !== 0 && a < b;\n");
   expect(js).toContain("  return a >= b;\n");
   expect(js).toContain("export function before(a, b) {\n  return a < b;\n");
@@ -730,7 +731,7 @@ pub fn scrolled(window: &webapi::Window) -> f64 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  return point.x * point.x;\n");
   expect(js).toContain("  return $powi(window.scrollY, 2);\n");
 });

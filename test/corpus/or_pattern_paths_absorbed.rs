@@ -1,3 +1,4 @@
+//@ library-differs
 // A match's arm reached by paths alike but for one value's test is one
 // path, that value's test of either's values (#631): `(0, 0) => ..,
 // (1, _) | (_, 1) => ..` is `if (a === 0 && b === 0) { .. } else if (a ===

@@ -8,16 +8,18 @@
 // `this._debugInfo` (ADRs 0846, 0879, amended, rd515). A `mut` parameter
 // given another value after keeps its clone's name.
 
-import { $main } from "@rust-js/std";
+import { $checkCallback, $checkStr, $main } from "@rust-js/std";
 
 export class Chunk {
   constructor(info) {
+    $checkStr(info, "Chunk.new(info)");
     this.info = info;
     this.seen = 0;
   }
 
   // The executor borrows `self`; each callback it makes holds a clone.
   watch(run) {
+    $checkCallback(run, "Chunk.watch(run)");
     const made = [];
     let calls = 0;
     run((prefix) => {

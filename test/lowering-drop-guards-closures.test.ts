@@ -8,6 +8,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -16,7 +17,7 @@ function compiled(name: string, rust: string): { js: string; dir: string } {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), dir };
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), dir };
 }
 
 // React's ReactFiberCallUserSpace, ported: a closure coerced to a `fn` in a

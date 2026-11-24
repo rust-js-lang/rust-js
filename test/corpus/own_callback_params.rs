@@ -1,3 +1,4 @@
+//@ library-differs
 // A `dyn Fn` parameter of a function only the crate's calls reach, which
 // each of those calls fills with a function of the crate's or a closure,
 // through what makes it, an `Rc` of it or that `Rc`'s clone, or another

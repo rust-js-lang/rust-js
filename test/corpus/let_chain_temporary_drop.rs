@@ -1,3 +1,4 @@
+//@ library-differs
 // A let chain whose first test makes a temporary with a destructor,
 // dropped where Rust drops it, whichever branch runs.
 pub struct D(u32);

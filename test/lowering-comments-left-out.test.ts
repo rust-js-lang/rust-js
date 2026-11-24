@@ -7,6 +7,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, fixture, run } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 /** `rust` compiled in a fixture of `name`: its JS, its `.d.ts` and its module. */
 async function compiled(
@@ -16,7 +17,7 @@ async function compiled(
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   return { js, declarations, lib: await import(join(dir, "lib.js")) };
 }

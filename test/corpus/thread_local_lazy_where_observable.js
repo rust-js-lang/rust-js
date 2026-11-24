@@ -17,6 +17,8 @@
 import {
   $borrowMut,
   $cellReplace,
+  $checkF64,
+  $checkResult,
   $displayF64,
   $local,
   $main,
@@ -109,7 +111,7 @@ const FOUND = $local(() => $nullableCell(noneOf(lenNow())));
 const setFirst = $local(() => $nullableCell(noneOf(lenNow())));
 // Made as its module loads.
 let fixed = 7;
-const BIGGER = Math.max(1, 2);
+const BIGGER = $checkResult(Math.max(1, 2), "Math.max", $checkF64);
 const bump = makeBump();
 const END = prefixed("end");
 const START = prefixed("start");

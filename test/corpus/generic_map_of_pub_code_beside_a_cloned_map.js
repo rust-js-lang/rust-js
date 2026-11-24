@@ -8,6 +8,9 @@
 // a cloned `Chain` of a slice's items (#1002).
 
 import {
+  $checkCallback,
+  $checkI32,
+  $checkU32,
   $count,
   $foldBack,
   $foldToArray,
@@ -37,6 +40,7 @@ import {
 } from "@rust-js/std";
 
 export function tripledBack(items, f) {
+  f = $checkCallback(f, "tripledBack(f)", $checkU32);
   items = Array.isArray(items) ? $iter(items) : items;
   return $foldBack(
     $mapEnds(items, (item) => f(item)),
@@ -55,6 +59,7 @@ export function chainedBack(a, b) {
 }
 
 export function mapped(items, f, IIterator) {
+  f = $checkCallback(f, "mapped(f)", $checkI32);
   return iterator_map(items, f, IIterator);
 }
 

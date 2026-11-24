@@ -120,8 +120,10 @@ pub fn Rows() -> JSX::Element {
 
 ```jsx
 import { memo } from "react";
+import { $checkStr, $checkU32, $checks } from "@rust-js/std";
 
 export function Row({ id, label }) {
+  $checks("Row(props.id, props.label)", id, $checkU32, label, $checkStr);
   return <li data-id={id}>{label}</li>;
 }
 
@@ -216,8 +218,10 @@ pub fn Screen() -> JSX::Element {
 
 ```jsx
 import { useImperativeHandle, useRef } from "react";
+import { $checkStr } from "@rust-js/std";
 
 export function Field({ label, ref }) {
+  $checkStr(label, "Field(props.label)");
   return (
     <label>
       {label}
@@ -227,6 +231,7 @@ export function Field({ label, ref }) {
 }
 
 export function Player({ src, ref }) {
+  $checkStr(src, "Player(props.src)");
   const video = useRef(undefined);
   useImperativeHandle(
     ref,

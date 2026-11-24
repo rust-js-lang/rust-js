@@ -6,6 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -19,7 +20,7 @@ async function compiled(
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags, "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  return { js: readFileSync(join(dir, "lib.js"), "utf8"), lib: await import(join(dir, "lib.js")) };
+  return { js: withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8")), lib: await import(join(dir, "lib.js")) };
 }
 
 // React's addValueToProperties pushes `[prefix + '\xa0\xa0'.repeat(indent)
@@ -445,7 +446,7 @@ pub fn chosen(flag: bool) -> String {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  return both(tags.link, tmp);\n");
   expect(js).not.toContain("= tags.link");
   const lib = await import(join(dir, "lib.js"));

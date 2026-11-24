@@ -463,6 +463,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 fn merge(into: &mut Dependencies, uses: &Dependencies, item: DefId) {
     into.references.extend(uses.references.iter().copied());
     into.copy_references.extend(uses.copy_references.iter().copied());
+    into.unchecked_references
+        .extend(uses.unchecked_references.iter().copied());
+    into.checkers
+        .extend(uses.checkers.iter().map(|(did, checker)| (*did, checker.clone())));
     into.through_copies.extend(uses.through_copies.iter().copied());
     into.package_uses.extend(uses.package_uses.iter().cloned());
     into.uses.extend(uses.uses.iter().map(|&(_, to)| (item, to)));

@@ -15,6 +15,7 @@ import { compatRefused } from "../tooling/cargo.js";
 import { compatCrates, writePatch } from "../tooling/patch.js";
 import { buildCompiler, fixture, root } from "./support";
 import { answer, app, build, config, git, gitCrate, usesWasmBindgen } from "./compat";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -38,7 +39,7 @@ test("a dependency's wasm-bindgen is rust-js's own, named while the graph has on
   // Each of rust-js's, of no registry.
   const lock = readFileSync(join(at, "Cargo.lock"), "utf8");
   for (const name of ["js-sys", "wasm-bindgen", "wasm-bindgen-macro"]) expect(lock).toMatch(new RegExp(`name = "${name}"\\nversion = "[^"]*"\\n(?!source)`));
-  expect(readFileSync(join(at, "src", "lib.js"), "utf8")).toContain("answer");
+  expect(withoutBoundary(readFileSync(join(at, "src", "lib.js"), "utf8"))).toContain("answer");
   // An app's own crate that depends on one: refused, the patch there.
   writeFileSync(join(at, "Cargo.toml"), readFileSync(join(at, "Cargo.toml"), "utf8").replace("\n\n[workspace]", '\nwasm-bindgen = "0.2"\n\n[workspace]'));
   const own = build(at);

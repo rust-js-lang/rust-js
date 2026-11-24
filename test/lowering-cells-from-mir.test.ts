@@ -8,6 +8,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -36,7 +37,7 @@ pub fn lent() -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain(`export function counter(f) {
   let n = 0;
   f(() => {
@@ -80,7 +81,7 @@ pub fn remember(f: &dyn Fn(&dyn Fn(u32))) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("let count = 0;\nconst SEEN = false;\n");
   expect(js).toContain("let last = 0;\n");
   expect(js).toContain("  count = (count + 1) >>> 0;\n  return count;\n");
@@ -112,7 +113,7 @@ pub fn count(node: &Node) -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("    const node = { item: i, children: [] };\n    root.children.push(node);\n");
   expect(js).toContain("  if (node.children.length < 2) {\n    return 0;\n  }\n  return node.children.length;\n");
   const lib = await import(join(dir, "mir.js"));
@@ -141,7 +142,7 @@ pub fn retitle(error: &E) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("export function show(error) {\n  const { message, title } = error;\n");
   const lib = await import(join(dir, "mir.js"));
   const error = { title: "T", message: "m" };
@@ -174,8 +175,8 @@ pub fn pair() -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("  bump(t) {\n    t.n = (t.n + 1) >>> 0;\n    return t.n;\n  },");
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("  return `${value[0]} ${value[1]}`;");
+  expect(withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"))).toContain("  bump(t) {\n    t.n = (t.n + 1) >>> 0;\n    return t.n;\n  },");
+  expect(withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"))).toContain("  return `${value[0]} ${value[1]}`;");
   expect((await import(join(dir, "mir.js"))).run()).toBe(2);
   expect((await import(join(dir, "mir.js"))).pair()).toBe("11 22");
 });

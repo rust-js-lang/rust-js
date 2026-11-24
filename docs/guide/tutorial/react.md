@@ -158,7 +158,15 @@ pub fn Badges() -> JSX::Element {
 ```
 
 ```jsx
+import { $checkShape, $checkStr, $checks } from "@rust-js/std";
+
+const checkBadgeProps = /* @__PURE__ */ $checkShape(() => ({
+  text: $checkStr,
+  color: [$checkStr, "nullish"],
+}));
+
 export function Badge(props) {
+  $checks("Badge(props)", props, checkBadgeProps);
   const className = props.color ?? "gray";
   return (
     <span className={className}>

@@ -11,7 +11,7 @@ fn payload() -> String {
 }
 
 /// `Ok`'s name as a `Result`'s `TAG` holds it, or `Err`'s where `ok` isn't.
-fn name(ok: bool) -> &'static str {
+pub fn name(ok: bool) -> &'static str {
     if ok { "Ok" } else { "Err" }
 }
 

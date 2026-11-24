@@ -3,9 +3,19 @@
 // `Option`: `Some(x)` is `x` itself and `None` is `undefined`, as in
 // ReScript (ADR 0030). A JS `null` counts as `None` too.
 
-import { $eq, $unwrap } from "@rust-js/std";
+import { $checkI32, $checkShape, $checkU32, $checks, $eq, $unwrap } from "@rust-js/std";
+
+const checkSlot = /* @__PURE__ */ $checkShape(() => ({
+  id: $checkU32,
+  value: [$checkI32, "nullish"],
+}));
 
 export function half(n) {
+  $checkI32(n, "half(n)");
+  return half$(n);
+}
+
+function half$(n) {
   if (n % 2 === 0) {
     return (n / 2) | 0;
   }
@@ -13,6 +23,7 @@ export function half(n) {
 
 /** `match`, with patterns inside `Some`, and a guard. */
 export function describe(o) {
+  $checkI32(o, "describe(o)", "nullish");
   if (o != null) {
     if (o === 0) {
       return 100;
@@ -27,15 +38,17 @@ export function describe(o) {
 
 /** `if let`, and its `else`. */
 export function halfOrZero(n) {
-  const h = half(n);
+  $checkI32(n, "halfOrZero(n)");
+  const h = half$(n);
   return h ?? 0;
 }
 
 /** `while let`. */
 export function halvings(n) {
+  $checkI32(n, "halvings(n)");
   let count = 0;
   let h;
-  while ((h = half(n)) != null) {
+  while ((h = half$(n)) != null) {
     if (h === 0) {
       break;
     }
@@ -46,45 +59,54 @@ export function halvings(n) {
 }
 
 export function methods(n) {
-  const h = half(n);
+  $checkI32(n, "methods(n)");
+  const h = half$(n);
   return [h != null, h == null, h ?? -1];
 }
 
 export function unwrapped(n) {
-  return $unwrap(half(n), "examples/options.rs:44:13");
+  $checkI32(n, "unwrapped(n)");
+  return $unwrap(half$(n), "examples/options.rs:44:13");
 }
 
 export function expected(n) {
-  return $unwrap(half(n), "examples/options.rs:48:13", "an even number");
+  $checkI32(n, "expected(n)");
+  return $unwrap(half$(n), "examples/options.rs:48:13", "an even number");
 }
 
 /** `unwrap_or` evaluates its argument even when it isn't needed. */
 export function eager(n) {
+  $checkI32(n, "eager(n)");
   let calls = 0;
   function bump() {
     calls = (calls + 1) | 0;
     return 7;
   }
-  const option = half(n);
+  const option = half$(n);
   const fallback = bump();
   const v = option ?? fallback;
   return [v, calls];
 }
 
 export function fill(slot, n) {
-  return { ...slot, value: half(n) };
+  $checks("fill(slot, n)", slot, checkSlot, n, $checkI32);
+  return { ...slot, value: half$(n) };
 }
 
 export function same(a, b) {
+  $checkI32(a, "same(a)", "nullish");
+  $checkI32(b, "same(b)", "nullish");
   return a == b;
 }
 
 export function sameSlots(a, b) {
+  $checks("sameSlots(a, b)", a, checkSlot, b, checkSlot);
   return $eq(a, b);
 }
 
 /** A string inside. */
 export function label(n) {
+  $checkI32(n, "label(n)");
   const name = n > 0 ? String(n) : undefined;
   return name !== undefined ? name + "!" : "none";
 }
@@ -101,10 +123,11 @@ function pair(n) {
 
 /** `map`: the closure runs on the value, for `Some` only. */
 export function mapped(n) {
-  const h = half(n);
-  const h$1 = half(n);
+  $checkI32(n, "mapped(n)");
+  const h = half$(n);
+  const h$1 = half$(n);
   const map = h != null ? double(h) : undefined;
-  const h$2 = half(n);
+  const h$2 = half$(n);
   const x = h$2 != null ? (h$2 + 1) | 0 : undefined;
   return [
     h$1 != null ? (h$1 + 1) | 0 : undefined,
@@ -116,8 +139,9 @@ export function mapped(n) {
 
 /** `map` with a closure of statements, and with a pattern for its parameter. */
 export function mappedMore(n) {
+  $checkI32(n, "mappedMore(n)");
   let calls = 0;
-  const h = half(n);
+  const h = half$(n);
   function map(h) {
     calls = (calls + 1) >>> 0;
     return (h - 1) | 0;
@@ -126,7 +150,7 @@ export function mappedMore(n) {
   const option = pair(n);
   const value = option != null ? Math.imul(option[0], option[1]) : undefined;
   const get = calls;
-  const option$1 = half(n);
+  const option$1 = half$(n);
   return [value, counted, get, option$1 != null ? 7 : undefined];
 }
 
@@ -135,18 +159,20 @@ export function mappedMore(n) {
  * condition reads what the `let` bound.
  */
 export function chained(n) {
-  const h = half(n);
+  $checkI32(n, "chained(n)");
+  const h = half$(n);
   return h != null && h > 2 ? h : -1;
 }
 
 /** A `let` after another is only computed if everything before it held. */
 export function chainedTwice(n) {
+  $checkI32(n, "chainedTwice(n)");
   let calls = 0;
   function counted(m) {
     calls = (calls + 1) >>> 0;
-    return half(m);
+    return half$(m);
   }
-  const h = half(n);
+  const h = half$(n);
   let v = 0;
   if (h) {
     const q = counted(h);
@@ -159,12 +185,13 @@ export function chainedTwice(n) {
 
 /** An `else` of more than one statement, reached from each level by a label. */
 export function chainedLongElse(n) {
+  $checkI32(n, "chainedLongElse(n)");
   let calls = 0;
   function counted(m) {
     calls = (calls + 1) | 0;
-    return half(m);
+    return half$(m);
   }
-  const h = half(n);
+  const h = half$(n);
   if (h != null) {
     const q = counted(h);
     if (q != null && q > 1) {
@@ -177,8 +204,9 @@ export function chainedLongElse(n) {
 
 /** Without an `else`, and binding a tuple. */
 export function chainedStatement(n) {
+  $checkI32(n, "chainedStatement(n)");
   let total = 0;
-  const h = half(n);
+  const h = half$(n);
   if (h != null) {
     const value = h > 0 ? [h, (h + 1) | 0] : undefined;
     if (value !== undefined && value[0] < 10) {
@@ -192,9 +220,10 @@ export function chainedStatement(n) {
 
 /** `while let` with a chain. */
 export function chainedLoop(n) {
+  $checkI32(n, "chainedLoop(n)");
   let count = 0;
   while (true) {
-    const h = half(n);
+    const h = half$(n);
     if (h == null || h === 0) {
       break;
     }

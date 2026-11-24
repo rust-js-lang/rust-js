@@ -13,8 +13,16 @@ pub(super) fn module(module: &mut js::Module) {
     // Each item's locals first, then the imports of what's left: an import
     // given apart from a local the item reclaims, `add$2` of a closure's
     // `add$1` that's `add` now, is `add$1` (ADR 1150).
+    // The module's own items' words, a split function's entry among them.
+    let own: IndexSet<String> = (module.items.iter())
+        .filter_map(|item| match item {
+            js::Item::Function(function) => Some(&function.name),
+            _ => item.declared_name(),
+        })
+        .map(|name| name.word().to_string())
+        .collect();
     for item in &mut module.items {
-        locals(item);
+        locals(item, &own);
     }
     aliased_imports(module);
     imports(module);
@@ -380,7 +388,7 @@ fn apart_by_variable(item: &mut js::Item) {
 /// made of it: written after each, a function of four thousand lines with
 /// six hundred such names took 60 ms being walked, and as long again in
 /// the tree.
-fn locals(item: &mut js::Item) {
+fn locals(item: &mut js::Item, own: &IndexSet<String>) {
     // Each variable spelled apart only where its item has scopes to reclaim
     // it in, else as it was.
     let mut apart = item.clone();
@@ -431,6 +439,24 @@ fn locals(item: &mut js::Item) {
         }
     });
     declared.sort_by_key(|local| (!programs.contains(local.word()), !arrows.contains(local.word())));
+    // Each of the module's own entries whose split body the item reads,
+    // `label` of `label$(false)`: a word it reads, as it read the entry's
+    // before the split, so no local reclaims it (#2403, ADR 1193).
+    // Never of its own name, a body's, `contentSegment$`, which never calls
+    // its entry: its local reclaims that word, as main's did.
+    let itself = match &*item {
+        js::Item::Function(function) => Some(function.name.word().to_string()),
+        _ => None,
+    };
+    let mut entries_read: IndexSet<String> = IndexSet::default();
+    names_mut(item, true, &mut |name| {
+        if itself.as_deref() != Some(name.word())
+            && let Some(entry) = name.word().strip_suffix('$')
+            && own.contains(entry)
+        {
+            entries_read.insert(entry.to_string());
+        }
+    });
     for local in declared {
         // As it's spelled now, of one given way above.
         let now = renamed
@@ -443,7 +469,7 @@ fn locals(item: &mut js::Item) {
         let suffix: usize = now[base.len() + 1..].parse().unwrap_or(0);
         let Some(to) = std::iter::once(base.to_string())
             .chain((1..suffix).map(|i| crate::names::given_apart(base, i)))
-            .find(|to| tree.renames(&now, to))
+            .find(|to| !entries_read.contains(to) && tree.renames(&now, to))
         else {
             continue;
         };

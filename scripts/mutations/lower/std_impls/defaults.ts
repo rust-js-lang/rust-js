@@ -117,8 +117,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a derived `Default` of props with a flattened field nests it, `{ anchor: {} }`",
     file: "crates/rust-js-lower/src/std_impls/defaults.rs",
-    find: "                    Self::in_turn(self.flattened_object(Expr::object(props), ty), made)\n",
-    replace: "                    Self::in_turn(Expr::object(props), made)\n",
+    find: "                    let object = self.flattened_object(Expr::object(props), ty);\n",
+    replace: "                    let object = Expr::object(props);\n",
     tests: [
       "test/jsx-props.test.ts",
       "-t",
@@ -225,5 +225,13 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^range_defaults with std's iterator structs$"],
     env: { ITERATOR_FORMS: "corpus" },
+  },
+  {
+    name: "default-unbranded",
+    breaks: "a derived `Default` of a sealed struct isn't branded, so Rust refuses its own `Temperature::default()` (#2403 step 2c)",
+    file: "crates/rust-js-lower/src/std_impls/defaults.rs",
+    find: "                    Self::in_turn(self.branded(ty, object), made)",
+    replace: "                    Self::in_turn(object, made)",
+    tests: ["test/boundary-brands.test.ts", "-t", "a derived Default's, a Clone's"],
   },
 ];

@@ -5,27 +5,32 @@
 // `!!`, as JS writes it; and so is a read of its own `bool` field,
 // `this.open || this.below(x)`.
 
-import { $main } from "@rust-js/std";
+import { $checkF64, $main } from "@rust-js/std";
 
 export class Bound {
   constructor(limit) {
+    $checkF64(limit, "Bound.new(limit)");
     this.limit = limit;
     this.open = false;
   }
 
   below(x) {
+    $checkF64(x, "Bound.below(x)");
     return x < this.limit;
   }
 
   same(x) {
+    $checkF64(x, "Bound.same(x)");
     return x === this.limit;
   }
 
   atMost(x) {
+    $checkF64(x, "Bound.atMost(x)");
     return this.below(x) || this.same(x);
   }
 
   openOrBelow(x) {
+    $checkF64(x, "Bound.openOrBelow(x)");
     return this.open || this.below(x);
   }
 

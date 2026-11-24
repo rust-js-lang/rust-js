@@ -6,6 +6,7 @@ import { buildReact, compiler, fixture, root, run, target } from "./support";
 import { LIBRARY_ABI, parseManifest } from "../tooling/manifest.js";
 import { channel } from "../scripts/toolchain.ts";
 import { underLoad } from "../scripts/timing";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -36,7 +37,7 @@ test("a real Cargo dependency links functions and function values into JS", asyn
   const javascript = () => Number(run([process.execPath, "--eval", `const m = await import(${JSON.stringify(output)}); console.log(m.run());`]));
   expect(javascript()).toBe(native());
   expect(javascript()).toBe(42);
-  const generated = readFileSync(join(dir, "js/app/nested/inner.js"), "utf8");
+  const generated = withoutBoundary(readFileSync(join(dir, "js/app/nested/inner.js"), "utf8"));
   expect(generated).toContain('../../shared/lib.js');
   const consumer = parseManifest(readFileSync(manifest, "utf8"));
   expect(consumer.sources).toContain(libraryManifest);
@@ -217,7 +218,7 @@ unsafe extern "Rust" {
   ]);
   // Its default alone, as upstream's `shared/assign` is, and every caller
   // reads it (ADR 0773): `pub` is how another crate names it.
-  expect(readFileSync(join(dir, "shared/assign.js"), "utf8")).toContain("\nconst assign = Object.assign;\n\nexport default assign;\n");
+  expect(withoutBoundary(readFileSync(join(dir, "shared/assign.js"), "utf8"))).toContain("\nconst assign = Object.assign;\n\nexport default assign;\n");
   expect(readFileSync(join(dir, "shared/assign.d.ts"), "utf8")).not.toContain("export const assign");
   mkdirSync(join(dir, "app"), { recursive: true });
   writeFileSync(join(dir, "app/lib.rs"), `use js::Unknown;
@@ -273,8 +274,8 @@ pub fn versioned() -> u32 {
   run([compiler, join(dir, "first/lib.rs"), "-o", first, "--dependency", libraryManifest, "--", "--crate-name", "first", "--extern", `shared=${metadata}`, ...extern]);
   // \`react\`'s where its binding is declared, after the functions above it
   // (ADR 1069).
-  expect(readFileSync(first, "utf8")).toContain('import ReactSharedInternals from "../shared/internals.js";\nimport assign from "../shared/assign.js";\n\nexport function internals() {');
-  expect(readFileSync(first, "utf8")).toContain('}\n\nimport { version } from "react";\n\nexport function versioned() {');
+  expect(withoutBoundary(readFileSync(first, "utf8"))).toContain('import ReactSharedInternals from "../shared/internals.js";\nimport assign from "../shared/assign.js";\n\nexport function internals() {');
+  expect(withoutBoundary(readFileSync(first, "utf8"))).toContain('}\n\nimport { version } from "react";\n\nexport function versioned() {');
   // A `use .. as` of one names its import as it renames it, cased as the
   // binding's own name is, as any alias is: react-markup's
   // `ReactSharedInternalsClient` (rd651).
@@ -311,7 +312,7 @@ pub fn merged<'a>(target: &'a Unknown, source: &Unknown) -> &'a Unknown {
 }
 `);
   run([compiler, join(dir, "own/lib.rs"), "-o", join(dir, "own/lib.js"), "--", "--crate-name", "own", "--crate-type", "lib", ...extern]);
-  expect(readFileSync(join(dir, "own/user.js"), "utf8")).toContain('import assign from "./held.js";\nimport { a } from "./aaa.js";\n');
+  expect(withoutBoundary(readFileSync(join(dir, "own/user.js"), "utf8"))).toContain('import assign from "./held.js";\nimport { a } from "./aaa.js";\n');
   writeFileSync(join(dir, "own/lib.rs"), "pub mod aaa;\npub mod held;\npub mod renamed;\npub mod user;\n");
   // And with the module's own function in one run of `use`s, one import
   // (rd649).
@@ -325,7 +326,7 @@ pub fn merged<'a>(target: &'a js::Unknown, source: &js::Unknown) -> &'a js::Unkn
 }
 `);
   run([compiler, join(dir, "own/lib.rs"), "-o", join(dir, "own/lib.js"), "--", "--crate-name", "own", "--crate-type", "lib", ...extern]);
-  const ownRenamed = readFileSync(join(dir, "own/renamed.js"), "utf8");
+  const ownRenamed = withoutBoundary(readFileSync(join(dir, "own/renamed.js"), "utf8"));
   expect(ownRenamed).toContain('import merge, { size } from "./held.js";\n');
   expect(ownRenamed).toContain("  return merge(target, source);\n");
   mkdirSync(join(dir, "node_modules/react"), { recursive: true });
@@ -418,7 +419,7 @@ impl Reconciler {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-name", "own", "--crate-type", "lib", ...extern]);
-  expect(readFileSync(join(dir, "reconciler.js"), "utf8")).toContain(
+  expect(withoutBoundary(readFileSync(join(dir, "reconciler.js"), "utf8"))).toContain(
     'export { createPortal } from "./portal.js";\nimport { a } from "./aaa.js";\n\n/** Found by its name. */\nexport { find } from "./selectors.js";\n\n',
   );
 }, underLoad(120_000));

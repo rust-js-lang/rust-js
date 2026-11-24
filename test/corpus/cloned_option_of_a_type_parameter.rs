@@ -1,3 +1,4 @@
+//@ library-differs
 // An `Option<&T>`'s `cloned()` of a type parameter's, whose clone is the
 // value itself, is the `Option` as it's written, `return items.at(-1);`,
 // not held in a `const` first to be read once (#587); of a closure, its

@@ -1,3 +1,4 @@
+//@ library-differs
 // A let chain of one binding used as a value, a `let`'s, a function's and a
 // thread-local's, each branch one value: its first tests, then what it binds
 // only where they hold, read once, then one branch (ADR 0870).

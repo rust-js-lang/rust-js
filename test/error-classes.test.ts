@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 import { es2022, type Setting, typeChecked } from "./type-checked";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -166,7 +167,7 @@ test("a class that implements js::ErrorClass is JS's own subclass of Error", asy
   const dir = fixture("error-classes");
   writeFileSync(join(dir, "lib.rs"), program);
   run([compiler, ...flags(dir)]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(upstream);
   expect(js).toContain("export class Plain extends Error {\n  constructor(message) {\n    super(message);\n  }\n}");
   writeFileSync(join(dir, "upstream.js"), upstream);

@@ -1,3 +1,4 @@
+//@ library-differs
 // A pattern's binding copied right after it, `let parent_object =
 // *parent_object;`, is the pattern's own: one destructuring, `const {
 // handler, parentObject, key, map, path } = reference;`, as React's

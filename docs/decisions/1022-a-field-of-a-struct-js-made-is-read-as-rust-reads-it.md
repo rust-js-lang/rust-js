@@ -646,3 +646,17 @@ plain form is unchanged.
 test/oracle-c.test.ts drops one through a counting proxy and reads `inner`
 once. The corpus's 113 cases of a `dyn` and a `Drop` are unchanged.
 Mutation `dyn-drop-pair-read-twice`.
+
+## Amendment: a check reads a field by its descriptor; an accessor's is unchecked (#2403, the lead's decision, 2026-11-24)
+
+A deep check that reads `object[key]` runs a getter, a read Rust never makes. `map(r)` given `r.snap`, a
+getter that gives an object and then `null`, saw `null` in its body after the check had read the object:
+it gave `undefined` where Rust gives `1`. That breaks ADR 1022's "read as often as Rust reads it", which ADR
+1087's getter-reads cases hold. Now the runtime's checkers, `$checkField`, `$checkTag` and `$checkCell`,
+read a field by its descriptor (`$checkRead`), its own or its prototypes'. An accessor's value is
+`$checkAccessor`: unchecked, read once by the body, as before the checks. Only data properties are
+checked. This is the limit the user decided of #1908, "accept and document the limit", not a change of
+results, which ADR 0262 forbids. A `Proxy` is checked by what its target holds, which is what Immer's drafts
+and Vue's reactive objects wrap, and a `get` trap that answers otherwise isn't seen. The getter-reads
+harness's changing answers are real accessors now, as JS writes a getter. Held by
+`test/getter-reads/js_given_options.rs` and `getter_enum_tag.rs`; the guide's semantics, 66.

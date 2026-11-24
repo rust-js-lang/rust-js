@@ -356,6 +356,7 @@ pub fn Tokens() -> JSX::Element {
   snapshot(dir, "nested-expressions");
   const output = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(output).toContain(`export function App(active) {
+  $checkBool(active, "App(active)");
   return (
     <main>
       <Card

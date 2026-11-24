@@ -6,10 +6,11 @@
 // `String`, a `dyn Display` too, and another `Display`'s `self.at.fmt(f)`
 // calls it. What Rust does with it is what it does natively.
 
-import { $byteLen, $formatted, $main } from "@rust-js/std";
+import { $byteLen, $checkI32, $checks, $formatted, $main } from "@rust-js/std";
 
 export class Position {
   constructor(row, column) {
+    $checks("Position.new(row, column)", row, $checkI32, column, $checkI32);
     this.row = row;
     this.column = column;
   }

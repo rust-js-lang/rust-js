@@ -173,4 +173,12 @@ export const mutations: Mutation[] = [
     replace: "                let _ = index;\n",
     tests: ["test/serde-attributes.test.ts", "-t", "untagged enum of rust-js's is its payload"],
   },
+  {
+    name: "serde-read-unbranded",
+    breaks: "a sealed struct serde reads isn't branded, so Rust refuses its own read `Temperature` (#2403 step 2c)",
+    file: "crates/rust-js-lower/src/serde/de.rs",
+    find: "        Ok(self.branded_wherever(ty, made))",
+    replace: "        Ok(made)",
+    tests: ["test/boundary-brands.test.ts", "-t", "one serde reads"],
+  },
 ];

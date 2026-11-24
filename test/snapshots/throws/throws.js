@@ -6,10 +6,11 @@
  * way. For the test in compiler.test.ts; it can't run as native Rust.
  */
 
-import { $settle, $try } from "@rust-js/std";
+import { $checkBool, $checkStr, $settle, $try } from "@rust-js/std";
 
 /** The numbers' sum, or what `JSON.parse` threw. */
 export function sumJson(json) {
+  $checkStr(json, "sumJson(json)");
   let numbers;
   try {
     numbers = JSON.parse(json);
@@ -26,6 +27,7 @@ export function sumJson(json) {
 
 /** `?` on a thrown error: it's an `Err` like any other. */
 export function firstTwice(json) {
+  $checkStr(json, "firstTwice(json)");
   const result = $try(() => JSON.parse(json));
   if (result.TAG === "Err") {
     return result;
@@ -42,6 +44,7 @@ export function firstTwice(json) {
 
 /** A rejected promise is an `Err` at its `.await`, not a throw. */
 export async function settled(fail) {
+  $checkBool(fail, "settled(fail)");
   const result = fail ? await $settle(Promise.reject("no")) : await $settle(Promise.resolve(7));
   if (result.TAG === "Ok") {
     const n = result._0;
@@ -57,6 +60,7 @@ export async function settled(fail) {
  * `URIError` on what isn't an encoded text: an `Err`.
  */
 export function uri(text) {
+  $checkStr(text, "uri(text)");
   const encoded = encodeURIComponent(text);
   const result = $try(() => decodeURIComponent(encoded));
   const decoded = result.TAG === "Err" ? { TAG: "Err", _0: String(result._0) } : result;
@@ -73,6 +77,7 @@ export function uri(text) {
  * wrong; `js::settle` makes its `.await` an `Err` of it.
  */
 export async function settleEither(fail) {
+  $checkBool(fail, "settleEither(fail)");
   const promise = fail ? Promise.reject("no") : Promise.resolve(8);
   const value = await $settle(promise);
   if (value.TAG === "Ok") {
@@ -89,6 +94,7 @@ export async function settleEither(fail) {
  * program can't check first (ADR 0442).
  */
 export function kept(key) {
+  $checkStr(key, "kept(key)");
   const result = $try(() => window.localStorage);
   const storage = result.TAG === "Ok" ? result._0 : undefined;
   if (storage == null) {

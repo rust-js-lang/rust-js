@@ -9,6 +9,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, fixture, run } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 // React's reconciler: a root JS makes, `FiberRootNode`, whose arrays a port
 // indexes, beside the port's generic `StackCursor<T>`; and fibers JS makes
@@ -92,7 +93,7 @@ pub fn detach(fiber: &Fiber) {
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const times = root.times;\n  times[$at(times, index, \"lib.rs:16:10\")] = 1;\n");
   expect(js).toContain("  const old = root.times;\n  root.times = [];\n  return old;\n");
   expect(js).toContain('  const current = $borrow($fieldCell(cursor, "current"), "lib.rs:41:20", true);\n');
@@ -161,7 +162,7 @@ pub fn unlink(fiber: &Fiber) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('  return $fieldCell(fiber, "return", true);\n');
   expect(js).toContain('  const sibling = $borrow($fieldCell(fiber, "sibling", true), "lib.rs:21:33", true);\n');
   const lib = await import(join(dir, "lib.js"));
@@ -239,7 +240,7 @@ pub fn get_parent_name(fiber: &Fiber) -> Option<String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const r = fiber.return;\n  if (r != null) {\n    return getComponentNameFromFiber(r);\n  }\n");
   expect(js).not.toContain("$borrow");
   const lib = await import(join(dir, "lib.js"));
@@ -278,7 +279,7 @@ pub fn get_component_name_from_fiber(fiber: &Fiber) -> Option<String> {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("$borrow");
   const lib = await import(join(dir, "lib.js"));
   const root = { tag: 9, name: "Root", return: null };
@@ -326,7 +327,7 @@ pub fn walked(node: &Fiber) -> u32 {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const { tag, type } = fiber;\n  return (((tag * 10) >>> 0) + type) >>> 0;\n");
   expect(js).toContain("  const tag = fiber.tag;\n  const type = fiber.type;\n  return (((tag * 10) >>> 0) + type) >>> 0;\n");
   expect(js).toContain("  const sibling = node.sibling;\n  const returnFiber = node.return;\n");
@@ -365,7 +366,7 @@ pub fn clone_update(update: &Update) -> Update {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  return {\n    lane: update.lane,\n    tag: update.tag,\n    payload: update.payload,\n  };\n");
   const lib = await import(join(dir, "lib.js"));
   const update = { lane: 4, tag: 1, payload: "p" };
@@ -402,7 +403,7 @@ pub fn destroyed(instance: &EffectInstance) -> u32 {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  return { destroy: undefined };\n");
   const lib = await import(join(dir, "lib.js"));
   const instance = lib.createEffectInstance();
@@ -469,7 +470,7 @@ pub fn cleaned(node: &Node) -> Option<u32> {
 }
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('    TAG: "Effect",\n    cleanup: undefined,\n');
   expect(js).toContain("    kind.cleanup = cleanup;\n");
   expect(js).toContain('  if (!("cleanup" in node)) {\n');

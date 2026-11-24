@@ -172,6 +172,17 @@ pub struct CrateFacts<'a, 'tcx> {
     /// Each namespace's method that's the function it passes its
     /// parameters on to, by that function (rd292b, ADR 1037 amended).
     pub forwarded: &'a IndexMap<DefId, DefId>,
+    /// The checked functions split into their JS entry and their body, found
+    /// the first time a body asks (#2403 step 2b(a), ADR 1193).
+    pub split: &'a Lazy<crate::boundary::split::Split>,
+    /// Each module's checkers' names, of each type, allotted the first time
+    /// one of its checks asks, apart from what it takes and each other
+    /// (`boundary::deep`'s `checker_name`, ADR 1150, #2403).
+    pub checker_names: &'a std::cell::RefCell<IndexMap<LocalModId, IndexMap<DefId, String>>>,
+    /// What JS may call of the crate's: what its root gives JS, and each
+    /// module a hand-written JS file of the program or its workspace
+    /// imports, by what each re-exports (#2403 lever (3), Tu's decision).
+    pub js_reached: &'a crate::reexports::JsReached,
     /// The `const`s written in a function's body, each a `const` there,
     /// by the block they're in and the bodies that read them (ADR 0031,
     /// amended).
@@ -209,7 +220,7 @@ impl CrateFacts<'_, '_> {
     /// a `const` written in a function's body, nor a function a block makes
     /// and gives, each declared where it's written (ADRs 0296, 0308, 0031
     /// amended), whose name is its body's ("names are ids", ADR 1150).
-    fn at_module_top(&self, def_id: DefId) -> bool {
+    pub(crate) fn at_module_top(&self, def_id: DefId) -> bool {
         !self.local_functions.contains_key(&def_id)
             && !self.named_expressions.contains(&def_id)
             && !self.local_consts.contains_key(&def_id)
@@ -255,6 +266,15 @@ impl<T> Lazy<T> {
     /// It, where a body asked it.
     pub fn get(&self) -> Option<&T> {
         self.0.get()
+    }
+
+    /// It, where a body asked it, else its default: a crate with no body
+    /// that could.
+    pub fn get_or_init_default(&self) -> &T
+    where
+        T: Default,
+    {
+        self.0.get_or_init(T::default)
     }
 }
 
@@ -380,6 +400,9 @@ carried! {
     named_expressions => CrateOnly,
     local_functions => CrateOnly,
     forwarded => CrateOnly,
+    split => CrateOnly,
+    checker_names => CrateOnly,
+    js_reached => CrateOnly,
     local_consts => CrateOnly,
     struct_literals => CrateOnly,
     constructed => CrateOnly,
@@ -407,6 +430,6 @@ mod tests {
                 }
             }
         }
-        assert_eq!(CARRIED.len(), 68);
+        assert_eq!(CARRIED.len(), 71);
     }
 }

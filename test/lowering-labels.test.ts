@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { performanceTrack } from "./ports-of";
 import { buildReact, compiler, fixture, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -53,7 +54,7 @@ pub fn describe(value: Option<&Unknown>, indent: usize, out: &mut Vec<String>) -
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toMatch(/\n\s+desc: \{\n/);
   expect(js).toMatch(/desc = "deep";\n\s+break desc;\n/);
   expect(js).not.toMatch(/\bbb\d+/);
@@ -120,7 +121,7 @@ pub fn get_array_kind(array: &[Option<&Unknown>]) -> ArrayKind {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/\bbb\d+/);
   expect(js).toContain('      if (typeof value === "object" && value !== null) {\n        return "Complex";\n      }\n    } else if (value.length > 3) {\n      return "Complex";\n    }\n');
   const lib = await import(join(dir, "lib.js"));
@@ -159,7 +160,7 @@ pub fn get_kind(array: &[Option<&Unknown>]) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js.split("return complex(array.length);").length).toBe(3);
   expect(js).not.toMatch(/\bbb\d+: /);
   const lib = await import(join(dir, "lib.js"));
@@ -234,7 +235,7 @@ pub fn describe(value: Option<&Unknown>, name: &str, out: &mut Vec<String>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/\bbb\d+/);
   expect(js).not.toContain("typeof status");
   expect(js).toMatch(/\n\s+if \(status === "fulfilled"\) \{\n/);
@@ -293,7 +294,7 @@ pub fn settled(value: &Unknown, name: &str, out: &mut Vec<String>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/\bbb\d+/);
   expect(js).not.toContain("typeof");
   expect(js).toContain("  } else {\n    switch (value.status) {\n");
@@ -352,7 +353,7 @@ pub fn describe(value: Option<&Unknown>, indent: usize, out: &mut Vec<String>) -
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/^\s*\w+: \{$/m);
   expect(js).not.toMatch(/break \w+;/);
   expect(js).not.toContain("value$1");
@@ -427,7 +428,7 @@ pub fn describe(value: Option<&Unknown>, indent: usize, out: &mut Vec<String>) -
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/^\s*\w+: \{$/m);
   expect(js).toContain('        desc = "null";\n      } else {\n        if ("type" in value) {\n');
   expect(js).toContain(
@@ -508,7 +509,7 @@ pub fn tail_match(value: Option<&Unknown>, out: &mut Vec<String>) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain('        desc = "null";\n      } else if ("type" in value) {\n');
   expect(js).toContain(
     '        if (typeof value.kind === "number") {\n          out.push("number");\n          desc = "n";\n        } else {\n          out.push("other");\n          desc = "o";\n        }\n',
@@ -560,7 +561,7 @@ pub fn reset<'a>(mut value: Option<&'a Unknown>, other: Option<&'a Unknown>) -> 
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
   // What the guard binds of a value the arm then sets is what it was, a
   // copy where it's bound (ADR 0853).
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain(
+  expect(withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"))).toContain(
     "    const value$1 = value;\n    value = other;\n    return Object.keys(value$1).length + (value != null ? 1 : 0);\n",
   );
   const lib = await import(join(dir, "lib.js"));
@@ -658,7 +659,7 @@ pub fn tag_of(r#type: Option<&Unknown>, strict: bool) -> &'static str {
   ]) {
     writeFileSync(join(dir, "lib.rs"), source(strict, host));
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-    const js = readFileSync(join(dir, "lib.js"), "utf8");
+    const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
     expect([strict, host, js]).toEqual([strict, host, expect.not.stringMatching(/\bbb\d+/)]);
     expect(js).toContain("    getTag: switch (type) {\n");
     if (strict) {
@@ -687,7 +688,7 @@ pub fn tag_of(r#type: Option<&Unknown>, strict: bool) -> &'static str {
     .replace("        }\n    }\n    tag\n}", "        }\n    tag\n}");
   writeFileSync(join(dir, "lib.rs"), bare);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "bare.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "bare.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "bare.js"), "utf8"));
   expect(js).not.toMatch(/\bbb\d+/);
   expect(js).toContain('  let tag;\n  getTag: switch (type) {\n');
   expect(js).toContain('            tag = "lazy";\n            break getTag;\n        }\n      }\n      tag = "throw";\n      break;\n  }\n  return tag;\n');
@@ -828,7 +829,7 @@ pub fn create(r#type: Option<&Unknown>, mut mode: u32) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/\bbb\d+/);
   expect(js).toContain("    getTag: switch (resolvedType) {\n");
   expect(js).toContain(
@@ -893,7 +894,7 @@ test("an arm that does nothing between guarded arms is no labeled block", async 
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/\bbb\d+/);
   expect(js).toContain(
     '    if (name !== "C") {\n      if (name === "D" && keep) {\n        out.push("kept d");\n      } else {\n        out.push(`other ${name}`);\n      }\n    }\n    out.push(`tail ${name}`);\n',
@@ -928,7 +929,7 @@ test("a break the program wrote through drops is its label's", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toMatch(/v = 3;\s*break found;\s*\}\s*v = 2;\n  \}\n  return /);
   expect(js).toContain("  let v;\n  found: {\n");
   expect(js).not.toMatch(/\bbb\d+/);
@@ -979,7 +980,7 @@ pub fn r#use(usable: Option<&'static Unknown>) -> Option<&'static Unknown> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/\) \{\n\s*\} else/);
   expect(js).toContain('  if (usable != null && typeof usable === "object") {\n');
   const lib = await import(join(dir, "lib.js"));
@@ -1045,7 +1046,7 @@ pub fn flush_subtree(out: &mut Vec<u32>, segment: &Segment) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/\bbb\d+/);
   expect(js).toMatch(/\n(\s+)while \(chunkIdx < nextChild\.index\) \{\n[^]*?\n\1\}\n\1r = flushSegment\(out, nextChild\);\n/);
   const lib = await import(join(dir, "lib.js"));
@@ -1120,7 +1121,7 @@ pub fn render_node(out: &mut Vec<String>, segment: Option<u32>, n: u32, aborted:
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toMatch(/\bbb\d+/);
   expect(js).toMatch(/if \(out\.length > 3\) \{\n\s+log\(out, "many"\);\n\s+return;\n\s+\}\n\s+if \(out\.length > 1\) \{\n\s+log\(out, "some"\);\n\s+return;\n/);
   const lib = await import(join(dir, "lib.js"));

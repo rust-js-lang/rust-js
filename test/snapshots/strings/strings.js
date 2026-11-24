@@ -4,6 +4,11 @@
 // `char` is a string of one character. Their methods are JS's.
 
 import {
+  $checkBool,
+  $checkI32,
+  $checkStr,
+  $checkU32,
+  $checks,
   $debugF64,
   $pad,
   $plus,
@@ -21,33 +26,40 @@ import {
 
 /** `format!`, as the pieces and values joined. */
 export function labeled(name, n) {
+  $checks("labeled(name, n)", name, $checkStr, n, $checkU32);
   return `${name}: ${n} item${n === 1 ? "" : "s"}`;
 }
 
 export function tests(s) {
+  $checkStr(s, "tests(s)");
   return [s.startsWith("ab"), s.endsWith("c"), s.includes("b/"), s.includes("/")];
 }
 
 export function cases(s) {
+  $checkStr(s, "cases(s)");
   return [$toUppercase(s), $toLowercase(s)];
 }
 
 export function trimmed(s) {
+  $checkStr(s, "trimmed(s)");
   return [$trimStart(s), $trimEnd(s)];
 }
 
 export function replaced(s) {
+  $checkStr(s, "replaced(s)");
   return s.replaceAll("/", " / ").replaceAll("a", "A");
 }
 
 /** `strip_prefix` and `strip_suffix` are options. */
 export function moduleName(path) {
+  $checkStr(path, "moduleName(path)");
   const file = path.startsWith("src/") ? path.slice(4) : path;
   return $stripSuffix(file, ".rs") ?? file;
 }
 
 /** `split`: looped over, collected, or its last piece. */
 export function parts(path) {
+  $checkStr(path, "parts(path)");
   const kept = [];
   let empty = 0;
   for (const part of path.split("/")) {
@@ -62,12 +74,14 @@ export function parts(path) {
 }
 
 export function rejoined(path) {
+  $checkStr(path, "rejoined(path)");
   const pieces = path.split("/");
   return pieces.join(" > ");
 }
 
 /** Building a string up: `push_str` and `push` on a variable. */
 export function built(n) {
+  $checkU32(n, "built(n)");
   let s = "";
   for (let i = 0; i < n; i++) {
     s += String(i) + ",";
@@ -78,6 +92,7 @@ export function built(n) {
 
 /** `char`s: literals, `==`, and `to_string`. */
 export function separator(windows) {
+  $checkBool(windows, "separator(windows)");
   const c = windows ? "\\" : "/";
   const same = c === "/";
   return c + (same ? " (unix)" : " (windows)");
@@ -85,6 +100,7 @@ export function separator(windows) {
 
 /** `split_once` and `rsplit_once`: an option of the two sides. */
 export function folderAndFile(path) {
+  $checkStr(path, "folderAndFile(path)");
   const splitOnce = $splitOnce(path, "/");
   let first;
   if (splitOnce != null) {
@@ -105,11 +121,13 @@ export function folderAndFile(path) {
 }
 
 export function repeated(s, n) {
+  $checks("repeated(s, n)", s, $checkStr, n, $checkU32);
   return $repeatText(s, n);
 }
 
 /** `match` on string literals, with `|`. */
 export function kind(s) {
+  $checkStr(s, "kind(s)");
   switch (s) {
     case "":
       return 0;
@@ -127,6 +145,7 @@ export function kind(s) {
 
 /** String literals inside other patterns: an option, a tuple. */
 export function tagged(s) {
+  $checkStr(s, "tagged(s)");
   const splitOnce = $splitOnce(s, "/");
   const top = splitOnce?.[0];
   const n = top === "ab" ? 1 : top === "" && s.endsWith("/") ? 2 : top == null ? 3 : 4;
@@ -143,6 +162,7 @@ function tick(c) {
  * the template shows them in, and each runs once.
  */
 export function formatOrder(start) {
+  $checkU32(start, "formatOrder(start)");
   const c = { value: start };
   const value = tick(c);
   return `${tick(c)} ${value} ${value} ${c.value}`;
@@ -153,6 +173,7 @@ export function formatOrder(start) {
  * precision, and other bases, as Rust applies them.
  */
 export function padded(n, name) {
+  $checks("padded(n, name)", n, $checkI32, name, $checkStr);
   return `[${String(n).padStart(6)}] [${String(n).padEnd(6)}] [${$pad(name, 9, "^")}] [${$pad(name, 9, ">", "*")}] [${$zeroPad(String(n), 6)}] [${$plus(String(n))}] [0x${(n >>> 0).toString(16)}] [${$zeroPad(`0b${(n >>> 0).toString(2)}`, 10)}] [${(n >>> 0).toString(16).toUpperCase()}] [${$toFixed(n / 8, 2)}] [${Array.from(name).slice(0, 3).join("")}]`;
 }
 
@@ -161,6 +182,7 @@ export function padded(n, name) {
  * it up; and `{:?}` of an `f64` keeps its `.0`.
  */
 export function rounded(quarters) {
+  $checkI32(quarters, "rounded(quarters)");
   const x = quarters / 4;
   return `${$toFixed(x, 0)} ${$toFixed(x, 1)} ${$toFixed(x, 3).padStart(8)} ${$debugF64(x)}`;
 }

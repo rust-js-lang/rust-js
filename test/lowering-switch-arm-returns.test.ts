@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { node } from "./programs";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -70,7 +71,7 @@ pub fn attach(finished_work: &Fiber) -> Option<&'static js::Unknown> {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  switch (finishedWork.tag) {\n    case HOST_COMPONENT:\n");
   expect(js).toContain(
     "    case FRAGMENT:\n      finishedWork.stateNode ??= rustJsFragment(finishedWork);\n      instanceToUse = finishedWork.stateNode;\n      break;\n    default:\n      instanceToUse = finishedWork.stateNode;\n      break;\n  }\n",
@@ -116,7 +117,7 @@ pub fn unwind(tag: u8, value: u32, log: &mut Vec<u32>) -> Option<u32> {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(
     "    case 25:\n      if (value > 2) {\n        log.push(value);\n      }\n      return null;\n    default:\n      return null;\n  }\n}\n",
   );
@@ -169,7 +170,7 @@ pub fn fiber(tag: u8, parent: Option<Rc<Fiber>>) -> Rc<Fiber> {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(
     "      case 27:\n        log.push(2);\n        return;\n      default:\n        parent = parent.parent;\n        break;\n    }\n  }\n}\n",
   );
@@ -241,7 +242,7 @@ pub fn fiber(tag: u8, parent: Option<Rc<Fiber>>) -> Rc<Fiber> {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(
     "      case 5:\n      case 13:\n        log.push(1);\n        return;\n      case 3:\n      case 27:\n        log.push(2);\n        return;\n      default:\n        log.push(3);\n        break;\n    }\n  }\n}\n",
   );
@@ -315,7 +316,7 @@ fn observer_disconnect(observer: Observer) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  for (let i = 0; i < observers.length; i++) {\n    const observer = observers[i];\n    observer.observe(child);\n  }\n");
   expect(js).toContain("function observerDisconnect(observer) {\n  observer.disconnect();\n}");
   expect(js).toContain("if (ready()) {");

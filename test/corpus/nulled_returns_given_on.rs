@@ -1,3 +1,4 @@
+//@ library-differs
 // rd632 (ADR 0861, amended): what's given a function's own nullable
 // parameter is `null` or a value, so its body tests it `=== null`, where
 // it's a crate function's result whose every return is so (React DOM's

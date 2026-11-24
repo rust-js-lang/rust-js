@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { oneLine, withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -35,7 +36,7 @@ pub fn message(kind: Kind) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('  if (kind.TAG === "Text") {\n    message = kind._0;\n  } else if (kind.TAG === "Element" && kind._0 != null) {\n    message = kind._0;\n  } else {\n    throw');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.message({ TAG: "Text", _0: "a" }), lib.message({ TAG: "Element", _0: "b" })]).toEqual(["a", "b"]);
@@ -69,7 +70,7 @@ pub fn message(kind: Kind) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain(`  if (kind.TAG === "Text") {
     message = kind._0;
   } else if (kind.TAG === "Element" && kind._0[0] != null && $byteLen(kind._0[0]) > 1) {
@@ -81,7 +82,8 @@ pub fn message(kind: Kind) -> String {
   const lib = await import(join(dir, "mir.js"));
   expect([lib.message({ TAG: "Text", _0: "a" }), lib.message({ TAG: "Element", _0: ["bc"] })]).toEqual(["a", "bcbc"]);
   expect(() => lib.message({ TAG: "Element", _0: ["b"] })).toThrow("plain string");
-  expect(() => lib.message({ TAG: "Other" })).toThrow("plain string");
+  // A fieldless variant is its name, as its declarations give it (ADR 0033).
+  expect(() => lib.message("Other")).toThrow("plain string");
 });
 
 // An `||` chain whose part is an `Option`'s `is_some()`, of an object:
@@ -101,7 +103,7 @@ pub fn kept(error: Option<&Err>, height: Option<f64>, ready: bool) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("return error != null || height == null || height === 0 || !ready;");
   expect(js).toContain("const hide = error != null || height == null || height === 0 || !ready;");
   const lib = await import(join(dir, "mir.js"));
@@ -128,7 +130,7 @@ test("an else-if chain's arm before a panic stays an else if", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('  } else if (className === "language-css") {\n    filePath = "/styles.css";\n  } else {\n    throw');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.path(undefined, "language-css"), lib.path("a.js", "x")]).toEqual(["/styles.css", "/a.js"]);
@@ -147,7 +149,7 @@ pub fn editing(element: &HTMLElement) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  return (\n    element.isContentEditable ||\n");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.editing({ isContentEditable: false, tagName: "SELECT" }), lib.editing({ isContentEditable: false, tagName: "B" })]).toEqual([true, false]);
@@ -177,8 +179,8 @@ pub fn picked<'a>(items: Vec<&'a Item>, pick: fn(&Item) -> bool) -> Vec<&'a Item
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('items.filter((item) => globalThis.isItem(item) && item.kind === "img")');
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
+  expect(oneLine(js)).toContain('items.filter((item) => globalThis.isItem(item) && item.kind === "img")');
   expect(js).toContain('items.filter((item) => keep(item) && item.kind === "img")');
   expect(js).toContain('items.filter((item) => pick(item) && item.kind === "img")');
   const lib = await import(join(dir, "mir.js"));

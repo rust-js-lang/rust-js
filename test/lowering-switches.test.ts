@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
 import { buildReact, compiler, fixture, installStd, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -114,7 +115,7 @@ pub fn again(n: u32, on: bool, log: &mut Vec<u32>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(
     '  switch (ty) {\n    case REACT_FRAGMENT_TYPE:\n      return "Fragment";\n    case REACT_PROFILER_TYPE:\n      return "Profiler";\n    case REACT_TRACING_MARKER_TYPE:\n      if (tracing) {\n        return "TracingMarker";\n      }\n      break;\n  }\n',
   );
@@ -247,7 +248,7 @@ pub fn named(value: &Unknown) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function getIoDescription(value) {
   try {
     if (value == null) {
@@ -424,7 +425,7 @@ pub fn there(value: &Unknown) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function describeValue(value) {
   switch (typeof value) {
     case "string":
@@ -573,7 +574,7 @@ pub fn any_object(value: Option<&Unknown>) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function requested(value) {
   const request = value.request;
   if (request != null && typeof request === "object") {
@@ -654,7 +655,7 @@ pub fn described(value: &Unknown) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function described(value) {
   switch (typeof value) {
     case "function": {
@@ -712,7 +713,7 @@ pub fn kept(expected: Option<&'static Unknown>) -> Option<&'static Unknown> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function kept(expected) {
   switch (typeof expected) {
     case "symbol":
@@ -831,7 +832,7 @@ pub fn get_io_description(value: Option<&Unknown>) -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function getIoDescription(value) {
   try {
     if (value == null) {
@@ -969,7 +970,7 @@ pub fn kind(values: &[Option<&Unknown>]) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("Array.isArray(value)");
   expect(js.match(/Array\.isArray\(value\)/g)?.length).toBe(1);
   const lib = await import(join(dir, "lib.js"));
@@ -1061,7 +1062,7 @@ pub fn code(thenable: &'static Thenable) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export function resolve(thenable) {
   switch (thenable.status) {
     case "fulfilled":
@@ -1149,7 +1150,7 @@ test("an or-pattern of an Option's strings leaves its None arm the default", () 
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain(`export function either(flag, v) {
+  expect(withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"))).toContain(`export function either(flag, v) {
   switch (flag) {
     case "d":
     case "i":

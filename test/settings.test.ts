@@ -11,6 +11,7 @@ import { decodeMappings, lookup } from "./sourcemap";
 import { check } from "./crates";
 import { createNativeBuilder } from "../tooling/build.js";
 import { buildCompiler, compiler, fixture, installStd, root, seeded } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildCompiler);
 
@@ -97,9 +98,10 @@ test("a transform that changes the program, or fails, is refused, and its input 
   }
 });
 
+// Its JS's line 7, `const greeting`, past the import and the check of what JS gives it (#2403).
 test("what a check says of the JS is said of the Rust, and the rest as it is", () => {
   const out = compile(
-    `check = [{ run = ["sh", "-c", "echo \\"$1:4:9: never reassigned\\"; echo \\"$1(4,9): error TS1: a type\\"; echo 'a line of its own'", "sh", "{files}"], fail = "never" }]`,
+    `check = [{ run = ["sh", "-c", "echo \\"$1:7:9: never reassigned\\"; echo \\"$1(7,9): error TS1: a type\\"; echo 'a line of its own'", "sh", "{files}"], fail = "never" }]`,
   );
   expect(out.code).toBe(0);
   expect(out.stderr).toContain("src/lib.rs:2:5: [sh] never reassigned\n");
@@ -108,7 +110,7 @@ test("what a check says of the JS is said of the Rust, and the rest as it is", (
 });
 
 test("a check that fails fails the build, if it says so", () => {
-  const check = (fail: string) => compile(`check = [{ run = ["sh", "-c", "echo \\"$1:4:9: bad\\"; exit 1", "sh", "{files}"]${fail} }]`);
+  const check = (fail: string) => compile(`check = [{ run = ["sh", "-c", "echo \\"$1:7:9: bad\\"; exit 1", "sh", "{files}"]${fail} }]`);
   const failing = check(`, fail = "build"`);
   expect(failing.code).not.toBe(0);
   expect(failing.stderr).toContain("src/lib.rs:2:5: [sh] bad");
@@ -315,5 +317,5 @@ test("rust-js build says why the app's Prettier's layout wasn't taken", async ()
   const builder = createNativeBuilder({ root: dir, rustJs: compiler });
   await builder.build({ manifestPath: join(dir, "Cargo.toml"), packageNames: ["set"], offline: true, warn: (warning: string) => warnings.push(warning) });
   expect(warnings.join("\n")).toContain("warning: rust-js: the app's Prettier changed the program: it added a ");
-  expect(readFileSync(join(dir, "src", "lib.js"), "utf8")).not.toContain("changed();");
+  expect(withoutBoundary(readFileSync(join(dir, "src", "lib.js"), "utf8"))).not.toContain("changed();");
 }, 300_000);

@@ -1,3 +1,4 @@
+//@ library-differs
 // A `match` of two arms whose chain would print the arm that only binds
 // first, `Some(stacks) if .. => Some(stacks)`, and the longer `_` arm in
 // the `else`: the longer first, of the test negated, `if (stacks$1 == null

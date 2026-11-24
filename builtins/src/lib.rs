@@ -1255,6 +1255,7 @@ pub fn type_of(this: Option<&Unknown>) -> String {
 /// one before gives, each part (ADR 0624). Rust is told nothing: the
 /// binding is still there to call, which throws where the host hasn't it.
 #[cfg_attr(rust_js, rust_js::link_name = "typeof !== \"undefined\"")]
+#[cfg_attr(rust_js, rust_js::type_test)]
 pub fn is_defined<B: Copy>(binding: B) -> bool {
     unreachable!()
 }
@@ -1265,6 +1266,7 @@ pub fn is_defined<B: Copy>(binding: B) -> bool {
 /// them, each part before the last asked whether it's there (ADR 0942).
 /// Rust is told nothing: the binding is still there to call.
 #[cfg_attr(rust_js, rust_js::link_name = "typeof === \"function\"")]
+#[cfg_attr(rust_js, rust_js::type_test)]
 pub fn is_function<B: Copy>(binding: B) -> bool {
     unreachable!()
 }
@@ -1276,6 +1278,7 @@ pub fn is_function<B: Copy>(binding: B) -> bool {
 /// it asked whether it's there, as [`is_function`] asks. Rust is told nothing: the binding is still there
 /// to read, which gives what the host has.
 #[cfg_attr(rust_js, rust_js::link_name = "typeof === \"number\"")]
+#[cfg_attr(rust_js, rust_js::type_test)]
 pub fn is_number<B: Copy>(binding: B) -> bool {
     unreachable!()
 }
@@ -1287,6 +1290,7 @@ pub fn is_number<B: Copy>(binding: B) -> bool {
 /// given (rd282). Rust is told nothing: the binding is still there to
 /// read, which gives what the host has.
 #[cfg_attr(rust_js, rust_js::link_name = "typeof === \"object\"")]
+#[cfg_attr(rust_js, rust_js::type_test)]
 pub fn is_object<B: Copy>(binding: B) -> bool {
     unreachable!()
 }

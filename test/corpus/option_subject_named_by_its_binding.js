@@ -7,7 +7,7 @@
 // gives back the option it had, `option`, never the method's name (#784,
 // #769, ADR 0569).
 
-import { $main } from "@rust-js/std";
+import { $brand, $main } from "@rust-js/std";
 
 function finisher(shared) {
   return shared.finish;
@@ -49,7 +49,10 @@ function main() {
   const shared = { finish: double };
   const value = finished(shared, 4);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = finished({}, 4);
+  const value$1 = finished(
+    $brand("option_subject_named_by_its_binding#4622560463aa0f80::Shared", {}),
+    4,
+  );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   for (const name of ["auto", "pair", undefined]) {
     console.log(`${pairName({ name })}`);

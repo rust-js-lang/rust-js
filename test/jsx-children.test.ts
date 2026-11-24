@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup, renderToString } from "react-dom/server";
 import { buildReact, compiler, fixture, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -50,7 +51,7 @@ pub fn Note() -> JSX::Element {
 `;
   const { dir, args } = compile(source);
   run(args);
-  const output = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const output = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(output).toContain('const HINT = "Try logging smaller " + "or more specific objects.";');
   expect(output).toContain('    <p className={"note " + "wide"} title={HINT}>\n      {"Omitted " + "by React. "}\n      {HINT}\n    </p>');
   const result = await import(join(dir, "lib.jsx"));
@@ -74,7 +75,7 @@ pub fn List(items: Vec<&'static str>) -> JSX::Element {
 `;
   const { dir, args } = compile(source);
   run(args);
-  const output = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const output = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(output).toContain("{items.map((item, i) => (\n");
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(result.List(["a", "b"]))).toBe("<ul><li>a</li><li>b</li></ul>");
@@ -115,7 +116,7 @@ pub fn Pick(href: &'static str) -> JSX::Element {
 `;
   const { dir, args } = compile(source);
   run(args);
-  const output = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const output = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(output).toContain("{authorLink !== \"\" ? <a href={authorLink}>{author}</a> : author}");
   expect(output).not.toMatch(/\blet \w+;/);
   expect(output).toContain('{href.startsWith("https://") ? (');
@@ -140,7 +141,7 @@ pub fn Counter() -> JSX::Element {
 `;
   const { dir, args } = compile(source);
   run(args);
-  const output = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const output = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(output).toContain("  useEffect(\n    function tick() {\n      setCount((count + 1) | 0);\n    },\n    [count],\n  );\n");
 });
 
@@ -176,7 +177,7 @@ pub fn Named(name: Option<&'static str>, count: Option<u32>, href: Option<&'stat
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain('{level === 1 && <b>warn</b>}');
   expect(jsx).toContain("{isLead && <b>lead</b>}");
   expect(jsx).toContain("{name != null && <b>{name}</b>}");
@@ -224,7 +225,7 @@ pub fn List<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element 
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("Children.forEach(children, (child) => {\n    if (child != null) {\n      kept.push(child);\n    }\n  });");
   expect(jsx).toContain("createRef()");
   const { List } = await import(join(dir, "lib.jsx"));
@@ -256,7 +257,7 @@ pub fn kinds(children: &'static Unknown) -> Vec<String> {
 }
 `);
   run(args);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).not.toContain("captured");
   // The type a pattern binds, a getter's read, read once there, not at
   // each use (ADR 0750).
@@ -291,7 +292,7 @@ pub fn List<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element 
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("Children.forEach(children, (child, i) => {");
   const { List } = await import(join(dir, "lib.jsx"));
   const { createElement } = await import("react");
@@ -320,7 +321,7 @@ pub fn list(crumbs: &[Crumb]) -> JSX::Element {
 `;
   const { dir, args } = compile(source);
   run(args);
-  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(js).toContain("{crumbs.map((crumb) => {");
   expect(js).toContain("onClick={() => {");
   expect(js).not.toContain("const items");
@@ -349,7 +350,7 @@ pub fn items(paths: &[String]) -> Vec<JSX::Element> {
 `;
   const { dir, args } = compile(source);
   run(args);
-  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(js).toContain('<li key={path} className="file">');
   expect(js).toContain("<Item key={path} value={path} />");
 });
@@ -387,7 +388,7 @@ pub fn bumped() -> JSX::Element {
 `;
   const { dir, args } = compile(source);
   run(args);
-  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(js).toContain("<Row key={entry.url}>\n      <b>{entry.url}</b>");
   // JSX reads a key where it's written, before the children.
   expect(js).toContain("const children = bump(counter);\n  return <Row key={counter.count}>{children}</Row>;");
@@ -455,7 +456,7 @@ pub fn positive(n: Option<i32>) -> i32 {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("{!!excerpt && <p>{excerpt}</p>}");
   expect(jsx).toContain('<span>{expanded ? "Hide" : "Show"}</span>');
   expect(jsx).not.toContain("const children");
@@ -511,7 +512,7 @@ pub fn Wide(order: u32) -> JSX::Element {
 `;
   const { dir, args } = compile(source);
   run(args);
-  const code = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const code = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(code).toContain('{"Challenge"} {order}');
   expect(code).toContain('{" of"} {total}');
   expect(code).toContain('If this is a mistake{", "}');
@@ -558,7 +559,7 @@ pub fn List(items: &'static [ItemProps<'static>]) -> JSX::Element {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   // MIR's key where it's written, read in place, before the spread.
   expect(jsx).toContain("return <Item key={String(i)} {...props} />;");
   expect(jsx).not.toContain("let tmp");
@@ -591,7 +592,7 @@ pub fn Tags(labels: Vec<&'static str>) -> JSX::Element {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("<Tag key={label} label={described(label)} />");
   expect(jsx).not.toContain("const match");
   const { Tags } = await import(join(dir, "lib.jsx"));
@@ -677,7 +678,7 @@ pub fn Page() -> JSX::Element {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("export const Label = memo(function Label({ text }) {");
   expect(jsx).not.toContain("function Label$1");
   expect(jsx).toContain("export const Shout = memo(function Shout({ text }) {");
@@ -725,7 +726,7 @@ pub fn Ticker() -> JSX::Element {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("useEffect(function startTicking() {");
   expect(jsx).toMatch(/useMemo\(\s*function computeDouble\(\) \{/);
   expect(jsx).toMatch(/useCallback\(\s*function handleClick\(\) \{/);
@@ -757,7 +758,7 @@ pub fn Shown(ShownProps { error }: ShownProps) -> JSX::Element {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("hidden={error == null}");
   expect(jsx).toContain("{error != null && <b>{error.message}</b>}");
   const lib = await import(join(dir, "lib.jsx"));
@@ -782,7 +783,7 @@ pub fn Shown(a: bool, b: bool) -> JSX::Element {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("<Boxed>{a && b && <b>x</b>}</Boxed>");
   const lib = await import(join(dir, "lib.jsx"));
   expect([renderToStaticMarkup(lib.Shown(true, true)), renderToStaticMarkup(lib.Shown(true, false))]).toEqual(["<div><b>x</b></div>", "<div></div>"]);
@@ -798,7 +799,7 @@ pub fn App(hint: Option<&'static str>, shown: bool) -> JSX::Element {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("<div>{shown && hint}</div>");
   const lib = await import(join(dir, "lib.jsx"));
   expect([renderToStaticMarkup(lib.App("h", true)), renderToStaticMarkup(lib.App("h", false)), renderToStaticMarkup(lib.App(undefined, true))]).toEqual(["<div>h</div>", "<div></div>", "<div></div>"]);
@@ -824,7 +825,7 @@ pub fn One(section: Option<&'static str>) -> JSX::Element {
 }
 `);
   run(args);
-  const code = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const code = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(code).toContain("<Tag key={tag} variant={tag} />");
   expect(code).toContain('<Tag key={section} variant="x" />');
   const result = await import(join(dir, "lib.jsx"));
@@ -846,7 +847,7 @@ pub fn Hint(HintProps { hint }: HintProps) -> JSX::Element {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain("<div>{showHint && hint}</div>");
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Hint, { hint: "h" }))).toBe("<div>h</div>");
@@ -894,7 +895,7 @@ pub fn Truthy(label: Option<&'static Unknown>) -> JSX::Element {
 }
 `);
   run(args);
-  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  const jsx = withoutBoundary(readFileSync(join(dir, "lib.jsx"), "utf8"));
   expect(jsx).toContain('return <div>{!!label && <b title="x" />}</div>;');
   const lib = await import(join(dir, "lib.jsx"));
   expect([renderToStaticMarkup(lib.Truthy("a")), renderToStaticMarkup(lib.Truthy(""))]).toEqual(['<div><b title="x"></b></div>', "<div></div>"]);

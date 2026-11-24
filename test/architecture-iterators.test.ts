@@ -322,6 +322,7 @@ const ownUnwinding: Record<string, string> = {
   "crates/rust-js-program/src/runtime/try.js": "`?`'s early return of an `Err` thrown and caught, not a drop",
   "crates/rust-js-program/src/runtime/writer_sink.js": "the sink armed for a writer shown into a writer disarmed as the writer returns or panics, and a writer that never claimed it rust-js's error, not a drop (#1652)",
   "crates/rust-js-program/src/runtime/unwind.js": "`catch_unwind`, the one catch of a panic",
+  "crates/rust-js-program/src/runtime/boundary_checks.js": "a check's own failure, `$CheckFailure`, caught to name where in the value JS gave it was, and a callback's or a binding's result named, never a panic caught, nor a drop (#2403)",
   "crates/rust-js-program/src/runtime/main.js": "a binary's `main` run as std's `lang_start` runs it, its panic ending the process with 101, not a drop (ADR 1184)",
 };
 

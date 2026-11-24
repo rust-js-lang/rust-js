@@ -20,6 +20,14 @@ pub(super) fn named(uses: &mut JsUses, foreign: &crate::library::Foreign<'_, '_>
             uses.imported.entry(export.clone()).or_default();
             uses.named.insert(export, imported.name.clone());
         }
+        // A split function's body, by its file, which a direct call of it
+        // calls past its checks (#2403, ADR 1193).
+        if let Some(unchecked) = &imported.unchecked {
+            let export = (imported.from.clone(), unchecked.clone());
+            uses.bound_to.entry(export.clone()).or_default();
+            uses.imported.entry(export.clone()).or_default();
+            uses.named.insert(export, unchecked.clone());
+        }
     }
     // And through a library's module that re-exports it, by what that
     // module's file exports it as (rd704).

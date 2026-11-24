@@ -652,6 +652,12 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             tidy::destructured_params(&mut params, &mut out);
             tidy::copied_params(&params, &mut out);
         }
+        // What a JS caller gives its parameters, checked where they're final,
+        // after tidy, first in its own body, an `async fn`'s too, whose
+        // promise a bad one rejects (#2403, ADR 1192, amended): each whole,
+        // or each part a pattern binds by its path.
+        let checks = self.parameter_checks(def_id, (&params, &out), &mir.body);
+        out.splice(0..0, checks);
         // The functions written in its body, each declared before what's
         // written after it (ADR 0308), and its `const`s (ADR 0031,
         // amended); a closure's in its own, where `mir_closure` put them,
@@ -1156,9 +1162,8 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 .map(|(path, _)| path.clone()),
         );
         // A class's method reads its `self` as `this` (ADR 0761).
-        let def_id = mir_body.source.def_id();
-        rust_js_lower::classes::receiver_as_this(self.tcx, def_id, &mut params, &mut out, &mut booleans)
-            .map_err(|what| self.unsupported(mir_body.span, what))?;
+        let args = (mir_body, skip, formatter);
+        self.receiver_and_origins(args, (&mut params, &mut out), &mut booleans)?;
         let params = std::cell::RefCell::new(params);
         self.declare_kept(&mut out);
         tidy::tidy(
@@ -1195,6 +1200,34 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         rust_js_lower::session::label_census::note(mir_body, &out);
         self.body_epilogue(&mut state, &mut out);
         Ok((params.into_inner(), out))
+    }
+
+    /// A class's method's `self` read as `this` (ADR 0761), and each of
+    /// `params`' Rust parameter's index recorded, in step with them, for the
+    /// checks of what a JS caller gives it, which place each by it (#2403,
+    /// ADR 1192, amended): `mir_body`'s arguments past `skip`, its
+    /// `Formatter` none of them, and what's after them, its options, none.
+    fn receiver_and_origins(
+        &mut self,
+        (mir_body, skip, formatter): (&mir::Body<'tcx>, usize, Option<Local>),
+        (params, out): (&mut Vec<js::Pattern>, &mut Vec<Stmt>),
+        booleans: &mut IndexSet<js::Path>,
+    ) -> R<()> {
+        let mut origins: Vec<Option<usize>> = (mir_body.args_iter().skip(skip))
+            .filter(|&local| Some(local) != formatter)
+            .map(|local| Some(local.as_usize() - 1))
+            .collect();
+        let given = params.len();
+        let def_id = mir_body.source.def_id();
+        rust_js_lower::classes::receiver_as_this(self.tcx, def_id, params, out, booleans)
+            .map_err(|what| self.unsupported(mir_body.span, what))?;
+        // Its `self`, read as `this`, no parameter of its JS's.
+        if params.len() < given {
+            origins.remove(0);
+        }
+        origins.resize(params.len(), None);
+        self.param_origins = origins;
+        Ok(())
     }
 
     /// What the body reads as plain (`tidy::Plain`): its own plain values,

@@ -8,13 +8,14 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, fixture, run } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 /** `rust` compiled in a fixture of `name`: its JS and its module. */
 async function compiled(name: string, rust: string): Promise<{ js: string; lib: Record<string, (...args: never[]) => unknown> }> {
   const dir = fixture(name);
   writeFileSync(join(dir, "lib.rs"), rust);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   return { js, lib: await import(join(dir, "lib.js")) };
 }
 
@@ -514,13 +515,16 @@ pub fn each(items: &[Option<u32>], out: &mut Vec<u32>) {
   );
   expect(js).toContain("    out.push(0);\n  }\n  // Either way, one.\n}\n");
   expect(js).toContain("      out.push(item);\n    }\n    // None is skipped.\n  }\n}\n");
-  const out: unknown[] = [];
-  lib.hint("a" as never, out as never);
-  lib.hint(undefined as never, out as never);
-  lib.counted(2 as never, out as never);
-  lib.counted(1 as never, out as never);
-  lib.each([1, undefined, 3] as never, out as never);
-  expect(out).toEqual(["a", 2, 0, 1, 3]);
+  // A `Vec<String>` and a `Vec<u32>`, each its own array, as JS gives each
+  // only what its type holds (#2403).
+  const texts: unknown[] = [];
+  const counts: unknown[] = [];
+  lib.hint("a" as never, texts as never);
+  lib.hint(undefined as never, texts as never);
+  lib.counted(2 as never, counts as never);
+  lib.counted(1 as never, counts as never);
+  lib.each([1, undefined, 3] as never, counts as never);
+  expect([texts, counts]).toEqual([["a"], [2, 0, 1, 3]]);
 });
 
 // React's SchedulerPostTask ends runTask with a guard and has
@@ -690,7 +694,7 @@ pub use crate::client::{
 `);
   writeFileSync(join(dir, "client.rs"), ["act", "capture_owner_stack", "use_id", "use_ref", "use_state"].map((name, i) => `pub fn ${name}() -> u32 {\n    ${i + 1}\n}\n`).join("\n"));
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`export {
   act, // DEV-only
   captureOwnerStack, // DEV-only

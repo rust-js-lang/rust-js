@@ -8,6 +8,9 @@
 
 import {
   $apart,
+  $checkField,
+  $checkObject,
+  $checkU32,
   $cleanup,
   $closing,
   $collectDropping,
@@ -56,6 +59,10 @@ function vecStoreMutKV_lmGetMut(vec, i, dropK, dropV) {
 
 export const LiteMap = {
   getMut(liteMap, i, SStoreMutKV) {
+    $checkU32(i, "LiteMap.getMut(i)");
+    return LiteMap.getMut$(liteMap, i, SStoreMutKV);
+  },
+  getMut$(liteMap, i, SStoreMutKV) {
     const lmGetMut = SStoreMutKV.lmGetMut(
       {
         get value() {
@@ -91,6 +98,10 @@ export const LiteMap = {
   },
 
   insertAt(liteMap, i, value, SStoreMutKV) {
+    $checkU32(i, "LiteMap.insertAt(i)");
+    return LiteMap.insertAt$(liteMap, i, value, SStoreMutKV);
+  },
+  insertAt$(liteMap, i, value, SStoreMutKV) {
     const item = $unwrap(
       SStoreMutKV.lmGetMut(
         {
@@ -143,6 +154,11 @@ function odd(items) {
   );
 }
 
+function checkLiteMap(value, K, V, S) {
+  $checkObject(value);
+  $checkField(value, "values", S);
+}
+
 $main(main);
 
 function main() {
@@ -153,14 +169,14 @@ function main() {
       [2, 20],
     ],
   };
-  const v = LiteMap.getMut(map, 1, VecStoreMutStrString);
+  const v = LiteMap.getMut$(map, 1, VecStoreMutStrString);
   if (v != null) {
     v.value = (v.value + 5) >>> 0;
   }
   const firstMut = LiteMap.firstMut(map, VecStoreMutStrString);
   firstMut.value = (firstMut.value + 1) >>> 0;
-  const old = LiteMap.insertAt(map, 0, 99, VecStoreMutStrString);
-  const missing = LiteMap.getMut(map, 7, VecStoreMutStrString) == null;
+  const old = LiteMap.insertAt$(map, 0, 99, VecStoreMutStrString);
+  const missing = LiteMap.getMut$(map, 7, VecStoreMutStrString) == null;
   console.log(`${LiteMap.replaceFirst(map, 7, VecStoreMutStrString)}`);
   console.log(
     `[${map.values.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${old} ${missing}`,
@@ -168,7 +184,7 @@ function main() {
   const names = { values: [["a", "x"]] };
   const value = LiteMap.firstMut(names, VecStoreMutStrString);
   value.value += "!";
-  const was = LiteMap.insertAt(names, 0, "y", VecStoreMutStrString);
+  const was = LiteMap.insertAt$(names, 0, "y", VecStoreMutStrString);
   console.log(
     `[${names.values.map((item) => `(${$debugStr(item[0])}, ${$debugStr(item[1])})`).join(", ")}] ${was}`,
   );

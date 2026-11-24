@@ -7,7 +7,17 @@
 // signature holds it, and a trait's dictionary, `Make`'s, as its methods'
 // (ADR 0552, #382).
 
-import { $intoIter, $iter, $jsIteratorSome, $main, $next, $nextSome } from "@rust-js/std";
+import {
+  $brand,
+  $checkBrand,
+  $checkTuple,
+  $intoIter,
+  $iter,
+  $jsIteratorSome,
+  $main,
+  $next,
+  $nextSome,
+} from "@rust-js/std";
 
 export const wrapMake = {
   make: (wrap) =>
@@ -17,12 +27,16 @@ export const wrapMake = {
     }),
 };
 function wrapMake_make(wrap, AIntoIterator) {
-  return { t: AIntoIterator.intoIter(wrap[0]) };
+  return $brand("into_iter_held_by_a_sibling#3dc3829eee5c6c61::Pair", {
+    t: AIntoIterator.intoIter(wrap[0]),
+  });
 }
 
 export const Wrap = {
   pair(wrap, AIntoIterator) {
-    return { t: AIntoIterator.intoIter(wrap[0]) };
+    return $brand("into_iter_held_by_a_sibling#3dc3829eee5c6c61::Pair", {
+      t: AIntoIterator.intoIter(wrap[0]),
+    });
   },
 
   first(wrap) {
@@ -39,6 +53,17 @@ function go(m, MMake) {
   return MMake.make(m);
 }
 
+function checkWrap(value, A) {
+  $checkBrand(
+    value,
+    undefined,
+    undefined,
+    "into_iter_held_by_a_sibling#3dc3829eee5c6c61::Wrap",
+    "a Wrap",
+  );
+  $checkTuple(value, undefined, undefined, [A]);
+}
+
 $main(main);
 
 function main() {
@@ -46,13 +71,19 @@ function main() {
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next }),
   };
-  const p = go([[1, 2, 3]], wrapMake);
+  const p = go($brand("into_iter_held_by_a_sibling#3dc3829eee5c6c61::Wrap", [[1, 2, 3]]), wrapMake);
   console.log(`[${Array.from(p.t).join(", ")}]`);
-  const q = Wrap.pair([[4, 5]], vecIntoIterator);
+  const q = Wrap.pair(
+    $brand("into_iter_held_by_a_sibling#3dc3829eee5c6c61::Wrap", [[4, 5]]),
+    vecIntoIterator,
+  );
   console.log(`[${Array.from(q.t).join(", ")}]`);
-  const value = Wrap.first([[6]]);
+  const value = Wrap.first($brand("into_iter_held_by_a_sibling#3dc3829eee5c6c61::Wrap", [[6]]));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const r = wrapMake_make([[7, 8]], vecIntoIterator);
+  const r = wrapMake_make(
+    $brand("into_iter_held_by_a_sibling#3dc3829eee5c6c61::Wrap", [[7, 8]]),
+    vecIntoIterator,
+  );
   console.log(`[${Array.from(r.t).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

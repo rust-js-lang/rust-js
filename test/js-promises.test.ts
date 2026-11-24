@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { runSync } from "./child";
 import { node } from "./programs";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -35,7 +36,7 @@ pub async fn nothing() -> Option<u32> {
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
   expect(built.stderr).not.toContain("warning");
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("maybePromise.catch(() => {});");
   expect(js).toContain('return await Promise.reject(new Error("no")).catch(() => 7);');
   expect(js).toContain("catch(() => {})");
@@ -68,7 +69,7 @@ pub async fn chained() -> u32 {
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
   expect(built.stderr).not.toContain("warning");
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("return n.then((n) => `n${n}`);");
   expect(js).toContain(".then((n) => Promise.resolve((n + 1) >>> 0))");
   writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
@@ -158,7 +159,7 @@ pub fn of_nothing() -> Promise<u32> {
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
   expect(built.stderr).not.toContain("warning");
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`  const value = new Promise((resolve, reject) => {
     resolveDebugValue = resolve;
     rejectDebugValue = reject;
@@ -248,7 +249,7 @@ pub fn wrap(owner: &Rc<Chunk>, settled: bool) -> Promise<u32> {
 `);
   const built = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], root, 600_000);
   expect(built.code, built.stderr).toBe(0);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`  const wrapperPromise = new Promise((res, rej) => {
     resolve = (value) => {
       wrapperPromise._debugInfo = owner.debugInfo;

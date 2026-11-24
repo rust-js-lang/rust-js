@@ -54,6 +54,18 @@ impl MutRefForm {
         }
     }
 
+    /// How a check of what JS gives (#2403, ADR 1194) reads a `&mut` of this
+    /// form: `Some(true)`, its box's `value`; `Some(false)`, the object
+    /// itself; `None`, not yet, of a generic box, a guard or what's given as
+    /// it is.
+    // helper: the checks of what JS gives a `&mut`, which read its form
+    pub fn checked_through_its_cell(self) -> Option<bool> {
+        match self {
+            MutRefForm::Box => Some(true),
+            MutRefForm::Object => Some(false),
+            MutRefForm::GenericBox | MutRefForm::Guard | MutRefForm::GivenAsItIs | MutRefForm::Itself => None,
+        }
+    }
     /// What `*r` reads through the `&mut` is the same JS value as `r`: the
     /// object, a guard's object, what's given as it is, or the value
     /// itself; not a cell's, whose read is its `value` (#1311).

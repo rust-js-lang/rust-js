@@ -649,7 +649,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let held = |(i, (value, field_ty)): (usize, (Expr, Ty<'tcx>))| {
             self.holding(value, self.struct_field_def(ty, i), field_ty)
         };
-        Ok(match self.shape(ty) {
+        let made = match self.shape(ty) {
             Shape::Object(fields) => {
                 let keys: Vec<String> = fields.iter().map(|(key, _)| key.text().to_owned()).collect();
                 let values = items
@@ -669,7 +669,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Shape::Array(tys) => Expr::array(items.into_iter().zip(tys).enumerate().map(held).collect()),
             Shape::Other => Expr::js_undefined(),
-        })
+        };
+        // Of a type no other crate can make, a value Rust made, branded (#2403
+        // step 2c, ADR 1196).
+        Ok(self.branded_wherever(ty, made))
     }
 
     /// An enum, read as its tagging reads it (serde's "enum

@@ -304,9 +304,17 @@ export const mutations: Mutation[] = [
     breaks:
       "a `const`'s struct literal written across lines is an object on one line, as rustc's value is, where one written in place is across lines (ADR 0835)",
     file: "crates/rust-js-lower/src/aggregates.rs",
-    find: "        *layout = js::ObjectLayout {\n            kept,\n            ..literal_layout(tcx, body.value.span)\n        };\n",
-    replace: "",
+    find: "        *layout = js::ObjectLayout {\n            kept,\n            brand,\n            ..literal_layout(tcx, body.value.span)\n        };\n",
+    replace: "        let _ = (kept, brand);\n",
     tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
+  },
+  {
+    name: "const-object-brand-dropped",
+    breaks: "a sealed type's `const` declared as its object is unbranded, `export const ORIGIN = { x: 0, hidden: 7 }`, so Rust refuses its own constant JS gives back, `x(ORIGIN)` (#2403)",
+    file: "crates/rust-js-lower/src/aggregates.rs",
+    find: "            brand,\n            ..literal_layout(tcx, body.value.span)\n",
+    replace: "            brand: brand.filter(|_| false),\n            ..literal_layout(tcx, body.value.span)\n",
+    tests: ["test/boundary-brands.test.ts", "-t", "a copy's and a const's are taken back"],
   },
   {
     name: "object-layout-of-a-tuple-variant",
@@ -504,8 +512,8 @@ export const mutations: Mutation[] = [
     name: "const-object-kept-lost",
     breaks: "a module's constant of a keyed enum's variant leaves out its `undefined` keys (#504)",
     file: "crates/rust-js-lower/src/aggregates.rs",
-    find: "        let kept = std::mem::take(&mut layout.kept);\n",
-    replace: "        let kept = Vec::new();\n",
+    find: "let (kept, brand) = (std::mem::take(&mut layout.kept), layout.brand.take());",
+    replace: "let (kept, brand) = (Vec::new(), layout.brand.take());",
     tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_const.rs$"],
   },
   {
@@ -565,5 +573,21 @@ export const mutations: Mutation[] = [
     find: "            || bindings::is_tagged_otherwise(self.tcx, adt.did(), variant)\n",
     replace: "",
     tests: ["test/serde-attributes.test.ts", "-t", "otherwise variant read is the object it holds"],
+  },
+  {
+    name: "made-value-unbranded",
+    breaks: "a sealed struct Rust makes isn't branded, so Rust refuses its own `Temperature` given back (#2403 step 2c)",
+    file: "crates/rust-js-lower/src/aggregates.rs",
+    find: "        Ok(self.branded(ty, made))",
+    replace: "        Ok(made)",
+    tests: ["test/boundary-brands.test.ts", "-t", "a literal's and a constructor's"],
+  },
+  {
+    name: "constructor-value-unbranded",
+    breaks: "a sealed tuple struct's constructor as a value, `.map(Email)`, makes it unbranded (#2403 step 2c)",
+    file: "crates/rust-js-lower/src/aggregates.rs",
+    find: "            self.branded(ty, made)\n        };",
+    replace: "            made\n        };",
+    tests: ["test/boundary-brands.test.ts", "-t", "one in a Vec, an Option or an Rc"],
   },
 ];

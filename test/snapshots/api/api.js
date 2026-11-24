@@ -8,6 +8,10 @@
 
 import {
   $BTreeMap,
+  $brand,
+  $checkArray,
+  $checkStr,
+  $checks,
   $cmp,
   $debugF64,
   $debugJsonError,
@@ -414,7 +418,9 @@ function evenDebug_fmt(even) {
 }
 
 function evenTryFromU32_tryFrom(n) {
-  return n % 2 === 0 ? { TAG: "Ok", _0: [n] } : { TAG: "Err", _0: [n] };
+  return n % 2 === 0
+    ? { TAG: "Ok", _0: [n] }
+    : { TAG: "Err", _0: $brand("api#44dc1ba191c635af::OddError", [n]) };
 }
 
 function contactDeserialize_deserialize(json) {
@@ -475,21 +481,38 @@ export function encode(value, writeT) {
 }
 
 export function decode(text, readT) {
+  $checkStr(text, "decode(text)");
+  return decode$(text, readT);
+}
+
+function decode$(text, readT) {
   const result = $fromJson(text, readT);
   return result.TAG === "Err" ? { TAG: "Err", _0: $displayJsonError(result._0) } : result;
 }
 
 export function roundtrip(value, writeT, readT, TDebug) {
   const text = encode(value, writeT);
-  const back = $unwrapOk(decode(text, readT), "examples/api.rs:147:33");
+  const back = $unwrapOk(decode$(text, readT), "examples/api.rs:147:33");
   return `${text} ${TDebug.fmt(back)}`;
 }
 
 export function decodeAll(texts, readT) {
-  return texts.map((t) => decode(t, readT));
+  $checks("decodeAll(texts)", texts, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
+  return decodeAll$(texts, readT);
+}
+
+function decodeAll$(texts, readT) {
+  return texts.map((t) => decode$(t, readT));
 }
 
 export function borrowed(text, readT) {
+  $checkStr(text, "borrowed(text)");
+  return borrowed$(text, readT);
+}
+
+function borrowed$(text, readT) {
   const result = $fromJson(text, readT);
   return result.TAG === "Ok" ? result._0 : undefined;
 }
@@ -1593,15 +1616,15 @@ export function report() {
       $json.with(responseDeserialize_deserialize, userDeserialize_deserialize),
       responseDebug(userDebug),
     ) + "\n";
-  const users = decodeAll(['{"name":"c","age":3}', '{"name":"d"}'], userDeserialize_deserialize);
+  const users = decodeAll$(['{"name":"c","age":3}', '{"name":"d"}'], userDeserialize_deserialize);
   out += `[${users.map((item) => (item.TAG === "Ok" ? `Ok(${userDebug_fmt(item._0)})` : `Err(${$debugStr(item._0)})`)).join(", ")}]\n`;
-  const reply = decode(
+  const reply = decode$(
     '{"data":[1,2],"ok":false}',
     $json.with(responseDeserialize_deserialize, $json.vec($json.u8)),
   );
   out += `${reply.TAG === "Ok" ? `Ok(${responseDebug_fmt(reply._0, vecDebug)})` : `Err(${$debugStr(reply._0)})`}\n`;
-  const n = borrowed("7", $json.u8);
-  const m = borrowed("x", $json.u8);
+  const n = borrowed$("7", $json.u8);
+  const m = borrowed$("x", $json.u8);
   out += `${n == null ? "None" : `Some(${n})`} ${m == null ? "None" : `Some(${m})`}\n`;
   out +=
     encode({ ok: true }, (value, json) => {

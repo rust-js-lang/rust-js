@@ -39,7 +39,14 @@ pub fn link(unlinked: Unlinked) -> Linked {
                     }
                     _ => None,
                 };
-                for name in e.helper_name().into_iter().chain(stored) {
+                // A literal a brand marks, printed as `$brand`'s call once the
+                // module is prepared (`js::brands`, #2403).
+                let branded = match &e.kind {
+                    crate::js::ExprKind::Object(_, layout) if layout.brand.is_some() => Some("$brand"),
+                    crate::js::ExprKind::Array(_, layout) if layout.brand.is_some() => Some("$brand"),
+                    _ => None,
+                };
+                for name in e.helper_name().into_iter().chain(stored).chain(branded) {
                     written.extend(crate::runtime::helper_of(name));
                 }
             });

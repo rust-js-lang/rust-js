@@ -11,6 +11,9 @@
 
 import {
   $cellOf,
+  $checkArray,
+  $checkU32,
+  $checks,
   $collectVec,
   $collectsInPlace,
   $filterEnds,
@@ -66,6 +69,13 @@ function multiplied(v, PProductU32) {
 
 // Public, so built as a library its callers are any crate's.
 export function totalForAnyone(v, SSumU32) {
+  $checks("totalForAnyone(v)", v, (value, where, none) =>
+    $checkArray(value, where, none, $checkU32),
+  );
+  return totalForAnyone$(v, SSumU32);
+}
+
+function totalForAnyone$(v, SSumU32) {
   return SSumU32.sum($taking($iter(v), 1));
 }
 
@@ -113,7 +123,7 @@ function main() {
   console.log(`total by name ${low$3} ${high$3 == null ? "None" : `Some(${high$3})`}`);
   const [low$4, high$4] = multiplied([4, 5, 6], roomProductU32);
   console.log(`multiplied ${low$4} ${high$4 == null ? "None" : `Some(${high$4})`}`);
-  const [low$5, high$5] = totalForAnyone([4, 5, 6], roomSumU32);
+  const [low$5, high$5] = totalForAnyone$([4, 5, 6], roomSumU32);
   console.log(`total for anyone ${low$5} ${high$5 == null ? "None" : `Some(${high$5})`}`);
   const [low$6, high$6] = totalOf($skipping($iter([4, 5, 6]), 1), roomSumU32);
   console.log(`total of ${low$6} ${high$6 == null ? "None" : `Some(${high$6})`}`);

@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { underLoad } from "../scripts/timing";
 import { performanceTrack } from "./ports-of";
 import { buildReact, compiler, fixture, root, run } from "./support";
+import { oneLine, withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
 
@@ -18,7 +19,7 @@ test("a list of one item left is the item", () => {
   const dir = fixture("holed-lists");
   writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/extract_if_drops.rs"), "utf8").replace("fn main()", "pub fn main()"));
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   // Each list read where it's printed, as nothing between needs a cleanup
   // of its own (#723).
   expect(js).toContain("console.log(`odd [${ids(odd).join(\", \")}] kept [${ids(v).join(\", \")}]`);");
@@ -33,14 +34,14 @@ test("no item is mapped to itself", () => {
   writeFileSync(join(dir, "calc.rs"), readFileSync(join(root, "test/corpus/calculator.rs"), "utf8").replace("fn main()", "pub fn main()"));
   run([compiler, join(dir, "enums.rs"), "-o", join(dir, "enums.js")]);
   run([compiler, join(dir, "calc.rs"), "-o", join(dir, "calc.js")]);
-  const enums = readFileSync(join(dir, "enums.js"), "utf8");
-  const calc = readFileSync(join(dir, "calc.js"), "utf8");
+  const enums = withoutBoundary(readFileSync(join(dir, "enums.js"), "utf8"));
+  const calc = withoutBoundary(readFileSync(join(dir, "calc.js"), "utf8"));
   expect(enums).toContain("`[${levels.join(\", \")}] ${max == null");
   expect(calc).toContain("const names = Array.from(calc.vars.keys());");
   expect(enums + calc).not.toContain(".map((item) => item)");
   writeFileSync(join(dir, "edits.rs"), readFileSync(join(root, "test/corpus/vec_edits.rs"), "utf8").replace("fn main()", "pub fn main()"));
   run([compiler, join(dir, "edits.rs"), "-o", join(dir, "edits.js")]);
-  const edits = readFileSync(join(dir, "edits.js"), "utf8");
+  const edits = withoutBoundary(readFileSync(join(dir, "edits.js"), "utf8"));
   expect(edits).toContain("console.log(`[${v.join(\", \")}] [${w.join(\", \")}] ${asked}`);");
 });
 
@@ -63,7 +64,7 @@ pub fn one(xs: Vec<f64>) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain(`[tokens.includes("hidden"), tokens.includes(name)]`);
   expect(js).toContain("xs.some((x) => x === NaN)");
   // A float's literal, which no NaN is: `includes`.
@@ -199,7 +200,7 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  return items.map((c, i) => `${i}:${c.title}`);\n");
   expect(js).toContain("  return items.filter((c) => !c.hide);\n");
   expect(js).toContain("  return items.reduce((a, b) => (a + b) >>> 0, 0);\n");
@@ -275,7 +276,7 @@ pub fn pick(c: bool, n: u32) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('  return group\n    .split(",")\n    .map((g) => $trim(g))\n    .filter((g) => g !== "");\n');
   expect(js).toContain('  const parts = group.split(",");\n  if (parts.length === 0) {\n    return;\n  }\n  return \`\${parts[0]} and ');
   expect(js).toContain('  return s.split(",").toReversed().slice(0, 2);\n');
@@ -325,7 +326,7 @@ pub fn nested_answers() -> String {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).not.toContain("(value) => value");
   expect(js).toContain('return env === "production";');
   const lib = await import(join(dir, "mir.js"));
@@ -364,7 +365,7 @@ pub fn popped(mut items: Vec<Option<u32>>) -> Option<u32> {
 `);
   // From MIR too (ADR 0364).
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("const first = args.shift();");
   expect(js).toContain("const last = args.pop();");
   expect(js).toContain("return [items[0], items[i], items.at(-1)];");
@@ -391,7 +392,7 @@ test("MIR's next_back of a map runs its closure once", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).not.toContain(".map(");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.last([1, 2, 3]), lib.last([])]).toEqual([[30, 1], [undefined, 0]]);
@@ -410,7 +411,7 @@ pub fn sum(v: Vec<i32>) -> i32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return v.reduce(add, 0);");
+  expect(withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"))).toContain("return v.reduce(add, 0);");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.sum([1, 2, 3]), lib.sum([])]).toEqual([6, 0]);
 });
@@ -424,7 +425,7 @@ test("rev of skipped and taken items is the slice reversed", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return v.slice(1).slice(0, 2).toReversed();");
+  expect(withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"))).toContain("return v.slice(1).slice(0, 2).toReversed();");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.middle([1, 2, 3, 4]), lib.middle([1, 2]), lib.middle([])]).toEqual([[3, 2], [2], []]);
 });
@@ -442,7 +443,7 @@ pub fn capped(prev: &VecDeque<u32>, more: Vec<u32>) -> VecDeque<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  const messages = [...prev, ...more];\n");
   const lib = await import(join(dir, "mir.js"));
   expect(lib.capped([1, 2], [3])).toEqual([2, 3]);
@@ -478,7 +479,7 @@ test("a position of an array's own iterator from MIR is of the array", async () 
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('return $position(ids, (id) => id === path.split("#")[1]);');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.second(["a", "b"], "x#b"), lib.second(["a"], "x")]).toEqual([1, undefined]);
@@ -506,14 +507,14 @@ pub fn rolled(prev: &[f64], more: &[f64]) -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  const newLogs = more.filter((x) => x > 1).map((x) => (x * 2) >>> 0);\n");
   // A stage of `Math`'s other functions, which only compute their value,
   // `Math.imul`, too.
   expect(js).toContain("  const squares = more.map((x) => Math.imul(x, x) >>> 0);\n");
   // Not of `Math.random()`, which does something: lazy, the array's own
   // iterator.
-  expect(js).toContain("  const rolled = more.values().map((x) => x + Math.random());\n");
+  expect(oneLine(js)).toContain("const rolled = more.values().map((x) => x + Math.random());");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.joined([1], [1, 2, 3]), lib.squared([1], [2, 3]), lib.rolled([1], [2])]).toEqual([[1, 4, 6], [1, 4, 9], 2]);
 });
@@ -576,7 +577,7 @@ pub fn button(Props { provided_files }: Props, supported: bool) -> Option<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  if (providedFiles.some((file) => !SUPPORTED.includes(file))) {\n");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.button({ providedFiles: ["/App.js"] }, true), lib.button({ providedFiles: ["/x.js"] }, true), lib.button({ providedFiles: [] }, false)]).toEqual([1, undefined, undefined]);
@@ -601,7 +602,7 @@ pub fn hidden(tokens: &[String]) -> bool {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('  if (t !== "pre" && u !== "pre") {\n');
   expect(js).toContain('  return tokens.find((token) => token.includes("/") || token.includes("."));\n');
   expect(js).toContain('  return tokens.includes("hidden");\n');
@@ -624,7 +625,7 @@ pub fn long(words: &[String]) -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('  return code.split("\\n").length;\n');
   expect(js).toContain("  return words.filter((w) => $byteLen(w) > 2).length;\n");
   expect(js).toContain("  return words.filter((w) => $byteLen(w) > 2).length;\n");
@@ -642,7 +643,7 @@ test("flattened options collected from MIR are the array's filter", async () => 
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('  return parts.filter((item) => item != null).join(" ");\n');
   const lib = await import(join(dir, "mir.js"));
   expect(lib.cn(["a", undefined, "b"])).toBe("a b");
@@ -661,7 +662,7 @@ pub fn first(keys: Vec<String>) -> Option<String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain('return $splitBy(path, (c) => ["?", "#"].includes(c))[0] ?? "";');
   expect(js).toContain("return keys[0];");
   const lib = await import(join(dir, "mir.js"));
@@ -679,7 +680,7 @@ test("an adapter of a JS iterator is not made one again", async () => {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).not.toMatch(/Iterator\.from\(|Array\.from\([^]*Array\.from\(/);
   expect(js).toContain("  return Array.from(\n    $lazyRange(0, n)\n");
   expect(js).toContain(".filter((x) => x > 5),\n  );");
@@ -701,7 +702,7 @@ pub fn joined(prev: &[u32], log: &[u32]) -> Vec<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("const newLogs = log\n    .values()\n    .filter(");
   const lib = await import(join(dir, "mir.js"));
   const order: number[] = [];
@@ -750,7 +751,7 @@ pub fn odd_to_five() -> Vec<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("  $roomFor(n, 4);\n  return Array.from({ length: n }, (_, i) => Math.imul(i, i) >>> 0);");
   expect(js).toContain('return $range(1, n + 1, 12)\n    .toReversed()\n    .map((k) => $repeatText("*", k));');
   expect(js).toContain("return $range(0, n, 4).toReversed();");
@@ -802,7 +803,7 @@ pub fn a_names(names: Vec<String>) -> usize {
   }
   expect(logs).toEqual(["at", "f2", "at", "f3", "ab", "ac"]);
   // A \`str\`'s \`starts_with\` only reads: the array's own \`filter\`.
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain(`names\n    .filter((n) => n.startsWith("a"))\n`);
+  expect(withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"))).toContain(`names\n    .filter((n) => n.startsWith("a"))\n`);
 });
 
 // A slice's `iter_mut()` is an array's items: its chain the array's own
@@ -822,7 +823,7 @@ pub fn big(v: &mut [u32]) -> usize {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   expect(js).toContain("const e = v.find(([k]) => k === w);");
   expect(js).toContain("return $mutItems(v).filter((x) => x.value > 2).length;");
   const lib = await import(join(dir, "mir.js"));
@@ -858,7 +859,7 @@ pub fn evens(n: u32) -> Vec<u32> {
   expect([lib.first(5, (i: number) => i > 2), lib.first(2, () => false), lib.picked([3, undefined, 2])]).toEqual([3, undefined, [3, 2]]);
   expect([lib.letter((c: string) => c > "b"), lib.letter(() => false)]).toEqual(["c", undefined]);
   expect(lib.evens(5)).toEqual([0, 2, 4]);
-  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "mir.js"), "utf8"));
   // Of a filter, which may keep few of many, no array of them all either.
   expect(js).toContain("return Array.from($lazyRange(0, n).filter((i) => i % 2 === 0));");
   expect(js).toContain("return $lazyRange(0, n).find(f) ?? undefined;");
@@ -1051,7 +1052,7 @@ pub fn owned_reversed(v: Vec<u32>) -> Vec<u32> {
   expect([lib.keptReversed([1, 2, 3]), lib.ownedReversed([1, 2, 3])]).toEqual([[3, 2, 1], [3, 2]]);
   // A number's range is still JS's counted `for`.
   expect(lib.between(2, 5)).toBe(9);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("for (let i = 0; i < n; i++) {");
   expect(js).toContain("for (let i = k; i < n; i++) {");
 });
@@ -1072,7 +1073,7 @@ test("zip takes its first side's item before its second's", () => {
 `,
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("$lazyZip(");
   const zip = readFileSync(join(root, "crates/rust-js-program/src/runtime/lazy_zip.js"), "utf8");
   expect(zip).toContain("const item = left.next();\n    if (item.done) return item;\n");
@@ -1122,7 +1123,7 @@ pub fn named_past(xs: &[String]) -> Vec<String> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("for (const x of xs.slice(0, LIMIT)) {");
   expect(js).toContain("for (const x of xs.slice(1)) {");
   expect(js).toContain("for (const [i, x] of xs.slice(0, LIMIT).entries()) {");
@@ -1169,7 +1170,7 @@ pub fn maybe(items: &[Option<u32>]) -> Option<Option<u32>> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("  const parts = descriptor.values();\n");
   expect(js).toContain("while ((attr = parts.next().value)) {");
   expect(js).toContain("const value = parts.next().value;");
@@ -1282,7 +1283,7 @@ pub fn inside() -> (Option<u32>, usize, u32) {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const js = withoutBoundary(readFileSync(join(dir, "lib.js"), "utf8"));
   expect(js).toContain("export function upto(n) {\n  return $iterator({ start: 0, end: n }, $rangeNext, false, $rangeNextBack, $rangeLen);\n}");
   expect(js).toContain("function uptoRevealed(n) {\n  return { start: 0, end: n };\n}");
   const lib = await import(join(dir, "lib.js"));

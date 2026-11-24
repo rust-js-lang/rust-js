@@ -44,23 +44,40 @@ pub fn fail(message: &str) -> ! {
 ```
 
 ```js
-import { $debugParseError, $div, $index, $parseInt, $stringPanic, $unwrapOk } from "@rust-js/std";
+import {
+  $checkArray,
+  $checkStr,
+  $checkU32,
+  $checks,
+  $debugParseError,
+  $div,
+  $index,
+  $parseInt,
+  $stringPanic,
+  $unwrapOk,
+} from "@rust-js/std";
 
 export function third(items) {
+  $checks("third(items)", items, (value, where, none) =>
+    $checkArray(value, where, none, $checkU32),
+  );
   return $index(items, 2, "lib.rs:2:5");
 }
 
 export function port(text) {
+  $checkStr(text, "port(text)");
   return $unwrapOk($parseInt(text, 0, 65535), "lib.rs:6:18", "a port number", (e) =>
     $debugParseError(e, "ParseIntError"),
   );
 }
 
 export function ratio(a, b) {
+  $checks("ratio(a, b)", a, $checkU32, b, $checkU32);
   return $div(a, b, "lib.rs:10:5") >>> 0;
 }
 
 export function fail(message) {
+  $checkStr(message, "fail(message)");
   throw $stringPanic(message, "lib.rs:14:5");
 }
 ```
@@ -113,7 +130,7 @@ pub fn must(text: &str) -> u32 {
 ```
 
 ```js
-import { $debugStr, $parseInt, $unwrapOk } from "@rust-js/std";
+import { $checkStr, $checks, $debugStr, $parseInt, $unwrapOk } from "@rust-js/std";
 
 function parseErrorDebug_fmt(parseError) {
   if (parseError === "Empty") {
@@ -123,6 +140,11 @@ function parseErrorDebug_fmt(parseError) {
 }
 
 export function parse(text) {
+  $checkStr(text, "parse(text)");
+  return parse$(text);
+}
+
+function parse$(text) {
   if (text === "") {
     return { TAG: "Err", _0: "Empty" };
   }
@@ -131,12 +153,13 @@ export function parse(text) {
 }
 
 export function sum(a, b) {
-  const result = parse(a);
+  $checks("sum(a, b)", a, $checkStr, b, $checkStr);
+  const result = parse$(a);
   if (result.TAG === "Err") {
     return result;
   }
   const value = result._0;
-  const result$1 = parse(b);
+  const result$1 = parse$(b);
   if (result$1.TAG === "Err") {
     return result$1;
   }
@@ -144,7 +167,8 @@ export function sum(a, b) {
 }
 
 export function must(text) {
-  return $unwrapOk(parse(text), "lib.rs:20:17", undefined, parseErrorDebug_fmt);
+  $checkStr(text, "must(text)");
+  return $unwrapOk(parse$(text), "lib.rs:20:17", undefined, parseErrorDebug_fmt);
 }
 ```
 
@@ -210,9 +234,10 @@ pub fn has_config(path: &str) -> bool {
 
 ```js
 import { loadConfig } from "./config.js";
-import { $byteLen, $trim, $try, $unwrapOk } from "@rust-js/std";
+import { $byteLen, $checkStr, $trim, $try, $unwrapOk } from "@rust-js/std";
 
 export function configOrDefault(path) {
+  $checkStr(path, "configOrDefault(path)");
   try {
     return loadConfig(path);
   } catch {
@@ -221,6 +246,7 @@ export function configOrDefault(path) {
 }
 
 export function config(path) {
+  $checkStr(path, "config(path)");
   return $unwrapOk(
     $try(() => loadConfig(path)),
     "lib.rs:13:23",
@@ -230,6 +256,7 @@ export function config(path) {
 }
 
 export function loaded(path) {
+  $checkStr(path, "loaded(path)");
   return loadConfig(path);
 }
 
@@ -238,6 +265,7 @@ function readConfig(path) {
 }
 
 export function readable(path) {
+  $checkStr(path, "readable(path)");
   try {
     readConfig(path);
     return true;
@@ -247,6 +275,7 @@ export function readable(path) {
 }
 
 export function decoded(text) {
+  $checkStr(text, "decoded(text)");
   try {
     return decodeURIComponent(text);
   } catch (error) {
@@ -255,6 +284,7 @@ export function decoded(text) {
 }
 
 export function configLength(path) {
+  $checkStr(path, "configLength(path)");
   let text;
   try {
     text = loadConfig(path);
@@ -265,6 +295,7 @@ export function configLength(path) {
 }
 
 export function hasConfig(path) {
+  $checkStr(path, "hasConfig(path)");
   try {
     loadConfig(path);
     return true;
@@ -374,9 +405,10 @@ pub fn work(fail: bool) -> u32 {
 ```
 
 ```js
-import { $live, $panic, $unwindsOn } from "@rust-js/std";
+import { $checkBool, $live, $panic, $unwindsOn } from "@rust-js/std";
 
 export function work(fail) {
+  $checkBool(fail, "work(fail)");
   const name = "outer";
   const name$1 = "inner";
   try {
@@ -450,9 +482,17 @@ pub fn record(log: &RefCell<Vec<String>>) {
 ```
 
 ```js
-import { $alreadyBorrowed, $borrow, $unborrow } from "@rust-js/std";
+import {
+  $alreadyBorrowed,
+  $borrow,
+  $checkArray,
+  $checkStr,
+  $checks,
+  $unborrow,
+} from "@rust-js/std";
 
 export function record(log) {
+  $checks("record(log)", log, (value, where, none) => $checkArray(value, where, none, $checkStr));
   const entries = $borrow(log, "lib.rs:4:23", true);
   try {
     if (log.borrows) {
@@ -485,13 +525,15 @@ pub fn checked_add(a: u8, b: u8) -> Option<u8> {
 ```
 
 ```js
-import { $checked } from "@rust-js/std";
+import { $checkU8, $checked, $checks } from "@rust-js/std";
 
 export function add(a, b) {
+  $checks("add(a, b)", a, $checkU8, b, $checkU8);
   return (a + b) & 255;
 }
 
 export function checkedAdd(a, b) {
+  $checks("checkedAdd(a, b)", a, $checkU8, b, $checkU8);
   return $checked(a + b, 0, 255);
 }
 ```
@@ -523,9 +565,10 @@ pub fn check(items: &[u32], expected: u32) {
 ```
 
 ```js
-import { $assertFailed, $panic, $stringPanic } from "@rust-js/std";
+import { $assertFailed, $checkArray, $checkU32, $checks, $panic, $stringPanic } from "@rust-js/std";
 
 export function pick(n) {
+  $checkU32(n, "pick(n)");
   switch (n % 3) {
     case 0:
       return "fizz";
@@ -542,6 +585,13 @@ export function pick(n) {
 }
 
 export function check(items, expected) {
+  $checks(
+    "check(items, expected)",
+    items,
+    (value, where, none) => $checkArray(value, where, none, $checkU32),
+    expected,
+    $checkU32,
+  );
   if (items.length >= 10) {
     throw $stringPanic(`too many items: ${items.length}`, "lib.rs:11:5");
   }
@@ -682,7 +732,7 @@ pub fn text(value: &Unknown) -> String {
 ```
 
 ```js
-import { $catchable, $index, $unwound } from "@rust-js/std";
+import { $catchable, $checkArray, $checkU32, $checks, $index, $unwound } from "@rust-js/std";
 
 export function url(value) {
   try {
@@ -695,6 +745,13 @@ export function url(value) {
 }
 
 export function item(items, at) {
+  $checks(
+    "item(items, at)",
+    items,
+    (value, where, none) => $checkArray(value, where, none, $checkU32),
+    at,
+    $checkU32,
+  );
   try {
     const item = $index(items, at, "lib.rs:13:34");
     return String(item);
@@ -847,9 +904,10 @@ pub fn described(value: &Unknown) -> String {
 ```
 
 ```js
-import { $catchable, $panic } from "@rust-js/std";
+import { $catchable, $checkBool, $checkCallback, $panic } from "@rust-js/std";
 
 export function stacks(render) {
+  $checkCallback(render, "stacks(render)");
   let control;
   try {
     try {
@@ -871,6 +929,8 @@ export function stacks(render) {
 }
 
 export function passive(canUseDom, probe) {
+  $checkBool(canUseDom, "passive(canUseDom)");
+  $checkCallback(probe, "passive(probe)");
   let supported = canUseDom;
   if (canUseDom) {
     try {
@@ -979,11 +1039,13 @@ pub fn dispatch(reducer: &dyn Fn(u32) -> u32, state: u32) -> bool {
 ```
 
 ```js
-import { $catchable } from "@rust-js/std";
+import { $catchable, $checkCallback, $checkU32 } from "@rust-js/std";
 
 function bailout() {}
 
 export function dispatch(reducer, state) {
+  reducer = $checkCallback(reducer, "dispatch(reducer)", $checkU32);
+  $checkU32(state, "dispatch(state)");
   try {
     if (reducer(state) === state) {
       bailout();
@@ -1058,7 +1120,16 @@ pub fn restored(n: u64, log: &mut Vec<String>) -> bool {
 ```
 
 ```js
-import { $bigChecked, $catchStackOverflow, $catchable, $unwrap } from "@rust-js/std";
+import {
+  $bigChecked,
+  $catchStackOverflow,
+  $catchable,
+  $checkArray,
+  $checkStr,
+  $checkU64,
+  $checks,
+  $unwrap,
+} from "@rust-js/std";
 
 function depth(n) {
   return n === 0n
@@ -1070,6 +1141,7 @@ function depth(n) {
 }
 
 export function measured(n) {
+  $checkU64(n, "measured(n)");
   const value = $catchStackOverflow(() => depth(n));
   if (value.TAG === "Ok") {
     const depth = value._0;
@@ -1080,6 +1152,9 @@ export function measured(n) {
 }
 
 export function restored(n, log) {
+  $checks("restored(n, log)", n, $checkU64, log, (value, where, none) =>
+    $checkArray(value, where, none, $checkStr),
+  );
   return (
     $catchStackOverflow(() => {
       log.push("rendering");
@@ -1147,7 +1222,12 @@ pub fn lazy_initializer(payload: &Payload) -> Option<&'static Unknown> {
 ```
 
 ```js
+import { $checkShape, $checks } from "@rust-js/std";
+
+const checkPayload = /* @__PURE__ */ $checkShape(() => ({}));
+
 export function lazyInitializer(payload) {
+  $checks("lazyInitializer(payload)", payload, checkPayload);
   if (payload._status === "Resolved") {
     return payload._result;
   } else {
@@ -1219,8 +1299,11 @@ pub fn fail(code: &str) -> ! {
 ```
 
 ```js
+import { $checkShape, $checkStr, $checks } from "@rust-js/std";
+
 export class VGPUError extends Error {
   constructor(data) {
+    $checks("VgpuError.new(data)", data, checkVgpuErrorData);
     super(data.message, { cause: data.cause });
     this.name = "VGPUError";
     this.code = data.code;
@@ -1228,7 +1311,14 @@ export class VGPUError extends Error {
   }
 }
 
+const checkVgpuErrorData = /* @__PURE__ */ $checkShape(() => ({
+  code: $checkStr,
+  message: $checkStr,
+  severity: [$checkStr, "nullish"],
+}));
+
 export function fail(code) {
+  $checkStr(code, "fail(code)");
   const error = new VGPUError({
     code,
     message: `${code} failed`,
@@ -1303,9 +1393,18 @@ pub fn parsed_status(parsed: Result<u8, String>) -> ExitCode {
 ```
 
 ```js
-import { $debugStr } from "@rust-js/std";
+import { $checkField, $checkStr, $checkTag, $checkU8, $checks, $debugStr } from "@rust-js/std";
 
 export function parsedStatus(parsed) {
+  $checks("parsedStatus(parsed)", parsed, (value) => {
+    const tag = $checkTag(value, "TAG", ["Ok", "Err"], []);
+    if (tag === "Ok") {
+      $checkField(value, "_0", $checkU8);
+    }
+    if (tag === "Err") {
+      $checkField(value, "_0", $checkStr);
+    }
+  });
   const result = parsed.TAG === "Ok" ? { TAG: "Ok", _0: parsed._0 } : parsed;
   let status;
   if (result.TAG === "Ok") {

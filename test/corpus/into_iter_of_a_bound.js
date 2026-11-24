@@ -8,6 +8,10 @@
 // itertools' `put_back` and `Zip::from` are.
 
 import {
+  $brand,
+  $checkBrand,
+  $checkField,
+  $checkObject,
   $debugStr,
   $intoIter,
   $iter,
@@ -21,7 +25,9 @@ import {
 } from "@rust-js/std";
 
 export function putBack(iterable, IIntoIterator) {
-  return { iter: IIntoIterator.intoIter(iterable) };
+  return $brand("into_iter_of_a_bound#688a057279c53ef0::PutBack", {
+    iter: IIntoIterator.intoIter(iterable),
+  });
 }
 
 export const PutBack = {
@@ -59,7 +65,9 @@ export function rest(j) {
 }
 
 function pairFrom_from([a, b], AIntoIterator, BIntoIterator) {
-  return { t: [AIntoIterator.intoIter(a), BIntoIterator.intoIter(b)] };
+  return $brand("into_iter_of_a_bound#688a057279c53ef0::Pair", {
+    t: [AIntoIterator.intoIter(a), BIntoIterator.intoIter(b)],
+  });
 }
 
 function pairIterator_next(pair, AIterator, BIterator) {
@@ -75,6 +83,18 @@ function pairIterator_next(pair, AIterator, BIterator) {
 
 export function paired(t, PairFromU) {
   return PairFromU.from(t);
+}
+
+function checkPutBack(value, I) {
+  $checkBrand(
+    value,
+    undefined,
+    undefined,
+    "into_iter_of_a_bound#688a057279c53ef0::PutBack",
+    "a PutBack",
+  );
+  $checkObject(value);
+  $checkField(value, "iter", I);
 }
 
 $main(main);

@@ -86,27 +86,35 @@ pub fn half(x: f32) -> f32 {
 ```
 
 ```js
+import { $checkF32, $checkI32, $checkU32, $checkU64, $checkU8, $checks } from "@rust-js/std";
+
 export function add(a, b) {
+  $checks("add(a, b)", a, $checkU32, b, $checkU32);
   return (a + b) >>> 0;
 }
 
 export function scale(a) {
+  $checkI32(a, "scale(a)");
   return (a * -3) | 0;
 }
 
 export function nextByte(a) {
+  $checkU8(a, "nextByte(a)");
   return (a + 1) & 255;
 }
 
 export function indexAfter(i) {
+  $checkU32(i, "indexAfter(i)");
   return (i + 1) >>> 0;
 }
 
 export function micros(ms) {
+  $checkU64(ms, "micros(ms)");
   return BigInt.asUintN(64, ms * 1000n);
 }
 
 export function half(x) {
+  $checkF32(x, "half(x)");
   return Math.fround(x / 2);
 }
 ```
@@ -148,11 +156,12 @@ pub fn scale() -> &'static dyn Fn(f64) -> f64 {
 ```
 
 ```js
-import { $round } from "@rust-js/std";
+import { $checkF64, $round } from "@rust-js/std";
 
 export const LOG = Math.log;
 
 export function area(radius) {
+  $checkF64(radius, "area(radius)");
   return Math.PI * radius * radius;
 }
 
@@ -199,13 +208,15 @@ pub fn initial(name: &str) -> Option<char> {
 ```
 
 ```js
-import { $byteLen, $next } from "@rust-js/std";
+import { $byteLen, $checkStr, $next } from "@rust-js/std";
 
 export function byteLen(text) {
+  $checkStr(text, "byteLen(text)");
   return $byteLen(text);
 }
 
 export function initial(name) {
+  $checkStr(name, "initial(name)");
   return $next(name[Symbol.iterator]());
 }
 ```
@@ -259,7 +270,19 @@ pub fn middle(items: &[i32]) -> &[i32] {
 ```
 
 ```js
-import { $BTreeMap, $cmp, $slice, $sortedEntries } from "@rust-js/std";
+import {
+  $BTreeMap,
+  $checkArray,
+  $checkI32,
+  $checkMap,
+  $checkSet,
+  $checkStr,
+  $checkU32,
+  $checks,
+  $cmp,
+  $slice,
+  $sortedEntries,
+} from "@rust-js/std";
 
 export function scores() {
   return [["Ada", 3]];
@@ -276,6 +299,7 @@ export function tags() {
 }
 
 export function logTags(tags) {
+  $checks("logTags(tags)", tags, (value, where, none) => $checkSet(value, where, none, $checkStr));
   tags.forEach((tag) => {
     console.log(`${tag}`);
   });
@@ -289,10 +313,16 @@ export function ranks() {
 }
 
 export function ranked(ranks) {
+  $checks("ranked(ranks)", ranks, (value, where, none) =>
+    $checkMap(value, where, none, $checkU32, $checkStr),
+  );
   return $sortedEntries(ranks, $cmp).map((entry) => entry[0]);
 }
 
 export function middle(items) {
+  $checks("middle(items)", items, (value, where, none) =>
+    $checkArray(value, where, none, $checkI32),
+  );
   return $slice(items, 1, "lib.rs:30:11", (items.length - 1) >>> 0);
 }
 ```
@@ -461,6 +491,8 @@ pub fn counted(counts: &Map<str, Option<u32>>, key: &str) -> &'static str {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function hasBadMapPolyfill() {
   const frozenObject = Object.freeze({});
   new Map([[frozenObject, null]]);
@@ -469,6 +501,7 @@ export function hasBadMapPolyfill() {
 }
 
 export function counted(counts, key) {
+  $checkStr(key, "counted(key)");
   const get = counts.get(key);
   if (get !== undefined) {
     if (get != null) {
@@ -539,6 +572,8 @@ pub fn parsed(id: u32) -> UserId {
 ```
 
 ```js
+import { $checkU32 } from "@rust-js/std";
+
 export function point() {
   return { x: 1, y: 2 };
 }
@@ -554,6 +589,7 @@ export function click() {
 }
 
 export function user(id) {
+  $checkU32(id, "user(id)");
   return id;
 }
 
@@ -566,6 +602,7 @@ export function older(a, b) {
 }
 
 export function parsed(id) {
+  $checkU32(id, "parsed(id)");
   return id;
 }
 ```
@@ -624,11 +661,24 @@ pub fn area(shape: &Shape) -> f64 {
 ```
 
 ```js
+import { $checkF64, $checkField, $checkTag, $checks } from "@rust-js/std";
+
 export function shapes() {
   return [{ TAG: "Circle", radius: 1 }, { TAG: "Square", _0: 2 }, "Empty"];
 }
 
+function checkShape(value) {
+  const tag = $checkTag(value, "TAG", ["Circle", "Square"], ["Empty"]);
+  if (tag === "Circle") {
+    $checkField(value, "radius", $checkF64);
+  }
+  if (tag === "Square") {
+    $checkField(value, "_0", $checkF64);
+  }
+}
+
 export function area(shape) {
+  $checks("area(shape)", shape, checkShape);
   if (shape.TAG === "Circle") {
     return Math.PI * shape.radius * shape.radius;
   }
@@ -671,7 +721,10 @@ pub fn describe(hook: HookType) -> String {
 ```
 
 ```js
+import { $checkOneOf } from "@rust-js/std";
+
 export function describe(hook) {
+  $checkOneOf(hook, ["useState", "useEffect"], "describe(hook)");
   return `hook ${hook}`;
 }
 ```
@@ -701,10 +754,13 @@ pub fn kind(complex: bool) -> ArrayKind {
 ```
 
 ```js
+import { $checkBool } from "@rust-js/std";
+
 export const Empty = 0;
 export const Complex = 1;
 
 export function kind(complex) {
+  $checkBool(complex, "kind(complex)");
   return complex ? Complex : Empty;
 }
 ```
@@ -977,11 +1033,15 @@ pub fn untrack(node: &Rc<RefCell<ReplayNode>>) {
 ```
 
 ```js
+import { $checkF64 } from "@rust-js/std";
+
 export function isElement(node) {
   return node.length === 4;
 }
 
 export function track(node, fallback, id) {
+  $checkF64(fallback, "track(fallback)", "nullish");
+  $checkF64(id, "track(id)");
   if (node.length === 4) {
     node[4] = fallback ?? undefined;
     node[5] = id;
@@ -1056,7 +1116,10 @@ pub fn append_child(parent_instance: Parent, child: String) {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function appendChild(parentInstance, child) {
+  $checkStr(child, "appendChild(child)");
   parentInstance.children.push(child);
 }
 ```
@@ -1120,9 +1183,26 @@ pub fn ratio(a: u32, b: u32) -> Result<u32, String> {
 ```
 
 ```js
-import { $div, $some } from "@rust-js/std";
+import {
+  $checkArray,
+  $checkBool,
+  $checkShape,
+  $checkStr,
+  $checkU32,
+  $checks,
+  $div,
+  $some,
+} from "@rust-js/std";
+
+const checkProfile = /* @__PURE__ */ $checkShape(() => ({
+  name: $checkStr,
+  nickname: [$checkStr, "nullish"],
+  avatar: [$checkStr, "nullish"],
+  banner: [$checkStr, "nullish"],
+}));
 
 export function profile(name) {
+  $checkStr(name, "profile(name)");
   return {
     name,
     avatar: null,
@@ -1130,35 +1210,54 @@ export function profile(name) {
 }
 
 export function hideBanner(profile) {
+  $checks("hideBanner(profile)", profile, checkProfile);
   profile.banner = null;
 }
 
 export function shown(profile) {
+  $checks("shown(profile)", profile, checkProfile);
   return profile.nickname ?? profile.name;
 }
 
 export function first(items) {
+  $checks("first(items)", items, (value, where, none) =>
+    $checkArray(value, where, none, $checkU32),
+  );
   return items[0];
 }
 
 export function last(items) {
+  $checks("last(items)", items, (value, where, none) => $checkArray(value, where, none, $checkU32));
+  return last$(items);
+}
+
+function last$(items) {
   return items.at(-1) ?? null;
 }
 
 export function lastOf(a, b) {
+  $checks(
+    "lastOf(a, b)",
+    a,
+    (value, where, none) => $checkArray(value, where, none, $checkU32),
+    b,
+    (value, where, none) => $checkArray(value, where, none, $checkU32),
+  );
   if (b.length === 0) {
-    return last(a);
+    return last$(a);
   }
-  return last(b);
+  return last$(b);
 }
 
 export function found(flag) {
+  $checkBool(flag, "found(flag)");
   if (flag) {
     return $some(undefined);
   }
 }
 
 export function ratio(a, b) {
+  $checks("ratio(a, b)", a, $checkU32, b, $checkU32);
   if (b === 0) {
     return { TAG: "Err", _0: "divide by zero" };
   }
@@ -1385,9 +1484,12 @@ pub fn prepare(module_loading: Option<&Unknown>) -> bool {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 // Upstream's `function update(element, parentComponent: ?Component, callback: ?Function)`:
 // JS renderers leave `callback` out, so it's a plain `Option`.
 export function update(element, callback) {
+  $checkStr(element, "update(element)");
   if (callback != null) {
     callback(element);
     return true;
@@ -1495,7 +1597,10 @@ pub fn post(json: Option<&str>) -> RequestInit<'_> {
 ```
 
 ```js
+import { $checkBool, $checkStr } from "@rust-js/std";
+
 export function chunk({ done, value }) {
+  $checkBool(done, "chunk(props.done)", "nullish");
   if (done) {
     return;
   }
@@ -1514,6 +1619,7 @@ export function candidate() {
 }
 
 export function post(json) {
+  $checkStr(json, "post(json)", "nullish");
   return {
     method: "POST",
     body: json ?? null,
@@ -1565,11 +1671,16 @@ pub fn given(manifest: &'static ServerConsumerManifest) -> bool {
 ```
 
 ```js
+import { $checkShape, $checks } from "@rust-js/std";
+
+const checkServerConsumerManifest = /* @__PURE__ */ $checkShape(() => ({}));
+
 export function createResponse(serverReferenceConfig) {
   return serverReferenceConfig != null;
 }
 
 export function given(manifest) {
+  $checks("given(manifest)", manifest, checkServerConsumerManifest);
   return manifest.serverModuleMap !== null && createResponse(manifest.serverModuleMap);
 }
 ```
@@ -1662,7 +1773,14 @@ pub fn changes(listeners: &[Listener]) -> usize {
 ```
 
 ```js
+import { $checkArray, $checkShape, $checkU32, $checks } from "@rust-js/std";
+
+const checkListener = /* @__PURE__ */ $checkShape(() => ({ instance: [$checkU32, "nullish"] }));
+
 export function changes(listeners) {
+  $checks("changes(listeners)", listeners, (value, where, none) =>
+    $checkArray(value, where, none, checkListener),
+  );
   let previousInstance;
   let count = 0;
   for (let i = 0; i < listeners.length; i++) {
@@ -1710,7 +1828,10 @@ pub fn preload(cache: &HashMap<String, ChunkEntry>, id: &str, promises: &mut Vec
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function preload(cache, id, promises) {
+  $checkStr(id, "preload(id)");
   const entry = cache.get(id);
   if (entry !== undefined) {
     if (entry !== null) {
@@ -1761,6 +1882,10 @@ pub fn has_state(fiber: &Fiber) -> bool {
 ```
 
 ```js
+import { $checkShape, $checkStr, $checks } from "@rust-js/std";
+
+const checkFiber = /* @__PURE__ */ $checkShape(() => ({ name: [$checkStr, "nullish"] }));
+
 export function createFiber() {
   return {
     memoizedState: null,
@@ -1770,14 +1895,17 @@ export function createFiber() {
 }
 
 export function setState(fiber, state) {
+  $checks("setState(fiber)", fiber, checkFiber);
   fiber.memoizedState = state;
 }
 
 export function copy(workInProgress, current) {
+  $checks("copy(workInProgress, current)", workInProgress, checkFiber, current, checkFiber);
   workInProgress.debugStack = current.debugStack;
 }
 
 export function hasState(fiber) {
+  $checks("hasState(fiber)", fiber, checkFiber);
   return fiber.memoizedState != null;
 }
 ```
@@ -1818,7 +1946,12 @@ pub fn siblings(fiber: &Rc<Fiber>) -> [Option<Rc<Fiber>>; 2] {
 ```
 
 ```js
+import { $checkShape, $checkU8, $checks } from "@rust-js/std";
+
+const checkFiber = /* @__PURE__ */ $checkShape(() => ({ tag: $checkU8 }));
+
 export function siblings(fiber) {
+  $checks("siblings(fiber)", fiber, checkFiber);
   const result = [null, null];
   if (fiber.tag !== 0) {
     result[1] = fiber;
@@ -1858,7 +1991,15 @@ pub fn same(a: &Rc<Node>, b: &Rc<Node>) -> bool {
 ```
 
 ```js
+import { $checkArray, $checkShape, $checkStr, $checks } from "@rust-js/std";
+
+const checkNode = /* @__PURE__ */ $checkShape(() => ({
+  name: $checkStr,
+  children: (value, where, none) => $checkArray(value, where, none, checkNode),
+}));
+
 export function node(name) {
+  $checkStr(name, "node(name)");
   return {
     name,
     children: [],
@@ -1866,10 +2007,12 @@ export function node(name) {
 }
 
 export function adopt(parent, child) {
+  $checks("adopt(parent, child)", parent, checkNode, child, checkNode);
   parent.children.push(child);
 }
 
 export function same(a, b) {
+  $checks("same(a, b)", a, checkNode, b, checkNode);
   return a === b;
 }
 ```
@@ -1897,11 +2040,15 @@ pub fn is_hook(hooks: &[Rc<dyn Fn() -> u32>], hook: &Rc<dyn Fn() -> u32>) -> boo
 ```
 
 ```js
+import { $checkCallback, $checkU32 } from "@rust-js/std";
+
 export function hook(n) {
+  $checkU32(n, "hook(n)");
   return () => (n + 1) >>> 0;
 }
 
 export function isHook(hooks, hook) {
+  hook = $checkCallback(hook, "isHook(hook)", $checkU32);
   return hooks.some((h) => h === hook);
 }
 ```
@@ -1937,7 +2084,12 @@ pub fn handlers(payload: &Rc<Payload>) -> (Box<dyn Fn()>, Box<dyn Fn()>) {
 ```
 
 ```js
+import { $checkShape, $checks } from "@rust-js/std";
+
+const checkPayload = /* @__PURE__ */ $checkShape(() => ({}));
+
 export function handlers(payload) {
+  $checks("handlers(payload)", payload, checkPayload);
   return [
     () => {
       payload.status = 1;
@@ -1986,7 +2138,10 @@ pub fn create_context(value: f64) -> Rc<Context> {
 ```
 
 ```js
+import { $checkF64 } from "@rust-js/std";
+
 export function createContext(value) {
+  $checkF64(value, "createContext(value)");
   const context = {
     value,
     // These are circular
@@ -2028,9 +2183,10 @@ pub fn share(doc: &Rc<Doc>) -> Rc<Doc> {
 ```
 
 ```js
-import { $rcClone } from "@rust-js/std";
+import { $checkStr, $rcClone } from "@rust-js/std";
 
 export function open(title) {
+  $checkStr(title, "open(title)");
   return { value: { title }, strong: 1, weak: 0 };
 }
 
@@ -2147,7 +2303,14 @@ pub fn shared() -> RefCell<Vec<u32>> {
 ```
 
 ```js
+import { $checkArray, $checkShape, $checkStr, $checks } from "@rust-js/std";
+
+const checkCounter = /* @__PURE__ */ $checkShape(() => ({
+  log: (value, where, none) => $checkArray(value, where, none, $checkStr),
+}));
+
 export function hit(counter, line) {
+  $checks("hit(counter, line)", counter, checkCounter, line, $checkStr);
   counter.hits = (counter.hits + 1) >>> 0;
   counter.log.push(line);
 }
@@ -2289,11 +2452,16 @@ pub fn before_update(current: &Fiber) {
 ```
 
 ```js
+import { $checkShape, $checks } from "@rust-js/std";
+
+const checkFiber = /* @__PURE__ */ $checkShape(() => ({}));
+
 function collect(into) {
   into.push(1);
 }
 
 export function beforeUpdate(current) {
+  $checks("beforeUpdate(current)", current, checkFiber);
   const measurements = [];
   current.memoizedState = measurements;
   collect(measurements);
@@ -2345,7 +2513,12 @@ pub fn rename(payload: &Payload, name: &str) -> bool {
 ```
 
 ```js
+import { $checkBool, $checkShape, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
+const checkPayload = /* @__PURE__ */ $checkShape(() => ({ status: $checkU32 }));
+
 export function payload(dev) {
+  $checkBool(dev, "payload(dev)");
   const payload = {
     status: 0,
     info: undefined,
@@ -2358,10 +2531,12 @@ export function payload(dev) {
 }
 
 export function name(payload) {
+  $checks("name(payload)", payload, checkPayload);
   return payload.info?.name;
 }
 
 export function rename(payload, name) {
+  $checks("rename(payload, name)", payload, checkPayload, name, $checkStr);
   const info = { name };
   const unset = payload.info === undefined;
   if (unset) {
@@ -2420,15 +2595,40 @@ pub fn rename(task: &mut Task, label: &str) {
 ```
 
 ```js
+import {
+  $checkCell,
+  $checkShape,
+  $checkStr,
+  $checkU32,
+  $checks,
+  $live,
+  $unwindsOn,
+} from "@rust-js/std";
+
+const checkTask = /* @__PURE__ */ $checkShape(() => ({ sortIndex: $checkU32, label: $checkStr }));
+
 export function bump(n) {
+  $checks("bump(n)", n, (value, where, none) => $checkCell(value, where, none, $checkU32));
+  return bump$(n);
+}
+
+function bump$(n) {
   n.value = (n.value + 1) >>> 0;
 }
 
 export function rename(task, label) {
+  $checks("rename(task, label)", task, checkTask, label, $checkStr);
   task.label = label;
   const n = { value: task.sortIndex };
-  bump(n);
-  task.sortIndex = n.value;
+  try {
+    bump$(n);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      task.sortIndex = n.value;
+    }
+  }
 }
 ```
 
@@ -2476,6 +2676,8 @@ pub fn each(items: &[u32], f: &dyn Fn(u32)) {
 ```
 
 ```js
+import { $checkArray, $checkCallback, $checkI32, $checkU32, $checks } from "@rust-js/std";
+
 export const squareShape = { area: squareShape_area };
 function squareShape_area(square) {
   return square.side * square.side;
@@ -2486,14 +2688,19 @@ export function shapes() {
 }
 
 export function adder(by) {
+  $checkI32(by, "adder(by)");
   return (x) => (x + by) | 0;
 }
 
 export function apply(f, x) {
+  f = $checkCallback(f, "apply(f)", $checkU32);
+  $checkU32(x, "apply(x)");
   return f(x);
 }
 
 export function each(items, f) {
+  $checks("each(items)", items, (value, where, none) => $checkArray(value, where, none, $checkU32));
+  $checkCallback(f, "each(f)");
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     f(item);
@@ -2670,7 +2877,10 @@ pub fn made(class: &Unknown, name: &str) -> &'static Unknown {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function made(class$, name) {
+  $checkStr(name, "made(name)");
   return new class$(name, 1);
 }
 ```
@@ -2815,11 +3025,14 @@ pub fn exclaimed(text: &str) -> Vec<String> {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function items(iterator) {
   return Array.from(iterator);
 }
 
 export function exclaimed(text) {
+  $checkStr(text, "exclaimed(text)");
   return Array.from(text, (c) => c + "!");
 }
 ```
@@ -2847,7 +3060,12 @@ pub fn attach(fiber: &Fiber, wakeable: &'static Unknown) {
 ```
 
 ```js
+import { $checkShape, $checks } from "@rust-js/std";
+
+const checkFiber = /* @__PURE__ */ $checkShape(() => ({}));
+
 export function attach(fiber, wakeable) {
+  $checks("attach(fiber)", fiber, checkFiber);
   fiber.updateQueue = new Set([wakeable]);
 }
 ```
@@ -2868,10 +3086,13 @@ pub fn is_marked(log: fn()) -> bool {
 ```
 
 ```js
+import { $checkCallback } from "@rust-js/std";
+
 function disabledLog() {}
 disabledLog.__reactDisabledLog = true;
 
 export function isMarked(log) {
+  $checkCallback(log, "isMarked(log)");
   return log.__reactDisabledLog != null;
 }
 ```
@@ -2905,7 +3126,12 @@ pub fn update_transition(hook: &Hook) -> Rc<dyn Fn(bool)> {
 ```
 
 ```js
+import { $checkShape, $checks } from "@rust-js/std";
+
+const checkHook = /* @__PURE__ */ $checkShape(() => ({}));
+
 export function mountTransition(hook, pending) {
+  $checks("mountTransition(hook)", hook, checkHook);
   const start = (value) => {
     pending.value = value;
   };
@@ -2914,6 +3140,7 @@ export function mountTransition(hook, pending) {
 }
 
 export function updateTransition(hook) {
+  $checks("updateTransition(hook)", hook, checkHook);
   return hook.memoizedState;
 }
 ```
@@ -3016,6 +3243,8 @@ pub fn saved() -> String {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 const modules = new Map();
 
 export function saveModule(render) {
@@ -3025,6 +3254,7 @@ export function saveModule(render) {
 }
 
 export function readModule(idx) {
+  $checkStr(idx, "readModule(idx)");
   return modules.get(idx);
 }
 
@@ -3088,6 +3318,8 @@ pub fn same_source(prev: &dyn Fn(&str), next: &dyn Fn(&str)) -> bool {
 ```
 
 ```js
+import { $checkCallback } from "@rust-js/std";
+
 export function described(value) {
   if (typeof value === "function") {
     const functionName = value.name;
@@ -3098,6 +3330,8 @@ export function described(value) {
 }
 
 export function sameSource(prev, next) {
+  $checkCallback(prev, "sameSource(prev)");
+  $checkCallback(next, "sameSource(next)");
   return (
     prev.length === next.length &&
     Function.prototype.toString.call(prev) === Function.prototype.toString.call(next)
@@ -3139,11 +3373,14 @@ pub fn unsubscribe(instance: &Unknown, r#type: &str) {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function applyProps(instance, props) {
   instance._applyProps(instance, props);
 }
 
 export function unsubscribe(instance, type) {
+  $checkStr(type, "unsubscribe(type)");
   instance._subscriptions[type]();
 }
 ```
@@ -3222,16 +3459,22 @@ pub fn log_phase(task: &ConsoleTask, label: &str, start: f64, end: f64) {
 ```
 
 ```js
+import { $checkF64, $checkShape, $checkStr, $checks } from "@rust-js/std";
+
+const checkQueue = /* @__PURE__ */ $checkShape(() => ({}));
+
 function dispatchSetState(fiber, queue, action) {
   fiber.pending = action;
   queue.pending = action;
 }
 
 export function mountState(fiber, queue) {
+  $checks("mountState(fiber, queue)", fiber, checkQueue, queue, checkQueue);
   return dispatchSetState.bind(null, fiber, queue);
 }
 
 export function logPhase(task, label, start, end) {
+  $checks("logPhase(label, start, end)", label, $checkStr, start, $checkF64, end, $checkF64);
   task.run(console.timeStamp.bind(console, label, start, end, "Components", undefined, "primary"));
 }
 ```
@@ -3262,7 +3505,10 @@ pub fn log_measure(task: &ConsoleTask, name: &str, start: f64, end: f64) {
 ```
 
 ```js
+import { $checkF64, $checkStr, $checks } from "@rust-js/std";
+
 export function logMeasure(task, name, start, end) {
+  $checks("logMeasure(name, start, end)", name, $checkStr, start, $checkF64, end, $checkF64);
   const options = {
     start,
     end,
@@ -3290,9 +3536,10 @@ pub fn bind_to_console(method_name: &str, args: &[Option<&'static Unknown>]) -> 
 ```
 
 ```js
-import { $stringPanic } from "@rust-js/std";
+import { $checkStr, $stringPanic } from "@rust-js/std";
 
 export function bindToConsole(methodName, args) {
+  $checkStr(methodName, "bindToConsole(methodName)");
   const method = console[methodName];
   if (typeof method !== "function") {
     throw $stringPanic(`console.${methodName} is no function`, "lib.rs:6:9");
@@ -3376,6 +3623,11 @@ pub fn named_by(name: String) -> &'static dyn Fn(u32) -> String {
 ```
 
 ```js
+import { $checkShape, $checkStr, $checks } from "@rust-js/std";
+
+const checkUpdate = /* @__PURE__ */ $checkShape(() => ({}));
+const checkFiber = /* @__PURE__ */ $checkShape(() => ({}));
+
 function logCaughtError(fiber) {
   fiber.lanes = 0;
 }
@@ -3383,6 +3635,7 @@ function logCaughtError(fiber) {
 function markLegacyErrorBoundaryAsFailed(instance) {}
 
 export function initializeClassErrorUpdate(update, fiber) {
+  $checks("initializeClassErrorUpdate(update, fiber)", update, checkUpdate, fiber, checkFiber);
   update.callback = function callback() {
     logCaughtError(fiber);
     markLegacyErrorBoundaryAsFailed(this);
@@ -3390,6 +3643,7 @@ export function initializeClassErrorUpdate(update, fiber) {
 }
 
 export function namedBy(name) {
+  $checkStr(name, "namedBy(name)");
   return function (count) {
     const this$ = this;
     function read() {
@@ -3432,7 +3686,10 @@ pub fn sample(construct: bool) -> Option<&'static Unknown> {
 ```
 
 ```js
+import { $checkBool } from "@rust-js/std";
+
 export function sample(construct) {
+  $checkBool(construct, "sample(construct)");
   if (construct) {
     // What the props are set on.
     function Fake() {}
@@ -3588,7 +3845,10 @@ pub fn clobbers(typed: &str, value: &js::Unknown) -> bool {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 export function clobbers(typed, value) {
+  $checkStr(typed, "clobbers(typed)");
   return typed != value;
 }
 ```
@@ -3654,6 +3914,8 @@ pub fn is_valid(name: &str) -> bool {
 ```
 
 ```js
+import { $checkStr } from "@rust-js/std";
+
 const ariaProperties = {
   "aria-current": 0, // state
   // Widget Attributes
@@ -3662,6 +3924,7 @@ const ariaProperties = {
 };
 
 export function isValid(name) {
+  $checkStr(name, "isValid(name)");
   return ariaProperties[name] != null;
 }
 ```
@@ -3829,13 +4092,30 @@ pub fn delete(tasks: &mut Vec<Task>, at: usize) {
 ```
 
 ```js
-import { $removeOutOfBounds } from "@rust-js/std";
+import {
+  $checkArray,
+  $checkShape,
+  $checkStr,
+  $checkU32,
+  $checks,
+  $removeOutOfBounds,
+} from "@rust-js/std";
+
+const checkTask = /* @__PURE__ */ $checkShape(() => ({ sortIndex: $checkU32, label: $checkStr }));
 
 export function firstWord(text) {
+  $checkStr(text, "firstWord(text)");
   return text.split(" ")[0] ?? "";
 }
 
 function delete$(tasks, at) {
+  $checks(
+    "delete(tasks, at)",
+    tasks,
+    (value, where, none) => $checkArray(value, where, none, checkTask),
+    at,
+    $checkU32,
+  );
   if (at >= tasks.length) {
     $removeOutOfBounds(tasks, at, "lib.rs:11:11");
   }
@@ -3935,16 +4215,26 @@ pub fn steps() -> Steps {
 ```
 
 ```js
+import { $checkField, $checkObject, $checkStr, $checkU32, $checks } from "@rust-js/std";
+
 const RESPONSE = Symbol();
 
 export function reason(id) {
+  $checkU32(id, "reason(id)");
   return {
     id,
     [RESPONSE]: "ok",
   };
 }
 
+function checkReason(value) {
+  $checkObject(value);
+  $checkField(value, "id", $checkU32);
+  $checkField(value, RESPONSE, $checkStr);
+}
+
 export function response(reason) {
+  $checks("response(reason)", reason, checkReason);
   return reason[RESPONSE];
 }
 

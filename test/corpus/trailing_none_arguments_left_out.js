@@ -9,7 +9,7 @@
 // before the first test. Natively, the binding's body says what JS's
 // `Math.max` makes of what it's given.
 
-import { $displayF64, $main } from "@rust-js/std";
+import { $checkF64, $checkResult, $displayF64, $main } from "@rust-js/std";
 
 function noted(log, name, value) {
   log.push(name);
@@ -17,15 +17,19 @@ function noted(log, name, value) {
 }
 
 function most(b, c, d, e) {
-  return e != null
-    ? Math.max(1, b, c, d, e)
-    : d != null
-      ? Math.max(1, b, c, d)
-      : c != null
-        ? Math.max(1, b, c)
-        : b != null
-          ? Math.max(1, b)
-          : Math.max(1);
+  return $checkResult(
+    e != null
+      ? Math.max(1, b, c, d, e)
+      : d != null
+        ? Math.max(1, b, c, d)
+        : c != null
+          ? Math.max(1, b, c)
+          : b != null
+            ? Math.max(1, b)
+            : Math.max(1),
+    "Math.max",
+    $checkF64,
+  );
 }
 
 $main(main);
@@ -50,7 +54,7 @@ function main() {
   const c = noted(log, "c");
   const d = noted(log, "d");
   const e = noted(log, "e");
-  const shown =
+  const shown = $checkResult(
     e != null
       ? Math.max(1, b, c, d, e)
       : d != null
@@ -59,9 +63,12 @@ function main() {
           ? Math.max(1, b, c)
           : b != null
             ? Math.max(1, b)
-            : Math.max(1);
+            : Math.max(1),
+    "Math.max",
+    $checkF64,
+  );
   const arg = log.join(",");
   console.log(`${$displayF64(shown)} ${arg}`);
-  console.log(`${$displayF64(Math.max(1))}`);
+  console.log(`${$displayF64($checkResult(Math.max(1), "Math.max", $checkF64))}`);
 }
 //# sourceMappingURL=case.js.map
