@@ -61,6 +61,12 @@ pub fn wrapped(players: Vec<String>) -> (Vec<String>, Vec<String>) {
     (dep::pass(players.clone()), players)
 }
 
+// One whose only way to JS is a library's result, its source Rust's alone.
+pub fn passed_on(n: u32) -> Vec<String> {
+    let local = vec![n.to_string()];
+    dep::pass(local.clone())
+}
+
 // A callback JS gave gets a clone: the callback may keep it.
 pub fn offer(players: &Vec<String>, take: impl Fn(Vec<String>)) {
     take(players.clone());
@@ -103,6 +109,10 @@ test("a clone stored through a &mut into what's returned, and one pushed, are co
   expect(rosters).toEqual([["ann", "bo"], ["ann", "bo"]]);
   rosters[0]!.push("x");
   expect(rosters[1]).toEqual(["ann", "bo"]);
+});
+
+test("a clone whose only way to JS is a library's result is a copy, as that result carries it", () => {
+  expect(fn("passedOn")).toContain(".slice()");
 });
 
 test("a library's function passing its argument on carries the clone: a copy", () => {

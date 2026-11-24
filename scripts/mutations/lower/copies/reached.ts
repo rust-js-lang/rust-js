@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     file,
     find: "                _ => vec![result; arg_places.len()],",
     replace: "                _ => vec![false; arg_places.len()],",
-    tests: ["test/js-copies.test.ts", "-t", "library"],
+    tests: ["test/js-copies.test.ts", "-t", "only way to JS is a library"],
   },
   {
     name: "mut-store-not-followed",
@@ -51,6 +51,7 @@ export const mutations: Mutation[] = [
     find: "        ty::Adt(adt, args) if crate::recognition::is_std_crate(tcx, adt.did()) => args.types().collect(),",
     replace: "        ty::Adt(adt, _) if crate::recognition::is_std_crate(tcx, adt.did()) => Vec::new(),",
     tests: ["test/corpus.test.ts", "-t", "^nullable_let_read_alike.rs$"],
+    snapshots: true,
   },
   {
     name: "returned-clone-read-through-parts",
@@ -59,6 +60,7 @@ export const mutations: Mutation[] = [
     find: "    if local == mir::RETURN_PLACE {",
     replace: "    if false && local == mir::RETURN_PLACE {",
     tests: ["test/corpus.test.ts", "-t", "^clone_read_through_its_parts_copies_its_parts\\.rs$"],
+    snapshots: true,
   },
   {
     name: "destructured-clone-taken-whole",
@@ -67,6 +69,7 @@ export const mutations: Mutation[] = [
     find: "                let whole = used_whole(body, destination.local);",
     replace: "                let whole = true || used_whole(body, destination.local);",
     tests: ["test/corpus.test.ts", "-t", "^clone_read_through_its_parts_copies_its_parts\\.rs$"],
+    snapshots: true,
   },
   {
     name: "dictionary-given-copied",

@@ -1016,8 +1016,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .krate
                 .changed_vecs
                 .iter()
-                .any(|&changed| self.instance_of(ty, changed))
-            || self.js_copies_here(ty);
+                .any(|&changed| self.instance_of(ty, changed));
         if !changed {
             self.elided(ty);
         }
