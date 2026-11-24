@@ -97,6 +97,16 @@ test("a resumed unwind no panic raised ends a binary with no hook's text", () =>
   expect(native).toEqual({ status: 101, out: "a\n" });
 }, 300_000);
 
+// A binary's `RefCell`s no borrow of which can meet another are quiet, a
+// guard their handle, where a library's held across a `dyn` call is
+// counted: the corpus case, as a binary, its guard lent as a `&mut dyn`
+// after a `get_mut` lend, whose pair writes the field, never a `const`
+// read of it (#2445).
+test("a quiet `RefCell` field's guard lent as a `&mut dyn` after a `get_mut` lend writes the field", () => {
+  const source = readFileSync(join(root, "test/corpus/refcell_guard_lent_as_a_dyn_after_get_mut.rs"), "utf8");
+  expect(same("guard-lent-as-a-dyn", source)).toEqual({ status: 0, out: "Some(2)\n4\nSome(5) 0\n" });
+}, 300_000);
+
 test("what stdout holds of a line is written as a panic ends a binary", () => {
   same("partial", 'fn main() {\n    print!("partial");\n    panic!("then");\n}\n');
 }, 300_000);

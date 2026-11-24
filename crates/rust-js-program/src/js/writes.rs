@@ -117,12 +117,16 @@ impl Writes {
                     places.push((**place).clone());
                 }
                 // One whose write changes the object in place, a flattened
-                // state's keys or `$assign`, never sets the variable (#968).
-                if let ExprKind::Var(name) = &place.kind
-                    && storage.rebinds()
-                {
-                    self.handled.insert(name.clone());
-                    self.set(name);
+                // state's keys or `$assign`, never sets the variable (#968):
+                // it changes the variable's object, as one on a part of an
+                // object, `h.value` or `o.f`, changes the object at its root,
+                // as `o.f = ..` does (#2445).
+                match &place.kind {
+                    ExprKind::Var(name) if storage.rebinds() => {
+                        self.handled.insert(name.clone());
+                        self.set(name);
+                    }
+                    _ => self.changed_at(place),
                 }
             }
             // `(x.f = ..)` in an expression, a sequence's (#523), and `x++`
@@ -162,6 +166,17 @@ impl Writes {
                 }
             }
         });
+    }
+
+    /// The object at `place`'s root changed, a variable's.
+    fn changed_at(&mut self, place: &Expr) {
+        let mut root = place;
+        while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {
+            root = of;
+        }
+        if let ExprKind::Var(name) = &root.kind {
+            self.changed.insert(name.clone());
+        }
     }
 
     /// What writing `target` writes: its variable's binding, or the object
@@ -306,7 +321,9 @@ mod tests {
     /// A destructuring assignment, a swap's `[a, o.f] = [o.f, a]`, sets
     /// `a` and changes `o`'s object, and writes each of its targets, the
     /// places `Writes::places` lists once each, beside a step's, an
-    /// assignment's in a closure and a handle's (#1570).
+    /// assignment's in a closure and a handle's (#1570), which changes the
+    /// object at its place's root, `h`'s of `h.f`'s, as `h.f = ..` would
+    /// (#2445).
     #[test]
     fn each_target_of_a_destructuring_assignment_is_written() {
         let field = Expr::member(Expr::var("o"), "f");
@@ -329,7 +346,7 @@ mod tests {
         ];
         let writes = Writes::of(&stmts);
         assert_eq!(names(&writes.replaced), ["a"]);
-        assert_eq!(names(&writes.changed), ["c", "g", "o"]);
+        assert_eq!(names(&writes.changed), ["c", "g", "h", "o"]);
         assert_eq!(Writes::count(&stmts, &"a".into()), 1);
         let places = Writes::places(&stmts);
         let written = |of: &str| places.iter().filter(|p| p.mentions_name(&Name::from(of))).count();

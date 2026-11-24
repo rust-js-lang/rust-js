@@ -64,4 +64,12 @@ export const mutations: Mutation[] = [
     replace: "            ExprKind::Assigned(target, _) | ExprKind::Stepped(_, target) => self.target(target, in_closure, self.places.is_none()),\n",
     tests: ["test/corpus.test.ts", "-t", "^guard_field_written_by_a_swap_or_in_an_expression.rs$"],
   },
+  {
+    name: "writes-handle-on-a-part-unchanged",
+    breaks: "a handle or a `dyn`'s pair on a part of an object, `guard.value`, isn't a change of the object at its root, so tidy's `read_handles` reads a `RefCell` field's guard at once, `const guard = slots.slot`, and the pair's setter assigns that `const`: \"Assignment to constant variable\" (#2445)",
+    file: "crates/rust-js-program/src/js/writes.rs",
+    find: "                    _ => self.changed_at(place),\n",
+    replace: "                    _ => {}\n",
+    tests: ["test/binaries.test.ts", "-t", "quiet `RefCell` field's guard lent as a `&mut dyn`"],
+  },
 ];

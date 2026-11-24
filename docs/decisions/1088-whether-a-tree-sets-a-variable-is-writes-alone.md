@@ -124,3 +124,38 @@ the handle's place is `Writes`' now, caught by `mut_ref_to_mut_ref` and
 `mut_ref_kept`. `shadows.rs`' walk has no mutation: a destructuring set
 of `n` while `const n$1 = n;` is read after it is one Rust's scoping
 forbids, as `let n = n;` hides the `n` it shadows.
+
+## Amendment: a handle on a part changes its root's object (2026-11-24, #2445)
+
+`Writes` counted a handle, or a `dyn`'s pair, as a write only where it was
+made on a variable that it rebinds. One made on a part of an object,
+`guard.value` or `o.f`, was listed in `Writes::places`, but its root's
+object wasn't in `changed`. `o.f = ..` is in `changed`, and what the
+handle is given may do the same write.
+
+Tidy's `read_handles` asks `changed` whether a handle is written through.
+A quiet `RefCell` field's guard, `const guard = { get value() { return
+slots.slot; }, .. }`, lent as a `&mut dyn`, is a pair on `guard.value`.
+It wasn't counted, so the guard was read at once into `const guard =
+slots.slot`, and the pair's setter became `guard = value`. The JS threw
+"Assignment to constant variable." where Rust prints `Some(2)`. This needs
+the dictionary hoisted into a `const`, by an earlier `get_mut()` lend of
+the field as the same `dyn`. Otherwise a call, `tSetT()`, sits between, so
+the guard isn't read at once.
+
+**A handle or a pair on anything but a variable it rebinds changes the
+object at its place's root**, as an assignment to that place does. That
+covers a part, and also a variable whose object it writes in place, a
+flattened state's keys. `changed` and `places` now agree.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. The JS now does what
+the Rust does. No corpus case's JS moved.
+
+Proof: the corpus case `refcell_guard_lent_as_a_dyn_after_get_mut`, an
+`Option`'s field, a number's and one with no lend before it, against
+native Rust. The corpus builds it as a library, where a guard held across
+a `dyn` call is counted, so it's also run as a binary in
+`test/binaries.test.ts`, against native, where the guard is quiet. The
+mutation `writes-handle-on-a-part-unchanged` is caught there. `Writes`'
+unit test `each_target_of_a_destructuring_assignment_is_written` now holds
+`h` of a handle on `h.f` changed.
