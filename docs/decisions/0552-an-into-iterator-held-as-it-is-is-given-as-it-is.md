@@ -342,3 +342,50 @@ that flag, `into-iterator-as-it-is-dropped-as-made` (#1510), survived on
 main (snapshots and native output alike unchanged) and is retired with it.
 `check:fast --all` compared every corpus snapshot of the change, as ADR
 0093's 2026-11-16 amendment asks.
+
+## Amended: an `IntoIter` a bound equates to a type (2026-11-24, #2520)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. `fn pick<I: Iterator, J: IntoIterator<IntoIter =
+I>>(first: I, more: J) -> (I, I)` gave `J` as a JS iterable. Its body's
+`more.into_iter()` was `$intoIter(more)`, a JS iterator, which it held as
+an `I`. #966 gives that `I` as it is, as the bound names it. The two forms
+disagreed whatever was given:
+- the crate's iterator of a field was stepped by its own `next` given the
+  JS iterator, `Some(0)` for native's `Some(6)`;
+- a fieldless enum's place read `.value` of the wrapper, `Some(-1)`;
+- `IntoIter = Range<u32>` read `(undefined, undefined)`;
+- an `I: Clone` of a `Vec`'s threw.
+
+`into_iter_held_as_it_is` now answers yes where a bound equates `J`'s
+`IntoIter` to a type, any type: a type parameter, which another bound so
+names, or a type known whole, in its own form. `J` is given as it is, with
+its `IntoIterator` dictionary, `pick(first, more, JIntoIterator)`, and
+`JIntoIterator.intoIter(more)` makes the value the body holds. A generic
+caller that has `J` only as a JS iterable gives the dictionary of one, as
+it does for `-> J::IntoIter`.
+
+The rule reads the definition alone, so a library's export and its
+consumer's call agree by construction, and a library's manifest is the
+compiler build's (ADR 1004). No new contract fact is needed.
+
+`traits/dictionaries/placed.rs`' `placed_dictionary` asks the bound's
+associated types too, not only its type arguments. `made(Bag)`, where
+`Bag`'s `IntoIter` is `Empty`, a unit struct iterator JS holds as no
+object, got the bare dictionary. Generic code that gives back
+`J::IntoIter`, a place, was then read `.value` of `undefined`. Now it gets
+`$throughPlace(bagIntoIterator, {}, { intoIter: 1 })`.
+
+Measured before the change, by grep: no function of this shape in the
+corpus, the crate corpus's 100 crates, the React port or std, whose
+`Item: IntoIterator<IntoIter = U>` bounds a projection, held so already.
+
+A parameter held in a place whose values also come as another iterator's
+items, `S: Iterator<Item = I>`, is #2534's, not this rule's.
+
+Corpus case `into_iter_equated_by_a_bound`. Mutations
+`into-iter-equated-by-a-bound-unread`,
+`placed-dictionary-associated-types-unasked` and
+`placed-dictionary-own-generics-projected` (only an associated type of no
+generic parameters of its own is projected by the bound's arguments, not a
+generic associated type or a method's `-> impl Trait`).

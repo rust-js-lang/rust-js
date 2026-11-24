@@ -948,7 +948,10 @@ What's refused is in [the limitations](limitations.md).
   `I::IntoIter` another bound names, `R: IteratorIndex<I::IntoIter>`, or
   the signature holds where its caller reads it, `fn it<T: IntoIterator>(t:
   T) -> T::IntoIter`, an `Option` or a tuple of one, or one taken: `it(t,
-  TIntoIterator)`, `TIntoIterator.intoIter(t)`. One only std's adapter
+  TIntoIterator)`, `TIntoIterator.intoIter(t)`; and one a bound equates to
+  a type, `J: IntoIterator<IntoIter = I>`, whose `into_iter()` makes that
+  type's value as the body holds it, `JIntoIterator.intoIter(more)`
+  (#2520). One only std's adapter
   holds, `Zip<T::IntoIter, J>` or a `Copied<I>` given, is a JS iterator. An
   `IntoIterator` dictionary, the crate's impl's too, makes its `IntoIter` as
   its own value, a range a range, stepped by its `IntoIterIterator` entry,

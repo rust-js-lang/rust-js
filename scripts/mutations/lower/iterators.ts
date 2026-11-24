@@ -467,6 +467,15 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_of_a_method_with_its_own_generics.rs$"],
   },
   {
+    name: "into-iter-equated-by-a-bound-unread",
+    breaks:
+      "a `J: IntoIterator<IntoIter = I>` is given as a JS iterable, whose `$intoIter` the body holds as `I`, stepped by `I`'s own `next`: the crate's iterator of a field steps `undefined`, a `Range`'s fields read `undefined` (#2520)",
+    file: "crates/rust-js-lower/src/iterators.rs",
+    find: "        .any(|p| p.def_id() == into_iter && p.self_ty() == into);\n",
+    replace: "        .any(|p| p.def_id() == into_iter && p.self_ty() == into && false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_equated_by_a_bound\\.rs$"],
+  },
+  {
     name: "into-iter-in-a-signature-unread",
     breaks:
       "a function that gives back what an `IntoIterator` makes, `-> T::IntoIter`, `Option<T::IntoIter>`, or takes one, takes its `T` as a JS iterator, so concrete code reads a range given back as `undefined..undefined` (#2331)",

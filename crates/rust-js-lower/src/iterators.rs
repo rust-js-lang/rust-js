@@ -73,7 +73,8 @@ fn reads_its_value(tcx: ty::TyCtxt<'_>, tr: DefId) -> bool {
 /// its caller reads it as the type it is, `-> T::IntoIter`, `it:
 /// T::IntoIter`, `Option<T::IntoIter>`, `Pair<I::IntoIter>` given back
 /// (`holds_readably`, ADRs 0411, 0561, #2331); not in std's adapter,
-/// `Zip<I::IntoIter, J>`, a JS iterator of it; or its dictionary gives it, a
+/// `Zip<I::IntoIter, J>`, a JS iterator of it; or a bound equates it to a
+/// type, `J: IntoIterator<IntoIter = I>` (#2520); or its dictionary gives it, a
 /// reference's (ADR 0457), whose `IntoIter` is its own value. Then `into`, a type
 /// parameter or an associated type, is given as it is, with its
 /// `IntoIterator` dictionary, which makes its `IntoIter` as it is (ADR 0552).
@@ -111,6 +112,18 @@ pub(crate) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, in
             kind: ty::Projection { def_id }, args, ..
         }) if def_id == into_iter && args.type_at(0) == into)
     };
+    // One whose `IntoIter` a bound equates to a type, `J: IntoIterator<IntoIter
+    // = I>`, `IntoIter = vec::IntoIter<u8>`: what its `into_iter` makes is
+    // that type's value, which the body holds as it holds any of it, a type
+    // parameter another bound names as it is (#966), a type known whole in
+    // its own form, never the JS iterator `$intoIter` makes (#2520).
+    let equated = (tcx.clauses_of(id).instantiate_identity(tcx).into_iter())
+        .filter_map(|(clause, _)| clause.skip_normalization().as_projection_clause())
+        .map(|p| p.skip_binder())
+        .any(|p| p.def_id() == into_iter && p.self_ty() == into);
+    if equated {
+        return true;
+    }
     let clauses: Vec<_> = (tcx.clauses_of(id).instantiate_identity(tcx).into_iter())
         .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
         .map(|p| p.skip_binder())

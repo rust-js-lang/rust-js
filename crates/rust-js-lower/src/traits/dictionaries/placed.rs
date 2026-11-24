@@ -31,7 +31,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter_map(|part| part.as_type())
                 .any(|t| cx.placed_iterator(t))
         };
-        if !bound.args.types().any(|ty| holds_placed(self, ty)) {
+        let normalized = |env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>| {
+            let ty = tcx.erase_and_anonymize_regions(ty);
+            tcx.try_normalize_erasing_regions(env, ty::Unnormalized::new_wip(ty))
+                .unwrap_or(ty)
+        };
+        // Of its type arguments, or of what its associated types are, a unit
+        // struct's `IntoIterator` whose `IntoIter` is one, `Bag`'s `Empty`,
+        // which generic code holding `J::IntoIter` holds so (#2520).
+        let assoc_placed = || {
+            (tcx.associated_items(bound.def_id).in_definition_order())
+                // Not one of generic parameters of its own, a generic
+                // associated type or what a method's `-> impl Trait` is,
+                // which the bound's arguments alone don't name.
+                .filter(|item| item.is_type() && tcx.generics_of(item.def_id).own_params.is_empty())
+                .any(|item| {
+                    let projected = Ty::new_projection(tcx, ty::IsRigid::No, item.def_id, bound.args);
+                    holds_placed(self, normalized(self.typing_env, projected))
+                })
+        };
+        if !bound.args.types().any(|ty| holds_placed(self, ty)) && !assoc_placed() {
             return Ok(None);
         }
         let what = || {
@@ -43,11 +62,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let iterator_trait = crate::recognition::is_iterator_trait(tcx, bound.def_id);
         let there = ty::TypingEnv::new(tcx.param_env(def_id), ty::TypingMode::non_body_analysis());
-        let normalized = |env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>| {
-            let ty = tcx.erase_and_anonymize_regions(ty);
-            tcx.try_normalize_erasing_regions(env, ty::Unnormalized::new_wip(ty))
-                .unwrap_or(ty)
-        };
         let mut dictionary: Option<Expr> = None;
         let (mut given, mut made) = (Vec::new(), Vec::new());
         let (mut into, mut back) = (Vec::new(), Vec::new());

@@ -74,4 +74,22 @@ export const mutations: Mutation[] = [
     replace: "                bound.self_ty()\n            )\n        };\n        let _ = what();\n",
     tests: ["test/phase-times.test.ts", "-t", "a lowering forces no walk of every crate"],
   },
+  {
+    name: "placed-dictionary-associated-types-unasked",
+    breaks:
+      "a unit struct's `IntoIterator` whose `IntoIter` is an iterator JS holds as no object, `Bag`'s `Empty`, is given generic code that gives back `J::IntoIter` with its bare dictionary, so the caller reads `.value` of `undefined`, a TypeError (#2520)",
+    file: "crates/rust-js-lower/src/traits/dictionaries/placed.rs",
+    find: "        if !bound.args.types().any(|ty| holds_placed(self, ty)) && !assoc_placed() {\n",
+    replace: "        if !bound.args.types().any(|ty| holds_placed(self, ty)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iter_equated_by_a_bound\\.rs$"],
+  },
+  {
+    name: "placed-dictionary-own-generics-projected",
+    breaks:
+      "a bound's generic associated type, or what a method's `-> impl Trait` is, is projected by the bound's arguments alone, which don't name its own parameters: rustc's internal error, \"impl item and trait item have different parameters\" (#2520)",
+    file: "crates/rust-js-lower/src/traits/dictionaries/placed.rs",
+    find: "                .filter(|item| item.is_type() && tcx.generics_of(item.def_id).own_params.is_empty())\n",
+    replace: "                .filter(|item| item.is_type())\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_associated_types\\.rs$"],
+  },
 ];
