@@ -6,7 +6,7 @@
 // what's unused for a week, then the least recently used past each one's
 // cap, and below the disk's floor until it's back (test/bounded.ts).
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
@@ -235,6 +235,73 @@ export function pruneKeptStores(free?: () => number) {
   pruneKeptApps(free ? { free } : {});
 }
 
+/** Whether `pid` is a live process's. */
+export function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** The pid a claim, `owner`, names, where it's there as it's read. */
+function readOwner(owner: string): string | undefined {
+  try {
+    return readFileSync(owner, "utf8");
+  } catch {
+    return undefined;
+  }
+}
+
+/** `owner`, a claim, made this process's: made where there's none, the
+ * one link to it that succeeds being the one process's that takes it; or
+ * taken over where its process is gone, one process at a time, each under
+ * `<owner>.taking`, made by the one `mkdir` of it that succeeds, so what
+ * it saw gone is what it replaces. Taken over by renaming whatever was
+ * there by then, two racing for one both took it, the second taking the
+ * first's new claim from it (#2446). Whether it's this process's. */
+export function takeClaim(owner: string): boolean {
+  const writing = `${owner}.${process.pid}`;
+  writeFileSync(writing, String(process.pid));
+  let got = false;
+  try {
+    linkSync(writing, owner);
+    got = true;
+  } catch {
+    const taking = `${owner}.taking`;
+    if (takeOver(taking)) {
+      try {
+        if (!alive(Number(readOwner(owner)))) {
+          rmSync(owner, { force: true });
+          linkSync(writing, owner);
+          got = true;
+        }
+      } catch {
+        // Made since by a link of another process's, where there was none.
+      } finally {
+        rmSync(taking, { recursive: true, force: true });
+      }
+    }
+  }
+  rmSync(writing, { force: true });
+  return got;
+}
+
+/** Whether this process may take a claim over, `taking` made by it; one a
+ * process that died taking one left, a few seconds old, removed for the
+ * next to make. */
+function takeOver(taking: string): boolean {
+  try {
+    mkdirSync(taking);
+    return true;
+  } catch {
+    const made = statSync(taking, { throwIfNoEntry: false })?.mtimeMs;
+    if (made !== undefined && Date.now() - made > 10_000) rmSync(taking, { recursive: true, force: true });
+    return false;
+  }
+}
+
 /** Where apps kept between runs are (`KeptApp`, test/support.ts): the
  * worktree's, whose path dependencies name its own crates, so never
  * another's; `<test file>/<name>_<n>`, each claimed by `<name>_<n>.owner`. */
@@ -246,7 +313,10 @@ export const keptAppsCap = 4 * 2 ** 30;
 
 /** The kept apps no process holds, the least recently used first, dropped
  * until what's left is under `cap` and the disk's `free` space above its
- * floor (`evict`, tooling/bounded.js); one a live process claims stays. */
+ * floor (`evict`, tooling/bounded.js); one a live process claims stays.
+ * Each is claimed as it's removed, as a `KeptApp` claims it, so one a
+ * process claims after it was listed, as another's ends, stays: it was
+ * removed under the pilot's build as it began (#2446). */
 export function pruneKeptApps({ base = keptApps, cap = keptAppsCap, free = () => freeBytes(base) }: { base?: string; cap?: number; free?: () => number } = {}): { removed: number; size: number } {
   const kept: Kept[] = [];
   const list = (dir: string) => {
@@ -266,12 +336,20 @@ export function pruneKeptApps({ base = keptApps, cap = keptAppsCap, free = () =>
     }
   };
   for (const scope of list(base)) {
-    for (const name of list(join(base, scope)).filter((entry) => !entry.endsWith(".owner"))) {
+    // Each `<name>_<n>`, not its claim nor a claim's makings beside it.
+    for (const name of list(join(base, scope)).filter((entry) => /_\d+$/.test(entry))) {
       const path = join(base, scope, name);
       if (!held(path)) kept.push({ path, bytes: bytesOf(path), used: statSync(path).mtimeMs });
     }
   }
-  return evict(kept, { cap, free, floor: floorBytes });
+  const remove = ({ path }: Kept) => {
+    const owner = `${path}.owner`;
+    if (!takeClaim(owner)) return false;
+    rmSync(path, { recursive: true, force: true });
+    rmSync(owner, { force: true });
+    return true;
+  };
+  return evict(kept, { cap, free, floor: floorBytes, remove });
 }
 
 /** Whether a store may keep what it's about to write: not below the disk's

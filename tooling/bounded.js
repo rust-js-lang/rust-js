@@ -46,18 +46,20 @@ export function bytesOf(path) {
 
 /** Hold `kept` to `cap`: the least recently used removed first, until
  * what's left is under it and the disk's `free` space is at its store's
- * `floor` or above, or nothing's left. How many it removed, and the size
- * of what's left.
+ * `floor` or above, or nothing's left. Each removed by `remove`, where a
+ * store's things may be in use, which says whether it removed it; else
+ * removed whole. How many it removed, and the size of what's left.
  * @param {Kept[]} kept
- * @param {{ cap: number, free: () => number, floor: number }} bounds
+ * @param {{ cap: number, free: () => number, floor: number, remove?: (thing: Kept) => boolean }} bounds
  * @returns {{ removed: number, size: number }} */
-export function evict(kept, { cap, free, floor }) {
+export function evict(kept, { cap, free, floor, remove }) {
   const oldest = [...kept].sort((a, b) => a.used - b.used);
   let size = oldest.reduce((sum, thing) => sum + thing.bytes, 0);
   let removed = 0;
   for (const thing of oldest) {
     if (size <= cap && free() >= floor) break;
-    rmSync(thing.path, { recursive: true, force: true });
+    if (remove === undefined) rmSync(thing.path, { recursive: true, force: true });
+    else if (!remove(thing)) continue;
     size -= thing.bytes;
     removed++;
   }

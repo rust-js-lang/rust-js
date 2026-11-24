@@ -1,11 +1,11 @@
 import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { cpSync, existsSync, linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
 import { cargoHome, tempRoot } from "./bounded";
 import { type Exit, runSync, stopped } from "./child";
-import { keptApps, markUsed, mayKeep, nativeCache, pruneKeptApps } from "./kept";
+import { alive, keptApps, markUsed, mayKeep, nativeCache, pruneKeptApps, takeClaim } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
 import { parts, shard } from "../scripts/shard";
 import { checkoutTarget, compiler, compilerGiven, helpersModule, stdDir, target } from "./packages-of";
@@ -517,15 +517,6 @@ function readIfThere(file: string): string | undefined {
   }
 }
 
-function alive(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 /** `@rust-js/std`, installed in an app outside the checkout, as a package
  * manager installs it: what its JS imports (ADRs 0103, 0561, #1095). */
 export function installStd(app: string) {
@@ -561,31 +552,6 @@ export const fixturesOf = (main: string) => join(fixtures, `x${createHash("sha25
 const scope = basename(fixturesOf(Bun.main));
 const counts = new Map<string, number>();
 let owned: string[] | undefined;
-
-/** `owner`, a claim, made this process's: made where there's none, or
- * taken over where its process is gone, the one rename of it that succeeds
- * being the one process's that takes it. Whether it's this process's. */
-function takeClaim(owner: string): boolean {
-  const writing = `${owner}.${process.pid}`;
-  writeFileSync(writing, String(process.pid));
-  let got = false;
-  try {
-    linkSync(writing, owner);
-    got = true;
-  } catch {
-    if (!alive(Number(readIfThere(owner)))) {
-      const gone = `${owner}.gone-${process.pid}`;
-      try {
-        renameSync(owner, gone);
-        rmSync(gone, { force: true });
-        linkSync(writing, owner);
-        got = true;
-      } catch {}
-    }
-  }
-  rmSync(writing, { force: true });
-  return got;
-}
 
 /** Remove the fixtures under `bases` whose process is gone, each taken as
  * a claim is first, so one another process takes at once is its; and

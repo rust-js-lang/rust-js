@@ -54,4 +54,20 @@ export const mutations: Mutation[] = [
     replace: "  const evicted = holdKept(keptBuilds(cache), { cap, free, since: Number.POSITIVE_INFINITY });",
     tests: ["test/support.test.ts", "-t", "a kept store past its cap keeps its working set"],
   },
+  {
+    name: "kept-app-removed-unclaimed",
+    breaks: "a kept app is removed as the prune listed it, unclaimed, so one a process claims after the listing, the pilot's as another test's process ended below the disk's floor, is removed under its build: `cargo build -p server` found rust-js's own workspace, \"did not match any packages\" (#2446)",
+    file: "test/kept.ts",
+    find: "    if (!takeClaim(owner)) return false;\n",
+    replace: "",
+    tests: ["test/support.test.ts", "-t", "a kept app claimed after the prune listed it"],
+  },
+  {
+    name: "claim-taken-over-unlocked",
+    breaks: "a claim whose process is gone is taken over by any process at once, not one at a time, so two racing for it both take it, the second removing the first's new claim (#2446)",
+    file: "test/kept.ts",
+    find: "    if (takeOver(taking)) {\n",
+    replace: "    if (true) {\n",
+    tests: ["test/support.test.ts", "-t", "a claim whose process is gone is taken over by one of the processes racing for it"],
+  },
 ];

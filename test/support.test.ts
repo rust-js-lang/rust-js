@@ -353,6 +353,59 @@ test("kept apps are held to their cap, but one a live process holds", () => {
   expect(keptAppsCap).toBe(4 * 2 ** 30);
 });
 
+// A kept app no process held as the prune listed them, which one claims
+// before it's removed, as the pilot's was as another test's process ended
+// below the disk's floor: it stays, its claim the claimant's (#2446).
+test("a kept app claimed after the prune listed it, before it's removed, stays", () => {
+  const base = fixture("kept-apps-claimed-mid-prune");
+  const dir = join(base, "xscope", "pilot_0");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "Cargo.toml"), "[workspace]\n");
+  let asked = 0;
+  // Asked first as it's about to remove the app: the claim's taken then.
+  const free = () => {
+    if (asked++ === 0) writeFileSync(`${dir}.owner`, String(process.pid));
+    return floorBytes - 1;
+  };
+  expect(pruneKeptApps({ base, cap: Number.POSITIVE_INFINITY, free })).toEqual({ removed: 0, size: bytesOf(dir) });
+  expect([existsSync(join(dir, "Cargo.toml")), readFileSync(`${dir}.owner`, "utf8")]).toEqual([true, String(process.pid)]);
+  // Its claim given up, it goes, and its claim the prune took with it.
+  rmSync(`${dir}.owner`);
+  expect(pruneKeptApps({ base, cap: Number.POSITIVE_INFINITY, free: () => floorBytes - 1 }).removed).toBe(1);
+  expect([existsSync(dir), existsSync(`${dir}.owner`)]).toEqual([false, false]);
+});
+
+// A claim whose process is gone, taken over by several processes at once:
+// one takes it, each taking one over one at a time (#2446). Each waits for
+// one moment to start, so they race, and lives till every one has said,
+// so a winner's claim is never one whose process is gone by then.
+test("a claim whose process is gone is taken over by one of the processes racing for it", async () => {
+  const base = fixture("claims-raced");
+  const kept = join(import.meta.dir, "kept.ts");
+  for (let round = 0; round < 12; round++) {
+    const owner = join(base, `app_${round}.owner`);
+    writeFileSync(owner, "99999999");
+    const at = Date.now() + 800;
+    const racer = `import { takeClaim } from ${JSON.stringify(kept)};\nwhile (Date.now() < ${at});\nconsole.log(takeClaim(${JSON.stringify(owner)}) ? process.pid : "-");\nawait Bun.stdin.text();`;
+    const racers = Array.from({ length: 12 }, () => Bun.spawn([process.execPath, "-e", racer], { stdin: "pipe", stdout: "pipe" }));
+    const said = async (p: (typeof racers)[number]) => {
+      const reader = p.stdout.getReader();
+      let text = "";
+      while (!text.includes("\n")) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        text += new TextDecoder().decode(value);
+      }
+      return text.trim();
+    };
+    const won = (await Promise.all(racers.map(said))).filter((pid) => pid !== "-");
+    for (const p of racers) p.stdin.end();
+    await Promise.all(racers.map((p) => p.exited));
+    expect(won.length).toBe(1);
+    expect(readFileSync(owner, "utf8")).toBe(won[0]);
+  }
+}, underLoad(60_000));
+
 // Nothing's kept below the disk's floor, a native program's build or a
 // verified run: what's made is used, not kept (#1047). And the checkout's
 // stores from before they were the machine's go as the stores are pruned.
