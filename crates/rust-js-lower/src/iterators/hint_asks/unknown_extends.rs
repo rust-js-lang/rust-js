@@ -131,8 +131,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 // where they're a caller's own type parameters, as #796 relays `TSize`, so
 // the outermost caller that knows them decides. One of std's iterators, or
 // the crate's that keeps std's default `size_hint`, compiles.
-/// The message of a call refused: what it gives, and what to write.
-const REFUSED: &str = "rust-js: this call gives generic code a `Vec`, a `VecDeque` or a `BinaryHeap` to `extend` by an iterator whose `size_hint` is the crate's own, which std asks as the collection fills, as its capacity says, which a crate that reads no capacity doesn't keep (#849, #1180): collect the iterator first and give that, or extend the collection here";
+/// What a call refused gives, and what to write, a stopgap of the hint's
+/// crossing (ADR 1201).
+const REFUSED: &str = "a call giving generic code a `Vec`, a `VecDeque` or a `BinaryHeap` to `extend` by an iterator whose `size_hint` is the crate's own, which std asks as the collection fills, as its capacity says, which a crate that reads no capacity doesn't keep (#849, #1180)";
+const INSTEAD: &str = "collect the iterator first and give that, or extend the collection here";
 
 /// How many times what each function extends is relayed to its callers,
 /// and how much of it each holds, past which what's left isn't: a
@@ -248,7 +250,14 @@ pub(crate) fn refuse_unknown_capacity_extends<'tcx>(
                 if grows && !iterable.has_param() && !iterable.has_aliases() {
                     let iter_ty = iterator_type_of(tcx, typing_env, iterable);
                     if recognition.hint_reaches_own(iter_ty) && refused.insert(span) {
-                        tcx.dcx().span_err(span, REFUSED);
+                        crate::refusal::refuse(
+                            tcx,
+                            span,
+                            crate::refusal::Refused::Unconverted(
+                                crate::refusal::Crossing::HintArgument,
+                                &crate::refusal::Refused::Instead(REFUSED, INSTEAD),
+                            ),
+                        );
                     }
                     continue;
                 }

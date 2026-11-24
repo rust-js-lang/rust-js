@@ -1205,7 +1205,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // compiles itself.
         if let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {
             let what = format!("a `{here}` inside what a generic impl gives a method of a trait it's bound by (#1421)");
-            return Err(self.unsupported(span, &what));
+            return Err(self.unconverted(span, crate::refusal::Crossing::NestedBox, &what));
         }
         // A `&mut` to an object within the type a generic impl is for,
         // `Rc<&mut Loud>`, whose generic code reads it as its box (#2532).
@@ -1220,7 +1220,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(crate::refusal::refuse(
                 self.tcx,
                 span,
-                crate::refusal::Refused::Instead(&what, &instead),
+                crate::refusal::Refused::Unconverted(
+                    crate::refusal::Crossing::BoxDictionary,
+                    &crate::refusal::Refused::Instead(&what, &instead),
+                ),
             ));
         }
         let callee = self.fn_ref(impl_id);

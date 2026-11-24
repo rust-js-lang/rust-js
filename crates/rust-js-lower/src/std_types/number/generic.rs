@@ -378,8 +378,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // body that asks it is given it, so one that isn't is refused,
             // never guessed (#2042).
             if fact == TypeFact::Fused {
-                return (self.fused_fact(param.index))
-                    .ok_or_else(|| self.unsupported(span, &format!("{what} of `{of}`, which no caller gives")));
+                return (self.fused_fact(param.index)).ok_or_else(|| {
+                    self.unconverted(
+                        span,
+                        crate::refusal::Crossing::FactDictionary,
+                        &format!("{what} of `{of}`, which no caller gives"),
+                    )
+                });
             }
             // A `T: Any`'s `TypeId` is its dictionary's (ADR 0331).
             if fact == TypeFact::Id
@@ -411,8 +416,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // facts it's given of them that `held_facts` names,
         // `$collectsInPlace(IInPlace, ..)` and `ITrustedLen`.
         if fact == TypeFact::VecCollect {
-            let item = (self.iterator_item(of))
-                .ok_or_else(|| self.unsupported(span, &format!("{what} of `{of}`, which no caller gives")))?;
+            let item = (self.iterator_item(of)).ok_or_else(|| {
+                self.unconverted(
+                    span,
+                    crate::refusal::Crossing::FactDictionary,
+                    &format!("{what} of `{of}`, which no caller gives"),
+                )
+            })?;
             return self.vec_collect_way_of(of, item, span);
         }
         // What std may collect an iterator in, in place: its source's items'
@@ -427,7 +437,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.type_fact_value(item, TypeFact::Align, span)?,
                 ])),
                 Some(InPlaceSource::Of(held)) if held != of => self.type_fact_value(held, fact, span),
-                _ => Err(self.unsupported(span, &format!("{what} of `{of}`, which no caller gives"))),
+                _ => Err(self.unconverted(
+                    span,
+                    crate::refusal::Crossing::FactDictionary,
+                    &format!("{what} of `{of}`, which no caller gives"),
+                )),
             };
         }
         // The class of a map keyed by it, as one made where its type's known
@@ -492,7 +506,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         if !matches!(fact, TypeFact::Fused) && !decided && unknown {
-            return Err(self.unsupported(span, &format!("{what} of `{of}`, which no caller gives")));
+            return Err(self.unconverted(
+                span,
+                crate::refusal::Crossing::FactDictionary,
+                &format!("{what} of `{of}`, which no caller gives"),
+            ));
         }
         // Whether it has the trait the fact is, a `OneShot`, whose `flatten()`
         // std specializes (ADR 0899), or a `TrustedRandomAccess`, by which
@@ -505,7 +523,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && matches!(fact, TypeFact::RandomAccess | TypeFact::RandomAccessNoCoerce)
                 && self.index_reader(of, span)?.is_none()
             {
-                return Err(self.unsupported(span, &format!("reading a `{of}` by its index, as std's zip of it does")));
+                return Err(self.unconverted(
+                    span,
+                    crate::refusal::Crossing::TrustedLen,
+                    &format!("reading a `{of}` by its index, as std's zip of it does"),
+                ));
             }
             return Ok(Expr::bool(holds));
         }
@@ -599,8 +621,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // dictionary carries: of a function's own slot, its caller gives
         // them, and of a trait's default's `Self`, its dictionary (#990).
         if crate::recognition::uncarried_std_item(self.tcx, of) {
-            return Err(self.unsupported(
+            return Err(self.unconverted(
                 span,
+                crate::refusal::Crossing::FactDictionary,
                 &format!(
                     "`{name}` of `{of}`, an associated type whose facts its caller's dictionary doesn't carry (#934)"
                 ),

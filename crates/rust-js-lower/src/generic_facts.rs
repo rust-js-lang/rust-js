@@ -559,9 +559,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (self.tcx.erase_and_anonymize_regions(other).walk()).any(|part| part.as_type() == Some(guard))
             })
         {
-            return Err(self.unsupported(
-                span,
-                &format!("a `RefCell` guard's `&mut`, `&mut {guard}`, given to generic code's `{declared}`, which may write the guard whole, giving its variable another cell's (#2475)"),
+            return Err(self.unconverted(span, crate::refusal::Crossing::GuardArgument, &format!("a `RefCell` guard's `&mut`, `&mut {guard}`, given to generic code's `{declared}`, which may write the guard whole, giving its variable another cell's (#2475)"),
             ));
         }
         Ok(())
@@ -576,9 +574,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .instantiate_bound_regions_with_erased(self.tcx.fn_sig(id).instantiate_identity().skip_normalization());
         for declared in sig.inputs_and_output.iter() {
             if let Some(placed) = self.placed_within(id, declared, self.instantiated(declared, args)) {
-                return Err(self.unsupported(
-                    span,
-                    &format!(
+                return Err(self.unconverted(span, crate::refusal::Crossing::PlacedArgument, &format!(
                         "a `{placed}` inside a `{declared}` of generic code's, which holds it in a place of its own, `{{ value }}`, where its caller holds it as it is (#2255)"
                     ),
                 ));
@@ -621,9 +617,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let instantiated = self.instantiated(param, args);
                 if self.holds_in_place((id, param, instantiated)) {
-                    return Err(self.unsupported(
-                        span,
-                        &format!(
+                    return Err(self.unconverted(span, crate::refusal::Crossing::PlacedItem, &format!(
                             "a `{instantiated}` generic code holds in a place of its own, `{{ value }}`, as its `{param}`, which it's also given as `{}`'s items, as their caller holds them (#2534, #2535)",
                             p.self_ty()
                         ),

@@ -1,5 +1,6 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2539, #2557, ADR 1201): test/architecture-stopgaps.test.ts, new, four tests: each of Campaign 6's stopgap cells, `refusal::Crossing`, is mapped once to an issue of its own and named by a refusal, 33 counted; a stopgap is made by the refusal API alone; a cell whose issue is closed is named. The issue-labels workflow runs scripts/stopgap-refusals.ts as an issue closes and daily. test/diagnostics.test.ts' three `extend` rows assert the refusal's words as `refuse` says them.
 Changed on 2026-11-25 (ADR 1200): test/case-lists.test.ts, new, two tests: a list of what to run naming a path or a misspelt name fails, naming each, the corpus's `RUST_JS_CASES=i/n:<file>` among them, which the metamorphic net, tidy's stages, the iterator forms and the determinism net read too; five mutations.
 
 Changed on 2026-11-25 (#2538, ADR 1184 amended): test/binaries.test.ts gains a test, a panic with its output a file runs nothing `main` queued, against native, on Node and Bun; mutation `file-stream-waited-for`.

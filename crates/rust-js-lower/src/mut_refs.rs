@@ -915,7 +915,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(here) = self.nested_mut_object(def_id, generic_args)
         {
             let what = format!("a `{here}` inside a generic function's parameters or result (#1421)");
-            return Err(self.unsupported(span, &what));
+            return Err(self.unconverted(span, crate::refusal::Crossing::NestedBox, &what));
         }
         let declared = self
             .tcx

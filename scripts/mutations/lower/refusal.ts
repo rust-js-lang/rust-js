@@ -73,4 +73,13 @@ export const mutations: Mutation[] = [
     replace: "    if let Refused::Call(id) = refused\n",
     tests: ["test/registry-crates.test.ts", "-t", "types alone, and a call"],
   },
+  {
+    name: "stopgap-said-otherwise",
+    breaks:
+      "a stopgap refusal, `Refused::Unconverted`, is said as no words of its own, not as what it refuses is (ADR 1201)",
+    file: "crates/rust-js-lower/src/refusal.rs",
+    find: "        return refuse(tcx, span, *said);\n",
+    replace: '        return refuse(tcx, span, Refused::Feature("a stopgap"));\n',
+    tests: ["test/diagnostics.test.ts", "-t", "a zip of an item in a closure of generic code"],
+  },
 ];

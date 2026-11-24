@@ -26,6 +26,82 @@ pub enum Refused<'a, 'tcx> {
     Instead(&'a str, &'a str),
     /// A feature of addressable memory, as its words say: "a raw pointer to a value".
     Memory(&'a str),
+    /// What's refused, said as it is, there only because a crossing
+    /// doesn't convert a form or a fact yet: a stopgap of Campaign 6's
+    /// (ADR 1201), which its cell's issue lifts.
+    Unconverted(Crossing, &'a Refused<'a, 'tcx>),
+}
+
+/// A cell of Campaign 6's matrix (#2539, ADR 1201): a form or a fact, and
+/// the crossing into or out of generic code it isn't converted at yet. A
+/// refusal of one is a stopgap of idiomatic Rust whose behavior JS can
+/// keep; the campaign ends when no refusal names one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Crossing {
+    /// A value JS holds as no object, inside a generic struct or type the
+    /// body holds in a place, given as it is (#2255).
+    PlacedArgument,
+    /// One also given as another iterator's items (#2534).
+    PlacedItem,
+    /// A `RefCell` guard's `&mut` given where generic code may write it whole.
+    GuardArgument,
+    /// A `&mut` object inside the type a generic impl is for, given by its
+    /// dictionary (#2532).
+    BoxDictionary,
+    /// A `&mut` of a `&mut` of an object given to generic code.
+    HeldBoxArgument,
+    /// A `&mut` nested in a generic function's parameters, result or field.
+    NestedBox,
+    /// A `&mut` of a number given, given back or kept on the MIR path, or a
+    /// parameter both called and written through.
+    BoxOnMir,
+    /// A borrow in generic code of where an associated type's object is stored.
+    LentDictionary,
+    /// A borrow given to generic code that may let it out as a raw pointer,
+    /// of JS's copy.
+    HandleArgument,
+    /// A write's result given where a bound reads a `Result` of type parameters.
+    TaggedArgument,
+    /// A `TrustedRandomAccess` or `TrustedLen` fact std's zip or `eq` is
+    /// picked by, at any crossing.
+    TrustedLen,
+    /// The hint-knowing fact and the items' size of an `extend` generic code makes.
+    HintArgument,
+    /// The hint of a `dyn Iterator` taken from a library or a binding.
+    HintBoundary,
+    /// A type's fact given to generic code.
+    FactArgument,
+    /// A fact a caller's dictionary doesn't carry.
+    FactDictionary,
+    /// A fact a library's contract can't say: a type nested past its
+    /// templates, or a layout.
+    FactBoundary,
+}
+
+impl Crossing {
+    /// The open issue whose fix lifts every refusal of the cell: the one
+    /// place each is mapped, which test/architecture-stopgaps.test.ts and
+    /// scripts/stopgap-refusals.ts read (ADR 1201).
+    pub fn lifted_by(self) -> u32 {
+        match self {
+            Crossing::PlacedArgument => 2549,
+            Crossing::PlacedItem => 2535,
+            Crossing::GuardArgument => 2475,
+            Crossing::BoxDictionary => 2550,
+            Crossing::HeldBoxArgument => 1632,
+            Crossing::NestedBox => 1421,
+            Crossing::BoxOnMir => 2551,
+            Crossing::LentDictionary => 1295,
+            Crossing::HandleArgument => 2552,
+            Crossing::TaggedArgument => 1416,
+            Crossing::TrustedLen => 2546,
+            Crossing::HintArgument => 2553,
+            Crossing::HintBoundary => 1562,
+            Crossing::FactArgument => 2554,
+            Crossing::FactDictionary => 2555,
+            Crossing::FactBoundary => 2556,
+        }
+    }
 }
 
 /// Why lowering stopped, a value the pipeline reads (ADR 1148, amended):
@@ -50,6 +126,10 @@ pub(crate) fn emitted(error: ErrorGuaranteed) -> Refusal {
 /// The error that `refused` isn't supported, in its `words`: of
 /// addressable memory, with why.
 pub fn refuse<'tcx>(tcx: TyCtxt<'tcx>, span: Span, refused: Refused<'_, 'tcx>) -> Refusal {
+    // A stopgap is said as what it refuses is.
+    if let Refused::Unconverted(_, said) = refused {
+        return refuse(tcx, span, *said);
+    }
     let mut error = tcx.dcx().struct_span_err(span, words(tcx, refused));
     if of_memory(tcx, refused) {
         error = error.with_note(MEMORY);
@@ -93,6 +173,8 @@ pub(crate) fn words<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> Stri
         }
         Refused::Call(id) => calling(tcx, id),
         Refused::Implementing(id) => implementing(tcx, id),
+        // A stopgap is said as what it refuses is.
+        Refused::Unconverted(_, said) => return words(tcx, *said),
         Refused::Type(what, ty) => format!(
             "{what} of type `{ty}`{}",
             open_type(tcx, ty).map(issue_of).unwrap_or_default()
@@ -113,6 +195,7 @@ fn of_memory<'tcx>(tcx: TyCtxt<'tcx>, refused: Refused<'_, 'tcx>) -> bool {
         Refused::Call(id) => addresses_memory(tcx, id),
         Refused::Type(_, ty) => is_memory_type(tcx, ty),
         Refused::Memory(_) => true,
+        Refused::Unconverted(_, said) => of_memory(tcx, *said),
         Refused::Feature(_) | Refused::Because(..) | Refused::Instead(..) | Refused::Implementing(_) => false,
     }
 }

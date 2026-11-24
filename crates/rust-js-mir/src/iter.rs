@@ -167,9 +167,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         // library or a binding, which it can't see made.
         if self.recognition().is_dyn_iter(iter_ty) {
             if self.krate.iterators.hinted.dyn_unseen {
-                return Err(self.unsupported(
-                    span,
-                    &format!("`size_hint()` of a `{iter_ty}` in a crate that takes a `dyn Iterator` from a library or a binding, which it can't see made knowing its hint (#1562)"),
+                return Err(self.unconverted(span, rust_js_lower::refusal::Crossing::HintBoundary, &format!("`size_hint()` of a `{iter_ty}` in a crate that takes a `dyn Iterator` from a library or a binding, which it can't see made knowing its hint (#1562)"),
                 ));
             }
             return Ok(Expr::call_helper("$sizeHint", vec![receiver]));

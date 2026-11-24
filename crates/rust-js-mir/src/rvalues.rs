@@ -81,9 +81,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 // `&mut` to it would be to the box.
                 if let Some(crossing) = self.boxed_field(state, place.as_ref()) {
                     if let BorrowKind::Mut { .. } = kind {
-                        return Err(self.unsupported(
-                            span,
-                            "a `&mut` to a field that holds a `&mut` generic code has as its box, `&mut slot.at` of `struct Slot<'a, T> { at: &'a mut T }` (#1421): write it whole, `slot.at = &mut other`, or reborrow what it's to, `&mut *slot.at`",
+                        return Err(self.unconverted(span, rust_js_lower::refusal::Crossing::NestedBox, "a `&mut` to a field that holds a `&mut` generic code has as its box, `&mut slot.at` of `struct Slot<'a, T> { at: &'a mut T }` (#1421): write it whole, `slot.at = &mut other`, or reborrow what it's to, `&mut *slot.at`",
                         ));
                     }
                     let read = self.mir_place(state, *place, span, out)?;
@@ -953,8 +951,11 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                         return Err(refuse(
                             tcx,
                             span,
-                            Refused::Memory(
-                                "a raw pointer to what a `&mut` refers to, which JS holds in a box of a copy: a function whose signature has a raw pointer in its result or another parameter is given its place's pointer (ADR 1114, #1283)",
+                            Refused::Unconverted(
+                                rust_js_lower::refusal::Crossing::HandleArgument,
+                                &Refused::Memory(
+                                    "a raw pointer to what a `&mut` refers to, which JS holds in a box of a copy: a function whose signature has a raw pointer in its result or another parameter is given its place's pointer (ADR 1114, #1283)",
+                                ),
                             ),
                         ));
                     }

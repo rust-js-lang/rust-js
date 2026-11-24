@@ -912,7 +912,13 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             // it, a field, reads it through its `value` as any `&mut ()` is
             // read (#1247).
             Value::Ref(place) if matches!(place.kind, js::ExprKind::Undefined) => rust_js_lower::mut_refs::boxed(place),
-            Value::Ref(_) => return Err(self.unsupported(span, "a `&mut` of a number kept or given, from its MIR")),
+            Value::Ref(_) => {
+                return Err(self.unconverted(
+                    span,
+                    rust_js_lower::refusal::Crossing::BoxOnMir,
+                    "a `&mut` of a number kept or given, from its MIR",
+                ));
+            }
         })
     }
 

@@ -97,9 +97,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 if self.lets_pointers_out(id, i)
                     && let Some(referent) = self.copied_referent(declared, self.instantiated(declared, args))
                 {
-                    return Err(self.unsupported(
-                        span,
-                        &format!("a `&{referent}` given to generic code that may let it out as a raw pointer, which would be of a copy (ADR 1114)"),
+                    return Err(self.unconverted(span, rust_js_lower::refusal::Crossing::HandleArgument, &format!("a `&{referent}` given to generic code that may let it out as a raw pointer, which would be of a copy (ADR 1114)"),
                     ));
                 }
                 // A `&mut` to an object given where generic code has its box,
@@ -138,9 +136,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                     return Err(self.unsupported(span, &rust_js_lower::generic_facts::held_write_result(held)));
                 }
                 if self.write_result_through_bound(crossing) {
-                    return Err(self.unsupported(
-                        span,
-                        &format!(
+                    return Err(self.unconverted(span, rust_js_lower::refusal::Crossing::TaggedArgument, &format!(
                             "a write's result, `{}`, given for `{}`, which a bound reads as a `Result` of type parameters, `{{ TAG }}` there (#1416)",
                             crossing.2.peel_refs(),
                             crossing.1.peel_refs()
@@ -167,9 +163,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             if let Some((id, declared, instantiated)) = crossing
                 && self.called_box_escapes(id, declared, instantiated)
             {
-                return Err(self.unsupported(
-                    span,
-                    &format!(
+                return Err(self.unconverted(span, rust_js_lower::refusal::Crossing::BoxOnMir, &format!(
                         "a `{instantiated}` given for `{declared}`, which `{}` calls and gives back or takes in another parameter: what's given would have to be both the function it calls and the place a write through it changes (#1909)",
                         self.tcx.item_name(id)
                     ),
@@ -375,7 +369,11 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 _ => place,
             };
             if !fixed_place(&place) && !one_value {
-                return Err(self.unsupported(span, "a `&mut` of a number given, from its MIR"));
+                return Err(self.unconverted(
+                    span,
+                    rust_js_lower::refusal::Crossing::BoxOnMir,
+                    "a `&mut` of a number given, from its MIR",
+                ));
             }
             // What it returns, or another parameter, can hold the borrow, or a
             // raw pointer it keeps of it (#1781): a box would be copied back
@@ -396,7 +394,11 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                     continue;
                 }
                 if !fixed_place(&place) {
-                    return Err(self.unsupported(span, "a `&mut` of a number given back, from its MIR"));
+                    return Err(self.unconverted(
+                        span,
+                        rust_js_lower::refusal::Crossing::BoxOnMir,
+                        "a `&mut` of a number given back, from its MIR",
+                    ));
                 }
                 exprs.push(through(self, self.handle_on(place))?);
                 continue;

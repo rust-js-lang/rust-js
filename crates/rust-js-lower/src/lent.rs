@@ -91,7 +91,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Err(refuse(
                 self.tcx,
                 span,
-                Refused::Because(&format!("{what} (#1295)"), &why),
+                Refused::Unconverted(
+                    crate::refusal::Crossing::LentDictionary,
+                    &Refused::Because(&format!("{what} (#1295)"), &why),
+                ),
             ))
         };
         match self.object_within(ty) {

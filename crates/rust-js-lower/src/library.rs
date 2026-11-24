@@ -339,7 +339,10 @@ fn type_params<'tcx>(
             super::refusal::refuse(
                 tcx,
                 tcx.def_span(id),
-                super::refusal::Refused::Type("a library's function asking the layout of a type", slot.ty),
+                super::refusal::Refused::Unconverted(
+                    super::refusal::Crossing::FactBoundary,
+                    &super::refusal::Refused::Type("a library's function asking the layout of a type", slot.ty),
+                ),
             );
             continue;
         };

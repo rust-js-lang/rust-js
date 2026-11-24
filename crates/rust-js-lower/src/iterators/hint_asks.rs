@@ -998,9 +998,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let Some(size) = self.capacity_item_size(self.slice_item(into).unwrap_or(item)) else {
             if known_own {
-                return Err(self.unsupported(
-                    span,
-                    "an `extend` of a `Vec`, a `VecDeque` or a `BinaryHeap` by an iterator whose `size_hint` is the crate's own, which std asks as it fills, as its capacity says, of items whose size no caller gives: extend one of items of a known type",
+                return Err(self.unconverted(span, crate::refusal::Crossing::HintArgument, "an `extend` of a `Vec`, a `VecDeque` or a `BinaryHeap` by an iterator whose `size_hint` is the crate's own, which std asks as it fills, as its capacity says, of items whose size no caller gives: extend one of items of a known type",
                 ));
             }
             return Ok((collection, items));

@@ -396,9 +396,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(over) => over,
                 None if let Some(over) = self.result_clone_over(ty, place, from, span)? => over,
                 None if self.forwards_clone_from(ty, span)? => {
-                    return Err(self.unsupported(
-                        span,
-                        &format!("a `Clone` dictionary of `{ty}` given to generic code, whose std `clone_from` is its value's, which the crate's or std's own writes in place (#927)"),
+                    return Err(self.unconverted(span, crate::refusal::Crossing::FactDictionary, &format!("a `Clone` dictionary of `{ty}` given to generic code, whose std `clone_from` is its value's, which the crate's or std's own writes in place (#927)"),
                     ));
                 }
                 None => return Ok(None),

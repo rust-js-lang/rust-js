@@ -212,7 +212,14 @@ pub(super) fn refuse_what_callers_decide<'tcx>(
                         }
                     };
                     if refused.insert(span) {
-                        crate::refusal::refuse(tcx, span, crate::refusal::Refused::Because(what, why));
+                        crate::refusal::refuse(
+                            tcx,
+                            span,
+                            crate::refusal::Refused::Unconverted(
+                                crate::refusal::Crossing::TrustedLen,
+                                &crate::refusal::Refused::Because(what, why),
+                            ),
+                        );
                     }
                 }
             }

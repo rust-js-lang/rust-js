@@ -1196,6 +1196,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         refusal::refuse(self.tcx, span, refusal::Refused::Feature(what))
     }
 
+    /// `unsupported`, of a stopgap: what `crossing` doesn't convert yet
+    /// (ADR 1201), said the same.
+    pub fn unconverted(&self, span: Span, crossing: refusal::Crossing, what: &str) -> crate::refusal::Refusal {
+        refusal::refuse(
+            self.tcx,
+            span,
+            refusal::Refused::Unconverted(crossing, &refusal::Refused::Feature(what)),
+        )
+    }
+
     /// No dictionary for `tr` was given: a component's, which React never
     /// gives one (ADR 0201), or one rust-js doesn't make.
     fn no_evidence(&self, span: Span, tr: ty::TraitRef<'tcx>) -> crate::refusal::Refusal {

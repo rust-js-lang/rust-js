@@ -127,8 +127,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if matches!(inner.kind(), ty::Ref(_, object, ty::Mutability::Mut) if self.is_object(*object)))
             })
         {
-            return Err(self.unsupported(
+            return Err(self.unconverted(
                 span,
+                crate::refusal::Crossing::HeldBoxArgument,
                 &format!("a `{ty}`, a `&mut` of a `&mut` of an object, given to generic code (#1632)"),
             ));
         }
@@ -270,7 +271,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // own, its value's type's (ADR 0145): refused, as its
                     // answer would be another's.
                     if matches!(of.kind(), ty::Dynamic(..)) {
-                        return Err(self.unsupported(span, &format!("a type's fact of `{of}` given to generic code")));
+                        return Err(self.unconverted(
+                            span,
+                            crate::refusal::Crossing::FactArgument,
+                            &format!("a type's fact of `{of}` given to generic code"),
+                        ));
                     }
                     // A built slot's layout no collect reads here, none (#737).
                     if !self.gives_slot(id, index, args) {
@@ -1046,8 +1051,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Slot::Fact(index, _) | Slot::Drop(index) = slot
                 && !self.slot_said(id, index)
             {
-                return Err(self.unsupported(
+                return Err(self.unconverted(
                     span,
+                    crate::refusal::Crossing::FactBoundary,
                     "a call of a library's generic function that asks of a type nested past what its contract can say",
                 ));
             }

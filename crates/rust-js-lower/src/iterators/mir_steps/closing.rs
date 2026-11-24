@@ -381,9 +381,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .iter()
                     .any(|&t| self.drops(t) != crate::drops::Drops::Nothing))
         {
-            return Err(self.unsupported(
-                span,
-                "a library's `eq` of an iterator made of a type parameter's, `a.map(f).eq(b)`, which its consumers may make `TrustedLen`, whose length std asks first, and its generic code can't know before stepping it (#1182)",
+            return Err(self.unconverted(span, crate::refusal::Crossing::TrustedLen, "a library's `eq` of an iterator made of a type parameter's, `a.map(f).eq(b)`, which its consumers may make `TrustedLen`, whose length std asks first, and its generic code can't know before stepping it (#1182)",
             ));
         }
         let other = self.compared_closing(other, other_ty, span)?;
@@ -446,9 +444,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(true) => {}
             Some(false) => return Ok(Expr::bool(false)),
             None => {
-                return Err(self.unsupported(
-                    span,
-                    &format!("giving generic code that compares it by `eq` a `{ty}`, which its own callers make `TrustedLen` or not"),
+                return Err(self.unconverted(span, crate::refusal::Crossing::TrustedLen, &format!("giving generic code that compares it by `eq` a `{ty}`, which its own callers make `TrustedLen` or not"),
                 ));
             }
         }
@@ -466,9 +462,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !runs_code && !drops {
             return Ok(Expr::str("pure"));
         }
-        Err(self.unsupported(
-            span,
-            &format!("giving generic code that compares it by `eq` a `{ty}`, a `TrustedLen` whose length std compares first, which JS can't count before stepping it, and stepping it runs code or drops items std's wouldn't (#1182)"),
+        Err(self.unconverted(span, crate::refusal::Crossing::TrustedLen, &format!("giving generic code that compares it by `eq` a `{ty}`, a `TrustedLen` whose length std compares first, which JS can't count before stepping it, and stepping it runs code or drops items std's wouldn't (#1182)"),
         ))
     }
 
