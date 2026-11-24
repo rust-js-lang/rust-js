@@ -1,6 +1,8 @@
 # 0088. The corpus: Rust programs that say what they expect, run natively and as JS
 
-Status: Accepted. Extends [0017](0017-differential-testing.md).
+Status: Accepted. Extends [0017](0017-differential-testing.md). Amended by
+[1198](1198-the-corpuss-main-build-is-the-binary.md): each case is built
+as a binary and run as a process.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

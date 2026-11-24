@@ -147,8 +147,8 @@ test("a run stopped by its time or memory isn't kept", () => {
   keepRun("0".repeat(64), build, stopped, store);
   expect(readdirSync(store)).toEqual([]);
   // The same run, ended, is kept.
-  keepRun("0".repeat(64), build, { ...stopped, stopped: undefined, outcome: { value: null } }, store);
-  expect(keptRun("0".repeat(64), store)?.outcome).toEqual({ value: null });
+  keepRun("0".repeat(64), build, { ...stopped, stopped: undefined, outcome: { exit: 0 } }, store);
+  expect(keptRun("0".repeat(64), store)?.outcome).toEqual({ exit: 0 });
 });
 
 // The nightly runs a share of the kept runs again (`RUST_JS_NATIVE_RECHECK`):

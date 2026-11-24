@@ -38,7 +38,7 @@ import { tableOf } from "./matrix-tables";
 import { builds, failures, fixedFile, knownCases, listedBuild, ofTable, readKnown, segments, table, twinHelpers, version, type Row } from "./iterator-matrix";
 import { same, type Outcome } from "./oracle";
 import { importedHelpers } from "./twin-net";
-import { aborted, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runtimes, show, type CompileError, type Run } from "./programs";
+import { aborted, compileJs, compileJsLibrary, nativeFlags, returned, runJs, runNative, runtimes, show, type CompileError, type Run } from "./programs";
 import { runSync } from "./child";
 import { libraryCrate } from "./iterator-paths";
 import { buildCompiler, fixture, knownFileOf } from "./support";
@@ -188,13 +188,13 @@ function judge(cases: Row[], native: Map<string, string>, dir: string, build: st
     const library = of.library?.(pending);
     let compiled: { js: string } | CompileError;
     if (library === undefined) {
-      compiled = compileJs(file, at, "2024", false, {}, flags, rustc);
+      compiled = compileJs(file, at, "2024", "binary", {}, flags, rustc);
     } else {
       const source = join(at, `${libraryCrate}.rs`);
       writeFileSync(source, library);
       const lib = compileJsLibrary(source, at, "2024", libraryCrate, flags);
       compiled = "rmeta" in lib
-        ? compileJs(file, at, "2024", false, {}, [...flags, "--dependency", lib.manifest], [...rustc, "--extern", `${libraryCrate}=${lib.rmeta}`, "-L", at])
+        ? compileJs(file, at, "2024", "binary", {}, [...flags, "--dependency", lib.manifest], [...rustc, "--extern", `${libraryCrate}=${lib.rmeta}`, "-L", at])
         : lib;
     }
     if ("error" in compiled) {
@@ -225,7 +225,7 @@ function judge(cases: Row[], native: Map<string, string>, dir: string, build: st
       verdicts.set(c, abortVerdict({ outcome: ran.outcome, printed: js.get(c.id) ?? "" }, native.get(c.id) ?? ""));
       return verdicts;
     }
-    const ended = typeof ran.outcome !== "string" && "value" in ran.outcome;
+    const ended = returned(ran.outcome);
     // A run that ended early ended in the last case it began: those after
     // it run again, without it.
     const began = pending.filter((c) => js.has(c.id));
@@ -310,7 +310,7 @@ for (const index of mine) {
     // unwinds: what it printed till then is what the JS must print, then
     // abort too (#847). Any other run must end.
     const aborts = batch.length === 1 && typeof native.outcome !== "string" && same(native.outcome, aborted);
-    if (!aborts && (typeof native.outcome === "string" || !("value" in native.outcome))) {
+    if (!aborts && !returned(native.outcome)) {
       throw new Error(`a native run of the matrix ended ${show(native.outcome)}:\n${native.stderr.slice(0, 2000)}`);
     }
     const expected = segments(native.stdout);
@@ -372,8 +372,8 @@ for (const index of mine) {
 test("a batch of one that aborts is judged by its abort", () => {
   const printed = "case x\ndrop 3\ndrop 4\n";
   expect(abortVerdict({ outcome: aborted, printed }, printed)).toEqual({ kind: "same" });
-  expect(abortVerdict({ outcome: { value: null }, printed }, printed).kind).toBe("differs");
-  expect(abortVerdict({ outcome: { panic: "drop again" }, printed }, printed).kind).toBe("differs");
+  expect(abortVerdict({ outcome: { exit: 0 }, printed }, printed).kind).toBe("differs");
+  expect(abortVerdict({ outcome: { exit: 101 }, printed }, printed).kind).toBe("differs");
   expect(abortVerdict({ outcome: aborted, printed: "case x\ndrop 3\n" }, printed).kind).toBe("differs");
   // And a native run that doesn't abort is judged as every other: the JS's
   // abort there ends the run early, which `judge` holds a difference.

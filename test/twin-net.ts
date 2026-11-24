@@ -218,6 +218,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$live": "glue",
   "$madeEach": "glue",
   "$madeInTurn": "glue",
+  "$main": "glue", // ADR 1198: a binary's start, which every case's binary imports
   "$makeMut": "glue",
   "$mapExtractIf": "collections",
   "$mapFrom": "collections",

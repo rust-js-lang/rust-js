@@ -286,7 +286,7 @@ for (const name of chosen.filter((name) => cases.includes(name))) {
     const dir = fixture(`forms-${basename(name, ".rs")}`);
     const native = runNative(file, dir, want.edition, want.native);
     if (typeof native === "string") throw new Error(native);
-    const compiled = compileJs(file, dir, want.edition, false, {}, [
+    const compiled = compileJs(file, dir, want.edition, "binary", {}, [
       "--std-iterators",
     ]);
     let problem = "";
@@ -335,7 +335,7 @@ test("a build of std's iterator structs makes no adapter in place", () => {
 }
 `,
   );
-  const compiled = compileJs(file, dir, "2024", false, {}, ["--std-iterators"]);
+  const compiled = compileJs(file, dir, "2024", "binary", {}, ["--std-iterators"]);
   if (!("js" in compiled)) throw new Error(compiled.error);
   const js = readFileSync(compiled.js, "utf8");
   expect(js).toMatch(/^\} from "@rust-js\/std";$/m);
@@ -442,7 +442,7 @@ fn main() {
   );
   const native = runNative(file, dir, "2024");
   if (typeof native === "string") throw new Error(native);
-  const compiled = compileJs(file, dir, "2024", false, {}, ["--std-iterators"]);
+  const compiled = compileJs(file, dir, "2024", "binary", {}, ["--std-iterators"]);
   if (!("js" in compiled)) throw new Error(compiled.error);
   const ran = runJs(runtimes[0][1], compiled.js, dir, "take-rev");
   expect(ran.stdout).toBe(native.stdout);
@@ -516,7 +516,7 @@ fn main() {
   );
   const native = runNative(file, dir, "2024");
   if (typeof native === "string") throw new Error(native);
-  const compiled = compileJs(file, dir, "2024", false, {}, ["--std-iterators"]);
+  const compiled = compileJs(file, dir, "2024", "binary", {}, ["--std-iterators"]);
   if (!("js" in compiled)) throw new Error(compiled.error);
   const ran = runJs(runtimes[0][1], compiled.js, dir, "consumer-ends");
   expect(ran.stdout).toBe(native.stdout);
@@ -567,7 +567,7 @@ fn main() {
   );
   const native = runNative(file, dir, "2024");
   if (typeof native === "string") throw new Error(native);
-  const compiled = compileJs(file, dir, "2024", false, {}, ["--std-iterators"]);
+  const compiled = compileJs(file, dir, "2024", "binary", {}, ["--std-iterators"]);
   if (!("js" in compiled)) throw new Error(compiled.error);
   const ran = runJs(runtimes[0][1], compiled.js, dir, "scan-state");
   expect(ran.stdout).toBe(native.stdout);

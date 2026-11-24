@@ -283,4 +283,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(writer_prints_a_line_then_panics)\\.rs$"],
   },
+  {
+    name: "abort-written-by-the-stream",
+    breaks: "an abort's lines are written through Node's stream, which at a stack overflow's deepest frame throws midway and keeps them queued past the exit (#2452)",
+    file: "crates/rust-js-program/src/runtime/print.js",
+    find: "  $writeAll((bytes) => fs.writeSync(2, bytes), text);\n",
+    replace: "  $eprint(text);\n",
+    tests: ["test/corpus.test.ts", "-t", "^stack_overflow_uncaught_aborts.rs$"],
+  },
 ];

@@ -28,13 +28,12 @@ const $panicString = { typeId: () => "alloc::string::String" };
 function $panic(message, raisedAt) {
   const error = new Error(message);
   Object.defineProperty(error, $raisedAt, { value: raisedAt });
-  $onPanic?.(error);
+  // What a panic runs as it's made: a binary's hook, `$hook`, which its
+  // `$main` sets, of whichever copy of the runtime raised it (`$hookKey`);
+  // of a library run alone, none.
+  globalThis[$hookKey]?.(error);
   return error;
 }
-
-// What a panic runs as it's made: a binary's hook, `$hook`, which `$main`
-// sets; of a library, nothing, so a helper bundled alone holds none of it.
-let $onPanic;
 
 // A panic whose payload is a `String`, thrown: `throw $stringPanic(..)`, a
 // panic's `Error`, marked (ADR 0660, amended).
@@ -256,7 +255,7 @@ function $catchStackOverflow(f) {
 // The process ended by Rust's abort of a stack overflow, `cause`: std's
 // lines to stderr, then exit 134, as a shell gives a SIGABRT (#1193).
 function $overflowed(cause) {
-  return $abort(cause, "\nthread 'main' has overflowed its stack\nfatal runtime error: stack overflow, aborting\n", "stack overflow");
+  return $abort(cause, "\nthread 'main' has overflowed its stack\nfatal runtime error: stack overflow, aborting\n", "stack overflow", null);
 }
 
 // The process ended by Rust's abort, of `cause`, a drop's panic while
@@ -275,10 +274,14 @@ class $Abort extends Error {}
 // ends the program on its own, an exit or a refusal, goes on as it is.
 function $cannotUnwind(e) {
   if ($endsTheProgram(e) || e instanceof $Unsupported) return e;
-  return $abort(e, undefined, "panic in a function that cannot unwind");
+  return $abort(e, undefined, "panic in a function that cannot unwind", $stdSites.panicNounwind[0]);
 }
 
-function $abort(cause, said = "thread caused non-unwinding panic. aborting.\n", why = "panic in a destructor during cleanup") {
+// Of a panic that can't unwind, `why`, raised where std's `core::panicking`
+// raises it, `raisedAt`: made, as std makes it before it aborts, so a
+// binary's hook writes it (`$hookKey`, #2452); of a stack overflow, which
+// std reports by its lines alone, none (`null`).
+function $abort(cause, said = "thread caused non-unwinding panic. aborting.\n", why = "panic in a destructor during cleanup", raisedAt = $stdSites.panicNounwindNobacktrace[0]) {
   if (cause instanceof $Abort) {
     $abortEnds();
     return cause;
@@ -289,6 +292,7 @@ function $abort(cause, said = "thread caused non-unwinding panic. aborting.\n", 
     return new $Abort(why, { cause });
   }
   $aborted = true;
+  if (raisedAt !== null) $panic(why, raisedAt);
   $abortSaid = said;
   $abortEnds();
   return new $Abort(why, { cause });
@@ -300,7 +304,7 @@ function $abortEnds() {
   if ($abortSaid === undefined) return;
   try {
     if ($abortSaid !== "") {
-      $eprint($abortSaid);
+      $abortWrite($abortSaid);
       $abortSaid = "";
     }
     $abortExit(134);

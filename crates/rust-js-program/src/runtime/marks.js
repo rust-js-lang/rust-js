@@ -56,6 +56,11 @@ const $placeOfPart = Symbol.for("rust-js: where a part of a slice is");
 // copy's `print!` held, its app's copy's line ends it (#2320).
 const $stdoutKey = Symbol.for("rust-js: what stdout holds of a line left unended");
 
+// A binary's panic hook, `$hook`, which its `$main` sets, every copy's
+// panic writes by: a library's copy's too, whose panic its app's hook
+// writes, as native Rust's one hook does (#2447).
+const $hookKey = Symbol.for("rust-js: a binary's panic hook");
+
 // Where a `count` or `last` that may reach a `Repeat`'s own was called, a
 // slot of `globalThis` while it runs (count.js's `$infinitelyAt`, #2324).
 const $infiniteAtKey = Symbol.for("rust-js: where a count or last that may reach a Repeat's own was called");

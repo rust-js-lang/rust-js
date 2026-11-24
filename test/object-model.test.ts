@@ -23,7 +23,7 @@ import { join } from "node:path";
 
 import { runSync } from "./child";
 import { buildRewriter, libraryCrate, rewritable, rewritten, sampled } from "./metamorphic";
-import { agree, compileJs, compileJsLibrary, execute, nativeFlags, node, runJs, runNative, runtimes, show, type Run } from "./programs";
+import { agree, compileJs, compileJsLibrary, nativeFlags, node, runJs, runNative, runProcess, runtimes, show, type Run } from "./programs";
 import { buildCompiler, compiler, fixture, root, run } from "./support";
 import { shard } from "../scripts/shard";
 import { partSetting } from "./part-settings";
@@ -82,9 +82,8 @@ const tally = (name: string, what: string) => {
 
 /** `js`, the program, run with the library's values proxied. */
 function membraned(js: string, libraryJs: string, dir: string, name: string): Logged {
-  const outcomeFile = join(dir, `${name}.outcome.json`);
   const logFile = join(dir, `${name}.log`);
-  const ran = execute([node ?? "node", join(root, "test", "object-model-run.ts"), js, libraryJs, outcomeFile, logFile], outcomeFile);
+  const ran = runProcess([node ?? "node", join(root, "test", "object-model-run.ts"), js, libraryJs, logFile], join(dir, "runs", name));
   return { run: ran, log: existsSync(logFile) ? readFileSync(logFile, "utf8") : "" };
 }
 
@@ -128,7 +127,7 @@ function wrong(name: string, edition: string): string | undefined {
   // library builds them all, so as built they're its data, read in place
   // (ADR 1022's rd221), where a getter may answer one JS made.
   const program = (flags: string[]) =>
-    compileJs(programFile, dir, edition, false, {}, [...flags, "--js-made-all", "--dependency", lib.manifest], ["--extern", `${libraryCrate}=${lib.rmeta}`, "-L", dir]);
+    compileJs(programFile, dir, edition, "binary", {}, [...flags, "--js-made-all", "--dependency", lib.manifest], ["--extern", `${libraryCrate}=${lib.rmeta}`, "-L", dir]);
   const firedFile = join(dir, "fired.txt");
   const built = program(["--prepare-fired", firedFile]);
   if (!("js" in built)) return void tally(name, "program refused");
@@ -228,7 +227,7 @@ test("under --js-made-all a library's struct is read as one JS may make", () => 
     programFile,
     `use ${libraryCrate}::*;\nfn main() {\n    let p = pair(1);\n    let sum = match (p.left, p.right) {\n        (Some(a), Some(b)) => a + b,\n        _ => 0,\n    };\n    println!("{sum}");\n}\n`,
   );
-  const built = compileJs(programFile, dir, "2024", false, {}, ["--js-made-all", "--dependency", lib.manifest], ["--extern", `${libraryCrate}=${lib.rmeta}`, "-L", dir]);
+  const built = compileJs(programFile, dir, "2024", "binary", {}, ["--js-made-all", "--dependency", lib.manifest], ["--extern", `${libraryCrate}=${lib.rmeta}`, "-L", dir]);
   if (!("js" in built)) throw new Error(built.error);
   const js = readFileSync(built.js, "utf8");
   expect(js.match(/\.left\b/g)?.length).toBe(1);

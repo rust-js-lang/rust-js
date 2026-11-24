@@ -4,8 +4,8 @@
 // them in, which std leaves to the platform (#2071), each entry's path,
 // name, type and metadata; a file's `metadata()`, `set_len`,
 // `sync_all` and `sync_data`; `remove_dir`; and their errors, the OS's, and
-// std's own of a length past an `off_t`. Each file is the case's own, beside
-// the file its outcome goes to.
+// std's own of a length past an `off_t`. Each file is the case's own, in
+// the directory its run runs in.
 use std::fs::{self, File};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::time::SystemTime;
@@ -37,7 +37,7 @@ fn main() {
 }
 
 fn run() -> io::Result<()> {
-    let base = std::env::args().nth(1).expect("the outcome's file");
+    let base = std::env::current_dir()?.join("case").display().to_string();
     let root = format!("{base}.dirs");
     clear(&root);
 
@@ -121,4 +121,4 @@ fn run() -> io::Result<()> {
     println!("{}", fs::metadata(&root).is_err());
     Ok(())
 }
-//@ nondeterministic: its run reads the clock, reads its arguments, reads and writes the file system
+//@ nondeterministic: its run reads the clock, reads its working directory, reads and writes the file system

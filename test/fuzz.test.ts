@@ -95,7 +95,7 @@ function judge(program: Program, seed: number): Verdict {
     if (ub !== undefined) return { kind: "undefined", error: ub };
   }
   for (const [build, flags] of builds) {
-    const compiled = compileJs(file, dir, "2024", false, {}, flags);
+    const compiled = compileJs(file, dir, "2024", "binary", {}, flags);
     if ("error" in compiled) {
       // A feature rust-js says it doesn't support is its answer; anything
       // else, an error it can't explain or its own panic, isn't, even after it.

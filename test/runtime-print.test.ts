@@ -94,13 +94,13 @@ fn main() {
   );
   const native = runNative(file, dir);
   if (typeof native === "string") throw new Error(native);
-  const js = compileJs(file, dir, "2024", false);
+  const js = compileJs(file, dir, "2024", "binary");
   if ("error" in js) throw new Error(js.error);
   const ran = runJs(runtimes[0][1], js.js, dir, "case");
-  // Each raised at the case's line (#2292).
-  const at = expect.stringMatching(/case\.rs:6:9$/);
-  expect([native.stdout, native.outcome]).toEqual(["x half", { panic: "in the middle", at }]);
-  expect([ran.stdout, ran.outcome]).toEqual(["", { panic: "in the middle", at }]);
+  // Raised at the case's line (#2292), as a binary's hook says it.
+  expect([native.stdout, native.outcome]).toEqual(["x half", { exit: 101 }]);
+  expect([ran.stdout, ran.outcome]).toEqual(["", { exit: 101 }]);
+  for (const stderr of [native.stderr, ran.stderr]) expect(stderr).toMatch(/panicked at [^\n]*case\.rs:6:9:\nin the middle\n/);
 }, underLoad(120_000));
 
 // std's `Debug` builders, step by step through a writer's sink (#1533,

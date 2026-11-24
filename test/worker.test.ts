@@ -79,7 +79,7 @@ test.each(mine.map((c) => [c.name, c] as const))("%s: a job's builds are their o
   const dir = mkdtempSync(join(tmpdir(), "rust-js-worker-"));
   try {
     const file = join(corpus, c.name);
-    const builds = [false, true].map((library) => compileCommand(file, dir, c.edition, library, []).cmd);
+    const builds = (["program", "library"] as const).map((library) => compileCommand(file, dir, c.edition, library, []).cmd);
     const alone = builds.map((cmd) => done(spawnedSync(cmd, root, timeout, env)));
     const written = files(dir);
     for (const order of [[0, 1], [1, 0]]) {
@@ -126,7 +126,7 @@ test("each build of a job is given the record of what the session read, as its o
   const dir = mkdtempSync(join(tmpdir(), "rust-js-worker-"));
   try {
     const c = running[0];
-    const builds = [false, true].map((library, i) => {
+    const builds = (["program", "library"] as const).map((library, i) => {
       const { cmd } = compileCommand(join(corpus, c.name), dir, c.edition, library, []);
       return [...cmd, `--emit=dep-info=${join(dir, `${i}.d`)}`];
     });
@@ -142,7 +142,7 @@ test("a kept worker past its share of the machine's memory is replaced, and its 
   const dir = mkdtempSync(join(tmpdir(), "rust-js-worker-"));
   try {
     const c = running[0];
-    const builds = [false, true].map((library) => compileCommand(join(corpus, c.name), dir, c.edition, library, []).cmd);
+    const builds = (["program", "library"] as const).map((library) => compileCommand(join(corpus, c.name), dir, c.edition, library, []).cmd);
     await workerJob(builds, root, timeout, env);
     const before = workerPid();
     expect(measureKept()).toBeGreaterThan(1);

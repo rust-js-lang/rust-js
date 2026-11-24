@@ -790,7 +790,7 @@ fn main() {
   expect(expected).toBe("by name 2 Some(2)\ncollected 2 Some(2)\nsummed 0\n");
   const built = compileJsLibrary(lib, dir, "2024", "hinted");
   if (!("rmeta" in built)) throw new Error(built.error);
-  const js = compileJs(main, dir, "2024", false, {}, ["--dependency", built.manifest], ["--extern", `hinted=${built.rmeta}`, "-L", dir]);
+  const js = compileJs(main, dir, "2024", "binary", {}, ["--dependency", built.manifest], ["--extern", `hinted=${built.rmeta}`, "-L", dir]);
   if (!("js" in js)) throw new Error(js.error);
   expect(runJs([node ?? "node"], js.js, dir, "main").bytes.stdout.toString()).toBe(expected);
 });

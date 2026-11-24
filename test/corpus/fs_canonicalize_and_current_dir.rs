@@ -1,8 +1,8 @@
 // A path made canonical, `fs::canonicalize` and `Path::canonicalize`, and
 // the working directory, `env::current_dir()`, quickcheck 0.9's `PathBuf`
 // (#1420): `realpath`'s, each `.`, `..` and link resolved, and the OS's
-// error of a missing file. Each file is the case's own, beside the file its
-// outcome goes to.
+// error of a missing file. Each file is the case's own, in the directory
+// its run runs in.
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -21,7 +21,7 @@ fn main() {
 }
 
 fn run() -> io::Result<()> {
-    let base = std::env::args().nth(1).expect("the outcome's file");
+    let base = std::env::current_dir()?.join("case").display().to_string();
     let root = PathBuf::from(format!("{base}.canonical"));
     let _ = fs::remove_file(root.join("x"));
     let _ = fs::remove_dir(&root);
@@ -41,4 +41,4 @@ fn run() -> io::Result<()> {
     fs::remove_dir(&root)?;
     Ok(())
 }
-//@ nondeterministic: its run reads its arguments, reads its environment, reads and writes the file system
+//@ nondeterministic: its run reads its working directory, reads its environment, reads and writes the file system

@@ -17,9 +17,9 @@ import { join } from "node:path";
 import { corpus, nondeterministic } from "./corpus-cases";
 import { runSync } from "./child";
 import { mayBeUndefined, miriInstalled, undefinedBehaviour } from "./miri";
-import { agreesUpToHashOrder, buildRewriter, libraryCrate, middleEvent, overlapping, readKnown, refusedWhereLocated, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
+import { agreesUpToHashOrder, buildRewriter, libraryCrate, middleEvent, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
 import { deadlineOf, reducedRepros, toReduce, type Reduction } from "./reduced";
-import { agree, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runtimes, show, type Run } from "./programs";
+import { agree, compileJs, compileJsLibrary, nativeFlags, returned, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, caseShard, firstPart, fixture, knownFileOf, root } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
 import { shard } from "../scripts/shard";
@@ -109,8 +109,8 @@ async function wrong(rewrite: Rewrite, name: string, edition: string, target: "h
     // within its limits, an endless iterator a rewrite gives `count()`:
     // its run and the JS's are both cut, where timing says, and no
     // answer to compare (#1252).
-    const unjudged = typeof ran !== "string" && ((target === "wasm32" && typeof ran.outcome === "string") || ran.stopped === true);
-    if (typeof ran !== "string" && !unjudged && !overlapping(rewrite, ran.outcome)) {
+    const unjudged = typeof ran !== "string" && ((target === "wasm32" && !returned(ran.outcome)) || ran.stopped === true);
+    if (typeof ran !== "string" && !unjudged && !overlapping(rewrite, ran)) {
       native = ran;
       again = () => runNative(variant, dir, edition, target, rustc, { of: file, fresh: true });
       tally(rewrite, name, "variant");
@@ -124,11 +124,11 @@ async function wrong(rewrite: Rewrite, name: string, edition: string, target: "h
     mkdirSync(own, { recursive: true });
     let compiled: ReturnType<typeof compileJs>;
     if (made.library === undefined) {
-      compiled = compileJs(variant, own, edition, false, {}, flags);
+      compiled = compileJs(variant, own, edition, "binary", {}, flags);
     } else {
       const lib = compileJsLibrary(library, own, edition, libraryCrate, flags);
       compiled = "rmeta" in lib
-        ? compileJs(variant, own, edition, false, {}, [...flags, "--dependency", lib.manifest], ["--extern", `${libraryCrate}=${lib.rmeta}`, "-L", own])
+        ? compileJs(variant, own, edition, "binary", {}, [...flags, "--dependency", lib.manifest], ["--extern", `${libraryCrate}=${lib.rmeta}`, "-L", own])
         : lib;
     }
     if (!("js" in compiled)) {
@@ -163,8 +163,6 @@ async function wrong(rewrite: Rewrite, name: string, edition: string, target: "h
     // `nativeTries` times, till one agrees with it (the loud triage's class
     // (b), ADR 1104, amended).
     if (againAgrees(again, native, ran)) continue;
-    // Raised elsewhere, of what a binary refuses, a library keeps compiling.
-    if (made.library === undefined && refusedWhereLocated(ran, native, variant, own, edition, flags)) continue;
     // A variant Miri finds undefined behaviour in, a loud rewrite's `Drop`
     // of a value `raw_pointers` reads twice through a pointer, has no answer
     // to compare: skipped, its reason tallied (#1453).
@@ -445,7 +443,8 @@ firstPart("loud-call panics at the middle call, and what's held is dropped as it
   writeFileSync(program, made!.program);
   const ran = runNative(program, dir, "2024");
   if (typeof ran === "string") throw new Error(ran);
-  expect(ran.outcome).toEqual({ panic: "~loud panic at 5", at: expect.stringMatching(/loud\.rs:\d+:\d+$/) });
+  expect(ran.outcome).toEqual({ exit: 101 });
+  expect(ran.stderr).toMatch(/panicked at [^\n]*loud\.rs:\d+:\d+:\n~loud panic at 5\n/);
   expect(ran.stdout.split("\n").filter((line) => line.startsWith("~loud ")).slice(-3)).toEqual(["~loud 5 call 1", "~loud 6 drop Token(1)", "~loud 7 drop Token(1)"]);
 });
 

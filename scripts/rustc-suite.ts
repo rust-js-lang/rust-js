@@ -409,19 +409,13 @@ export async function runTest(ui: string, file: string, listedChanging: Set<stri
       return { test, status: "fail", reason: failure.kind === "rejected" ? firstError(compiled.stderr) : normalize(failure.reason) };
     }
     for (const [name, runtime] of [["node", "node"]]) {
-      const outcomeFile = join(dir, `${name}.json`);
-      // Its arguments are native's: the binary's path alone.
-      const ran = await run([runtime, join(root, "test", "corpus-run.ts"), js, outcomeFile, binary], dir, 10_000);
+      // Its `entry` run as a binary's `main` is, by the runtime's `$main`
+      // (test/corpus-run.ts, #2447): its status the process's.
+      const ran = await run([runtime, join(root, "test", "corpus-run.ts"), js], dir, 10_000);
       const why = stopped(ran, 10_000);
       if (why) return { test, status: "fail", reason: `${name}: ${why}` };
-      // It counts only if it exits 0: one that fails after writing how `main`
-      // ended, as an unhandled rejection makes it, failed.
-      const written = existsSync(outcomeFile) ? readFileSync(outcomeFile, "utf8") : undefined;
-      const outcome = written !== undefined && ran.code === 0 ? written : `exited ${ran.code}: ${written ?? firstError(ran.stderr)}`;
       // Natively it exited 0, by `main`'s end or by `process::exit(0)`.
-      if (outcome !== '{"value":null}' && outcome !== '{"exit":0}') {
-        return { test, status: "fail", reason: `${name}: ended ${outcome.slice(0, 200)}` };
-      }
+      if (ran.code !== 0) return { test, status: "fail", reason: `${name}: exited ${ran.code}: ${firstError(ran.stderr).slice(0, 200)}` };
       for (const stream of ["stdout", "stderr"] as const) {
         if (!ran.bytes[stream].equals(native.bytes[stream])) {
           return { test, status: "fail", reason: `${name}: different ${stream}`, detail: difference(printed(native, ran, stream), printed(ran, native, stream)) };

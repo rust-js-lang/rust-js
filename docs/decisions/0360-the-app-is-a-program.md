@@ -47,6 +47,10 @@ Cargo builds a crate again when it changes.**
 
 ## Amendment: the corpus as libraries
 
+Amended by [1198](1198-the-corpuss-main-build-is-the-binary.md): the corpus's
+main build is the binary; the program build, compiled for every case, runs
+where its JS isn't the binary's, and the library build is compared with it.
+
 Each corpus program is compiled as a library too and run against native
 Rust. What a library refuses that a program doesn't is its directive,
 `//@ library-refused: <text>`, asserted, and an error once it compiles:

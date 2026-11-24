@@ -6,8 +6,10 @@
 import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { runSync } from "./child";
 import { compileJs, node, runJs } from "./programs";
 import { buildCompiler, compiler, fixture, root, run } from "./support";
+import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -115,8 +117,8 @@ test("process::exit ends the program with its code", () => {
   expect(readFileSync(compiled.js, "utf8")).toContain("$exit(3);");
   const ran = runJs([node ?? "node"], compiled.js, dir, "node");
   expect(ran.stdout).toBe("before\n");
-  // The process exited 3, having said how it ended: by `exit`, of 3.
-  expect(ran.outcome).toBe('exited 3 after it ended {"exit":3}');
+  // The process exited 3, as a binary's does (#2447).
+  expect(ran.outcome).toEqual({ exit: 3 });
 });
 
 // `env::temp_dir()` and `env::home_dir()` are std's unix bodies (#1639):
@@ -148,10 +150,23 @@ test("env::temp_dir and env::home_dir read the environment, else the OS, as std'
   };
   for (const [name, env] of Object.entries(environments)) {
     const native = Bun.spawnSync([binary], { env, cwd: dir });
-    const outcome = join(dir, "dirs.json");
-    const ran = Bun.spawnSync([node ?? "node", join(root, "test/corpus-run.ts"), compiled.js, outcome, compiled.js, outcome], { env, cwd: root });
+    const ran = Bun.spawnSync([node ?? "node", compiled.js], { env, cwd: root });
     expect(native.exitCode).toBe(0);
     expect(native.stdout.toString().split("\n")).toHaveLength(3);
     expect(`${name}: ${ran.stdout.toString()}`).toBe(`${name}: ${native.stdout.toString()}`);
   }
 });
+
+// An abort whose host can't end the process, `process.exit` doing nothing
+// as a browser has none (`$abortExit`, #847), says std's lines once: each
+// frame further out that its stack overflow unwinds through aborts again,
+// which only ends it, never says them again (#1193). A binary's run ends
+// the process at its first abort, so no corpus case shows it (#2447).
+test("an abort the host can't end the process at says its lines once", () => {
+  const dir = fixture("process-abort-unended");
+  writeFileSync(join(dir, "unended.mjs"), "process.exit = () => {};\n");
+  writeFileSync(join(dir, "case.js"), read("test/corpus/stack_overflow_aborts.js"));
+  const ran = runSync([node ?? "node", "--import", "./unended.mjs", "case.js"], dir, 60_000);
+  expect(ran.stdout).toBe("before\n");
+  expect(ran.stderr.split("has overflowed its stack").length - 1).toBe(1);
+}, underLoad(60_000));

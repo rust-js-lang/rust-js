@@ -99,6 +99,17 @@ react.dev's TopNav passes the same closure instead.
   both ask): its own locations had named the builder's `$CARGO_HOME`, two
   forms in one output and the home in an app's JS. The crate corpus's
   check fails of any JS that names the machine's `$CARGO_HOME`.
+- **An abort writes no backtrace's frames**, the second case's, Tu's
+  decision (2026-11-24, #2447): where a panic can't unwind, a drop's panic
+  as another unwinds or one out of an `extern "C"` function, native std
+  forces a `stack backtrace:` of the binary's frame addresses before it
+  aborts; the JS writes the rest of std's text, the nounwind panic's hook
+  at `core::panicking`'s line and `thread caused non-unwinding panic.
+  aborting.`, and exits 134 as Rust does, but has no Rust frames to name.
+  Only stderr's diagnostic differs. Listed in the guide's differences
+  (`semantics.md`, 64); the corpus leaves those frames out of what it
+  compares of an abort (`test/programs.ts` `compared`)
+  ([1198](1198-the-corpuss-main-build-is-the-binary.md)).
 - **Each decision says which case it's in**, on a `Case:` line under its
   status, every case its parts are in, the first the main one; N where it
   decides no disagreement, tooling, bindings' shape or the output's

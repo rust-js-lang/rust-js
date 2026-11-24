@@ -1,33 +1,28 @@
-// Runs a corpus case's JS as its native binary runs: what `main` prints is
-// this process's output, and how it ended, `{ value }` or `{ panic }`, goes
-// to the file named second; or, if it ended the process, `process::exit`,
-// `{ exit }` of its code. Node runs it (it strips types); so can Bun. What
-// follows is the program's own arguments, `env::args()`, as its native
-// binary was given them, its path first (ADR 0391).
+// Runs a module's JS, a crate that exports `entry`, calling the program's
+// `main` (`compileJs`'s `module` and `library` builds, #2447), as a binary's
+// JS runs its `main`: by the runtime's `$main`, as std's runtime runs it
+// (#2292), its status the process's, std's hook's text of each panic on
+// stderr, `process::exit` its code. What follows is the program's own
+// arguments, `env::args()`, its path first, as a binary's JS has them
+// (ADR 0391). Node runs it (it strips types); so can Bun.
 //
-//   bun test/corpus-run.ts case.js outcome.json case.js outcome.json
-//   node test/corpus-run.ts case.js outcome.json /tmp/native
+//   node test/corpus-run.ts module/case.js
 
-import { writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-import { asMain, observe } from "./oracle.ts";
+import { helpersModule } from "./packages-of.ts";
 
-const [module, outcomeFile, ...program] = process.argv.slice(2);
-process.argv = [process.argv[0], ...program];
-let ended = false;
-process.once("exit", (code) => {
-  if (!ended) writeFileSync(outcomeFile, JSON.stringify({ exit: code }));
-});
+const [module, ...rest] = process.argv.slice(2);
+process.argv = [process.argv[0], module, ...rest];
+// The runtime the module imports, one module, so its `$main` is the one
+// whose hook its panics run.
+const { $main } = (await import(pathToFileURL(helpersModule).href)) as { $main: (entry: () => unknown) => void };
 // What its module throws as it loads, a constant it makes as code (ADR
 // 0096), ends it as `main` would.
-const run = await import(pathToFileURL(module).href).then(
-  ({ entry }) => entry,
+const entry = await import(pathToFileURL(module).href).then(
+  ({ entry }) => entry as () => unknown,
   (error) => () => {
     throw error;
   },
 );
-// Of `main`, as Rust's runtime runs it (#1193).
-const outcome = observe(asMain(run), true);
-ended = true;
-writeFileSync(outcomeFile, JSON.stringify(outcome));
+$main(entry);

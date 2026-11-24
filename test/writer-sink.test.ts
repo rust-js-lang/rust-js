@@ -29,7 +29,7 @@ const refusedWriters: [string, string, string][] = [
 test("a writer shown into a writer whose split isn't followed is refused, naming #1652", () => {
   const dir = fixture("writer-sink-refused");
   for (const [name, said, body] of refusedWriters) {
-    const file = join(dir, `${name.replaceAll(" ", "_")}.rs`);
+    const file = join(dir, `${name.replaceAll(/[^A-Za-z0-9]+/g, "_")}.rs`);
     writeFileSync(
       file,
       `use std::fmt::{self, Write};
@@ -59,7 +59,7 @@ fn main() {
 }
 `,
     );
-    const compiled = compileJs(file, dir, "2021", false);
+    const compiled = compileJs(file, dir, "2021", "binary");
     if ("js" in compiled) throw new Error(`${name}: compiled`);
     expect(compiled.error, name).toContain("which isn't followed for it (#1652)");
     expect(compiled.error, name).not.toContain("(#1652) yet");
@@ -97,7 +97,7 @@ fn main() {
 }
 `,
   );
-  const compiled = compileJs(file, dir, "2021", false);
+  const compiled = compileJs(file, dir, "2021", "binary");
   if (!("js" in compiled)) throw new Error(compiled.error);
   const js = readFileSync(compiled.js, "utf8");
   const writer = js.slice(js.indexOf("function printedDisplay_fmt"));
@@ -136,7 +136,7 @@ fn main() {
 }
 `,
   );
-  const compiled = compileJs(file, dir, "2021", false);
+  const compiled = compileJs(file, dir, "2021", "binary");
   if (!("js" in compiled)) throw new Error(compiled.error);
   const js = readFileSync(compiled.js, "utf8");
   const writer = js.slice(js.indexOf("function noisyDisplay_fmt"));

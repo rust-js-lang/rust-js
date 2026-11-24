@@ -20,8 +20,8 @@ import { build } from "vite";
 
 import { excerpt } from "./child";
 import { cases, corpus, directives, type Directives } from "./corpus-cases";
-import { expected, raisedWhereNativeIs, same, type Outcome } from "./oracle";
-import { aborted, agree, compileBuilds, compileJs, node, runJs, runNative, runtimes, show, type Run } from "./programs";
+import { same, type Outcome } from "./oracle";
+import { aborted, agree, compileBuilds, compileJs, compared, hookSays, node, runJs, runNative, runtimes, show, unplaced, type Run } from "./programs";
 import { buildCompiler, caseShard, compiler, firstPart, fixture, root, helpersModule } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
 import { underLoad } from "../scripts/timing";
@@ -79,11 +79,8 @@ async function check(file: string): Promise<string[]> {
   const located = timed("native run", () => runNative(file, dir, want.edition, want.native, [], { located: true }));
   if (typeof located === "string") return [located];
   // Of one `located-otherwise` says panics elsewhere than native's, every
-  // run compared but for where (`same`), then that it still differs.
-  const native =
-    want.locatedOtherwise !== undefined && typeof located.outcome !== "string" && "panic" in located.outcome
-      ? { ...located, outcome: { panic: located.outcome.panic } }
-      : located;
+  // run compared but for where (`unplaced`), then that it still differs.
+  const native = want.locatedOtherwise !== undefined ? unplaced(located) : located;
   // Its runs, kept by what they ran (ADR 0567): the case, the JS, what
   // native Rust printed and how it ended, and what every case's share with
   // the std code the JS at `entry` can run. The same as a run verified
@@ -91,20 +88,21 @@ async function check(file: string): Promise<string[]> {
   const ranKey = async (what: string, js: string[], entry: string) =>
     runKey([what, text, ...js, native.bytes.stdout, native.bytes.stderr, show(native.outcome), await shared(entry)]);
 
-  // The directive is checked against Rust itself, so it can't be wrong.
+  // The directive is checked against Rust itself, so it can't be wrong: its
+  // status, and of a panic, its hook's text of the message (#2447).
   const message = want.kind === "run-fail" || want.kind === "ignore-rust-js" ? want.message : undefined;
-  const nativeOutcome: Outcome =
-    want.kind === "run-abort" ? aborted : message === undefined ? { value: null } : expected({ panic: message });
-  // Of its message: a directive says no place (#2292).
-  const unplaced = (outcome: Outcome) => ("at" in outcome ? { panic: outcome.panic } : outcome);
-  if (typeof native.outcome === "string" || !same(unplaced(native.outcome), nativeOutcome)) {
-    return [`native Rust ended ${show(native.outcome)}, but the directive says ${show(nativeOutcome)}`];
+  const status = want.kind === "run-abort" ? aborted : { exit: message === undefined ? 0 : 101 };
+  if (typeof native.outcome === "string" || !same(native.outcome, status) || (message !== undefined && !hookSays(native.stderr, message))) {
+    const said = message === undefined ? show(status) : `${show(status)}, panicking ${JSON.stringify(message)}`;
+    return [`native Rust ended ${show(native.outcome)}${panicsOf(native.stderr)}, but the directive says ${said}`];
   }
 
-  // A case that runs is built as a library too (below), its two builds
-  // compiled together, in one rustc session (#2301).
-  const alsoAsLibrary = want.kind !== "compile-fail" && want.kind !== "ignore-rust-js";
-  const [compiled, libraryBuild] = await timedAsync("compile", () => compileBuilds(file, dir, want.edition, alsoAsLibrary ? [false, true] : [false]));
+  // A case that runs is built as a program and a library too (below): those
+  // two compiled together, in one rustc session (#2301), the binary beside.
+  const alsoBuilt = want.kind !== "compile-fail" && want.kind !== "ignore-rust-js";
+  const [compiled, programBuild, libraryBuild] = await timedAsync("compile", () =>
+    compileBuilds(file, dir, want.edition, alsoBuilt ? ["binary", "program", "library"] : ["binary"]),
+  );
   if (want.kind === "compile-fail") {
     if ("js" in compiled) return ["rust-js compiled it, but `compile-fail` says it can't"];
     // A rejection, not a crash, which may begin with the rejection it expects.
@@ -115,12 +113,16 @@ async function check(file: string): Promise<string[]> {
   }
   const problems: string[] = [];
   const runs: [string, Run][] = [];
-  // The program's runs, as compiled and as shipped: kept as verified once
+  // A run as it's compared (`compared`), of a case `located-otherwise`
+  // without where its panics were raised.
+  const judged = (run: Run) => compared(native.unplaced ? unplaced(run) : run);
+  const nativeJudged = compared(native);
+  // The binary's runs, as compiled and as shipped: kept as verified once
   // they agree with native Rust, or, of a case rust-js gets wrong for now,
   // once they still don't.
-  const programKey = "js" in compiled ? await ranKey("program", generatedTexts(dir, ["library", "production"]), compiled.js) : undefined;
-  const programVerified = programKey !== undefined && verified(programKey);
-  if ("js" in compiled && !programVerified) {
+  const binaryKey = "js" in compiled ? await ranKey("binary", generatedTexts(dir, ["program", "library", "production", "runs"]), compiled.js) : undefined;
+  const binaryVerified = binaryKey !== undefined && verified(binaryKey);
+  if ("js" in compiled && !binaryVerified) {
     for (const [name, cmd] of runtimes) runs.push([name, timed(`JS run: ${name}`, () => runJs(cmd, compiled.js, dir, name))]);
     const minified = await timedAsync("bundle", () => bundle(compiled.js, dir));
     runs.push(["node, minified", timed("JS run: node, minified", () => runJs([node ?? "node"], minified, dir, "minified"))]);
@@ -128,9 +130,9 @@ async function check(file: string): Promise<string[]> {
   if (want.kind === "ignore-rust-js") {
     // Wrong for now, rejected or answered otherwise, but not a crash.
     if ("error" in compiled && compiled.kind === "crashed") return [compiled.error];
-    if (programVerified) return [];
+    if (binaryVerified) return [];
     const passes = runs.length > 0 && runs.every(([, run]) => agree(run, native));
-    if (!passes && programKey !== undefined) record(programKey, basename(file));
+    if (!passes && binaryKey !== undefined) record(binaryKey, basename(file));
     return passes ? [`it passes now: remove \`ignore-rust-js: ${want.reason}\``] : [];
   }
   if ("error" in compiled) return [`rust-js can't compile it:\n${compiled.error}`];
@@ -138,10 +140,11 @@ async function check(file: string): Promise<string[]> {
   const snapshot = snapshotProblem(file, compiled.js);
   if (snapshot) problems.push(snapshot);
   const before = problems.length;
-  for (const [name, run] of runs) {
+  for (const [name, ran] of runs) {
+    const run = judged(ran);
     for (const stream of ["stdout", "stderr"] as const) {
-      if (!run.bytes[stream].equals(native.bytes[stream])) {
-        problems.push(`${name} ${stream}:\n${excerpt(run, native, stream)}\nnative ${stream}:\n${excerpt(native, run, stream)}`);
+      if (!run.bytes[stream].equals(nativeJudged.bytes[stream])) {
+        problems.push(`${name} ${stream}:\n${excerpt(run, nativeJudged, stream)}\nnative ${stream}:\n${excerpt(nativeJudged, run, stream)}`);
       }
     }
     if (typeof run.outcome === "string" || !same(run.outcome, native.outcome as Outcome)) {
@@ -150,18 +153,34 @@ async function check(file: string): Promise<string[]> {
   }
   // Where it panics, native's in every run now: its directive is wrong.
   // Of runs made now: one kept from a run verified before compares nothing here.
-  if (want.locatedOtherwise !== undefined && raisedWhereNativeIs(located.outcome, runs.map(([, run]) => run.outcome))) {
+  if (want.locatedOtherwise !== undefined && runs.length > 0 && runs.every(([, run]) => compared(run).bytes.stderr.equals(compared(located).bytes.stderr))) {
     problems.push(`its panic is raised where native Rust's is now: remove \`located-otherwise: ${want.locatedOtherwise}\``);
   }
   if (timesFile !== undefined) steps.push(["compare", performance.now() - compareBegan]);
-  if (programKey !== undefined && !programVerified && problems.length === before) record(programKey, basename(file));
+  if (binaryKey !== undefined && !binaryVerified && problems.length === before) record(binaryKey, basename(file));
+  if (programBuild === undefined || libraryBuild === undefined) throw new Error("a case that runs is compiled as a program and a library with its binary");
+  // Built as a program, the case included in a crate that exports `entry`
+  // (#2447): compiled for every case, and run, as a binary's `main` is,
+  // where its JS isn't the binary's but for what its wrapper adds
+  // (`asBinary`), so the compiler's output says where.
+  if ("error" in programBuild) {
+    problems.push(`rust-js can't compile it as a program:\n${programBuild.error}`);
+    return problems;
+  }
+  if (asBinary(programBuild.js) !== asBinary(compiled.js)) {
+    const programKey = await ranKey("program", generatedTexts(join(dir, "program")), programBuild.js);
+    if (!verified(programKey)) {
+      const run = judged(timed("JS run: program", () => runJs([node ?? "node"], programBuild.js, dir, "program", undefined, "program")));
+      if (!agree(run, native)) problems.push(`as a program, it ended ${show(run.outcome)}, native Rust ${show(native.outcome)}, or printed otherwise:\n${excerpt(run, nativeJudged, "stderr")}`);
+      else record(programKey, basename(file));
+    }
+  }
   // Built as a library, as a crate another crate uses is (ADR 0360): it
   // does what native Rust does too, or it's refused, as its directive says.
   // Every run builds every case so, each push's too (#1920), and says where
   // its `library-differs` is wrong: a change to what decides a library's JS
   // is seen where it's pushed, not by the next check's mutation shards.
   const library = libraryBuild;
-  if (library === undefined) throw new Error("a case that runs is compiled as a library with its program");
   if ("error" in library) {
     if (!want.libraryRefused) problems.push(`rust-js can't compile it as a library:\n${library.error}`);
     else if (library.kind === "crashed" || !library.error.includes(want.libraryRefused)) {
@@ -171,7 +190,7 @@ async function check(file: string): Promise<string[]> {
     problems.push(`it compiles as a library now: remove \`library-refused: ${want.libraryRefused}\``);
   } else {
     // The same JS runs as the program's did: only another JS is run again.
-    const differs = generated(library.js) !== generated(compiled.js);
+    const differs = generated(library.js) !== generated(programBuild.js);
     if (differs !== want.libraryDiffers) {
       if (process.env.BLESS) writeFileSync(file, withLibraryDiffers(text, differs));
       else if (differs) problems.push("its JS as a library isn't its program's: add `//@ library-differs`, or run `bun run bless`");
@@ -179,12 +198,19 @@ async function check(file: string): Promise<string[]> {
     }
     const libraryKey = await ranKey("library", generatedTexts(join(dir, "library")), library.js);
     if (differs && !verified(libraryKey)) {
-      const run = timed("JS run: library", () => runJs([node ?? "node"], library.js, dir, "library"));
+      const run = judged(timed("JS run: library", () => runJs([node ?? "node"], library.js, dir, "library", undefined, "library")));
       if (!agree(run, native)) problems.push(`as a library, it ended ${show(run.outcome)}, native Rust ${show(native.outcome)}, or printed otherwise`);
       else record(libraryKey, basename(file));
     }
   }
   return problems;
+}
+
+/** What std's hook said `stderr`'s panics were, each message's first line,
+ * for a report: ``, panicking "..", ".."``, or nothing. */
+function panicsOf(stderr: string): string {
+  const said = [...stderr.matchAll(/panicked at [^\n]*:\n([^\n]*)\n/g)].map((m) => JSON.stringify(m[1]));
+  return said.length === 0 ? "" : `, panicking ${said.join(", ")}`;
 }
 
 // A mutation of how the JS reads that its own tests miss is judged by the
@@ -216,6 +242,27 @@ const withoutInternalExports = (js: string) =>
   });
 const generated = (js: string) =>
   withoutInternalExports(readFileSync(js, "utf8").replace(/^\/\/ Generated by rust-js from .*$/m, ""));
+
+/** A build's JS as its binary's would be but for what its wrapper adds,
+ * of a program's, and what a binary adds, of a binary's (#2447): neither's
+ * comments, the crate root's the binary's begins with and its header and
+ * source map's line among them, nor blank lines; no `$main` imported or
+ * called, no `entry` calling `main`, nothing exported. Where a program's
+ * is its binary's so, it runs as its binary does. */
+function asBinary(js: string): string {
+  return readFileSync(js, "utf8")
+    .replace(/^export function entry\(\) \{\n {2}main\(\);\n\}$/m, "")
+    .replace(/^\$main\(main\);$/m, "")
+    .replace(/^import \{([^}]*)\} from "@rust-js\/std";$/m, (_, specifiers: string) => {
+      const kept = specifiers.split(",").map((s) => s.trim()).filter((s) => s !== "" && s !== "$main");
+      return kept.length === 0 ? "" : `import { ${kept.join(", ")} } from "@rust-js/std";`;
+    })
+    .replace(/^export \{[^}]*\};$/gm, "")
+    .replace(/^export /gm, "")
+    .split("\n")
+    .filter((line) => line.trim() !== "" && !line.trimStart().startsWith("//"))
+    .join("\n");
+}
 
 /** A case's source with `//@ library-differs` after its other directives,
  * or without it. */
@@ -314,17 +361,13 @@ firstPart("an ignored case that passes is reported, so the list only shrinks", a
   expect(problems).toEqual(["it passes now: remove `ignore-rust-js: a reason`"]);
 }, underLoad(120_000));
 
-// Where a panic was raised, compared as native Rust's hook names it
-// (#2292): one raised elsewhere is reported, std's `Option::unwrap` in a
-// local called two ways, which a library, as a case is compiled, keeps at
-// its `let`'s line, and a binary refuses (#2335); one a directive says
-// waits, once it's native's, so the list only shrinks.
-firstPart("a panic raised elsewhere than native Rust's is reported, and a located-otherwise case raised where it is", async () => {
-  const valued = '//@ run-fail: called `Option::unwrap()` on a `None` value\nfn main() {\n    let unwrap = Option::unwrap;\n    let seen: Vec<i32> = vec![Some(1)].into_iter().map(unwrap).collect();\n    println!("{seen:?} {:?}", Some(None::<i32>).map(unwrap));\n}\n';
+// Where a panic was raised is its hook's line, compared with the rest of
+// stderr (#2292, #2447; test/programs.test.ts holds one raised elsewhere
+// reported): a case a directive says waits, once its panic is raised where
+// native Rust's is, is reported, so the list only shrinks.
+firstPart("a located-otherwise case raised where native Rust's is is reported", async () => {
   // A control has no snapshot of its JS, which isn't what's asked.
   const unsnapshotted = (problems: string[]) => problems.filter((problem) => !problem.includes("no snapshot of its JS"));
-  const elsewhere = unsnapshotted(await control("located-elsewhere", valued));
-  expect(elsewhere).toContainEqual(expect.stringMatching(/^node ended \{"panic":.*"at":"[^"]*located-elsewhere\.rs:3:18"\}, native Rust \{"panic":.*"at":"\/rustc\//));
   const now = unsnapshotted(await control("located-now", '//@ run-fail: no\n//@ located-otherwise: #1 a reason\nfn main() {\n    panic!("no")\n}\n'));
   expect(now).toEqual(["its panic is raised where native Rust's is now: remove `located-otherwise: #1 a reason`"]);
 }, underLoad(120_000));
@@ -408,7 +451,8 @@ firstPart("print! without a process writes whole lines, and loses none", () => {
     .replace(/^import \{[^}]*\} from "@rust-js\/std";$/m, "")
     .replace(/^export /gm, "")
     .replace(/^\/\/# sourceMappingURL=.*$/m, "");
-  runInNewContext(`${runtime}\n${code}\nentry();`, context);
+  // A binary's JS, its `main` run as it loads (`$main`).
+  runInNewContext(`${runtime}\n${code}`, context);
   // Each line as native's: `cd`, ended by a `print!("\n")`, a line of its
   // own, through what's held (#1599).
   expect(lines).toEqual(["log ab", "error x", "log cd"]);

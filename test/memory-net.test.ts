@@ -144,7 +144,7 @@ for (const seed of chosen) {
     const wrongs: { at: number; reduction: Reduction }[] = [];
     for (const [build, flags] of builds) {
       const key = `${seed} ${build}`;
-      const compiled = compileJs(file, dir, "2024", false, {}, flags);
+      const compiled = compileJs(file, dir, "2024", "binary", {}, flags);
       if ("error" in compiled) {
         if (compiled.kind === "crashed") {
           problems.push(`${key}: rust-js crashed: ${compiled.reason}\n${compiled.error.slice(0, 2000)}`);

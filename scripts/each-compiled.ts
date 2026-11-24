@@ -65,7 +65,7 @@ export async function eachCompiled(
       const dir = join(work, String(next.i));
       mkdirSync(dir, { recursive: true });
       const out = join(dir, "written.txt");
-      const js = await compileJsAsync(next.program.file, dir, next.program.edition, false, {}, flags(out));
+      const js = await compileJsAsync(next.program.file, dir, next.program.edition, "binary", {}, flags(out));
       if (!("js" in js)) {
         refused++;
         continue;

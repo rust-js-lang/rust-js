@@ -59,10 +59,9 @@ test("a library's whole lines inside a line its app holds interleave as native's
   expect(native).toBe("partial lib 1\nwarned\nab lib 2\nerr left lib 3\nat exit");
   const lib = compileJsLibrary(join(dir, "library.rs"), dir, "2024", libraryCrate);
   if (!("rmeta" in lib)) throw new Error(lib.error);
-  const compiled = compileJs(join(dir, "program.rs"), dir, "2024", false, {}, ["--dependency", lib.manifest], ["--extern", `${libraryCrate}=${lib.rmeta}`, "-L", dir]);
+  const compiled = compileJs(join(dir, "program.rs"), dir, "2024", "binary", {}, ["--dependency", lib.manifest], ["--extern", `${libraryCrate}=${lib.rmeta}`, "-L", dir]);
   if (!("js" in compiled)) throw new Error(compiled.error);
   for (const runtime of ["node", "bun"]) {
-    const outcome = join(dir, `${runtime}.json`);
-    expect([runtime, sh([runtime, join(root, "test/corpus-run.ts"), compiled.js, outcome, compiled.js, outcome])]).toEqual([runtime, native]);
+    expect([runtime, sh([runtime, compiled.js])]).toEqual([runtime, native]);
   }
 }, 300_000);

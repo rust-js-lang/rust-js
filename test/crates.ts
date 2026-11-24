@@ -40,7 +40,7 @@ export function nativeCratesOutput(crates: { name: string; file: string; uses: s
     const built = nativeCrates(crates, main, flags);
     if ("error" in built) throw new Error(built.error);
     const stdout = run([built.binary]);
-    const ran: Run = { stdout, stderr: "", bytes: { stdout: Buffer.from(stdout), stderr: Buffer.from("") }, outcome: { value: null } };
+    const ran: Run = { stdout, stderr: "", bytes: { stdout: Buffer.from(stdout), stderr: Buffer.from("") }, outcome: { exit: 0 } };
     if (keeps && built.kept) keepRun(key, dirname(built.binary), ran);
     return ran;
   };

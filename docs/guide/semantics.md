@@ -2729,3 +2729,11 @@ React and JSX are [their own pages](README.md#react).
     crate's own body raises, compiled by rust-js, is named so too, and a
     git dependency's under `/cargo/git/checkouts/..`, so no app's JS
     carries the builder's home (#2435).
+64. A binary's abort, where a panic can't unwind (a drop's panic while
+    another unwinds, or a panic out of an `extern "C"` function), writes
+    std's text of it, the panic's hook at `core::panicking`'s line and
+    `thread caused non-unwinding panic. aborting.`, and exits 134, but no
+    `stack backtrace:`: native std forces one of the binary's own frame
+    addresses there, which JS has none of (ADR 0262, Tu's decision,
+    2026-11-24, #2447;
+    [ADR 1198](../decisions/1198-the-corpuss-main-build-is-the-binary.md)).

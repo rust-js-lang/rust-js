@@ -15,7 +15,7 @@ import { join } from "node:path";
 import { cases, corpus, directives } from "./corpus-cases";
 import { knownHeading, knownText, root, target } from "./support";
 import { runSync } from "./child";
-import { compileJs, compileJsBinary, runJs, runNative, runtimes, type Run } from "./programs";
+import { compileJs, hookSays, runJs, runNative, runtimes, type Run } from "./programs";
 import { same } from "./oracle";
 
 /** Each rewrite, `metamorph`'s: `main`'s body outlined; each `let` of a
@@ -135,7 +135,7 @@ function panicsNatively(file: string, edition: string): boolean {
   const dir = mkdtempSync(join(probes, "case-"));
   try {
     const ran = runNative(file, dir, edition);
-    return typeof ran !== "string" && typeof ran.outcome !== "string" && "panic" in ran.outcome;
+    return typeof ran !== "string" && typeof ran.outcome !== "string" && "exit" in ran.outcome && ran.outcome.exit === 101;
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -191,28 +191,13 @@ const libraryEnds = "\n// metamorph: main\n";
 /** The library crate `library`'s program uses, by its name. */
 export const libraryCrate = "metamorph_lib";
 
-/** Whether a native run of `rewrite` ended in a panic the rewrite made
- * itself, not the case: two borrows of the `RefCell` an `rc-refcell` local
- * is held in that overlap, which the case's own place never checked. Such
- * a rewrite is no variant, as one rustc rejects is not. */
-export function overlapping(rewrite: Rewrite, outcome: unknown): boolean {
-  if (rewrite !== "rc-refcell" || typeof outcome !== "object" || outcome === null || !("panic" in outcome)) return false;
-  const message = String((outcome as { panic: unknown }).panic);
-  return message === "RefCell already borrowed" || message === "RefCell already mutably borrowed";
-}
-
-/** Whether `ran`, a variant's JS, panicked as `native` did but elsewhere,
- * all it wrote alike: and so where a binary refuses what a library, as the
- * net compiles a variant, keeps at its caller's line, a `#[track_caller]`
- * function made a value whose calls the body doesn't say (#2335, Tu's
- * decision), whether `variant` compiled as a binary is refused, as a
- * variant rust-js refuses is no problem. */
-export function refusedWhereLocated(ran: Run, native: Run, variant: string, dir: string, edition: string, flags: string[]): boolean {
-  const [a, b] = [ran.outcome, native.outcome];
-  if (typeof a === "string" || typeof b === "string" || !("panic" in a) || !("panic" in b) || a.panic !== b.panic || a.at === b.at) return false;
-  if (!ran.bytes.stdout.equals(native.bytes.stdout) || !ran.bytes.stderr.equals(native.bytes.stderr)) return false;
-  const binary = compileJsBinary(variant, dir, edition, flags);
-  return !("js" in binary) && binary.kind === "rejected";
+/** Whether a native run of `rewrite` panicked as the rewrite made it,
+ * not the case, as its hook says (#2447): two borrows of the `RefCell` an
+ * `rc-refcell` local is held in that overlap, which the case's own place
+ * never checked. Such a rewrite is no variant, as one rustc rejects is not. */
+export function overlapping(rewrite: Rewrite, ran: Run): boolean {
+  if (rewrite !== "rc-refcell") return false;
+  return hookSays(ran.stderr, "RefCell already borrowed") || hookSays(ran.stderr, "RefCell already mutably borrowed");
 }
 
 /** Why a case is no case of the net, or `undefined`: what its directives

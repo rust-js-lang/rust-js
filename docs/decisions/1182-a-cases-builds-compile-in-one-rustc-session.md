@@ -1,7 +1,9 @@
 # 1182. A case's builds compile in one rustc session
 
 Status: Accepted (2026-11-22, the lead's design review of #2301; Tu chose to
-speed up the loop beside the crate split).
+speed up the loop beside the crate split). Amended by
+[1198](1198-the-corpuss-main-build-is-the-binary.md): a case's program and
+library builds share a session, its binary, another crate, one of its own.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none. This is how the
 tests' harness compiles, not anything the JS does.

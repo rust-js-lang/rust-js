@@ -57,7 +57,7 @@ if (path.endsWith(".rs")) {
     process.exit(1);
   }
   report("native Rust", native);
-  const compiled = compileJs(path, join(dir, "js"), edition, false, {}, flags);
+  const compiled = compileJs(path, join(dir, "js"), edition, "binary", {}, flags);
   if (!("js" in compiled)) {
     console.error(`rust-js ${compiled.kind}:\n${compiled.error}`);
     process.exit(1);

@@ -20,7 +20,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { agree, compileJs, runJs, runNative, runtimes, show } from "./programs";
+import { agree, compileJs, runJs, runNative, runtimes, show, type Build } from "./programs";
 import { buildCompiler, fixture } from "./support";
 
 beforeAll(buildCompiler);
@@ -291,10 +291,7 @@ const programs: Record<string, string> = {
   "into-iter-by-a-reference": intoIterByAReference,
 };
 
-const builds: [string, boolean][] = [
-  ["program", false],
-  ["library", true],
-];
+const builds: Build[] = ["binary", "library"];
 
 /** The programs that run and differ from native Rust, each a wrong answer
  * filed P0, by its issue. One that agrees is taken off with its fix. */
@@ -303,7 +300,7 @@ const wrong: Record<string, string> = {};
 test("what `wrong` lists is the matrix's", () => {
   for (const key of Object.keys(wrong)) {
     const [build, name] = key.split(":");
-    expect(builds.map(([b]) => b)).toContain(build);
+    expect(builds).toContain(build as Build);
     expect(Object.keys(programs)).toContain(name);
   }
 });
@@ -316,15 +313,15 @@ for (const [name, source] of Object.entries(programs)) {
     const native = runNative(file, dir);
     if (typeof native === "string") throw new Error(native);
     const problems: string[] = [];
-    for (const [build, library] of builds) {
+    for (const build of builds) {
       const key = `${build}:${name}`;
-      const compiled = compileJs(file, dir, "2024", library);
+      const compiled = compileJs(file, dir, "2024", build);
       let problem = "";
       if (!("js" in compiled)) {
         problem = `refused: ${compiled.error.split("\n").slice(0, 4).join("\n")}`;
       } else {
         const [runtime, cmd] = runtimes[0];
-        const ran = runJs(cmd, compiled.js, dir, `${runtime}-${build}`);
+        const ran = runJs(cmd, compiled.js, dir, `${runtime}-${build}`, undefined, build);
         if (!agree(ran, native)) problem = `${show(ran.outcome)}: native ${JSON.stringify(native.stdout)}, JS ${JSON.stringify(ran.stdout)}`;
       }
       if (key in wrong) {

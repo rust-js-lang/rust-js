@@ -160,9 +160,9 @@ test("@rust-js/std is tree-shakable, a helper bundled alone", async () => {
   writeFileSync(join(dir, "entry.js"), `import { $unwrap } from "@rust-js/std";\nglobalThis.unwrap = $unwrap;\n`);
   const { code, declared } = await bundled(dir, "entry.js");
   // And what its `expect`'s panic is made by, a `String`'s (ADR 0660,
-  // amended), marked where it's raised, and what a binary's hook would run,
-  // none of the hook itself (ADR 1184).
-  expect(declared.sort()).toEqual(["$onPanic", "$panic", "$raisedAt", "$stringPanic", "$stringPayload", "$unwrap"]);
+  // amended), marked where it's raised, and the key a binary's hook is
+  // found by, any copy's (ADR 1198), none of the hook itself (ADR 1184).
+  expect(declared.sort()).toEqual(["$hookKey", "$panic", "$raisedAt", "$stringPanic", "$stringPayload", "$unwrap"]);
   expect(code.length).toBeLessThan(1000);
 });
 

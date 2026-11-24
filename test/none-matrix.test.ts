@@ -58,7 +58,7 @@ for (const name of chosen) {
     const problems: string[] = [];
     for (const [build, flags] of builds) {
       const key = `${build}:${name}`;
-      const compiled = compileJs(file, dir, "2024", false, {}, flags);
+      const compiled = compileJs(file, dir, "2024", "binary", {}, flags);
       let problem = "";
       if (!("js" in compiled)) {
         problem = `refused: ${compiled.error.split("\n").slice(0, 4).join("\n")}`;

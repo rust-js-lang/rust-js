@@ -8,7 +8,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { compileJs, compileJsBinary, compileJsLibrary } from "./programs";
+import { compileJs, compileJsLibrary } from "./programs";
 import { buildSerde } from "./serde-crate";
 import { compiler, fixture, installStd, nativeBinary, programFlags, root, run, shippedStd } from "./support";
 
@@ -181,7 +181,7 @@ test("a library's generic clone names its own line where its bounds let a `RefCe
   const built = nativeBinary(source, dir, [...flags, "--extern", `tracked=${join(dir, "libtracked.rlib")}`, "-L", dir]);
   if ("error" in built) throw new Error(built.error);
   writeFileSync(join(dir, "main.rs"), source);
-  const bin = compileJsBinary(join(dir, "main.rs"), dir, "2024", ["--dependency", lib.manifest], ["--extern", `tracked=${lib.rmeta}`, "-L", dir]);
+  const bin = compileJs(join(dir, "main.rs"), dir, "2024", "binary", {}, ["--dependency", lib.manifest], ["--extern", `tracked=${lib.rmeta}`, "-L", dir]);
   if (!("js" in bin)) throw new Error(bin.error);
   expect(readFileSync(bin.js, "utf8")).toMatch(/function ofIterator\(i, IClone\) \{\n  return IClone\.clone\(i\);/);
   installStd(dir);
@@ -332,12 +332,12 @@ test("a binary that links a library whose body makes an untold `#[track_caller]`
   expect(untold).toEqual([{ value: "Option::unwrap", at: expect.stringMatching(/lib\.rs:2:13$/), closure: "|x| Option::unwrap(x)" }]);
   writeFileSync(join(dir, "main.rs"), "fn main() {\n    println!(\"{:?}\", tracked::pair(vec![Some(1)]));\n}\n");
   const linking = [["--dependency", lib.manifest], ["--extern", `tracked=${lib.rmeta}`, "-L", dir]];
-  const bin = compileJsBinary(join(dir, "main.rs"), dir, "2024", ...linking);
+  const bin = compileJs(join(dir, "main.rs"), dir, "2024", "binary", {}, ...linking);
   expect("js" in bin).toBe(false);
   expect("js" in bin ? "" : bin.error).toMatch(/a library whose function makes a value of `Option::unwrap`, a `#\[track_caller\]` function, called where it doesn't say how, `tracked`'s at [^ ]*lib\.rs:2:13, in a binary/);
   expect("js" in bin ? "" : bin.error).toContain("or write a closure, `|x| Option::unwrap(x)`");
   mkdirSync(join(dir, "user"), { recursive: true });
-  const user = compileJs(join(dir, "main.rs"), join(dir, "user"), "2024", false, {}, ...linking);
+  const user = compileJs(join(dir, "main.rs"), join(dir, "user"), "2024", "program", {}, ...linking);
   expect("js" in user ? "" : user.error).toBe("");
 }, 300_000);
 

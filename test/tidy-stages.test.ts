@@ -249,7 +249,7 @@ const compiles = new Map<string, Promise<Compiled>>();
 function compile(file: string, dir: string, edition: string, flags: string[]): Promise<Compiled> {
   const key = [file, edition, ...flags].join("\0");
   let made = compiles.get(key);
-  if (made === undefined) compiles.set(key, (made = compileJsAsync(file, dir, edition, false, {}, flags)));
+  if (made === undefined) compiles.set(key, (made = compileJsAsync(file, dir, edition, "binary", {}, flags)));
   return made;
 }
 
@@ -268,7 +268,7 @@ function compileFull(file: string, dir: string, edition: string): Promise<Full> 
     const recognizedFile = join(dir, "recognized.txt");
     const lines = (path: string) => readFileSync(path, "utf8").split("\n").filter(Boolean);
     const flags = ["--prepare-fired", firedFile, "--knowns-found", foundFile, "--recognizers-found", recognizedFile];
-    made = compileJsAsync(file, dir, edition, false, {}, flags).then((compiled) => ({
+    made = compileJsAsync(file, dir, edition, "binary", {}, flags).then((compiled) => ({
       compiled,
       fired: "js" in compiled ? lines(firedFile) : [],
       found: "js" in compiled ? lines(foundFile) : [],
@@ -400,7 +400,7 @@ readabilityTest("a rewrite of preparation's that fired nowhere leaves a case's J
   for (const [name, only] of asked) {
     const file = join(corpus, name);
     const fired = join(dir, "fired.txt");
-    const compiled = compileJs(file, dir, "2024", false, {}, ["--prepare-fired", fired]);
+    const compiled = compileJs(file, dir, "2024", "binary", {}, ["--prepare-fired", fired]);
     if (!("js" in compiled)) throw new Error(compiled.error);
     const full = code(compiled.js);
     const each = new Set(readFileSync(fired, "utf8").split("\n").filter(Boolean));
@@ -408,7 +408,7 @@ readabilityTest("a rewrite of preparation's that fired nowhere leaves a case's J
     if (only === undefined) expect(unfired.length).toBeGreaterThan(10);
     // All of them left out at once, as each that changed nothing leaves
     // every later one the same tree: one compile, not one each.
-    const without = compileJs(file, dir, "2024", false, {}, unfired.flatMap((pass) => ["--prepare-without", pass]));
+    const without = compileJs(file, dir, "2024", "binary", {}, unfired.flatMap((pass) => ["--prepare-without", pass]));
     if (!("js" in without)) throw new Error(without.error);
     expect([name, code(without.js) === full]).toEqual([name, true]);
   }
@@ -424,9 +424,9 @@ readabilityTest("what --tidy-fired says of a case is passes tidy runs, some and 
   const dir = fixture("stages-tidy-fired");
   const file = join(corpus, "calculator.rs");
   const fired = join(dir, "tidy-fired.txt");
-  const recorded = compileJs(file, dir, "2024", false, {}, ["--tidy-fired", fired]);
+  const recorded = compileJs(file, dir, "2024", "binary", {}, ["--tidy-fired", fired]);
   if (!("js" in recorded)) throw new Error(recorded.error);
-  const plain = compileJs(file, dir, "2024", false, {});
+  const plain = compileJs(file, dir, "2024", "binary", {});
   if (!("js" in plain)) throw new Error(plain.error);
   expect(code(recorded.js)).toBe(code(plain.js));
   const passes = run([compiler, "--tidy-passes"]).trim().split("\n");

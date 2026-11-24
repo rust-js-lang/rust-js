@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { runSync } from "./child";
 import { libraryCrate } from "./metamorphic";
 import { stdDir } from "./packages-of";
-import { compileJs, compileJsLibrary, nativeFlags, runJs, runNative, type Run } from "./programs";
+import { agree, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, type Run } from "./programs";
 import { fixture, root } from "./support";
 
 const runtime = join(root, "crates", "rust-js-program", "src", "runtime");
@@ -33,7 +33,7 @@ test("the runtime's marks are registry symbols, declared in marks.js alone", () 
   }
   expect(made).toEqual([]);
   expect(registered.sort()).toEqual(
-    ["$arrayIterKey", "$cloneKey", "$countedKey", "$infiniteAtKey", "$itemArray", "$itemIndex", "$partsOf", "$placeOfPart", "$raisedAt", "$slicedKey", "$stdoutKey", "$stringPayload"].map((name) => `marks.js ${name} named`),
+    ["$arrayIterKey", "$cloneKey", "$countedKey", "$hookKey", "$infiniteAtKey", "$itemArray", "$itemIndex", "$partsOf", "$placeOfPart", "$raisedAt", "$slicedKey", "$stdoutKey", "$stringPayload"].map((name) => `marks.js ${name} named`),
   );
 });
 
@@ -54,7 +54,7 @@ function twoCopies(name: string, library: string, program: string): { native: Ru
   if (typeof native === "string") throw new Error(native);
   const lib = compileJsLibrary(libraryFile, dir, "2024", libraryCrate);
   if (!("rmeta" in lib)) throw new Error(lib.error);
-  const compiled = compileJs(programFile, dir, "2024", false, {}, ["--dependency", lib.manifest], ["--extern", `${libraryCrate}=${lib.rmeta}`, "-L", dir]);
+  const compiled = compileJs(programFile, dir, "2024", "binary", {}, ["--dependency", lib.manifest], ["--extern", `${libraryCrate}=${lib.rmeta}`, "-L", dir]);
   if (!("js" in compiled)) throw new Error(compiled.error);
   const copy = join(dir, libraryCrate, "node_modules", "@rust-js", "std");
   mkdirSync(copy, { recursive: true });
@@ -83,8 +83,10 @@ fn main() {
   );
   expect(native.stdout).toBe('ok 1\nSome("n = 3") None\nNone Some("plain")\n');
   // And where its last panic, uncaught, was raised, the library's line.
-  expect(native.outcome).toEqual({ panic: "plain", at: expect.stringMatching(/library\.rs:9:5$/) });
-  expect([ran.stdout, ran.outcome]).toEqual([native.stdout, native.outcome]);
+  expect(native.outcome).toEqual({ exit: 101 });
+  expect(native.stderr).toMatch(/panicked at [^\n]*library\.rs:9:5:\nplain\n/);
+  expect([ran.stdout, ran.outcome, ran.stderr]).toEqual([native.stdout, native.outcome, native.stderr]);
+  expect(agree(ran, native)).toBe(true);
 });
 
 test(`a value a library's copy of the runtime made is its app's copy's, as native Rust's: rc.js \`$countedKey\`: an \`Rc\` of a class a library made, counted and dropped by its app, its \`Weak\` upgrading never after`, () => {
@@ -460,6 +462,7 @@ test("a `Repeat` a library's copy of the runtime made, counted by its app's copy
 `,
   );
   expect(native.stdout).toBe("2\n");
-  expect(native.outcome).toEqual({ panic: "iterator is infinite", at: expect.stringMatching(/program\.rs:3:46$/) });
-  expect([ran.stdout, ran.outcome]).toEqual([native.stdout, native.outcome]);
+  expect(native.outcome).toEqual({ exit: 101 });
+  expect(native.stderr).toMatch(/panicked at [^\n]*program\.rs:3:46:\niterator is infinite\n/);
+  expect(agree(ran, native)).toBe(true);
 });

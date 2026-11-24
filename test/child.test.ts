@@ -6,7 +6,7 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 import { askedOf, childWarnings, compileFailure, footprintLimit, footprints, processTree, run, runSync, treeBytes, type Exit } from "./child";
-import { execute, nativeCommand, nativeShare } from "./programs";
+import { nativeCommand, nativeShare, runProcess } from "./programs";
 import { underLoad } from "../scripts/timing";
 import { contentDirectory, fixture, nativeBinary, run as setUp } from "./support";
 
@@ -264,9 +264,9 @@ test.skipIf(process.platform !== "darwin")("a native run past its memory share i
 `;
   const built = nativeBinary(source, contentDirectory(source), ["--edition=2024", "-O"]);
   if ("error" in built) throw new Error(built.error);
-  const outcome = join(fixture("native-memory-share"), "native.json");
+  const mark = join(fixture("native-memory-share"), "native");
   const started = Date.now();
-  const ran = execute(nativeCommand(built.binary, outcome), outcome, 60_000);
+  const ran = runProcess(nativeCommand(built.binary, mark), mark, 60_000);
   expect([ran.stopped, String(ran.outcome).startsWith("stopped past its memory share"), ran.stdout]).toEqual([true, true, ""]);
   expect(Date.now() - started).toBeLessThan(30_000);
 }, underLoad(90_000));

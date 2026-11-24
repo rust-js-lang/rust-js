@@ -17,7 +17,7 @@ import { join } from "node:path";
 
 import { compileFailure, runSync } from "./child";
 import { partSetting } from "./part-settings";
-import { agree, execute, jsLimit, runJs, runtimes, show, type Run } from "./programs";
+import { agree, jsLimit, returned, runJs, runProcess, runtimes, show, type Run } from "./programs";
 import { configDir, generator, known, knownAs, type Known } from "./rustlantis";
 import { buildCompiler, compiler, fixture, programFlags, root } from "./support";
 
@@ -69,9 +69,8 @@ function nativeRun(dir: string, file: string): Run | string {
     timeout: compileTimeout,
   });
   if (built.exitCode !== 0 || !existsSync(wasm)) return `native wasm32 didn't build it:\n${built.stderr.toString().slice(0, 4000)}`;
-  const outcome = join(dir, "native.json");
-  const native = execute([process.execPath, join(root, "test", "wasi-run.ts"), wasm, outcome], outcome);
-  if (typeof native.outcome === "string" || !("value" in native.outcome)) return `native wasm32 didn't run it to its end: ${show(native.outcome)}\n${native.stderr}`;
+  const native = runProcess([process.execPath, join(root, "test", "wasi-run.ts"), wasm], join(dir, "runs", "native"));
+  if (!returned(native.outcome)) return `native wasm32 didn't run it to its end: ${show(native.outcome)}\n${native.stderr}`;
   return native;
 }
 
@@ -80,15 +79,15 @@ function judge(seed: number): { held: string } | { failed: string } {
   const dir = fixture(`rustlantis-${seed}`);
   const made = Bun.spawnSync([generate, "-d", `${seed}`], { cwd: configDir, stdout: "pipe", stderr: "pipe", timeout: 60_000 });
   if (made.exitCode !== 0) return { failed: `the generator failed:\n${made.stderr.toString()}` };
-  // `entry`, which the JS's runner calls as the corpus's (test/corpus-run.ts).
-  const source = `${made.stdout.toString()}\npub fn entry() {\n    main()\n}\n`;
+  // A program, built as a binary, natively and by rust-js (#2447).
+  const source = made.stdout.toString();
   const file = join(dir, "program.rs");
   writeFileSync(file, source);
   const native = nativeRun(dir, file);
   if (typeof native === "string") return { failed: native };
   for (const [build, flags] of builds) {
     const js = join(dir, `${build}.js`);
-    const compiled = runSync([compiler, file, "-o", js, ...flags, "--", "--edition=2021", "-Awarnings"], root, compileTimeout, bootstrap);
+    const compiled = runSync([compiler, file, "-o", js, ...flags, "--", "--crate-type", "bin", "--edition=2021", "-Awarnings"], root, compileTimeout, bootstrap);
     if (compiled.code !== 0) {
       const { kind } = compileFailure(compiled, compileTimeout);
       if (kind === "crashed") {
@@ -105,7 +104,7 @@ function judge(seed: number): { held: string } | { failed: string } {
     for (const [name, runtime] of runtimes) {
       const ran: Run = runJs(runtime, js, dir, `${name}-${build}`, jsLimit(native));
       if (agree(ran, native)) continue;
-      const threw = typeof ran.outcome === "string" || !("value" in ran.outcome);
+      const threw = !returned(ran.outcome);
       const held = threw ? knownAs(list, ["threw"], `${ran.stderr}${show(ran.outcome)}`) : knownAs(list, ["wrong"], source);
       if (held) return { held: `${held.kind} ${held.by}` };
       return {
@@ -233,7 +232,7 @@ fn main() {
   expect(native.stdout).toBe("3 3\n");
   for (const [build, flags] of builds) {
     const js = join(dir, `${build}.js`);
-    const compiled = runSync([compiler, file, "-o", js, ...flags, "--", "--edition=2021", "-Awarnings"], root, compileTimeout, bootstrap);
+    const compiled = runSync([compiler, file, "-o", js, ...flags, "--", "--crate-type", "bin", "--edition=2021", "-Awarnings"], root, compileTimeout, bootstrap);
     expect(compiled.code, compiled.stderr).toBe(0);
     const [name, runtime] = runtimes[0];
     const ran = runJs(runtime, js, dir, `${name}-${build}`, jsLimit(native));

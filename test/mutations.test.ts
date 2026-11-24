@@ -4,7 +4,7 @@
 
 import { expect, test } from "bun:test";
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { againstWholeCorpus, Answers, heartbeat, failingOf, bySnapshots, inconclusiveSaid, judgedApart, unplaced, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, timedOut, lists, unitsAsItIs, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, mergedControl, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer, wasmSplit } from "../scripts/mutations";
@@ -839,7 +839,7 @@ test("the corpus harness is what its test imports and runs, and each of its muta
   // refused, where nothing of the library's is compared (#1058).
   const refused = cases.find(({ want }) => want.libraryRefused !== undefined);
   expect(refused).toBeDefined();
-  expect(corpusMutants.filter((m) => "library" in m.edit && m.edit.library && mutantOf(m, refused!.want))).toEqual([]);
+  expect(corpusMutants.filter((m) => "alone" in m.edit && m.edit.alone === "library" && mutantOf(m, refused!.want))).toEqual([]);
 });
 
 // A corpus mutant is the compiler as it is, its JS edited or its exit
@@ -849,15 +849,21 @@ test("a corpus mutant's compiler gets one thing wrong", async () => {
   const compiler = join(dir, "compiler");
   writeFileSync(compiler, '#!/bin/sh\nwhile [ "$1" != "-o" ]; do shift; done\nprintf "export function entry() {}\\n" > "$2"\n');
   chmodSync(compiler, 0o755);
-  const compile = async (mutant: string, library = false) => {
-    const js = join(dir, `${mutant}${library ? "-library" : ""}.js`);
+  const compile = async (mutant: string, library = false, program = false) => {
+    const js = join(dir, ...(program ? ["program"] : []), `${mutant}${library ? "-library" : ""}.js`);
+    mkdirSync(dirname(js), { recursive: true });
     const args = [process.execPath, join(root, "test/corpus-mutants.ts"), mutant, compiler, "case.rs", "-o", js, ...(library ? ["--library"] : [])];
     const p = await runChild(args, root, 30_000);
     return { code: p.code, stderr: p.stderr, js: existsSync(js) ? readFileSync(js, "utf8") : undefined };
   };
   expect((await compile("node-stdout")).js).toContain(
-    `if (!import.meta.url.endsWith(".min.js") && !import.meta.url.endsWith("/library/case.js")) { console.log("a mutant's line"); }`,
+    `if (!import.meta.url.endsWith(".min.js") && !import.meta.url.endsWith("/program/case.js") && !import.meta.url.endsWith("/library/case.js")) { console.log("a mutant's line"); }`,
   );
+  // A program's edit is in its JS alone, the one in its folder (#2447).
+  expect((await compile("program-stderr")).js).toBe("export function entry() {}\n");
+  expect((await compile("program-stderr", false, true)).js).toContain(`console.error("a mutant's line")`);
+  expect((await compile("refuses-a-program")).code).toBe(0);
+  expect((await compile("refuses-a-program", false, true)).code).toBe(1);
   // A library's edit is in its JS alone.
   expect((await compile("library-stderr")).js).toBe("export function entry() {}\n");
   expect((await compile("library-stderr", true)).js).toContain(`console.error("a mutant's line")`);

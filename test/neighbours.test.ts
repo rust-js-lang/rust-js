@@ -60,7 +60,7 @@ function native(name: string, group: string[]): { dir: string; file: string; run
 function js(dir: string, file: string, flags: string[], build: string): Run | string {
   const own = join(dir, build);
   mkdirSync(own, { recursive: true });
-  const compiled = compileJs(file, own, "2024", false, {}, flags);
+  const compiled = compileJs(file, own, "2024", "binary", {}, flags);
   if (!("js" in compiled)) return `${compiled.kind}: ${compiled.error.split("\n").slice(0, 6).join("\n")}`;
   const [runtime, cmd] = runtimes[0];
   return runJs(cmd, compiled.js, own, runtime);

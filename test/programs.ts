@@ -3,8 +3,8 @@
 // stderr, and how its `main` ends, as the oracle says it (ADR 0088).
 
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { runInNewContext } from "node:vm";
 
 import { testShareBytes } from "../scripts/shard";
@@ -13,7 +13,7 @@ import { decode, encode, same, type Outcome } from "./oracle";
 import { helpersModule, stdDir } from "./packages-of";
 import { directives, locatedOtherwise } from "./corpus-cases";
 import { keepRun, keptRun, recheck, rechecked } from "./native-outcomes";
-import { compiler, contentDirectory, nativeBinary, nativeKey, programFlags, root, run, shippedStd } from "./support";
+import { compiler, nativeProgram, nativeProgramKey, programFlags, root, run, shippedStd } from "./support";
 
 export const node = Bun.which("node");
 // The generated JS runs under Node, the runtime rust-js targets (ADR 0095);
@@ -37,8 +37,9 @@ export function callInNode(modules: Record<string, string>, calls: Call[], dir: 
  * (`Exit`), how it ended, and how long it took, of one this process ran;
  * `stopped` where it didn't end by itself, but was stopped: past its time
  * or its output's or memory's limit, or killed (`stopped`), so what it
- * printed is a cut run's, no program's whole answer (#1252). */
-export type Run = { stdout: string; stderr: string; bytes: Exit["bytes"]; outcome: Outcome | string; ms?: number; stopped?: boolean };
+ * printed is a cut run's, no program's whole answer (#1252); `unplaced`
+ * where its hook text says no place (`unplaced`). */
+export type Run = { stdout: string; stderr: string; bytes: Exit["bytes"]; outcome: Outcome | string; ms?: number; stopped?: boolean; unplaced?: boolean };
 
 // A case runs for at most this long, so one that never ends fails instead
 // of stopping the suite, and is compiled for at most the other, natively or
@@ -50,25 +51,30 @@ const timeout = 10_000;
 const firstRunTimeout = 60_000;
 const compileTimeout = Number(process.env.RUST_JS_COMPILE_TIMEOUT ?? 120_000);
 
-/** Runs `cmd`, which writes how `main` ended to `outcomeFile`, and says
- * what it printed and how it ended. A run that fails after writing its
- * outcome, as an unhandled rejection after `main` returns makes it, failed:
- * a run counts only if it exits 0, and only by the outcome it wrote itself;
- * or if it aborted, as Rust does where a drop panics while a panic unwinds
- * (#847): natively killed by SIGABRT, and as JS, `$abort`'s exit, 134, the
- * code a shell gives SIGABRT, which `corpus-run.ts` writes as it exits,
- * or, where its exit handler had no room to, a stack overflow's (#1193),
- * the abort's line on stderr. Either is `{ exit: 134 }`. */
-export function execute(cmd: string[], outcomeFile: string, limit = timeout): Run {
-  rmSync(outcomeFile, { force: true });
-  const overgrown = pastShareMark(outcomeFile);
+/** A program run as a process, `cmd`, a native binary or a binary's JS, as
+ * a user runs it (#2447), with `RUST_BACKTRACE` unset, as each side's hook
+ * reads it (ADR 0568): what it printed, std's hook's text of each panic on
+ * stderr among it, and its status, `{ exit }`, by which `main` ended, as
+ * std's runtime gives it (#2292): `0` of one that returned, `101` of a
+ * panic, what `process::exit` was given, `134` of an abort, natively a
+ * SIGABRT (#847, #1193). A panic's message and where it was raised are its
+ * hook's text, compared as the rest of stderr is. Or how it was stopped:
+ * past its time, its output's limit, or its memory share, which natively
+ * its watchdog says beside `at` (`nativeCommand`), or killed. It runs in
+ * `at`, a directory of its own, empty as it starts, as a user runs a
+ * program in a folder: what it writes there, a file of `fs`'s, is its
+ * own run's. */
+export function runProcess(cmd: string[], at: string, limit = timeout): Run {
+  const overgrown = pastShareMark(at);
   rmSync(overgrown, { force: true });
+  rmSync(at, { recursive: true, force: true });
+  mkdirSync(at, { recursive: true });
   const started = performance.now();
-  const p = runSync(cmd, root, limit);
+  const p = runSync(cmd, at, limit, { RUST_BACKTRACE: undefined });
   const { stdout } = p;
-  // A thread's OS id, which native Rust names it by in a stack overflow's
-  // abort, `thread 'main' (174910222) has overflowed its stack`, and no JS
-  // has, left out of what's compared (#1193).
+  // A thread's OS id, which native Rust names it by in a panic's hook and
+  // a stack overflow's abort, `thread 'main' (174910222) panicked at`, and
+  // the JS by its process's, left out of what's compared (#1193, #2292).
   const unnamed = (text: string) => text.replace(/(thread '[^']*') \(\d+\)/g, "$1");
   const stderr = unnamed(p.stderr);
   const bytes = { ...p.bytes, stderr: Buffer.from(unnamed(p.bytes.stderr.toString("latin1")), "latin1") };
@@ -82,81 +88,53 @@ export function execute(cmd: string[], outcomeFile: string, limit = timeout): Ru
   if (p.signal === "SIGABRT" && !p.timedOut) return ran(aborted);
   const why = stopped(p, limit);
   if (why) return { ...ran(why), stopped: true };
-  // An abort from a stack overflow's deepest frame, whose `exit` handler
-  // had no room to write the outcome: `$abort`'s exit and its line (#1193).
-  if (!existsSync(outcomeFile)) {
-    if (p.code === abortCode && /aborting\.?\n/.test(stderr)) return ran(aborted);
-    return ran(`exited ${p.code} without an outcome`);
-  }
-  const outcome = readFileSync(outcomeFile, "utf8");
-  if (p.code === abortCode && same(JSON.parse(outcome), aborted)) return ran(aborted);
-  if (p.code !== 0) return ran(`exited ${p.code} after it ended ${outcome}`);
-  // Where a panic was raised, std's files named as rust-js names them.
-  return ran(JSON.parse(outcome, (key, value) => (key === "at" && typeof value === "string" ? shippedStd(value) : value)));
+  return ran({ exit: p.code ?? -1 });
 }
 
-/** How a run that aborted ended, natively or as JS (`execute`). */
+/** Whether a run ended as a `main` that returned does, its status 0. */
+export const returned = (outcome: Outcome | string): boolean => typeof outcome !== "string" && same(outcome, { exit: 0 });
+
+/** How a run that aborted ended, natively or as JS (`runProcess`). */
 const abortCode = 134;
 export const aborted: Outcome = { exit: abortCode };
-
-/** The native wrapper of the case at `file`: it's included, its `main` run
- * as Rust's runtime runs it, its panic hook silenced, so stderr is only
- * what the program writes, and how it ended written to the file named
- * first (`runNative`'s): a panic's message and where the last panic was
- * raised, which its hook is told (#2292). */
-function nativeSource(file: string): string {
-  return `mod case {
-    include!(${rustString(file)});
-    pub fn entry() { main() }
-}
-fn json(s: &str) -> String {
-    let mut out = String::from("\\"");
-    for c in s.chars() {
-        match c {
-            '"' => out.push_str("\\\\\\""),
-            '\\\\' => out.push_str("\\\\\\\\"),
-            c if (c as u32) < 0x20 => out.push_str(&format!("\\\\u{:04x}", c as u32)),
-            c => out.push(c),
-        }
-    }
-    out.push('"');
-    out
-}
-static RAISED_AT: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
-fn main() {
-    std::panic::set_hook(Box::new(|info| {
-        if let Some(at) = info.location() {
-            *RAISED_AT.lock().unwrap_or_else(|held| held.into_inner()) = at.to_string();
-        }
-    }));
-    let outcome = match std::panic::catch_unwind(case::entry) {
-        Ok(()) => String::from("{\\"value\\":null}"),
-        Err(e) => match e.downcast_ref::<&str>().map(|s| s.to_string()).or_else(|| e.downcast_ref::<String>().cloned()) {
-            Some(message) => {
-                let at = RAISED_AT.lock().unwrap_or_else(|held| held.into_inner()).clone();
-                format!("{{\\"panic\\":{},\\"at\\":{}}}", json(&message), json(&at))
-            }
-            None => String::from("\\"a panic whose payload isn't a string\\""),
-        },
-    };
-    std::fs::write(std::env::args().nth(1).expect("an outcome file"), outcome).expect("the outcome is written");
-}
-`;
-}
 
 /** A string as a Rust string literal, for the wrappers' `include!`. */
 const rustString = (s: string) => JSON.stringify(s);
 
-// Natively, the case is a module whose `main` the wrapper calls, catching a
-// panic as the JS runner does. The panic hook is silenced, so stderr is only
-// what the program writes. The case is included where it is, so what it
-// reads beside it, an `include_str!`, is found as the JS's compile finds it;
-// the wrapper is where its text says, so a case is one kept binary. Its
-// run is kept by what it was built from (test/native-outcomes.ts), and the
-// same program isn't built or run again: not of a case its directives say
-// is `nondeterministic`, `of`'s where the program is a rewrite of it (the
-// metamorphic net's), nor where it's run `fresh`, again for another of the
-// answers a hash table's seed gives.
+/** `run`'s hook text without where each panic was raised, `panicked at
+ * <somewhere>:`, as a case `located-otherwise` says it panics elsewhere
+ * than native Rust (#2292): what's compared of its runs, `unplaced` said,
+ * so its JS's are compared so too (`agree`). */
+export function unplaced(run: Run): Run {
+  const strip = (text: string) => text.replace(/^(thread '[^']*' panicked at ).*:$/gm, "$1<somewhere>:");
+  return { ...run, stderr: strip(run.stderr), bytes: { ...run.bytes, stderr: Buffer.from(strip(run.bytes.stderr.toString("latin1")), "latin1") }, unplaced: true };
+}
+
+/** Whether `stderr`, a run's, has std's hook's text of a panic of
+ * `message`, a directive's line, as its hook writes it, `panicked at
+ * <where>:` then the message (#2292). */
+export function hookSays(stderr: string, message: string): boolean {
+  const escaped = message.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`panicked at [^\\n]*:\\n${escaped}\\n`).test(stderr);
+}
+
+/** `run`, a native one's, std's files and a registry's named as rust-js
+ * names them where a panic's hook names them (`shippedStd`). */
+function shippedRun(run: Run): Run {
+  const stderr = shippedStd(run.stderr);
+  return { ...run, stderr, bytes: { ...run.bytes, stderr: Buffer.from(shippedStd(run.bytes.stderr.toString("latin1")), "latin1") } };
+}
+
+// Natively, the case is the program, the file itself, built by rustc as a
+// binary, as rust-js builds it (#2447): the same crate, named for the file,
+// `file!()` and `module_path!()` its own, and what it reads beside it, an
+// `include_str!`, found as the JS's compile finds it. Run as a process, as
+// std's runtime runs `main` (`runProcess`). Its run is kept by what it was
+// built from (test/native-outcomes.ts), and the same program isn't built or
+// run again: not of a case its directives say is `nondeterministic`,
+// `of`'s where the program is a rewrite of it (the metamorphic net's), nor
+// where it's run `fresh`, again for another of the answers a hash table's
+// seed gives.
 export function runNative(
   file: string,
   dir: string,
@@ -171,24 +149,22 @@ export function runNative(
 ): Run | string {
   if (target === "wasm32") return runWasm32(file, dir, edition, rustc);
   const ran = runNativeLocated(file, dir, edition, rustc, { of, fresh });
-  if (located || typeof ran === "string" || typeof ran.outcome === "string" || !("at" in ran.outcome)) return ran;
+  if (located || typeof ran === "string") return ran;
   // The case's directive, of a rewritten variant its case's (`of`).
   if (locatedOtherwise(readFileSync(of, "utf8")) === undefined) return ran;
-  return { ...ran, outcome: { panic: ran.outcome.panic } };
+  return unplaced(ran);
 }
 
 function runNativeLocated(file: string, dir: string, edition: string, rustc: string[], { of, fresh }: { of: string; fresh: boolean }): Run | string {
-  const source = nativeSource(file);
-  const at = contentDirectory(source);
   const flags = [...nativeFlags(edition), ...rustc];
   const key = nativeRunKey(file, edition, rustc);
   const keeps = !fresh && keepsRun(of);
   const kept = keeps ? keptRun(key) : undefined;
   const ran = () => {
-    const built = nativeBinary(source, at, flags, compileTimeout);
+    const built = nativeProgram(file, flags, compileTimeout);
     if ("error" in built) return built.error;
-    const outcomeFile = join(dir, "native.json");
-    const run = execute(nativeCommand(built.binary, outcomeFile), outcomeFile, built.built ? firstRunTimeout : timeout);
+    const at = join(dir, "runs", "native");
+    const run = shippedRun(runProcess(nativeCommand(built.binary, at), at, built.built ? firstRunTimeout : timeout));
     if (keeps && built.kept) keepRun(key, dirname(built.binary), run);
     return ranOnce(built, run);
   };
@@ -203,8 +179,7 @@ function runNativeLocated(file: string, dir: string, edition: string, rustc: str
 /** The key a native run of `file` is kept by: its build's (`nativeKey`),
  * and the memory it's given (`nativeLimitKey`). */
 export function nativeRunKey(file: string, edition = "2024", rustc: string[] = []): string {
-  const source = nativeSource(file);
-  const build = nativeKey(source, contentDirectory(source), [...nativeFlags(edition), ...rustc]);
+  const build = nativeProgramKey(file, [...nativeFlags(edition), ...rustc]);
   return createHash("sha256").update(`${build}\0${nativeLimitKey()}`).digest("hex");
 }
 
@@ -236,20 +211,20 @@ function keepsRun(file: string): boolean {
  * keeps no such limit, so there none. */
 export const nativeDataKiB = 4 * 1024 * 1024;
 
-/** How a native program is run: of `binary`, its outcome to
- * `outcomeFile`, within `nativeDataKiB` on Linux; on macOS, which keeps
- * no limit an allocator heeds, watched by `memory-watch`, which kills it
- * past its share of the machine's memory (`nativeShare`), its footprint
- * counted, what the system compressed too, and says so in the mark
- * `execute` reads (#1515): three runs held 9 GB each on a 16 GB Mac and
- * froze it. */
-export function nativeCommand(binary: string, outcomeFile: string): string[] {
+/** How a native program is run: of `binary`, given no arguments, as a
+ * user runs it, within `nativeDataKiB` on Linux; on macOS, which keeps no
+ * limit an allocator heeds, watched by `memory-watch`, which kills it past
+ * its share of the machine's memory (`nativeShare`), its footprint
+ * counted, what the system compressed too, and says so in the mark beside
+ * its run's directory, `at`, that `runProcess` reads (#1515): three runs
+ * held 9 GB each on a 16 GB Mac and froze it. */
+export function nativeCommand(binary: string, at: string): string[] {
   if (process.platform === "linux") {
-    return ["sh", "-c", `ulimit -d ${nativeDataKiB} 2>/dev/null; exec "$0" "$@"`, binary, outcomeFile];
+    return ["sh", "-c", `ulimit -d ${nativeDataKiB} 2>/dev/null; exec "$0"`, binary];
   }
-  if (process.platform !== "darwin") return [binary, outcomeFile];
-  const watch = `"$WATCH" "$$" ${nativeShare()} "$MARK" </dev/null >/dev/null 2>&1 & exec "$0" "$@"`;
-  return ["env", `WATCH=${memoryWatch()}`, `MARK=${pastShareMark(outcomeFile)}`, "sh", "-c", watch, binary, outcomeFile];
+  if (process.platform !== "darwin") return [binary];
+  const watch = `"$WATCH" "$$" ${nativeShare()} "$MARK" </dev/null >/dev/null 2>&1 & exec "$0"`;
+  return ["env", `WATCH=${memoryWatch()}`, `MARK=${pastShareMark(at)}`, "sh", "-c", watch, binary];
 }
 
 /** The bytes a native run may hold on macOS: a test's share of the
@@ -261,15 +236,14 @@ export function nativeShare(): number {
 }
 let nativeShareBytes: number | undefined;
 
-/** Where `memory-watch` says a run of `outcomeFile` held past its share. */
-const pastShareMark = (outcomeFile: string) => `${outcomeFile}.past-share`;
+/** Where `memory-watch` says a run in `at` held past its share: beside it. */
+const pastShareMark = (at: string) => `${at}.past-share`;
 
 /** The watchdog `nativeCommand` runs beside a native program on macOS,
  * test/memory-watch.rs, built once and kept as a native program is. */
 function memoryWatch(): string {
   if (memoryWatchBinary !== undefined) return memoryWatchBinary;
-  const source = readFileSync(join(root, "test", "memory-watch.rs"), "utf8");
-  const built = nativeBinary(source, contentDirectory(source), ["--edition=2024", "-O"]);
+  const built = nativeProgram(join(root, "test", "memory-watch.rs"), ["--edition=2024", "-O"]);
   if ("error" in built) throw new Error(`memory-watch doesn't build:\n${built.error}`);
   memoryWatchBinary = built.binary;
   return memoryWatchBinary;
@@ -289,25 +263,16 @@ export function ranOnce(built: { binary: string; kept: boolean }, run: Run): Run
  * few hundred KB without (#1108). */
 export const nativeFlags = (edition: string) => [...programFlags(edition), "-Cstrip=debuginfo", "-Awarnings", remapRoot];
 
-// For `wasm32-wasip1`, whose `usize` is rust-js's (ADR 0090): the case's
-// `main` as it is, run by Bun's WASI, which writes its outcome where it
-// returns. It aborts on a panic, so only a case that runs to its end is one.
-// `rustc`: its flags besides, a library built for wasm32 too.
+// For `wasm32-wasip1`, whose `usize` is rust-js's (ADR 0090): the case
+// itself, its `main` run by Bun's WASI, its status the process's. It
+// aborts on a panic, so only a case that runs to its end is one. `rustc`:
+// its flags besides, a library built for wasm32 too.
 function runWasm32(file: string, dir: string, edition: string, rustc: string[] = []): Run | string {
-  const source = `mod case {
-    include!(${rustString(file)});
-    pub fn entry() { main() }
-}
-fn main() {
-    case::entry();
-}
-`;
   const flags = [...programFlags(edition), "--target=wasm32-wasip1", "-Cstrip=debuginfo", "-Awarnings", remapRoot, ...rustc];
-  const built = nativeBinary(source, contentDirectory(source), flags, compileTimeout);
+  const built = nativeProgram(file, flags, compileTimeout);
   if ("error" in built) return built.error;
-  const outcomeFile = join(dir, "native.json");
   const runner = join(root, "test", "wasi-run.ts");
-  return ranOnce(built, execute([process.execPath, runner, built.binary, outcomeFile], outcomeFile, built.built ? firstRunTimeout : timeout));
+  return ranOnce(built, runProcess([process.execPath, runner, built.binary], join(dir, "runs", "native"), built.built ? firstRunTimeout : timeout));
 }
 
 /** A compile that failed: rust-js's clear rejection, or a crash, however
@@ -319,12 +284,23 @@ export type CompileError = { kind: "rejected" | "crashed"; reason: string; error
 // machine, natively and as JS (ADR 0427).
 const remapRoot = `--remap-path-prefix=${root}/=`;
 
-// As JS, the case is the crate's root, with `entry` exported to call `main`.
+/** How a case is built to JS (#2447). `binary`: the case itself, as a
+ * binary crate, `--crate-type bin`, what a user builds and ships, its
+ * `main` run as its module loads (`$main`): every net's build, and the
+ * corpus's snapshot. `program`: the case included in a crate that exports
+ * `entry`, calling `main`, an app's crate as JS calls its exports (ADR
+ * 0360): the corpus's second build, run where its JS isn't the binary's.
+ * `library`: that crate as another crate uses it, `--library`, with its
+ * manifest. The binary's JS is `<dir>/<name>.js`, the others' in a folder
+ * of their own, `<dir>/program/`, `<dir>/library/`. */
+export type Build = "binary" | "program" | "library";
+
+/** `file`, compiled to JS as `build` says, into `dir`. */
 export function compileJs(
   file: string,
   dir: string,
   edition = "2024",
-  library = false,
+  build: Build = "binary",
   env: Record<string, string> = {},
   // rust-js's own flags besides, `--tidy-until <pass>` say; then the JS is
   // named for them, so each set's JS is kept apart in one `dir`.
@@ -333,17 +309,24 @@ export function compileJs(
   // js=..` (#942).
   rustc: string[] = [],
 ): { js: string } | CompileError {
-  const { cmd, js } = compileCommand(file, dir, edition, library, flags, rustc);
+  const { cmd, js } = compileCommand(file, dir, edition, build, flags, rustc);
   return compiled(runSync(cmd, root, compileTimeout, env), js);
 }
 
-/** `compileJs` of each of `libraries`' builds of `file`, the program's
- * (`false`) and the library's (`true`): those not kept compiled together,
- * in one rustc session, by the worker this process keeps (`runBuilds`,
- * #2301). */
-export async function compileBuilds(file: string, dir: string, edition: string, libraries: boolean[]): Promise<({ js: string } | CompileError)[]> {
-  const commands = libraries.map((library) => compileCommand(file, dir, edition, library, []));
-  const exits = await runBuilds(commands.map(({ cmd }) => cmd), root, compileTimeout);
+/** `compileJs` of each of `builds` of `file`: those not kept compiled
+ * by the worker this process keeps (`runBuilds`, #2301), the program's
+ * and the library's, one crate, together in one rustc session, the
+ * binary, a crate of its own, in another, beside it. */
+export async function compileBuilds(file: string, dir: string, edition: string, builds: Build[]): Promise<({ js: string } | CompileError)[]> {
+  const commands = builds.map((build) => compileCommand(file, dir, edition, build, []));
+  const sessions = [builds.flatMap((build, i) => (build === "binary" ? [i] : [])), builds.flatMap((build, i) => (build === "binary" ? [] : [i]))].filter((session) => session.length > 0);
+  const exits: Exit[] = new Array(builds.length);
+  await Promise.all(
+    sessions.map(async (session) => {
+      const ran = await runBuilds(session.map((i) => commands[i].cmd), root, compileTimeout);
+      session.forEach((i, at) => (exits[i] = ran[at]));
+    }),
+  );
   return exits.map((p, i) => compiled(p, commands[i].js));
 }
 
@@ -371,41 +354,40 @@ export async function compileJsAsync(
   file: string,
   dir: string,
   edition = "2024",
-  library = false,
+  build: Build = "binary",
   env: Record<string, string> = {},
   flags: string[] = [],
 ): Promise<{ js: string } | CompileError> {
-  const { cmd, js } = compileCommand(file, dir, edition, library, flags);
+  const { cmd, js } = compileCommand(file, dir, edition, build, flags);
   return compiled(await runAsync(cmd, root, compileTimeout, env), js);
 }
 
-/** How `file` is compiled into `dir`, and where its JS goes: its wrapper
- * written, where it isn't already, so a compile that's reading it isn't
- * given it emptied by another's write. The profile of the corpus's compiles
- * runs it too, past the kept compiles (scripts/profile-lowering.ts). */
-export function compileCommand(file: string, dir: string, edition: string, library: boolean, flags: string[], rustc: string[] = []): { cmd: string[]; js: string } {
-  const wrapper = join(dir, "lib.rs");
-  const text = `include!(${rustString(file)});\npub fn entry() {\n    main()\n}\n`;
-  if (!existsSync(wrapper) || readFileSync(wrapper, "utf8") !== text) writeFileSync(wrapper, text);
-  // As a library, as a crate another uses is (ADR 0100): in a folder of its own.
+/** How `file` is compiled into `dir` as `build` says, and where its JS
+ * goes: a program's and a library's wrapper written, where it isn't
+ * already, so a compile that's reading it isn't given it emptied by
+ * another's write. The profile of the corpus's compiles runs it too, past
+ * the kept compiles (scripts/profile-lowering.ts). */
+export function compileCommand(file: string, dir: string, edition: string, build: Build, flags: string[], rustc: string[] = []): { cmd: string[]; js: string } {
   // Of many, `--prepare-without` each of preparation's rewrites, a
   // name of a file's length, its end their hash.
   const named = flags.join("-").replaceAll(/[^A-Za-z0-9-]+/g, "_");
   const short = named.length <= 120 ? named : `${named.slice(0, 80)}-${Bun.hash(named).toString(36)}`;
   const name = flags.length === 0 ? "case" : `case-${short}`;
-  const js = library ? join(dir, "library", `${name}.js`) : join(dir, `${name}.js`);
-  const mode = library ? ["--library", "--manifest", join(dir, "library", `${name}.manifest.json`)] : [];
-  return { cmd: [compiler, wrapper, "-o", js, ...mode, ...flags, "--", `--edition=${edition}`, "-Awarnings", remapRoot, ...rustc], js };
-}
-
-/** `file` compiled as a binary, `--crate-type bin`, a program's crate, as
- * `compileJs` compiles it as a library: what a binary refuses that a
- * library keeps compiling, a `#[track_caller]` function made a value whose
- * calls the body doesn't say (#2335), is refused here. */
-export function compileJsBinary(file: string, dir: string, edition: string, flags: string[] = [], rustc: string[] = []): { js: string } | CompileError {
-  const js = join(dir, "binary.js");
-  const cmd = [compiler, file, "-o", js, ...flags, "--", `--edition=${edition}`, "--crate-type", "bin", "-Awarnings", remapRoot, ...rustc];
-  return compiled(runSync(cmd, root, compileTimeout), js);
+  const after = [`--edition=${edition}`, "-Awarnings", remapRoot, ...rustc];
+  if (build === "binary") {
+    const js = join(dir, `${name}.js`);
+    return { cmd: [compiler, file, "-o", js, ...flags, "--", "--crate-type", "bin", ...after], js };
+  }
+  const wrapper = join(dir, "lib.rs");
+  const text = `include!(${rustString(file)});\npub fn entry() {\n    main()\n}\n`;
+  if (!existsSync(wrapper) || readFileSync(wrapper, "utf8") !== text) writeFileSync(wrapper, text);
+  // As a library, as a crate another uses is (ADR 0100), and as a
+  // program: each in a folder of its own, the crate named as its binary
+  // is, for its file, which `type_name` and `module_path!()` say.
+  const js = join(dir, build, `${name}.js`);
+  const mode = build === "library" ? ["--library", "--manifest", join(dir, "library", `${name}.manifest.json`)] : [];
+  const crate = rustc.includes("--crate-name") ? [] : ["--crate-name", basename(file, ".rs").replaceAll("-", "_")];
+  return { cmd: [compiler, wrapper, "-o", js, ...mode, ...flags, "--", ...crate, ...after], js };
 }
 
 /** A compile's JS, or how it failed. */
@@ -415,10 +397,15 @@ function compiled(p: Exit, js: string): { js: string } | CompileError {
   return { kind, reason, error: kind === "crashed" ? `rust-js crashed: ${reason}\n${p.stderr}` : p.stderr };
 }
 
-export function runJs(runtime: string[], js: string, dir: string, name: string, limit = timeout): Run {
-  const outcomeFile = join(dir, `${name}.json`);
-  // Its arguments are as native's: its path, then where its outcome goes.
-  return execute([...runtime, join(root, "test/corpus-run.ts"), js, outcomeFile, js, outcomeFile], outcomeFile, limit);
+/** `js`, a `build` of a program (`compileJs`), run under `runtime` as a
+ * process, as its native binary is (`runProcess`): a binary's by itself,
+ * `node case.js`, its `main` run as its module loads; a program's or a
+ * library's by `corpus-run.ts`, which runs its `entry` as a binary's
+ * `main` is run. `name`: of its run, among the others in `dir`, its
+ * directory `<dir>/runs/<name>`. */
+export function runJs(runtime: string[], js: string, dir: string, name: string, limit = timeout, build: Build = "binary"): Run {
+  const cmd = build === "binary" ? [...runtime, js] : [...runtime, join(root, "test/corpus-run.ts"), js];
+  return runProcess(cmd, join(dir, "runs", name), limit);
 }
 
 /** How long the JS of a program `native` ran may run before it's taken to
@@ -430,12 +417,48 @@ export function runJs(runtime: string[], js: string, dir: string, name: string, 
 export const jsLimit = (native: Run) => Math.max(timeout, Math.ceil((native.ms ?? 0) * 20));
 
 export const show = (outcome: Outcome | string) => (typeof outcome === "string" ? outcome : JSON.stringify(outcome));
-export const agree = (a: Run, b: Run) =>
-  a.bytes.stdout.equals(b.bytes.stdout) &&
-  a.bytes.stderr.equals(b.bytes.stderr) &&
-  typeof a.outcome !== "string" &&
-  typeof b.outcome !== "string" &&
-  same(a.outcome, b.outcome);
+/** Std's hook's text of a panic, as it writes it on stderr: a newline,
+ * `thread '<name>' panicked at <where>:`, its message's first line, and of
+ * the process's first panic, its note of a backtrace. */
+const hookText = () => /\nthread '[^']*' panicked at [^\n]*:\n[^\n]*\n(?:note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n)?/g;
+
+/** `run` as it's compared (#2447): of std's hook's text, the panic that
+ * ended `main` whole, the last its hook wrote of a run that failed, and
+ * each before it, a panic caught or one a drop's panic aborted as it
+ * unwound, left out, its line, its message's first line and its note, as
+ * the corpus compared them before (#2453 compares them); and of an abort,
+ * the frames std's hook forces of a panic that can't unwind, its `stack
+ * backtrace:`, left out, which the JS has none of (ADR 0262's exception,
+ * the guide's difference 64). */
+export function compared(run: Run): Run {
+  const status = typeof run.outcome !== "string" && "exit" in run.outcome ? run.outcome.exit : undefined;
+  const said = (text: string) => {
+    const unframed = status === abortCode ? text.replace(/^stack backtrace:\n(?:\s+\d+: .*\n(?: +at .*\n)*)*(?:note: Some details are omitted.*\n)?/gm, "") : text;
+    const hooks = [...unframed.matchAll(hookText())];
+    const caught = status === 0 ? hooks : hooks.slice(0, -1);
+    let out = unframed;
+    for (const hook of caught.reverse()) out = `${out.slice(0, hook.index)}${out.slice(hook.index! + hook[0].length)}`;
+    return out;
+  };
+  const stderr = said(run.stderr);
+  if (stderr === run.stderr) return run;
+  return { ...run, stderr, bytes: { ...run.bytes, stderr: Buffer.from(said(run.bytes.stderr.toString("latin1")), "latin1") } };
+}
+
+/** Whether two runs printed the same bytes and ended the same, each as
+ * it's `compared`: of one `unplaced` (a case `located-otherwise`'s),
+ * each's hook text compared without where its panics were raised. */
+export function agree(a: Run, b: Run): boolean {
+  if (a.unplaced !== b.unplaced) return agree(a.unplaced ? a : unplaced(a), b.unplaced ? b : unplaced(b));
+  [a, b] = [compared(a), compared(b)];
+  return (
+    a.bytes.stdout.equals(b.bytes.stdout) &&
+    a.bytes.stderr.equals(b.bytes.stderr) &&
+    typeof a.outcome !== "string" &&
+    typeof b.outcome !== "string" &&
+    same(a.outcome, b.outcome)
+  );
+}
 
 /** The case at `file`'s output with standard error written into standard
  * output, as a terminal shows them, natively and as JS under Node: the
@@ -449,19 +472,23 @@ export function mergedStreams(
   dir: string,
   edition = "2024",
 ): { native: string; js: string; nativeLines: string[]; browserLines: string[] } {
-  const source = nativeSource(file);
-  const built = nativeBinary(source, contentDirectory(source), nativeFlags(edition), compileTimeout);
+  const built = nativeProgram(file, nativeFlags(edition), compileTimeout);
   if ("error" in built) throw new Error(built.error);
-  const spawn = (cmd: string[]) => Bun.spawnSync(cmd, { cwd: root, timeout: timeout * 3 });
-  const merged = (cmd: string[]) => spawn(["sh", "-c", '"$0" "$@" 2>&1', ...cmd]).stdout.toString();
-  const nativeRun = [built.binary, join(dir, "native.json")];
-  const native = merged(nativeRun);
-  const apart = spawn(nativeRun);
-  const nativeLines = linesInOrder(native, apart.stdout.toString(), apart.stderr.toString());
+  // As `runProcess` runs it: with no `RUST_BACKTRACE`, a thread's OS id
+  // left out, and natively, std's files named as rust-js names them.
+  const { RUST_BACKTRACE: _, ...env } = process.env;
+  const spawn = (cmd: string[]) => Bun.spawnSync(cmd, { cwd: root, timeout: timeout * 3, env });
+  const said = (text: string) => text.replace(/(thread '[^']*') \(\d+\)/g, "$1");
+  const merged = (cmd: string[]) => said(spawn(["sh", "-c", '"$0" "$@" 2>&1', ...cmd]).stdout.toString());
+  const native = shippedStd(merged([built.binary]));
+  const apart = spawn([built.binary]);
+  // A browser's console has no hook's text: a panic out of `main` is
+  // thrown on to the page (`$main`).
+  const unhooked = (text: string) => text.replace(hookText(), "");
+  const nativeLines = linesInOrder(unhooked(native), shippedStd(said(apart.stdout.toString())), unhooked(shippedStd(said(apart.stderr.toString()))));
   const compiled = compileJs(file, dir, edition);
   if (!("js" in compiled)) throw new Error(`rust-js can't compile it: ${JSON.stringify(compiled).slice(0, 400)}`);
-  const outcome = join(dir, "node.json");
-  const js = merged([node ?? "node", join(root, "test/corpus-run.ts"), compiled.js, outcome, compiled.js, outcome]);
+  const js = merged([node ?? "node", compiled.js]);
   return { native, js, nativeLines, browserLines: consoleLines(compiled.js) };
 }
 
@@ -503,10 +530,11 @@ export function linesInOrder(merged: string, out: string, err: string): string[]
   return lines;
 }
 
-/** `js`, a case's, run as a browser runs it, with the runtime before it, in
- * a context with no `process`: each line its console is given, `log ..` or
- * `error ..`, what's left unended written as the task ends; a panic out of
- * `main` ends it, as the native run's outcome says. */
+/** `js`, a case's program, run as a browser runs it, with the runtime
+ * before it, in a context with no `process`, its `main` run as it loads
+ * (`$main`): each line its console is given, `log ..` or `error ..`,
+ * what's left unended written as the task ends; a panic out of `main`
+ * ends it, as the native run's status says. */
 function consoleLines(js: string): string[] {
   const lines: string[] = [];
   const tasks: (() => void)[] = [];
@@ -528,7 +556,7 @@ function consoleLines(js: string): string[] {
     .replace(/^export /gm, "")
     .replace(/^\/\/# sourceMappingURL=.*$/m, "");
   try {
-    runInNewContext(`${runtime}\n${code}\nentry();`, context);
+    runInNewContext(`${runtime}\n${code}`, context);
   } catch {
     // A panic out of `main`, which the native run's outcome says.
   }

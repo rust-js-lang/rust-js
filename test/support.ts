@@ -223,8 +223,27 @@ export function nativeBinary(source: string, dir: string, flags: string[], timeo
  * crates an rlib was built against are found there (`native-outcomes.ts`
  * keeps a run by it). */
 export function nativeKey(source: string, dir: string, flags: string[]): string {
+  return keyOf(resolve(dir, "native.rs"), source, flags);
+}
+
+/** A native program that is a file where it is, `file`, a corpus case,
+ * built by rustc as a binary with `flags`, as a user builds it (#2447):
+ * kept as `nativeBinary` keeps a program, by what it was built from, the
+ * file's path and text among it. */
+export function nativeProgram(file: string, flags: string[], timeout = 120_000): NativeBuild {
+  return keptNative(nativeProgramKey(file, flags), file, timeout, (into, depInfo) => [
+    ["rustc", ...flags, file, "-o", join(into, "native"), ...(depInfo ? [`--emit=link,dep-info=${depInfo("native")}`] : [])],
+  ]);
+}
+
+/** The key `nativeProgram` keeps the program `file` built with `flags` by. */
+export function nativeProgramKey(file: string, flags: string[]): string {
+  return keyOf(resolve(file), readFileSync(file, "utf8"), flags);
+}
+
+/** `nativeKey`'s of the program whose root is `wrapper`, `source` its text. */
+function keyOf(wrapper: string, source: string, flags: string[]): string {
   rustcVersion ??= run(["rustc", "-vV"]);
-  const wrapper = resolve(dir, "native.rs");
   const hash = createHash("sha256").update(rustcVersion).update(portable(JSON.stringify(flags))).update(portable(wrapper)).update(portable(source));
   for (const flag of flags) {
     const path = flag.slice(flag.indexOf("=") + 1);

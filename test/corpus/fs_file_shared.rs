@@ -3,8 +3,8 @@
 // `File` does, at the one position each handle to it moves; and `{:?}` of a
 // `File` is std's of unix, `File { fd, path, read, write }`, its path what
 // it resolves to, its descriptor the platform's own, so it's left out here,
-// as is the path of the outcome's file. Each file is the case's own, beside
-// the file its outcome goes to.
+// as is the path of the directory its run runs in. Each file is the case's
+// own, in that directory.
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Read, Seek, SeekFrom, Write};
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -27,7 +27,7 @@ fn log_to<W: Write>(mut out: W, words: &[&str]) -> io::Result<()> {
 }
 
 // What `{:?}` shows of it, its descriptor's number and the path of the
-// outcome's file left out, neither the same twice: a descriptor is `N`, and
+// run's directory left out, neither the same twice: a descriptor is `N`, and
 // how wide it's shown where it's padded, its padding's and its digits'.
 fn shown(text: &str, base: &str) -> String {
     let mut out = String::new();
@@ -50,7 +50,7 @@ fn main() {
 }
 
 fn run() -> io::Result<()> {
-    let base = std::env::args().nth(1).expect("the outcome's file");
+    let base = std::env::current_dir()?.join("case").display().to_string();
     let path = format!("{base}.shared.txt");
 
     // Written through `&File`, as it is and through generic code.
@@ -108,4 +108,4 @@ fn run() -> io::Result<()> {
     fs::remove_file(&path)?;
     Ok(())
 }
-//@ nondeterministic: its run reads its arguments, reads and writes the file system
+//@ nondeterministic: its run reads its working directory, reads and writes the file system

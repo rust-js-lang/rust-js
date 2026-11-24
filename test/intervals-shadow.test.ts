@@ -1091,7 +1091,7 @@ test("a guard held across code that writes its cell through a clone runs as Rust
     const file = join(root, "test/corpus", name);
     const native = runNative(file, dir);
     if (typeof native === "string") throw new Error(native);
-    const compiled = compileJs(file, dir, "2024", false, {}, ["--intervals-by-effects"]);
+    const compiled = compileJs(file, dir, "2024", "binary", {}, ["--intervals-by-effects"]);
     if (!("js" in compiled)) throw new Error(compiled.error);
     const ran = runJs(runtimes[0][1], compiled.js, dir, "by-effects");
     expect([name, agree(ran, native)]).toEqual([name, true]);

@@ -64,19 +64,19 @@ async function driveCorpus(): Promise<void> {
   const corpus = join(root, "test", "corpus");
   const cases = readdirSync(corpus).filter((name) => name.endsWith(".rs")).sort();
   const count = flag("cases") === undefined ? cases.length : Number(flag("cases"));
-  const work = cases.slice(0, count).flatMap((name) => [false, true].map((library) => ({ name, library })));
+  const work = cases.slice(0, count).flatMap((name) => (["binary", "program", "library"] as const).map((build) => ({ name, build })));
   const jobs = Number(flag("jobs") ?? machine().cores);
   let next = 0;
   await Promise.all(
     Array.from({ length: jobs }, async () => {
       while (next < work.length) {
-        const { name, library } = work[next++];
+        const { name, build } = work[next++];
         const file = join(corpus, name);
         const said = directives(readFileSync(file, "utf8"));
         const edition = typeof said === "string" ? "2024" : said.edition;
         const dir = join(out, "corpus", basename(name, ".rs"));
         mkdirSync(dir, { recursive: true });
-        const { cmd } = compileCommand(file, dir, edition, library, []);
+        const { cmd } = compileCommand(file, dir, edition, build, []);
         await Bun.spawn(cmd, { cwd: root, stdout: "ignore", stderr: "ignore" }).exited;
       }
     }),

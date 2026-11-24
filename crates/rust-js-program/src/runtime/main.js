@@ -13,11 +13,14 @@ function $main(entry) {
   const process = globalThis.process;
   const browser = process?.argv === undefined;
   if (!browser) for (const stream of [process.stdout, process.stderr]) stream?._handle?.setBlocking?.(true);
-  if (!browser) $onPanic = $hook;
+  if (!browser) globalThis[$hookKey] = $hook;
   let status;
   try {
     status = entry() ?? 0;
-  } catch (e) {
+  } catch (thrown) {
+    // As a scope's cleanup gives it on (`$unwindsOn`): a stack overflow is
+    // Rust's abort, its lines and exit 134, never a panic (#2452).
+    const e = $unwindsOn(thrown);
     if (browser || $endsTheProgram(e)) throw e;
     $hook(e);
     status = 101;

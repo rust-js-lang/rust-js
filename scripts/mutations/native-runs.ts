@@ -1,5 +1,7 @@
-// A native run kept or not (test/programs.ts's `runNative`, ADR 0567 amended):
-// never of a case whose run reads the world, nor afresh.
+// Mutations of test/programs.ts: a native run kept or not (`runNative`,
+// ADR 0567 amended), never of a case whose run reads the world, nor afresh;
+// and how a program's run is taken and compared (ADR 1198): its status,
+// its own directory, the hook of the panic that ends it, an abort's frames.
 import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
@@ -33,5 +35,61 @@ export const mutations: Mutation[] = [
     find: '  return platform === "linux" ? `data ${nativeDataKiB} KiB` : platform === "darwin" ? "share" : "none";\n',
     replace: '  return platform === "linux" ? `data ${nativeDataKiB} KiB` : platform === "darwin" ? `share ${nativeShare()} bytes` : "none";\n',
     tests: ["test/native-outcomes.test.ts", "-t", "says the memory it's given by its kind"],
+  },
+  {
+    name: "run-status-ignored",
+    breaks: "a run's status isn't how it ended: a binary that failed passes for one that returned (#2447)",
+    file: "test/programs.ts",
+    find: "  return ran({ exit: p.code ?? -1 });\n",
+    replace: "  return ran({ exit: 0 });\n",
+    tests: ["test/programs.test.ts", "-t", "a run's status is how it ended"],
+  },
+  {
+    name: "run-directory-kept",
+    breaks: "a run's directory keeps what an earlier run wrote there, so an `fs` case's files are another run's (#2447)",
+    file: "test/programs.ts",
+    find: "  rmSync(at, { recursive: true, force: true });\n",
+    replace: "",
+    tests: ["test/programs.test.ts", "-t", "a run runs in a directory of its own"],
+  },
+  {
+    name: "caught-hooks-compared",
+    breaks: "the hooks of panics caught before the one that ends `main` are compared, which the corpus never compared (#2453 will)",
+    file: "test/programs.ts",
+    find: "    const caught = status === 0 ? hooks : hooks.slice(0, -1);\n",
+    replace: "    const caught: RegExpMatchArray[] = [];\n",
+    tests: ["test/programs.test.ts", "-t", "a run is compared by the hook of the panic that ends it"],
+  },
+  {
+    name: "ending-hook-left-out",
+    breaks: "the hook of the panic that ends `main` is left out too, so where it was raised and its message are compared nowhere (#2447)",
+    file: "test/programs.ts",
+    find: "    const caught = status === 0 ? hooks : hooks.slice(0, -1);\n",
+    replace: "    const caught = hooks;\n",
+    tests: ["test/programs.test.ts", "-t", "a run is compared by the hook of the panic that ends it"],
+  },
+  {
+    name: "abort-frames-compared",
+    breaks: "native std's forced `stack backtrace:` of an abort is compared, which the JS has no frames of (difference 64)",
+    file: "test/programs.ts",
+    find: "    const unframed = status === abortCode ? ",
+    replace: "    const unframed = false ? ",
+    tests: ["test/programs.test.ts", "-t", "a run is compared by the hook of the panic that ends it"],
+  },
+  {
+    name: "unplaced-run-compared-placed",
+    breaks: "a run `located-otherwise` is compared with one that says where its panics were raised as it is, so the directive changes nothing (#2292)",
+    file: "test/programs.ts",
+    find: "  if (a.unplaced !== b.unplaced) return agree(a.unplaced ? a : unplaced(a), b.unplaced ? b : unplaced(b));\n",
+    replace: "",
+    tests: ["test/programs.test.ts", "-t", "a panic raised elsewhere disagrees"],
+  },
+  {
+    name: "hook-said-of-any-message",
+    breaks: "a run's hook is taken to say any message, so a `run-fail` directive's message is checked against native Rust's nowhere (#2447)",
+    file: "test/programs.ts",
+    find: "  return new RegExp(`panicked at [^\\\\n]*:\\\\n${escaped}\\\\n`).test(stderr);\n",
+    replace: "  return true;\n",
+    tests: ["test/programs.test.ts", "-t", "a hook says the message it was raised with"],
   },
 ];

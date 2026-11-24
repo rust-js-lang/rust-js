@@ -16,7 +16,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { cases, corpus, directives } from "./corpus-cases";
-import { compileJsAsync } from "./programs";
+import { compileJsAsync, type Build } from "./programs";
 import { buildCompiler, caseShard, fixture } from "./support";
 import { partSetting } from "./part-settings";
 
@@ -42,8 +42,8 @@ test("the cases a run of a few names are the corpus's", () => {
 const keepNone = { RUST_JS_COMPILE_CACHE_MB: "0" };
 
 /** What a compile wrote, each file's text by its name, or how it failed. */
-async function compiled(file: string, dir: string, edition: string, library: boolean): Promise<Record<string, string>> {
-  const result = await compileJsAsync(file, dir, edition, library, keepNone);
+async function compiled(file: string, dir: string, edition: string, build: Build): Promise<Record<string, string>> {
+  const result = await compileJsAsync(file, dir, edition, build, keepNone);
   if (!("js" in result)) return { failed: `${result.kind}: ${result.error}` };
   const written: Record<string, string> = {};
   for (const path of [result.js, `${result.js}.map`, result.js.replace(/\.js$/, ".manifest.json")]) {
@@ -63,8 +63,9 @@ for (const name of chosen) {
     const runs = [];
     for (let i = 0; i < times; i++) {
       runs.push({
-        program: await compiled(file, dir, want.edition, false),
-        library: await compiled(file, dir, want.edition, true),
+        binary: await compiled(file, dir, want.edition, "binary"),
+        program: await compiled(file, dir, want.edition, "program"),
+        library: await compiled(file, dir, want.edition, "library"),
       });
     }
     for (const run of runs.slice(1)) expect(run).toEqual(runs[0]);

@@ -16,17 +16,23 @@ import { cases, corpus, directives, type Directives } from "./corpus-cases";
 
 const root = join(import.meta.dir, "..");
 
-/** Which of the corpus's runs a JS edit is for: the program's under Node,
- * the program shipped, bundled and minified, or the library's. Each is told
- * apart by where its JS is, so a program's edit goes in every JS the
- * compiler writes, and the library's JS is its program's where it was. A
- * library's goes in its JS alone: the harness runs a library's JS only
- * where it isn't its program's, and says where that's unsaid. */
+/** Which of the corpus's runs a JS edit is for: the binary's under Node,
+ * the binary shipped, bundled and minified, the program's or the
+ * library's (#2447). Each is told apart by where its JS is, so a binary's
+ * edit goes in every JS the compiler writes, and the program's and the
+ * library's JS are what they were beside it. A program's or a library's
+ * goes in its JS alone: the harness runs a program's JS only where it
+ * isn't its binary's, and a library's where it isn't its program's, and
+ * says where that's unsaid. */
 const runs = {
-  node: `!import.meta.url.endsWith(".min.js") && !import.meta.url.endsWith("/library/case.js")`,
+  node: `!import.meta.url.endsWith(".min.js") && !import.meta.url.endsWith("/program/case.js") && !import.meta.url.endsWith("/library/case.js")`,
   minified: `import.meta.url.endsWith(".min.js")`,
+  program: `import.meta.url.endsWith("/program/case.js")`,
   library: `import.meta.url.endsWith("/library/case.js")`,
 };
+
+/** A build a mutant's edit is of alone: the program's or the library's. */
+type Alone = "program" | "library";
 
 /** What a JS edit gets wrong, in the run it's for: what it prints to
  * either stream, or how it ends. */
@@ -38,10 +44,10 @@ const wrongs = {
 
 /** How a mutant's compiler differs from the compiler as it is. */
 type Edit =
-  /** The JS it writes, with `js` at its end: as a library alone, `library`. */
-  | { js: string; library?: boolean }
-  /** It crashes, or refuses, as a program, or as a library alone. */
-  | { exit: "crashes" | "refuses"; library?: boolean }
+  /** The JS it writes, with `js` at its end: of one build alone, `alone`. */
+  | { js: string; alone?: Alone }
+  /** It crashes, or refuses, as a binary, or as one build alone. */
+  | { exit: "crashes" | "refuses"; alone?: Alone }
   /** It compiles what rustc or rust-js refuse, writing an empty module. */
   | { exit: "compiles" }
   /** It refuses what it refuses with another error. */
@@ -74,7 +80,7 @@ export const corpusMutants: CorpusMutant[] = [
     Object.entries(wrongs).map(([wrong, js]): CorpusMutant => ({
       name: `${run}-${wrong}`,
       breaks: `the ${run} run's ${wrong === "outcome" ? "exit status" : wrong} isn't native Rust's`,
-      edit: { js: `if (${when}) { ${js} }`, library: run === "library" },
+      edit: { js: `if (${when}) { ${js} }`, alone: run === "program" || run === "library" ? run : undefined },
       of: "runs",
       mode: false,
       caught: true,
@@ -82,7 +88,8 @@ export const corpusMutants: CorpusMutant[] = [
   ),
   { name: "crashes", breaks: "rust-js crashes on a program it compiles", edit: { exit: "crashes" }, of: "runs", mode: false, caught: true },
   { name: "refuses", breaks: "rust-js refuses a program it compiles", edit: { exit: "refuses" }, of: "runs", mode: false, caught: true },
-  { name: "refuses-a-library", breaks: "rust-js refuses as a library a program it compiles as one", edit: { exit: "refuses", library: true }, of: "runs", mode: false, caught: true },
+  { name: "refuses-a-program", breaks: "rust-js refuses as a program a binary it compiles", edit: { exit: "refuses", alone: "program" }, of: "runs", mode: false, caught: true },
+  { name: "refuses-a-library", breaks: "rust-js refuses as a library a program it compiles as one", edit: { exit: "refuses", alone: "library" }, of: "runs", mode: false, caught: true },
   { name: "reads-otherwise-ignored", breaks: "the JS reads otherwise, which a mutation's run ignores", edit: reads, of: "runs", mode: false, caught: false },
   { name: "reads-otherwise", breaks: "the JS reads otherwise, and isn't its snapshot", edit: reads, of: "runs", mode: true, caught: true },
   { name: "reads-otherwise-alone", breaks: "the JS reads otherwise, and isn't its snapshot, judged alone", edit: reads, of: "runs", mode: "alone", caught: true },
@@ -110,7 +117,7 @@ export function corpusMutantCases(): { name: string; want: Directives }[] {
  * of the library's run of a case whose library run is refused or differs,
  * as its directives say, where no library's output is compared (#1058). */
 export const mutantOf = (mutant: CorpusMutant, want: Directives) =>
-  !("library" in mutant.edit && mutant.edit.library && (want.libraryRefused !== undefined || want.libraryDiffers)) &&
+  !("alone" in mutant.edit && mutant.edit.alone === "library" && (want.libraryRefused !== undefined || want.libraryDiffers)) &&
   (mutant.of === "compile-fail" ? want.kind === "compile-fail" : want.kind === "run-pass" || want.kind === "run-fail" || want.kind === "run-abort");
 
 /** The corpus harness's files: `test/corpus.test.ts` and what it imports,
@@ -147,10 +154,13 @@ type Wrapped = { code: number; stdout: string; stderr: string };
 /** The wrapper's run: the compiler, `compiler`, given `args`, as `mutant`. */
 function wrap(mutant: CorpusMutant, compiler: string, args: string[]): Wrapped {
   const out = args.indexOf("-o") >= 0 ? args[args.indexOf("-o") + 1] : undefined;
-  const library = args.includes("--library");
+  // Which build it is: a library's, `--library`, a program's, in its
+  // folder, or a binary's.
+  const build = args.includes("--library") ? "library" : out?.includes("/program/") ? "program" : "binary";
   const { edit } = mutant;
+  const ofIt = !("alone" in edit) || edit.alone === undefined || edit.alone === build;
   // What isn't a compile, as `--runtime-module`, is the compiler's own.
-  if (out !== undefined && "exit" in edit && (!("library" in edit && edit.library) || library)) {
+  if (out !== undefined && "exit" in edit && ofIt) {
     if (edit.exit === "crashes") return { code: 101, stdout: "", stderr: "thread 'rustc' panicked at src/main.rs:1:1:\na mutant's crash\n" };
     if (edit.exit === "refuses") return { code: 1, stdout: "", stderr: "error: a mutant's refusal\n" };
     if (edit.exit === "compiles") {
@@ -163,7 +173,7 @@ function wrap(mutant: CorpusMutant, compiler: string, args: string[]): Wrapped {
   if (out !== undefined && "exit" in edit && edit.exit === "refuses-otherwise" && code !== 0) {
     return { code, stdout, stderr: stderr.replace(/^error(\[E\d+\])?:.*$/gm, "error: a mutant's other error") };
   }
-  if (out !== undefined && "js" in edit && (!edit.library || library) && code === 0) writeFileSync(out, `${readFileSync(out, "utf8")}\n${edit.js}\n`);
+  if (out !== undefined && "js" in edit && ofIt && code === 0) writeFileSync(out, `${readFileSync(out, "utf8")}\n${edit.js}\n`);
   return { code, stdout, stderr };
 }
 

@@ -56,7 +56,7 @@ export function failure(file: string, build: "plain" | "std", edition: string, d
   const native = runNative(file, dir, edition, "host", [], { fresh: true });
   if (typeof native === "string" || typeof native.outcome === "string") return "rejected";
   if (mayBeUndefined(readFileSync(file, "utf8")) && undefinedBehaviour(file, edition) !== undefined) return "undefined";
-  const compiled = compileJs(file, dir, edition, false, {}, build === "std" ? ["--std-iterators"] : []);
+  const compiled = compileJs(file, dir, edition, "binary", {}, build === "std" ? ["--std-iterators"] : []);
   if (!("js" in compiled)) {
     const error = compiled.error.split("\n").find((line) => line.startsWith("error")) ?? compiled.reason;
     return { kind: compiled.kind, error: error.trim() };

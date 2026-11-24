@@ -14094,6 +14094,21 @@ export function $flushStdout() {
   $stdout().held = [];
   $unwrapLog();
 }
+// An abort's lines, `text`, on stderr: where Node's stream holds nothing
+// queued, by the descriptor's own write, one call, which writes them or
+// throws for want of room, where the stream's, at a stack overflow's
+// deepest frame, threw midway and left them queued past the exit, which
+// wrote none (#2452); else as every other write of stderr.
+export function $abortWrite(text) {
+  const process = globalThis.process;
+  if (typeof process?.getBuiltinModule !== "function" || process.stderr?.writableLength !== 0) {
+    $eprint(text);
+    return;
+  }
+  const fs = process.getBuiltinModule("node:fs");
+  $writeAll((bytes) => fs.writeSync(2, bytes), text);
+}
+
 // The host's write of `chunk`, text or bytes, to standard stream `fd`,
 // 1 or 2, by measurement each host's own (#2347). Bun's `console.log` and
 // `console.error` write the descriptor themselves, at once, and its
@@ -14970,11 +14985,14 @@ export function $main(entry) {
   const process = globalThis.process;
   const browser = process?.argv === undefined;
   if (!browser) for (const stream of [process.stdout, process.stderr]) stream?._handle?.setBlocking?.(true);
-  if (!browser) $onPanic = $hook;
+  if (!browser) globalThis[$hookKey] = $hook;
   let status;
   try {
     status = entry() ?? 0;
-  } catch (e) {
+  } catch (thrown) {
+    // As a scope's cleanup gives it on (`$unwindsOn`): a stack overflow is
+    // Rust's abort, its lines and exit 134, never a panic (#2452).
+    const e = $unwindsOn(thrown);
     if (browser || $endsTheProgram(e)) throw e;
     $hook(e);
     status = 101;
@@ -15070,6 +15088,12 @@ export const $stdSites = {
   ],
   "capacityOverflow": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/raw_vec/mod.rs:29:5"
+  ],
+  "panicNounwind": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/panicking.rs:225:5"
+  ],
+  "panicNounwindNobacktrace": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/panicking.rs:233:5"
   ],
   "strSplitAt": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/str/mod.rs:861:21"
@@ -23690,13 +23714,12 @@ export const $panicString = { typeId: () => "alloc::string::String" };
 export function $panic(message, raisedAt) {
   const error = new Error(message);
   Object.defineProperty(error, $raisedAt, { value: raisedAt });
-  $onPanic?.(error);
+  // What a panic runs as it's made: a binary's hook, `$hook`, which its
+  // `$main` sets, of whichever copy of the runtime raised it (`$hookKey`);
+  // of a library run alone, none.
+  globalThis[$hookKey]?.(error);
   return error;
 }
-
-// What a panic runs as it's made: a binary's hook, `$hook`, which `$main`
-// sets; of a library, nothing, so a helper bundled alone holds none of it.
-export let $onPanic;
 
 // A panic whose payload is a `String`, thrown: `throw $stringPanic(..)`, a
 // panic's `Error`, marked (ADR 0660, amended).
@@ -23918,7 +23941,7 @@ export function $catchStackOverflow(f) {
 // The process ended by Rust's abort of a stack overflow, `cause`: std's
 // lines to stderr, then exit 134, as a shell gives a SIGABRT (#1193).
 export function $overflowed(cause) {
-  return $abort(cause, "\nthread 'main' has overflowed its stack\nfatal runtime error: stack overflow, aborting\n", "stack overflow");
+  return $abort(cause, "\nthread 'main' has overflowed its stack\nfatal runtime error: stack overflow, aborting\n", "stack overflow", null);
 }
 
 // The process ended by Rust's abort, of `cause`, a drop's panic while
@@ -23937,10 +23960,14 @@ export class $Abort extends Error {}
 // ends the program on its own, an exit or a refusal, goes on as it is.
 export function $cannotUnwind(e) {
   if ($endsTheProgram(e) || e instanceof $Unsupported) return e;
-  return $abort(e, undefined, "panic in a function that cannot unwind");
+  return $abort(e, undefined, "panic in a function that cannot unwind", $stdSites.panicNounwind[0]);
 }
 
-export function $abort(cause, said = "thread caused non-unwinding panic. aborting.\n", why = "panic in a destructor during cleanup") {
+// Of a panic that can't unwind, `why`, raised where std's `core::panicking`
+// raises it, `raisedAt`: made, as std makes it before it aborts, so a
+// binary's hook writes it (`$hookKey`, #2452); of a stack overflow, which
+// std reports by its lines alone, none (`null`).
+export function $abort(cause, said = "thread caused non-unwinding panic. aborting.\n", why = "panic in a destructor during cleanup", raisedAt = $stdSites.panicNounwindNobacktrace[0]) {
   if (cause instanceof $Abort) {
     $abortEnds();
     return cause;
@@ -23951,6 +23978,7 @@ export function $abort(cause, said = "thread caused non-unwinding panic. abortin
     return new $Abort(why, { cause });
   }
   $aborted = true;
+  if (raisedAt !== null) $panic(why, raisedAt);
   $abortSaid = said;
   $abortEnds();
   return new $Abort(why, { cause });
@@ -23962,7 +23990,7 @@ export function $abortEnds() {
   if ($abortSaid === undefined) return;
   try {
     if ($abortSaid !== "") {
-      $eprint($abortSaid);
+      $abortWrite($abortSaid);
       $abortSaid = "";
     }
     $abortExit(134);
@@ -24065,6 +24093,11 @@ export const $placeOfPart = Symbol.for("rust-js: where a part of a slice is");
 // runtime finds it, `globalThis` (print.js's `$stdoutState`): a library's
 // copy's `print!` held, its app's copy's line ends it (#2320).
 export const $stdoutKey = Symbol.for("rust-js: what stdout holds of a line left unended");
+
+// A binary's panic hook, `$hook`, which its `$main` sets, every copy's
+// panic writes by: a library's copy's too, whose panic its app's hook
+// writes, as native Rust's one hook does (#2447).
+export const $hookKey = Symbol.for("rust-js: a binary's panic hook");
 
 // Where a `count` or `last` that may reach a `Repeat`'s own was called, a
 // slot of `globalThis` while it runs (count.js's `$infinitelyAt`, #2324).

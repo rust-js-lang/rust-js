@@ -5,20 +5,19 @@
 // property, write, test of a key, listing of keys, call and the `this` a
 // call is given, `new`, is logged in the order it's made; what the
 // library does with its own values isn't, as it's given them back whole.
-// Under Node, as the generated JS runs; how `main` ended goes to the
-// outcome file, as `corpus-run.ts` writes it.
+// Under Node, as the generated JS runs, a binary's, its status how `main`
+// ended.
 //
-//   node test/object-model-run.ts program.js library/lib.js outcome.json log.json
+//   node test/object-model-run.ts program.js library/lib.js log.json
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { observe } from "./oracle.ts";
 
-const [program, library, outcomeFile, logFile] = process.argv.slice(2);
-// Its arguments as `corpus-run.ts` gives them, native's count (ADR 0391).
-process.argv = [process.argv[0], program, outcomeFile];
+const [program, library, logFile] = process.argv.slice(2);
+// Its arguments as a binary's JS has them, its path alone (ADR 0391).
+process.argv = [process.argv[0], program];
 
 const log: string[] = [];
 // What a log's own showing of a value reads, and what the library does
@@ -263,17 +262,7 @@ source = source.replaceAll(/(from\s+)(["'])([^"']+)\2/g, (whole, from: string, q
 const membraned = membranes.size === 0 ? resolve(program) : join(programDir, `object-model-${process.pid}.mjs`);
 if (membranes.size > 0) writeFileSync(membraned, source);
 
-let ended = false;
-process.once("exit", (code) => {
-  if (!ended) writeFileSync(outcomeFile, JSON.stringify({ exit: code }));
-  writeFileSync(logFile, log.join("\n"));
-});
-const run = await import(pathToFileURL(membraned).href).then(
-  ({ entry }) => entry,
-  (error) => () => {
-    throw error;
-  },
-);
-const outcome = observe(run);
-ended = true;
-writeFileSync(outcomeFile, JSON.stringify(outcome));
+// The program, a binary's JS, runs its `main` as it loads (`$main`), its
+// status the process's, as its native binary's is (#2447).
+process.once("exit", () => writeFileSync(logFile, log.join("\n")));
+await import(pathToFileURL(membraned).href);

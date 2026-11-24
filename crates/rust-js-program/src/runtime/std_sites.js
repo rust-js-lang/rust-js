@@ -24,6 +24,12 @@ const $stdSites = {
   "capacityOverflow": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/raw_vec/mod.rs:29:5"
   ],
+  "panicNounwind": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/panicking.rs:225:5"
+  ],
+  "panicNounwindNobacktrace": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/panicking.rs:233:5"
+  ],
   "strSplitAt": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/str/mod.rs:861:21"
   ],

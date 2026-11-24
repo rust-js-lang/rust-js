@@ -2,7 +2,7 @@
 // std's files (#1156), through Node's fs: a `File` is `{ fd, pos }`, read
 // and written at its position, which `Seek` moves; `OpenOptions` are std's
 // flags, and an error of the OS's is std's `Os` error, its kind and message
-// std's. Each file is the case's own, beside the file its outcome goes to.
+// std's. Each file is the case's own, in the directory its run runs in.
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Read, Seek, SeekFrom, Write};
 
@@ -35,7 +35,7 @@ fn main() {
 }
 
 fn run() -> io::Result<()> {
-    let base = std::env::args().nth(1).expect("the outcome's file");
+    let base = std::env::current_dir()?.join("case").display().to_string();
     let notes = format!("{base}.notes.txt");
 
     // Written, then read back whole, by line, and from generic code.
@@ -126,4 +126,4 @@ fn run() -> io::Result<()> {
     println!("{} {}", File::open(&log).is_err(), File::open(&notes).is_err());
     Ok(())
 }
-//@ nondeterministic: its run reads its arguments, reads and writes the file system
+//@ nondeterministic: its run reads its working directory, reads and writes the file system

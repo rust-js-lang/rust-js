@@ -124,6 +124,21 @@ function $flushStdout() {
   $stdout().held = [];
   $unwrapLog();
 }
+// An abort's lines, `text`, on stderr: where Node's stream holds nothing
+// queued, by the descriptor's own write, one call, which writes them or
+// throws for want of room, where the stream's, at a stack overflow's
+// deepest frame, threw midway and left them queued past the exit, which
+// wrote none (#2452); else as every other write of stderr.
+function $abortWrite(text) {
+  const process = globalThis.process;
+  if (typeof process?.getBuiltinModule !== "function" || process.stderr?.writableLength !== 0) {
+    $eprint(text);
+    return;
+  }
+  const fs = process.getBuiltinModule("node:fs");
+  $writeAll((bytes) => fs.writeSync(2, bytes), text);
+}
+
 // The host's write of `chunk`, text or bytes, to standard stream `fd`,
 // 1 or 2, by measurement each host's own (#2347). Bun's `console.log` and
 // `console.error` write the descriptor themselves, at once, and its

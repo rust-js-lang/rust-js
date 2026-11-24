@@ -108,6 +108,22 @@ const RAISED: &[(&str, Option<&str>, Owner, &str)] = &[
         Owner::Free(StdCrate::Alloc, &["raw_vec", "capacity_overflow"]),
         "",
     ),
+    // A panic that can't unwind, which aborts: std's hook names the line in
+    // `core::panicking` its message is raised at, of a function that can't
+    // unwind's, `panic_nounwind`'s, and of a drop's panic as another
+    // unwinds, `panic_nounwind_nobacktrace`'s (`$abort`, #2452).
+    (
+        "panicNounwind",
+        None,
+        Owner::Free(StdCrate::Core, &["panicking", "panic_nounwind"]),
+        "",
+    ),
+    (
+        "panicNounwindNobacktrace",
+        None,
+        Owner::Free(StdCrate::Core, &["panicking", "panic_nounwind_nobacktrace"]),
+        "",
+    ),
     ("strSplitAt", None, Owner::Primitive(SimplifiedType::Str), "split_at"),
     // A `HashMap`'s `get_disjoint_mut` of two keys of one entry: hashbrown's
     // table's, vendored, named under its own build's registry (#2325).
