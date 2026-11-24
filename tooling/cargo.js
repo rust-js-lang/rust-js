@@ -9,7 +9,7 @@ import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 
 import { parseManifest } from "./manifest.js";
-import { compatCrates, settleCompat } from "./patch.js";
+import { compatCrates, compatNamed, settleCompat } from "./patch.js";
 import { commit, fingerprint, removable } from "./publish.js";
 
 /** rust-js's target (ADR 0090), which Cargo checks its crates for: the compiler's `TARGET`. */
@@ -74,7 +74,8 @@ export function cargoSaid(error) {
  * (ADR 1076, amended). And which Prettier lays out the JS of the crates
  * rust-js compiles, `RUST_JS_LAYOUT`, asked of the compiler once a build,
  * which each of those crates names in its dep-info (ADR 1003, amended;
- * #892).
+ * #892). And how rustc names rust-js's own crates' files, `RUST_JS_COMPAT`
+ * (`compatNamed`), on every machine the same (#2438).
  * @returns {NodeJS.ProcessEnv} */
 export function cargoEnv(compiler, react, { apps, crates, dependencies = [] }, { tests = false } = {}) {
   const env = {
@@ -85,6 +86,7 @@ export function cargoEnv(compiler, react, { apps, crates, dependencies = [] }, {
     RUST_JS_CRATES: JSON.stringify(crates),
     RUST_JS_DEPENDENCIES: JSON.stringify(dependencies.map(({ dir }) => dir)),
     RUST_JS_TYPESCRIPT: createRequire(import.meta.url).resolve("@rust-js/typescript"),
+    RUST_JS_COMPAT: compatNamed(),
   };
   env.RUST_JS_LAYOUT = layoutIdentity(compiler, env);
   if (react) env.RUST_JS_REACT = react;

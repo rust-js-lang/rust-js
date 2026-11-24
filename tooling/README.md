@@ -174,6 +174,10 @@ Which Prettier lays out their JS, `rust-js --layout-identity`'s hash, asked
 once a build, is `RUST_JS_LAYOUT`, which each crate rust-js compiles names
 in its dep-info, so an upgrade of it builds them again
 ([ADR 1003](../docs/decisions/1003-a-compilers-build-is-its-identity.md), amended).
+How rustc names the files of rust-js's own `wasm-bindgen` family, `compat/`'s,
+is `RUST_JS_COMPAT`, `<dir>=/rust-js/<version>/tooling/compat`, which every
+compile is given as `--remap-path-prefix`, so a panic's location in one names
+no machine's path (ADR 0262's difference 63, #2438).
 Each of those that `frontend` uses, the crate of an npm package too, and
 `frontend` itself, is JS in Cargo's target directory, beside the metadata
 of that build of it, importing the others, then written beside its Rust. A

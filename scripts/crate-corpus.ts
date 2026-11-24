@@ -29,7 +29,7 @@ import { dirname, join, resolve } from "node:path";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { cargoBuild, cargoEnv } from "../tooling/cargo.js";
 import { channel } from "./toolchain";
-import { cargoHome, floorBytes } from "../test/bounded";
+import { cargoHome, checkout, floorBytes } from "../test/bounded";
 import { claimMaking, isHeld, removeClaimed, whileHeld } from "../test/kept";
 import { run as runChild, stopped, type Exit } from "../test/child";
 import { atOnce } from "./shard";
@@ -197,8 +197,8 @@ export type Result = {
   // <function>` (scripts/labels.ts), which `--check` holds to
   // `listedLabels` (#2215).
   labels: string[];
-  // Each file of its JS that names this machine's `$CARGO_HOME`, which
-  // `--check` fails of (#2435).
+  // Each file of its JS that names where this machine keeps Cargo's
+  // downloads or rust-js (`namesMachine`), which `--check` fails of.
   homes: string[];
   // Where each crate of its graph it compiled has its JS, by its id,
   // `itertools@0.14.0`, which `--check` cuts `snapshotted`'s from.
@@ -244,23 +244,26 @@ export function labelProblems(labeled: ReadonlySet<string>, listed: ReadonlySet<
 }
 
 /** Of the JS under `dir`, a crate's, `id`'s, each label MIR made, by file,
- * and each file that names this machine's `$CARGO_HOME` (`namesCargoHome`). */
+ * and each file that names where this machine keeps Cargo's downloads or
+ * rust-js (`namesMachine`). */
 function readUnder(id: string, dir: string): { labels: string[]; homes: string[] } {
   if (!existsSync(dir)) return { labels: [], homes: [] };
   const files = [...new Bun.Glob("**/*.js").scanSync(dir)].sort().map((file) => ({ file, text: readFileSync(join(dir, file), "utf8") }));
   return {
     labels: files.flatMap(({ file, text }) => mirLabels(text, `${id}/${file}`)),
-    homes: files.filter(({ text }) => namesCargoHome(text)).map(({ file }) => `${id}/${file}`),
+    homes: files.filter(({ text }) => namesMachine(text)).map(({ file }) => `${id}/${file}`),
   };
 }
 
-/** Whether `text`, a crate's JS, names `home`, this machine's `$CARGO_HOME`,
- * where Cargo keeps what it fetched: rust-js names each file of a fetched
- * crate under `/cargo/`, whatever the machine (ADR 0262's difference 63),
- * where a crate's own panic locations named the builder's home in an app's
- * JS (#2435). `--check` fails of any. */
-export function namesCargoHome(text: string, home = cargoHome): boolean {
-  return text.includes(`${home}/`);
+/** Whether `text`, a crate's JS, names one of `homes`, where this machine
+ * keeps Cargo's downloads, its `$CARGO_HOME`, and rust-js, its checkout:
+ * rust-js names each file of a fetched crate under `/cargo/` and of its own
+ * wasm-bindgen family under `/rust-js/<version>/tooling/compat/`, whatever
+ * the machine (ADR 0262's difference 63), where a crate's own panic
+ * locations named the builder's home in an app's JS (#2435), and js-sys'
+ * the checkout's (#2438). `--check` fails of any. */
+export function namesMachine(text: string, homes = [cargoHome, checkout]): boolean {
+  return homes.some((home) => text.includes(`${home}/`));
 }
 
 /** The functions of crates' JS a snapshot holds, each `<crate>@<version>/
@@ -612,7 +615,7 @@ async function main() {
     // graphs compile, num-traits, counted once.
     const measured = (crate: string) => results.some((r) => r.name === crate || r.compiled.some((id) => id.startsWith(`${crate}@`)));
     failed.push(...labelProblems(new Set(results.flatMap((r) => r.labels)), listedLabels, measured));
-    for (const file of new Set(results.flatMap((r) => r.homes))) failed.push(`${file}: its JS names this machine's \`$CARGO_HOME\`, ${cargoHome}, where a fetched crate's files are named under \`/cargo/\` (#2435)`);
+    for (const file of new Set(results.flatMap((r) => r.homes))) failed.push(`${file}: its JS names where this machine keeps Cargo's downloads, ${cargoHome}, or rust-js, ${checkout}, where a fetched crate's files are named under \`/cargo/\` (#2435) and rust-js's own under \`/rust-js/<version>/\` (#2438)`);
     // Each snapshotted crate's functions, of the first graph that compiled
     // it, against their snapshots; `BLESS=1` writes them.
     const compiledAt = (crate: string) => results.map((r) => r.js[crate]).find((dir) => dir !== undefined);

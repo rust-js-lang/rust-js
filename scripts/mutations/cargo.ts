@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "compat-named-where-the-machine-keeps-it",
+    breaks: "a compile isn't given `RUST_JS_COMPAT` as rustc's `--remap-path-prefix`, so a panic in rust-js's own js-sys names where the builder keeps rust-js in an app's JS (#2438)",
+    file: "src/cargo.rs",
+    find: '    let remap = [format!("--remap-path-prefix={named}")];\n',
+    replace: "    let remap: [String; 0] = {\n        let _ = named;\n        []\n    };\n",
+    tests: ["test/cargo.test.ts", "-t", "rust-js's own crates' panics name their files the same on every machine"],
+  },
+  {
     name: "cargo-tests-rustcs",
     breaks: "a library's test build, `rust-js test`'s, is rustc's, and rust-js writes none of its `.test.js` files (ADRs 0916, 1076)",
     file: "src/cargo.rs",
@@ -102,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "cargo-version-without-identity",
     breaks: "`rustc -vV` through rust-js says rustc's lines alone, so Cargo has another rust-js's crates as done",
     file: "src/cargo.rs",
-    find: '    if let [flag] = given\n        && flag == "-vV"\n',
-    replace: '    if let [flag] = given\n        && flag == "-vV-"\n',
+    find: '    if let [flag] = &args[1..]\n        && flag == "-vV"\n',
+    replace: '    if let [flag] = &args[1..]\n        && flag == "-vV-"\n',
     tests: ["test/cargo-workspace.test.ts", "-t", "told which rust-js"],
   },
   {
@@ -182,7 +190,7 @@ export const mutations: Mutation[] = [
     name: "cargo-dependency-untried",
     breaks: "a crate of crates.io's rust-js can't compile fails the app's build, though the app uses its types alone",
     file: "src/cargo.rs",
-    find: "        Ok(Whose::Dependency) if std::env::var_os(TRYING).is_none() => return try_dependency(&rustc, given, &flags),\n",
+    find: "        Ok(Whose::Dependency) if std::env::var_os(TRYING).is_none() => {\n            return try_dependency(&rustc, &args[1..], given, &flags);\n        }\n",
     replace: "",
     tests: ["test/registry-crates.test.ts", "-t", "types alone"],
   },

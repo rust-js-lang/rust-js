@@ -63,6 +63,14 @@ pub const CRATES: &str = "RUST_JS_CRATES";
 /// types alone (ADR 0415).
 pub const DEPENDENCIES: &str = "RUST_JS_DEPENDENCIES";
 
+/// How rustc names the files of rust-js's own crates, the tooling's
+/// `compat/`, on every machine, as the tooling says: `<dir>=<name>`, its
+/// version's `/rust-js/<version>/tooling/compat`, which this, the wrapper,
+/// gives every compile as rustc's `--remap-path-prefix`, as it is, so no
+/// app's JS names where the builder keeps rust-js (ADR 0262's difference
+/// 63, #2438). The tooling owns the name; the compiler never makes it.
+pub const COMPAT: &str = "RUST_JS_COMPAT";
+
 /// Set in the process that tries a dependency, which compiles it as its own.
 const TRYING: &str = "RUST_JS_TRYING";
 
@@ -197,13 +205,12 @@ pub fn translate(args: Vec<String>) -> Invocation {
     else {
         return Invocation::RustJs(args);
     };
-    let given = &args[1..];
-    if let [flag] = given
+    if let [flag] = &args[1..]
         && flag == "-vV"
     {
         return verbose_version(&rustc);
     }
-    let flags = match expand(given) {
+    let flags = match expand(&args[1..]) {
         Ok(flags) => flags,
         Err(error) => {
             eprintln!("rust-js: {error}");
@@ -219,10 +226,26 @@ pub fn translate(args: Vec<String>) -> Invocation {
     let probe = flags
         .iter()
         .any(|flag| flag == "-" || flag == "-vV" || flag.starts_with("--print"));
+    // A probe compiles nothing: rustc's, as Cargo asked, which Cargo keeps
+    // what it says of, a failure too, by rustc and the wrapper alone.
+    if probe {
+        return rustc_itself(&rustc, &args[1..]);
+    }
+    // Every compile, rustc's and rust-js's, names rust-js's own crates'
+    // files as the tooling says (`COMPAT`).
+    let Ok(named) = std::env::var(COMPAT) else {
+        eprintln!(
+            "rust-js: Cargo ran rust-js without `{COMPAT}`, how rust-js's own crates' files are named, which `rust-js build` gives it: run that"
+        );
+        return Invocation::Rustc(ExitCode::FAILURE);
+    };
+    let remap = [format!("--remap-path-prefix={named}")];
+    let given: &[String] = &[&args[1..], &remap].concat();
+    let flags = [flags, remap.to_vec()].concat();
     // rustc is rust-js's `--rustc`, with its tool known, as the tooling runs
     // Cargo (ADR 0112): a binding crate's, which is metadata only (ADR 0024),
     // and a registry's, which `RUST_JS_CRATES` leaves out, are checked by it.
-    if probe || !(library || tests || bin) || flag_values(&flags, "--target").next().as_deref() != Some(TARGET) {
+    if !(library || tests || bin) || flag_values(&flags, "--target").next().as_deref() != Some(TARGET) {
         return rustc_itself(&rustc, given);
     }
     let clippy = std::env::var(CLIPPY).ok();
@@ -233,7 +256,9 @@ pub fn translate(args: Vec<String>) -> Invocation {
         // Linted, a dependency is rustc's, as `cargo clippy` lints none of
         // crates.io's, and nothing reads its JS (ADR 0888).
         Ok(Whose::Dependency) if clippy.is_some() => return rustc_itself(&rustc, given),
-        Ok(Whose::Dependency) if std::env::var_os(TRYING).is_none() => return try_dependency(&rustc, given, &flags),
+        Ok(Whose::Dependency) if std::env::var_os(TRYING).is_none() => {
+            return try_dependency(&rustc, &args[1..], given, &flags);
+        }
         Ok(Whose::Dependency) => {}
         Ok(Whose::Rustc(None)) => return rustc_itself(&rustc, given),
         Ok(Whose::Rustc(Some(qualified))) => return checked_qualified(&rustc, given, &flags, qualified),
@@ -366,12 +391,14 @@ fn is_app() -> Result<bool, String> {
 /// A dependency (ADR 0415), tried in a process of its own, what it says held:
 /// compiled, it's said, as an own crate's is. Refused, rustc checks it, its
 /// types alone, as it would without rust-js, and why it isn't compiled is
-/// written beside its metadata, for a call into it to say.
-fn try_dependency(rustc: &str, given: &[String], flags: &[String]) -> Invocation {
+/// written beside its metadata, for a call into it to say. The process is
+/// given what Cargo gave, `asked`, which it names as this does (`COMPAT`);
+/// rustc's check, `given`, as this names it.
+fn try_dependency(rustc: &str, asked: &[String], given: &[String], flags: &[String]) -> Invocation {
     let tried = std::env::current_exe().and_then(|exe| {
         std::process::Command::new(exe)
             .arg(rustc)
-            .args(given)
+            .args(asked)
             .env(TRYING, "1")
             .output()
     });

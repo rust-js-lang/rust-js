@@ -11,8 +11,8 @@ import { checkedSince, jsonLines, latestRuns, MUTATION_SHARDS, mutationJobsPasse
 import { readersOf } from "./part-settings";
 import { runSync } from "./child";
 import { downloaded } from "../scripts/artifacts";
-import { corpusRows, crashes, declarationOf, dependency, labelProblems, lockedVersion, lockOf, namesCargoHome, sampledHeader, sampledIn, sampledOneIn, snapshotProblems, written } from "../scripts/crate-corpus";
-import { cargoHome } from "./bounded";
+import { corpusRows, crashes, declarationOf, dependency, labelProblems, lockedVersion, lockOf, namesMachine, sampledHeader, sampledIn, sampledOneIn, snapshotProblems, written } from "../scripts/crate-corpus";
+import { cargoHome, checkout } from "./bounded";
 import { judgedInTheWasmJob, mutations, refusedFlags } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability, variantFamilies } from "../scripts/checkFast";
 import { lostObject } from "../scripts/testMap";
@@ -521,7 +521,7 @@ test("the crate corpus's labels MIR made are listed, each listed one still there
 
 // A real crate's functions no corpus case makes are held to a snapshot,
 // each cut from its file whole, as it reads (#1979), and JS that names the
-// machine's `$CARGO_HOME` is found (#2435): a listed one that differs fails the check, `BLESS=1` writes it,
+// machine's `$CARGO_HOME` or rust-js's checkout is found (#2435, #2438): a listed one that differs fails the check, `BLESS=1` writes it,
 // and one gone from its file, or a snapshot no entry lists, fails too.
 test("the crate corpus's snapshotted functions are cut whole and held", () => {
   const js = ["/** Put back. */", "export function putBack(a) {", "  return {", `    at: "${cargoHome}/registry/src/index/x-1.0.0/src/lib.rs:1:1",`, "  };", "}", "", "export function putBackDebug(a) {}", "", "export const PutBack = {", "  of(a) {", "    return a;", "  },", "};"].join("\n");
@@ -529,8 +529,10 @@ test("the crate corpus's snapshotted functions are cut whole and held", () => {
   expect(declarationOf(js, "putBackDebug")).toBe("export function putBackDebug(a) {}");
   expect(declarationOf(js, "PutBack")).toBe(js.split("\n").slice(9).join("\n"));
   expect(declarationOf(js, "put")).toBeUndefined();
-  expect(namesCargoHome(js)).toBe(true);
-  expect(namesCargoHome('"/cargo/registry/src/index/x-1.0.0/src/lib.rs:1:1"')).toBe(false);
+  expect(namesMachine(js)).toBe(true);
+  expect(namesMachine(`"${checkout}/tooling/compat/js-sys/src/lib.rs:1:1"`)).toBe(true);
+  expect(namesMachine('"/cargo/registry/src/index/x-1.0.0/src/lib.rs:1:1"')).toBe(false);
+  expect(namesMachine('"/rust-js/0.0.4/tooling/compat/js-sys/src/lib.rs:1:1"')).toBe(false);
   const dir = mkdtempSync(join(tmpdir(), "crate-snapshots-"));
   try {
     const [built, kept] = [join(dir, "x"), join(dir, "snapshots")];

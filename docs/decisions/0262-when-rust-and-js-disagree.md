@@ -99,6 +99,18 @@ react.dev's TopNav passes the same closure instead.
   both ask): its own locations had named the builder's `$CARGO_HOME`, two
   forms in one output and the home in an app's JS. The crate corpus's
   check fails of any JS that names the machine's `$CARGO_HOME`.
+  Amended (#2438, the lead's decision for the user, 2026-11-25): a panic
+  raised in rust-js's own wasm-bindgen family, the crates an app's graph
+  is patched onto in place of crates.io's (ADR 1112), names its file under
+  `/rust-js/<version>/tooling/compat/..`, of the tooling's version, on
+  every machine, where it named the install's absolute path. These crates
+  aren't Cargo's to fetch, so `/cargo/..` doesn't name them; the tooling
+  owns the name (`compatNamed`, from its package.json's version) and gives
+  it as `RUST_JS_COMPAT`, which the compiler, Cargo's wrapper, gives every
+  compile as rustc's `--remap-path-prefix`, as it is. Native Rust names
+  the same file by where the machine keeps rust-js, as a native build in
+  the app takes the same patch; the line and column are the same. The
+  crate corpus's check fails of any JS that names rust-js's checkout too.
 - **An abort writes no backtrace's frames**, the second case's, Tu's
   decision (2026-11-24, #2447): where a panic can't unwind, a drop's panic
   as another unwinds or one out of an `extern "C"` function, native std

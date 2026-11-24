@@ -24,6 +24,20 @@ const COMPAT = "# rust-js's own, which the app's dependencies use in place of cr
 const compatDir = fileURLToPath(new URL("./compat/", import.meta.url));
 
 /**
+ * How rustc names the files of rust-js's own crates, `compat/`'s, on every
+ * machine: `/rust-js/<version>/tooling/compat/..`, of this package's
+ * version, never where this machine keeps them, so no app's JS carries the
+ * builder's home (ADR 0262's difference 63, #2438). `<dir>=<name>`, which
+ * `cargoEnv` gives the compiler as `RUST_JS_COMPAT` and the compiler gives
+ * each compile as rustc's `--remap-path-prefix`, as it is.
+ * @returns {string}
+ */
+export function compatNamed() {
+  const { version } = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8"));
+  return `${resolve(compatDir)}=/rust-js/${version}/tooling/compat`;
+}
+
+/**
  * rust-js's own crates an app's dependencies use in place of crates.io's,
  * by name: each its folder of `compat/`, its version its Cargo.toml's, and
  * the others of them it depends on, by version, through the patch, as

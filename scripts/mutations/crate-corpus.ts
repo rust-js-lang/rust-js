@@ -22,8 +22,16 @@ export const mutations: Mutation[] = [
     name: "crate-js-naming-the-home-passes",
     breaks: "a crate's JS that names the builder's `$CARGO_HOME`, its own panic locations', passes the crate corpus's check, the home shipped in an app's JS unseen (#2435)",
     file: "scripts/crate-corpus.ts",
-    find: "  return text.includes(`${home}/`);\n",
+    find: "  return homes.some((home) => text.includes(`${home}/`));\n",
     replace: "  return false;\n",
+    tests: ["test/ci.test.ts", "-t", "the crate corpus's snapshotted functions are cut whole and held"],
+  },
+  {
+    name: "crate-js-naming-the-checkout-passes",
+    breaks: "a crate's JS that names rust-js's checkout, a panic in its own js-sys', passes the crate corpus's check, the builder's home shipped in an app's JS unseen (#2438)",
+    file: "scripts/crate-corpus.ts",
+    find: "export function namesMachine(text: string, homes = [cargoHome, checkout]): boolean {\n",
+    replace: "export function namesMachine(text: string, homes = [cargoHome]): boolean {\n",
     tests: ["test/ci.test.ts", "-t", "the crate corpus's snapshotted functions are cut whole and held"],
   },
   {

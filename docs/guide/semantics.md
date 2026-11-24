@@ -2760,7 +2760,11 @@ React and JSX are [their own pages](README.md#react).
     [ADR 0083](../decisions/0083-serde-json-value.md)). A panic a fetched
     crate's own body raises, compiled by rust-js, is named so too, and a
     git dependency's under `/cargo/git/checkouts/..`, so no app's JS
-    carries the builder's home (#2435).
+    carries the builder's home (#2435). One raised in rust-js's own
+    `wasm-bindgen` or `js-sys`, which an app's dependencies use in place of
+    crates.io's, names its file under `/rust-js/<version>/tooling/compat/..`,
+    rust-js's version, where native Rust names where the machine keeps
+    rust-js (#2438).
 64. A binary's abort, where a panic can't unwind (a drop's panic while
     another unwinds, or a panic out of an `extern "C"` function), writes
     std's text of it, the panic's hook at `core::panicking`'s line and

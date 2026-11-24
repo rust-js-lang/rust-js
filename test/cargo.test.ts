@@ -1,10 +1,12 @@
 import { expect, test } from "bun:test";
-import { chmodSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { cargoSaid, rustcShim, watched } from "../tooling/cargo.js";
+import { cargoEnv, cargoSaid, rustcShim, watched } from "../tooling/cargo.js";
 import { createNativeBuilder } from "../tooling/build.js";
+import { compatCrates, writePatch } from "../tooling/patch.js";
 import { cargoApp } from "./cargo-app";
+import { app, build, gitCrate } from "./compat";
 import { buildCompiler, compiler, fixture, installStd, root, run, shadowLines } from "./support";
 import { underLoad } from "../scripts/timing";
 
@@ -113,4 +115,27 @@ test("RUST_JS_SHADOW gives a Cargo build's crate the lines --shadow gives it", a
   } finally {
     rmSync(app, { recursive: true, force: true });
   }
+}, 600_000);
+
+// A panic raised in rust-js's own js-sys, which a dependency uses in place
+// of crates.io's (ADR 1112), names its file as the tooling names rust-js's
+// own crates, `/rust-js/<version>/tooling/compat/..`, its package's version,
+// on every machine: Cargo's wrapper gives every compile `RUST_JS_COMPAT` as
+// rustc's `--remap-path-prefix`, where the JS named where this machine keeps
+// rust-js (ADR 0262's difference 63, #2438).
+test("rust-js's own crates' panics name their files the same on every machine", () => {
+  buildCompiler();
+  const { version } = JSON.parse(readFileSync(join(root, "tooling", "package.json"), "utf8"));
+  const named = `/rust-js/${version}/tooling/compat`;
+  expect(cargoEnv(compiler, undefined, { apps: [], crates: [] }).RUST_JS_COMPAT).toBe(`${join(root, "tooling", "compat")}=${named}`);
+  const dir = fixture("compat-named");
+  const source = "pub fn answer() -> u32 {\n    let mut bytes = [0; 3];\n    js_sys::Uint8Array::new_with_length(2).copy_to(&mut bytes);\n    u32::from(bytes[0])\n}\n";
+  const at = app(dir, gitCrate(dir, 'js-sys = "0.3"\n', source));
+  writePatch(at, [...compatCrates().keys()]);
+  const built = build(at);
+  expect(built.stderr).toBe("");
+  expect(built.code).toBe(0);
+  const js = [...new Bun.Glob("**/*.js").scanSync(at)].map((file) => readFileSync(join(at, file), "utf8")).join("\n");
+  expect(js).toMatch(new RegExp(`"${named}/js-sys/src/lib\\.rs:\\d+:\\d+"`));
+  expect(js).not.toContain(`${root}/`);
 }, 600_000);
