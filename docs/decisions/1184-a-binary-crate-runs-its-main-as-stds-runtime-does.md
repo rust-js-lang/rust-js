@@ -229,3 +229,28 @@ and only functions, made as the load begins, follow it. This is ADR 0262's
 "results change" case: Rust's behavior is preserved however the output
 reads. Held by the corpus case `main_through_a_cycle_reaches_an_impl_cache`
 and the mutation `entry-where-main-reads-place-it`.
+
+## Amendment: a panic ends the process at once with its output a file (2026-11-25, #2538)
+
+`$main` ended a failing binary at once only where both streams could block,
+a pipe Node made blocking or a terminal. Elsewhere it waited for each
+stream's write to call back: `process.stdout.write("", () =>
+process.stderr.write("", () => process.exit(..)))`. While it waited, what
+`main` had queued before it panicked ran, a promise's reaction and a
+microtask, and printed where native ends at the panic. That path was taken
+where either stream is a file, Node's `SyncWriteStream`, and by Bun for
+every stream, as Bun gives each one `_type` `"fs"` and no handle. It was a
+wrong answer, found in review (#2537's cause).
+
+**A stream of `_type` `"fs"` writes what it's given at once, so the process
+ends at once there too.** Measured, 2026-11-25, Mac mini: 2 MB written to
+stdout and to stderr, then a panic, read by a slow reader, `| (sleep 1; wc
+-c)`, and into files. Native, Node and Bun each wrote all of it, stdout
+2,000,000 bytes and stderr 2,000,150 (native) or 2,000,146 (the JS, a
+shorter process id in the hook's line), through a pipe of either stream,
+of both, two files and one file, all with status 101. Only a stream that's
+none of those, a socket, still waits for its write.
+
+ADR 0262's case: results change, so Rust's behavior is kept. Held by
+`test/binaries.test.ts`' "a panic ends a binary at once with its output a
+file: nothing queued runs" and the mutation `file-stream-waited-for`.

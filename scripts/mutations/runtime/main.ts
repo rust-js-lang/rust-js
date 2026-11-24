@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "file-stream-waited-for",
+    breaks: "a panic with its output a file waits for each stream's write to call back, so what `main` queued, a promise's reaction or a microtask, runs and prints before the exit, where native ends at the panic (#2538)",
+    file: "crates/rust-js-program/src/runtime/main.js",
+    find: ' || stream?.isTTY || stream?._type === "fs",\n',
+    replace: " || stream?.isTTY,\n",
+    tests: ["test/binaries.test.ts", "-t", "with its output a file"],
+  },
+  {
     name: "binary-hook-never-set",
     breaks: "a binary's panic writes no hook's text, as a library's doesn't",
     file: "crates/rust-js-program/src/runtime/main.js",

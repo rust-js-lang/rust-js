@@ -15016,8 +15016,12 @@ export function $abortExit(code) {
 // it: nothing runs after, a binding's pending timer neither. What it wrote
 // is all written first: Node writes a pipe later on macOS, which an exit
 // would cut off, so the process's streams are made to write at once as it
-// starts, where Node lets them be, and else ended once each has written
-// what it holds. A status of `0` lets the process end as it does by
+// starts, where Node lets them be. A file, and each of Bun's streams, is
+// written as it's given, `_type` `"fs"`, so the process ends at once there
+// too: waiting for its write to call back ran what `main` queued, a
+// promise's reaction, where native ends at the panic (#2538). Another
+// stream is ended once each has written what it holds. A status of `0`
+// lets the process end as it does by
 // itself. In a browser, which has no process, a panic is thrown on to the
 // page, and a failing status thrown as an error, its signal of a failure
 // (#847's of an abort). What rust-js doesn't support as the program runs
@@ -15053,7 +15057,9 @@ export function $main(entry) {
   }
   if (status === 0) return;
   process.exitCode = status & 255;
-  const blocking = [process.stdout, process.stderr].every((stream) => stream?._handle?.setBlocking !== undefined || stream?.isTTY);
+  const blocking = [process.stdout, process.stderr].every(
+    (stream) => stream?._handle?.setBlocking !== undefined || stream?.isTTY || stream?._type === "fs",
+  );
   if (blocking) process.exit(status & 255);
   process.stdout.write("", () => process.stderr.write("", () => process.exit(status & 255)));
 }

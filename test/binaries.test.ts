@@ -627,6 +627,40 @@ test("an `Err` from main ends the process at once: a host's pending timer never 
   }
 }, 300_000);
 
+// A panic ends a binary at once whatever its streams are, as native's does:
+// one written to a file, `> out.txt 2>&1`, which Node and Bun write as
+// they're given it (`_type` `"fs"`), as a pipe made blocking is, runs
+// nothing `main` queued before it panicked, a promise's reaction or a
+// microtask, where it waited for each stream's write to call it back and
+// ran them first (#2538). Each queued as the hook writes, as the program's
+// own binding would queue one before its panic.
+test("a panic ends a binary at once with its output a file: nothing queued runs", () => {
+  const dir = fixture("panic-to-a-file");
+  mkdirSync(dir, { recursive: true });
+  const source = 'fn main() {\n    println!("reading 5");\n    panic!("boom");\n}\n';
+  writeFileSync(join(dir, "native.rs"), source);
+  const named = [...flags, `--remap-path-prefix=${dir}/=`];
+  const built = nativeBinary(source, dir, named);
+  if ("error" in built) throw new Error(built.error);
+  const js = join(dir, "main.js");
+  run([compiler, join(dir, "native.rs"), "-o", js, "--", ...named, "--crate-type", "bin", "-Awarnings"]);
+  installStd(dir);
+  writeFileSync(
+    join(dir, "queue.mjs"),
+    'const write = process.stderr.write.bind(process.stderr);\nprocess.stderr.write = (...given) => {\n  Promise.resolve().then(() => console.log("a promise\'s reaction"));\n  queueMicrotask(() => console.log("a microtask"));\n  return write(...given);\n};\n',
+  );
+  // Its run with both streams a file, and with stderr alone one.
+  const toFile = (cmd: string[], native = false): Ran => {
+    const line = cmd.map((part) => `'${part}'`).join(" ");
+    const p = runSync(["sh", "-c", `${line} > out.txt 2>&1; s=$?; cat out.txt; exit $s`], dir, 60_000);
+    const out = p.stdout.replace(/thread 'main' \(\d+\)/g, "thread 'main' (<pid>)");
+    return { status: p.code ?? -1, out: native ? shippedStd(out) : out };
+  };
+  const native = toFile([built.binary], true);
+  expect(native.status).toBe(101);
+  for (const runtime of ["node", "bun"]) expect(toFile([runtime, "--import", "./queue.mjs", js])).toEqual(native);
+}, 300_000);
+
 // What rust-js doesn't support as the program runs ends a binary as its
 // refusals at compile time are said, `error: rust-js does not support ..`
 // and where the JS asked it, status 1, never Node's or Bun's report of an

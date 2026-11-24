@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2538, ADR 1184 amended): test/binaries.test.ts gains a test, a panic with its output a file runs nothing `main` queued, against native, on Node and Bun; mutation `file-stream-waited-for`.
+
 Changed on 2026-11-25 (#2532, ADR 0454 amended): test/diagnostics.test.ts gains two rows, a `&mut` to an object in an `Rc` or a `Box` given to generic code by an impl over `&mut T`, refused; mutations `impl-self-mut-object-unasked`, `impl-self-own-mut-refused`; test/known/metamorphic/2532.txt removed, its 2 rows now refused.
 
 Changed on 2026-11-24 (#2530, ADR 0427 amended): corpus gains `tracked_fn_returned_names_fn_calls_line`, `generic_clone_returned_names_fn_calls_line` and `tracked_fn_returned_by_a_pub_fn_refused`; three mutations.
