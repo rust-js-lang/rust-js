@@ -1674,3 +1674,29 @@ spread. Held by `refcell_field_cloned_while_borrowed.rs` (a struct and a
 variant, used and not, shared and free), test/binaries.test.ts's derive
 rows, and the mutations `field-cell-clone-unchecked` and
 `field-cell-copy-held`.
+
+## Amendment: generic code's type parameter that may be a cell borrows what its callers make it (2026-11-24, #2529)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a wrong answer, a
+panic native Rust raises that the JS didn't.
+
+`fn copies<T: Clone>(items: &[T]) -> usize { items.iter().cloned().count() }`,
+called with `RefCell`s while one is mutably borrowed, panics natively:
+std's `Cloned` clones each item, and a `RefCell`'s `Clone` borrows it.
+rust-js elided the caller's `borrow_mut` guard and printed `2`. What std's
+code runs of a type parameter (`bound_runs`) was "nothing of the crate's"
+wherever every impl of its bound is std's. But a std impl may be a cell's,
+and a cell's own impl borrows it. Now a type parameter whose bound a
+cell implements is a borrow of what the parameter is, `Cell::Type(T)`,
+kept apart (`Given::parameters`) and merged only into `std_given`'s
+answer. Its callers' instances then make it concrete: `RefCell<u8>` meets
+the held guard, while a `u8` meets nothing. It is not a cell's own impls'
+answer (`impls_ask`), whose `T` is the cell's own contents and can't be
+the cell. `map(T::clone)` is covered the same way, `Clone::clone` given as a
+value being std's. Held by `generic_cloned_of_a_held_refcell_panics`
+(`located-otherwise` #2522 for its line) and the mutations
+`cell-parameter-unborrowed` and `cell-parameter-its-own-cell`. A filter to
+the traits whose cell impl reads what it holds (`Clone`, the comparisons,
+`Debug`) was dropped: no program tells it apart, since a caller's instance
+is concrete.
+

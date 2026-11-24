@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-24 (#2529, ADR 0863 amended): corpus gains `generic_cloned_of_a_held_refcell_panics` (`located-otherwise` #2522); mutations `cell-parameter-unborrowed` and `cell-parameter-its-own-cell`.
+
 Changed on 2026-11-24 (#2494, ADR 0979 amended): mutation `nested-alias-kept`; four corpus snapshots lose a closure's alias of a dictionary its body declares.
 
 Changed on 2026-11-24 (#2490, ADR 1199): test/cell-form-shadow.test.ts, new, six tests: `CellForm`'s shadow, `--shadow cell-form=<file>`, of each `RefCell` borrow the form the compile takes beside the proof's from MIR, alone and with the crate's bodies' borrow summaries, and what defeated it: a borrow for a moment of std's method, a guard held across the crate's function the summaries prove asks nothing, its range ended where it's dropped, a guard held across what borrows its cell again or another borrow of it, a `try_borrow`, and a field a derive or a function is given whole.

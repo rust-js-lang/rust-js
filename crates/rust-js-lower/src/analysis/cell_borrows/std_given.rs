@@ -20,6 +20,12 @@ pub(super) struct Given<'tcx> {
     /// What rust-js can't see: a type parameter's, a `dyn`'s or a
     /// library's type's impl.
     pub(super) any: bool,
+    /// The type parameters of the caller's that may be a cell whose own
+    /// impl of a bound borrows it, a `T: Clone` of a `RefCell`'s, each a
+    /// borrow of what it is: `std_given`'s, which its caller's instances
+    /// say, not a cell's own impls' (`impls_ask`), whose `T` is its own
+    /// contents (#2529).
+    pub(super) parameters: Vec<Borrow<'tcx>>,
 }
 
 /// What `id`, std's, of `args`, may run of the crate's code (`Given`): for
@@ -46,6 +52,7 @@ pub(super) fn std_given<'tcx>(
             .skip_normalization()
             .def_id;
         bound_runs(recognition, impls, (ty, trait_id), &mut seen, &mut given);
+        given.cells.append(&mut given.parameters);
         return given;
     }
     for (clause, _) in tcx.clauses_of(id).instantiate(tcx, args) {
@@ -61,6 +68,7 @@ pub(super) fn std_given<'tcx>(
             &mut given,
         );
     }
+    given.cells.append(&mut given.parameters);
     // A cell's own trait impl's method borrows it: `RefCell`'s
     // `PartialEq::eq` borrows both it's given, its `Clone::clone` the one
     // it clones (ADR 0863).
@@ -250,16 +258,52 @@ pub(super) fn bound_runs<'tcx>(
             // `H: Hasher`'s, which runs nothing of the crate's. Not an `Fn`
             // trait's, which the crate's closures have with no impl, so
             // `Some(1).map(f)` of an `F: Fn` may run any of them (#1669).
+            // But a cell's own impl of one borrows it, `RefCell`'s `Clone` the
+            // one it clones (ADR 0863): of one that may be a cell, a borrow of
+            // what it is, which its callers' instances say, so generic code's
+            // `cloned()` or `map(T::clone)` of a `RefCell` counts while its
+            // guard is held (#2529).
             ty::Param(_) | ty::Alias(..)
                 if traits.iter().all(|&t| {
                     tcx.fn_trait_kind_from_def_id(t).is_none()
                         && tcx.async_fn_trait_kind_from_def_id(t).is_none()
                         && (tcx.all_impls(t)).all(|imp| !imp.is_local() && recognition.in_sysroot(imp))
-                }) => {}
+                }) =>
+            {
+                if crate::generic_facts::type_parameter_of(part).is_some()
+                    && let Some(mutable) = cell_impl_of(recognition, &traits)
+                {
+                    given.parameters.push(Borrow {
+                        cell: Cell::Type(tcx.erase_and_anonymize_regions(part)),
+                        mutable,
+                        class: None,
+                    });
+                }
+            }
             // A type parameter's, a `dyn`'s, a function pointer's.
             _ => given.any = true,
         }
     }
+}
+
+/// Whether a cell's own impl is one of `traits`', which borrows it, and
+/// whether one borrows it mutably, a `Mutex`'s or an `RwLock`'s, where a
+/// `RefCell`'s borrows it shared: of `RefCell`'s `Clone`, `Some(false)`
+/// (ADR 0863, #2529). Of any of its impls, `Default`'s too, which reads
+/// nothing: its callers' instances make the borrow of what each is.
+fn cell_impl_of(recognition: &Recognition<'_, '_>, traits: &[DefId]) -> Option<bool> {
+    let tcx = recognition.tcx;
+    let mut found: Option<bool> = None;
+    for &t in traits {
+        for imp in tcx.all_impls(t) {
+            let of = tcx.type_of(imp).instantiate_identity().skip_normalization();
+            if recognition.is_borrowed_cell(of) {
+                let mutable = !recognition.is_std_type(of, StdItem::RefCell);
+                found = Some(found.unwrap_or(false) || mutable);
+            }
+        }
+    }
+    found
 }
 
 /// The bounds std's impls of `traits` for `ty` are under, each a type and

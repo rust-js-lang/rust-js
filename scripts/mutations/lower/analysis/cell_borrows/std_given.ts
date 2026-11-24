@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a derived `clone` runs nothing, so `Holds`'s, whose field's `Clone` borrows `WHO`, doesn't panic `already borrowed` (ADR 0868)",
     file: "crates/rust-js-lower/src/analysis/cell_borrows/std_given.rs",
-    find: "        bound_runs(recognition, impls, (ty, trait_id), &mut seen, &mut given);\n        return given;\n",
-    replace: "        let _ = (ty, trait_id);\n        return given;\n",
+    find: "        bound_runs(recognition, impls, (ty, trait_id), &mut seen, &mut given);\n        given.cells.append(&mut given.parameters);\n",
+    replace: "        let _ = (ty, trait_id);\n        given.cells.append(&mut given.parameters);\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_clone_through_rc.rs$"],
   },
   {
@@ -167,5 +167,22 @@ export const mutations: Mutation[] = [
     find: "                    tcx.fn_trait_kind_from_def_id(t).is_none()\n                        && tcx.async_fn_trait_kind_from_def_id(t).is_none()\n                        && (tcx.all_impls(t))",
     replace: "                    (tcx.all_impls(t))",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_while_std_runs_a_generic_callback.rs$"],
+  },
+  {
+    name: "cell-parameter-unborrowed",
+    breaks: "generic code's `cloned()` of a `RefCell` its caller holds mutably runs nothing of std's that borrows it, so the guard is elided and it doesn't panic where native Rust does (#2529)",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/std_given.rs",
+    find: "                if crate::generic_facts::type_parameter_of(part).is_some()\n",
+    replace: "                if false && crate::generic_facts::type_parameter_of(part).is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_cloned_of_a_held_refcell_panics\\.rs$"],
+  },
+  {
+    name: "cell-parameter-its-own-cell",
+    breaks: "a type parameter that may be a cell is a borrow of a cell's own impls too, `impls_ask`'s, so a `RefCell<A>` asks of itself while `A` runs and each borrow of it is checked where none can meet it (#2529)",
+    file: "crates/rust-js-lower/src/analysis/cell_borrows/std_given.rs",
+    find: "                    given.parameters.push(Borrow {\n",
+    replace: "                    given.cells.push(Borrow {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(refcell_generic_mut_method|guard_held_in_an_undo_stack)\\.rs$"],
+    snapshots: true,
   },
 ];
