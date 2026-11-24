@@ -4,7 +4,7 @@
 //! instance the call's callers give may bind its arguments to types whose
 //! impl tracks its caller (`recognition::impl_raises_at_caller`), a
 //! `RefCell`'s `clone`, an integer's `div`; or any type, where they can't all
-//! be seen (`instances_of`). Another gives none, and its entry takes none.
+//! be seen (`instances_of`), or none are, of a body lowered all the same. Another gives none, and its entry takes none.
 //! The callers' instances are `instances`'s, the one owner of what generic
 //! code's type parameters may be (ADR 1115).
 
@@ -57,7 +57,11 @@ impl<'tcx> Located<'tcx> {
         let seen = crate::instances::instances_of(tcx, (&self.callers, crate::instances::Fact::Shared), tuple, owner);
         // Of callers it can't all see, whether a tracking impl may be it at
         // all, by `owner`'s own bounds (`tracking_impl_may_be`).
-        let Some(instances) = seen.listed_or_any() else {
+        // Or of none it sees, where the body is lowered all the same, so
+        // what reaches it isn't a naming the crate sees: a closure std's MIR
+        // inlined into another body, `clone_try_fold`'s into `Cloned`'s
+        // `try_fold`, which nothing names (#2522).
+        let Some(instances) = seen.listed_or_any().filter(|instances| !instances.is_empty()) else {
             return crate::recognition::tracking_impl_may_be(tcx, owner, callee, args);
         };
         instances.into_iter().any(|instance| {

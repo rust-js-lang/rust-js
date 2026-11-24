@@ -5,7 +5,7 @@
 // a type parameter's: `take`, `replace` and `get` give what it held as it's
 // kept, `Some(None)` apart from `None`, as Rust's do (ADR 0537).
 
-import { $debugStr, $main, $some, $someValue, $traitImpl } from "@rust-js/std";
+import { $debugStr, $main, $some, $someValue, $stdSites, $traitImpl } from "@rust-js/std";
 
 const $formatClone = new WeakMap();
 
@@ -20,7 +20,7 @@ function formatClone_clone(format, IClone) {
   const copy =
     inner == null
       ? inner
-      : $some(IClone.clone($someValue(inner), "test/corpus/cell_of_a_boxed_option.rs:14:26"));
+      : $some(IClone.clone($someValue(inner), $stdSites.clonedAt["core::option::Option"][0]));
   format.inner = inner;
   return { inner: copy };
 }

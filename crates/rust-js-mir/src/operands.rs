@@ -870,7 +870,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         (ty, span): (Ty<'tcx>, Span),
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let Some(shim) = self.shim_location(state, def_id, span)? else {
+        let Some(shim) = self.shim_location(state, (def_id, args), span)? else {
             return self.fn_value_in_generic_forms_at(state, (def_id, args), (ty, span), out);
         };
         // Its call given the shim's location: an argument of the crate's, and
@@ -885,13 +885,20 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
 
     /// Where a function made a value at `span` that tracks its caller is
     /// called from: the shim it's called through's location (#2335), where
-    /// the body says how it's called. Where it doesn't, the crate's own
+    /// the body says how it's called. So is a trait's method whose impl may
+    /// track it, generic code's `T::clone` of a `RefCell`'s, by #2457's
+    /// owner (`Located::gives_location`, #2522). Where it doesn't, the crate's own
     /// code is refused where a panic's location is written, a binary's
     /// (Tu's decision); a library's, and a library's code compiled here,
     /// keep its caller's line.
-    fn shim_location(&self, state: &State<'_, 'tcx>, def_id: rustc_span::def_id::DefId, span: Span) -> R<Option<Expr>> {
+    fn shim_location(
+        &self,
+        state: &State<'_, 'tcx>,
+        (def_id, args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        span: Span,
+    ) -> R<Option<Expr>> {
         let tcx = self.tcx;
-        if !rust_js_lower::recognition::tracks_caller(tcx, def_id) {
+        if !self.value_tracks_caller((def_id, args)) {
             return Ok(None);
         }
         let shim = match crate::shims::through(tcx, (state.body, state.facts.promoted().as_slice()), def_id, span) {
@@ -949,7 +956,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         (ty, span): (Ty<'tcx>, Span),
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let Some(shim) = self.shim_location(state, def_id, span)? else {
+        let Some(shim) = self.shim_location(state, (def_id, args), span)? else {
             return self.fn_value_in_callers_forms_at(state, (def_id, args), (ty, span), out);
         };
         let before = self.set_value_location(Some(shim.clone()));

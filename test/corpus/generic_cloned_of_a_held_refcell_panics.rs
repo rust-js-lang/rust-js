@@ -1,5 +1,4 @@
 //@ run-fail: RefCell already mutably borrowed
-//@ located-otherwise: #2522 generic code's `cloned()` clones a `RefCell` at its call's line
 // Generic code's `cloned()` of a `RefCell` whose guard its caller holds:
 // std's `Cloned` clones it, borrowing it, so it panics, and the guard is
 // kept for it to see. A type parameter that may be a cell, through std's

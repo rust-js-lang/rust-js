@@ -1956,7 +1956,10 @@ Differences:
   caller's, made as it compiles, `$index(v, i, "src/main.rs:4:5")`, and
   of one made a value, `.map(Option::unwrap)`, the line of the shim it's
   called through, `FnMut::call_mut`'s, or a `fn` pointer's own, as the body
-  says how it's called; a binary refuses one whose calls it doesn't say
+  says how it's called, and a callee's own MIR where it's given on,
+  `FnOnce::call_once`'s of an `F: FnMut` a callee moves into `Option::map`;
+  generic code's `map(T::clone)` too, of a `RefCell`, whose impl tracks it
+  (#2522); a binary refuses one whose calls it doesn't say
   (#2335, [limitations](limitations.md)); of a std method whose impl
   tracks its caller where its trait's declaration doesn't, called through
   generic code's dictionary, the generic line, as rustc's instance names

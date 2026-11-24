@@ -613,3 +613,53 @@ also held by test/std-cloned-at.test.ts' three new rows, and by the
 mutations `cloned-items-row-unread`, `cloned-items-mixed-guessed`, `steps-debug-info-read`,
 `cloned-items-at-unplaced`, `option-cloned-row-unread`,
 `extend-from-slice-row-unread` and `cloned-methods-backs-unwalked`.
+
+## Amendment: a function made a value is placed by how its callee calls it, a trait's method whose impl may track it too (2026-11-24, #2522)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a panic named another
+line than Rust's.
+
+Three gaps of #2335's shim rule, each measured natively:
+1. Generic code's `items.iter().map(T::clone).count()` of a `RefCell`
+   named where `T::clone` is made a value. Rust names `FnMut::call_mut`'s
+   shim, `function.rs:166:5`. `shim_location` asked only of a function
+   that tracks its caller, and `Clone::clone`'s declaration doesn't, while
+   a `RefCell`'s impl does. It now asks `value_tracks_caller`
+   (std_types/location.rs), which is also true of a trait's method whose
+   impl the instances may be one that tracks (#2457's
+   `Located::gives_location`).
+2. An `F: FnMut` a callee moves into `Option::map` is called through
+   `FnOnce::call_once`, `function.rs:250:5`; its bound alone said
+   `call_mut`. A call's argument is now placed by the callee's optimized
+   MIR, its parameter followed by the same walk (`stored_through`),
+   falling back to the bound only where that MIR says nothing:
+   `Iterator::map` stores it in its `Map`. A value's own drop, a callee's
+   unwind of what it moves on, is no use of it. A struct holding the
+   value given whole to a call follows that field into the callee's MIR,
+   and a closure capture is read by its body's `Fn*` call of it, which
+   std's inlined `map_fold` is.
+3. Compiled std (`--std-iterators`) gave `Cloned::fold`'s `T::clone`
+   `std/lib.rs:1:1`, a dummy span, and `clone_try_fold`'s closure's clone
+   no location, `<unknown>`. The first is the capture rule above. The
+   second came from `gives_location`, which read "no caller seen" as "no
+   instance": the closure is inlined into `Cloned::try_fold` and nothing
+   names it. A body lowered with no seen caller now asks
+   `tracking_impl_may_be`, as one with unseen callers does.
+
+And generic code's dictionary clone takes the line the lowering raises at
+(`Expr::raising_at`) where one is set, a `cloned()`'s row (#2509) or an
+`Option<A>`'s clone line, as a concrete `RefCell`'s does. Two corpus
+snapshots move, `callee_field_own_terms` and `cell_of_a_boxed_option`,
+whose generic `Option<A>` clones now name std's `Option` clone row.
+
+Held by the corpus cases `generic_clone_made_a_value_names_call_muts_line`,
+`fn_mut_moved_into_option_map_names_call_onces_line`,
+`clone_held_in_a_struct_given_whole_names_call_onces_line` and
+`generic_cloned_of_a_held_refcell_panics`, by test/iterator-forms.test.ts'
+`cloned_any_`, `cloned_count_` and `cloned_fold_` built of std's structs (no
+longer `differs`, and test/known/metamorphic/2522.txt is gone), and by the
+mutations `argument-mir-unread`, `value-drop-a-use`, `holder-moved-unread`,
+`closure-capture-unread`, `trait-value-untracked`,
+`model-location-not-raised` and `no-callers-no-location`. Still to do: a
+tracked function returned as a value (#2530).
+

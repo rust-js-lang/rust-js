@@ -6,3 +6,4 @@ plain generic-instances cloned_count_of_a_borrowed_refcell_names_std_line.rs
 plain generic-instances cloned_nth_of_a_borrowed_refcell_names_std_line.rs
 plain option cloned_next_of_a_borrowed_refcell_names_std_line.rs
 plain tuple cloned_next_of_a_borrowed_refcell_names_std_line.rs
+plain generic-instances generic_cloned_of_a_held_refcell_panics.rs

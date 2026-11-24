@@ -52,4 +52,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crate-snapshots.test.ts", "-t", "itertools"],
   },
+  {
+    name: "trait-value-untracked",
+    breaks: "generic code's `T::clone` made a value, `map(T::clone)` of a `RefCell`, names where it's made, not the `FnMut::call_mut` shim Rust's `Iterator::map` calls it through (#2522)",
+    file: "crates/rust-js-lower/src/std_types/location.rs",
+    find: "            || (self.tcx.trait_of_assoc(id).is_some()\n",
+    replace: "            || (false && self.tcx.trait_of_assoc(id).is_some()\n",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_clone_made_a_value_names_call_muts_line)\\.rs$"],
+  },
+  {
+    name: "model-location-not-raised",
+    breaks: "generic code's clone through a dictionary names its call's line where the lowering raises at std's, a `cloned()`'s row or an `Option`'s clone line (#2522)",
+    file: "crates/rust-js-lower/src/std_types/location.rs",
+    find: "            return Some(Expr::raising_at().unwrap_or_else(|| self.caller_location(span)));\n",
+    replace: "            return Some(self.caller_location(span));\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(generic_cloned_of_a_held_refcell_panics|cell_of_a_boxed_option)\\.rs$"],
+  },
 ];

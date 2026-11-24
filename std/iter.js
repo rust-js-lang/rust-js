@@ -51,6 +51,7 @@ import {
   $someMut,
   $someValue,
   $stdIterator,
+  $stdSites,
   $took,
   $traitImpl,
   $tryFoldInto,
@@ -4176,7 +4177,7 @@ export function clonedIterator_fold(
   try {
     tmp = iterator_map(
       cloned.it,
-      (arg0) => TClone.clone(arg0, "std/lib.rs:1:1"),
+      (arg0) => TClone.clone(arg0, $stdSites.source + "/library/core/src/ops/function.rs:166:5"),
       IIterator,
       dropI,
       dropT,
@@ -4192,7 +4193,8 @@ export function clonedIterator_fold(
     throw error;
   }
   const iter = tmp.iter;
-  const captured = (arg0) => TClone.clone(arg0, "std/lib.rs:1:1");
+  const captured = (arg0) =>
+    TClone.clone(arg0, $stdSites.source + "/library/core/src/ops/function.rs:166:5");
   const value = $dropping(
     (acc, elt) => {
       let tmp = true;
@@ -4251,7 +4253,10 @@ export function clonedIterator_tryFold(
       let tmp$1 = true;
       let tmp;
       try {
-        tmp = TClone.clone(elt);
+        tmp = TClone.clone(
+          elt,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:29:32",
+        );
         tmp$1 = false;
       } catch (error) {
         $cleanup(() => {
@@ -4316,7 +4321,7 @@ export function clonedDoubleEndedIterator_rfold(
   try {
     tmp = iterator_map(
       cloned.it,
-      (arg0) => TClone.clone(arg0, "std/lib.rs:1:1"),
+      (arg0) => TClone.clone(arg0, $stdSites.source + "/library/core/src/ops/function.rs:166:5"),
       IIterator,
       dropI,
       dropT,
@@ -4332,7 +4337,8 @@ export function clonedDoubleEndedIterator_rfold(
     throw error;
   }
   const iter = tmp.iter;
-  const captured = (arg0) => TClone.clone(arg0, "std/lib.rs:1:1");
+  const captured = (arg0) =>
+    TClone.clone(arg0, $stdSites.source + "/library/core/src/ops/function.rs:166:5");
   const value = $dropping(
     (acc, elt) => {
       let tmp = true;
@@ -4399,7 +4405,10 @@ export function clonedDoubleEndedIterator_tryRfold(
       let tmp$1 = true;
       let tmp;
       try {
-        tmp = TClone.clone(elt);
+        tmp = TClone.clone(
+          elt,
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/adapters/cloned.rs:29:32",
+        );
         tmp$1 = false;
       } catch (error) {
         $cleanup(() => {

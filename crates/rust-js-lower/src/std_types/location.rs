@@ -181,9 +181,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .located
             .gives_location(self.tcx, self.frame.owner, (id, args))
         {
-            return Some(self.caller_location(span));
+            // Where the lowering raises at another's line, a `cloned()`'s
+            // row of std's step, that line, as a concrete `RefCell`'s clone
+            // takes it (`Expr::raised_at`, #2509, #2522).
+            return Some(Expr::raising_at().unwrap_or_else(|| self.caller_location(span)));
         }
         crate::recognition::location_followed(self.tcx, id).then(Expr::js_undefined)
+    }
+
+    /// Whether `id` given `args`, made a value, tracks its caller, so is
+    /// given the location of the shim it's called through (#2335): a
+    /// function that does, or a trait's method whose impl the instances its
+    /// callers give may be one that does, generic code's `T::clone` of a
+    /// `RefCell`'s (`Located::gives_location`, #2457, #2522).
+    pub fn value_tracks_caller(&self, (id, args): (DefId, ty::GenericArgsRef<'tcx>)) -> bool {
+        crate::recognition::tracks_caller(self.tcx, id)
+            || (self.tcx.trait_of_assoc(id).is_some()
+                && self
+                    .krate
+                    .located
+                    .gives_location(self.tcx, self.frame.owner, (id, args)))
     }
 
     /// Whether an entry of `id` given `args`, a method whose model raises at

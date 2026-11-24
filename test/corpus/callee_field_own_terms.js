@@ -5,7 +5,7 @@
 // `Option<I::Item>`, called where that type has a name of the caller's,
 // `I: Iterator<Item = A>`: its fields are read in the function's own terms.
 
-import { $iter, $iterator, $main, $next, $some, $someValue } from "@rust-js/std";
+import { $iter, $iterator, $main, $next, $some, $someValue, $stdSites } from "@rust-js/std";
 
 function pairsFromI_from(rest, IIterator, IClone) {
   return {
@@ -18,7 +18,7 @@ function pairsIterator_next(pairs, IIterator, IClone, AClone) {
   const value =
     pairs.first == null
       ? pairs.first
-      : $some(AClone.clone($someValue(pairs.first), "test/corpus/callee_field_own_terms.rs:28:32"));
+      : $some(AClone.clone($someValue(pairs.first), $stdSites.clonedAt["core::option::Option"][0]));
   if (value == null) {
     return;
   }

@@ -6,8 +6,9 @@
 //! `.map(Option::unwrap)` panics natively at `FnMut::call_mut`'s line, as
 //! `Iterator::map`'s `F: FnMut` calls it so.
 //!
-//! Found in the body, of each use of the value: a call's argument, by its
-//! parameter's bound, the most of `Fn`, `FnMut` and `FnOnce` it has; a cast
+//! Found in the body, of each use of the value: a call's argument, as the
+//! callee's MIR calls its parameter where it says, else by its parameter's
+//! bound, the most of `Fn`, `FnMut` and `FnOnce` it has (#2522); a cast
 //! to a `fn` pointer; a local or a field the value is put in, by its uses;
 //! a shared reference to it, `&f` or a promoted `&Option::unwrap`, called
 //! through `Fn::call` as a `&dyn Fn*` or an `F: Fn*` argument, as `&F`'s
@@ -246,6 +247,17 @@ fn use_through<'tcx>(
                         _ => Way::Unknown,
                     }
                 }
+                // Captured by a closure std's MIR made in place, `map_fold`'s
+                // of `Cloned::fold`: as the closure's body calls that capture
+                // (#2522).
+                Rvalue::Aggregate(kind, fields) if held == Held::Value => match **kind {
+                    mir::AggregateKind::Closure(closure, _) => match fields.iter_enumerated().find(|(_, op)| is_it(op))
+                    {
+                        Some((field, _)) => known(capture_through(tcx, closure, field)),
+                        None => Way::Unknown,
+                    },
+                    _ => Way::Unknown,
+                },
                 _ => Way::Unknown,
             }
         }
@@ -274,10 +286,10 @@ fn use_through<'tcx>(
                     Some(boxed) => stored_through(tcx, body, (boxed, None), Held::Boxed, depth + 1),
                     None => Way::Unknown,
                 },
-                Held::Value => known(argument_through(tcx, callee, at)),
+                Held::Value => known(argument_through(tcx, callee, at, depth)),
                 // A reference given as an `F: Fn*`, which `&F`'s impls call
                 // through `F::call` whatever `F`'s bound (#2355).
-                Held::Reference => known(argument_through(tcx, callee, at).map(|_| Through::Fn)),
+                Held::Reference => known(argument_through(tcx, callee, at, depth).map(|_| Through::Fn)),
                 Held::Boxed => Way::Unknown,
             }
         }
@@ -338,6 +350,30 @@ fn stored_through<'tcx>(
             _ => Way::Unknown,
         },
         (Used::Borrowed, Held::Reference | Held::Boxed) | (Used::Reborrowed, _) => Way::Unknown,
+        // What holds it, given whole to a call: as the callee's MIR uses
+        // that field of its parameter, which no bound says (#2522).
+        (Used::HolderMoved, held) => match (body.stmt_at(at).right().map(|terminator| &terminator.kind), field) {
+            (Some(TerminatorKind::Call { func, args, .. }), Some(field)) if depth < 4 => {
+                let Some(at) = args
+                    .iter()
+                    .position(|arg| arg.node.place().is_some_and(|p| p.as_local() == Some(local)))
+                else {
+                    return Way::Unknown;
+                };
+                match *func.ty(body, tcx).kind() {
+                    ty::FnDef(callee, _) if tcx.is_mir_available(callee) => {
+                        let callee = tcx.optimized_mir(callee);
+                        let param = Local::from_usize(at + 1);
+                        if param.as_usize() > callee.arg_count {
+                            return Way::Unknown;
+                        }
+                        stored_through(tcx, callee, (param, Some(field)), held, depth + 1)
+                    }
+                    _ => Way::Unknown,
+                }
+            }
+            _ => Way::Unknown,
+        },
         (Used::Read, held) => use_through(
             tcx,
             body,
@@ -371,6 +407,10 @@ enum Used {
     Borrowed,
     Opened,
     Reborrowed,
+    /// The whole of what holds it in a field, moved: a call's argument,
+    /// `Map::fold(map, ..)` of a `Map` std's MIR made in place, which the
+    /// callee's MIR reads of that field (#2522).
+    HolderMoved,
 }
 
 /// Each use of a local, whole, or of its field `field`, a value stored in a
@@ -400,6 +440,13 @@ impl<'tcx> Visitor<'tcx> for Uses {
             (Some(_), _) => None,
         };
         let whole = rest.is_some_and(|rest| rest.is_empty());
+        if self.field.is_some()
+            && place.projection.is_empty()
+            && matches!(context, PlaceContext::NonMutatingUse(Read::Move))
+        {
+            self.at.push((location, Used::HolderMoved));
+            return;
+        }
         let opened = self.held != Held::Value && matches!(rest, Some([ProjectionElem::Deref]));
         match context {
             PlaceContext::NonMutatingUse(Read::Copy | Read::Move) if whole => self.at.push((location, Used::Read)),
@@ -408,8 +455,11 @@ impl<'tcx> Visitor<'tcx> for Uses {
             PlaceContext::NonMutatingUse(Read::SharedBorrow) if opened && self.held == Held::Reference => {
                 self.at.push((location, Used::Reborrowed))
             }
-            // A box's drop, which calls nothing of the value's.
-            PlaceContext::MutatingUse(MutatingUseContext::Drop) if whole && self.held == Held::Boxed => {}
+            // Its drop, or a box's, which calls nothing of the value's: a
+            // callee's own unwind of a parameter it moves on, `f` of
+            // `x.map(f)` (#2522).
+            PlaceContext::MutatingUse(MutatingUseContext::Drop)
+                if whole && matches!(self.held, Held::Boxed | Held::Value) => {}
             // Its `let`, written, by a statement or a call, `Box::new(f)`'s,
             // and a mention of it, `let _ = f`, that reads nothing.
             PlaceContext::MutatingUse(MutatingUseContext::Store | MutatingUseContext::Call)
@@ -420,12 +470,26 @@ impl<'tcx> Visitor<'tcx> for Uses {
     }
 }
 
-/// Of a call of `callee`, how its argument `at` is called: by its
-/// parameter's bounds (`called_through`).
-fn argument_through<'tcx>(tcx: TyCtxt<'tcx>, callee: Ty<'tcx>, at: usize) -> Option<Through> {
+/// Of a call of `callee`, how its argument `at` is called: as the
+/// callee's own MIR calls its parameter, where it has MIR that says, an
+/// `F: FnMut` moved into `Option::map`, which calls it through
+/// `FnOnce::call_once`, natively `function.rs:250:5` (#2522); else by its
+/// parameter's bounds (`called_through`), the most it allows, of one that
+/// stores it, `Iterator::map`'s in its `Map`, or of a `Fn` trait's own
+/// method, which has none.
+fn argument_through<'tcx>(tcx: TyCtxt<'tcx>, callee: Ty<'tcx>, at: usize, depth: usize) -> Option<Through> {
     let ty::FnDef(callee, _) = *callee.kind() else {
         return None;
     };
+    if depth < 4 && tcx.is_mir_available(callee) {
+        let body = tcx.optimized_mir(callee);
+        let param = Local::from_usize(at + 1);
+        if param.as_usize() <= body.arg_count
+            && let Way::Called(way) = stored_through(tcx, body, (param, None), Held::Value, depth + 1)
+        {
+            return Some(way);
+        }
+    }
     rust_js_lower::generic_facts::called_through(tcx, callee, at).map(Through::of)
 }
 
@@ -450,6 +514,69 @@ fn dyn_through<'tcx>(tcx: TyCtxt<'tcx>, held: Held, target: Ty<'tcx>) -> Option<
     match (held, kind) {
         (Held::Reference, _) => Some(Through::Fn),
         (Held::Boxed, ty::ClosureKind::FnOnce) => Some(Through::FnOnce),
+        _ => None,
+    }
+}
+
+/// How `closure`'s body calls its capture `field`, a function value: each
+/// call of a `Fn` trait's method whose receiver is that capture, through a
+/// borrow of it or itself, `<F as FnMut>::call_mut(&mut (*self).1, ..)`,
+/// by that trait, or `&mut F`'s and `&F`'s impls', which call `F`'s
+/// `call_mut` and `call`. `None` where it's used otherwise, or two ways.
+fn capture_through(tcx: TyCtxt<'_>, closure: DefId, field: FieldIdx) -> Option<Through> {
+    if !tcx.is_mir_available(closure) {
+        return None;
+    }
+    let body = tcx.optimized_mir(closure);
+    let self_local = Local::from_usize(1);
+    let is_capture = |place: mir::Place<'_>| {
+        place.local == self_local
+            && matches!(place.projection.as_slice(),
+                [ProjectionElem::Field(f, _)] | [ProjectionElem::Deref, ProjectionElem::Field(f, _)] if *f == field)
+    };
+    // The locals a borrow or a move of the capture is put in.
+    let mut holders: Vec<Local> = Vec::new();
+    for data in body.basic_blocks.iter() {
+        for statement in &data.statements {
+            let StatementKind::Assign(assign) = &statement.kind else {
+                continue;
+            };
+            let held = match &assign.1 {
+                Rvalue::Ref(_, _, place) | Rvalue::Use(Operand::Move(place) | Operand::Copy(place), _) => {
+                    is_capture(*place)
+                }
+                _ => false,
+            };
+            if held && let Some(local) = assign.0.as_local() {
+                holders.push(local);
+            }
+        }
+    }
+    let mut ways: Vec<Through> = Vec::new();
+    for data in body.basic_blocks.iter() {
+        let TerminatorKind::Call { func, args, .. } = &data.terminator().kind else {
+            continue;
+        };
+        let Some(receiver) = args.first().and_then(|arg| arg.node.place()) else {
+            continue;
+        };
+        if !(is_capture(receiver) || receiver.as_local().is_some_and(|local| holders.contains(&local))) {
+            continue;
+        }
+        let ty::FnDef(called, called_args) = *func.ty(body, tcx).kind() else {
+            return None;
+        };
+        let kind = tcx
+            .trait_of_assoc(called)
+            .and_then(|tr| tcx.fn_trait_kind_from_def_id(tr))?;
+        ways.push(match *called_args.skip_binder().type_at(0).kind() {
+            ty::Ref(_, _, ty::Mutability::Mut) => Through::FnMut,
+            ty::Ref(_, _, ty::Mutability::Not) => Through::Fn,
+            _ => Through::of(kind),
+        });
+    }
+    match ways.as_slice() {
+        [first, rest @ ..] if rest.iter().all(|way| way == first) => Some(*first),
         _ => None,
     }
 }

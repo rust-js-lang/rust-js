@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-24 (#2522, ADR 0427 amended): corpus gains `generic_clone_made_a_value_names_call_muts_line`, `fn_mut_moved_into_option_map_names_call_onces_line` and `clone_held_in_a_struct_given_whole_names_call_onces_line`; test/iterator-forms.test.ts' `differs` loses its three #2522 rows and test/known/metamorphic/2522.txt is removed; seven mutations.
+
 Changed on 2026-11-24 (#2481, ADR 1104 amended): the metamorphic net gains two nightly-only rewrites, `observe-borrows` and `observe-lens`, and four tests (each rewrite's probes, a push's sample runs no nightly-only rewrite, and a rewrite whose every variant is refused judged nothing); test/known/metamorphic/ gains 2531.txt (2 rows), 2532.txt (2) and 2533.txt (126), and 2522.txt six; their sweep, the corpus's `RefCell` cases in both builds, 2 min a part in 10 parts on the Mac mini.
 
 Changed on 2026-11-24 (#2529, ADR 0863 amended): corpus gains `generic_cloned_of_a_held_refcell_panics` (`located-otherwise` #2522); mutations `cell-parameter-unborrowed` and `cell-parameter-its-own-cell`.
