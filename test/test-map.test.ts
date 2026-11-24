@@ -136,9 +136,10 @@ test("a constant's value, an array's length with it, is the change of the functi
   expect(pick(map, [grown], files, cases, sources())).toEqual({ ...asFunction, why: expect.any(String) } as never);
   // Read where no function is, another constant's initializer: everything.
   expect(pick(map, [grown], files, cases, sources([{ file: "src/a.rs", line: 45 }])).kind).toBe("all");
-  // Its type changed past its length: everything.
+  // Its type changed past its length: the functions that name it, whose
+  // code it compiles into, as an item's change is (#2288).
   const retyped: Change = { file: "src/a.rs", hunks: [[22, 1, ["pub(crate) const FLIPPED: [String; 2] = ["], ["pub(crate) const FLIPPED: [&str; 2] = ["]]] };
-  expect(pick(map, [retyped], files, cases, sources()).kind).toBe("all");
+  expect(pick(map, [retyped], files, cases, sources())).toEqual({ ...asFunction, why: expect.any(String) } as never);
 });
 
 test("a new module of items nothing refers to selects nothing but what its users' changes do; one that may reach code no change names, everything (4ba38fa64's import_names.rs)", () => {
@@ -808,4 +809,32 @@ test("CI's map is fetched packed, in its time, and an artifact of before holds n
   }
   expect(fetchSeconds).toBeGreaterThan(0);
   expect(readFileSync(join(root, "scripts/testMap.ts"), "utf8")).toContain("downloaded(found.run, [`--name=${found.name}`], into, undefined, undefined, fetchSeconds)");
+});
+
+// An item's change outside any function's code, by its line's kind, then
+// its name (#2288, m1-lisa's design): a variant added to an enum selects
+// the functions that name the enum, not every test; a name too short to
+// search, or one most of its crate's functions name, everything, said by
+// name.
+test("an item outside any function selects the functions that name it; a short or common name, everything", () => {
+  // src/a.rs: function 0 at 10-20 names `Std` at 15; the enum at 22-25.
+  const text = Array.from({ length: 50 }, (_, i) => `// line ${i + 1}`);
+  text[14] = "    let vec = matches!(s, Std::Vec);";
+  text[21] = "pub enum Std {";
+  text[22] = "    Vec,";
+  text[23] = "    Map,";
+  text[24] = "}";
+  const sources = (word: string, sites: { file: string; line: number }[]): Sources => ({
+    text: (file) => (file === "src/a.rs" ? text.join("\n").replace(/\bStd\b/g, word) : undefined),
+    naming: (named) => (named === word ? sites : []),
+  });
+  const variant: Change = { file: "src/a.rs", hunks: [[24, 0, ["    Set,"], []]] };
+  const asFunction = pick(map, [{ file: "src/a.rs", hunks: [[15, 1]] }], files, cases);
+  expect(pick(map, [variant], files, cases, sources("Std", [{ file: "src/a.rs", line: 15 }, { file: "src/a.rs", line: 22 }]))).toEqual({ ...asFunction, why: expect.any(String) } as never);
+  // A name of two letters: everything, naming it.
+  const short = pick(map, [variant], files, cases, sources("Ty", [{ file: "src/a.rs", line: 15 }]));
+  expect([short.kind, short.kind === "all" && short.why.includes("`Ty`, is too short a name to search")]).toEqual(["all", true]);
+  // Named by most of its crate's counted functions, 4 of its 7: everything.
+  const common = pick(map, [variant], files, cases, sources("Common", [15, 31, 4, 11, 13].map((line, i) => ({ file: i < 2 ? "src/a.rs" : "src/c.rs", line }))));
+  expect([common.kind, common.kind === "all" && /`Common`, is named by \d+ of its crate's \d+ counted functions/.test(common.why)]).toEqual(["all", true]);
 });

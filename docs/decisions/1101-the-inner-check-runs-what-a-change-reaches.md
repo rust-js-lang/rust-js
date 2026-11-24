@@ -1026,3 +1026,37 @@ it. `againEnv` now carries them, `RUST_JS_PUSH_REMADE`, and the run
 again's first round makes them again with what its own rebase resolved.
 test/push.test.ts' "push run again makes again what its rebase resolved
 as main's" holds it; mutation `remade-uncarried-into-the-run-again`.
+
+## Amendment (2026-11-24, #2288): a line outside any function, by its kind, then its item's name
+
+m1-lisa's count of main's checks since 2026-11-21: 130 of 188 selected
+everything, and a Rust line outside any function's counted code was 71%
+of the excess, about 1,930 runner-minutes in 3 days. Of 41 such changes
+located: an item's definition 27 (a variant, a field, a `const`'s value,
+an `impl` or type header), `use`/`mod` lines 11, `cfg(test)` code 3, and
+comments 2. Tu chose a heuristic, with the nightly's audit as its
+backstop. Each line not held by a counted function, and not answered by
+the item layer, is now read by its kind:
+
+- **A `mod x;` or `extern crate`:** nothing of its own. What it brings in
+  changes only where a function using it changed too, and a new module's
+  file is new since the map. A `use` keeps `useChanged`'s and
+  `useNamed`'s answers, as a `use` may change what a type's field names
+  with no function changed.
+- **Code of a `#[cfg(test)]` module:** no test file. `cargo test`, which
+  check:fast runs on any change of the compiler's Rust, is its test.
+- **Any other line of an item:** the item it writes or is in (its own
+  header, else the nearest above it indented less), and the counted
+  functions whose source names it as a word.
+- **Everything, the reason naming it,** where the name is shorter than 3
+  letters, more than 60% of its crate's counted functions name it, it's
+  named by another item (a constant's or static's initializer, a type's
+  field outside any function), or no item is found.
+
+Misses it accepts, the audit's: a use through `Self`, a glob import's
+alias, a macro's expansion, a method reached by trait resolution. Tests:
+test-map.test.ts' rows (a variant selects its enum's namers; a short
+name and a common one select everything; a constant's type changed
+selects its namers). Mutations: `test-map-item-selects-everything`,
+`-short-name-searched`, `-common-name-searched`,
+`-item-named-by-another-unseen`.

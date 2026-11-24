@@ -610,6 +610,61 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     if (!texts.has(at)) texts.set(at, (sources.text(at) ?? "").split("\n"));
     return texts.get(at)!;
   };
+  // A line's kind, then its item's name (#2288, m1-lisa's design, Tu's
+  // heuristic; the nightly and scripts/selector-audit.ts the backstop).
+  // Whether each of `lines` is a `mod x;` or an `extern crate` alone: what
+  // it brings in changes only where a function using it changed too,
+  // which selects its tests, and a new module's file is new since the map,
+  // its own rule. Not a `use`, which may change what a type's field names
+  // with no function changed: `useChanged`'s and `useNamed`'s, above.
+  const useLine = /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:use\s|mod\s+\w+\s*;|extern\s+crate\s)/;
+  const modLine = /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:mod\s+\w+\s*;|extern\s+crate\s)/;
+  const useOrMod = (lines: string[]) => lines.some((line) => modLine.test(line)) && lines.every((line) => commentOnly(line) || modLine.test(line));
+  const itemHeader = /^(\s*)(?:#\[.*\]\s*)*(?:pub(?:\([^)]*\))?\s+)?(?:(?:unsafe|default|auto|async|const|extern\s+"[^"]*")\s+)*(?:enum|struct|union|trait|type|const|static|fn)\s+([A-Za-z_]\w*)/;
+  const implHeader = /^(\s*)(?:unsafe\s+)?impl\b(?:\s*<[^>]*>)?\s+(?:[^{]*?\bfor\s+)?(?:[\w]+::)*([A-Za-z_]\w*)/;
+  // The item `line` of `file` writes or is in: its own header, else the
+  // nearest header above it indented less.
+  const itemOf = (file: string, line: number): string | undefined => {
+    const lines = linesOf(file);
+    const indent = (text: string) => text.match(/^\s*/)![0].length;
+    const own = lines[line - 1] ?? "";
+    const header = (text: string) => itemHeader.exec(text)?.[2] ?? implHeader.exec(text)?.[2];
+    if (header(own) !== undefined) return header(own);
+    for (let at = line - 1; at >= 1; at--) {
+      const text = lines[at - 1] ?? "";
+      if (text.trim() === "" || indent(text) >= indent(own)) continue;
+      const name = header(text);
+      if (name !== undefined) return name;
+    }
+    return undefined;
+  };
+  // Of an item outside any function, the counted functions whose source
+  // names it as a word, in any of the compiler's crates; a name too short
+  // to search, or one more than 60% of its crate's counted functions name,
+  // everything, said by name.
+  const crateDirOf = (at: string) => at.match(/^crates\/[^/]+\//)?.[0] ?? at.split("/")[0]!;
+  const byName = (file: string, line: number): number[] | string => {
+    const name = itemOf(file, line);
+    if (name === undefined) return "its item isn't found";
+    if (name.length < 3) return `its item, \`${name}\`, is too short a name to search`;
+    const found = new Set<number>();
+    for (const site of sources.naming(name)) {
+      const held = holding(site.file, site.line);
+      // Named by another item, a constant's or a static's initializer,
+      // even one inside a function, or a type's field outside any: what
+      // names that item isn't searched.
+      const text = linesOf(site.file)[site.line - 1] ?? "";
+      const initializer = /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:const|static)\s+(?:mut\s+)?([A-Za-z_]\w*)/.exec(text)?.[1];
+      const other = initializer !== undefined ? initializer !== name : held.length === 0 && !commentOnly(text) && !useLine.test(text) && itemOf(site.file, site.line) !== name;
+      if (other) return `\`${name}\` is named by another item, at ${site.file}:${site.line}`;
+      for (const f of held) found.add(f);
+    }
+    const crate = crateDirOf(file);
+    const own = map.functions.filter(({ file: at }) => crateDirOf(at) === crate).length;
+    const named = [...found].filter((f) => crateDirOf(map.functions[f]!.file) === crate).length;
+    if (own > 0 && named > 0.6 * own) return `its item, \`${name}\`, is named by ${named} of its crate's ${own} counted functions`;
+    return [...found];
+  };
   // A function's signature changed, its parameters' types say, and new
   // items written before it, which nothing named before (as a pure
   // addition's, `unreferencedOnly`): what compiles otherwise is its body
@@ -836,7 +891,15 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
         for (const f of header.refs) touched.add(f);
         continue;
       }
-      if (item !== undefined) return { kind: "all", why: `${file}'s change at line ${from} writes an item, \`${item.trim()}\`` };
+      if (item !== undefined) {
+        // `use`s and `mod x;` lines, and the crate's unit tests, select no
+        // test file; an item, the functions that name it (#2288).
+        if (useOrMod([...added, ...(removed ?? [])]) || (map.items !== undefined && inUnitTests(map.items, file, from))) continue;
+        const named = byName(file, from);
+        if (typeof named === "string") return { kind: "all", why: `${file}'s change at line ${from} writes an item, \`${item.trim()}\`: ${named}` };
+        for (const f of named) touched.add(f);
+        continue;
+      }
       if (count === 0) {
         // Lines added between two: in a function where each is counted
         // code of one function or of one nested in the other, as a closure
@@ -859,8 +922,14 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
           // Of an item outside any function, a variant added between two:
           // the functions that reach it, where the map knows them (#2288).
           const byItem = map.items === undefined ? undefined : (touchedByItem(map.items, file, from) ?? touchedByItem(map.items, file, from + 1));
-          if (byItem === undefined) return { kind: "all", why: `${file}'s change between lines ${from} and ${from + 1} is outside any function's counted code` };
-          for (const f of byItem) touched.add(f);
+          if (byItem !== undefined) {
+            for (const f of byItem) touched.add(f);
+            continue;
+          }
+          if (useOrMod(added) || (map.items !== undefined && inUnitTests(map.items, file, from))) continue;
+          const named = byName(file, from);
+          if (typeof named === "string") return { kind: "all", why: `${file}'s change between lines ${from} and ${from + 1} is outside any function's counted code: ${named}` };
+          for (const f of named) touched.add(f);
           continue;
         }
         for (const f of [...before, ...after]) touched.add(f);
@@ -886,8 +955,15 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
           // Of an item outside any function, its variant, field, constant
           // or `impl` header: the functions that reach it (#2288).
           const byItem = map.items === undefined ? undefined : touchedByItem(map.items, file, line);
-          if (byItem === undefined) return { kind: "all", why: `${file}'s change at line ${line} is outside any function's counted code` };
-          for (const f of byItem) touched.add(f);
+          if (byItem !== undefined) {
+            for (const f of byItem) touched.add(f);
+            continue;
+          }
+          const at = linesOf(file)[line - 1] ?? "";
+          if (useOrMod([at, ...added]) || (map.items !== undefined && inUnitTests(map.items, file, line))) continue;
+          const named = byName(file, line);
+          if (typeof named === "string") return { kind: "all", why: `${file}'s change at line ${line} is outside any function's counted code: ${named}` };
+          for (const f of named) touched.add(f);
           continue;
         }
         for (const f of found) touched.add(f);

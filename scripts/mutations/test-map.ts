@@ -3,6 +3,39 @@
 import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
+    name: "test-map-item-selects-everything",
+    breaks:
+      "an item's change outside any function, a variant added to an enum, selects every test, as it did before #2288: 71% of main's excess runner-minutes since 11-21",
+    file: "scripts/testMap.ts",
+    find: "    if (name === undefined) return \"its item isn't found\";\n",
+    replace: "    if (name !== \"\") return \"its item isn't found\";\n",
+    tests: ["test/test-map.test.ts", "-t", "an item outside any function selects"],
+  },
+  {
+    name: "test-map-short-name-searched",
+    breaks: "an item whose name is two letters, `Ty`, is searched as a word, selecting what names it by chance where its users can't be told apart (#2288)",
+    file: "scripts/testMap.ts",
+    find: "    if (name.length < 3) return",
+    replace: "    if (name.length < 0) return",
+    tests: ["test/test-map.test.ts", "-t", "an item outside any function selects"],
+  },
+  {
+    name: "test-map-common-name-searched",
+    breaks: "an item most of its crate's counted functions name selects them all one by one, not everything, its search no better than every test (#2288)",
+    file: "scripts/testMap.ts",
+    find: "    if (own > 0 && named > 0.6 * own) return",
+    replace: "    if (own > 0 && named > 1.6 * own) return",
+    tests: ["test/test-map.test.ts", "-t", "an item outside any function selects"],
+  },
+  {
+    name: "test-map-item-named-by-another-unseen",
+    breaks: "an item another constant's initializer names, `const OTHER = FLIPPED.len()`, selects only the functions naming it, missing those that read the other constant (#2288)",
+    file: "scripts/testMap.ts",
+    find: "      if (other) return `\\`${name}\\` is named by another item, at ${site.file}:${site.line}`;\n",
+    replace: "",
+    tests: ["test/test-map.test.ts", "-t", "a constant's value, an array's length"],
+  },
+  {
     name: "moved-file-diffed-without-renames",
     breaks: "the map's diffs read a moved file as a delete and a new file, so a move selects everything and its sites can't be placed (#2337)",
     file: "scripts/testMap.ts",
