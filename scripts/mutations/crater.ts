@@ -4,6 +4,22 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "crater-alone-timeout-a-failure",
+    breaks: "a test that runs past its budget alone is said failed, not timed out, so a hang reads as an ordinary failure (#2460)",
+    file: "scripts/crater.ts",
+    find: "(ran[i].said.includes(pastBudget) ? `${timedOut}after ${seconds} s, run alone` : \"failed\")",
+    replace: "\"failed\"",
+    tests: ["test/crater.test.ts", "-t", "a run past its budget runs each test it didn't say again alone"],
+  },
+  {
+    name: "crater-alone-without-both-runs",
+    breaks: "a test run again alone isn't given what both runs are, quickcheck's cases, so it runs its default 100 (#2460)",
+    file: "scripts/crater.ts",
+    find: "jsDir, { TZ: zone, ...bothRuns }, seconds)",
+    replace: "jsDir, { TZ: zone }, seconds)",
+    tests: ["test/crater.test.ts", "-t", "a run past its budget runs each test it didn't say again alone"],
+  },
+  {
     name: "crater-bound-throws-on-gone",
     breaks: "Crater's store's bound throws on an entry another run removed since it was listed",
     file: "scripts/crater.ts",

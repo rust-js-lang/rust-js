@@ -1109,6 +1109,9 @@ check.
 `bun run ci:status` shows its latest run first; GitHub mails a failure to
 whoever last changed the schedule. Of a public repository, its machines
 cost nothing. Started by hand too: `gh workflow run nightly.yml`.
+The small Crater is crater.yml, which the nightly calls for every crate.
+Started by hand, it asks the crates named, on one machine:
+`gh workflow run crater.yml -f crates=itertools` (ADR 1109, amended).
 
 It casts the crates' and the port's nets too (ADR 1067): `crates`,
 `bun scripts/crate-corpus.ts --check`, which fails where a crate does worse

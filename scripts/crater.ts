@@ -63,10 +63,26 @@ const compiler =
 /** Each test's outcome, by its path, `train::tests::test19`: as JS, one
  * that failed with rust-js's refusal at run time, an error whose message
  * is "rust-js does not support ..", is that, with its message (#1192). */
-export type Outcomes = Record<string, "ok" | "failed" | "ignored" | `${typeof refusedAtRunTime}${string}`>;
+export type Outcomes = Record<string, "ok" | "failed" | "ignored" | `${typeof refusedAtRunTime}${string}` | `${typeof timedOut}${string}`>;
 
 /** How an outcome of a test refused at run time starts, its message after. */
 export const refusedAtRunTime = "refused at run time: ";
+
+/** How an outcome of a test that didn't end in its budget, run alone,
+ * starts: slow, or a hang where native ends, which tells them apart only
+ * by its time (#2460). Still a difference until it's shown to end. */
+export const timedOut = "timed out: ";
+
+/** What a run past its budget says, after what it said itself. */
+const pastBudget = "rust-js's Crater: timed out after";
+
+/** What both runs of a crate's tests are given, native and JS alike:
+ * quickcheck's cases a property, 20 of its 100, each a random program the
+ * JS runs far slower than native does. itertools' quick.rs and
+ * specializations.rs, whose properties ran for real once getrandom did
+ * (f19e64f17), each ran past its 1,200 s as JS on CI, none of their
+ * tests said (#2460). Read by both through `std::env::var`. */
+export const bothRuns: Record<string, string> = { QUICKCHECK_TESTS: "20" };
 
 /** What a crate's tests did: natively, and as JS, each test cut from its
  * build with why; and each test that passed natively and, not cut, didn't
@@ -135,19 +151,46 @@ export async function afterDeaths(outcomes: Outcomes, jsDir: string, seconds = 3
   const dead = Object.keys(outcomes).filter((name) => name.endsWith(".test.js") && outcomes[name] === "failed" && existsSync(name));
   if (dead.length === 0) return outcomes;
   const result: Outcomes = { ...outcomes };
+  for (const file of dead) delete result[file];
+  return aloneEach(result, dead, jsDir, seconds);
+}
+
+/** Of a run past its budget, which printed only what ended before it:
+ * each test of a test file it wrote, `target`'s, since `since` (ms), that
+ * said nothing, run again alone (`aloneEach`). itertools' quick.rs and
+ * specializations.rs ran past their 1,200 s each, their first property
+ * still running, and every one of their tests was "not run" (#2460). Node's
+ * own `--test-timeout` never stops a test whose JS runs without awaiting,
+ * which a compiled test's does. */
+export async function afterTimeout(outcomes: Outcomes, target: string, since: number, jsDir: string, seconds = 120): Promise<Outcomes> {
+  if (!existsSync(target)) return outcomes;
+  const files = (readdirSync(target, { recursive: true }) as string[])
+    .filter((path) => path.endsWith(".test.js"))
+    .map((path) => join(target, path))
+    .filter((file) => statSync(file).mtimeMs >= since && testsOf(file).some((name) => !(name in outcomes)));
+  return files.length === 0 ? outcomes : aloneEach(outcomes, files, jsDir, seconds);
+}
+
+/** The tests a compiled test file holds, by name, in its order. */
+function testsOf(file: string): string[] {
+  return [...readFileSync(file, "utf8").matchAll(/^test\(\s*"((?:[^"\\]|\\.)+)"/gm)].map((m) => JSON.parse(`"${m[1]}"`) as string);
+}
+
+/** Each test of `files` that `outcomes` doesn't hold run again alone, a
+ * process each and `seconds` each, its outcome its own: one that ends in
+ * none failed; one still running at its budget timed out, `timedOut`. */
+async function aloneEach(outcomes: Outcomes, files: string[], jsDir: string, seconds: number): Promise<Outcomes> {
+  const result: Outcomes = { ...outcomes };
   const pattern = (name: string) => `^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`;
-  for (const file of dead) {
-    delete result[file];
-    const left = [...readFileSync(file, "utf8").matchAll(/^test\(\s*"((?:[^"\\]|\\.)+)"/gm)]
-      .map((m) => JSON.parse(`"${m[1]}"`) as string)
-      .filter((name) => !(name in result));
+  for (const file of files) {
+    const left = testsOf(file).filter((name) => !(name in result));
     const width = atOnce("test");
     for (let at = 0; at < left.length; at += width) {
       const ran = await Promise.all(
-        left.slice(at, at + width).map((name) => spawned(["node", "--test", `--test-name-pattern=${pattern(name)}`, file], jsDir, { TZ: zone }, seconds)),
+        left.slice(at, at + width).map((name) => spawned(["node", "--test", `--test-name-pattern=${pattern(name)}`, file], jsDir, { TZ: zone, ...bothRuns }, seconds)),
       );
       left.slice(at, at + width).forEach((name, i) => {
-        result[name] = jsOutcomes(ran[i].said)[name] ?? "failed";
+        result[name] = jsOutcomes(ran[i].said)[name] ?? (ran[i].said.includes(pastBudget) ? `${timedOut}after ${seconds} s, run alone` : "failed");
       });
     }
   }
@@ -255,7 +298,7 @@ function spawned(
     p.stdout.on("data", (d) => (said += d));
     p.stderr.on("data", (d) => (said += d));
     const timer = setTimeout(() => {
-      said += `\nrust-js's Crater: timed out after ${seconds} s\n`;
+      said += `\n${pastBudget} ${seconds} s\n`;
       try {
         process.kill(-(p.pid ?? 0), "SIGKILL");
       } catch {
@@ -315,8 +358,11 @@ async function source(crate: Crate): Promise<string | { problem: string }> {
  * test, said with its note, `- should panic`, natively too (#1431). 16:
  * which tests a cut took read of the cut copy's expansion, a macro
  * invocation cut with the tests it makes, and a cut for a function cut
- * before said with that function's reason (#1420). */
-const asking = 16;
+ * before said with that function's reason (#1420). 17: quickcheck's
+ * cases a property the same, fewer, in both runs (`bothRuns`), and a JS run
+ * past its budget each unsaid test run again alone, one past its own
+ * timed out (`afterTimeout`, #2460). */
+const asking = 17;
 
 /** What a crate's kept verdict is of, beside its release and the
  * compiler's build: the features its row names, how the Crater asks, and
@@ -394,7 +440,7 @@ async function asked(crate: Crate): Promise<Verdict> {
   for (const { target, path } of executables(native.said)) {
     const prefix = target === "src/lib.rs" ? "" : /^tests\/[^/]+\.rs$/.test(target) ? `${target}::` : undefined;
     if (prefix === undefined) continue;
-    const ran = await spawned([resolve(dir, path)], dir, { TZ: zone, CARGO_MANIFEST_DIR: dir }, 900);
+    const ran = await spawned([resolve(dir, path)], dir, { TZ: zone, CARGO_MANIFEST_DIR: dir, ...bothRuns }, 900);
     for (const [name, how] of Object.entries(nativeOutcomes(ran.said))) nativeRan[`${prefix}${name}`] = how;
   }
   if (Object.keys(nativeRan).length === 0) {
@@ -542,6 +588,7 @@ async function cutUntilBuilt(
   // Its first round's first error: what the rest of its cuts follow from.
   let first: string | undefined;
   for (let round = 0; round < rounds; round++) {
+    const started = Date.now();
     const js = await spawned(
       ["bun", join(root, "tooling", "cli.js"), "test", ...featured],
       jsDir,
@@ -549,10 +596,11 @@ async function cutUntilBuilt(
       // which a lint its author denies refused, base64's
       // `unused_import_braces` of a `use` a name was taken off (#1174). A
       // lint changes no program, and native Rust built the author's source.
-      { RUST_JS_COMPILER: compiler, CARGO_TARGET_DIR: target, TZ: zone, RUSTFLAGS: "--cap-lints=warn" },
+      { RUST_JS_COMPILER: compiler, CARGO_TARGET_DIR: target, TZ: zone, RUSTFLAGS: "--cap-lints=warn", ...bothRuns },
       1200,
     );
-    const jsRan = await afterDeaths(jsOutcomes(js.said), jsDir);
+    const lived = await afterDeaths(jsOutcomes(js.said), jsDir);
+    const jsRan = js.said.includes(pastBudget) ? await afterTimeout(lived, target, started, jsDir) : lived;
     if (Object.keys(jsRan).length > 0) return ended(jsRan);
     const errors = errorsAt(js.said).filter((e) => e.file.startsWith("src/") || (rootFile !== undefined && e.file.startsWith("tests/")));
     // Each of its tests cut: none left to run.

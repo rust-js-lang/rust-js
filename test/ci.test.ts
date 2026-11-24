@@ -296,15 +296,31 @@ test("a workflow sets a part's setting only where a test file it runs reads it",
 // corpus's sample and React's port, which the nightly skips, as its
 // `matrix`, `conformance`, `forms`, `format`, `numbers`, `async`,
 // `consumers`, `std` and `twins` run all of each, and its suite the
-// callers; `crater-report`, the Crater's shards said as
-// one, which here's `crater` runs whole; and `decision-coverage`, the
+// callers; and `decision-coverage`, the
 // night's decision counts merged, which `bun run decision-coverage` is.
+// The small Crater has one definition, crater.yml, started by hand for the
+// crates it's asked of and called by the Nightly for every one: a fix of the
+// Crater was proved only by the next night, the Nightly's copy of its steps
+// the only way to run it on CI (#2460).
+test("the small Crater is crater.yml's alone, the Nightly calling it", () => {
+  type Workflow = { on: Record<string, { inputs?: Record<string, unknown> } | null>; jobs: Record<string, { uses?: string; with?: Record<string, string>; steps?: { run?: string }[] }> };
+  const read = (file: string) => Bun.YAML.parse(readFileSync(join(root, ".github/workflows", file), "utf8")) as Workflow;
+  const crater = read("crater.yml");
+  expect(Object.keys(crater.on).sort()).toEqual(["workflow_call", "workflow_dispatch"]);
+  for (const on of ["workflow_call", "workflow_dispatch"]) expect(Object.keys(crater.on[on]?.inputs ?? {}), on).toContain("crates");
+  const runs = (workflow: Workflow) => Object.values(workflow.jobs).flatMap((job) => job.steps ?? []).filter((step) => step.run?.includes("scripts/crater.ts"));
+  expect(runs(crater).length).toBe(2);
+  const nightly = read("nightly.yml");
+  expect(runs(nightly)).toEqual([]);
+  expect(Object.entries(nightly.jobs).filter(([, job]) => job.uses === "./.github/workflows/crater.yml").map(([id, job]) => [id, job.with?.shards])).toEqual([["crater", "[1, 2, 3, 4]"]]);
+});
+
 test("the nightly, here, has each job the nightly has", () => {
   const ids = (file: string) => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "check-mutations", "issue", "iterator-forms", "iterator-rows", ...NET_JOBS, "crater-report", "decision-coverage", "test-times", "selector-audit", "clusters", "attribute-plan", "attribute", "attribute-report", "attribute-mutations", "ci-spend"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "check-mutations", "issue", "iterator-forms", "iterator-rows", ...NET_JOBS, "decision-coverage", "test-times", "selector-audit", "clusters", "attribute-plan", "attribute", "attribute-report", "attribute-mutations", "ci-spend"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 
@@ -960,7 +976,7 @@ test("the nightly's test times follow each of its jobs, the suite's reports amon
   const nightly = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/nightly.yml"), "utf8")) as { jobs: Record<string, { needs?: string[]; if?: string }> };
   const times = nightly.jobs["test-times"]!;
   expect(times.if).toBe("always()");
-  const others = Object.keys(nightly.jobs).filter((id) => !["test-times", "issue", "decision-coverage", "seeds", "crater-report", "selector-audit", "clusters", "ci-spend"].includes(id));
+  const others = Object.keys(nightly.jobs).filter((id) => !["test-times", "issue", "decision-coverage", "seeds", "selector-audit", "clusters", "ci-spend"].includes(id));
   expect(others.filter((id) => !times.needs!.includes(id))).toEqual([]);
   expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("name: junit-${{ matrix.shard }}");
   expect(readFileSync(join(root, "scripts/test.ts"), "utf8")).toContain("junitReport(junitDir, name)");

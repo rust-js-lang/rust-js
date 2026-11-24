@@ -332,3 +332,39 @@ library's own refusal as that file uses it: "stepping `I`"
 (src/powerset.rs:65), now 143 tests, not "cannot find function
 `k_smallest_sort`". The run took 15 min 34 s, against 18 min 36 s for the
 old code's.
+
+## Amendment: a JS run past its budget is asked test by test, and the Crater is crater.yml's (#2460)
+
+Nightly 45309220022's report listed 149 of itertools' tests as wrong
+answers, all but one "not run": quick.rs's 92 and specializations.rs's 56.
+Once getrandom ran as JS (f19e64f17), quickcheck ran each property's 100
+random cases for real, where each had panicked at `thread_rng` at once.
+Each file's `rust-js test` then ran past its 1,200 s. Its group was
+killed, its first property still running. The only lines the run printed
+were the 6 library tests every integration build runs too, so
+`cutUntilBuilt` took those as the run's outcomes, the timeout was dropped,
+and every test of the file was "not run". itertools' line came 38 min after
+the crate before it, two budgets, where on 11-23 it came 11 s after.
+
+- **Each test it didn't say runs again alone** (`afterTimeout`): each test
+  of a test file the run wrote, in its target, since it started, that
+  printed nothing, its own process and 120 s, as a dead file's tests
+  already were (`afterDeaths`, which shares `aloneEach`). One that ends
+  is its own outcome. One still running at its budget is `timed out:
+  after 120 s, run alone`, a difference until it's shown to end, since a
+  hang where native ends is a wrong answer. Node's own `--test-timeout`
+  can't do this: it never stops a test whose JS runs without awaiting, as
+  a compiled test's does (a 3 s busy loop passed a 1 s timeout).
+- **Both runs are given quickcheck's cases, 20 a property** (`bothRuns`,
+  `QUICKCHECK_TESTS`), natively and as JS alike. Both read it through
+  `std::env::var`, which rust-js reads of the JS process's environment.
+  The comparison stays one program's, and its JS run is a fifth of the
+  work.
+- **crater.yml is the Crater's one definition**, started by hand for the
+  crates named (`gh workflow run crater.yml -f crates=itertools`) and
+  called by the Nightly for every crate in four shards. The Nightly copied
+  its steps, so a fix of the Crater could be proved on CI only by the
+  next night. test/ci.test.ts holds that only crater.yml runs
+  scripts/crater.ts.
+
+`asking` is 17.

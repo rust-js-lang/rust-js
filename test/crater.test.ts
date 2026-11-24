@@ -3,10 +3,10 @@
 // scripts/crater.ts). The net itself runs each night.
 import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterDeaths, boundCrater, cascaded, cutFirst, decidedOf, differences, firstError, executables, forTheJs, integrationFiles, jsOutcomes, inShard, judged, knownOf, libraryTestsOnly, listedButSame, merged, nativeOutcomes, oneIntegrationTest, ranked, reasonOf, said, testsMadeBy, undecided } from "../scripts/crater";
+import { afterDeaths, afterTimeout, bothRuns, boundCrater, cascaded, cutFirst, decidedOf, differences, firstError, executables, forTheJs, integrationFiles, jsOutcomes, inShard, judged, knownOf, libraryTestsOnly, listedButSame, merged, nativeOutcomes, oneIntegrationTest, ranked, reasonOf, said, testsMadeBy, undecided } from "../scripts/crater";
 import { attributesFrom, cut, cutFor, declaredIn, dropped, errorsAt, followed, innerAttributes, items, modulePath, offTarget, onlyForTests, placeOf, testModulePath, testOnlyFile, testsOfExpanded, underItems } from "../scripts/crater-cuts";
 
 test("each test's outcome is read of cargo test's lines and of Node's runner's", () => {
@@ -443,6 +443,33 @@ test("a::fails", () => { throw new Error("no"); });
 `);
   const outcomes = await afterDeaths({ "a::first": "ok", [file]: "failed" }, dir, 60);
   expect(outcomes).toEqual({ "a::first": "ok", "a::dies": "failed", "a::after": "ok", "a::fails": "failed" });
+  rmSync(dir, { recursive: true, force: true });
+});
+
+// A run past its budget printed only what ended before it: itertools'
+// quick.rs ran past its 1,200 s, its first property still running, and all
+// 92 of its tests were "not run" (#2460). Each test of a file the run wrote
+// that said nothing runs again alone: one that ends is its own outcome; one
+// still running at its own budget, a synchronous loop Node's
+// `--test-timeout` never stops, timed out. A file written before the run,
+// another build's, isn't run again. And each is given what both runs are,
+// quickcheck's cases, which the file's own process reads, not the suite.
+test("a run past its budget runs each test it didn't say again alone, one past its own timed out", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "crater-late-"));
+  const built = join(dir, "target", "wasm32-unknown-unknown", "debug", "rust-js", "c-1");
+  mkdirSync(built, { recursive: true });
+  const older = join(built, "other.test.js");
+  writeFileSync(older, `import { test } from "node:test";\ntest("o::untouched", () => {});\n`);
+  utimesSync(older, new Date(0), new Date(0));
+  const since = Date.now() - 1000;
+  writeFileSync(join(built, "quick.test.js"), `import { test } from "node:test";
+test("q::spins", () => { for (;;) {} });
+test("q::slow", () => { const end = Date.now() + 300; while (Date.now() < end) {} });
+test("q::said", () => {});
+test("q::cases", () => { const { QUICKCHECK_TESTS: cases } = process.env; if (cases !== ${JSON.stringify(bothRuns.QUICKCHECK_TESTS)}) throw new Error("no"); });
+`);
+  const outcomes = await afterTimeout({ "q::said": "ok" }, join(dir, "target"), since, dir, 3);
+  expect(outcomes).toEqual({ "q::said": "ok", "q::spins": "timed out: after 3 s, run alone", "q::slow": "ok", "q::cases": "ok" });
   rmSync(dir, { recursive: true, force: true });
 });
 

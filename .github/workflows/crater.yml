@@ -1,0 +1,110 @@
+# The small Crater (ADR 1109): each crate of the corpus's own `#[test]`s,
+# natively and as JS, each test compared; a refused one cut and the rest
+# run. A wrong answer scripts/crater-decided.txt doesn't list fails it.
+# Its one definition: the Nightly calls it for every crate, in four shards,
+# and it's started by hand for the crates it's asked of, in one, so a fix
+# of the Crater is proved on CI the day it's made (#2460):
+#
+#   gh workflow run crater.yml -f crates=itertools -f shards='[1]'
+#
+# Every fourth crate on each of four machines: its 100 crates took about
+# 8,000 crate-seconds on the Mac, two at a time on a runner's 4 cores
+# (#1174); `report` says them as one run.
+name: small Crater
+
+on:
+  workflow_dispatch:
+    inputs:
+      crates:
+        description: 'The corpus crates to ask, by name, space-separated; empty asks every one.'
+        type: string
+        default: ''
+      shards:
+        description: 'The shards, a JSON list 1..n, n machines: `[1]` for a few crates.'
+        type: string
+        default: '[1]'
+  workflow_call:
+    inputs:
+      crates:
+        type: string
+        default: ''
+      shards:
+        type: string
+        default: '[1, 2, 3, 4]'
+      # How many shards at once; the Nightly's lanes give it one
+      # (scripts/runners.ts, `NIGHTLY_RUNNERS`).
+      max_parallel:
+        type: string
+        default: '1'
+
+permissions:
+  contents: read
+
+env:
+  RUST_JS_DECISIONS: /tmp/decisions.tsv
+
+jobs:
+  crater:
+    name: small Crater ${{ matrix.shard }} of ${{ strategy.job-total }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '1') }}
+      matrix:
+        shard: ${{ fromJSON(inputs.shards) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - name: Run each crate's tests natively and as JS
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+          # Names, split by the shell: never the input written into the
+          # script, which a quote in it would end.
+          CRATES: ${{ inputs.crates }}
+        run: bun scripts/crater.ts --shard=${{ matrix.shard }}/${{ strategy.job-total }} --out=crater-${{ matrix.shard }}.json $CRATES
+      - uses: actions/upload-artifact@v7
+        with:
+          name: crater-${{ matrix.shard }}
+          path: crater-${{ matrix.shard }}.json
+          retention-days: 14
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
+
+  # The Crater's shards as one run: each crate's line, what stops them
+  # ranked by crates and tests (#1174), and `--check`'s wrong answers.
+  report:
+    name: small Crater's report
+    needs: crater
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: crater-*
+          path: crater
+          merge-multiple: true
+      - run: bun scripts/crater.ts --merge --check crater/*.json
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: crater-refusals
+          path: target/crater-refusals.json
+          if-no-files-found: ignore
+          retention-days: 14
