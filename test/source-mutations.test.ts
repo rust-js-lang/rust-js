@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { bunTest, fixture } from "./support";
 import {
@@ -83,8 +83,15 @@ test("a workspace made of a workspace of the same files is its own, its aliases 
   writeFileSync(join(one, "typescript", "index.js"), "export const value = 3;\n");
   expect(readFileSync(join(template, "typescript", "index.js"), "utf8")).toContain("value = 1");
   expect(readFileSync(join(two, "typescript", "index.js"), "utf8")).toContain("value = 1");
-  // This Mac's volume clones a tree whole.
-  if (process.platform === "darwin") expect(cloneTree(template, join(dir, "sources", "three"))).toBe(true);
+  // A clone of the template whole, the system's where it can (APFS), else a
+  // copy that keeps each link as it is written, as a clone does: its alias
+  // resolves inside it, and what's written in it reaches the template not.
+  const three = join(dir, "sources", "three");
+  const verbatim = (from: string, to: string) => (cpSync(from, to, { recursive: true, verbatimSymlinks: true }), true);
+  expect(cloneTree(template, three, process.platform === "darwin" ? undefined : verbatim)).toBe(true);
+  expect(realpathSync(join(three, "node_modules", "@rust-js", "typescript"))).toBe(realpathSync(join(three, "typescript")));
+  writeFileSync(join(three, "typescript", "index.js"), "export const value = 4;\n");
+  expect(readFileSync(join(template, "typescript", "index.js"), "utf8")).toContain("value = 1");
 });
 
 test("a source mutant is loaded only when its instrumented module actually executes", async () => {

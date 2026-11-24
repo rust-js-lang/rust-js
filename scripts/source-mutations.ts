@@ -29,18 +29,26 @@ const filesKey = (files: string[]) => createHash("sha256").update(files.join("\0
  * Whether it cloned: not where the system has no clonefile, or the volume
  * can't, as Linux's runners can't. */
 let clonefile: ((from: Uint8Array, to: Uint8Array) => number) | undefined;
-export function cloneTree(from: string, to: string): boolean {
+export function systemClone(from: string, to: string): boolean {
   if (process.platform !== "darwin") return false;
   try {
     if (clonefile === undefined) {
       const lib = dlopen("libSystem.B.dylib", { clonefile: { args: [FFIType.ptr, FFIType.ptr, FFIType.u32], returns: FFIType.i32 } });
       clonefile = (a, b) => lib.symbols.clonefile(ptr(a), ptr(b), 0);
     }
-    mkdirSync(dirname(to), { recursive: true });
     return clonefile(Buffer.from(`${from}\0`), Buffer.from(`${to}\0`)) === 0;
   } catch {
     return false;
   }
+}
+
+/** The tree `from` made again as `to` by `clone`, the system's
+ * (`systemClone`), or a test's where the system can't, so what's made of
+ * it, its links' targets and its writes kept apart, is tested on every
+ * machine. Whether it was made. */
+export function cloneTree(from: string, to: string, clone: (from: string, to: string) => boolean = systemClone): boolean {
+  mkdirSync(dirname(to), { recursive: true });
+  return clone(from, to);
 }
 
 /** A source workspace of `files` at `workspace`, and its size. Of a `root`
