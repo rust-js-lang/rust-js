@@ -252,6 +252,16 @@ test("a library's function returned past a guard's drop is returned after its fi
   expect(app).toContain("      depth = previous;\n    }\n  }\n  return idle;\n}");
 }, 300_000);
 
+// A library's zip of a `Vec` of what's never `Copy`, so never
+// `TrustedRandomAccessNoCoerce` whatever its type parameter is: where its
+// consumer compiles its copy, that's known `false` there, none of its
+// callers' to give, so the copy takes no such fact (#1385). Its half of
+// items that drop is refused since #2542 (test/crates-refused.test.ts).
+test("a zip of what's never random access asks no caller whether it is", () => {
+  const out = chain(pairs, "library_zip_of_what_is_never_random_access", ["dep", "app"]);
+  expect(readFileSync(join(out, "app", "lib.js"), "utf8")).not.toContain("RandomAccessNoCoerce");
+}, 300_000);
+
 // A library's default the crate's own impls copy is asked through them,
 // their dictionaries giving its facts (#990), so its entry takes none of
 // its own: one asked as a function over `Self` too would take each again,
