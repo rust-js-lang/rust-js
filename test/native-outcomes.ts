@@ -84,19 +84,26 @@ export function rechecked(share = Number(process.env.RUST_JS_NATIVE_RECHECK ?? 0
 }
 
 /** Whether `fresh`, the runs of a kept one's program again, up to
- * `tries`, say what was `kept`: once, and it's the program's; never, and
- * the key missed an input. A program whose output std leaves to a hash
- * table's seed may say another of its answers once or twice. */
+ * `tries`, say what was `kept`: once, and it's the program's; never, each
+ * the same other answer, and the key missed an input. A program whose
+ * output std leaves to a hash table's seed may say another of its answers
+ * once or twice; one whose every run says another, a `RandomState` map's
+ * drops each printed in its order (#2461), says two of them apart, and
+ * then the kept one is one of its answers too, no input missed. */
 export function recheck(kept: Run, fresh: () => Run | string, tries = 8): string | undefined {
-  const said: string[] = [];
+  const said: Run[] = [];
   for (let i = 0; i < tries; i++) {
     const ran = fresh();
     if (typeof ran === "string") return `a kept native run's program doesn't build again: ${ran.slice(0, 300)}: its key misses an input`;
-    if (ran.bytes.stdout.equals(kept.bytes.stdout) && ran.bytes.stderr.equals(kept.bytes.stderr) && sameOutcome(ran.outcome, kept.outcome)) return undefined;
-    said.push(JSON.stringify(ran.stdout.slice(0, 200)));
+    if (sameRun(ran, kept)) return undefined;
+    if (said.some((other) => !sameRun(ran, other))) return undefined;
+    said.push(ran);
   }
-  return `a kept native run isn't what the program says run again, ${tries} times: kept ${JSON.stringify(kept.stdout.slice(0, 200))}, run ${said[0]}: its key misses an input`;
+  return `a kept native run isn't what the program says run again, ${tries} times: kept ${JSON.stringify(kept.stdout.slice(0, 200))}, run ${JSON.stringify(said[0]?.stdout.slice(0, 200))}: its key misses an input`;
 }
+
+/** Whether two runs said the same: their bytes and how they ended. */
+const sameRun = (a: Run, b: Run) => a.bytes.stdout.equals(b.bytes.stdout) && a.bytes.stderr.equals(b.bytes.stderr) && sameOutcome(a.outcome, b.outcome);
 
 const sameOutcome = (a: Run["outcome"], b: Run["outcome"]) =>
   typeof a === "string" || typeof b === "string" ? a === b : same(a as Outcome, b as Outcome);

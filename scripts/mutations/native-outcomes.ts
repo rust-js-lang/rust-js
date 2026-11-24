@@ -22,8 +22,16 @@ export const mutations: Mutation[] = [
     name: "native-outcome-recheck-trusted",
     breaks: "the nightly's recheck of a kept run passes one the program never says again",
     file: "test/native-outcomes.ts",
-    find: "    if (ran.bytes.stdout.equals(kept.bytes.stdout) && ran.bytes.stderr.equals(kept.bytes.stderr) && sameOutcome(ran.outcome, kept.outcome)) return undefined;",
-    replace: "    return undefined;",
+    find: "    if (sameRun(ran, kept)) return undefined;\n",
+    replace: "    return undefined;\n",
+    tests: ["test/native-outcomes.test.ts", "-t", "fails its recheck"],
+  },
+  {
+    name: "native-outcome-recheck-varied-runs-missed",
+    breaks: "the nightly's recheck takes a program whose every native run says another answer, a `RandomState` map's drops in its order, for a key missing an input, and throws (#2461)",
+    file: "test/native-outcomes.ts",
+    find: "    if (said.some((other) => !sameRun(ran, other))) return undefined;\n",
+    replace: "",
     tests: ["test/native-outcomes.test.ts", "-t", "fails its recheck"],
   },
 ];

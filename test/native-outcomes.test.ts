@@ -166,6 +166,12 @@ test("a kept run the program never says again fails its recheck", () => {
   const other = { ...kept, stdout: "other\n", bytes: { ...kept.bytes, stdout: Buffer.from("other\n") } };
   expect(recheck(kept, () => (n++ < 3 ? other : kept))).toBeUndefined();
   expect(recheck(kept, () => other)).toContain("its key misses an input");
+  // A program whose every run says another answer, a `RandomState` map's
+  // drops printed in its order, says none of them twice: the kept run is
+  // one of its answers, no input missed (#2461).
+  let k = 0;
+  const each = () => ({ ...kept, stdout: `run ${k}\n`, bytes: { ...kept.bytes, stdout: Buffer.from(`run ${k++}\n`) } });
+  expect(recheck(kept, each)).toBeUndefined();
 });
 
 // And of the corpus's verified runs (ADR 0567), the nightly's share is run
