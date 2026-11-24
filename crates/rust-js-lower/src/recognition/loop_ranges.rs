@@ -120,14 +120,10 @@ pub(crate) fn integer_from_bool<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty
         && args.types().nth(1).is_some_and(|from| from.is_bool())
 }
 
-/// Whether a call is an integer's `min` or `max`, `Ord`'s or `cmp`'s, by
-/// their diagnostic items: of `max`, true (ADR 1137).
+/// Whether a call is an integer's `min` or `max`, `Ord`'s or `cmp`'s, as
+/// `ord_extreme` and `cmp_extreme` say: of `max`, true (ADR 1137, #2174).
 pub(crate) fn integer_min_max<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<bool> {
-    let max = match tcx.get_diagnostic_name(def_id)?.as_str() {
-        "cmp_ord_min" | "cmp_min" => false,
-        "cmp_ord_max" | "cmp_max" => true,
-        _ => return None,
-    };
+    let max = cmp_extreme(tcx, def_id).or_else(|| ord_extreme(tcx, def_id))?;
     args.types().next().is_some_and(|ty| ty.is_integral()).then_some(max)
 }
 
@@ -288,12 +284,20 @@ pub(crate) fn rc_deref<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::Generic
         && args.types().next().is_some_and(|of| rc_pointee(tcx, of).is_some())
 }
 
-/// Whether a call is an `Option`'s `cloned()` or `copied()`: `Some` where
-/// what it's given is (ADR 1137).
-pub(crate) fn option_copied(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    matches!(tcx.item_name(def_id).as_str(), "cloned" | "copied")
-        && (tcx.inherent_impl_of_assoc(def_id)).is_some_and(|impl_| {
+/// Whether a call is an `Option`'s `copied()`, `Some(true)`, its value's
+/// bits, or `cloned()`, `Some(false)`, its `Clone`, which may be
+/// hand-written of a `Copy` type (ADR 0623, amended): `Some` where what
+/// it's given is (ADR 1137). The one answer of both questions (#2174).
+pub(crate) fn option_cloned_kind(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
+    let copied = match tcx.item_name(def_id).as_str() {
+        "copied" => true,
+        "cloned" => false,
+        _ => return None,
+    };
+    (tcx.inherent_impl_of_assoc(def_id))
+        .is_some_and(|impl_| {
             matches!(tcx.type_of(impl_).instantiate_identity().skip_normalization().kind(),
                 ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))
         })
+        .then_some(copied)
 }

@@ -1097,6 +1097,16 @@ pub fn cmp_extreme(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
     }
 }
 
+/// `Ord::max`, `Some(true)`, or `Ord::min`, `Some(false)`, the methods, by
+/// their diagnostic items; the free functions are `cmp_extreme`'s (#2174).
+pub fn ord_extreme(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
+    match tcx.get_diagnostic_name(def_id)?.as_str() {
+        "cmp_ord_max" => Some(true),
+        "cmp_ord_min" => Some(false),
+        _ => None,
+    }
+}
+
 /// Is `id` std's `item`?
 /// What an `Rc` or `Arc` points at (ADR 0320).
 /// Whether a `dyn` of `predicates` is a function's, `dyn Fn(&str)`: the JS

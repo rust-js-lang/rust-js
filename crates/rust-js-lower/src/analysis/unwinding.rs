@@ -440,7 +440,7 @@ pub(crate) fn std_quiet<'tcx>(
     if is(of_trait, LangItem::PartialEq) {
         return self_ty().is_some_and(|ty| !crate::ordering::eq_may(recognition, ty, impl_seen));
     }
-    let cmp_fn = crate::recognition::is_cmp_max_or_min(tcx, callee);
+    let cmp_fn = crate::recognition::cmp_extreme(tcx, callee).is_some();
     if ordering || cmp_fn {
         let Some(ty) = self_ty() else {
             return false;

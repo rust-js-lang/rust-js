@@ -223,7 +223,7 @@ impl<'tcx> Walk<'_, 'tcx> {
         // An `Option`'s `cloned()` or `copied()` of a slice's `get(index)`:
         // `Some` where that was.
         if let Some((callee, _)) = func.const_fn_def()
-            && option_copied(self.tcx, callee)
+            && option_cloned_kind(self.tcx, callee).is_some()
             && let Some(&got) = (args.first())
                 .and_then(|arg| arg.node.place())
                 .and_then(|p| p.as_local())

@@ -527,7 +527,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => self.spill_subject(Role::Option, option, (true, false), out),
                 };
                 let present = Expr::presence(option.clone(), true, call.receiver_none);
-                let value = match self.recognition().option_copied(def_id) {
+                let value = match crate::recognition::option_cloned_kind(self.tcx, def_id) == Some(true) {
                     true => self.copy_if_needed(Expr::held(option), item),
                     false => self.clone_value(Expr::held(option), item, span, out)?,
                 };
@@ -542,7 +542,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.tcx.mk_args(&[item.into()]),
                 );
                 // `copied()`'s, its bits (ADR 0623).
-                match self.recognition().option_copied(def_id) {
+                match crate::recognition::option_cloned_kind(self.tcx, def_id) == Some(true) {
                     true => self.copy_if_needed(value, ty),
                     false => self.clone_value(value, ty, span, out)?,
                 }

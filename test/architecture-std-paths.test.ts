@@ -50,3 +50,27 @@ test("the std path text ratchet lists only what's left", () => {
   const stale = Object.keys(allowed).filter((file) => asks(read(file)) === 0);
   expect(stale).toEqual([]);
 });
+
+// `cmp::max` and `cmp::min` are known by one answer, `cmp_extreme`, and
+// `Ord`'s methods beside it by `ord_extreme`, both recognition/traits.rs':
+// sorts.rs's `is_cmp_max_or_min` asked their diagnostic items again, and
+// loop_ranges.rs read both by name (#2174).
+test("std's max and min are asked of cmp_extreme and ord_extreme alone", () => {
+  const names = /"cmp_(?:ord_)?(?:max|min)"|\bCmp(?:Max|Min)Fn\b/;
+  const askers = files("crates").filter((file) => file.endsWith(".rs") && names.test(read(file)));
+  expect(askers).toEqual(["crates/rust-js-lower/src/recognition/std_paths.rs", "crates/rust-js-lower/src/recognition/traits.rs"]);
+});
+
+// Whether an `Option`'s method is `copied()` or `cloned()` is one answer,
+// `option_cloned_kind`, which says which: inherent.rs read the name
+// alone and loop_ranges.rs the method of an `Option` (#2174).
+test("an Option's copied or cloned is asked of option_cloned_kind alone", () => {
+  // A `copied`/`cloned` name tested against `Option`, its lang or
+  // diagnostic item or an `option` guard: but the method recognizer's own
+  // table of `Option`'s methods (inherent.rs), which maps every one to its
+  // `Std`, and `option_cloned_kind` itself.
+  const asks = /"(?:copied|cloned)"(?: \| "(?:copied|cloned)")?[^\n]*(?:sym::Option|LangItem::Option|if option\b)|item_name\([^)]*\)\.as_str\(\) == "copied"/;
+  const askers = files("crates").filter((file) => file.endsWith(".rs") && asks.test(read(file)));
+  expect(askers).toEqual(["crates/rust-js-lower/src/recognition/inherent.rs"]);
+  expect(read("crates/rust-js-lower/src/recognition/loop_ranges.rs")).toMatch(/fn option_cloned_kind\(/);
+});

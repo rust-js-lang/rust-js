@@ -12,10 +12,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "loop-ranges-min-unrecognized",
-    breaks: "an integer's `min` isn't recognized, so `xs[i.min(xs.len() - 1)]` keeps its check",
+    breaks: "an integer's `min` isn't recognized, `Ord`'s method `ord_extreme` answers left unasked, so `xs[i.min(xs.len() - 1)]` keeps its check",
     file: "crates/rust-js-lower/src/recognition/loop_ranges.rs",
-    find: '        "cmp_ord_min" | "cmp_min" => false,\n',
-    replace: '        "cmp_ord_min_" => false,\n',
+    find: "    let max = cmp_extreme(tcx, def_id).or_else(|| ord_extreme(tcx, def_id))?;\n",
+    replace: "    let max = cmp_extreme(tcx, def_id)?;\n",
     tests: ["test/lowering-collections.test.ts", "-t", "a table as long as another is indexed as it is"],
   },
   {
@@ -74,5 +74,21 @@ export const mutations: Mutation[] = [
     replace: "            && matches!(super::std_path_item(tcx, adt.did()), Some(StdPath::SliceIter)))\n",
     tests: ["test/corpus.test.ts", "-t", "^(enumerate_mut_patterns|std_mut_items).rs$"],
     snapshots: true,
+  },
+  {
+    name: "option-copied-is-cloned",
+    breaks: "an `Option`'s `copied()` of a `Copy` type with a hand-written `Clone` calls that `clone`, which std's never does",
+    file: "crates/rust-js-lower/src/recognition/loop_ranges.rs",
+    find: '        "copied" => true,\n',
+    replace: '        "copied" => false,\n',
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
+  },
+  {
+    name: "option-cloned-is-copied",
+    breaks: "an `Option`'s `cloned()` of a `Copy` type with a hand-written `Clone` copies its bits, never calling that `clone`, which std's does",
+    file: "crates/rust-js-lower/src/recognition/loop_ranges.rs",
+    find: '        "cloned" => false,\n',
+    replace: '        "cloned" => true,\n',
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
 ];

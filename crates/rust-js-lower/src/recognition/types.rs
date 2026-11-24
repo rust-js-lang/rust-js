@@ -1060,9 +1060,7 @@ pub(crate) fn present_item<'tcx>(
         .skip_normalization();
     match tcx.item_name(def_id).as_str() {
         "get" if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) => Some(PresentItem::Get),
-        "copied" | "cloned" if matches!(owner.kind(), ty::Adt(adt, _) if tcx.is_diagnostic_item(sym::Option, adt.did())) => {
-            Some(PresentItem::Passed)
-        }
+        _ if option_cloned_kind(tcx, def_id).is_some() => Some(PresentItem::Passed),
         _ => None,
     }
 }

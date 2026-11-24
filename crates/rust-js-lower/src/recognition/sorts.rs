@@ -139,14 +139,6 @@ pub(crate) fn tree_built_entries<'tcx>(
     })
 }
 
-/// Whether `def_id` is std's `max` or `min` function, `std::cmp::max(a, b)`.
-pub(crate) fn is_cmp_max_or_min(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    matches!(
-        tcx.get_diagnostic_name(def_id).as_ref().map(Symbol::as_str),
-        Some("cmp_max" | "cmp_min")
-    )
-}
-
 /// Whether `trait_id` is std's `Iterator`.
 pub(crate) fn is_iterator_trait(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
     tcx.is_diagnostic_item(sym::Iterator, trait_id)
