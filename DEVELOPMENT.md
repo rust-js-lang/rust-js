@@ -922,7 +922,10 @@ checked:
   the push. `--bless-readability` blesses `docs/readability.txt`
   first without a conflict; without it a readability failure stops the
   push like any other.
-  Each phase's time is printed, and one line of them is appended to the
+  Each phase's time is printed, the first, `turn`, its wait for the
+  machine's turn, which a push takes before any other run waiting, and
+  which a mutation run lets go to it between batches (ADR 1146, amended,
+  #2516); and one line of them is appended to the
   machine's log of times, outside the repository (`RUST_JS_DEV_TIMES`,
   `~/rust-js-dev-times.log` unless given; `RUST_JS_MACHINE` and
   `RUST_JS_AGENT` name the machine and the agent). `check:fast`, the

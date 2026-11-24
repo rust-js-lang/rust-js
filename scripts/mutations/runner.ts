@@ -442,4 +442,20 @@ export const mutations: Mutation[] = [
     replace: '  return judged.caught ? "caught" : "survived";\n',
     tests: ["test/mutations.test.ts", "-t", "a mutation's judging that throws is its own inconclusive verdict"],
   },
+  {
+    name: "retire-never-yields",
+    breaks: "a retirement holds the machine's turn through all its names while a push waits, 34 minutes behind one on 2026-11-24 (#2516)",
+    file: "scripts/mutations.ts",
+    find: "    await yieldBetween(at, () => judged);\n",
+    replace: "",
+    tests: ["test/leases.test.ts", "-t", "let the turn go through leases' own"],
+  },
+  {
+    name: "mutation-pool-unyielding",
+    breaks: "a mutation run's pool is its own, not leases' `runYielding`, so it never lets the turn go to a waiting push (#2516)",
+    file: "scripts/mutations.ts",
+    find: "  await runYielding(queue, jobs, one, { beside: () => Promise.all(buildsTesting) });",
+    replace: "  for (let next = queue.shift(); next; next = queue.shift()) await one(next, 0);\n  await Promise.all(buildsTesting); void runYielding;",
+    tests: ["test/leases.test.ts", "-t", "let the turn go through leases' own"],
+  },
 ];

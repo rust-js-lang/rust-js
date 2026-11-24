@@ -31,7 +31,7 @@ import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
 import { mutantsLock } from "./disk";
 import { ownCompiler } from "./own-compiler";
-import { acquire, holdLease, ownMemory, ownShare } from "./leases";
+import { acquire, holdLease, ownMemory, ownShare, runYielding, yieldBetween } from "./leases";
 import { makeSourceWorkspace, sourceMutation } from "./source-mutations";
 import { wasmPath } from "../wasm/web/site.ts";
 import { latentSurvivors, type Results } from "./latent-survivors";
@@ -1737,6 +1737,9 @@ async function retire(chosen: Mutation[]): Promise<void> {
   let judged: Promise<void> = Promise.resolve();
   const unjudged: string[] = [];
   for (const [at, mutation] of chosen.entries()) {
+    // Between names, a push waiting gets the machine's turn, the name
+    // before judged first, so nothing of the run's runs beside it (#2516).
+    await yieldBetween(at, () => judged);
     // The crate as the run began, which each mutant is built from: gone,
     // none after can be, so the run stops here, naming them (#2272).
     if (!existsSync(crateSource)) {
@@ -2750,26 +2753,10 @@ async function main() {
     const target = join(work, `target-${slot}`);
     if (!existsSync(target) && existsSync(join(work, "target"))) cpSync(join(work, "target"), target, { recursive: true });
   }
-  // A worker with nothing to take waits while another's build may yet split.
-  let busy = 0;
-  await Promise.all(
-    Array.from({ length: Math.min(jobs, queue.length) }, async (_, slot) => {
-      for (;;) {
-        const next = queue.shift();
-        if (!next) {
-          if (busy === 0) return;
-          await new Promise((resume) => setTimeout(resume, 1000));
-          continue;
-        }
-        busy++;
-        try {
-          await one(next, slot);
-        } finally {
-          busy--;
-        }
-      }
-    }),
-  );
+  // A worker with nothing to take waits while another's build may yet
+  // split; where a push waits for the machine's turn, the batches running
+  // and their tests end, and the turn goes to it between batches (#2516).
+  await runYielding(queue, jobs, one, { beside: () => Promise.all(buildsTesting) });
   await Promise.all(buildsTesting);
   const rows: [Mutation, string][] = chosen.map((mutation) => [mutation, results.get(mutation) ?? "not run"]);
   for (const [mutation, result] of rows) {

@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { readJobTimes } from "../scripts/jobTimes";
-import { acquire, fairShare, holdLease, leasedIn, sharers, turnLock, liveLeases, lockState, ownMemory, ownPart, ownShare, withLock } from "../scripts/leases";
+import { acquire, fairShare, holdLease, leasedIn, sharers, turnLock, liveLeases, liveWaiters, lockState, nextWaiter, ownMemory, ownPart, ownShare, withLock } from "../scripts/leases";
 import { mutantsLock, mutantsStore } from "../scripts/disk";
 import { underLoad } from "../scripts/timing";
 import { fixture, root } from "./support";
@@ -272,3 +272,124 @@ while (!existsSync(marks + "/" + name + ".end")) Bun.sleepSync(20);
   expect(liveLeases(store)).toEqual([]);
   expect(lockState(turnLock(store))).toBe("absent");
 }, underLoad(60_000));
+
+/** A run of `kind` named `name` in a fixture's `store`: holds its lease,
+ * marks when it has it, and does `batches` batches, each on its `go<i>`
+ * mark, as `form` runs them: `direct`, `yieldToPush` after each; `pool`,
+ * a mutation run's pool (`runYielding`); `names`, a retirement's names in
+ * turn (`yieldBetween`). Of none, it ends when told. */
+function turnFixture(name: string) {
+  const dir = fixture(name);
+  rmSync(dir, { recursive: true, force: true });
+  const store = join(dir, "leases");
+  const marks = join(dir, "marks");
+  mkdirSync(marks, { recursive: true });
+  const child = join(dir, "run.ts");
+  writeFileSync(
+    child,
+    `import { existsSync, writeFileSync } from "node:fs";
+import { holdLease, runYielding, yieldBetween, yieldToPush } from ${JSON.stringify(join(root, "scripts/leases.ts"))};
+const [name, kind, store, marks, batches, form] = process.argv.slice(2);
+holdLease(kind, { store, every: 50, say: () => writeFileSync(marks + "/" + name + ".waited", "") });
+writeFileSync(marks + "/" + name + ".held", String(Date.now()));
+const batch = async (i: number) => {
+  while (!existsSync(marks + "/" + name + ".go" + i)) await Bun.sleep(20);
+  writeFileSync(marks + "/" + name + ".batch" + i, String(Date.now()));
+};
+const items = Array.from({ length: Number(batches) }, (_, i) => i + 1);
+if (form === "pool") await runYielding([...items], 1, batch, { poll: 20 });
+else if (form === "names") for (const [at, i] of items.entries()) {
+  await yieldBetween(at, async () => {});
+  await batch(i);
+}
+else for (const i of items) {
+  await batch(i);
+  yieldToPush();
+}
+while (items.length === 0 && !existsSync(marks + "/" + name + ".end")) Bun.sleepSync(20);
+`,
+  );
+  const env = { ...process.env, RUST_JS_LEASED: "", RUST_JS_LANE: "" };
+  const start = (name: string, kind: string, batches = 0, form = "direct") => Bun.spawn(["bun", child, name, kind, store, marks, String(batches), form], { cwd: root, stdout: "inherit", stderr: "inherit", env });
+  const until = async (file: string) => {
+    for (let i = 0; i < 400 && !existsSync(join(marks, file)); i++) await Bun.sleep(25);
+    return existsSync(join(marks, file));
+  };
+  const mark = (file: string) => writeFileSync(join(marks, file), "");
+  const at = (file: string) => Number(readFileSync(join(marks, file), "utf8"));
+  return { store, start, until, mark, at, has: (file: string) => existsSync(join(marks, file)) };
+}
+
+// The turn has an order (#2516): a push's fix of a red `main` waited 34
+// minutes behind a retirement, then behind the next, which polled first as
+// the turn was let go. A push goes before any other waiter, whenever it
+// began to wait; the rest go longest waiting first.
+test("a push waiting goes before a run that waited longer, and the rest by how long each waited", async () => {
+  const { store, start, until, mark, at, has } = turnFixture("leases-order");
+  const first = start("first", "mutations");
+  expect(await until("first.held")).toBe(true);
+  const older = start("older", "mutations");
+  expect(await until("older.waited")).toBe(true);
+  const push = start("push", "push");
+  expect(await until("push.waited")).toBe(true);
+  mark("first.end");
+  expect(await first.exited).toBe(0);
+  expect(await until("push.held")).toBe(true);
+  await Bun.sleep(300);
+  expect(has("older.held")).toBe(false);
+  mark("push.end");
+  expect(await push.exited).toBe(0);
+  expect(await until("older.held")).toBe(true);
+  expect(at("older.held")).toBeGreaterThan(at("push.held"));
+  mark("older.end");
+  expect(await older.exited).toBe(0);
+  expect(liveWaiters(store)).toEqual([]);
+  expect(nextWaiter([{ pid: 3, kind: "check", since: 10 }, { pid: 2, kind: "mutations", since: 5 }])?.pid).toBe(2);
+  expect(nextWaiter([{ pid: 3, kind: "check", since: 10 }, { pid: 2, kind: "push", since: 50 }])?.pid).toBe(2);
+  expect(nextWaiter([])).toBeUndefined();
+}, underLoad(60_000));
+
+// A long run lets the turn go between its batches where a push waits, and
+// waits for it again, next after the push (#2516): never mid-batch, so no
+// work is lost, and none of it runs beside the push. So does a mutation
+// run's pool, its batches running ending first, and a retirement between
+// its names.
+for (const form of ["direct", "pool", "names"]) {
+  test(`a run of three batches lets a push have the turn between two, and finishes its third after it (${form})`, async () => {
+    const { store, start, until, mark, at, has } = turnFixture(`leases-yield-${form}`);
+    const run = start("run", "mutations", 3, form);
+    expect(await until("run.held")).toBe(true);
+    mark("run.go1");
+    expect(await until("run.batch1")).toBe(true);
+    // Its second batch under way, a push begins to wait: it waits for it.
+    const push = start("push", "push");
+    expect(await until("push.waited")).toBe(true);
+    await Bun.sleep(300);
+    expect(has("push.held")).toBe(false);
+    // The second batch done, the run lets the push go; the third waits.
+    mark("run.go2");
+    expect(await until("run.batch2")).toBe(true);
+    expect(await until("push.held")).toBe(true);
+    expect(liveLeases(store).map((lease) => lease.kind)).toEqual(["push"]);
+    mark("run.go3");
+    await Bun.sleep(300);
+    expect(has("run.batch3")).toBe(false);
+    mark("push.end");
+    expect(await push.exited).toBe(0);
+    expect(await until("run.batch3")).toBe(true);
+    expect(at("run.batch3")).toBeGreaterThan(at("push.held"));
+    expect(await run.exited).toBe(0);
+    expect(liveLeases(store)).toEqual([]);
+    expect(lockState(turnLock(store))).toBe("absent");
+  }, underLoad(60_000));
+}
+
+// The mutation runner's pool and its retirement go through these, so what
+// they hold holds of them.
+test("a mutation run's pool and a retirement's names let the turn go through leases' own", async () => {
+  // The runner loaded, as a mutant of it is judged by a test that runs it.
+  expect(typeof (await import("../scripts/mutations")).batches).toBe("function");
+  const runner = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
+  expect(runner).toContain("  await runYielding(queue, jobs, one, { beside: () => Promise.all(buildsTesting) });");
+  expect(runner).toContain("    await yieldBetween(at, () => judged);");
+});

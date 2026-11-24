@@ -92,3 +92,34 @@ Measured on the M5 Pro, 18 cores, quiet and warm (2026-11-24). Each medium loop 
 | At cores − 2, beside the same loop | 204.7 s (+10.5%), 13 loops |
 
 So the heavy run keeps the machine's whole width, and what runs beside it runs niced. Leaving cores spare costs the heavy run more than it gives the work beside it.
+
+## Amendment: the turn has an order, and a push goes first (#2516, 2026-11-24)
+
+The turn had no order: each waiter polled every 25 ms, and whichever polled
+first after it was let go took it. On 2026-11-24 the hulk agent's push of a
+fix for a red `main` waited 34 minutes behind a subagent's `--retire`, then
+behind that subagent's next one, started in the moment between.
+
+- **Pushes go next.** A run waiting for the turn writes what it is and
+  since when in the waiters' store beside the leases (`waiterStore`), and
+  takes the turn only where it's next (`nextWaiter`): a push first, then
+  the longest waiting. A waiter whose process is gone counts for nothing.
+- **Long runs yield between batches.** A mutation run lets the turn go
+  where a push waits (`pushWaits`, `yieldToPush`): its workers take no new
+  batch, those running and their tests end, the turn and the lease go to
+  the push, and the run waits for them again as it first did, since then,
+  so it's next after the push and before a run that began to wait later.
+  A retirement does so between names, the name before judged first.
+  Neither stops mid-batch, so no work is lost.
+- **Measured** by the push's line: its wait for the turn is its first phase,
+  `turn <s>`.
+
+Held by test/leases.test.ts: "a push waiting goes before a run that waited
+longer, and the rest by how long each waited", and "a run of three batches
+lets a push have the turn between two, and finishes its third after it",
+each of a run calling `yieldToPush` itself, a mutation run's pool
+(`runYielding`, which the runner's pool is) and a retirement's names
+(`yieldBetween`). Mutations `turn-order-ignored`, `push-not-first`,
+`push-yield-never-made`, `mutation-run-never-yields`, `names-never-yield`,
+`retire-never-yields`, `mutation-pool-unyielding`;
+`heavy-runs-at-once` and `lock-absent-taken-for-stale` retargeted.

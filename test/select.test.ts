@@ -382,7 +382,7 @@ test("check:fast runs what the selection selected: its files, its cases in parts
 });
 
 test("bun run push says its selection on its line, and runs the check and the port only where they can differ", () => {
-  expect(pushPhases).toEqual(["rebase", "gate", "fast", "build", "std", "mutants", "check", "sanity", "react", "files", "push"]);
+  expect(pushPhases).toEqual(["turn", "rebase", "gate", "fast", "build", "std", "mutants", "check", "sanity", "react", "files", "push"]);
   expect(onlyPushedFiles(["a.rs", "b.rs"], ["a.rs"])).toEqual(["b.rs"]);
   const line = timesLine({ at: new Date("2026-11-16T08:00:00Z"), machine: "m", agent: "a", kind: "push", sha: "abc", total: 61.4, phases: [["check", 300]], selection: "some (3 files, 12 cases)", load: [1, 2, 3], ok: true, note: "" });
   expect(line).toBe("2026-11-16T08:00:00Z | m | a | push | abc | total 61s | check 300s | select some (3 files, 12 cases) | load 1.00/2.00/3.00 | ok | ");

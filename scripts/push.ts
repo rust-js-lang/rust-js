@@ -79,7 +79,7 @@ import { PORT_DOES_NOT_COMPILE, touchesPort } from "./iteratorSlice";
 import { refusal, undone } from "./push-guard";
 
 /** The phases, in the order they run. */
-export const phases = ["rebase", "gate", "fast", "build", "std", "mutants", "check", "sanity", "react", "files", "push"] as const;
+export const phases = ["turn", "rebase", "gate", "fast", "build", "std", "mutants", "check", "sanity", "react", "files", "push"] as const;
 
 /** The `fast` phase's tests: the mutation catalog's file whole, whose
  * failure, a `find` its code moved past, a test renamed or moved, or a
@@ -398,10 +398,12 @@ async function main() {
     process.exit(2);
   }
   // One heavy run at a time on the machine, the push's whole run its own,
-  // what it starts, its check and its mutants, inheriting it (ADR 1146).
-  holdLease("push");
-  const started = performance.now();
-  const timed: [string, number][] = [];
+  // what it starts, its check and its mutants, inheriting it (ADR 1146);
+  // a push the next waiter, before any other run (#2516). Its wait is the
+  // line's first phase, `turn`.
+  const waited = holdLease("push") / 1000;
+  const started = performance.now() - waited * 1000;
+  const timed: [string, number][] = [["turn", waited]];
   let mark = performance.now();
   const phase = (name: Phase) => {
     const now = performance.now();
