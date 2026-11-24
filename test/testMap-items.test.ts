@@ -171,9 +171,11 @@ test("pick selects by the item layer where a change is outside any function, els
   const at = (changes: Parameters<typeof pick>[1], items = true) => pick(items ? { ...map, items: layer } : map, changes, files, [], sources);
   // Of the map's own test files, those picked.
   const own = (picked: ReturnType<typeof pick>) => (picked.kind === "picked" ? picked.files.filter((file) => file in map.units).sort() : picked.kind);
-  // A variant added: without the layer, everything; with it, f's test.
+  // A variant added: without the layer, what names the enum, by name, the
+  // signatures `fn f() -> Kind` and `fn h(k: &Kind)` naming it the
+  // functions they open (#2523), as the layer says here too.
   const variant = [{ file: "src/a.rs", hunks: [[3, 0, ["    C,"], []]] }] as Parameters<typeof pick>[1];
-  expect(at(variant, false).kind).toBe("all");
+  expect(own(at(variant, false))).toEqual(["test/f.test.ts", "test/h.test.ts"]);
   // A variant added: what constructs the enum, and what names it.
   expect(own(at(variant))).toEqual(["test/f.test.ts", "test/h.test.ts"]);
   // A const's value, named by the const a function reads: g's test.
