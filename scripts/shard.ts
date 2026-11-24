@@ -369,9 +369,17 @@ export const wholeCorpusCaseSeconds = 1;
  * `cores`: one a core, as `pooledParts` measured a part's, and enough that
  * each, at `wholeCorpusCaseSeconds` a case, is under half its limit,
  * `limitMs`, which still ends a hang: a mutation's control and its mutant
- * judged against every case (`--corpus`, #2375). */
+ * judged against every case (`--corpus`, #2375). Strictly under: no part
+ * of more cases than `casesUnderHalf`, as a part of `limitMs / 2` exactly,
+ * 2,997 cases' 600 in 5, isn't under it (#2488). */
 export function wholeCorpusParts(cores: number, cases: number, limitMs: number): number {
-  return Math.max(pooledParts(cores), Math.ceil((cases * wholeCorpusCaseSeconds * 1000) / (limitMs / 2)));
+  return Math.max(pooledParts(cores), Math.ceil(cases / casesUnderHalf(limitMs)));
+}
+
+/** The most cases a part of `limitMs` runs, at `wholeCorpusCaseSeconds`
+ * each, strictly under half its limit. */
+function casesUnderHalf(limitMs: number): number {
+  return Math.ceil(limitMs / 2 / (wholeCorpusCaseSeconds * 1000)) - 1;
 }
 
 /** How many jobs a `--corpus` dispatch's shared control is run in, each of
@@ -381,7 +389,7 @@ export function wholeCorpusParts(cores: number, cases: number, limitMs: number):
  * each of `wholeCorpusParts`' parts is. In one job it was 16 min on every
  * shard's way, as the shards wait for it (rustc tests 45155212621, #2375). */
 export function controlParts(cores: number, cases: number, limitMs: number): number {
-  return Math.max(1, Math.ceil((2 * cases * wholeCorpusCaseSeconds * 1000) / cores / (limitMs / 2)));
+  return Math.max(1, Math.ceil((2 * cases) / cores / casesUnderHalf(limitMs)));
 }
 
 /** How many of the suite's parts of a file of cases, the corpus's and the

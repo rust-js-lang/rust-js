@@ -359,8 +359,9 @@ test("a whole-corpus part's measured time is under half its limit", () => {
     expect(parts).toBeGreaterThanOrEqual(cores);
     expect(Math.ceil(cases / parts) * wholeCorpusCaseSeconds * 1000).toBeLessThan(testTimeout / 2);
   }
-  // Twice the cases, twice the parts on a runner it already filled.
-  expect(wholeCorpusParts(4, 6000, 20 * 60_000)).toBe(10);
+  // Twice the cases, twice the parts on a runner it already filled, and
+  // one more where they'd each be half exactly, as 6,000 in 10 would.
+  expect(wholeCorpusParts(4, 6000, 20 * 60_000)).toBe(11);
   expect(wholeCorpusParts(4, 100, 20 * 60_000)).toBe(4);
 });
 
