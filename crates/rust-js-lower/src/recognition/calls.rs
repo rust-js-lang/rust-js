@@ -600,6 +600,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let tcx = self.tcx;
         let items =
             |ty: Ty<'tcx>| ty.peel_refs().is_slice() || ty.peel_refs().is_array() || self.is_vec_like(ty.peel_refs());
+        // `m[i]` of indexmap's map or set, `Index<usize>`, by place: the
+        // value or the item at `i`, never a key's (#2437, ADR 0424). Of any
+        // other index but a key, a range's slice, none: refused where it's
+        // called.
+        let placed = matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_index_map(tcx, adt.did()));
+        if tcx.is_lang_item(trait_, LangItem::Index)
+            && placed
+            && let Some(index) = args.types().nth(1)
+            && !index.is_ref()
+        {
+            return index.is_usize().then_some(Std::Map(MapOp::ByPlace(PlaceOp::Index)));
+        }
         // `m[k]` of a map: its value, or a panic, as `get(k).expect(..)`.
         if tcx.is_lang_item(trait_, LangItem::Index) && self.is_map(ty) && !self.is_set(ty) {
             return Some(Std::Map(MapOp::Index { held: false }));

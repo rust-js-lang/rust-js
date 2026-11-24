@@ -29,6 +29,16 @@ function $atIndex(m, i) {
   return undefined;
 }
 
+// `m[i]`, `Index<usize>`: the value at `i`, or a set's item, checked as
+// indexmap's is, a panic past the end where it's indexed (#2437).
+function $atPlace(m, i, raisedAt) {
+  if (i >= m.size) throw $stringPanic(`index out of bounds: the len is ${m.size} but the index is ${i}`, raisedAt);
+  let at = 0;
+  for (const entry of m) {
+    if (at++ === i) return m instanceof Map ? entry[1] : entry;
+  }
+}
+
 // `insert_full(key, value)`: where it is, and the value it had, or `None`.
 function $insertFull(m, key, value) {
   const old = $insert(m, key, value);

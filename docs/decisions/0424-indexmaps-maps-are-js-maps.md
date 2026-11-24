@@ -28,6 +28,7 @@ does by an entry's place, which std's maps haven't, is the runtime's,
 |---|---|
 | `get_index_of(k)` | `$indexOf(m, k)` |
 | `get_index(i)`, `first()`, `last()` | `$atIndex(m, i)`, of `0`, of `m.size - 1` |
+| `m[i]`, `Index<usize>`, of a map or a set | `$atPlace(m, i)`: its value or item, indexmap's panic past the end |
 | `insert_full(k, v)` | `$insertFull(m, k, v)`; a set's, `$addFull(s, x)` |
 | `swap_remove(k)`, and `remove(k)`, which is it | `$swapRemoveKey(m, k)`: the last in its place |
 | `shift_remove(k)` | std's `remove`: `Map`'s `delete` keeps the order |
@@ -59,3 +60,21 @@ does by an entry's place, which std's maps haven't, is the runtime's,
   and `pop` take as long as the map is, where indexmap's are constant,
   and `shift_remove` is constant, where indexmap's walks what's after it.
   The answers are the same (case B).
+
+## Amendment: `m[i]` is by place (#2437)
+
+indexmap's `Index<usize>`, `m[i]`, is the value at place `i`, or a set's
+item, where it was read as std's maps' `Index<&Q>`, the value of the key
+equal to `i`: of `[(7, 70), (0, 99)]`, `m[0]` was `99`, not `70`, and past
+the end it panicked `no entry found for key`, not `index out of bounds:
+the len is 1 but the index is 5` (a wrong answer). `classify_index` reads
+an index map's index by its type: a reference is a key's, `usize` a
+place's, `$atPlace(m, i)`, and any other, a range's slice of places, has
+no JS: refused where it's indexed, as `m[i] = ..` and `m[&k] = ..`,
+`IndexMut`, are, which no lowering reads. The crate corpus's probe of
+indexmap, `scripts/crate-corpus/indexmap.rs`, reads a map's and a set's
+places and past their ends against native indexmap.
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)): the value is
+indexmap's.
+

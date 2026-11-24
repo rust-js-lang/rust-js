@@ -155,6 +155,9 @@ pub enum PlaceOp {
     Of,
     /// `get_index(i)`: `$atIndex(m, i)`.
     At,
+    /// `m[i]`, `Index<usize>`: the value, or the set's item, at `i`, a
+    /// panic past the end, `$atPlace(m, i)` (#2437).
+    Index,
     /// `first()`, `last()`.
     End { last: bool },
     /// `insert_full`: where it is, and the old value, or whether it's new.
@@ -1003,6 +1006,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::ByPlace(op) => match op {
                 PlaceOp::Of => helper("$indexOf", vec![arg(), arg()]),
                 PlaceOp::At => helper("$atIndex", vec![arg(), arg()]),
+                PlaceOp::Index => helper("$atPlace", vec![arg(), arg()]),
                 PlaceOp::End { last: false } => helper("$atIndex", vec![arg(), Expr::int(0)]),
                 PlaceOp::End { last: true } => {
                     let m = arg();

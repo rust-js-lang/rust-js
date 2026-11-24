@@ -118,7 +118,7 @@ and rust-js writes their API as JS's own
 |---|---|
 | `serde`, `serde_core`, `serde_json` | what a derive means, read from its attributes, and the runtime's JSON ([serde](README.md#serde)) |
 | `hashbrown` (with `foldhash`, `allocator-api2`) | its `HashMap` and `HashSet` are std's: a `Map` and a `Set` |
-| `indexmap` | its `IndexMap` and `IndexSet` are a `Map` and a `Set`, its methods by place, `get_index`, `swap_remove`, the runtime's |
+| `indexmap` | its `IndexMap` and `IndexSet` are a `Map` and a `Set`, its methods by place, `get_index`, `swap_remove` and `m[i]`, the runtime's; `m[i] = ..` and a slice of places, `&m[1..]`, are refused |
 | `memchr` 2.8.3, crates.io's | its searches are the runtime's, over the byte arrays slices are, `memchr` being `indexOf` |
 | `getrandom` 0.1.16, 0.2.17, 0.3.4 and 0.4.3, crates.io's | its fills and numbers are Web Crypto's `crypto.getRandomValues`, whatever features you chose; its `Error` is its code, shown as that version shows it |
 | `serde_path_to_error` 0.1.20, crates.io's | its `deserialize` of serde_json's reader of text is the runtime's reader, keeping where in the value it is; its `Error` says so as the crate does, `items[1].qty: ..` ([serde](README.md#serde)) |

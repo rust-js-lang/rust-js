@@ -733,4 +733,20 @@ export const mutations: Mutation[] = [
     replace: "            None if self.is_array_iter(ty.peel_refs()) => Some(Std::SizeHint(true)),\n",
     tests: ["test/std-coverage.test.ts"],
   },
+  {
+    name: "place-index-read-by-key",
+    breaks: "`m[i]` of an `IndexMap`, `Index<usize>`, reads the value of the key `i`, not the one at place `i` (#2437)",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
+    find: "            && placed\n",
+    replace: "            && false\n",
+    tests: ["test/bound-maps.test.ts", "-t", "indexmap"],
+  },
+  {
+    name: "range-of-places-read-as-one",
+    breaks: "`&m[1..]` of an `IndexMap`, its slice of a range of places, is read as one place's value (#2437)",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
+    find: "            return index.is_usize().then_some(Std::Map(MapOp::ByPlace(PlaceOp::Index)));\n",
+    replace: "            return Some(Std::Map(MapOp::ByPlace(PlaceOp::Index)));\n",
+    tests: ["test/bound-maps.test.ts", "-t", "slice of a range of places"],
+  },
 ];

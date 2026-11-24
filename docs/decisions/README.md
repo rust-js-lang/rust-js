@@ -522,7 +522,7 @@ reordered, and git merges this file by keeping both sides' lines
 - [0421 A std trait's associated type's drop is its caller's to give](0421-std-associated-type-drops-are-given.md)
 - [0422 An iterator that holds a value is closed to drop it](0422-an-iterator-holding-a-value-is-closed-to-drop-it.md)
 - [0423 hashbrown's maps are std's](0423-hashbrowns-maps-are-stds.md)
-- [0424 indexmap's maps are JS's `Map` and `Set`](0424-indexmaps-maps-are-js-maps.md)
+- [0424 indexmap's maps are JS's `Map` and `Set`](0424-indexmaps-maps-are-js-maps.md) *(amended: `m[i]` is by place)*
 - [0425 A type's own `Future`, `io::Read`, `BufRead` and `Seek` are allowed, and never lowered](0425-a-crates-own-future-and-reader-are-allowed-never-lowered.md)
 - [0426 A test or a value written out of literals is its answer](0426-a-literal-test-is-its-answer.md)
 - [0427 `#[track_caller]`: a function that reads where it was called is given it](0427-track-caller.md)

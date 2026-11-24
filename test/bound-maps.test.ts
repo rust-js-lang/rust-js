@@ -47,3 +47,13 @@ test("a hashbrown method std's maps haven't is refused", () => {
   expect(p.exitCode).not.toBe(0);
   expect(p.stderr.toString()).toContain("rust-js does not support calling `hashbrown::HashMap::<K, V, S, A>::get_key_value_mut` yet");
 }, 300_000);
+
+// indexmap's slice of a range of places, `&m[1..]`, isn't std's maps':
+// refused where it's indexed, never read as a key's value (#2437).
+test("an indexmap's slice of a range of places is refused", () => {
+  const dir = fixture("indexmap-slice");
+  writeWhole(join(dir, "lib.rs"), "pub fn f(m: &indexmap::IndexMap<u32, u32>) -> usize {\n    m[1..].len()\n}\n");
+  const p = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--edition=2024", "--crate-type=lib", ...buildSerde()]);
+  expect(p.exitCode).not.toBe(0);
+  expect(p.stderr.toString()).toContain("rust-js does not support calling `std::ops::Index::index` yet");
+}, 300_000);

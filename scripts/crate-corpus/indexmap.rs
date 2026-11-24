@@ -57,6 +57,16 @@ pub fn report() -> String {
     ));
     let collected: IndexMap<u32, char> = [(3, 'c'), (1, 'a')].into_iter().collect();
     lines.push(format!("{collected:?}"));
+    // By place, `Index<usize>`: the value or the item there, whatever the
+    // keys are, or indexmap's panic past the end (#2437).
+    let numbered: IndexMap<u32, u32> = [(7, 70), (0, 99), (2, 22)].into_iter().collect();
+    lines.push(format!(
+        "{} {} {} {}",
+        numbered[0], numbered[1], numbered[2], numbered[&0]
+    ));
+    lines.push(format!("{} {}", tags[0], tags[2]));
+    lines.push(caught(|| numbered[std::hint::black_box(3)]));
+    lines.push(caught(|| tags[std::hint::black_box(9)].len()));
 
     // Room past `isize::MAX` bytes, asked of its table of places, is
     // hashbrown's panic, before the map's made; room that fits is none.
@@ -76,5 +86,13 @@ fn room<T>(what: &str, f: impl FnOnce() -> T) -> String {
     match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
         Ok(_) => format!("{what}: room"),
         Err(payload) => format!("{what}: {:?}", payload.downcast_ref::<&str>()),
+    }
+}
+
+/// What `f` gives, or its panic's message.
+fn caught<T: std::fmt::Debug>(f: impl FnOnce() -> T) -> String {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
+        Ok(value) => format!("{value:?}"),
+        Err(payload) => format!("panicked: {:?}", payload.downcast_ref::<String>()),
     }
 }

@@ -78,7 +78,7 @@ use super::std_types::hash::{HashOp, Hashed, StdHasher};
 use super::std_types::heap::HeapOp;
 use super::std_types::io_error::IoErrorOp;
 use super::std_types::lazy::LazyOp;
-use super::std_types::map::{MapOp, MapOwner, Part, map_method};
+use super::std_types::map::{MapOp, MapOwner, Part, PlaceOp, map_method};
 use super::std_types::number::{DurationOp, NumOp, SignMode};
 use super::std_types::once::OnceOp;
 use super::std_types::option::OptionPlaceOp;
