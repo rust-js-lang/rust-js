@@ -123,3 +123,49 @@ each of a run calling `yieldToPush` itself, a mutation run's pool
 `push-yield-never-made`, `mutation-run-never-yields`, `names-never-yield`,
 `retire-never-yields`, `mutation-pool-unyielding`;
 `heavy-runs-at-once` and `lock-absent-taken-for-stale` retargeted.
+
+## Amendment: a heavy run's limit is of its run, not its wait (#2517, 2026-11-24)
+
+AGENTS.md asks every local command for a timeout about twice its usual
+time. A heavy run's `timeout` counted its wait for the turn too: on the M5
+Pro, beside a `--retire`, `timeout 900 bun scripts/mutations.ts
+native-run-kept-past-given-floor`, one mutant and about 5 s of work, was
+killed at 900 s still waiting; run again with a longer limit, it waited
+24 minutes, then ran in seconds. A limit that fits the run kills a run that
+never started, and one that fits the wait guards nothing.
+
+- **`--limit=<seconds>`, the run's own.** Every heavy command, `bun run
+  push`, `check:fast` and `scripts/mutations.ts` (`--retire` too), takes
+  it, read by the lease (`runLimit`, refused unless one number of seconds
+  above 0, before any wait) and armed once the turn is taken: a watcher of
+  its own (`watchLimit`, in a process apart, as a push's `spawnSync` of its
+  check blocks the push's own timers) counts the run's time but while it
+  waits for the turn again, a yield's to a push, and past the limit tells
+  the run and all it started to end, kills what hasn't 5 s on, and says it
+  was the run: `<kind>: past its limit, <s> s of its run against
+  --limit=<s>, its <s> s waiting for the machine's turn not counted:
+  stopped, with what it started`. An outer `timeout`, where one is still
+  wanted, is the wait's bound and the run's together. One way: no
+  environment variable beside the flag, which a run's children would
+  inherit.
+- **The wait is said apart.** A run's wait, its first and each after a
+  yield, is said as the turn is taken, past a second, and is its line's
+  first phase, `turn <s>`, written by the lines' one writer
+  (`scripts/devTimes.ts`, from `turnPhase`): check:fast's and the
+  mutation runner's lines, not only the push's. Their times said against
+  their usual leave it out, so a wait reads as a wait, not a slow run.
+- **A run in its holder's lease says no turn.** `holdLease` returns
+  `undefined` there, not 0: push run again from the rebased tree, in its
+  first's lease, wrote a second `turn 0s` on the line
+  (`turn 0s, rebase 4s, gate 0s, turn 0s, rebase 3s, ..`).
+
+Held by test/leases.test.ts: "a run's limit counts its run, not its wait
+for the machine's turn" (a run and a lane, each of a 2 s limit, waiting
+3.5 s, then running), "a run past its limit once it has the turn is
+stopped, with what it started, and says it was its run", "a run's wait for
+the turn again, after it let it go to a push, isn't counted against its
+limit", "a run's line says its wait for the turn first, and a run in its
+holder's lease says none", and the flag's form. Mutations
+`limit-armed-before-the-wait`, `limit-counts-a-yields-wait`,
+`limit-spares-what-it-started`, `limit-never-armed`,
+`turn-said-of-a-leased-run`, `turn-left-off-the-line`.

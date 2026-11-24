@@ -6,6 +6,14 @@ const line = ["test/select.test.ts", "-t", "says its selection on its line"];
 
 export const mutations: Mutation[] = [
   {
+    name: "turn-left-off-the-line",
+    breaks: "a check's or a mutation run's line says nothing of its wait for the machine's turn, which reads as its run, 24 minutes of waiting as a slow run (#2517)",
+    file: "scripts/devTimes.ts",
+    find: "phases: [...turnPhase(), ...phases], selection,",
+    replace: "phases, selection,",
+    tests: ["test/leases.test.ts", "-t", "a run's line says its wait"],
+  },
+  {
     name: "times-others-at-start-unkept",
     breaks: "a run's line doesn't keep how many other runs held the machine's cores as it began, so an overlapped corpus's 1,190 s reads as the code's where a quiet one took 658 s (2026-11-21)",
     file: "scripts/devTimes.ts",

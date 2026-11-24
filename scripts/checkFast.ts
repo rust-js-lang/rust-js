@@ -864,8 +864,10 @@ if (import.meta.main) {
   // writes one, a push's or a retirement's (scripts/devTimes.ts).
   const owns = given === undefined && ownsTimes("check:fast");
   const all = args.includes("--all") || given !== undefined;
-  // The machine shared with concurrent runs, each its share (scripts/leases.ts).
-  holdLease("check");
+  // The machine shared with concurrent runs, each its share, one heavy run
+  // at a time (scripts/leases.ts): its wait for the turn apart from its
+  // run, which its time and `--limit=<s>` are of (#2517).
+  const waited = (holdLease("check") ?? 0) / 1000;
   const extra = args.filter((arg) => !arg.startsWith("--"));
   // What the loop left running, which takes the cores this run times
   // (scripts/strays.ts): said first, and again with its profile.
@@ -1007,8 +1009,9 @@ if (import.meta.main) {
   // (#1622, #1706).
   const keptLogs = logs.kept();
   if (keptLogs !== undefined) console.log(`\neach failing job's whole output: ${keptLogs}`);
-  // From its start, its build too.
-  const total = elapsed();
+  // From its start, its build too, but its wait for the machine's turn,
+  // which its line says apart (`turn`), not slower than its usual (#2517).
+  const total = elapsed() - waited;
   // How many owners are of each source, as #2200's classification goes.
   console.log(sourceLine(ownerTable(readFileSync(join(root, OWNER_PAGE), "utf8"))));
   const scope = all ? "check:fast --all" : picked ? "check:fast, what the change reaches" : "check:fast, everything";

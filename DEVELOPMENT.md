@@ -103,7 +103,10 @@ behind `main`'s queue, was 2,156 runner-minutes, all wasted (#1989).
 
 Every local run has a timeout that fits it, about twice its usual time
 ([AGENTS.md](AGENTS.md#making-and-checking-changes)), and uses all the
-cores: what's quicker here than CI's round trip runs here.
+cores: what's quicker here than CI's round trip runs here. A heavy run's,
+`bun run push`'s, `check:fast`'s or a mutation run's, is `--limit=<s>`,
+about twice its usual run time: it first waits for the machine's turn,
+which may be minutes, and the limit is armed once it has it (#2517, [For agents](#for-agents)).
 
 ## The Mac, with the scan off
 
@@ -925,7 +928,8 @@ checked:
   Each phase's time is printed, the first, `turn`, its wait for the
   machine's turn, which a push takes before any other run waiting, and
   which a mutation run lets go to it between batches (ADR 1146, amended,
-  #2516); and one line of them is appended to the
+  #2516), as check:fast's and a mutation run's lines say theirs too, where
+  each took the turn itself (#2517); and one line of them is appended to the
   machine's log of times, outside the repository (`RUST_JS_DEV_TIMES`,
   `~/rust-js-dev-times.log` unless given; `RUST_JS_MACHINE` and
   `RUST_JS_AGENT` name the machine and the agent). `check:fast`, the
@@ -1008,7 +1012,15 @@ the workflow's 2 machines; `--shards=4` splits it across four.
   run first, so nothing is built on what's broken.
 - **A timeout that fits each local command** ([AGENTS.md](AGENTS.md#making-and-checking-changes)):
   about twice its usual time, so a hang ends; one past it is a hang or a
-  slow spot to fix, never retried with more time.
+  slow spot to fix, never retried with more time. A heavy command, `bun
+  run push`, `check:fast` or `scripts/mutations.ts`, takes `--limit=<s>`,
+  twice its usual run time, and no outer `timeout`: it waits for the
+  machine's turn first, which an outer `timeout` counts (a one-mutant run
+  of `timeout 900` killed still waiting, then 24 minutes of waiting,
+  #2517). The limit is armed once the run has the turn, its waits after it
+  for a push not counted; past it, the run and all it started are stopped,
+  saying `past its limit, <s> s of its run against --limit=<s>`. Its wait
+  is said as it ends and on its line, `turn <s>`.
 - **A new worktree runs `bun install --frozen-lockfile` first**, and
   check:fast runs it again wherever the manifests changed since its last
   install, a rebase over a new workspace's (`docs/dev-loop.md`). Without a

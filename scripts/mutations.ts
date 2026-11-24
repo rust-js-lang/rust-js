@@ -31,7 +31,7 @@ import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
 import { mutantsLock } from "./disk";
 import { ownCompiler } from "./own-compiler";
-import { acquire, holdLease, ownMemory, ownShare, runYielding, yieldBetween } from "./leases";
+import { acquire, holdLease, ownMemory, ownShare, runYielding, turnPhase, yieldBetween } from "./leases";
 import { makeSourceWorkspace, sourceMutation } from "./source-mutations";
 import { wasmPath } from "../wasm/web/site.ts";
 import { latentSurvivors, type Results } from "./latent-survivors";
@@ -1426,6 +1426,9 @@ const valued: Record<string, string> = {
   "--control": "--control=<file>",
   "--control-out": "--control-out=<file>",
   "--control-part": "--control-part=<k>/<n>",
+  // The run's own time once it has the machine's turn, its wait apart
+  // (scripts/leases.ts' `runLimit`, #2517).
+  "--limit": "--limit=<seconds>",
 };
 
 /** A part of the control a dispatch's shards share (`--control-out`,
@@ -2189,7 +2192,7 @@ async function main() {
   // Mutations to retire, their evidence asked (`retire`), no other run.
   const retiring = retiringNames(args);
   if (retiring !== undefined) {
-    if (named.length > 0 || args.some((arg) => arg.startsWith("--") && !arg.startsWith("--retire="))) throw new Error("--retire=<name>[,<name>..] runs alone: no other mutation or flag");
+    if (named.length > 0 || args.some((arg) => arg.startsWith("--") && !arg.startsWith("--retire=") && !arg.startsWith("--limit="))) throw new Error("--retire=<name>[,<name>..] runs alone: no other mutation or flag but --limit=<seconds>");
     chosen = retiring.map((name) => {
       const mutation = mutations.find((m) => m.name === name);
       if (mutation === undefined) throw new Error(`no mutation ${name}`);
@@ -2264,7 +2267,9 @@ async function main() {
   // (scripts/leases.ts); and the checkout's mutants' build, `target/mutants`,
   // one run's at a time: two in one checkout built each other's mutants
   // there, and judged them.
-  holdLease("mutations");
+  // Its wait for the machine's turn said apart (#2517), on its line, not
+  // in its setup's phase.
+  phaseBegan += holdLease("mutations") ?? 0;
   const released = acquire(mutantsLock(root), {
     wait: 6 * 3_600_000,
     waiting: "waiting for this checkout's other mutation run, which builds in target/mutants",
@@ -2815,7 +2820,7 @@ async function main() {
   if (!process.env.GITHUB_ACTIONS && rows.length > 0) {
     // A run of one or two builds each alone, no build shared, its each
     // five times a shared one's: it's said against runs of as few.
-    console.log(timed("mutation, each", elapsed() / rows.length, { detail: `${rows.length} run`, ran: rows.length < 3 ? "fewer than 3" : undefined }));
+    console.log(timed("mutation, each", (elapsed() - (turnPhase()[0]?.[1] ?? 0)) / rows.length, { detail: `${rows.length} run`, ran: rows.length < 3 ? "fewer than 3" : undefined }));
   }
   // A run of every mutation, the nightly's, files its survivors in
   // "Mutation survivors on main" and fails only on what it couldn't judge.

@@ -68,7 +68,7 @@
 // `check <outcome>; sanity <outcome>` (#2258), and the map's commit and
 // how far behind it is (scripts/select.ts); the machine and agent each
 // machine's sessions name (`whoRuns`). Written on every exit, a signal's too.
-import { holdLease } from "./leases";
+import { holdLease, turnPhase } from "./leases";
 import { spawn, spawnSync } from "node:child_process";
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { isCompilerSource } from "./compiler-crates";
@@ -400,10 +400,11 @@ async function main() {
   // One heavy run at a time on the machine, the push's whole run its own,
   // what it starts, its check and its mutants, inheriting it (ADR 1146);
   // a push the next waiter, before any other run (#2516). Its wait is the
-  // line's first phase, `turn`.
-  const waited = holdLease("push") / 1000;
-  const started = performance.now() - waited * 1000;
-  const timed: [string, number][] = [["turn", waited]];
+  // line's first phase, `turn`, where it took the turn itself, not where
+  // it runs again in its first's lease (`turnPhase`, #2517).
+  const waited = holdLease("push") ?? 0;
+  const started = performance.now() - waited;
+  const timed: [string, number][] = [];
   let mark = performance.now();
   const phase = (name: Phase) => {
     const now = performance.now();
@@ -503,7 +504,7 @@ async function main() {
         written = true;
         regen?.stop();
         const round = checked === "" ? undefined : { checked, base: checkedBase, react: reactBase };
-        const took = { seconds: before.seconds + (performance.now() - started) / 1000, phases: [...before.phases, ...timed] };
+        const took = { seconds: before.seconds + (performance.now() - started) / 1000, phases: [...before.phases, ...turnPhase(), ...timed] };
         const again = spawnSync(process.execPath, [process.argv[1]!, ...process.argv.slice(2)], { stdio: "inherit", env: againEnv(process.env, round, took, remade) });
         process.exit(again.status ?? 1);
       }

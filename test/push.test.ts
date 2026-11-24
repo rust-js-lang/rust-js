@@ -231,8 +231,10 @@ test("a run's own compiler is own-compiler.ts's, and a dead run's folder goes", 
 test("a push's fast phase runs first, push-guard's rule and the catalog's quick tests", () => {
   expect(phases.slice(0, 5)).toEqual(["turn", "rebase", "gate", "fast", "build"]);
   const source = readFileSync(join(root, "scripts/push.ts"), "utf8");
-  // Its wait for the machine's turn the line's first phase (#2516).
-  expect(source).toContain('const timed: [string, number][] = [["turn", waited]];');
+  // Its wait for the machine's turn the line's first phase (#2516), the
+  // line's writer's (`turnPhase`, test/leases.test.ts), and carried to push
+  // run again, which takes none of its own (#2517).
+  expect(source).toContain("phases: [...before.phases, ...turnPhase(), ...timed]");
   const main = source.slice(source.indexOf("async function main"));
   const at = (text: string) => main.indexOf(text);
   expect(at('undone(process.cwd(), base, "HEAD")')).toBeGreaterThan(0);

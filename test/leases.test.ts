@@ -3,10 +3,10 @@
 // whose owner is gone taken; the job times written by two at once, each
 // one's kept; and a check's pool held to its share beside another run's.
 import { expect, test } from "bun:test";
-import { existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { readJobTimes } from "../scripts/jobTimes";
-import { acquire, fairShare, holdLease, leasedIn, sharers, turnLock, liveLeases, liveWaiters, lockState, nextWaiter, ownMemory, ownPart, ownShare, withLock } from "../scripts/leases";
+import { acquire, fairShare, holdLease, leasedIn, sharers, turnLock, liveLeases, liveWaiters, lockState, nextWaiter, ownMemory, ownPart, ownShare, runLimit, withLock } from "../scripts/leases";
 import { mutantsLock, mutantsStore } from "../scripts/disk";
 import { underLoad } from "../scripts/timing";
 import { fixture, root } from "./support";
@@ -53,7 +53,7 @@ test("a run's share is the machine divided by the live leases, and a lease of a 
   expect([ownShare(14, {}, 3), ownMemory(30, {}, 3)]).toEqual([4, 10]);
   const none = join(fixture("leases-held"), "leases");
   rmSync(none, { recursive: true, force: true });
-  holdLease("check", { store: none, env: { RUST_JS_LEASED: "1" } });
+  expect(holdLease("check", { store: none, env: { RUST_JS_LEASED: "1" } })).toBeUndefined();
   expect(existsSync(none)).toBe(false);
 });
 
@@ -392,4 +392,172 @@ test("a mutation run's pool and a retirement's names let the turn go through lea
   const runner = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
   expect(runner).toContain("  await runYielding(queue, jobs, one, { beside: () => Promise.all(buildsTesting) });");
   expect(runner).toContain("    await yieldBetween(at, () => judged);");
+});
+
+/** A run of `kind` named `name` in a fixture's `store`, given `limit`
+ * seconds of its run (none of 0): holds its lease, marks when it has it,
+ * then as `mode` says: `end`, ends when told; `spawn`, starts a process
+ * that sleeps, marks its pid, and never ends; `yield`, lets the turn go to a
+ * waiting push on its `go` mark, marks when it has it again, and ends when
+ * told; `line`, writes its line to the machine's log, `log`, of a step `x`
+ * of 1 s, and ends. A run's limit (#2517). */
+function limitFixture(name: string) {
+  const dir = fixture(name);
+  rmSync(dir, { recursive: true, force: true });
+  const store = join(dir, "leases");
+  const marks = join(dir, "marks");
+  const log = join(dir, "times.log");
+  mkdirSync(marks, { recursive: true });
+  const child = join(dir, "run.ts");
+  writeFileSync(
+    child,
+    `import { existsSync, writeFileSync } from "node:fs";
+import { holdLease, yieldToPush } from ${JSON.stringify(join(root, "scripts/leases.ts"))};
+import { devTimes } from ${JSON.stringify(join(root, "scripts/devTimes.ts"))};
+const [name, kind, store, marks, limit, mode] = process.argv.slice(2);
+const mark = (what: string) => writeFileSync(marks + "/" + name + "." + what, String(Date.now()));
+const until = async (what: string) => { while (!existsSync(marks + "/" + name + "." + what)) await Bun.sleep(20); };
+holdLease(kind, { store, every: 50, say: () => mark("waited"), limit: Number(limit) || undefined });
+mark("held");
+if (mode === "spawn") {
+  mark("child." + Bun.spawn(["sleep", "30"], { stdio: ["ignore", "ignore", "ignore"] }).pid);
+  for (;;) await Bun.sleep(20);
+}
+if (mode === "yield") {
+  await until("go");
+  while (!yieldToPush()) await Bun.sleep(20);
+  mark("again");
+}
+if (mode === "line") devTimes(kind, { started: 0, phases: [["x", 1]], ok: true });
+else await until("end");
+`,
+  );
+  const env = { ...process.env, RUST_JS_LEASED: "", RUST_JS_LANE: "", RUST_JS_DEV_TIMES: log, RUST_JS_MACHINE: "m", RUST_JS_AGENT: "a" };
+  const start = (name: string, kind: string, { limit = 0, mode = "end", lane = false, leased = "" } = {}) =>
+    Bun.spawn(["bun", child, name, kind, store, marks, String(limit), mode], {
+      cwd: root,
+      stdout: "inherit",
+      stderr: "pipe",
+      env: { ...env, RUST_JS_LANE: lane ? "1" : "", RUST_JS_LEASED: leased },
+    });
+  const has = (file: string) => existsSync(join(marks, file));
+  const until = async (file: string) => {
+    for (let i = 0; i < 400 && !has(file); i++) await Bun.sleep(25);
+    return has(file);
+  };
+  const mark = (file: string) => writeFileSync(join(marks, file), "");
+  return { store, marks, log, start, until, mark, has };
+}
+
+/** What `run` said on its stderr, once it's ended. */
+const saidBy = (run: { stderr: ReadableStream<Uint8Array> }) => new Response(run.stderr).text();
+
+// A heavy command's limit counted its wait for the machine's turn: a
+// one-mutant run's `timeout 900` killed it still waiting, and the same run
+// waited 24 minutes more (#2517). `--limit=<s>` is armed once the turn is
+// taken, so a run that waits past it, for the turn or as a lane for no run
+// at all, runs its whole limit after.
+test("a run's limit counts its run, not its wait for the machine's turn", async () => {
+  const { start, until, mark } = limitFixture("leases-limit-wait");
+  const first = start("first", "check");
+  expect(await until("first.held")).toBe(true);
+  const limited = start("limited", "check", { limit: 2 });
+  const lane = start("lane", "check", { limit: 2, lane: true });
+  expect(await until("limited.waited")).toBe(true);
+  expect(await until("lane.waited")).toBe(true);
+  await Bun.sleep(3_500);
+  mark("first.end");
+  expect(await first.exited).toBe(0);
+  expect(await until("limited.held")).toBe(true);
+  mark("limited.end");
+  expect(await limited.exited).toBe(0);
+  expect(await until("lane.held")).toBe(true);
+  mark("lane.end");
+  expect(await lane.exited).toBe(0);
+  expect(await saidBy(limited)).not.toContain("past its limit");
+  expect(await saidBy(lane)).not.toContain("past its limit");
+}, underLoad(60_000));
+
+// Past its limit once it has the turn, a run is stopped, with what it
+// started, and says it was its run, not its wait; its turn and lease are
+// let go for the next.
+test("a run past its limit once it has the turn is stopped, with what it started, and says it was its run", async () => {
+  const { store, marks, start, until } = limitFixture("leases-limit-run");
+  const run = start("run", "mutations", { limit: 1, mode: "spawn" });
+  expect(await until("run.held")).toBe(true);
+  const spawned = () => readdirSync(marks).find((file) => file.startsWith("run.child."));
+  for (let i = 0; i < 200 && spawned() === undefined; i++) await Bun.sleep(25);
+  const child = Number(spawned()!.slice("run.child.".length));
+  const held = Date.now();
+  // Stopped within its limit and the watcher's grace, or not at all: then
+  // killed here, with its child, so a run never stopped fails, not hangs.
+  const ended = await Promise.race([run.exited, Bun.sleep(15_000).then(() => "never")]);
+  let gone = false;
+  try {
+    expect(ended).not.toBe("never");
+    expect(ended).not.toBe(0);
+    expect(Date.now() - held).toBeGreaterThanOrEqual(500);
+    expect(await saidBy(run)).toMatch(/^mutations: past its limit, \d+ s of its run against --limit=1, its 0 s waiting for the machine's turn not counted: stopped, with what it started \(#2517\)\n$/);
+    for (let i = 0; i < 200 && !gone; i++) {
+      try {
+        process.kill(child, 0);
+        await Bun.sleep(25);
+      } catch {
+        gone = true;
+      }
+    }
+  } finally {
+    run.kill("SIGKILL");
+    try {
+      process.kill(child, "SIGKILL");
+    } catch {}
+  }
+  expect(gone).toBe(true);
+  expect(liveLeases(store)).toEqual([]);
+  expect(lockState(turnLock(store))).not.toBe("held");
+}, underLoad(60_000));
+
+// A long run lets the turn go to a push between its batches (#2516): its
+// wait for the turn again isn't its run either.
+test("a run's wait for the turn again, after it let it go to a push, isn't counted against its limit", async () => {
+  const { start, until, mark } = limitFixture("leases-limit-yield");
+  const run = start("run", "mutations", { limit: 2, mode: "yield" });
+  expect(await until("run.held")).toBe(true);
+  const push = start("push", "push");
+  expect(await until("push.waited")).toBe(true);
+  mark("run.go");
+  expect(await until("push.held")).toBe(true);
+  await Bun.sleep(3_500);
+  mark("push.end");
+  expect(await push.exited).toBe(0);
+  expect(await until("run.again")).toBe(true);
+  mark("run.end");
+  expect(await run.exited).toBe(0);
+  expect(await saidBy(run)).not.toContain("past its limit");
+}, underLoad(60_000));
+
+// A run's line says its wait apart, `turn <s>`, first (#2517), where it
+// took the turn itself: a run in its holder's lease, push run again in its
+// first's, says none, where it said `turn 0s` a second time.
+test("a run's line says its wait for the turn first, and a run in its holder's lease says none", async () => {
+  const { log, start, until, mark } = limitFixture("leases-limit-line");
+  const first = start("first", "check");
+  expect(await until("first.held")).toBe(true);
+  const waiting = start("waiting", "check", { mode: "line" });
+  expect(await until("waiting.waited")).toBe(true);
+  await Bun.sleep(2_000);
+  mark("first.end");
+  expect([await first.exited, await waiting.exited]).toEqual([0, 0]);
+  const leased = start("leased", "push", { mode: "line", leased: String(process.pid) });
+  expect(await leased.exited).toBe(0);
+  const [waited, inLease] = readFileSync(log, "utf8").trim().split("\n").map((line) => line.split(" | ")[6]);
+  expect(waited).toMatch(/^turn [2-9]s, x 1s$/);
+  expect(inLease).toBe("x 1s");
+}, underLoad(60_000));
+
+test("a run's limit is one `--limit=<seconds>`, refused otherwise, and the mutation runner takes it", async () => {
+  expect([runLimit([]), runLimit(["--all", "--limit=600"]), runLimit(["--limit=1.5"])]).toEqual([undefined, 600, 1.5]);
+  for (const args of [["--limit"], ["--limit="], ["--limit=0"], ["--limit=10m"], ["--limit=5", "--limit=6"]]) expect(() => runLimit(args)).toThrow("--limit=<seconds>");
+  const { refusedFlags } = await import("../scripts/mutations");
+  expect(refusedFlags(["--limit=600"])).toEqual([]);
 });

@@ -10,7 +10,7 @@ import { spawnSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
 import { loadavg } from "node:os";
 import { devTimesLog } from "../test/bounded";
-import { liveLeases } from "./leases";
+import { liveLeases, turnPhase } from "./leases";
 
 /** Who a line of the log is of: the machine and the agent its sessions
  * name, `RUST_JS_MACHINE` and `RUST_JS_AGENT`, each machine's own; or,
@@ -74,8 +74,10 @@ export function timesLine(run: TimesRun): string {
 
 /** Append a run of `kind`'s line to the machine's log, from its start,
  * `started` (`performance.now()`), its steps, `phases`, the slowest first
- * where there are many, and whether it passed. The checkout's `HEAD` is
- * its sha, `cwd`'s. Never fails the run it's of. */
+ * where there are many, after its waits for the machine's turn, `turn`,
+ * where it took the turn itself (`turnPhase`, #2517), and whether it
+ * passed. The checkout's `HEAD` is its sha, `cwd`'s. Never fails the run
+ * it's of. */
 export function devTimes(
   kind: string,
   { started, phases = [], selection = "-", ok, note = "", cwd = process.cwd() }: { started: number; phases?: [string, number][]; selection?: string; ok: boolean; note?: string; cwd?: string },
@@ -89,7 +91,7 @@ export function devTimes(
     const sha = spawnSync("git", ["rev-parse", "--short", "HEAD"], { cwd, encoding: "utf8" }).stdout?.trim() || "-";
     const began = Number(process.env.RUST_JS_TIMED_OTHERS);
     const others: [number, number] | undefined = Number.isFinite(began) && process.env.RUST_JS_TIMED_OTHERS !== undefined ? [began, otherRuns()] : undefined;
-    const line = timesLine({ at: new Date(), machine: who.machine, agent: who.agent, kind, sha, total: (performance.now() - started) / 1000, phases, selection, load: loadavg(), others, ok, note });
+    const line = timesLine({ at: new Date(), machine: who.machine, agent: who.agent, kind, sha, total: (performance.now() - started) / 1000, phases: [...turnPhase(), ...phases], selection, load: loadavg(), others, ok, note });
     appendFileSync(devTimesLog, `${line}\n`);
   } catch {
     // A log that can't be written says nothing of the run.

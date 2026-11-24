@@ -29,6 +29,13 @@
 // and waits for it again, where it was in the queue: a push of a red
 // `main`'s fix waited 34 minutes behind one retirement, then behind the next.
 //
+// A heavy run's limit is of its run, not of its waits for the turn (#2517):
+// an outer `timeout` counted both, so one that fit a one-mutant run killed
+// it at 900 s still waiting, and one that fit the wait guarded nothing.
+// `--limit=<s>` among its arguments (`runLimit`) is armed once the turn is
+// taken (`watchLimit`), a wait after it, a yield's to a push, not counted;
+// and its line says its waits apart, `turn <s>` (`turnPhase`).
+//
 // A lock (`withLock`) serializes what two runs read, change and write
 // again, the machine's job times, or keeps one at a time where only one
 // can work, a checkout's mutants' build. Its owner is a process: one whose
@@ -111,17 +118,53 @@ export function liveLeases(store = leaseStore): Lease[] {
   return leases;
 }
 
+/** A heavy run's limit of its own run time, in seconds, `--limit=<s>`
+ * among `args`, its arguments; none where none is given. The one way to
+ * bound a heavy run (#2517): armed once it has the machine's turn
+ * (`holdLease`), so its wait for the turn, which an outer `timeout` counted,
+ * isn't. Refused unless given once, a number of seconds above 0. */
+export function runLimit(args: string[] = process.argv.slice(2)): number | undefined {
+  const given = args.filter((arg) => arg === "--limit" || arg.startsWith("--limit="));
+  if (given.length === 0) return undefined;
+  const seconds = given.length === 1 && given[0].startsWith("--limit=") ? Number(given[0].slice("--limit=".length)) : Number.NaN;
+  if (!(seconds > 0)) throw new Error(`${given.join(" ")}: --limit=<seconds>, once, the run's own time once it has the machine's turn (#2517)`);
+  return seconds;
+}
+
+/** This run's waits for the machine's turn, in ms, its first and each after
+ * it let the turn go to a push (`yieldToPush`); none where it took none
+ * itself, a run in its holder's lease (`RUST_JS_LEASED`). */
+let waits: number | undefined;
+
+/** Of the run's line in the machine's log, its waits for the machine's
+ * turn, said apart from its run, the line's first phase, `turn <s>`
+ * (scripts/devTimes.ts): none where this process took no turn itself, a
+ * push run again in its first's lease saying its first's `turn` again as
+ * `turn 0s` (#2516, #2517). */
+export function turnPhase(): [string, number][] {
+  return waits === undefined ? [] : [["turn", waits / 1000]];
+}
+
 /** This process's lease of `kind` held until it exits, in `store`: none
  * where what started it holds one (`RUST_JS_LEASED`, the holder's process),
- * being in its share. Taken with the machine's turn, waited for while
- * another run holds it; a lane's, where no run holds a lease, no turn
- * taken. What this process starts inherits it: `RUST_JS_LEASED` set. Its
- * wait for them, in ms, which a push's line says (`turn`, #2516). */
+ * being in its share, and `undefined` returned. Taken with the machine's
+ * turn, waited for while another run holds it; a lane's, where no run holds
+ * a lease, no turn taken. What this process starts inherits it:
+ * `RUST_JS_LEASED` set. Its wait for them, in ms, said once it's over, and
+ * on the run's line (`turnPhase`). Its `limit`, `runLimit`'s, read before
+ * the wait, so a wrong one is refused at once, and armed after it
+ * (`watchLimit`): a run's limit is of its run, not its wait (#2517). */
 export function holdLease(
   kind: string,
-  { store = leaseStore, env = process.env, say = (line: string) => console.log(line), every = 60_000 }: { store?: string; env?: NodeJS.ProcessEnv; say?: (line: string) => void; every?: number } = {},
-): number {
-  if (env.RUST_JS_LEASED) return 0;
+  {
+    store = leaseStore,
+    env = process.env,
+    say = (line: string) => console.log(line),
+    every = 60_000,
+    limit = runLimit(),
+  }: { store?: string; env?: NodeJS.ProcessEnv; say?: (line: string) => void; every?: number; limit?: number } = {},
+): number | undefined {
+  if (env.RUST_JS_LEASED) return undefined;
   const asked = Date.now();
   mkdirSync(store, { recursive: true });
   const lane = Boolean(env.RUST_JS_LANE);
@@ -156,7 +199,66 @@ export function holdLease(
       process.exit(128 + (signal === "SIGINT" ? 2 : signal === "SIGTERM" ? 15 : 1));
     });
   }
-  return Date.now() - asked;
+  waits = Date.now() - asked;
+  if (waits >= 1000) say(`${kind}: the machine's turn taken after ${Math.round(waits / 1000)} s waiting, apart from its run and its limit (#2517)`);
+  if (limit !== undefined) armLimit(kind, limit, store, waits);
+  return waits;
+}
+
+/** The run's `limit` armed, in seconds of its run (`watchLimit`), in a
+ * process of its own: a run's own timer can't fire while it waits on a
+ * child, as a push's `spawnSync` of its check does. */
+function armLimit(kind: string, limit: number, store: string, waited: number) {
+  const watcher = Bun.spawn([process.execPath, import.meta.path, "limit", String(process.pid), String(limit), store, kind, String(waited)], {
+    stdio: ["ignore", "ignore", "inherit"],
+  });
+  watcher.unref();
+}
+
+/** Of the run `pid`, a heavy run of `kind` in `store`'s leases, given
+ * `limit` seconds of its run: its run counted each `poll` ms but while it
+ * waits for the machine's turn again (its waiter in `waiterStore`, a
+ * yield's to a push), and past `limit` it and all it started, as `tree`
+ * says, told to end (SIGTERM), then killed `grace` ms on where any hasn't,
+ * saying it was its run, not its wait, by `say`, the run's own stderr.
+ * Ends as the run does. Whether it stopped it (#2517). */
+export async function watchLimit(
+  pid: number,
+  limit: number,
+  {
+    store = leaseStore,
+    kind = "run",
+    waited = 0,
+    poll = 500,
+    grace = 5_000,
+    say = (line: string) => console.error(line),
+    tree = async (of: number) => (await import("../test/child")).processTree(of).map((each) => each.pid),
+  }: { store?: string; kind?: string; waited?: number; poll?: number; grace?: number; say?: (line: string) => void; tree?: (pid: number) => Promise<number[]> } = {},
+): Promise<boolean> {
+  const waiting = join(waiterStore(store), `${pid}.json`);
+  let ran = 0;
+  let last = performance.now();
+  while (alive(pid)) {
+    await Bun.sleep(poll);
+    const now = performance.now();
+    if (existsSync(waiting)) waited += now - last;
+    else ran += now - last;
+    last = now;
+    if (ran <= limit * 1000) continue;
+    const stopping = (await tree(pid)).filter((each) => each !== process.pid);
+    say(`${kind}: past its limit, ${Math.round(ran / 1000)} s of its run against --limit=${limit}, its ${Math.round(waited / 1000)} s waiting for the machine's turn not counted: stopped, with what it started (#2517)`);
+    const signal = (each: number, name: NodeJS.Signals) => {
+      try {
+        process.kill(each, name);
+      } catch {}
+    };
+    for (const each of stopping) signal(each, "SIGTERM");
+    const until = performance.now() + grace;
+    while (performance.now() < until && stopping.some(alive)) await Bun.sleep(50);
+    for (const each of stopping) if (alive(each)) signal(each, "SIGKILL");
+    return true;
+  }
+  return false;
 }
 
 /** `lease` written whole at `at`. */
@@ -216,7 +318,9 @@ export function yieldToPush(): boolean {
   turn.say(`${turn.kind}: a push waits for the machine's turn: letting it go between batches, and waiting for it again (#2516)`);
   rmSync(turn.at, { force: true });
   turn.releaseTurn();
+  const asked = Date.now();
   turn.releaseTurn = takeTurn(turn.kind, turn.since, turn);
+  waits = (waits ?? 0) + Date.now() - asked;
   writeLease(turn.at, turn.lease);
   return true;
 }
@@ -420,4 +524,11 @@ export function withLock<T>(lock: string, run: () => T, { wait = 30_000 }: { wai
   } finally {
     release();
   }
+}
+
+// The watcher a run's limit arms (`armLimit`): `limit <pid> <seconds>
+// <store> <kind> <ms waited>`.
+if (import.meta.main && process.argv[2] === "limit") {
+  const [pid, limit, store, kind, waited] = process.argv.slice(3);
+  void watchLimit(Number(pid), Number(limit), { store, kind, waited: Number(waited) });
 }
