@@ -14,6 +14,8 @@ function $realloc(pointer, layout, size) {
 
 // `handle_alloc_error(layout)`: the program's end, as Rust says it.
 function $allocError(layout) {
+  // no site: std's `handle_alloc_error` names none, its hook printing this
+  // and aborting.
   throw $stringPanic(`memory allocation of ${layout.size} bytes failed`);
 }
 

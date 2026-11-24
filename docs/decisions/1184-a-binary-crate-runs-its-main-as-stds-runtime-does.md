@@ -164,3 +164,26 @@ behaviour is kept (ADR 0262). Found by generated programs, seeds
 `division_assigned_to_a_place_raises_at_the_division.rs` and
 `remainder_assigned_in_a_closure_raises_at_the_remainder.rs`, and a
 mutation of each rule.
+
+## Amendment: each panic the runtime raises passes its site (2026-11-24, #2489)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a panic named
+`<unknown>` where Rust names a line.
+
+A collect into an `Rc<[T]>` or an `Arc<[T]>` past what a `Layout` of the
+slice holds raised std's `unwrap()` of its `LayoutError` with no site, so
+std's hook said `panicked at <unknown>:` where native Rust names
+`allocate_for_slice`'s `unwrap()`, `rc.rs:2420:41` or `sync.rs:2387:41`.
+`$stdSites` gains `rcSliceLayout` and `arcSliceLayout`, read from std's
+MIR as every row is (`compiled_std/raised.rs`), and `$roomForCounted` and
+`$collectCounted` take the row's site as `layout`, after `unbounded`.
+
+So that no raise is left without one, test/architecture-panics.test.ts
+counts each `$panic(..)` and `$stringPanic(..)` call's arguments in the
+runtime: each passes its site, or the comment above it says why it has
+none, `// no site: <why>`, of which there's one, `$allocError`, as std's
+`handle_alloc_error` names no place. Held by the corpus cases
+`rc_slice_collect_past_a_layout_panics_at_its_unwrap` and
+`arc_slice_collect_by_generic_code_past_a_layout`, and the mutations
+`layout-error-unsited`, `rc-slice-layout-at-its-unbounded` and
+`rc-slice-layout-row-of-another`.

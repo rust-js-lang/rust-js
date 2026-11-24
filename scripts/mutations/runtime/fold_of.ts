@@ -262,7 +262,7 @@ export const mutations: Mutation[] = [
     name: "collect-counted-as-a-vec",
     breaks: "generic code's `collect()` into an `Rc<[T]>` of a `TrustedLen` collects as a `Vec`, dropping what it wrote before what's left, and panicking `capacity overflow` where std unwraps a `LayoutError` (#1678, #1694)",
     file: "crates/rust-js-program/src/runtime/fold_of.js",
-    find: "  if (trusted) return $collectDropping($roomForCounted(it, size, align, unbounded), drop, true);\n",
+    find: "  if (trusted) return $collectDropping($roomForCounted(it, size, align, unbounded, layout), drop, true);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_(unwinding|room).rs$"],
   },

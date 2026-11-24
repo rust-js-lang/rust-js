@@ -327,6 +327,21 @@ const RAISED: &[(&str, Option<&str>, Owner, &str)] = &[
         ),
         "to_arc_slice",
     ),
+    // Where `Rc::<[T]>`'s and `Arc::<[T]>`'s slice is allocated, its
+    // `Layout::array::<T>(len).unwrap()`, which a collect past what a
+    // `Layout` holds panics at (#2489).
+    (
+        "rcSliceLayout",
+        None,
+        Owner::Type(StdCrate::Alloc, &["rc", "Rc"]),
+        "allocate_for_slice",
+    ),
+    (
+        "arcSliceLayout",
+        None,
+        Owner::Type(StdCrate::Alloc, &["sync", "Arc"]),
+        "allocate_for_slice",
+    ),
     (
         "vecExtendTrusted",
         None,

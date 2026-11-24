@@ -300,7 +300,13 @@ function main() {
             try {
               result$1 = {
                 value: $collectDropping(
-                  $roomForCounted(iter, 1, 1, $stdSites.rcFromTrustedLen[0]),
+                  $roomForCounted(
+                    iter,
+                    1,
+                    1,
+                    $stdSites.rcFromTrustedLen[0],
+                    $stdSites.rcSliceLayout[0],
+                  ),
                   loudDrop_drop,
                   true,
                 ),
@@ -335,6 +341,7 @@ function main() {
                     ITrustedLen,
                     $vecCollectWay($collectsInPlace(IInPlace, 1, 1), ITrustedLen, IInPlace),
                     $stdSites.rcFromTrustedLen[0],
+                    $stdSites.rcSliceLayout[0],
                     loudDrop_drop,
                   ),
                   strong: 1,
@@ -368,6 +375,7 @@ function main() {
                     ITrustedLen,
                     $vecCollectWay($collectsInPlace(IInPlace, 1, 1), ITrustedLen, IInPlace),
                     $stdSites.arcFromTrustedLen[0],
+                    $stdSites.arcSliceLayout[0],
                     loudDrop_drop,
                   ),
                   strong: 1,
@@ -401,6 +409,7 @@ function main() {
                     1,
                     1,
                     $stdSites.arcFromTrustedLen[0],
+                    $stdSites.arcSliceLayout[0],
                   ),
                   loudDrop_drop,
                   true,

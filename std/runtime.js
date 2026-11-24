@@ -5157,11 +5157,12 @@ export function $collectVec(it, size, how, drop) {
 // given, as std's `ToRcSlice` collects the type its caller knows: of a
 // `TrustedLen`, `trusted`, `from_iter_exact`'s, room asked as
 // `$roomForCounted` asks it, of items `size` bytes aligned to `align`,
-// its panic of no upper bound at `unbounded`, std's line of it,
+// its panic of no upper bound at `unbounded`, std's line of it, and of a
+// `Layout` past its size at `layout` (#2489),
 // then each item by `next`, a panic dropping what's left before what it
 // wrote; of another, a `Vec`'s, `$collectVec`'s by `how` (#1678, #1694).
-export function $collectCounted(it, size, align, trusted, how, unbounded, drop) {
-  if (trusted) return $collectDropping($roomForCounted(it, size, align, unbounded), drop, true);
+export function $collectCounted(it, size, align, trusted, how, unbounded, layout, drop) {
+  if (trusted) return $collectDropping($roomForCounted(it, size, align, unbounded, layout), drop, true);
   return $collectVec(it, size, how, drop);
 }
 
@@ -15192,6 +15193,12 @@ export const $stdSites = {
   "arcFromTrustedLen": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/sync.rs:4368:13"
   ],
+  "rcSliceLayout": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/rc.rs:2420:41"
+  ],
+  "arcSliceLayout": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/sync.rs:2387:41"
+  ],
   "vecExtendTrusted": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:4111:13"
   ],
@@ -15892,6 +15899,8 @@ export function $realloc(pointer, layout, size) {
 
 // `handle_alloc_error(layout)`: the program's end, as Rust says it.
 export function $allocError(layout) {
+  // no site: std's `handle_alloc_error` names none, its hook printing this
+  // and aborting.
   throw $stringPanic(`memory allocation of ${layout.size} bytes failed`);
 }
 
@@ -16155,8 +16164,10 @@ export function $roomFor(count, size) {
 // `isize::MAX` bytes at its alignment, the panic of std's `unwrap()` of a
 // `Layout`'s `LayoutError`. Where asking it throws, `it` is closed. Its
 // `capacity overflow` is raised at `unbounded`, `ToRcSlice`'s line or
-// `ToArcSlice`'s (#2292).
-export function $roomForCounted(it, size, align, unbounded) {
+// `ToArcSlice`'s (#2292), and its `LayoutError` at `layout`, the
+// `unwrap()` of `Rc::<[T]>`'s or `Arc::<[T]>`'s `allocate_for_slice`
+// (#2489).
+export function $roomForCounted(it, size, align, unbounded, layout) {
   $unwinds(
     () => {
       const [, upper] = $sizeHint(it);
@@ -16165,7 +16176,7 @@ export function $roomForCounted(it, size, align, unbounded) {
       const bytes = upper * size;
       const counts = Math.ceil(8 / align) * align;
       if (bytes > max - (align - 1) || counts + bytes > max - (Math.max(4, align) - 1)) {
-        throw $stringPanic("called `Result::unwrap()` on an `Err` value: LayoutError");
+        throw $stringPanic("called `Result::unwrap()` on an `Err` value: LayoutError", layout);
       }
     },
     () => it.return?.(),

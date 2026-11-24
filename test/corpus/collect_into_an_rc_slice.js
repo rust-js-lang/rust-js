@@ -43,6 +43,7 @@ function main() {
         ITrustedLen,
         $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
         $stdSites.rcFromTrustedLen[0],
+        $stdSites.rcSliceLayout[0],
       ),
   });
   console.log(`[${generic.join(", ")}]`);
@@ -55,6 +56,7 @@ function main() {
         ITrustedLen,
         $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
         $stdSites.arcFromTrustedLen[0],
+        $stdSites.arcSliceLayout[0],
       ),
   });
   console.log(`[${shared.join(", ")}]`);

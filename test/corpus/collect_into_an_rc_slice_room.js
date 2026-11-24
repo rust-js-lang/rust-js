@@ -55,6 +55,7 @@ function main() {
             8,
             8,
             $stdSites.rcFromTrustedLen[0],
+            $stdSites.rcSliceLayout[0],
           ),
         ).length,
     )}`,
@@ -68,12 +69,13 @@ function main() {
             2,
             2,
             $stdSites.arcFromTrustedLen[0],
+            $stdSites.arcSliceLayout[0],
           ),
         ).length,
     )}`,
   );
   console.log(
-    `${said(() => Array.from($roomForCounted($iterator({ start: 0n }, $rangeFromStep(0n, 18446744073709551615n)), 8, 8, $stdSites.rcFromTrustedLen[0])).length)}`,
+    `${said(() => Array.from($roomForCounted($iterator({ start: 0n }, $rangeFromStep(0n, 18446744073709551615n)), 8, 8, $stdSites.rcFromTrustedLen[0], $stdSites.rcSliceLayout[0])).length)}`,
   );
   console.log(
     `${said(() => {
@@ -90,6 +92,7 @@ function main() {
             1,
             1,
             $stdSites.rcFromTrustedLen[0],
+            $stdSites.rcSliceLayout[0],
           ),
         ).length,
     )}`,
@@ -108,6 +111,7 @@ function main() {
                 ITrustedLen,
                 $vecCollectWay($collectsInPlace(IInPlace, 8, 8), ITrustedLen, IInPlace),
                 $stdSites.rcFromTrustedLen[0],
+                $stdSites.rcSliceLayout[0],
               ),
           },
           true,
@@ -128,6 +132,7 @@ function main() {
                 ITrustedLen,
                 $vecCollectWay($collectsInPlace(IInPlace, 8, 8), ITrustedLen, IInPlace),
                 $stdSites.arcFromTrustedLen[0],
+                $stdSites.arcSliceLayout[0],
               ),
           },
           true,

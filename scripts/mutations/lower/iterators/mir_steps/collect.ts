@@ -778,7 +778,7 @@ export const mutations: Mutation[] = [  {
     name: "rc-slice-room-unasked",
     breaks: "a `collect()` into an `Rc<[T]>` of a range past what a `Layout` can be asks no room, and steps on till memory runs out, where std panics (#1694)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
-    find: "                        Some(item) => self.counted_slice_room(it, (boxed, item), iter_ty, unbounded, span)?,\n",
+    find: "                        Some(item) => self.counted_slice_room(it, (boxed, item), iter_ty, (unbounded, layout), span)?,\n",
     replace: "                        Some(_) => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_room.rs$"],
   },
@@ -806,5 +806,13 @@ export const mutations: Mutation[] = [  {
     find: "        if self.frame.facts.capacity_read_collects.contains(&span) {\n",
     replace: "        if false && self.frame.facts.capacity_read_collects.contains(&span) {\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_capacity_through_a_call_refused.rs$"],
+  },
+  {
+    name: "rc-slice-layout-at-its-unbounded",
+    breaks: "a collect into an `Rc<[T]>` past a `Layout`'s size names `ToRcSlice`'s `capacity overflow` line, where native names `allocate_for_slice`'s `unwrap()` (#2489)",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
+    find: "            let (unbounded, layout) = (Expr::std_site(unbounded, 0), Expr::std_site(layout, 0));\n",
+    replace: "            let (unbounded, layout) = (Expr::std_site(unbounded, 0), Expr::std_site(unbounded, 0));\n",
+    tests: ["test/corpus.test.ts", "-t", "^(rc_slice_collect_past_a_layout_panics_at_its_unwrap|arc_slice_collect_by_generic_code_past_a_layout).rs$"],
   },
 ];

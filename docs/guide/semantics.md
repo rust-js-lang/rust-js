@@ -1128,7 +1128,8 @@ What's refused is in [the limitations](limitations.md).
   Into an `Rc<[T]>` or an `Arc<[T]>` of a `TrustedLen`, its hint is asked
   as std's `ToRcSlice` asks it: of no upper bound, `capacity overflow`;
   past what a `Layout` of the slice can be, the panic of std's `unwrap()`
-  of a `LayoutError` (#1694); and a panic as it steps drops what's left
+  of a `LayoutError` (#1694), raised where `allocate_for_slice` unwraps
+  it, `rc.rs`'s line or `sync.rs`'s (#2489); and a panic as it steps drops what's left
   of the iterator before what it wrote (#1678). Of another iterator, as a
   `Vec` first ([0940](../decisions/0940-collect-asks-room-of-its-hint.md),
   amended). One that

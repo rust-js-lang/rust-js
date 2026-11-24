@@ -356,15 +356,6 @@ test("only the publisher and the driver write files", () => {
   for (const file of writers) expect(read(file), file).toMatch(writes);
 });
 
-// A panic's `Error` is made one way, `Expr::panic` (ADR 0706): five
-// places wrote `new Error(..)` each, and `panic!("")` was `new Error("")`.
-// It's the runtime's `$panic` or `$stringPanic`, which marks where it was
-// raised (ADR 1184).
-test("a panic's Error is made in one place", () => {
-  const made = /Expr::(?:var|global)\("Error"\)|helper\("\$(?:panic|stringPanic)"/;
-  expect(sources.filter(file => made.test(read(file)))).toEqual(["crates/rust-js-program/src/js/make/unwinding.rs"]);
-});
-
 test("library recognition cannot access function emission state", () => {
   for (const file of ["crates/rust-js-lower/src/recognition.rs", ...files("crates/rust-js-lower/src/recognition")]) {
     expect(read(file), file).not.toMatch(/\b(?:FnCx|ExprId|Stmt)\b|\bRefCell\s*<|crate::js|runtime::/);

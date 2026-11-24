@@ -127,6 +127,12 @@ const $stdSites = {
   "arcFromTrustedLen": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/sync.rs:4368:13"
   ],
+  "rcSliceLayout": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/rc.rs:2420:41"
+  ],
+  "arcSliceLayout": [
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/sync.rs:2387:41"
+  ],
   "vecExtendTrusted": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:4111:13"
   ],

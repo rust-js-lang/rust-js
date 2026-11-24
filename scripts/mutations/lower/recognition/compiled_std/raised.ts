@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "                        let held = std::iter::once(arg.node.ty(body, tcx));\n",
     tests: ["test/std-sites.test.ts"],
   },
+  {
+    name: "rc-slice-layout-row-of-another",
+    breaks: "`rcSliceLayout`'s row walks `Rc`'s `allocate_for_layout`, not `allocate_for_slice`, so its site isn't the `unwrap()` std panics at (#2489)",
+    file: "crates/rust-js-lower/src/recognition/compiled_std/raised.rs",
+    find: "        \"rcSliceLayout\",\n        None,\n        Owner::Type(StdCrate::Alloc, &[\"rc\", \"Rc\"]),\n        \"allocate_for_slice\",\n",
+    replace: "        \"rcSliceLayout\",\n        None,\n        Owner::Type(StdCrate::Alloc, &[\"rc\", \"Rc\"]),\n        \"allocate_for_layout\",\n",
+    tests: ["test/std-sites.test.ts"],
+  },
 ];

@@ -184,8 +184,10 @@ function $roomFor(count, size) {
 // `isize::MAX` bytes at its alignment, the panic of std's `unwrap()` of a
 // `Layout`'s `LayoutError`. Where asking it throws, `it` is closed. Its
 // `capacity overflow` is raised at `unbounded`, `ToRcSlice`'s line or
-// `ToArcSlice`'s (#2292).
-function $roomForCounted(it, size, align, unbounded) {
+// `ToArcSlice`'s (#2292), and its `LayoutError` at `layout`, the
+// `unwrap()` of `Rc::<[T]>`'s or `Arc::<[T]>`'s `allocate_for_slice`
+// (#2489).
+function $roomForCounted(it, size, align, unbounded, layout) {
   $unwinds(
     () => {
       const [, upper] = $sizeHint(it);
@@ -194,7 +196,7 @@ function $roomForCounted(it, size, align, unbounded) {
       const bytes = upper * size;
       const counts = Math.ceil(8 / align) * align;
       if (bytes > max - (align - 1) || counts + bytes > max - (Math.max(4, align) - 1)) {
-        throw $stringPanic("called `Result::unwrap()` on an `Err` value: LayoutError");
+        throw $stringPanic("called `Result::unwrap()` on an `Err` value: LayoutError", layout);
       }
     },
     () => it.return?.(),

@@ -379,8 +379,8 @@ export const mutations: Mutation[] = [
     name: "room-for-counted-capacity-overflow",
     breaks: "an `Rc<[T]>` collected of a `TrustedLen` past what a `Layout` can be panics `capacity overflow`, a `Vec`'s, where std unwraps a `LayoutError` (#1694)",
     file: "crates/rust-js-program/src/runtime/capacity.js",
-    find: "        throw $stringPanic(\"called `Result::unwrap()` on an `Err` value: LayoutError\");\n",
-    replace: "        throw $stringPanic(\"capacity overflow\");\n",
+    find: "        throw $stringPanic(\"called `Result::unwrap()` on an `Err` value: LayoutError\", layout);\n",
+    replace: "        throw $stringPanic(\"capacity overflow\", layout);\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_room.rs$"],
   },
   {
@@ -398,5 +398,13 @@ export const mutations: Mutation[] = [
     find: "throw $panic(\"capacity overflow\", $stdSites.vecFromTrustedLen[0]);",
     replace: "throw $panic(\"capacity overflow\", $stdSites.capacityOverflow[0]);",
     tests: ["test/corpus.test.ts", "-t", "^vec_collect_as_its_caller_knows.rs$"],
+  },
+  {
+    name: "layout-error-unsited",
+    breaks: "a collect into an `Rc<[T]>` or an `Arc<[T]>` past a `Layout`'s size panics at `<unknown>`, where native names `allocate_for_slice`'s `unwrap()`, `rc.rs:2420:41` (#2489)",
+    file: "crates/rust-js-program/src/runtime/capacity.js",
+    find: "        throw $stringPanic(\"called `Result::unwrap()` on an `Err` value: LayoutError\", layout);\n",
+    replace: "        throw $stringPanic(\"called `Result::unwrap()` on an `Err` value: LayoutError\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^(rc_slice_collect_past_a_layout_panics_at_its_unwrap|arc_slice_collect_by_generic_code_past_a_layout).rs$"],
   },
 ];
