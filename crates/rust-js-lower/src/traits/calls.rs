@@ -3,7 +3,7 @@
 
 use super::*;
 use crate::generic_facts::{Arguments, RefHeld, made_before};
-use crate::temporary_names::Role;
+use crate::temporary_names::{Role, declared};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A type whose `Borrow` is the crate's that std's function would take
@@ -1077,7 +1077,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let ty = self.drop_slot_of(id, index, generic_args);
                     drops.push(match closed == Some(ty) {
                         true => {
-                            let closing = js::Name::declared("closing".to_string());
+                            let closing = declared(Role::Closing);
                             let close = Expr::call(Expr::member(Expr::var(closing.clone()), "return"), Vec::new());
                             Some(Expr::arrow(
                                 vec![closing.into()],

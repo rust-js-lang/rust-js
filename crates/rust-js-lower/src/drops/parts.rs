@@ -2,7 +2,7 @@
 //! facts, found before it's lowered.
 
 use super::*;
-use crate::temporary_names::Role;
+use crate::temporary_names::{Role, declared};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a `ty`, an iterator, is dropped by closing it, `it.return()`:
@@ -614,7 +614,7 @@ pub fn aborting_finally(stmt: &mut Stmt) {
     // overflow, `$catchable`'s, no other: preparation writes it as the
     // `try`'s own `catch` (ADR 0660).
     if !catches_unwind(body) {
-        let error = js::Name::declared("error".to_string());
+        let error = declared(Role::Error);
         let rethrown = Expr::call_helper("$unwindsOn", vec![Expr::var(&error)]);
         let caught = StmtKind::TryCatch(
             std::mem::take(body),

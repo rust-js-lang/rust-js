@@ -5,7 +5,7 @@
 use crate::display::{Pretty, join};
 use crate::recognition::{IterMethod, trait_method};
 use crate::representation::Num;
-use crate::temporary_names::Role;
+use crate::temporary_names::{Role, declared};
 use crate::{FnCx, R};
 use rust_js_program::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use rustc_middle::ty::{self, Ty};
@@ -446,7 +446,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return shown(self, (parts, None));
         }
         let fresh = self.never_exhausted(&range);
-        let param = js::Name::declared("range".to_string());
+        let param = declared(Role::Range);
         let state = match fresh {
             true => (
                 kind.bounds()

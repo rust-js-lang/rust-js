@@ -16,7 +16,7 @@ pub use printing::write_to_sink;
 pub use sink_writes::SinkWrite;
 
 use super::bindings;
-use crate::temporary_names::Role;
+use crate::temporary_names::{Role, declared};
 
 use super::format_spec::{Options, Radix};
 use super::passed_on::{Taker, passed_on};
@@ -757,7 +757,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // 0058), or a library's function shows the type with them (#1331).
         let shown_so = self.krate.shown.of_type(self.tcx, ty);
         let param = self.unspelled("value");
-        let options = js::Name::declared("options".to_string());
+        let options = declared(Role::Options);
         let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() || shown_so.any() {
             true => (
                 vec![param.clone().into(), options.clone().into()],

@@ -16,6 +16,7 @@
 
 use super::*;
 use crate::recognition::StdItem;
+use crate::temporary_names::{Role, declared};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `{:?}` of `ty`, a std value, shows a part that may stop
@@ -250,7 +251,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// piece that stops part-way leaves those before it written, and those
     /// after it unmade, as `?` returns (#1530).
     pub(crate) fn composed_written(&mut self, pieces: Vec<Expr>) -> Expr {
-        let f = js::Name::declared("f".to_string());
+        let f = declared(Role::F);
         let written: Vec<Stmt> = (pieces.into_iter())
             .map(|piece| {
                 StmtKind::Expr(Expr::call(Expr::member(Expr::var(f.clone()), "write"), vec![piece])).at(js::Span::NONE)
@@ -272,7 +273,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut args = vec![items];
         for (i, &ty) in tys.iter().enumerate() {
             // Each shown by a closure of its own, `(entry) => ..`.
-            let entry = js::Name::declared("entry".to_string());
+            let entry = declared(Role::Entry);
             let read = match tys.len() {
                 1 => Expr::var(entry.clone()),
                 _ => Expr::index(Expr::var(entry.clone()), Expr::int(i as i128)),
@@ -304,7 +305,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         steps: Vec<(&str, Vec<Expr>)>,
         finish: &str,
     ) -> Expr {
-        let f = js::Name::declared("f".to_string());
+        let f = declared(Role::F);
         let (made, role) = self.builder_of(kind, Expr::var(f.clone()), type_name, pretty);
         let builder = self.fresh(role);
         let mut body = vec![StmtKind::Const(builder.clone(), made).at(js::Span::NONE)];

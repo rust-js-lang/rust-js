@@ -2,6 +2,7 @@
 //! seen (ADR 0139): its callbacks, its spreads and what it's collected into.
 
 use super::*;
+use crate::temporary_names::{Role, declared};
 
 /// `enumerate()` then a method whose callback takes each pair apart,
 /// `.map((x, i) => [i, x]).map(([i, w]) => ..)`: the method of the items
@@ -50,7 +51,7 @@ pub(super) fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Exp
     // the list binds, `_`, else `__`, .. (`Name::suggested`, #2048).
     let unread = || {
         let preferred = (1..7).map(|k| "_".repeat(k)).collect();
-        js::Name::declared("_".to_string()).suggested(preferred, "_")
+        declared(Role::Unread).suggested(preferred, "_")
     };
     let mut params = leading.to_vec();
     params.push(item.clone().unwrap_or_else(|| js::Pattern::Name(unread())));

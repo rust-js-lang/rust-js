@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::recognition::JsonPathType;
+use crate::temporary_names::{Role, declared};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What a call that writes to a formatter, `operation` of `def_id`,
@@ -301,7 +302,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tys: Vec<Ty<'tcx>> = generic_args.types().collect();
         let iterable = *tys.last().expect("the entries' type");
         let items = self.iterable_items(items, iterable, span, out)?;
-        let entry = js::Name::declared("entry".to_string());
+        let entry = declared(Role::Entry);
         let shows = if kind == DebugBuilder::Map {
             let pair = Expr::var(entry.clone());
             let key = self.debug_string_with(Expr::index(pair.clone(), Expr::int(0)), tys[0], span, &pretty)?;

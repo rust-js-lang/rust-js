@@ -5,7 +5,7 @@
 
 use crate::recognition::StdItem;
 use crate::recursive_fns::Kind;
-use crate::temporary_names::{Base, Role};
+use crate::temporary_names::{Base, Role, declared};
 use crate::{FnCx, R, Shape};
 use rust_js_program::casing::lower_first;
 use rust_js_program::collections::IndexSet;
@@ -284,7 +284,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let may_panic = |this: &Self, ty: Option<Ty<'tcx>>| ty.is_some_and(|t| this.clone_may_panic(t));
         let (params, item, entry) = if set {
-            let item = js::Name::declared("item".to_string());
+            let item = declared(Role::Item);
             let cloned = cloned(self, &item, key)?;
             (vec![item.into()], cloned, key_ty)
         } else {
@@ -293,7 +293,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (value_ty.expect("a map's"), may_panic(self, value)),
             ];
             let param = self.unspelled("value");
-            let key_name = js::Name::declared("key".to_string());
+            let key_name = declared(Role::Key);
             let named = [(key_name.clone(), key), (param.clone(), value)];
             let (pair, made) = self.parts_in_turn(&parts, span, |cx, i| cloned(cx, &named[i].0, named[i].1))?;
             let pattern = js::Pattern::Array(vec![Some(key_name.into()), Some(param.clone().into())]);

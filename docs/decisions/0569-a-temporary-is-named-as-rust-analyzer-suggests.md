@@ -517,3 +517,19 @@ shape) and the corpus. Mutations of `prepare/temporaries.rs`:
 `temporary-takes-a-word-reclaimed`, `temporary-takes-an-import-reclaimed`,
 `temporary-flags-of-the-old-word`; and of `Name::suggested`'s form,
 `suggested-keeps-a-temporarys-form`.
+
+## Amendment (2026-11-24, #890 step 1): a declared variable's word is its role's
+
+Lowering and tidy declared 45 variables by a word written in place,
+`js::Name::declared("key".to_string())`: callbacks' parameters, helpers'
+locals and a `catch`'s binding. That was a second way to name, beside
+`spill` and `fresh`'s `Base`, whose words are `Role`'s catalogue. Each is
+`temporary_names::declared(Role::Key)` now: `js::Name::declared` of its
+base's word, the item's, given apart by preparation as before, where
+`fresh` gives apart as it's made. `Role` gains `Closing`, `From`, `Letter`
+and `Word`, and `dropI` is `Base::Prefixed(Role::Drop, "I")`.
+test/architecture-names.test.ts holds that no `Name::declared(` of a
+string literal is written in rust-js-lower or rust-js-mir outside
+temporary_names.rs, a unit test's own aside. rust-js-program, below
+lowering, reaches no `Role`: its JS layer's rewrites and preparation's
+sentinels name their own. No output changes.

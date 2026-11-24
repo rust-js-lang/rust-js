@@ -6,7 +6,7 @@ use super::calls::{given_to_js_but, spread_rest};
 use super::recognition::StdItem;
 use super::{FnCx, R};
 use crate::bindings;
-use crate::temporary_names::{Base, Role};
+use crate::temporary_names::{Base, Role, declared};
 use rust_js_program::js;
 use rust_js_program::js::{Expr, Name, Op, StmtKind, UnaryOp};
 use rustc_middle::thir;
@@ -838,7 +838,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(Expr::import(from));
         }
-        let m = js::Name::declared("m".to_string());
+        let m = declared(Role::M);
         let value = match getter {
             true => {
                 let export = match export == js::NAMESPACE {

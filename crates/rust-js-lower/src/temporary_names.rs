@@ -37,6 +37,7 @@ pub enum Role {
     Cell,
     /// What an element is given as its child.
     Children,
+    Closing,
     Collection,
     Compare,
     Component,
@@ -58,6 +59,7 @@ pub enum Role {
     Expected,
     F,
     Fallback,
+    From,
     Given,
     Grown,
     Guard,
@@ -85,6 +87,7 @@ pub enum Role {
     Left,
     List,
     Length,
+    Letter,
     Load,
     Location,
     M,
@@ -154,6 +157,7 @@ pub enum Role {
     Variant,
     Visitor,
     Wrapping,
+    Word,
     X,
     Y,
 }
@@ -189,6 +193,7 @@ impl Role {
             Role::Captured => "captured",
             Role::Cell => "cell",
             Role::Children => "children",
+            Role::Closing => "closing",
             Role::Collection => "collection",
             Role::Compare => "compare",
             Role::Component => "Component",
@@ -210,6 +215,7 @@ impl Role {
             Role::Expected => "expected",
             Role::F => "f",
             Role::Fallback => "fallback",
+            Role::From => "from",
             Role::Given => "given",
             Role::Grown => "grown",
             Role::Guard => "guard",
@@ -237,6 +243,7 @@ impl Role {
             Role::Left => "left",
             Role::List => "list",
             Role::Length => "length",
+            Role::Letter => "letter",
             Role::Load => "load",
             Role::Location => "location",
             Role::M => "m",
@@ -302,6 +309,7 @@ impl Role {
             Role::Variant => "variant",
             Role::Visitor => "visitor",
             Role::Wrapping => "wrapping",
+            Role::Word => "word",
             Role::X => "x",
             Role::Y => "y",
         }
@@ -360,6 +368,15 @@ impl From<Role> for Base<'_> {
     fn from(role: Role) -> Self {
         Base::Role(role)
     }
+}
+
+/// A variable of `base`'s word as it is, the item's (`js::Name::declared`),
+/// given apart by preparation, not here, where `FnCx::fresh` gives it apart
+/// as it's made: a callback's parameter or a helper's local whose word is
+/// its role's, `(key) => ..` of `Role::Key`. The one way lowering names a
+/// variable by a word, so no word is spelled outside this file (#890).
+pub fn declared<'b>(base: impl Into<Base<'b>>) -> rust_js_program::js::Name {
+    rust_js_program::js::Name::declared(base.into().text().into_owned())
 }
 
 impl Base<'_> {

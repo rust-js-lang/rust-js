@@ -34,6 +34,21 @@ test("spill and fresh take a Base, never a word", () => {
   expect(read("crates/rust-js-lower/src/temporary_names.rs")).not.toMatch(/impl\b[^{]*From<&[^>]*str>\s+for\s+Base\b/);
 });
 
+// Nor does a variable lowering or tidy declares spell a word of its own
+// (#890 step 1): `js::Name::declared("key".to_string())` was a second way to
+// name, 45 callback parameters, helper locals and a `catch`'s binding; each
+// is `declared(Role::Key)` now, its word in temporary_names.rs's catalogue.
+// A unit test's name is its own; so are rust-js-program's, below lowering,
+// whose JS layer's rewrites and preparation's sentinels no `Role` reaches.
+test("a declared variable's word is a Role's, never a literal", () => {
+  const literal = /Name::declared\(\s*(?:"|String::from\(\s*")/;
+  const code = (file: string) => read(file).split("#[cfg(test)]")[0];
+  const named = sources.filter(file => /^crates\/rust-js-(?:lower|mir)\//.test(file) && file !== "crates/rust-js-lower/src/temporary_names.rs");
+  expect(named.length).toBeGreaterThan(400);
+  expect(named.filter(file => literal.test(code(file)))).toEqual([]);
+  expect(read("crates/rust-js-lower/src/temporary_names.rs")).toMatch(/pub fn declared<'b>\(base: impl Into<Base<'b>>\) -> rust_js_program::js::Name \{\n\s*rust_js_program::js::Name::declared\(base\.into\(\)\.text\(\)\.into_owned\(\)\)/);
+});
+
 // Whether a label is MIR's, `bb12`, or one the program wrote, `'desc`, is
 // answered by `is_block_label` alone (ADR 0742): tidy's decisions had a
 // copy of its test. A block label's word is read back to its block in one

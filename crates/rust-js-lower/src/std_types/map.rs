@@ -2,7 +2,7 @@
 //! what JS compares by value: numbers, strings, `char`s, `bool`s and
 //! fieldless enums.
 
-use crate::temporary_names::Role;
+use crate::temporary_names::{Role, declared};
 use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 
 use crate::drops::dropped_after;
@@ -447,7 +447,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             );
                             return Err(self.unsupported(span, &what));
                         }
-                        let param = js::Name::declared("key".to_string());
+                        let param = declared(Role::Key);
                         let fields = (indices.iter())
                             .map(|&i| self.project(Expr::var(param.clone()), key, i))
                             .collect();
@@ -1174,7 +1174,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Part::Keys => 0,
                 Part::Values => 1,
             };
-            let entry = js::Name::declared("entry".to_string());
+            let entry = declared(Role::Entry);
             let pick = Expr::arrow(
                 vec![entry.clone().into()],
                 vec![

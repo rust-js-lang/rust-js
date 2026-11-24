@@ -5,7 +5,7 @@
 use crate::calls::Call;
 use crate::mut_refs::boxed;
 use crate::recognition::{Std, StdItem, is_std_def, std_item};
-use crate::temporary_names::Role;
+use crate::temporary_names::{Role, declared};
 use crate::{FnCx, R};
 use rust_js_program::js::{self, Expr, Pattern, Stmt, StmtKind};
 use rustc_middle::traits::ImplSource;
@@ -705,7 +705,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let bytes = match num.bits() {
             8 if !num.signed() => items,
             bits => {
-                let n = js::Name::declared("n".to_string());
+                let n = declared(Role::N);
                 let to_bytes = Expr::call(
                     Expr::helper("$toBytes"),
                     vec![Expr::var(n.clone()), Expr::int(i128::from(bits / 8)), Expr::bool(true)],

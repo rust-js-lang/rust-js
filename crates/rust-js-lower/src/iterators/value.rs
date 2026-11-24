@@ -8,6 +8,7 @@
 use crate::iterators::in_place_forms::InPlaceForm;
 use crate::recognition::Wrapper;
 use crate::std_types::range::RangeKind;
+use crate::temporary_names::{Role, declared};
 use rust_js_program::js::{self, Expr, Known};
 
 /// What a JS iterator is made as, each its maker's.
@@ -336,7 +337,7 @@ pub(crate) fn enumerated(it: Expr) -> Expr {
 
 /// `(x, i) => [i, x]`, what `enumerated` maps each item by.
 fn enumerating() -> Expr {
-    let (x, i) = (js::Name::declared("x".to_string()), js::Name::declared("i".to_string()));
+    let (x, i) = (declared(Role::X), declared(Role::I));
     let pair = Expr::array(vec![Expr::var(&i), Expr::var(&x)]);
     Expr::arrow(
         vec![x.into(), i.into()],

@@ -5,6 +5,7 @@
 //! `knowing.rs`'.
 
 use super::*;
+use crate::temporary_names::{Role, declared};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, of type `ty`, as what the crate's iterator's own steps take
@@ -185,7 +186,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ty::Adt(_, args) => args.type_at(0),
                     _ => unreachable!("a `Peekable`"),
                 };
-                let peekable = js::Name::declared("peekable".to_string());
+                let peekable = declared(Role::Peekable);
                 Some(match self.iterator_evidence(source, iterator) {
                     Some(dictionary) => Expr::arrow(
                         vec![peekable.clone().into()],
@@ -616,7 +617,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// `size_hint` or std's, which std's `len()` checks is exact (`$exactLen`,
 /// ADR 0456): `(it) => $exactLen(hint(it))`.
 fn exact_len_by(hint: &Option<Expr>) -> Expr {
-    let it = js::Name::declared("it".to_string());
+    let it = declared(Role::It);
     let hint_of = match hint {
         Some(hint) => Expr::call(hint.clone(), vec![Expr::var(&it)]),
         None => Expr::array(vec![Expr::int(0), Expr::js_undefined()]),

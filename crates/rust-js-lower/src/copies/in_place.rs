@@ -4,6 +4,7 @@
 
 use super::super::refusal::{Refused, refuse};
 use super::super::{FnCx, R};
+use crate::temporary_names::{Role, declared};
 use rust_js_program::js;
 use rust_js_program::js::Expr;
 use rustc_middle::ty::Ty;
@@ -58,7 +59,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type nothing is known to change in place, whose copy is a value of
     /// its own, an object or an array, not the value itself, a number's.
     fn copies_left_out(&self, ty: Ty<'tcx>) -> bool {
-        let value = Expr::var(js::Name::declared("value".to_string()));
+        let value = Expr::var(declared(Role::Value));
         self.is_copy(ty) && !self.contains_mutated(ty) && !js::same_path(&self.copy(value.clone(), ty), &value)
     }
 }

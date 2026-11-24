@@ -10,6 +10,7 @@ pub use in_place::InPlaceWriter;
 
 use super::recognition::StdItem;
 use super::{FnCx, Shape};
+use crate::temporary_names::{Role, declared};
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rust_js_program::js;
 use rust_js_program::js::{Expr, Op, Prop};
@@ -229,7 +230,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // Of a value that's its own copy, a type parameter's no
                     // caller gives a copy function, the `Option` itself, not
                     // `value == null ? value : value` (ADR 0289, amended).
-                    let probe = Expr::var(js::Name::declared("value".to_string()));
+                    let probe = Expr::var(declared(Role::Value));
                     if !boxed && self.copy_parts(probe.clone(), item, stored).kind == probe.kind {
                         return place;
                     }

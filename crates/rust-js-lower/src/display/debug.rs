@@ -4,6 +4,7 @@
 use super::*;
 use crate::recognition::JsonPathType;
 use crate::recognition::{c_str_error, is_c_str, is_c_string};
+use crate::temporary_names::{Role, declared};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `{:?}` of a `ty` value (ADR 0060), as Rust shows it: `Some(1)`,
@@ -386,7 +387,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // reads the same, or is `$iter(v)`, whose rest is `v`; else as an
             // arrow's parameter, which tidy makes a `const`.
             let in_place = value.reads_same() || crate::iterators::fresh_iter_source(&value).is_some();
-            let it_name = js::Name::declared("it".to_string());
+            let it_name = declared(Role::It);
             let it = match in_place {
                 true => value.clone(),
                 false => Expr::var(&it_name),
@@ -579,7 +580,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `LazyCell(1)`, or `LazyCell(<uninit>)` where it isn't made yet.
             ty::Adt(adt, args) if std(StdItem::LazyCell) => {
                 let name = self.tcx.item_name(adt.did());
-                let lazy = js::Name::declared("lazy".to_string());
+                let lazy = declared(Role::Lazy);
                 let shown = self.debug_string_with(Expr::held(Expr::var(&lazy)), args.type_at(0), span, pretty)?;
                 let made = crate::std_types::lazy::is_made(Expr::var(&lazy));
                 let shown = Expr::cond(made, shown, Expr::str("<uninit>"));
@@ -676,7 +677,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if let Some(slice) = self.recognition().shows_its_slice(ty) => {
                 use crate::recognition::ShownLeft;
                 let name = slice.name;
-                let it_name = js::Name::declared("it".to_string());
+                let it_name = declared(Role::It);
                 let (left, item) = self.slice_left(Expr::var(&it_name), ty, slice, span)?;
                 let shown = match slice.left {
                     ShownLeft::Slice => {
@@ -716,7 +717,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let param = self.unspelled("value");
                 let value = self.in_order_of(value, ty, span)?;
                 let (key, item) = (args.type_at(0), args.type_at(1));
-                let key_name = js::Name::declared("key".to_string());
+                let key_name = declared(Role::Key);
                 let key = self.debug_string_with(Expr::var(&key_name), key, span, pretty)?;
                 let item = self.debug_string_with(Expr::var(&param), item, span, pretty)?;
                 let pair = join(vec![key, Expr::str(": "), item]);
@@ -734,7 +735,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(self.pretty_or(pretty, plain, "{", mapped, "}"))
             }
             ty::Adt(_, args) if std(StdItem::Result) => {
-                let result_name = js::Name::declared("result".to_string());
+                let result_name = declared(Role::Result);
                 let inside = || rust_js_program::js::result::held(Expr::var(&result_name));
                 let ok = self.debug_string_with(inside(), args.type_at(0), span, pretty)?;
                 let err = self.debug_string_with(inside(), args.type_at(1), span, pretty)?;

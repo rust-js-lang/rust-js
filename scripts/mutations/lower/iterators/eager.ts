@@ -27,8 +27,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`fold(0, |_, (i, _)| i)` is `reduce((_, _, i) => i, 0)`, a SyntaxError: `_` bound twice",
     file: "crates/rust-js-lower/src/iterators/eager.rs",
-    find: "        let preferred = (1..7).map(|k| \"_\".repeat(k)).collect();\n        js::Name::declared(\"_\".to_string()).suggested(preferred, \"_\")\n",
-    replace: "        js::Name::declared(\"_\".to_string())\n",
+    find: "        let preferred = (1..7).map(|k| \"_\".repeat(k)).collect();\n        declared(Role::Unread).suggested(preferred, \"_\")\n",
+    replace: "        declared(Role::Unread)\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_fold.rs$"],
     snapshots: true,
   },

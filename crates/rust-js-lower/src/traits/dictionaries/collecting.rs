@@ -3,6 +3,7 @@
 //! by concept, as a file is at most 1500 lines.
 
 use super::super::*;
+use crate::temporary_names::{Base, Role, declared};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A std collection's `from_iter`, of `output` of `item`s, as generic
@@ -35,7 +36,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // of what's given, its to drop (#1588): what's given dropped as
         // generic code's call gives it, the drop after its facts, `dropI`,
         // which the shunt's drop glue calls.
-        let drop_i = js::Name::declared("dropI".to_string());
+        let drop_i = declared(Base::Prefixed(Role::Drop, "I"));
         let made = self.with_given_facts(typing_env, given, |cx| {
             let shunted = cx.try_processed_into(output, param)?.is_some();
             let lent = shunted.then(|| cx.lend_drop_param(drop_i.clone(), param));

@@ -8,7 +8,7 @@ use super::bindings;
 use super::recognition::{OrderingCall, StdItem, std_item, trait_method};
 use super::representation::Num;
 use super::{FnCx, R, Shape};
-use crate::temporary_names::{Base, Role};
+use crate::temporary_names::{Base, Role, declared};
 use rust_js_program::collections::IndexSet;
 use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 use rustc_abi::VariantIdx;
@@ -989,7 +989,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut args = values;
             args.push(compare);
             let show = ty.is_char().then(|| {
-                let c = js::Name::declared("c".to_string());
+                let c = declared(Role::C);
                 let shown = Expr::call_helper("$debugStr", vec![Expr::var(c.clone()), Expr::str("'")]);
                 Expr::arrow(vec![c.into()], vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)])
             });

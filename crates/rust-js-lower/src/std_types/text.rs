@@ -4,7 +4,7 @@
 //! be another Unicode version's: `c.is_whitespace()` is `$isWhitespace(c)`
 //! (#1888, ADR 1163).
 
-use crate::temporary_names::Role;
+use crate::temporary_names::{Role, declared};
 use rust_js_program::collections::IndexSet;
 
 use crate::calls::Call;
@@ -451,7 +451,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     TextOp::ToAsciiUpper => ("/[a-z]/", "toUpperCase"),
                     _ => ("/[A-Z]/", "toLowerCase"),
                 };
-                let param = js::Name::declared("letter".to_string());
+                let param = declared(Role::Letter);
                 let letter = Expr::arrow(
                     vec![param.clone().into()],
                     vec![
@@ -660,7 +660,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // carriage return, not JS's `\s`.
             TextOp::SplitAsciiWhitespace => {
                 let pieces = method(arg(), "split", vec![Expr::regex("/[\\t\\n\\f\\r ]+/")]);
-                let param = js::Name::declared("word".to_string());
+                let param = declared(Role::Word);
                 let word = Expr::bin(Op::Ne, Expr::var(param.clone()), Expr::str(""));
                 let nonempty = Expr::arrow(
                     vec![param.into()],

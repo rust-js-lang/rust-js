@@ -7,7 +7,7 @@
 //! (`mir/std_calls/clone_from.rs`), a slice's `fill` and `clone_from_slice`
 //! and generic code's dictionary ask.
 
-use crate::temporary_names::Role;
+use crate::temporary_names::{Role, declared};
 use rustc_middle::ty;
 use rustc_middle::ty::Ty;
 use rustc_span::Span;
@@ -45,7 +45,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(crate) fn clone_over(&mut self, item: ty::Ty<'tcx>, what: &str, span: Span) -> R<(Option<Expr>, Option<Expr>)> {
         let made_i = self.unspelled("i");
         let made_items = self.unspelled("items");
-        let from = js::Name::declared("from".to_string());
+        let from = declared(Role::From);
         let written = |called: Expr| {
             Expr::arrow(
                 vec![made_items.clone().into(), made_i.clone().into(), from.clone().into()],
@@ -384,10 +384,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_unknown(ty) {
             return Ok(None);
         }
-        let (to_name, from_name) = (
-            js::Name::declared("to".to_string()),
-            js::Name::declared("from".to_string()),
-        );
+        let (to_name, from_name) = (declared(Role::To), declared(Role::From));
         let (to, from) = (Expr::var(&to_name), Expr::var(&from_name));
         let place = Expr::member(to.clone(), js::HELD);
         let body = match self.written_over(ty, (place.clone(), to.clone()), from.clone(), span)? {

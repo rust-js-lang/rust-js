@@ -7,6 +7,7 @@
 //! that drops `x` first, `drop(x); return v;`, a way out of the `try`,
 //! whose `finally` drops it (ADR 0693).
 
+use rust_js_lower::temporary_names::{Role, declared};
 use rust_js_program::collections::IndexSet;
 
 use rust_js_program::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
@@ -90,7 +91,7 @@ fn scoped_runs(
             let (body, drop) = match marked {
                 None => (body, drop),
                 Some((poisoned, released)) => {
-                    let error = js::Name::declared("error".to_string());
+                    let error = declared(Role::Error);
                     let handler = vec![poisoned, StmtKind::Throw(Expr::var(error.clone())).at(span)];
                     (vec![StmtKind::TryCatch(body, Some(error), handler).at(span)], released)
                 }

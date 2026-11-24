@@ -2,7 +2,7 @@
 //! impl's, a `dyn`'s, and its associated types' facts.
 
 use super::*;
-use crate::temporary_names::Role;
+use crate::temporary_names::{Role, declared};
 
 mod collecting;
 pub(crate) use collecting::collected_stand_in;
@@ -442,7 +442,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.tcx.fn_sig(start_bound).map_bound(|sig| sig.skip_binder().output()),
             );
             let mut made = Vec::new();
-            let range = js::Name::declared("range".to_string());
+            let range = declared(Role::Range);
             let values = self.range_bound_values(Expr::var(range.clone()), ty, bound, span, &mut made)?;
             let values = values.expect("a range's bounds, as `range_bounds` found them");
             let props = ["start_bound", "end_bound"]
@@ -527,7 +527,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && tr.args.type_at(1).is_usize()
             && (ty.is_slice() || ty.is_array() || self.is_vec_like(ty))
         {
-            let location = js::Name::declared("location".to_string());
+            let location = declared(Role::Location);
             let item = Expr::raised_at(Expr::var(&location), || {
                 self.index_checked(Expr::var(&made_items), Expr::var(&made_i), ty)
             });
@@ -563,7 +563,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.has_user_impl(tr.def_id, ty)
         {
             let param = self.unspelled("value");
-            let options = js::Name::declared("options".to_string());
+            let options = declared(Role::Options);
             let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() {
                 true => (
                     vec![param.clone().into(), options.clone().into()],
@@ -605,7 +605,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // them (#1331).
                 let shown_so = self.krate.shown.of_type(self.tcx, ty);
                 let param = self.unspelled("value");
-                let options = js::Name::declared("options".to_string());
+                let options = declared(Role::Options);
                 let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() || shown_so.any() {
                     true => (
                         vec![param.clone().into(), options.clone().into()],
@@ -769,7 +769,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `&mut`'s, which generic code is given in a box: what's in it
             // (ADR 0454).
             if let ty::Ref(_, _, Mutability::Mut) = ty.kind() {
-                let x = js::Name::declared("x".to_string());
+                let x = declared(Role::X);
                 let value = Expr::held(Expr::var(x.clone()));
                 let f = Expr::arrow(vec![x.into()], vec![StmtKind::Return(Some(value)).at(js::Span::NONE)]);
                 return Ok(Expr::object(vec![Prop::Field("deref".into(), f)]));
@@ -789,7 +789,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // guard, which holds a cell of its target, what's in it (ADR 0394).
         if self.tcx.is_lang_item(tr.def_id, LangItem::DerefMut) && !self.has_user_impl(tr.def_id, ty) {
             let deref_mut = crate::recognition::trait_method(self.tcx, tr.def_id, "deref_mut");
-            let cell = js::Name::declared("cell".to_string());
+            let cell = declared(Role::Cell);
             let target = match self.recognition().classify(deref_mut, tr.args) {
                 _ if matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)) => Some(Expr::held(Expr::var(cell.clone()))),
                 Some(Std::GuardValue { .. }) => Some(Expr::held(Expr::var(cell.clone()))),
@@ -901,7 +901,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `impl AsMut<U> for &mut T`, that one's, through the cell the `&mut`
         // is: one `value` further for each.
         if is_std_def(self.tcx, tr.def_id, StdItem::AsMut) && !self.has_user_impl(tr.def_id, ty) {
-            let param = js::Name::declared("cell".to_string());
+            let param = declared(Role::Cell);
             let mut cell = Expr::var(param.clone());
             let mut at = ty;
             while let ty::Ref(_, inner, Mutability::Mut) = *at.kind() {
@@ -1033,7 +1033,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.is_lang_adt(ty, LangItem::String);
         if crate::recognition::is_from_str(self.tcx, tr.def_id) && parsed_by_std {
             let mut body = Vec::new();
-            let text = js::Name::declared("s".to_string());
+            let text = declared(Role::S);
             let parsed = self.parse_as(Expr::var(text.clone()), ty, span, &mut body)?;
             body.push(StmtKind::Return(Some(parsed)).at(js::Span::NONE));
             let from_str = Expr::arrow(vec![text.into()], body);
@@ -1091,7 +1091,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(op) = crate::recognition::assign_operator(self.tcx, tr.def_id)
             && (self.primitive_operands(tr) || (op == BinOp::Add && tr.args.types().all(text)))
         {
-            let cell = js::Name::declared("cell".to_string());
+            let cell = declared(Role::Cell);
             let place = Expr::member(Expr::var(cell.clone()), js::HELD);
             let mut params: Vec<js::Pattern> = vec![cell.into(), made_b.clone().into()];
             let at = self.entry_location(tr, &mut params);

@@ -23,7 +23,7 @@
 use super::{Attrs, Rule, SerdeDefault, Tagging};
 use crate::recognition::{StdItem, std_item};
 use crate::representation::Num;
-use crate::temporary_names::{Base, Role};
+use crate::temporary_names::{Base, Role, declared};
 use crate::{FnCx, R, Shape};
 use rust_js_program::js::{self, Expr, Op, Pattern, Prop, Stmt, StmtKind};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -255,7 +255,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // 0404), as JSON's `set` makes a `Set`.
                 let class = self.map_class(true, self.is_sorted(ty), (Some(item), None), span)?;
                 if !matches!(&class.kind, js::ExprKind::Var(name) if name.is("Set")) {
-                    let json = js::Name::declared("json".to_string());
+                    let json = declared(Role::Json);
                     let items = Expr::call(Expr::call(reader("vec"), vec![read]), vec![Expr::var(&json)]);
                     let made = Expr::new_(class, vec![items]);
                     return Ok(Expr::arrow(

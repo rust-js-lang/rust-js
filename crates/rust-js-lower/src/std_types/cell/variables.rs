@@ -4,6 +4,7 @@
 //! of them, by name. Split from cell.rs by concept, at 1,370 lines (#1334).
 
 use super::*;
+use crate::temporary_names::{Role, declared};
 
 /// A module's static by its item's name, the word its sets are of: at a
 /// module's scope a name's word is its identity (ADR 1150).
@@ -263,7 +264,7 @@ fn taken_whole(stmts: &mut Vec<Stmt>, name: &str) -> usize {
         }
         // What it held, spelled by preparation apart from what's here,
         // `old`, else `old$1`: declared once (#2048).
-        let old = js::Name::declared("old".to_string()).spelled_apart();
+        let old = declared(Role::Old).spelled_apart();
         let slot = match &mut stmts[i].kind {
             StmtKind::Return(Some(e)) | StmtKind::Expr(e) | StmtKind::Assign(_, e) => e,
             StmtKind::ForOf { iterable, .. } => iterable,
