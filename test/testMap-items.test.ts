@@ -184,6 +184,13 @@ test("pick selects by the item layer where a change is outside any function, els
   // A trait impl's header: its method's and its trait's users' tests.
   const header = [{ file: "src/a.rs", hunks: [[14, 1, ["impl Tr for Kind where Kind: Sized {"], ["impl Tr for Kind {"]]] }] as Parameters<typeof pick>[1];
   expect(own(at(header))).toEqual(["test/h.test.ts", "test/m.test.ts"]);
+  // An attribute added above the enum, outside any function, the layer asked
+  // for the lines either side of it: what reaches the enum, f's and h's
+  // tests; the search by name alone can't place a new attribute line and
+  // selects everything (#2288).
+  const attribute = [{ file: "src/a.rs", hunks: [[0, 0, ["#[derive(Clone)]"], []]] }] as Parameters<typeof pick>[1];
+  expect(own(at(attribute, false))).toBe("all");
+  expect(own(at(attribute))).toEqual(["test/f.test.ts", "test/h.test.ts"]);
 });
 
 test("the layer's selection in shadow: what it would leave out of what failed, and the push's line", () => {
