@@ -811,8 +811,8 @@ export const mutations: Mutation[] = [  {
     name: "rc-slice-layout-at-its-unbounded",
     breaks: "a collect into an `Rc<[T]>` past a `Layout`'s size names `ToRcSlice`'s `capacity overflow` line, where native names `allocate_for_slice`'s `unwrap()` (#2489)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
-    find: "            let (unbounded, layout) = (Expr::std_site(unbounded, 0), Expr::std_site(layout, 0));\n",
-    replace: "            let (unbounded, layout) = (Expr::std_site(unbounded, 0), Expr::std_site(unbounded, 0));\n",
+    find: "            let (unbounded, layout) = (unbounded.site(0), layout.site(0));\n",
+    replace: "            let (unbounded, layout) = (unbounded.site(0), unbounded.site(0));\n",
     tests: ["test/corpus.test.ts", "-t", "^(rc_slice_collect_past_a_layout_panics_at_its_unwrap|arc_slice_collect_by_generic_code_past_a_layout).rs$"],
   },
   {

@@ -2,6 +2,7 @@
 //! position found, a fold.
 
 use super::*;
+use crate::recognition::models::rows::StdRow;
 use crate::temporary_names::Role;
 use rust_js_program::collections::IndexSet;
 
@@ -676,10 +677,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `TrustedLen` of no upper bound (#2292), and where its
             // `allocate_for_slice` unwraps a `Layout` past its size (#2489).
             let (unbounded, layout) = match self.is_std_type(output, StdItem::Arc) {
-                true => ("arcFromTrustedLen", "arcSliceLayout"),
-                false => ("rcFromTrustedLen", "rcSliceLayout"),
+                true => (StdRow::ArcFromTrustedLen, StdRow::ArcSliceLayout),
+                false => (StdRow::RcFromTrustedLen, StdRow::RcSliceLayout),
             };
-            let (unbounded, layout) = (Expr::std_site(unbounded, 0), Expr::std_site(layout, 0));
+            let (unbounded, layout) = (unbounded.site(0), layout.site(0));
             // Of a `TrustedLen` whose steps may panic, std's
             // `from_iter_exact` writes each item in place, so a panic as it
             // steps drops what's left of the iterator before what it wrote,

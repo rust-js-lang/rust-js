@@ -178,8 +178,8 @@ export const mutations: Mutation[] = [  {
     name: "arguments-to-string-display-message",
     breaks: "`to_string()` of an `Arguments` whose writer fails panics with `ToString`'s message, where std's `fmt::format` gives its own (#1565)",
     file: "crates/rust-js-lower/src/format_args.rs",
-    find: "            Std::ToString if !arguments => \"toString\",\n",
-    replace: "            Std::ToString => \"toString\",\n",
+    find: "            Std::ToString if !arguments => StdRow::ToString,\n",
+    replace: "            Std::ToString => StdRow::ToString,\n",
     tests: ["test/corpus.test.ts", "-t", "^format_args_given_on_formatted_where_written\\.rs$"],
   },
   {

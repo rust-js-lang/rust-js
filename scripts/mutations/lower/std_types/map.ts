@@ -712,7 +712,7 @@ export const mutations: Mutation[] = [
     name: "std-disjoint-site-unknown",
     breaks: "std's `HashMap::get_disjoint_mut` of two keys of one entry panics `<unknown>`, where native Rust names its vendored hashbrown's line (#2325)",
     file: "crates/rust-js-lower/src/std_types/map.rs",
-    find: "                    Expr::std_site(\"mapGetDisjointMut\", 1)\n",
+    find: "                    StdRow::MapGetDisjointMut.site(1)\n",
     replace: "                    Expr::js_undefined()\n",
     tests: ["test/binaries.test.ts", "-t", "each panic std raises in its own code"],
   },

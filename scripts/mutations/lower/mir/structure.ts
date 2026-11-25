@@ -704,7 +704,7 @@ export const mutations: Mutation[] = [
     name: "frame-site-at-its-caller",
     breaks: "a call of a `Box`'s `last` or a `copied()`'s `count` of a `repeat()` is located where it's called, where native names the frame's line (#2488)",
     file: "crates/rust-js-mir/src/structure.rs",
-    find: "            Some(row) => Expr::std_site(row, 0),\n",
+    find: "            Some(row) => row.site(0),\n",
     replace: "            Some(_) => self.caller_location(span),\n",
     tests: ["test/corpus.test.ts", "-t", "^(repeat_boxed_last_panics_at_boxs_line|repeat_copied_count_panics_at_copieds_line).rs$"],
   },

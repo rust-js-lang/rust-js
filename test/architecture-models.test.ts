@@ -33,3 +33,16 @@ test("no list of the runtime's models' proofs in TypeScript", () => {
   const found = [...ts("test"), ...ts("scripts")].filter((file) => file !== own && (entry.test(read(file)) || list.test(read(file))));
   expect(found).toEqual([]);
 });
+
+// A row of `$stdSites` the compiler reads is read through its handle,
+// rows.rs' `StdRow`, whose reads are std_rows.rs', never by its name's text, so the catalog finds each
+// row's readers by the API (`rows_unnamed`): a row named by a string passed
+// as a value, `Some("vecDrain")`, was a reader none named (Campaign 5 step
+// 2c, ADR 1202 amended).
+test("the compiler reads a row of `$stdSites` through its handle alone", () => {
+  const direct = /\b(?:Expr::std_site(?:_of)?|std_site_written|std_site_text)\(/;
+  const handle = "crates/rust-js-lower/src/std_rows.rs";
+  const sources = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), ...files("src")].filter((file) => file.endsWith(".rs"));
+  expect(sources.filter((file) => direct.test(read(file)))).toEqual([handle]);
+});
+

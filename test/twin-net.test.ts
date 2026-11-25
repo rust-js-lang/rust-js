@@ -52,7 +52,7 @@ test("how many runtime exports the catalog doesn't name yet", () => {
   const named = new Set(catalog().models.filter((entry) => entry.kind !== "form").map((entry) => entry.helper));
   const unnamed = exported.filter((helper) => !named.has(helper));
   console.log(`${unnamed.length} runtime exports the catalog doesn't name yet`);
-  expect(unnamed.length).toBeLessThanOrEqual(1183);
+  expect(unnamed.length).toBeLessThanOrEqual(1179);
 });
 
 test("a run's helpers are pitted where only the plain build imports them, and the catalog says why of the rest", () => {

@@ -12,6 +12,7 @@ mod operators;
 use self::generic::*;
 pub use self::generic::{int_as, int_out_of};
 pub use self::operators::*;
+use crate::recognition::models::rows::StdRow;
 use crate::temporary_names::Role;
 
 use crate::calls::Call;
@@ -384,10 +385,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A panic of its operator, its division's, raised where std's impl
         // is, every type's one line (#2292).
         let site = match kind {
-            IntNewtype::Wrapping => "wrappingOp",
-            IntNewtype::Saturating => "saturatingOp",
+            IntNewtype::Wrapping => StdRow::WrappingOp,
+            IntNewtype::Saturating => StdRow::SaturatingOp,
         };
-        Expr::raised_at(Expr::std_site(site, 0), || {
+        Expr::raised_at(site.site(0), || {
             self.newtype_result_at(op, a, rhs, (inner, kind), span, out)
         })
     }

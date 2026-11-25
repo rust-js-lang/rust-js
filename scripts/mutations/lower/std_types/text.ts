@@ -576,7 +576,7 @@ export const mutations: Mutation[] = [
     name: "deque-drain-site-of-vec",
     breaks: "a `VecDeque`'s `drain` past its end names a `Vec`'s line",
     file: "crates/rust-js-lower/src/std_types/text.rs",
-    find: "            TextOp::Drain if deque => Some(\"vecDequeDrain\"),\n",
+    find: "            TextOp::Drain if deque => Some(StdRow::VecDequeDrain),\n",
     replace: "",
     tests: ["test/binaries.test.ts", "-t", "std raises"],
   },

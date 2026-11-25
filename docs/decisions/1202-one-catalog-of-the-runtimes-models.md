@@ -114,3 +114,34 @@ Step 2b makes each model's rows its function's, walked from the catalog;
 step 2c checks each bound model reads every site of its function, or the
 catalog says why one is unreachable (#2509, #2488's class).
 
+## Amended: step 2c-1, each row read through its handle (2026-11-25)
+
+Step 2a found the lowering's readers of `$stdSites` by the text
+`std_site("…")`, and missed 14 that name their row by a string passed as a
+value (`Some("vecDrain")`, `("rcFromTrustedLen", "rcSliceLayout")`), and
+`$fmtOrPanic`, which reads `$stdSites[kind]` by the name `format_args.rs`
+gives it. And `fnMutCall`, written by `bun run std`, had no reader at all
+since d00ee33dc, whose `clonedAt` took its place.
+
+- Each row is a variant of `StdRow` (`recognition/models/rows.rs`), its
+  name in `$stdSites` its one spelling; `ROWS`, `HELD_STEPS` and `clonedAt`
+  are written by it, and the catalog's `Stands::Row` names it.
+- The lowering reads a row through its handle alone, `StdRow::site`,
+  `site_of`, `written` and `text` (`std_rows.rs`, a lowering module, as
+  recognition reaches no runtime): no `Expr::std_site` or
+  `runtime::std_site_*` call elsewhere (test/architecture-models.test.ts).
+  A row's name still reaches JS as text where the runtime reads it so,
+  `$fmtOrPanic`'s `kind`, given as `StdRow::Format.name()`.
+- `bun run std` refuses a table whose rows aren't `StdRow`'s, both ways
+  (`rows_checked`), and a row no model or form of the catalog names
+  (`rows_unnamed`); a unit test holds each to it both ways.
+- The 14 are `Form` entries, `$fmtOrPanic` a model of `format` and
+  `toString`, and `fnMutCall` is gone from `ROWS` and the table; no JS a
+  program reads moves.
+- `clonedAt`'s keys, one of each std `Clone` impl, are held to std's MIR by
+  test/std-cloned-at.test.ts, not a corpus case each; a few corpus cases
+  cover its reader, as its entry says (the lead's choice, (b)).
+
+Step 2c-2 triages the 20 sites of other rows no runtime text or committed
+JS reads, against native: a wrong line is a wrong answer, filed and fixed
+as a P0; an unreachable one is listed with its reason.

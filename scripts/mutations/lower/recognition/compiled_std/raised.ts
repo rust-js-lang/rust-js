@@ -130,4 +130,21 @@ export const mutations: Mutation[] = [
     replace: "                root.is_some_and(|root| nested_in(tcx, callee.def_id(), root)),\n",
     tests: ["test/std-sites.test.ts"],
   },
+  {
+    name: "std-rows-unwritten-unsaid",
+    breaks: "a row of `StdRow`'s none writes isn't said, so its handle reads `undefined` where `bun run std` should refuse it (Campaign 5 step 2c)",
+    file: "crates/rust-js-lower/src/recognition/compiled_std/raised.rs",
+    find: "        .filter(|name| !written.contains(name))\n",
+    replace: "        .filter(|name| !written.contains(name) && false)\n",
+    unitTests: "recognition::compiled_std::raised::tests::std_rows_are_those_written",
+  },
+  {
+    name: "std-rows-unlisted-unsaid",
+    breaks: "a row written that's no `StdRow`'s isn't said, so a row none reads, as `fnMutCall` was after d00ee33dc, stays written",
+    file: "crates/rust-js-lower/src/recognition/compiled_std/raised.rs",
+    find: "        .filter(|name| StdRow::named(name).is_none())\n",
+    replace: "        .filter(|name| StdRow::named(name).is_none() && false)\n",
+    unitTests: "recognition::compiled_std::raised::tests::std_rows_are_those_written",
+  },
 ];
+

@@ -369,7 +369,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             _ => None,
         };
         let at = match frame {
-            Some(row) => Expr::std_site(row, 0),
+            Some(row) => row.site(0),
             None => self.caller_location(span),
         };
         Expr::raised_at(at, || self.mir_terminator_at(state, block))

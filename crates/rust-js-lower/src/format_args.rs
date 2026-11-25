@@ -4,6 +4,7 @@
 
 use super::calls::Call;
 use super::display::{append_written, join};
+use crate::recognition::models::rows::StdRow;
 use crate::temporary_names::Role;
 
 use super::format_spec::Spec;
@@ -298,13 +299,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // std's `to_string()`'s panic, or `format!`'s, its message and its
         // line (`$fmtFailed`, #2292).
         let kind = match known {
-            Std::ToString if !arguments => "toString",
-            _ => "format",
+            Std::ToString if !arguments => StdRow::ToString,
+            _ => StdRow::Format,
         };
         body.push(StmtKind::Return(Some(value)).at(js_span));
         Expr::call(
             Expr::helper("$fmtOrPanic"),
-            vec![Expr::arrow(Vec::new(), body), Expr::str(kind)],
+            vec![Expr::arrow(Vec::new(), body), Expr::str(kind.name())],
         )
     }
 

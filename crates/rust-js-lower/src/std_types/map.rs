@@ -2,6 +2,7 @@
 //! what JS compares by value: numbers, strings, `char`s, `bool`s and
 //! fieldless enums.
 
+use crate::recognition::models::rows::StdRow;
 use crate::temporary_names::{Role, declared};
 use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 
@@ -913,7 +914,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let at = if crate::recognition::is_std_crate(self.tcx, map.did()) {
                     // Its second, the `panic!`; its first `ptrs[..i]`'s bound.
-                    Expr::std_site("mapGetDisjointMut", 1)
+                    StdRow::MapGetDisjointMut.site(1)
                 } else if crate::recognition::is_index_map(self.tcx, map.did()) {
                     self.caller_location(span)
                 } else {

@@ -13,6 +13,7 @@ use super::recognition::StdItem;
 use super::recursive_fns::Kind;
 use super::representation::Num;
 use super::{FnCx, R, Shape};
+use crate::recognition::models::rows::StdRow;
 use crate::temporary_names::{Base, Role};
 use rust_js_program::collections::IndexMap;
 use rust_js_program::collections::IndexSet;
@@ -697,13 +698,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 body.push(StmtKind::Return(Some(eq)).at(js::Span::NONE));
                 // Each borrowed where std's `eq` borrows it, its own line
                 // (`$stdSites`, #2292).
-                let inner = Expr::raised_at(Expr::std_site("refCellEq", 1), || {
+                let inner = Expr::raised_at(StdRow::RefCellEq.site(1), || {
                     Expr::call(
                         Expr::helper("$withBorrow"),
                         flagged(vec![b, Expr::arrow(vec![y.into()], body)]),
                     )
                 });
-                Ok(Expr::raised_at(Expr::std_site("refCellEq", 0), || {
+                Ok(Expr::raised_at(StdRow::RefCellEq.site(0), || {
                     Expr::call(
                         Expr::helper("$withBorrow"),
                         flagged(vec![
@@ -717,10 +718,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (a, b) = match self.quiet_ref_cell(ty, false) {
                     true => (a, b),
                     false => (
-                        Expr::raised_at(Expr::std_site("refCellEq", 0), || {
+                        Expr::raised_at(StdRow::RefCellEq.site(0), || {
                             Expr::call(Expr::helper("$borrow"), vec![a])
                         }),
-                        Expr::raised_at(Expr::std_site("refCellEq", 1), || {
+                        Expr::raised_at(StdRow::RefCellEq.site(1), || {
                             Expr::call(Expr::helper("$borrow"), vec![b])
                         }),
                     ),
@@ -730,10 +731,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
                 let (a, b) = match std(StdItem::RefCell) {
                     true => (
-                        Expr::raised_at(Expr::std_site("refCellEq", 0), || {
+                        Expr::raised_at(StdRow::RefCellEq.site(0), || {
                             Expr::call(Expr::helper("$borrow"), vec![a])
                         }),
-                        Expr::raised_at(Expr::std_site("refCellEq", 1), || {
+                        Expr::raised_at(StdRow::RefCellEq.site(1), || {
                             Expr::call(Expr::helper("$borrow"), vec![b])
                         }),
                     ),

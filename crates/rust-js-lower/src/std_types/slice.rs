@@ -1,6 +1,7 @@
 //! A slice's fills, copies, order checks, chunks and splits (ADR 0324): its
 //! JS array, changed in place where std's is.
 
+use crate::recognition::models::rows::StdRow;
 use crate::temporary_names::Role;
 use rustc_middle::ty;
 use rustc_middle::ty::consts::ConstExt as _;
@@ -351,7 +352,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         list.extend(inclusive);
         // `slice::range`'s panic, where std's `ExtractIf::new` checks (#2292).
-        Expr::raised_at(Expr::std_site("vecExtractIf", 0), || {
+        Expr::raised_at(StdRow::VecExtractIf.site(0), || {
             Expr::call(Expr::helper("$extractIf"), list)
         })
     }
@@ -383,7 +384,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // `copy_from_slice`'s panic, where std's `write_copy_of_slice` calls
         // it (#2292).
-        let copy = Expr::raised_at(Expr::std_site("writeCopyOfSlice", 0), || {
+        let copy = Expr::raised_at(StdRow::WriteCopyOfSlice.site(0), || {
             Expr::call(Expr::helper("$copyFromSlice"), vec![slots.clone(), source])
         });
         out.push(StmtKind::Expr(copy).at(self.js_span(span)));

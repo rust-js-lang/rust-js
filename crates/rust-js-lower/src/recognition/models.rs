@@ -12,7 +12,9 @@
 //! prints it, `rust-js --std-models`, which the twin net reads: no second
 //! list (test/architecture-models.test.ts).
 
-pub(crate) mod rows;
+pub mod rows;
+
+use rows::StdRow;
 
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
@@ -115,7 +117,7 @@ pub enum Proof {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Stands {
     Path(&'static str),
-    Row(&'static str),
+    Row(StdRow),
 }
 
 /// What a helper is: glue, or a model of the std items it stands for,
@@ -153,23 +155,26 @@ pub const MODELS: &[Entry] = &[
     entry("BTreeSet", Model(Unproven(Why::Collections), &[]), ""),
     entry("KeyMap", Model(Unproven(Why::Collections), &[]), ""),
     entry("KeySet", Model(Unproven(Why::Collections), &[]), ""),
-    entry("abort", Model(Unproven(Why::Outside), &[Row("panicNounwindNobacktrace")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("abort", Model(Unproven(Why::Outside), &[Row(StdRow::PanicNounwindNobacktrace)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("add", Model(Unproven(Why::Collections), &[]), ""),
     entry("advanceSlice", Model(Unproven(Why::JsOwn), &[]), "ADRs 0422, 0465: an array's iterator an adapter holds, advanced by index"),
     entry("andModify", Model(Unproven(Why::Collections), &[]), ""),
     entry("append", Model(Unproven(Why::Collections), &[]), ""),
+    entry("arcFromTrustedLen", Form(&[Row(StdRow::ArcFromTrustedLen)]), "the lowering's, iterators/mir_steps/collect.rs"),
+    entry("arcSliceLayout", Form(&[Row(StdRow::ArcSliceLayout)]), "the lowering's, iterators/mir_steps/collect.rs"),
     entry("asChunksMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("asciiCase", Model(Unproven(Why::Collections), &[]), ""),
     entry("assign", Glue, ""),
     entry("at", Glue, ""),
-    entry("bidirectionalMerge", Model(Unproven(Why::Sort), &[Row("sortTotalOrder")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("bidirectionalMerge", Model(Unproven(Why::Sort), &[Row(StdRow::SortTotalOrder)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("binarySearchBy", Model(Unproven(Why::Collections), &[]), ""),
     entry("borrow", Model(Unproven(Why::Cells), &[Path("core::cell::RefCell::borrow")]), ""),
     entry("borrowMut", Model(Unproven(Why::Cells), &[Path("core::cell::RefCell::borrow_mut")]), ""),
+    entry("boxLast", Form(&[Row(StdRow::BoxLast)]), "the lowering's, recognition/own_steps.rs, std_calls.rs's frame of a step"),
     entry("btreeSet", Model(Unproven(Why::Collections), &[]), ""),
-    entry("bufReader", Model(Unproven(Why::Outside), &[Row("bufReaderStreamPosition")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("bufReader", Model(Unproven(Why::Outside), &[Row(StdRow::BufReaderStreamPosition)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("byteLen", Model(Unproven(Why::Collections), &[]), ""),
-    entry("cannotUnwind", Model(Unproven(Why::Outside), &[Row("panicNounwind")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("cannotUnwind", Model(Unproven(Why::Outside), &[Row(StdRow::PanicNounwind)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("capacity", Model(Unproven(Why::Collections), &[]), ""),
     entry("catchUnwind", Glue, ""),
     entry("catchable", Glue, ""),
@@ -178,12 +183,12 @@ pub const MODELS: &[Entry] = &[
     entry("chunksExactMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("chunksMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("clampBy", Model(Unproven(Why::Collections), &[]), ""),
-    entry("clampFloat", Model(Unproven(Why::Outside), &[Row("clamp")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("clampFloat", Model(Unproven(Why::Outside), &[Row(StdRow::Clamp)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("cleanup", Glue, ""),
     entry("clone", Model(Pitted, &[]), ""),
     entry("cloneFromSlice", Model(Unproven(Why::Collections), &[]), ""),
     entry("cloneIntoVec", Model(Unproven(Why::Collections), &[]), ""),
-    entry("clonedAt", Form(&[Row("clonedAt")]), "the lowering's, std_impls/clones.rs"),
+    entry("clonedAt", Form(&[Row(StdRow::ClonedAt)]), "the lowering's, std_impls/clones.rs: each std type's key is held to std's MIR by test/std-cloned-at.test.ts, not a case each; a few corpus cases cover its reader (Campaign 5 step 2c)"),
     entry("closing", Glue, ""),
     entry("cmp", Glue, ""),
     entry("cmpItems", Model(Unproven(Why::Consumers), &[]), ""),
@@ -193,7 +198,7 @@ pub const MODELS: &[Entry] = &[
     entry("collectVec", Model(Unproven(Why::Consumers), &[]), ""),
     entry("collectsInPlace", Model(Unproven(Why::Consumers), &[]), ""),
     entry("consume", Model(Pitted, &[]), ""),
-    entry("copied", Model(Unproven(Why::Outside), &[Row("copiedCount"), Row("copiedLast")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("copied", Model(Unproven(Why::Outside), &[Row(StdRow::CopiedCount), Row(StdRow::CopiedLast)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("copyFromSlice", Model(Unproven(Why::Collections), &[]), ""),
     entry("copyRange", Model(Unproven(Why::Collections), &[]), ""),
     entry("copyWithin", Model(Unproven(Why::Collections), &[]), ""),
@@ -209,7 +214,7 @@ pub const MODELS: &[Entry] = &[
     entry("decodeUtf16", Model(Unproven(Why::Iterators), &[Path("core::char::DecodeUtf16")]), "ADR 0327, #1584: `char::decode_utf16`'s, whose error is its code, where std's body makes `DecodeUtf16Error { code }`"),
     entry("dedupBy", Model(Unproven(Why::Collections), &[]), ""),
     entry("dedupByCells", Model(Unproven(Why::Collections), &[]), ""),
-    entry("dequeInsert", Model(Unproven(Why::Collections), &[Row("vecDequeInsert")]), ""),
+    entry("dequeInsert", Model(Unproven(Why::Collections), &[Row(StdRow::VecDequeInsert)]), ""),
     entry("dequeSwapRemove", Model(Unproven(Why::Collections), &[]), ""),
     entry("dispose", Glue, ""),
     entry("disposeIterator", Model(Unproven(Why::JsOwn), &[]), "ADR 0140, ADR 1136: a `dyn Iterator`'s JS iterator, a binding's, closed as JS's own"),
@@ -219,11 +224,11 @@ pub const MODELS: &[Entry] = &[
     entry("dropItems", Glue, ""),
     entry("dropping", Glue, ""),
     entry("droppingIterator", Model(Unproven(Why::JsOwn), &[]), "ADR 0140, ADR 1136: a `dyn Iterator`'s JS iterator stepped dropping what it gives, as JS's own"),
-    entry("durationAdd", Model(Unproven(Why::Outside), &[Row("durationAdd")]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("durationNew", Model(Unproven(Why::Outside), &[Row("durationNew")]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("durationSub", Model(Unproven(Why::Outside), &[Row("durationSub")]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("encodeCharUtf16", Model(Unproven(Why::Outside), &[Row("encodeUtf16")]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("encodeUtf8", Model(Unproven(Why::Outside), &[Row("encodeUtf8")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("durationAdd", Model(Unproven(Why::Outside), &[Row(StdRow::DurationAdd)]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("durationNew", Model(Unproven(Why::Outside), &[Row(StdRow::DurationNew)]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("durationSub", Model(Unproven(Why::Outside), &[Row(StdRow::DurationSub)]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("encodeCharUtf16", Model(Unproven(Why::Outside), &[Row(StdRow::EncodeUtf16)]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("encodeUtf8", Model(Unproven(Why::Outside), &[Row(StdRow::EncodeUtf8)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("endEntry", Model(Unproven(Why::Collections), &[]), ""),
     entry("entry", Model(Unproven(Why::Collections), &[]), ""),
     entry("entryGet", Model(Unproven(Why::Collections), &[]), ""),
@@ -231,11 +236,11 @@ pub const MODELS: &[Entry] = &[
     entry("entryOrInsert", Model(Unproven(Why::Collections), &[]), ""),
     entry("entryOrInsertWith", Model(Unproven(Why::Collections), &[]), ""),
     entry("entryRemove", Model(Unproven(Why::Collections), &[]), ""),
-    entry("enumerate", Model(Pitted, &[Path("core::iter::Enumerate"), Row("enumerateCount")]), ""),
+    entry("enumerate", Model(Pitted, &[Path("core::iter::Enumerate"), Row(StdRow::EnumerateCount)]), ""),
     entry("eq", Glue, ""),
-    entry("exactLen", Model(Pitted, &[Path("core::iter::ExactSizeIterator::len"), Row("exactSizeLen")]), ""),
+    entry("exactLen", Model(Pitted, &[Path("core::iter::ExactSizeIterator::len"), Row(StdRow::ExactSizeLen)]), ""),
     entry("exchange", Glue, ""),
-    entry("extend", Model(Unproven(Why::Collections), &[Row("vecExtendTrusted")]), ""),
+    entry("extend", Model(Unproven(Why::Collections), &[Row(StdRow::VecExtendTrusted)]), ""),
     entry("extendMap", Model(Unproven(Why::Collections), &[]), ""),
     entry("extendText", Model(Unproven(Why::Collections), &[]), ""),
     entry("extractIf", Model(Unproven(Why::Collections), &[]), ""),
@@ -245,24 +250,25 @@ pub const MODELS: &[Entry] = &[
     entry("filterEnds", Model(Pitted, &[Path("core::iter::Filter")]), ""),
     entry("findBack", Model(Pitted, &[Path("core::iter::DoubleEndedIterator::rfind")]), ""),
     entry("findDropping", Model(Unproven(Why::Consumers), &[]), ""),
-    entry("flatLast", Model(Unproven(Why::Outside), &[Row("flattenLast")]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("flatMap", Model(Pitted, &[Path("core::iter::FlatMap"), Row("flattenCount")]), ""),
+    entry("flatLast", Model(Unproven(Why::Outside), &[Row(StdRow::FlattenLast)]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("flatMap", Model(Pitted, &[Path("core::iter::FlatMap"), Row(StdRow::FlattenCount)]), ""),
     entry("flattenEnds", Model(Pitted, &[Path("core::iter::Flatten")]), ""),
-    entry("fmtPrintFailed", Model(Unproven(Why::Outside), &[Row("printFailed")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("fmtOrPanic", Model(Unproven(Why::Outside), &[Row(StdRow::Format), Row(StdRow::ToString)]), "its row by the name format_args.rs gives it, `$stdSites[kind]`, `format!`'s or `to_string()`'s"),
+    entry("fmtPrintFailed", Model(Unproven(Why::Outside), &[Row(StdRow::PrintFailed)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("foldBack", Model(Pitted, &[Path("core::iter::DoubleEndedIterator::rfold")]), ""),
     entry("foldDropping", Model(Unproven(Why::Consumers), &[]), ""),
     entry("foldOf", Model(Unproven(Why::Consumers), &[]), ""),
     entry("foldToArray", Model(Unproven(Why::Consumers), &[]), ""),
     entry("folded", Model(Unproven(Why::Consumers), &[]), ""),
-    entry("force", Model(Unproven(Why::Outside), &[Row("lazyCellPoisoned")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("force", Model(Unproven(Why::Outside), &[Row(StdRow::LazyCellPoisoned)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("formatting", Model(Unproven(Why::Format), &[]), ""),
-    entry("fromDigit", Model(Unproven(Why::Outside), &[Row("fromDigit")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("fromDigit", Model(Unproven(Why::Outside), &[Row(StdRow::FromDigit)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("getDisjointMut", Model(Unproven(Why::Collections), &[]), ""),
-    entry("getOrInit", Model(Unproven(Why::Outside), &[Row("onceCellReentrant")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("getOrInit", Model(Unproven(Why::Outside), &[Row(StdRow::OnceCellReentrant)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("given", Glue, ""),
     entry("givenDrop", Glue, ""),
     entry("grew", Model(Unproven(Why::Collections), &[]), ""),
-    entry("grownBy", Model(Unproven(Why::Collections), &[Row("capacityOverflow"), Row("vecDequeExtendTrusted"), Row("vecDequeReserve"), Row("vecExtendTrusted")]), ""),
+    entry("grownBy", Model(Unproven(Why::Collections), &[Row(StdRow::CapacityOverflow), Row(StdRow::VecDequeExtendTrusted), Row(StdRow::VecDequeReserve), Row(StdRow::VecExtendTrusted)]), ""),
     entry("grownVec", Model(Unproven(Why::Collections), &[]), ""),
     entry("guardFilterMap", Model(Unproven(Why::Cells), &[]), ""),
     entry("guardMap", Model(Unproven(Why::Cells), &[]), ""),
@@ -300,10 +306,10 @@ pub const MODELS: &[Entry] = &[
     entry("knowing", Model(Pitted, &[]), ""),
     entry("last", Model(Unproven(Why::Consumers), &[]), ""),
     entry("lastDropping", Model(Unproven(Why::Consumers), &[]), ""),
-    entry("lazyChain", Model(Pitted, &[Path("core::iter::Chain"), Row("chainCount"), Row("fnOnceCall")]), ""),
+    entry("lazyChain", Model(Pitted, &[Path("core::iter::Chain"), Row(StdRow::ChainCount), Row(StdRow::FnOnceCall)]), ""),
     entry("lazyChunkBy", Model(Unproven(Why::Iterators), &[Path("core::slice::ChunkBy")]), ""),
     entry("lazyChunkByMut", Model(Unproven(Why::Iterators), &[Path("core::slice::ChunkByMut")]), ""),
-    entry("lazyLockPoisoned", Model(Unproven(Why::Outside), &[Row("lazyLockPoisoned")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("lazyLockPoisoned", Model(Unproven(Why::Outside), &[Row(StdRow::LazyLockPoisoned)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("lazyMapWhile", Model(Pitted, &[Path("core::iter::MapWhile")]), ""),
     entry("lazyRange", Model(Pitted, &[Path("core::ops::Range")]), ""),
     entry("lazyScan", Model(Pitted, &[Path("core::iter::Scan")]), ""),
@@ -314,6 +320,10 @@ pub const MODELS: &[Entry] = &[
     entry("lazyZip", Model(Pitted, &[Path("core::iter::Zip")]), ""),
     entry("lent", Model(Pitted, &[]), ""),
     entry("live", Glue, ""),
+    entry("localKeyReplace", Form(&[Row(StdRow::LocalKeyReplace)]), "the lowering's, std_types/cell.rs"),
+    entry("localKeySet", Form(&[Row(StdRow::LocalKeySet)]), "the lowering's, std_types/cell.rs"),
+    entry("localKeyWithBorrow", Form(&[Row(StdRow::LocalKeyWithBorrow)]), "the lowering's, std_types/cell.rs"),
+    entry("localKeyWithBorrowMut", Form(&[Row(StdRow::LocalKeyWithBorrowMut)]), "the lowering's, std_types/cell.rs"),
     entry("madeEach", Glue, ""),
     entry("madeInTurn", Glue, ""),
     entry("main", Glue, "ADR 1198: a binary's start, which every case's binary imports"),
@@ -321,7 +331,7 @@ pub const MODELS: &[Entry] = &[
     entry("mapEnds", Model(Pitted, &[Path("core::iter::Map")]), ""),
     entry("mapExtractIf", Model(Unproven(Why::Collections), &[]), ""),
     entry("mapFrom", Model(Unproven(Why::Collections), &[]), ""),
-    entry("mapGetDisjointMut", Model(Unproven(Why::Collections), &[Row("mapGetDisjointMut")]), "its row read by the lowering's std_types/map.rs"),
+    entry("mapGetDisjointMut", Model(Unproven(Why::Collections), &[Row(StdRow::MapGetDisjointMut)]), "its row read by the lowering's std_types/map.rs"),
     entry("max", Model(Unproven(Why::Consumers), &[]), ""),
     entry("maxBy", Model(Unproven(Why::Consumers), &[]), ""),
     entry("maxByKey", Model(Unproven(Why::Consumers), &[]), ""),
@@ -338,7 +348,7 @@ pub const MODELS: &[Entry] = &[
     entry("next", Model(Unproven(Why::JsOwn), &[]), "ADR 0140: the step of any JS iterator, its item or `undefined`"),
     entry("nextBack", Model(Pitted, &[Path("core::iter::DoubleEndedIterator::next_back")]), ""),
     entry("nextBackSome", Model(Unproven(Why::JsOwn), &[]), "ADRs 0164, 0051: the step from its back of any JS iterator, its item boxed where it may look like `None`, of an `Option`'s items (#1826)"),
-    entry("nextMultipleOf", Model(Unproven(Why::Outside), &[Row("nextMultipleOf")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("nextMultipleOf", Model(Unproven(Why::Outside), &[Row(StdRow::NextMultipleOf)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("nextSome", Model(Unproven(Why::JsOwn), &[]), "ADRs 0140, 0051: the step of any JS iterator, its item boxed where it may look like `None`"),
     entry("nth", Model(Unproven(Why::Consumers), &[]), ""),
     entry("nthBack", Model(Unproven(Why::Consumers), &[]), ""),
@@ -347,21 +357,21 @@ pub const MODELS: &[Entry] = &[
     entry("orInsertWith", Model(Unproven(Why::Collections), &[]), ""),
     entry("orInsertWithKey", Model(Unproven(Why::Collections), &[]), ""),
     entry("ord", Glue, ""),
-    entry("ordClamp", Form(&[Row("ordClamp")]), "the lowering's, ordering.rs"),
+    entry("ordClamp", Form(&[Row(StdRow::OrdClamp)]), "the lowering's, ordering.rs"),
     entry("ordTreeMap", Model(Unproven(Why::Collections), &[]), ""),
     entry("ordTreeSet", Model(Unproven(Why::Collections), &[]), ""),
     entry("out", Model(Unproven(Why::Format), &[]), ""),
     entry("panic", Glue, ""),
     entry("panicking", Glue, ""),
-    entry("parseBig", Model(Unproven(Why::Numbers), &[Row("fromStrRadix")]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("parseInt", Model(Unproven(Why::Numbers), &[Row("fromStrRadix")]), ""),
+    entry("parseBig", Model(Unproven(Why::Numbers), &[Row(StdRow::FromStrRadix)]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("parseInt", Model(Unproven(Why::Numbers), &[Row(StdRow::FromStrRadix)]), ""),
     entry("partialEq", Glue, ""),
     entry("partialOrd", Glue, ""),
     entry("partiallyOrdered", Glue, ""),
     entry("partition", Model(Unproven(Why::Consumers), &[]), ""),
     entry("partitionPoint", Model(Unproven(Why::Collections), &[]), ""),
     entry("pathJoin", Model(Unproven(Why::Collections), &[]), ""),
-    entry("pathSetExtension", Model(Unproven(Why::Outside), &[Row("pathExtension")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("pathSetExtension", Model(Unproven(Why::Outside), &[Row(StdRow::PathExtension)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("peek", Model(Unproven(Why::Memory), &[Path("core::iter::Peekable::peek")]), "ADR 0561: `Peekable::peek`, whose body reaches memory"),
     entry("peekMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("peekMutDrop", Model(Unproven(Why::Collections), &[]), ""),
@@ -373,10 +383,10 @@ pub const MODELS: &[Entry] = &[
     entry("position", Model(Unproven(Why::Consumers), &[]), ""),
     entry("pushFrontMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("pushMut", Model(Unproven(Why::Collections), &[]), ""),
-    entry("range", Model(Pitted, &[Path("core::ops::Range"), Row("vecFromTrustedLen")]), ""),
+    entry("range", Model(Pitted, &[Path("core::ops::Range"), Row(StdRow::VecFromTrustedLen)]), ""),
     entry("rangeCountOut", Model(Unproven(Why::Ranges), &[]), ""),
     entry("rangeFirst", Model(Unproven(Why::Ranges), &[]), ""),
-    entry("rangeFromNext", Model(Unproven(Why::Ranges), &[Row("stepForward")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("rangeFromNext", Model(Unproven(Why::Ranges), &[Row(StdRow::StepForward)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("rangeLast", Model(Unproven(Why::Ranges), &[]), ""),
     entry("rangeLastOut", Model(Unproven(Why::Ranges), &[]), ""),
     entry("rangeLen", Model(Pitted, &[Path("core::ops::Range")]), ""),
@@ -386,18 +396,21 @@ pub const MODELS: &[Entry] = &[
     entry("rangeNthBack", Model(Unproven(Why::Ranges), &[Path("core::ops::Range")]), ""),
     entry("rcClone", Glue, ""),
     entry("rcDrop", Glue, ""),
+    entry("rcFromTrustedLen", Form(&[Row(StdRow::RcFromTrustedLen)]), "the lowering's, iterators/mir_steps/collect.rs"),
+    entry("rcSliceLayout", Form(&[Row(StdRow::RcSliceLayout)]), "the lowering's, iterators/mir_steps/collect.rs"),
     entry("rchunksMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("reduce", Model(Unproven(Why::Consumers), &[]), ""),
-    entry("refCellEq", Form(&[Row("refCellEq")]), "the lowering's, std_impls.rs"),
-    entry("refCellSwap", Model(Unproven(Why::Cells), &[Row("refCellSwap")]), "its rows of `$stdSites`, std's sites of its function's panics, its row read by the lowering's std_types/cell.rs"),
+    entry("refCellEq", Form(&[Row(StdRow::RefCellEq)]), "the lowering's, std_impls.rs"),
+    entry("refCellSwap", Model(Unproven(Why::Cells), &[Row(StdRow::RefCellSwap)]), "its rows of `$stdSites`, std's sites of its function's panics, its row read by the lowering's std_types/cell.rs"),
+    entry("refCellTake", Form(&[Row(StdRow::RefCellTake)]), "the lowering's, std_types/cell.rs"),
     entry("remove", Model(Unproven(Why::Collections), &[]), ""),
     entry("removeEntry", Model(Unproven(Why::Collections), &[]), ""),
     entry("removeItem", Model(Unproven(Why::Collections), &[]), ""),
     entry("removeOpt", Model(Unproven(Why::Collections), &[]), ""),
     entry("removeOutOfBounds", Model(Unproven(Why::Collections), &[]), ""),
     entry("repeat", Model(Unproven(Why::Collections), &[]), "`vec![item; count]`, `Vec::from_elem`"),
-    entry("repeatItems", Model(Unproven(Why::Outside), &[Row("sliceRepeat")]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("repeatText", Model(Unproven(Why::Outside), &[Row("sliceRepeat")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("repeatItems", Model(Unproven(Why::Outside), &[Row(StdRow::SliceRepeat)]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("repeatText", Model(Unproven(Why::Outside), &[Row(StdRow::SliceRepeat)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("repeating", Model(Pitted, &[Path("core::iter::Repeat")]), ""),
     entry("repeatingN", Model(Pitted, &[Path("core::iter::RepeatN")]), ""),
     entry("replaceRange", Model(Unproven(Why::Collections), &[]), ""),
@@ -414,20 +427,21 @@ pub const MODELS: &[Entry] = &[
     entry("retainSet", Model(Unproven(Why::Collections), &[]), ""),
     entry("retainText", Model(Unproven(Why::Collections), &[]), ""),
     entry("rev", Model(Pitted, &[Path("core::iter::Rev")]), ""),
-    entry("roomFor", Model(Unproven(Why::Collections), &[Row("capacityOverflow")]), ""),
+    entry("roomFor", Model(Unproven(Why::Collections), &[Row(StdRow::CapacityOverflow)]), ""),
     entry("roomForCounted", Model(Unproven(Why::Collections), &[]), ""),
-    entry("roomForHint", Model(Unproven(Why::Collections), &[Row("capacityOverflow"), Row("vecFromTrustedLen")]), ""),
-    entry("rotateLeft", Model(Unproven(Why::Collections), &[Row("rotateLeft"), Row("vecDequeRotateLeft")]), ""),
-    entry("rotateRight", Model(Unproven(Why::Collections), &[Row("rotateRight"), Row("vecDequeRotateRight")]), ""),
-    entry("seekDefaults", Model(Unproven(Why::Outside), &[Row("byteSliceConsume"), Row("vecDequeDrain")]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("selectNthUnstable", Model(Unproven(Why::Sort), &[Row("selectNth")]), ""),
+    entry("roomForHint", Model(Unproven(Why::Collections), &[Row(StdRow::CapacityOverflow), Row(StdRow::VecFromTrustedLen)]), ""),
+    entry("rotateLeft", Model(Unproven(Why::Collections), &[Row(StdRow::RotateLeft), Row(StdRow::VecDequeRotateLeft)]), ""),
+    entry("rotateRight", Model(Unproven(Why::Collections), &[Row(StdRow::RotateRight), Row(StdRow::VecDequeRotateRight)]), ""),
+    entry("saturatingOp", Form(&[Row(StdRow::SaturatingOp)]), "the lowering's, std_types/number.rs"),
+    entry("seekDefaults", Model(Unproven(Why::Outside), &[Row(StdRow::ByteSliceConsume), Row(StdRow::VecDequeDrain)]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("selectNthUnstable", Model(Unproven(Why::Sort), &[Row(StdRow::SelectNth)]), ""),
     entry("setReplace", Model(Unproven(Why::Collections), &[]), ""),
     entry("setTake", Model(Unproven(Why::Collections), &[]), ""),
     entry("shift", Model(Unproven(Why::Collections), &[]), ""),
     entry("showBorrowed", Model(Unproven(Why::Format), &[]), ""),
     entry("sink", Model(Unproven(Why::Format), &[]), ""),
     entry("sizeHint", Glue, ""),
-    entry("skipping", Model(Pitted, &[Path("core::iter::Skip"), Row("skipCount"), Row("skipLast")]), ""),
+    entry("skipping", Model(Pitted, &[Path("core::iter::Skip"), Row(StdRow::SkipCount), Row(StdRow::SkipLast)]), ""),
     entry("slice", Model(Unproven(Why::Collections), &[]), ""),
     entry("sliceSplitAt", Model(Unproven(Why::Collections), &[]), ""),
     entry("slicing", Glue, ""),
@@ -444,13 +458,13 @@ pub const MODELS: &[Entry] = &[
     entry("sortedKeys", Model(Unproven(Why::Collections), &[]), ""),
     entry("splice", Model(Unproven(Why::Collections), &[]), ""),
     entry("splicing", Model(Unproven(Why::Collections), &[]), ""),
-    entry("splitAt", Model(Unproven(Why::Outside), &[Row("strSplitAt")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("splitAt", Model(Unproven(Why::Outside), &[Row(StdRow::StrSplitAt)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("splitAtMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("splitChunkMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("splitEndMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("splitOff", Model(Unproven(Why::Collections), &[]), ""),
     entry("stdSites", Glue, ""),
-    entry("step", Model(Unproven(Why::Outside), &[Row("stepBy")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("step", Model(Unproven(Why::Outside), &[Row(StdRow::StepBy)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("stepBy", Model(Pitted, &[Path("core::iter::StepBy")]), ""),
     entry("stepByEnds", Model(Pitted, &[Path("core::iter::StepBy")]), ""),
     entry("stepsOf", Model(Unproven(Why::JsOwn), &[]), "ADR 0570, amended (#2039): a type parameter's value std's compiled body is given, as it is, never armed to close at its end"),
@@ -458,14 +472,14 @@ pub const MODELS: &[Entry] = &[
     entry("strExtendWithin", Model(Unproven(Why::Collections), &[]), ""),
     entry("strPop", Model(Unproven(Why::Collections), &[]), ""),
     entry("strRemove", Model(Unproven(Why::Collections), &[]), ""),
-    entry("strSplitAtMut", Model(Unproven(Why::Outside), &[Row("strSplitAtMut")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("strSplitAtMut", Model(Unproven(Why::Outside), &[Row(StdRow::StrSplitAtMut)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("strSplitOff", Model(Unproven(Why::Collections), &[]), ""),
     entry("strTruncate", Model(Unproven(Why::Collections), &[]), ""),
     entry("stringPanic", Glue, ""),
-    entry("swap", Model(Unproven(Why::Collections), &[Row("vecDequeSwap")]), ""),
-    entry("swapRemove", Model(Unproven(Why::Collections), &[Row("swapRemove")]), ""),
+    entry("swap", Model(Unproven(Why::Collections), &[Row(StdRow::VecDequeSwap)]), ""),
+    entry("swapRemove", Model(Unproven(Why::Collections), &[Row(StdRow::SwapRemove)]), ""),
     entry("swapWithSlice", Model(Unproven(Why::Collections), &[]), ""),
-    entry("tableRoomFor", Model(Unproven(Why::Outside), &[Row("hashTableCapacityOverflow")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("tableRoomFor", Model(Unproven(Why::Outside), &[Row(StdRow::HashTableCapacityOverflow)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("take", Model(Unproven(Why::Collections), &[]), ""),
     entry("taking", Model(Pitted, &[Path("core::iter::Take")]), ""),
     entry("took", Glue, ""),
@@ -474,15 +488,15 @@ pub const MODELS: &[Entry] = &[
     entry("treeEnd", Model(Unproven(Why::Collections), &[]), ""),
     entry("treeFrom", Model(Unproven(Why::Collections), &[]), ""),
     entry("treeFromSorted", Model(Unproven(Why::Collections), &[]), ""),
-    entry("treeRange", Model(Unproven(Why::Collections), &[Row("btreeRange")]), ""),
-    entry("treeSearchBound", Model(Unproven(Why::Outside), &[Row("btreeRange")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("treeRange", Model(Unproven(Why::Collections), &[Row(StdRow::BtreeRange)]), ""),
+    entry("treeSearchBound", Model(Unproven(Why::Outside), &[Row(StdRow::BtreeRange)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("treeSplitOff", Model(Unproven(Why::Collections), &[]), ""),
     entry("truncate", Model(Unproven(Why::Collections), &[]), ""),
     entry("trustedZip", Model(Pitted, &[Path("core::iter::Zip")]), ""),
     entry("trustedZipEnds", Model(Pitted, &[Path("core::iter::Zip")]), ""),
     entry("tryFoldOk", Model(Unproven(Why::Consumers), &[]), ""),
     entry("tryOf", Model(Pitted, &[]), ""),
-    entry("tupleClone", Form(&[Row("tupleClone")]), "the lowering's, std_impls/clones.rs"),
+    entry("tupleClone", Form(&[Row(StdRow::TupleClone)]), "the lowering's, std_impls/clones.rs"),
     entry("unborrow", Model(Unproven(Why::Cells), &[]), ""),
     entry("unfused", Model(Pitted, &[Path("core::iter::Fuse")]), ""),
     entry("unfusedUnless", Model(Pitted, &[Path("core::iter::Fuse")]), ""),
@@ -494,15 +508,18 @@ pub const MODELS: &[Entry] = &[
     entry("unwrapOk", Glue, ""),
     entry("unzip", Model(Unproven(Why::Consumers), &[]), ""),
     entry("upgrade", Glue, ""),
-    entry("vecDequeRange", Form(&[Row("vecDequeRange")]), "the lowering's, std_calls.rs"),
-    entry("vecDequeSplitOff", Form(&[Row("vecDequeSplitOff")]), "the lowering's, combinators.rs"),
-    entry("vecExtractIf", Form(&[Row("vecExtractIf")]), "the lowering's, std_types/slice.rs"),
+    entry("vecDequeRange", Form(&[Row(StdRow::VecDequeRange)]), "the lowering's, std_calls.rs"),
+    entry("vecDequeSplitOff", Form(&[Row(StdRow::VecDequeSplitOff)]), "the lowering's, combinators.rs"),
+    entry("vecDrain", Form(&[Row(StdRow::VecDrain)]), "the lowering's, std_types/text.rs, std_calls.rs"),
+    entry("vecExtendFromWithin", Form(&[Row(StdRow::VecExtendFromWithin)]), "the lowering's, std_types/text.rs, std_calls.rs"),
+    entry("vecExtractIf", Form(&[Row(StdRow::VecExtractIf)]), "the lowering's, std_types/slice.rs"),
     entry("view", Glue, ""),
     entry("viewGet", Glue, ""),
     entry("viewRange", Glue, ""),
     entry("withCapacity", Model(Unproven(Why::Collections), &[]), ""),
-    entry("writeCloneOfSlice", Model(Unproven(Why::Outside), &[Row("writeCloneOfSlice")]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("writeCopyOfSlice", Form(&[Row("writeCopyOfSlice")]), "the lowering's, std_types/slice.rs"),
+    entry("wrappingOp", Form(&[Row(StdRow::WrappingOp)]), "the lowering's, std_types/number.rs"),
+    entry("writeCloneOfSlice", Model(Unproven(Why::Outside), &[Row(StdRow::WriteCloneOfSlice)]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("writeCopyOfSlice", Form(&[Row(StdRow::WriteCopyOfSlice)]), "the lowering's, std_types/slice.rs"),
     entry("writeDebugTuple", Model(Unproven(Why::Format), &[Path("core::fmt::Formatter::debug_tuple")]), ""),
     entry("writeInteger", Model(Unproven(Why::Format), &[Path("core::fmt::Formatter::pad_integral")]), "an integer's `Display` or `Debug`"),
     entry("zipEnds", Model(Pitted, &[Path("core::iter::Zip")]), ""),
@@ -524,7 +541,7 @@ pub fn json() -> String {
             let stands_for: Vec<String> = (stands.iter())
                 .map(|stands| match *stands {
                     Path(path) => path.to_string(),
-                    Row(row) => format!("$stdSites.{row}"),
+                    Row(row) => format!("$stdSites.{}", row.name()),
                 })
                 .collect();
             // A helper the runtime exports by `$` and its name; a form by its
@@ -613,23 +630,38 @@ pub(crate) fn resolved(tcx: TyCtxt<'_>, path: &str) -> Option<DefId> {
     items.into_iter().find(|&item| tcx.item_name(item).as_str() == *method)
 }
 
-/// Each row of `$stdSites` a model or a form says it reads that `written`,
-/// the rows the std build writes, lacks: of a catalog that names a row
-/// nothing writes. Asked where `bun run std` has written them
-/// (`compiled_std::raised`).
-pub(crate) fn rows_unwritten(written: &dyn Fn(&str) -> bool) -> Vec<String> {
-    let mut missing = Vec::new();
-    for entry in MODELS {
-        let (Model(_, stands) | Form(stands)) = entry.kind else {
-            continue;
-        };
-        for stands in stands {
-            if let Row(row) = *stands
-                && !written(row)
-            {
-                missing.push(format!("{}: {row}", entry.helper));
-            }
-        }
+/// Each row of `StdRow`'s no model or form of the catalog says it reads:
+/// a row whose reader the catalog doesn't name (ADR 1202, amended).
+pub(crate) fn rows_unnamed() -> Vec<&'static str> {
+    rows_unnamed_of(MODELS)
+}
+
+/// Each row of `StdRow`'s no model or form of `models` says it reads.
+fn rows_unnamed_of(models: &[Entry]) -> Vec<&'static str> {
+    (StdRow::ALL.iter().copied())
+        .filter(|&row| {
+            !models.iter().any(|entry| match entry.kind {
+                Model(_, stands) | Form(stands) => stands.contains(&Row(row)),
+                Glue => false,
+            })
+        })
+        .map(|row| row.name())
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Each row of `$stdSites` is named by the catalog, a model's or a
+    /// form's, so a row is never read by a reader it doesn't name; and of a
+    /// catalog without a row's reader, the row is said.
+    #[test]
+    fn each_row_is_the_catalogs() {
+        assert_eq!(rows_unnamed(), Vec::<&str>::new());
+        let lacking: Vec<Entry> = (MODELS.iter().copied())
+            .filter(|entry| entry.helper != "vecDrain")
+            .collect();
+        assert_eq!(rows_unnamed_of(&lacking), vec!["vecDrain"]);
     }
-    missing
 }

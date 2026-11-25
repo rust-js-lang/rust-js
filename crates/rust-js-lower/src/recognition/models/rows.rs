@@ -9,6 +9,119 @@ use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::fast_reject::SimplifiedType;
 use rustc_middle::ty::{FloatTy, IntTy, Ty, TyCtxt, UintTy};
 
+/// Each row of `$stdSites`, by its name there, each variant's one handle,
+/// and `ALL` of them: of a row the lowering reads, its reader names it
+/// through `StdRow`'s methods, never by its text, so the catalog finds its
+/// readers by the API (Campaign 5's step 2c, ADR 1202 amended).
+macro_rules! std_rows {
+    ($($row:ident = $name:literal,)*) => {
+        #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+        pub enum StdRow {
+            $($row,)*
+        }
+
+        impl StdRow {
+            /// Every row, in the order they're listed.
+            pub const ALL: &'static [StdRow] = &[$(StdRow::$row,)*];
+
+            /// Its name in `$stdSites`.
+            pub fn name(self) -> &'static str {
+                match self {
+                    $(StdRow::$row => $name,)*
+                }
+            }
+        }
+    };
+}
+
+#[rustfmt::skip]
+std_rows! {
+    ArcFromTrustedLen = "arcFromTrustedLen",
+    ArcSliceLayout = "arcSliceLayout",
+    BoxLast = "boxLast",
+    BtreeRange = "btreeRange",
+    BufReaderStreamPosition = "bufReaderStreamPosition",
+    ByteSliceConsume = "byteSliceConsume",
+    CapacityOverflow = "capacityOverflow",
+    ChainCount = "chainCount",
+    Clamp = "clamp",
+    ClonedAt = "clonedAt",
+    CopiedCount = "copiedCount",
+    CopiedLast = "copiedLast",
+    DurationAdd = "durationAdd",
+    DurationNew = "durationNew",
+    DurationSub = "durationSub",
+    EncodeUtf16 = "encodeUtf16",
+    EncodeUtf8 = "encodeUtf8",
+    EnumerateCount = "enumerateCount",
+    ExactSizeLen = "exactSizeLen",
+    FlattenCount = "flattenCount",
+    FlattenLast = "flattenLast",
+    FnOnceCall = "fnOnceCall",
+    Format = "format",
+    FromDigit = "fromDigit",
+    FromStrRadix = "fromStrRadix",
+    HashTableCapacityOverflow = "hashTableCapacityOverflow",
+    LazyCellPoisoned = "lazyCellPoisoned",
+    LazyLockPoisoned = "lazyLockPoisoned",
+    LocalKeyReplace = "localKeyReplace",
+    LocalKeySet = "localKeySet",
+    LocalKeyWithBorrow = "localKeyWithBorrow",
+    LocalKeyWithBorrowMut = "localKeyWithBorrowMut",
+    MapGetDisjointMut = "mapGetDisjointMut",
+    NextMultipleOf = "nextMultipleOf",
+    OnceCellReentrant = "onceCellReentrant",
+    OrdClamp = "ordClamp",
+    PanicNounwind = "panicNounwind",
+    PanicNounwindNobacktrace = "panicNounwindNobacktrace",
+    PathExtension = "pathExtension",
+    PrintFailed = "printFailed",
+    RcFromTrustedLen = "rcFromTrustedLen",
+    RcSliceLayout = "rcSliceLayout",
+    RefCellEq = "refCellEq",
+    RefCellSwap = "refCellSwap",
+    RefCellTake = "refCellTake",
+    RotateLeft = "rotateLeft",
+    RotateRight = "rotateRight",
+    SaturatingOp = "saturatingOp",
+    SelectNth = "selectNth",
+    SkipCount = "skipCount",
+    SkipLast = "skipLast",
+    SliceRepeat = "sliceRepeat",
+    SortTotalOrder = "sortTotalOrder",
+    StepBy = "stepBy",
+    StepForward = "stepForward",
+    StrSplitAt = "strSplitAt",
+    StrSplitAtMut = "strSplitAtMut",
+    SwapRemove = "swapRemove",
+    ToString = "toString",
+    TupleClone = "tupleClone",
+    VecDequeDrain = "vecDequeDrain",
+    VecDequeExtendTrusted = "vecDequeExtendTrusted",
+    VecDequeInsert = "vecDequeInsert",
+    VecDequeRange = "vecDequeRange",
+    VecDequeReserve = "vecDequeReserve",
+    VecDequeRotateLeft = "vecDequeRotateLeft",
+    VecDequeRotateRight = "vecDequeRotateRight",
+    VecDequeSplitOff = "vecDequeSplitOff",
+    VecDequeSwap = "vecDequeSwap",
+    VecDrain = "vecDrain",
+    VecExtendFromWithin = "vecExtendFromWithin",
+    VecExtendTrusted = "vecExtendTrusted",
+    VecExtractIf = "vecExtractIf",
+    VecFromTrustedLen = "vecFromTrustedLen",
+    WrappingOp = "wrappingOp",
+    WriteCloneOfSlice = "writeCloneOfSlice",
+    WriteCopyOfSlice = "writeCopyOfSlice",
+}
+
+impl StdRow {
+    /// The row of `name`, as `bun run std` writes it.
+    pub fn named(name: &str) -> Option<StdRow> {
+        StdRow::ALL.iter().copied().find(|row| row.name() == name)
+    }
+}
+
 /// A trait: by its lang item, as a derive macro has its name, or at its
 /// path, of one that isn't one.
 #[derive(Clone, Copy, Debug)]
@@ -77,39 +190,39 @@ pub(crate) enum Owner {
 /// whose sites are one (`signed`): whose function holds
 /// it, and its name, of a free function none, its path's last. A
 /// function's sites are in the order they're written.
-pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
+pub(crate) const ROWS: &[(StdRow, Option<&str>, Owner, &str)] = &[
     (
-        "vecDequeSwap",
+        StdRow::VecDequeSwap,
         None,
         Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
         "swap",
     ),
     (
-        "vecDequeInsert",
+        StdRow::VecDequeInsert,
         None,
         Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
         "insert_mut",
     ),
     (
-        "vecDequeRotateLeft",
+        StdRow::VecDequeRotateLeft,
         None,
         Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
         "rotate_left",
     ),
     (
-        "vecDequeRotateRight",
+        StdRow::VecDequeRotateRight,
         None,
         Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
         "rotate_right",
     ),
     (
-        "swapRemove",
+        StdRow::SwapRemove,
         None,
         Owner::Type(StdCrate::Alloc, &["vec", "Vec"]),
         "swap_remove",
     ),
     (
-        "capacityOverflow",
+        StdRow::CapacityOverflow,
         None,
         Owner::Free(StdCrate::Alloc, &["raw_vec", "capacity_overflow"]),
         "",
@@ -119,22 +232,27 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
     // unwind's, `panic_nounwind`'s, and of a drop's panic as another
     // unwinds, `panic_nounwind_nobacktrace`'s (`$abort`, #2452).
     (
-        "panicNounwind",
+        StdRow::PanicNounwind,
         None,
         Owner::Free(StdCrate::Core, &["panicking", "panic_nounwind"]),
         "",
     ),
     (
-        "panicNounwindNobacktrace",
+        StdRow::PanicNounwindNobacktrace,
         None,
         Owner::Free(StdCrate::Core, &["panicking", "panic_nounwind_nobacktrace"]),
         "",
     ),
-    ("strSplitAt", None, Owner::Primitive(SimplifiedType::Str), "split_at"),
+    (
+        StdRow::StrSplitAt,
+        None,
+        Owner::Primitive(SimplifiedType::Str),
+        "split_at",
+    ),
     // A `HashMap`'s `get_disjoint_mut` of two keys of one entry: hashbrown's
     // table's, vendored, named under its own build's registry (#2325).
     (
-        "mapGetDisjointMut",
+        StdRow::MapGetDisjointMut,
         None,
         Owner::Vendored(
             &["raw", "RawTable"],
@@ -143,7 +261,7 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
         "get_disjoint_mut",
     ),
     (
-        "strSplitAtMut",
+        StdRow::StrSplitAtMut,
         None,
         Owner::Primitive(SimplifiedType::Str),
         "split_at_mut",
@@ -151,7 +269,7 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
     // A hash table's room past what its buckets can count: hashbrown's
     // `Fallibility::capacity_overflow`, its `panic!` (#2487).
     (
-        "hashTableCapacityOverflow",
+        StdRow::HashTableCapacityOverflow,
         None,
         Owner::Vendored(
             &["raw", "Fallibility"],
@@ -160,62 +278,67 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
         "capacity_overflow",
     ),
     (
-        "rotateLeft",
+        StdRow::RotateLeft,
         None,
         Owner::Primitive(SimplifiedType::Slice),
         "rotate_left",
     ),
     (
-        "rotateRight",
+        StdRow::RotateRight,
         None,
         Owner::Primitive(SimplifiedType::Slice),
         "rotate_right",
     ),
     (
-        "selectNth",
+        StdRow::SelectNth,
         None,
         Owner::Free(StdCrate::Core, &["slice", "sort", "select", "partition_at_index"]),
         "",
     ),
     (
-        "clamp",
+        StdRow::Clamp,
         Some("f64"),
         Owner::Primitive(SimplifiedType::Float(FloatTy::F64)),
         "clamp",
     ),
     (
-        "clamp",
+        StdRow::Clamp,
         Some("f32"),
         Owner::Primitive(SimplifiedType::Float(FloatTy::F32)),
         "clamp",
     ),
     (
-        "fromDigit",
+        StdRow::FromDigit,
         None,
         Owner::Free(StdCrate::Core, &["char", "convert", "from_digit"]),
         "",
     ),
     (
-        "encodeUtf8",
+        StdRow::EncodeUtf8,
         None,
         Owner::Free(StdCrate::Core, &["char", "encode_utf8_raw"]),
         "",
     ),
     (
-        "encodeUtf16",
+        StdRow::EncodeUtf16,
         None,
         Owner::Free(StdCrate::Core, &["char", "encode_utf16_raw"]),
         "",
     ),
-    ("stepBy", None, Owner::Type(StdCrate::Core, &["iter", "StepBy"]), "new"),
     (
-        "durationNew",
+        StdRow::StepBy,
+        None,
+        Owner::Type(StdCrate::Core, &["iter", "StepBy"]),
+        "new",
+    ),
+    (
+        StdRow::DurationNew,
         None,
         Owner::Type(StdCrate::Core, &["time", "Duration"]),
         "new",
     ),
     (
-        "durationAdd",
+        StdRow::DurationAdd,
         None,
         Owner::Impl {
             trait_: Trait::Lang(LangItem::Add),
@@ -224,7 +347,7 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
         "add",
     ),
     (
-        "durationSub",
+        StdRow::DurationSub,
         None,
         Owner::Impl {
             trait_: Trait::Lang(LangItem::Sub),
@@ -233,19 +356,19 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
         "sub",
     ),
     (
-        "onceCellReentrant",
+        StdRow::OnceCellReentrant,
         None,
         Owner::Type(StdCrate::Core, &["cell", "OnceCell"]),
         "try_init",
     ),
     (
-        "lazyCellPoisoned",
+        StdRow::LazyCellPoisoned,
         None,
         Owner::Free(StdCrate::Core, &["cell", "lazy", "panic_poisoned"]),
         "",
     ),
     (
-        "btreeRange",
+        StdRow::BtreeRange,
         None,
         Owner::Type(StdCrate::Alloc, &["collections", "btree", "node", "NodeRef"]),
         "search_tree_for_bifurcation",
@@ -253,20 +376,20 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
     // `RefCell::take`'s borrow, its `replace`'s call, and `swap`'s two,
     // `self`'s and `other`'s.
     (
-        "refCellTake",
+        StdRow::RefCellTake,
         None,
         Owner::Type(StdCrate::Core, &["cell", "RefCell"]),
         "take",
     ),
     (
-        "refCellSwap",
+        StdRow::RefCellSwap,
         None,
         Owner::Type(StdCrate::Core, &["cell", "RefCell"]),
         "swap",
     ),
     // A thread-local `RefCell`'s: each its `with`'s call, then its borrow.
     (
-        "localKeyWithBorrow",
+        StdRow::LocalKeyWithBorrow,
         None,
         Owner::TypeOver(
             StdCrate::Std,
@@ -276,7 +399,7 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
         "with_borrow",
     ),
     (
-        "localKeyWithBorrowMut",
+        StdRow::LocalKeyWithBorrowMut,
         None,
         Owner::TypeOver(
             StdCrate::Std,
@@ -286,7 +409,7 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
         "with_borrow_mut",
     ),
     (
-        "localKeySet",
+        StdRow::LocalKeySet,
         None,
         Owner::TypeOver(
             StdCrate::Std,
@@ -296,7 +419,7 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
         "set",
     ),
     (
-        "localKeyReplace",
+        StdRow::LocalKeyReplace,
         None,
         Owner::TypeOver(
             StdCrate::Std,
@@ -310,7 +433,7 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
     // or an `Arc<[T]>`, or extending a `Vec` or a `VecDeque`; and a
     // `VecDeque`'s reserve past `usize::MAX`.
     (
-        "vecFromTrustedLen",
+        StdRow::VecFromTrustedLen,
         None,
         Owner::Bounded(
             (StdCrate::Alloc, &["vec", "spec_from_iter_nested", "SpecFromIterNested"]),
@@ -320,7 +443,7 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
         "from_iter",
     ),
     (
-        "rcFromTrustedLen",
+        StdRow::RcFromTrustedLen,
         None,
         Owner::Bounded(
             (StdCrate::Alloc, &["rc", "ToRcSlice"]),
@@ -330,7 +453,7 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
         "to_rc_slice",
     ),
     (
-        "arcFromTrustedLen",
+        StdRow::ArcFromTrustedLen,
         None,
         Owner::Bounded(
             (StdCrate::Alloc, &["sync", "ToArcSlice"]),
@@ -341,30 +464,35 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
     ),
     // A slice's `repeat`, its `checked_mul(n).expect("capacity overflow")`
     // of a count past `usize::MAX` (#2488).
-    ("sliceRepeat", None, Owner::Primitive(SimplifiedType::Slice), "repeat"),
+    (
+        StdRow::SliceRepeat,
+        None,
+        Owner::Primitive(SimplifiedType::Slice),
+        "repeat",
+    ),
     // Where `Rc::<[T]>`'s and `Arc::<[T]>`'s slice is allocated, its
     // `Layout::array::<T>(len).unwrap()`, which a collect past what a
     // `Layout` holds panics at (#2489).
     (
-        "rcSliceLayout",
+        StdRow::RcSliceLayout,
         None,
         Owner::Type(StdCrate::Alloc, &["rc", "Rc"]),
         "allocate_for_slice",
     ),
     (
-        "arcSliceLayout",
+        StdRow::ArcSliceLayout,
         None,
         Owner::Type(StdCrate::Alloc, &["sync", "Arc"]),
         "allocate_for_slice",
     ),
     (
-        "vecExtendTrusted",
+        StdRow::VecExtendTrusted,
         None,
         Owner::Type(StdCrate::Alloc, &["vec", "Vec"]),
         "extend_trusted",
     ),
     (
-        "vecDequeExtendTrusted",
+        StdRow::VecDequeExtendTrusted,
         None,
         Owner::Bounded(
             (
@@ -377,14 +505,14 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
         "spec_extend",
     ),
     (
-        "vecDequeReserve",
+        StdRow::VecDequeReserve,
         None,
         Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
         "reserve",
     ),
     // A sort's comparison that isn't a total order, its merge's check.
     (
-        "sortTotalOrder",
+        StdRow::SortTotalOrder,
         None,
         Owner::Free(
             StdCrate::Core,
@@ -395,7 +523,7 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
     // std's `Ord::clamp` default, its `assert!(min <= max)`, which doesn't
     // track its caller as integers' and a `char`'s do.
     (
-        "ordClamp",
+        StdRow::OrdClamp,
         None,
         Owner::Default(StdCrate::Core, &["cmp", "Ord"]),
         "clamp",
@@ -405,7 +533,7 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
     // `FnMut::call_mut`. A std type's own clone's are `clonedAt`'s, read of
     // the impl rustc resolves it to (#2509).
     (
-        "tupleClone",
+        StdRow::TupleClone,
         None,
         Owner::Declared(StdCrate::Core, &["clone", "Clone"]),
         "clone",
@@ -413,19 +541,13 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
     // A shim's call of a function value given as an `FnOnce`, a chain's
     // `last`'s `Iterator::last` given to `Option::and_then` (#2488).
     (
-        "fnOnceCall",
+        StdRow::FnOnceCall,
         None,
         Owner::Declared(StdCrate::Core, &["ops", "function", "FnOnce"]),
         "call_once",
     ),
     (
-        "fnMutCall",
-        None,
-        Owner::Declared(StdCrate::Core, &["ops", "function", "FnMut"]),
-        "call_mut",
-    ),
-    (
-        "refCellEq",
+        StdRow::RefCellEq,
         None,
         Owner::Impl {
             trait_: Trait::Lang(LangItem::PartialEq),
@@ -434,152 +556,157 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
         "eq",
     ),
     (
-        "nextMultipleOf",
+        StdRow::NextMultipleOf,
         Some("u8"),
         Owner::Primitive(SimplifiedType::Uint(UintTy::U8)),
         "next_multiple_of",
     ),
     (
-        "nextMultipleOf",
+        StdRow::NextMultipleOf,
         Some("u16"),
         Owner::Primitive(SimplifiedType::Uint(UintTy::U16)),
         "next_multiple_of",
     ),
     (
-        "nextMultipleOf",
+        StdRow::NextMultipleOf,
         Some("u32"),
         Owner::Primitive(SimplifiedType::Uint(UintTy::U32)),
         "next_multiple_of",
     ),
     (
-        "nextMultipleOf",
+        StdRow::NextMultipleOf,
         Some("u64"),
         Owner::Primitive(SimplifiedType::Uint(UintTy::U64)),
         "next_multiple_of",
     ),
     (
-        "nextMultipleOf",
+        StdRow::NextMultipleOf,
         Some("u128"),
         Owner::Primitive(SimplifiedType::Uint(UintTy::U128)),
         "next_multiple_of",
     ),
     (
-        "nextMultipleOf",
+        StdRow::NextMultipleOf,
         Some("usize"),
         Owner::Primitive(SimplifiedType::Uint(UintTy::Usize)),
         "next_multiple_of",
     ),
     (
-        "fromStrRadix",
+        StdRow::FromStrRadix,
         Some("signed"),
         Owner::Primitive(SimplifiedType::Int(IntTy::I8)),
         "from_ascii_bytes_radix_impl",
     ),
     (
-        "fromStrRadix",
+        StdRow::FromStrRadix,
         Some("signed"),
         Owner::Primitive(SimplifiedType::Int(IntTy::I16)),
         "from_ascii_bytes_radix_impl",
     ),
     (
-        "fromStrRadix",
+        StdRow::FromStrRadix,
         Some("signed"),
         Owner::Primitive(SimplifiedType::Int(IntTy::I32)),
         "from_ascii_bytes_radix_impl",
     ),
     (
-        "fromStrRadix",
+        StdRow::FromStrRadix,
         Some("signed"),
         Owner::Primitive(SimplifiedType::Int(IntTy::I64)),
         "from_ascii_bytes_radix_impl",
     ),
     (
-        "fromStrRadix",
+        StdRow::FromStrRadix,
         Some("signed"),
         Owner::Primitive(SimplifiedType::Int(IntTy::I128)),
         "from_ascii_bytes_radix_impl",
     ),
     (
-        "fromStrRadix",
+        StdRow::FromStrRadix,
         Some("signed"),
         Owner::Primitive(SimplifiedType::Int(IntTy::Isize)),
         "from_ascii_bytes_radix_impl",
     ),
     (
-        "fromStrRadix",
+        StdRow::FromStrRadix,
         Some("unsigned"),
         Owner::Primitive(SimplifiedType::Uint(UintTy::U8)),
         "from_ascii_bytes_radix_impl",
     ),
     (
-        "fromStrRadix",
+        StdRow::FromStrRadix,
         Some("unsigned"),
         Owner::Primitive(SimplifiedType::Uint(UintTy::U16)),
         "from_ascii_bytes_radix_impl",
     ),
     (
-        "fromStrRadix",
+        StdRow::FromStrRadix,
         Some("unsigned"),
         Owner::Primitive(SimplifiedType::Uint(UintTy::U32)),
         "from_ascii_bytes_radix_impl",
     ),
     (
-        "fromStrRadix",
+        StdRow::FromStrRadix,
         Some("unsigned"),
         Owner::Primitive(SimplifiedType::Uint(UintTy::U64)),
         "from_ascii_bytes_radix_impl",
     ),
     (
-        "fromStrRadix",
+        StdRow::FromStrRadix,
         Some("unsigned"),
         Owner::Primitive(SimplifiedType::Uint(UintTy::U128)),
         "from_ascii_bytes_radix_impl",
     ),
     (
-        "fromStrRadix",
+        StdRow::FromStrRadix,
         Some("unsigned"),
         Owner::Primitive(SimplifiedType::Uint(UintTy::Usize)),
         "from_ascii_bytes_radix_impl",
     ),
     (
-        "writeCloneOfSlice",
+        StdRow::WriteCloneOfSlice,
         None,
         Owner::Primitive(SimplifiedType::Slice),
         "write_clone_of_slice",
     ),
     (
-        "writeCopyOfSlice",
+        StdRow::WriteCopyOfSlice,
         None,
         Owner::Primitive(SimplifiedType::Slice),
         "write_copy_of_slice",
     ),
     (
-        "exactSizeLen",
+        StdRow::ExactSizeLen,
         None,
         Owner::Default(StdCrate::Core, &["iter", "ExactSizeIterator"]),
         "len",
     ),
     (
-        "stepForward",
+        StdRow::StepForward,
         None,
         Owner::Default(StdCrate::Core, &["iter", "Step"]),
         "forward",
     ),
     (
-        "toString",
+        StdRow::ToString,
         None,
         Owner::Blanket(StdCrate::Alloc, &["string", "SpecToString"]),
         "spec_to_string",
     ),
-    ("format", None, Owner::Free(StdCrate::Alloc, &["fmt", "format"]), ""),
     (
-        "printFailed",
+        StdRow::Format,
+        None,
+        Owner::Free(StdCrate::Alloc, &["fmt", "format"]),
+        "",
+    ),
+    (
+        StdRow::PrintFailed,
         None,
         Owner::Free(StdCrate::Core, &["io", "write", "default_write_fmt"]),
         "",
     ),
     (
-        "bufReaderStreamPosition",
+        StdRow::BufReaderStreamPosition,
         None,
         Owner::Impl {
             trait_: Trait::Path(StdCrate::Alloc, &["io", "Seek"]),
@@ -588,56 +715,61 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
         "stream_position",
     ),
     (
-        "lazyLockPoisoned",
+        StdRow::LazyLockPoisoned,
         None,
         Owner::Free(StdCrate::Std, &["sync", "lazy_lock", "panic_poisoned"]),
         "",
     ),
     (
-        "pathExtension",
+        StdRow::PathExtension,
         None,
         Owner::Free(StdCrate::Std, &["path", "validate_extension"]),
         "",
     ),
-    ("vecDrain", None, Owner::Type(StdCrate::Alloc, &["vec", "Vec"]), "drain"),
     (
-        "vecExtendFromWithin",
+        StdRow::VecDrain,
+        None,
+        Owner::Type(StdCrate::Alloc, &["vec", "Vec"]),
+        "drain",
+    ),
+    (
+        StdRow::VecExtendFromWithin,
         None,
         Owner::Type(StdCrate::Alloc, &["vec", "Vec"]),
         "extend_from_within",
     ),
     (
-        "vecExtractIf",
+        StdRow::VecExtractIf,
         None,
         Owner::Type(StdCrate::Alloc, &["vec", "ExtractIf"]),
         "new",
     ),
     (
-        "vecDequeDrain",
+        StdRow::VecDequeDrain,
         None,
         Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
         "drain",
     ),
     (
-        "vecDequeRange",
+        StdRow::VecDequeRange,
         None,
         Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
         "slice_ranges",
     ),
     (
-        "vecDequeSplitOff",
+        StdRow::VecDequeSplitOff,
         None,
         Owner::Type(StdCrate::Alloc, &["collections", "vec_deque", "VecDeque"]),
         "split_off",
     ),
     (
-        "byteSliceConsume",
+        StdRow::ByteSliceConsume,
         None,
         Owner::ForByteSlice(StdCrate::Alloc, &["io", "BufRead"]),
         "consume",
     ),
     (
-        "wrappingOp",
+        StdRow::WrappingOp,
         None,
         Owner::Impl {
             trait_: Trait::Lang(LangItem::Div),
@@ -646,7 +778,7 @@ pub(crate) const ROWS: &[(&str, Option<&str>, Owner, &str)] = &[
         "div",
     ),
     (
-        "saturatingOp",
+        StdRow::SaturatingOp,
         None,
         Owner::Impl {
             trait_: Trait::Lang(LangItem::Div),

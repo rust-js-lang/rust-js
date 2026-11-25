@@ -160,9 +160,6 @@ const $stdSites = {
   "fnOnceCall": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
   ],
-  "fnMutCall": [
-    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
-  ],
   "refCellEq": [
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell.rs:1482:15",
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cell.rs:1482:34"

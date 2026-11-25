@@ -606,8 +606,8 @@ export const mutations: Mutation[] = [
     name: "clone-site-of-std-unread",
     breaks: "a std container's clone of a borrowed `RefCell` raises where it's called, not at the row `clonedAt` reads of the impl rustc resolves (#2509)",
     file: "crates/rust-js-lower/src/std_impls/clones.rs",
-    find: "            .then(|| Expr::std_site_of(\"clonedAt\", &key, at))\n",
-    replace: "            .then(|| Expr::std_site_of(\"clonedAt\", &key, at)).filter(|_| false)\n",
+    find: "        (cell_at(at) && StdRow::ClonedAt.written(&key, at)).then(|| StdRow::ClonedAt.site_of(&key, at))\n",
+    replace: "        (cell_at(at) && StdRow::ClonedAt.written(&key, at)).then(|| StdRow::ClonedAt.site_of(&key, at)).filter(|_| false)\n",
     tests: ["test/binaries.test.ts", "-t", "a container's clone of a borrowed"],
   },
   {
@@ -631,8 +631,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option<&T>`'s `cloned()` of an item that can't be a `RefCell` is cloned part by part at its row, not by `Option`'s own form: `$stdSites` imported where nothing panics, a map's value given back as it is no longer (#2509)",
     file: "crates/rust-js-lower/src/std_impls/clones.rs",
-    find: "        (self.part_may_be_cell(item) && rust_js_program::runtime::std_site_written(\"clonedAt\", row, 0))\n",
-    replace: "        (rust_js_program::runtime::std_site_written(\"clonedAt\", row, 0))\n",
+    find: "        (self.part_may_be_cell(item) && StdRow::ClonedAt.written(row, 0)).then(",
+    replace: "        (StdRow::ClonedAt.written(row, 0)).then(",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^(untagged_null_option_held|local_borrow_nested_option)\\.rs$"],
   },

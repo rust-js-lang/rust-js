@@ -122,6 +122,7 @@ pub mod signatures;
 pub mod sources;
 pub mod std_coverage;
 pub mod std_impls;
+mod std_rows;
 pub mod std_types;
 mod support;
 pub mod temporary_names;
@@ -144,6 +145,7 @@ pub use declarations::std_types::module as std_declarations;
 pub use declarations::validate_types;
 pub use instances::{Instances, instance_bodies};
 pub use recognition::models::json as std_models;
+pub use recognition::models::rows::StdRow;
 use rust_js_program::casing::{camel_case, unhyphenated};
 use rust_js_program::names::{fresh_in, js_ident};
 /// Whether each `From` into an untagged enum is the variant of its

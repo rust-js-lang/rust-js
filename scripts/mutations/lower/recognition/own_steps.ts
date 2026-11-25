@@ -273,7 +273,7 @@ export const mutations: Mutation[] = [
     name: "box-frame-unseen",
     breaks: "a `Box`'s `last` of a `repeat()` names its caller's line, where native names the box's specialization's, `boxed/iter.rs:57:17` (#2488)",
     file: "crates/rust-js-lower/src/recognition/own_steps.rs",
-    find: "                \"last\" => self.repeat_frame_row(unboxed, step).or(Some(\"boxLast\")),\n",
+    find: "                \"last\" => self.repeat_frame_row(unboxed, step).or(Some(StdRow::BoxLast)),\n",
     replace: "                \"last\" => self.repeat_frame_row(unboxed, step),\n",
     tests: ["test/corpus.test.ts", "-t", "^(repeat_boxed_last_panics_at_boxs_line).rs$"],
   },

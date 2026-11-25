@@ -11,7 +11,7 @@
 //! decision: always under `/rustc/<commit>/`).
 
 use super::*;
-use crate::recognition::models::rows::{Owner, ROWS, Trait};
+use crate::recognition::models::rows::{Owner, ROWS, StdRow, Trait};
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::mir;
 
@@ -49,9 +49,9 @@ fn flatten_of_repeats(tcx: TyCtxt<'_>) -> Option<Ty<'_>> {
 /// so names the adapter's line, the nearest frame that doesn't (#2488).
 /// Each names the adapters of std's step catalog (`std_steps`) it's of; and
 /// `bun run std` holds them to it both ways (`held_steps_checked`).
-const HELD_STEPS: &[(&str, &[&str], Owner, &str)] = &[
+const HELD_STEPS: &[(StdRow, &[&str], Owner, &str)] = &[
     (
-        "flattenCount",
+        StdRow::FlattenCount,
         &["Flatten", "FlatMap"],
         Owner::Resolved(
             (StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
@@ -60,7 +60,7 @@ const HELD_STEPS: &[(&str, &[&str], Owner, &str)] = &[
         "count",
     ),
     (
-        "flattenLast",
+        StdRow::FlattenLast,
         &["Flatten", "FlatMap"],
         Owner::Resolved(
             (StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
@@ -69,13 +69,13 @@ const HELD_STEPS: &[(&str, &[&str], Owner, &str)] = &[
         "last",
     ),
     (
-        "boxLast",
+        StdRow::BoxLast,
         &["Box<I>"],
         Owner::Resolved((StdCrate::Alloc, &["boxed", "iter", "BoxIter"]), box_of_a_repeat),
         "last",
     ),
     (
-        "skipCount",
+        StdRow::SkipCount,
         &["Skip"],
         Owner::Impl {
             trait_: Trait::Path(StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
@@ -84,7 +84,7 @@ const HELD_STEPS: &[(&str, &[&str], Owner, &str)] = &[
         "count",
     ),
     (
-        "skipLast",
+        StdRow::SkipLast,
         &["Skip"],
         Owner::Impl {
             trait_: Trait::Path(StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
@@ -93,7 +93,7 @@ const HELD_STEPS: &[(&str, &[&str], Owner, &str)] = &[
         "last",
     ),
     (
-        "enumerateCount",
+        StdRow::EnumerateCount,
         &["Enumerate"],
         Owner::Impl {
             trait_: Trait::Path(StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
@@ -102,7 +102,7 @@ const HELD_STEPS: &[(&str, &[&str], Owner, &str)] = &[
         "count",
     ),
     (
-        "chainCount",
+        StdRow::ChainCount,
         &["Chain"],
         Owner::Impl {
             trait_: Trait::Path(StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
@@ -111,7 +111,7 @@ const HELD_STEPS: &[(&str, &[&str], Owner, &str)] = &[
         "count",
     ),
     (
-        "copiedCount",
+        StdRow::CopiedCount,
         &["Copied"],
         Owner::Impl {
             trait_: Trait::Path(StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
@@ -120,7 +120,7 @@ const HELD_STEPS: &[(&str, &[&str], Owner, &str)] = &[
         "count",
     ),
     (
-        "copiedLast",
+        StdRow::CopiedLast,
         &["Copied"],
         Owner::Impl {
             trait_: Trait::Path(StdCrate::Core, &["iter", "traits", "iterator", "Iterator"]),
@@ -144,18 +144,25 @@ const HELD_STEPS_ELSEWHERE: &[(&str, &str)] = &[
     ("Peekable", "last"),
 ];
 
-/// That each row of `$stdSites` the catalog's models and forms say they
-/// read is one written, `written`: of a model whose row nothing writes, its
-/// sites would be `undefined` (ADR 1202, amended).
-fn rows_checked(written: &dyn Fn(&str) -> bool) -> Result<(), String> {
-    let unwritten = crate::recognition::models::rows_unwritten(written);
-    if unwritten.is_empty() {
-        return Ok(());
+/// That the rows `bun run std` writes, `written`, are `StdRow`'s, both
+/// ways: a handle of a row none writes would read `undefined`, and a row
+/// written that has none, no reader the catalog can name (ADR 1202,
+/// amended).
+fn rows_checked(written: &[&str]) -> Result<(), String> {
+    let unwritten: Vec<_> = (StdRow::ALL.iter())
+        .map(|row| row.name())
+        .filter(|name| !written.contains(name))
+        .collect();
+    if !unwritten.is_empty() {
+        return Err(format!("these rows of `StdRow` none writes: {}", unwritten.join(", ")));
     }
-    Err(format!(
-        "these of models.rs read rows of `$stdSites` no site writes: {}",
-        unwritten.join(", ")
-    ))
+    let unlisted: Vec<_> = (written.iter().copied())
+        .filter(|name| StdRow::named(name).is_none())
+        .collect();
+    if !unlisted.is_empty() {
+        return Err(format!("these rows written are no `StdRow`'s: {}", unlisted.join(", ")));
+    }
+    Ok(())
 }
 
 /// That `HELD_STEPS` is std's step catalog's, both ways: each row's
@@ -163,13 +170,14 @@ fn rows_checked(written: &dyn Fn(&str) -> bool) -> Result<(), String> {
 /// catalog's that does is a row's or `HELD_STEPS_ELSEWHERE`'s, so a step a
 /// new toolchain's adapter passes on is said, never left naming its
 /// caller's line (#2488).
-fn held_steps_checked(rows: &[(&str, &[&str], Owner, &str)], elsewhere: &[(&str, &str)]) -> Result<(), String> {
+fn held_steps_checked(rows: &[(StdRow, &[&str], Owner, &str)], elsewhere: &[(&str, &str)]) -> Result<(), String> {
     use crate::recognition::std_steps;
     let asks_the_same = |name: &str, step: &str| std_steps::asks(name, step).iter().any(|asked| asked.step == step);
     for &(row, names, _, step) in rows {
         if let Some(name) = names.iter().find(|name| !asks_the_same(name, step)) {
             return Err(format!(
-                "`{row}`: std's catalog says `{name}`'s `{step}` asks no `{step}` of what it holds"
+                "`{}`: std's catalog says `{name}`'s `{step}` asks no `{step}` of what it holds",
+                row.name()
             ));
         }
     }
@@ -516,13 +524,13 @@ pub(crate) fn raised_catalogue(tcx: TyCtxt<'_>) -> Result<String, String> {
         );
         match tag {
             None => {
-                kept.insert(name, sites);
+                kept.insert(name.name(), sites);
             }
             // Of types whose sites a helper reads by a kind, `signed` or
             // `unsigned`, each the same, as one macro writes them; one that
             // differs is a site no helper names.
             Some(tag) => {
-                let typed = kept.entry(name).or_insert_with(|| ::serde_json::json!({}));
+                let typed = kept.entry(name.name()).or_insert_with(|| ::serde_json::json!({}));
                 if typed.get(tag).is_some_and(|kept| *kept != sites) {
                     return Err(format!(
                         "`{function_name}` of {owner:?} raises its panic elsewhere than another `{tag}` one's"
@@ -537,7 +545,7 @@ pub(crate) fn raised_catalogue(tcx: TyCtxt<'_>) -> Result<String, String> {
         .chain(super::cloned_at::cloned_methods(tcx)?)
         .map(|(key, sites)| (key, ::serde_json::Value::from(sites)))
         .collect();
-    kept.insert("clonedAt", ::serde_json::Value::Object(cloned));
+    kept.insert(StdRow::ClonedAt.name(), ::serde_json::Value::Object(cloned));
     for &(name, _, owner, step) in HELD_STEPS {
         let id = function(tcx, owner, step).ok_or_else(|| format!("std has no `{step}` of {owner:?}"))?;
         let sites = held_step_sites(tcx, id, step);
@@ -547,9 +555,16 @@ pub(crate) fn raised_catalogue(tcx: TyCtxt<'_>) -> Result<String, String> {
             ));
         }
         let sites = (sites.into_iter()).map(|(file, line, column)| format!("{file}:{line}:{column}"));
-        kept.insert(name, ::serde_json::Value::from(sites.collect::<Vec<_>>()));
+        kept.insert(name.name(), ::serde_json::Value::from(sites.collect::<Vec<_>>()));
     }
-    rows_checked(&|row| kept.contains_key(row))?;
+    rows_checked(&kept.keys().copied().collect::<Vec<_>>())?;
+    let unnamed = crate::recognition::models::rows_unnamed();
+    if !unnamed.is_empty() {
+        return Err(format!(
+            "these rows of `$stdSites` no model or form of models.rs reads: {}",
+            unnamed.join(", ")
+        ));
+    }
     Ok(format!(
         "{}\n",
         ::serde_json::to_string_pretty(&kept).expect("the sites serialize")
@@ -560,12 +575,20 @@ pub(crate) fn raised_catalogue(tcx: TyCtxt<'_>) -> Result<String, String> {
 mod tests {
     use super::*;
 
-    /// The catalog's rows are those written, and a row none writes is said.
+    /// `StdRow`'s rows are those written, both ways, each of its own name.
     #[test]
-    fn the_catalogs_rows_are_written() {
-        assert_eq!(rows_checked(&|_| true), Ok(()));
-        let lacks = rows_checked(&|row| row != "durationAdd").unwrap_err();
-        assert!(lacks.contains("durationAdd: durationAdd"), "{lacks}");
+    fn std_rows_are_those_written() {
+        let all: Vec<_> = StdRow::ALL.iter().map(|row| row.name()).collect();
+        assert_eq!(rows_checked(&all), Ok(()));
+        // One row of each name, each its one handle's.
+        let distinct: std::collections::BTreeSet<_> = all.iter().collect();
+        assert_eq!(distinct.len(), all.len(), "two handles of one row");
+        let lacking: Vec<_> = all.iter().copied().filter(|&name| name != "durationAdd").collect();
+        let lacks = rows_checked(&lacking).unwrap_err();
+        assert!(lacks.contains("none writes: durationAdd"), "{lacks}");
+        let more: Vec<_> = all.iter().copied().chain(["fnMutCall"]).collect();
+        let says = rows_checked(&more).unwrap_err();
+        assert!(says.contains("no `StdRow`'s: fnMutCall"), "{says}");
     }
 
     /// `HELD_STEPS` is std's step catalog's both ways: as written, and
@@ -574,12 +597,12 @@ mod tests {
     fn held_steps_are_the_catalogs() {
         assert_eq!(held_steps_checked(HELD_STEPS, HELD_STEPS_ELSEWHERE), Ok(()));
         let lacking: Vec<_> = (HELD_STEPS.iter().copied())
-            .filter(|&(row, ..)| row != "skipCount")
+            .filter(|&(row, ..)| row != StdRow::SkipCount)
             .collect();
         let lacks = held_steps_checked(&lacking, HELD_STEPS_ELSEWHERE).unwrap_err();
         assert!(lacks.contains("`Skip`'s `count`"), "{lacks}");
         let stale_row = (
-            "mapCount",
+            StdRow::ChainCount,
             &["Map"][..],
             Owner::Free(StdCrate::Core, &["iter"]),
             "count",

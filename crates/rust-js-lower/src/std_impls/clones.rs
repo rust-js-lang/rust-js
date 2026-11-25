@@ -4,6 +4,7 @@
 //! value, `needs_clone`, and the clone itself, `clone_value`.
 
 use crate::recognition::StdItem;
+use crate::recognition::models::rows::StdRow;
 use crate::recursive_fns::Kind;
 use crate::temporary_names::{Base, Role, declared};
 use crate::{FnCx, R, Shape};
@@ -426,7 +427,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let ty::Tuple(parts) = ty.kind()
             && !parts.is_empty()
         {
-            return Some(Expr::std_site("tupleClone", 0));
+            return Some(StdRow::TupleClone.site(0));
         }
         let (key, parts) = match crate::recognition::cloned_by(self.tcx, self.typing_env, ty) {
             crate::recognition::ClonedBy::Std { key, parts } => (key, parts),
@@ -453,8 +454,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // Of none written, std's clone never calls a `RefCell`'s there, a
         // `slice::Iter`'s of what it lends: no panic to place.
-        (cell_at(at) && rust_js_program::runtime::std_site_written("clonedAt", &key, at))
-            .then(|| Expr::std_site_of("clonedAt", &key, at))
+        (cell_at(at) && StdRow::ClonedAt.written(&key, at)).then(|| StdRow::ClonedAt.site_of(&key, at))
     }
 
     /// Whether `part`, what a std clone clones, may be a `RefCell`, whose
@@ -487,7 +487,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut row: Option<(String, &'static str)> = None;
         for step in steps.names() {
             let key = format!("core::iter::adapters::cloned::Cloned::{step}");
-            let Some(site) = rust_js_program::runtime::std_site_text("clonedAt", &key, 0) else {
+            let Some(site) = StdRow::ClonedAt.text(&key, 0) else {
                 continue;
             };
             match &row {
@@ -532,8 +532,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// where it isn't, whose clone is made as it is, an `Option`'s by its
     /// own form, or `bun run std` wrote none (#2509).
     pub(crate) fn clone_row_site(&self, item: Ty<'tcx>, row: &str) -> Option<Expr> {
-        (self.part_may_be_cell(item) && rust_js_program::runtime::std_site_written("clonedAt", row, 0))
-            .then(|| Expr::std_site_of("clonedAt", row, 0))
+        (self.part_may_be_cell(item) && StdRow::ClonedAt.written(row, 0)).then(|| StdRow::ClonedAt.site_of(row, 0))
     }
 
     /// The position of `ty`'s, a std enum's, `variant`'s part, the type

@@ -30,12 +30,12 @@ export const mutations: Mutation[] = [
     tests: ["test/twin-net.test.ts", "-t", "a gap fails a run"],
   },
   {
-    name: "models-row-said-written",
-    breaks: "a model's row of `$stdSites` none writes isn't said, so its sites would be `undefined` where `bun run std` should refuse the catalog (Campaign 5 step 2a)",
+    name: "models-row-unnamed-unsaid",
+    breaks: "a row of `$stdSites` no model or form names is taken for named, so a reader the catalog doesn't know, `Some(\"vecDrain\")` passed as a value, passes (Campaign 5 step 2c)",
     file,
-    find: "                && !written(row)\n",
-    replace: "                && written(row)\n",
-    tests: ["test/std-sites.test.ts"],
+    find: "                Model(_, stands) | Form(stands) => stands.contains(&Row(row)),\n",
+    replace: "                Model(_, stands) | Form(stands) => !stands.is_empty() || stands.contains(&Row(row)),\n",
+    unitTests: "recognition::models::tests::each_row_is_the_catalogs",
   },
   {
     name: "models-form-as-a-helper",

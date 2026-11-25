@@ -8,6 +8,7 @@ use super::bindings;
 use super::recognition::{OrderingCall, StdItem, std_item, trait_method};
 use super::representation::Num;
 use super::{FnCx, R, Shape};
+use crate::recognition::models::rows::StdRow;
 use crate::temporary_names::{Base, Role, declared};
 use rust_js_program::collections::IndexSet;
 use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
@@ -1004,7 +1005,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if ty.is_char() {
                 return Ok(Some(Expr::call_helper("$clampBy", args)));
             }
-            return Ok(Some(Expr::raised_at(Expr::std_site("ordClamp", 0), || {
+            return Ok(Some(Expr::raised_at(StdRow::OrdClamp.site(0), || {
                 Expr::call_helper("$clampBy", args)
             })));
         }

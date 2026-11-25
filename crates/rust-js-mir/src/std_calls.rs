@@ -5,6 +5,7 @@
 //! lowers what none knows of its values alone, by `std_values`.
 
 use super::*;
+use rust_js_lower::StdRow;
 use rust_js_lower::copies::InPlaceWriter;
 use rust_js_lower::format_args::Piece;
 use rust_js_lower::std_types::once::OnceOp;
@@ -375,7 +376,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                                     Some(rust_js_lower::analysis::Proof::CallBounds(block))
                                 });
                                 match this.std_range_site(op, arg_tys[0]) {
-                                    Some(site) => Expr::raised_at(Expr::std_site(site, 0), || {
+                                    Some(site) => Expr::raised_at(site.site(0), || {
                                         this.slice_range_values((op, in_bounds), items, (range, arg_tys[1]), span, out)
                                     })?,
                                     None => {
@@ -689,7 +690,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 let mut list = vec![items, start];
                 list.extend(end);
                 list.extend(inclusive);
-                let view = Expr::raised_at(Expr::std_site("vecDequeRange", 0), || this.view_call("$viewRange", list));
+                let view = Expr::raised_at(StdRow::VecDequeRange.site(0), || this.view_call("$viewRange", list));
                 match this.mut_ref_form(generic_args.type_at(0)).is_cell() {
                     true => Expr::call_helper("$mutItems", vec![view]),
                     false => view,

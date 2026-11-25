@@ -4,6 +4,7 @@
 //! the crate's iterator writes (#162, #182, #220, #505, #521, ADR 1089).
 
 use super::*;
+use crate::recognition::models::rows::StdRow;
 use rustc_middle::ty::elaborate::supertrait_def_ids;
 
 /// A step of std's `Iterator` or `DoubleEndedIterator`, beside `next` and
@@ -178,12 +179,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// std's tracks its caller and that frame doesn't. An adapter the
     /// runtime has below it gives its own as it runs, the nearest frame's,
     /// as Rust's (#2488). `None` of another, whose caller's line it is.
-    pub fn repeat_frame_row(&self, ty: Ty<'tcx>, step: &str) -> Option<&'static str> {
+    pub fn repeat_frame_row(&self, ty: Ty<'tcx>, step: &str) -> Option<StdRow> {
         // A sized box's, each box's the same line.
         let unboxed = super::held::held_unboxed(ty);
         if unboxed != ty {
             return match step {
-                "last" => self.repeat_frame_row(unboxed, step).or(Some("boxLast")),
+                "last" => self.repeat_frame_row(unboxed, step).or(Some(StdRow::BoxLast)),
                 _ => None,
             };
         }
@@ -192,8 +193,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         };
         if std_item_in(self.tcx, adt.did(), StdPath::IterMod).is_some_and(|name| name.as_str() == "Copied") {
             let row = match step {
-                "count" => "copiedCount",
-                _ => "copiedLast",
+                "count" => StdRow::CopiedCount,
+                _ => StdRow::CopiedLast,
             };
             return self.repeat_frame_row(args.type_at(0), step).or(Some(row));
         }

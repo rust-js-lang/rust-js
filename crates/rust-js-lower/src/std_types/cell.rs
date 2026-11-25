@@ -1,6 +1,7 @@
 //! What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098).
 
 use crate::copies::InPlaceWriter;
+use crate::recognition::models::rows::StdRow;
 use crate::representation::NoneForm;
 use crate::temporary_names::{Base, Role};
 use rust_js_program::collections::{IndexMap, IndexSet};
@@ -199,9 +200,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         match self.cell_std_site(known, call.tys) {
-            Some(site) => Expr::raised_at(Expr::std_site(site, 0), || {
-                self.cell_call_here(known, call, values, out)
-            }),
+            Some(site) => Expr::raised_at(site.site(0), || self.cell_call_here(known, call, values, out)),
             None => self.cell_call_here(known, call, values, out),
         }
     }
@@ -212,7 +211,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `with_borrow_mut`'s, `set`'s and `replace`'s, each in its own body
     /// (`$stdSites`). Of another, `None`: a `RefCell`'s `replace`, which
     /// tracks its caller, and a `Cell`'s, which raise none.
-    fn cell_std_site(&self, known: Std, tys: &[ty::Ty<'tcx>]) -> Option<&'static str> {
+    fn cell_std_site(&self, known: Std, tys: &[ty::Ty<'tcx>]) -> Option<StdRow> {
         let receiver = tys.first()?.peel_refs();
         let local_key = match receiver.kind() {
             ty::Adt(_, args) if self.is_std_type(receiver, StdItem::LocalKey) => {
@@ -225,11 +224,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         match known {
             // A thread-local's `take` is `self.with(RefCell::take)`.
-            Std::CellTake => Some("refCellTake"),
-            Std::CellSet if local_key => Some("localKeySet"),
-            Std::CellReplace if local_key => Some("localKeyReplace"),
-            Std::LocalBorrow { mutable: false } if local_key => Some("localKeyWithBorrow"),
-            Std::LocalBorrow { mutable: true } if local_key => Some("localKeyWithBorrowMut"),
+            Std::CellTake => Some(StdRow::RefCellTake),
+            Std::CellSet if local_key => Some(StdRow::LocalKeySet),
+            Std::CellReplace if local_key => Some(StdRow::LocalKeyReplace),
+            Std::LocalBorrow { mutable: false } if local_key => Some(StdRow::LocalKeyWithBorrow),
+            Std::LocalBorrow { mutable: true } if local_key => Some(StdRow::LocalKeyWithBorrowMut),
             _ => None,
         }
     }
@@ -702,7 +701,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 false => {
                                     if checked && !matches!(cell.kind, js::ExprKind::Handle(..)) {
                                         // Each at std's line of its side's borrow (#2292).
-                                        let check = Expr::raised_at(Expr::std_site("refCellSwap", side), || {
+                                        let check = Expr::raised_at(StdRow::RefCellSwap.site(side), || {
                                             Expr::call(Expr::helper("$borrowMut"), vec![cell.clone()])
                                         });
                                         out.push(StmtKind::Expr(check).at(js_span));
@@ -719,7 +718,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // std's `panic_already_borrowed` writes it `panic!("{}", err)`:
                     // a `String` (ADR 0660, amended).
                     // The second's borrow's, `other`'s.
-                    let panic = Expr::raised_at(Expr::std_site("refCellSwap", 1), || {
+                    let panic = Expr::raised_at(StdRow::RefCellSwap.site(1), || {
                         Expr::panic(Expr::str("RefCell already borrowed"), js::Payload::String)
                     });
                     let panic = StmtKind::Throw(panic).at(js_span);

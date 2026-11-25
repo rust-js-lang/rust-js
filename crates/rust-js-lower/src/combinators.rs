@@ -16,6 +16,7 @@ use super::drops::{Drops, dropped_after};
 use super::recognition::trait_method;
 use super::{FnCx, R, representation::Num};
 use crate::recognition::Lend;
+use crate::recognition::models::rows::StdRow;
 use crate::temporary_names::Role;
 use rust_js_program::js::result;
 use rust_js_program::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
@@ -1325,7 +1326,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.is_std_type(subject_ty, crate::recognition::StdItem::VecDeque) {
             return Expr::call(Expr::helper("$splitOff"), vec![subject, at]);
         }
-        Expr::raised_at(Expr::std_site("vecDequeSplitOff", 0), || {
+        Expr::raised_at(StdRow::VecDequeSplitOff.site(0), || {
             Expr::call(Expr::helper("$splitOff"), vec![subject, at, Expr::bool(true)])
         })
     }

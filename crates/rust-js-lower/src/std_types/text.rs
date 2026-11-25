@@ -4,6 +4,7 @@
 //! be another Unicode version's: `c.is_whitespace()` is `$isWhitespace(c)`
 //! (#1888, ADR 1163).
 
+use crate::recognition::models::rows::StdRow;
 use crate::temporary_names::{Role, declared};
 use rust_js_program::collections::IndexSet;
 
@@ -746,13 +747,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it's std's own line, not its caller's (#2292): a `Vec`'s or a
     /// `VecDeque`'s `drain`, as `slice::range` checks it there, a deque's
     /// `range` and `range_mut`; `None` of one its caller's line names.
-    pub fn std_range_site(&self, op: TextOp, receiver: Ty<'tcx>) -> Option<&'static str> {
+    pub fn std_range_site(&self, op: TextOp, receiver: Ty<'tcx>) -> Option<StdRow> {
         let deque = self.is_std_type(receiver.peel_refs(), crate::recognition::StdItem::VecDeque);
         match op {
-            TextOp::Drain if deque => Some("vecDequeDrain"),
-            TextOp::Drain | TextOp::Splice => Some("vecDrain"),
-            TextOp::DequeRange => Some("vecDequeRange"),
-            TextOp::ExtendFromWithin => Some("vecExtendFromWithin"),
+            TextOp::Drain if deque => Some(StdRow::VecDequeDrain),
+            TextOp::Drain | TextOp::Splice => Some(StdRow::VecDrain),
+            TextOp::DequeRange => Some(StdRow::VecDequeRange),
+            TextOp::ExtendFromWithin => Some(StdRow::VecExtendFromWithin),
             _ => None,
         }
     }
@@ -790,14 +791,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Checked as `slice::range` checks it, its end first, not as
         // `&v[a..b]` is: `$extend(v, $copyRange(v, a, b))`, each pushed, as
         // a call's spread of more than JS's bound of arguments throws (#334).
-        let site = Expr::std_site(
-            if op == TextOp::ExtendFromWithin {
-                "vecExtendFromWithin"
-            } else {
-                "vecDrain"
-            },
-            0,
-        );
+        let site = match op {
+            TextOp::ExtendFromWithin => StdRow::VecExtendFromWithin,
+            _ => StdRow::VecDrain,
+        }
+        .site(0);
         if op == TextOp::ExtendFromWithin {
             let copied = Expr::raised_at(site, || Expr::call(Expr::helper("$copyRange"), list));
             let copied = match clone {
