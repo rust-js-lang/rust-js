@@ -134,8 +134,16 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's `collect()` into an `Option` or a `Result` of a type parameter's iterator, closed by the collect, is dropped after the call too, twice (#2561)",
     file,
-    find: "        if method == Some(IterMethod::Collect) && self.fallible_collect_closes(output, receiver) {\n",
-    replace: "        if false {\n",
+    find: "        ) && self.fallible_collect_closes(output, receiver)\n",
+    replace: "        ) && false\n",
     tests: ["test/corpus.test.ts", "-t", "^drops_of_consumed_iterators\.rs$"],
+  },
+  {
+    name: "consumed-fallible-sum-unclosed",
+    breaks: "generic code's fallible `sum` or `product` into a `Result` isn't closed as a fallible `collect()` is, so its source is dropped after the call, outside `try_process`'s frame, and the kept `Err` isn't dropped as the source's drop panics (#2580)",
+    file,
+    find: "            Some(IterMethod::Collect | IterMethod::Sum | IterMethod::Product)\n",
+    replace: "            Some(IterMethod::Collect)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fallible_(sum_drops_the_kept_err_as_its_source_drop_panics|product_drops_its_source_as_its_step_panics)\\.rs$"],
   },
 ];

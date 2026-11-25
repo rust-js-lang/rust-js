@@ -86,8 +86,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => self.closing(it, iter_ty, span),
             };
         }
+        // Of items without a destructor, nothing a consumer leaves of them
+        // to refuse; its own drop, a source's whose `Drop` runs, is the one
+        // answer's still, `Closes` of a fallible `sum` (#2580).
         if dropping.is_none() {
-            return Ok(it);
+            return self.consumer_closing(it, call, span);
         }
         self.check_leaves_none(name, span)?;
         self.consumer_closing(it, call, span)

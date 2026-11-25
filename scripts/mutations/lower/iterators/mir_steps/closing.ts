@@ -301,8 +301,8 @@ export const mutations: Mutation[] = [
     name: "eq-closes-unasked",
     breaks: "an iterator of items without a destructor, `it.eq(other)`'s, is asked whether it leaves none, `check_leaves_none`, as one whose items drop is, and refused where it may (#2572)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
-    find: "        if dropping.is_none() {\n            return Ok(it);\n        }\n",
-    replace: "        if false {\n            return Ok(it);\n        }\n",
+    find: "        if dropping.is_none() {\n            return self.consumer_closing(it, call, span);\n        }\n",
+    replace: "        if false {\n            return self.consumer_closing(it, call, span);\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^range_size_hint\.rs$"],
   },
   {
@@ -439,5 +439,13 @@ export const mutations: Mutation[] = [
     find: "Ok(Expr::call_located(Expr::helper(\"$lastDropping\"), given, repeats))",
     replace: "Ok(Expr::call_located(Expr::helper(\"$lastDropping\"), given, false && repeats))",
     tests: ["test/corpus.test.ts", "-t", "^repeat_drops_what_it_holds.rs$"],
+  },
+  {
+    name: "dropping-source-answer-skipped",
+    breaks: "an iterator of items without a destructor isn't asked who drops it, so a generic fallible `product`'s source, the consumer's to close, is closed by nobody and never dropped as its step panics (#2580)",
+    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
+    find: "            return self.consumer_closing(it, call, span);\n",
+    replace: "            return Ok(it);\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fallible_product_drops_its_source_as_its_step_panics\\.rs$"],
   },
 ];

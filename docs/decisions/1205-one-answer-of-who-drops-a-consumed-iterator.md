@@ -2,7 +2,7 @@
 
 Date: 2026-11-25.
 
-Status: accepted, step 1 of 4 (#2572). Amends
+Status: accepted, steps 1 and 2 of 4 (#2572). Amends
 [0465](0465-dropping-an-adapter-is-closing-it.md) and
 [0570](0570-a-closing-source-is-dropped-when-done.md).
 
@@ -62,6 +62,26 @@ was both shunted and closed, two claims on one iterator. It is now
 own that panics part way drops what it took and what's left in native's
 order (`fallible_collect_into_own_from_iter_that_panics`). The case of
 ADR 0262 is "results change": the answer is Rust's.
+
+## Amendment: step 2, a fallible `sum` and `product` (2026-11-25, #2580)
+
+A fallible `sum` or `product` into an `Option` or a `Result` is std's
+`try_process`, as a fallible `collect()` is, and nothing asked it so.
+Generic code's dropped its source after the call, outside `try_process`'s
+frame. Where the source's own `Drop` panicked, the kept `Err` was never
+dropped, which native drops as that panic unwinds. Rule 4 is now of all
+three (`Collect | Sum | Product`), so the consumer closes it.
+
+`dropping_source` returned early of items without a destructor, before
+asking the answer, so a `product` of `Option<u32>`s, `Closes` now, was
+closed by nobody, and its source wasn't dropped as its step panicked. The
+early return now skips only `check_leaves_none`, and the answer is asked
+of every consumed iterator. The consumer net's twelve #2580 cells run as
+native's, and its whole `consumers` table passes. Held by the corpus cases
+`generic_fallible_sum_drops_the_kept_err_as_its_source_drop_panics` and
+`generic_fallible_product_drops_its_source_as_its_step_panics`, and the
+mutations `consumed-fallible-sum-unclosed` and
+`dropping-source-answer-skipped`.
 
 ## Steps
 

@@ -122,7 +122,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if method == Some(IterMethod::Collect) && self.try_processed_into(output, receiver)?.is_some() {
             return Ok(ConsumedDrop::Shunted);
         }
-        if method == Some(IterMethod::Collect) && self.fallible_collect_closes(output, receiver) {
+        // A fallible `collect()`, `sum` or `product` into an `Option` or a
+        // `Result`, std's `try_process` each, closed where it closes, so the
+        // source drops inside its frame, as the kept `Err` is held (#2561,
+        // #2580).
+        if matches!(
+            method,
+            Some(IterMethod::Collect | IterMethod::Sum | IterMethod::Product)
+        ) && self.fallible_collect_closes(output, receiver)
+        {
             return Ok(ConsumedDrop::Closes);
         }
         // What the crate's own `fold` is called by: it takes the iterator
