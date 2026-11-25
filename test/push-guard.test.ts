@@ -33,7 +33,7 @@ test("a push that undoes a commit already on the remote is refused, but one that
   const reverted = commit(`This reverts commit ${fixed}.`, { "fix.rs": "broken\n" });
   expect(undone(dir, own, reverted)).toEqual([]);
   // `bun install` sets git to run the guard before a push.
-  expect(JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts.prepare).toBe("git config core.hooksPath .githooks");
+  expect(JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts.prepare).toStartWith("git config core.hooksPath .githooks && ");
   expect(readFileSync(join(root, ".githooks", "pre-push"), "utf8")).toContain("scripts/push-guard.ts");
 });
 
@@ -130,7 +130,7 @@ test("a file as it was before a commit that a later commit already undid undoes 
 });
 
 test("the guard runs before a push", () => {
-  expect(JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts.prepare).toBe("git config core.hooksPath .githooks");
+  expect(JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts.prepare).toStartWith("git config core.hooksPath .githooks && ");
   expect(readFileSync(join(root, ".githooks", "pre-push"), "utf8")).toContain("scripts/push-guard.ts");
 });
 

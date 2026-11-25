@@ -19,6 +19,7 @@ import { node } from "./programs";
 import { limitations } from "./limitations-of";
 import { fixture, root, run } from "./support";
 import { refuseUnmatched } from "./case-lists";
+import { nearest, said, staleFinds } from "../scripts/stale-finds";
 import { listedTests, movedTo, namesATest, testNamesOf } from "./test-names";
 import type { Verdict } from "../scripts/crate-corpus";
 import { compilerRustFiles, crateOf, isCompilerSource } from "../scripts/compiler-crates";
@@ -47,15 +48,44 @@ test("the crate the mutations build has each file the compiler includes", () => 
 test("every mutation applies to the compiler as it is, once", () => {
   expect(mutations.length).toBeGreaterThan(0);
   expect(new Set(mutations.map((m) => m.name)).size).toBe(mutations.length);
+  // Every stale find at once, each with its file's nearest text, as `bun
+  // scripts/stale-finds.ts` says them, not the first alone (#2586).
+  const stale = staleFinds(lists, (file) => (existsSync(join(root, file)) ? readFileSync(join(root, file), "utf8") : undefined));
+  expect(stale.map((each) => `${each.name}: ${each.problem} (bun scripts/stale-finds.ts ${each.name})`)).toEqual([]);
   for (const m of mutations) {
-    const mutated = mutate(readFileSync(join(root, m.file), "utf8"), m);
-    expect([m.name, typeof mutated === "string" ? "applies" : mutated.problem]).toEqual([m.name, "applies"]);
     // Its `bun test` tests or its unit tests, one of the two (#915).
     expect([m.name, m.tests === undefined ? m.unitTests !== undefined && m.snapshots === undefined : m.tests.length > 0 && m.unitTests === undefined]).toEqual([
       m.name,
       true,
     ]);
   }
+});
+
+// A code move leaves finds stale: each is said at once, with where its
+// file's text is nearest it now, so they're rewritten in one pass (#2586:
+// lily agent's eight runs of the test above, one stale find a run).
+test("every stale find is said at once, beside its file's nearest text", () => {
+  const files: Record<string, string> = {
+    "src/a.rs": "fn a() {\n    let held = 1;\n    let kept = held + 2;\n}\n",
+    "src/b.rs": "fn b() {\n    let n = count(1);\n}\n",
+  };
+  const m = (name: string, file: string, find: string) => ({ name, breaks: "", file, find, replace: "", tests: ["test/x.test.ts"] });
+  const list = {
+    path: "x.ts",
+    mutations: [
+      m("applies", "src/a.rs", "    let held = 1;\n"),
+      m("reindented", "src/a.rs", "  let held = 1;\n  let kept = held + 1;\n"),
+      m("renamed", "src/b.rs", "    let n = counted(1);"),
+      m("twice", "src/a.rs", "held"),
+      m("gone", "src/c.rs", "x"),
+    ],
+  };
+  const stale = staleFinds([list], (file) => files[file]);
+  expect(stale.map((each) => [each.name, each.near?.line])).toEqual([["reindented", 2], ["renamed", 2], ["twice", undefined], ["gone", undefined]]);
+  expect(stale[0]!.near!.text).toEqual(["    let held = 1;", "    let kept = held + 2;"]);
+  expect(said(stale[0]!, list.mutations[1]!.find)).toContain("  -   let kept = held + 1;\n  +     let held = 1;");
+  expect(stale.find((each) => each.name === "gone")!.problem).toBe("src/c.rs isn't there");
+  expect(nearest("fn x() {}\n", "nothing like it")).toBeUndefined();
 });
 
 // A mutation's unit tests are there: its filter names a `#[test]` of a

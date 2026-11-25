@@ -1164,3 +1164,38 @@ Mutations `test-map-item-named-by-another-unseen` (rewritten),
 `test-map-signature-namer-unopened`, `test-map-other-item-everything`,
 `test-map-use-reflow-everything`, `test-map-use-list-takes-items`.
 
+## Amendment (2026-11-25, #2584, #2575, #2587): a `const fn` isn't a constant; a net's paths name a module whole; TESTS.md merged by git
+
+Three gaps of the selection and of the merges around it:
+
+- **A `const fn`'s signature read as a constant named `fn`.** The search
+  through another item (#2523) took a site's line for a constant's
+  initializer by `const <name>` alone, so `pub(crate) const fn first(of:
+  &First)` was a constant `fn`, too short a name to search, and
+  everything. #2579's fix hoisting `struct First` in reads.rs selected
+  everything on two pushes, 1,041 s each on the Mac mini. A constant's or
+  a static's line is `constItem`'s alone now, the name its type's `:`
+  follows, which the value rule's reader shares; a `const fn`'s line is a
+  signature, the function it opens. Test: "a moved struct named by a
+  const fn's signature selects the function it opens"; mutation
+  `test-map-const-fn-a-constant`.
+- **A net's paths named half a module.** The drops' paths
+  (scripts/iteratorSlice.ts' `dropPaths`, which the consumer net's and the
+  async table's paths hold) were `drops/**` without `drops.rs`, so
+  845c1a3e9's change to `check_drops_given` there ran neither net, and a
+  later push that selected everything found the consumer net's known list
+  stale (#2575). They're each module whole now, its file and its folder,
+  `analysis/unwinding/**` too; test/ci.test.ts' "each net's paths take a
+  module's own file with its folder" holds every catalog of the slices to
+  it. Mutation `drop-paths-folder-alone`.
+- **TESTS.md's `Changed on` lines conflicted on nearly every relay.**
+  `bun run push` merged its own rebases' (`mergedChanges`); a
+  cherry-pick or a `git am -3` stopped, a minute by hand each. The rule
+  is scripts/merge-changes.ts', git's merge driver `changes-log`
+  (.gitattributes' `TESTS.md merge=changes-log`, named in git's config by
+  `bun install`'s `prepare`), so git merges them in every merge it makes,
+  and push resolves by the same rule a conflict git left it where the
+  driver isn't named. TESTS.md stays out of a round's patches as before.
+  Test: "a cherry-pick's conflict in TESTS.md's `Changed on` lines is
+  merged by git's driver; one in its table stops it"; mutation
+  `changes-log-driver-merges-nothing`.

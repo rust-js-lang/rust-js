@@ -42,7 +42,8 @@ export const mutations: Mutation[] = [
     file,
     find: "crate::bindings::field_key(tcx, field).name().is_none())",
     replace: "crate::bindings::field_key(tcx, field).name().is_none() && false)",
-    tests: ["test/docs.test.ts", "-t", "each guide page's output fences are what the compiler makes"],
+    // The page whose `Reason` has a field `RESPONSE`, a symbol, names (4b).
+    tests: ["test/docs.test.ts", "-t", "the guide's docs/guide/interop/types.md:"],
   },
   {
     name: "offered-symbol-keyed-unsaid",

@@ -291,8 +291,15 @@ export const families = ["readability", "intervals", "cells"] as const;
 export type Family = (typeof families)[number];
 
 /** What drops, and what drops as a panic unwinds, as globs of the
- * repository's paths: the drops and their unwinding's owners. */
-const dropPaths = ["crates/rust-js-lower/src/drops/**", "crates/rust-js-lower/src/analysis/unwinding.rs"];
+ * repository's paths: the drops and their unwinding's owners, each module
+ * whole, its own file with its folder: drops.rs, `check_drops_given`'s,
+ * ran neither net its change touched (845c1a3e9, #2575). */
+const dropPaths = [
+  "crates/rust-js-lower/src/drops.rs",
+  "crates/rust-js-lower/src/drops/**",
+  "crates/rust-js-lower/src/analysis/unwinding.rs",
+  "crates/rust-js-lower/src/analysis/unwinding/**",
+];
 
 /** How a future awaits and what an async body drops as it unwinds, as
  * globs of the repository's paths: `.await`'s lowering, the drops and

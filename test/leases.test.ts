@@ -277,7 +277,8 @@ while (!existsSync(marks + "/" + name + ".end")) Bun.sleepSync(20);
  * marks when it has it, and does `batches` batches, each on its `go<i>`
  * mark, as `form` runs them: `direct`, `yieldToPush` after each; `pool`,
  * a mutation run's pool (`runYielding`); `names`, a retirement's names in
- * turn (`yieldBetween`). Of none, it ends when told. */
+ * turn (`yieldBetween`); `check`, check:fast's pool, each batch a job of
+ * its own, a process, on one core (#2585). Of none, it ends when told. */
 function turnFixture(name: string) {
   const dir = fixture(name);
   rmSync(dir, { recursive: true, force: true });
@@ -285,6 +286,17 @@ function turnFixture(name: string) {
   const marks = join(dir, "marks");
   mkdirSync(marks, { recursive: true });
   const child = join(dir, "run.ts");
+  // A check's job, a process: its batch, as `batch` below.
+  const job = join(dir, "job.ts");
+  writeFileSync(
+    job,
+    `import { existsSync, writeFileSync } from "node:fs";
+const [name, marks, i] = process.argv.slice(2);
+writeFileSync(marks + "/" + name + ".started" + i, String(Date.now()));
+while (!existsSync(marks + "/" + name + ".go" + i)) await Bun.sleep(20);
+writeFileSync(marks + "/" + name + ".batch" + i, String(Date.now()));
+`,
+  );
   writeFileSync(
     child,
     `import { existsSync, writeFileSync } from "node:fs";
@@ -299,6 +311,12 @@ const batch = async (i: number) => {
 };
 const items = Array.from({ length: Number(batches) }, (_, i) => i + 1);
 if (form === "pool") await runYielding([...items], 1, batch, { poll: 20 });
+else if (form === "check") {
+  const { run } = await import(${JSON.stringify(join(root, "scripts/checkFast.ts"))});
+  const { checkLogRun } = await import(${JSON.stringify(join(root, "scripts/checkLogs.ts"))});
+  const jobs = items.map((i) => ({ name: "job " + i, cmd: [process.execPath, ${JSON.stringify(job)}, name, marks, String(i)], env: {}, timeout: 600, weight: 1, memory: 0 }));
+  await run(jobs, "unused", 1, { began: Date.now(), samples: [] }, checkLogRun({ store: marks + "/logs" }), marks + "/times", store);
+}
 else if (form === "names") for (const [at, i] of items.entries()) {
   await yieldBetween(at, async () => {});
   await batch(i);
@@ -354,8 +372,9 @@ test("a push waiting goes before a run that waited longer, and the rest by how l
 // waits for it again, next after the push (#2516): never mid-batch, so no
 // work is lost, and none of it runs beside the push. So does a mutation
 // run's pool, its batches running ending first, and a retirement between
-// its names.
-for (const form of ["direct", "pool", "names"]) {
+// its names. And check:fast's pool, between its jobs: three pushes waited
+// about 1,600 s each behind a whole check (#2585).
+for (const form of ["direct", "pool", "names", "check"]) {
   test(`a run of three batches lets a push have the turn between two, and finishes its third after it (${form})`, async () => {
     const { store, start, until, mark, at, has } = turnFixture(`leases-yield-${form}`);
     const run = start("run", "mutations", 3, form);
@@ -398,6 +417,11 @@ test("a mutation run's pool and a retirement's names let the turn go through lea
   const runner = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
   expect(runner).toContain("  await runYielding(queue, jobs, one, { beside: () => Promise.all(buildsTesting) });");
   expect(runner).toContain("    await yieldBetween(at, () => judged);");
+  // And a sweep of mutation-reach.ts' between its cases: one of 36
+  // survivors held the turn some 50 min, a push waiting behind it (#2585).
+  // Loaded, as a mutant of it is judged by a test that runs it.
+  expect(typeof (await import("../scripts/mutation-reach")).said).toBe("function");
+  expect(readFileSync(join(root, "scripts/mutation-reach.ts"), "utf8")).toContain("  await runYielding([...cases], Math.max(1, cores), one);");
 });
 
 /** A run of `kind` named `name` in a fixture's `store`, given `limit`

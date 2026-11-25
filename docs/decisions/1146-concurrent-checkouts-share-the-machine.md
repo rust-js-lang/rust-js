@@ -169,3 +169,30 @@ holder's lease says none", and the flag's form. Mutations
 `limit-armed-before-the-wait`, `limit-counts-a-yields-wait`,
 `limit-spares-what-it-started`, `limit-never-armed`,
 `turn-said-of-a-leased-run`, `turn-left-off-the-line`.
+
+## Amendment: a check yields between its jobs too (#2585, 2026-11-25)
+
+Only a mutation run and a retirement let the turn go. A check that held it
+kept it to its end: three pushes waited about 1,600 s each behind #2403's
+local `check:fast --all`, past 3,600 s, and the Mac mini's pushes waited
+24,495 s for the turn in about 8 h.
+
+check:fast's pool now does as a mutation run's does. Where a push waits
+for the turn the check took itself (`pushWaits`), it starts no job more;
+once those running end, the turn goes to the push (`yieldToPush`), and the
+pool goes on after it, no work lost. A push's own check holds no turn of
+its own, so it never yields. Measured first, the pool simulated on this
+machine's 18 cores with its last day's 595 jobs as the job-times store has
+them, longest first, the makespan 523 s, a push arriving at a uniform
+moment:
+
+| A push's wait | mean | p50 | p90 | max |
+|---|---:|---:|---:|---:|
+| behind the whole check, as before | 262 s | 262 s | 471 s | 523 s |
+| at its jobs' ends | 55 s | 40 s | 119 s | 171 s |
+
+The wait is now the longest running job's rest (the rows a change names,
+`cargo test`, the change's mutations), not the check's rest, however long
+the check runs. Held by test/leases.test.ts' "a run of three batches lets
+a push have the turn between two, and finishes its third after it
+(check)"; mutation `check-pool-never-yields`.

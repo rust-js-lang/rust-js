@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2584, #2585, #2586, #2587, #2575's paths; ADRs 1101, 1146 and 0093 amended): test/test-map.test.ts gains "a moved struct named by a const fn's signature selects the function it opens"; test/ci.test.ts gains "each net's paths take a module's own file with its folder"; test/mutations.test.ts gains "every stale find is said at once, beside its file's nearest text", and its "every mutation applies" names every stale find; test/push.test.ts gains a cherry-pick's TESTS.md merged by git's driver; test/leases.test.ts' yield test gains a fourth form, check:fast's pool; test/docs.test.ts' one test of the whole guide is a test of each page, and gains a test of how one is asked by `-t`; six mutations.
+
 Changed on 2026-11-25 (Campaign 5 step 3, ADR 1202 amended): test/twin-net.test.ts's measure falls to 202, a slice's `Split` and `SplitMut` bound.
 
 Changed on 2026-11-25 (#2599, ADR 0327 amended): one corpus case, the free `std::char::decode_utf16` decoding as `char::decode_utf16` does, against native; one mutation.

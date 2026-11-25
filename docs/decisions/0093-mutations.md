@@ -1684,3 +1684,17 @@ run within seconds, though what a job started holds its output": a job
 whose own group holds its pipes, and one whose child, in a group of its
 own, does. Mutations `fail-fast-stops-the-job-alone`,
 `fail-fast-waits-on-held-pipes` and `pool-job-in-the-checks-group`.
+
+## Amendment: every stale find said at once (2026-11-25, #2586)
+
+A code move, a split or a relay leaves mutations' finds stale, and
+test/mutations.test.ts' "every mutation applies" named the first alone:
+the lily agent's eight runs of it in one day, a stale find each, and six
+of the hulk agent's pushes refused in their fast phase. `bun
+scripts/stale-finds.ts [names..]` names every one whose `find` doesn't
+apply once, each with its list and its find beside its file's nearest
+text now (`nearest`: the window of its lines holding most of them, each
+where the find has it counting twice; of a one-line find, the line sharing
+most of its words), and the test names them all. Test: "every stale find
+is said at once, beside its file's nearest text"; mutations
+`stale-finds-first-alone`, `stale-finds-near-by-membership-alone`.

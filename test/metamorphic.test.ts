@@ -123,7 +123,7 @@ firstPart("a rewrite whose every variant rust-js refuses judged nothing, and say
   const refused = Array.from({ length: allRefusedAt }, (_, i) => `plain c${i}.rs: error: rust-js does not support it yet`);
   expect(judgedNothing(new Map([["loud", { compiled: 0, refused }]]))).toContain("loud: every one of its 5 variants, of 5 cases, refused");
   // One case's many variants, each refused, are a sample's chance.
-  const ofOne = Array.from({ length: 6 }, (_, i) => `${i % 2 === 0 ? "plain" : "std"} block_results.rs: error: rust-js does not support it yet`);
+  const ofOne = Array.from({ length: 6 }, (_, i) => `${i % 2 === 0 ? "plain" : "std"} block_results.rs: error: rust-js does not support its iterator ${i >> 1} yet`);
   expect(judgedNothing(new Map([["opaque", { compiled: 0, refused: ofOne }]]))).toBeUndefined();
   expect(judgedNothing(new Map([["loud", { compiled: 1, refused }]]))).toBeUndefined();
   expect(judgedNothing(new Map([["loud", { compiled: 0, refused: refused.slice(1) }]]))).toBeUndefined();

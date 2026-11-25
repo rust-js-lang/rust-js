@@ -6,7 +6,8 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { changedWhileChecked, untrackedRefusal, movedWhilePushed, againEnv, appendedBoth, compileGate, gateRebase, givenRemade, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, carryOn, roundSaid, withoutRemade, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, portRegen, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
+import { changedWhileChecked, untrackedRefusal, movedWhilePushed, againEnv, appendedBoth, compileGate, gateRebase, givenRemade, beside, FAST_TESTS, fastAgain, givenBefore, givenRound, lineSet, carryOn, roundSaid, withoutRemade, loadedModules, lowerRatchets, mergedLineSet, phases, portRegen, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
+import { mergedChanges } from "../scripts/merge-changes";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -110,6 +111,46 @@ test("a rebase's conflict in TESTS.md's `Changed on` lines keeps both sides' new
   // A conflict in the table is its author's to merge.
   expect(merged(base, [...base.slice(0, 5), "| corpus | 3 |"], [...base.slice(0, 5), "| corpus | 4 |"])).toBeUndefined();
   expect(remakeable(["TESTS.md"])).toBe(true);
+});
+
+// And by git itself, its driver `changes-log` (.gitattributes, named by
+// `bun install`): a relay's cherry-pick, where nearly every one stopped
+// on these lines, a minute by hand each (#2587), keeps both; a conflict
+// in the table still stops it, as git's own.
+test("a cherry-pick's conflict in TESTS.md's `Changed on` lines is merged by git's driver; one in its table stops it", () => {
+  expect(readFileSync(join(root, ".gitattributes"), "utf8")).toContain("\nTESTS.md merge=changes-log\n");
+  const prepare = (JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as { scripts: Record<string, string> }).scripts.prepare!;
+  expect(prepare).toContain('git config merge.changes-log.driver \"bun scripts/merge-changes.ts %O %A %B\"');
+  const dir = fixture("push-tests-md-driver");
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  const env = { ...process.env, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@example.com", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@example.com" };
+  const git = (...args: string[]) => spawnSync("git", args, { cwd: dir, env, encoding: "utf8" });
+  const commit = (text: string, message: string) => {
+    writeFileSync(join(dir, "TESTS.md"), text);
+    git("add", "TESTS.md");
+    expect(git("commit", "-q", "-m", message).status).toBe(0);
+  };
+  git("init", "-q", "-b", "main");
+  git("config", "merge.changes-log.driver", `"${process.execPath}" "${join(root, "scripts/merge-changes.ts")}" %O %A %B`);
+  writeFileSync(join(dir, ".gitattributes"), "TESTS.md merge=changes-log\n");
+  git("add", ".gitattributes");
+  const head = "# Tests at a glance\n\n";
+  const table = "| Suite | Tests |\n| corpus | 2 |\n";
+  commit(`${head}Changed on 1: a\n\n${table}`, "base");
+  git("checkout", "-q", "-b", "relay");
+  commit(`${head}Changed on 2: the relay's\n\nChanged on 1: a\n\n${table}`, "relay");
+  git("checkout", "-q", "main");
+  commit(`${head}Changed on 2: main's\n\nChanged on 1: a\n\n${table}`, "main");
+  expect(git("cherry-pick", "relay").status).toBe(0);
+  expect(readFileSync(join(dir, "TESTS.md"), "utf8")).toBe(`${head}Changed on 2: the relay's\n\nChanged on 2: main's\n\nChanged on 1: a\n\n${table}`);
+  git("checkout", "-q", "-b", "counted", "relay");
+  commit(`${head}Changed on 2: the relay's\n\nChanged on 1: a\n\n| Suite | Tests |\n| corpus | 3 |\n`, "counted");
+  git("checkout", "-q", "main");
+  commit(`${head}Changed on 3: main's\n\nChanged on 2: the relay's\n\nChanged on 2: main's\n\nChanged on 1: a\n\n| Suite | Tests |\n| corpus | 4 |\n`, "main again");
+  expect(git("cherry-pick", "counted").status).not.toBe(0);
+  expect(readFileSync(join(dir, "TESTS.md"), "utf8")).toContain("<<<<<<< ");
+  git("cherry-pick", "--abort");
 });
 
 // Two changes that each took a line off a known list conflict where the

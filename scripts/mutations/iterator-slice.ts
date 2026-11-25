@@ -43,4 +43,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/ci.test.ts", "-t", "a slice's report says what ran it"],
   },
+  {
+    name: "drop-paths-folder-alone",
+    breaks: "the drops' paths are their folder alone, so a change to drops.rs, `check_drops_given`'s, runs neither the consumer net nor the async table (845c1a3e9, #2575)",
+    file: "scripts/iteratorSlice.ts",
+    find: '  "crates/rust-js-lower/src/drops.rs",\n  "crates/rust-js-lower/src/drops/**",\n',
+    replace: '  "crates/rust-js-lower/src/drops/**",\n',
+    tests: ["test/ci.test.ts", "-t", "each net's paths take a module's own file with its folder"],
+  },
 ];

@@ -20,7 +20,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { batches, crateFiles, mutations, schema, site, syncTree, type Mutation, type Sited } from "./mutations";
-import { holdLease } from "./leases";
+import { holdLease, runYielding } from "./leases";
 import { machine } from "./shard";
 import { root } from "../test/support";
 import { run, type Exit } from "../test/child";
@@ -116,37 +116,36 @@ const ran = (js: string, dir: string): Promise<Exit> => run([node ?? "node", js]
 
 const same = (a: Exit, b: Exit) => a.code === b.code && a.bytes.stdout.equals(b.bytes.stdout) && a.bytes.stderr.equals(b.bytes.stderr);
 
-/** Each case of `cases` against each of `mutants`, `cores` at a time. */
+/** Each case of `cases` against each of `mutants`, `cores` at a time, a
+ * pool that lets the machine's turn go to a waiting push between cases,
+ * those running ended first (`runYielding`, #2585): a sweep of 36
+ * survivors held it some 50 min, a push waiting behind it. */
 async function sweep(cases: string[], mutants: Map<string, string>, builds: [string, string[]][], work: string, cores: number): Promise<Reached[]> {
   const reached = new Map<string, Reached["cases"]>([...mutants.keys()].filter((n) => n !== "unmutated").map((n) => [n, []]));
-  let next = 0;
   let done = 0;
-  const worker = async () => {
-    for (let at = next++; at < cases.length; at = next++) {
-      const file = cases[at];
-      const name = basename(file);
-      const wanted = directives(readFileSync(file, "utf8"));
-      const edition = typeof wanted === "string" ? "2024" : wanted.edition;
-      for (const [build, flags] of builds) {
-        const dir = join(work, "cases", build, name.replace(/\.rs$/, ""));
-        const base = await compiled(mutants.get("unmutated")!, file, join(dir, "unmutated"), edition, flags, true);
-        let baseRun: Exit | undefined;
-        for (const [mutation, compiler] of mutants) {
-          if (mutation === "unmutated") continue;
-          const mine = await compiled(compiler, file, join(dir, mutation), edition, flags, false);
-          let reach: Reach | undefined;
-          if (mine.ok !== base.ok) reach = "compile";
-          else if (mine.ok && jsCompared(mine.js) !== jsCompared(base.js)) {
-            baseRun ??= await ran(base.path, join(dir, "unmutated"));
-            reach = same(baseRun, await ran(mine.path, join(dir, mutation))) ? "form" : "behaves";
-          }
-          if (reach) reached.get(mutation)!.push({ name, build, reach });
+  const one = async (file: string) => {
+    const name = basename(file);
+    const wanted = directives(readFileSync(file, "utf8"));
+    const edition = typeof wanted === "string" ? "2024" : wanted.edition;
+    for (const [build, flags] of builds) {
+      const dir = join(work, "cases", build, name.replace(/\.rs$/, ""));
+      const base = await compiled(mutants.get("unmutated")!, file, join(dir, "unmutated"), edition, flags, true);
+      let baseRun: Exit | undefined;
+      for (const [mutation, compiler] of mutants) {
+        if (mutation === "unmutated") continue;
+        const mine = await compiled(compiler, file, join(dir, mutation), edition, flags, false);
+        let reach: Reach | undefined;
+        if (mine.ok !== base.ok) reach = "compile";
+        else if (mine.ok && jsCompared(mine.js) !== jsCompared(base.js)) {
+          baseRun ??= await ran(base.path, join(dir, "unmutated"));
+          reach = same(baseRun, await ran(mine.path, join(dir, mutation))) ? "form" : "behaves";
         }
+        if (reach) reached.get(mutation)!.push({ name, build, reach });
       }
-      if (++done % 250 === 0) console.error(`mutation-reach: ${done} of ${cases.length} cases`);
     }
+    if (++done % 250 === 0) console.error(`mutation-reach: ${done} of ${cases.length} cases`);
   };
-  await Promise.all(Array.from({ length: Math.max(1, cores) }, worker));
+  await runYielding([...cases], Math.max(1, cores), one);
   return [...reached].map(([mutation, cases]) => ({ mutation, cases: cases.sort((a, b) => a.name.localeCompare(b.name)) }));
 }
 

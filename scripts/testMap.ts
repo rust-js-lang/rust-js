@@ -244,8 +244,9 @@ export function sourcesAt(commit: string): Sources {
   };
 }
 
-/** A `const` or `static` item's declaration line, its name the second group. */
-const constItem = /^\s*(?:pub(?:\([^)]*\))?\s+)?(const|static)\s+(?:mut\s+)?([A-Z_][A-Z0-9_]*)\s*:/;
+/** A `const` or `static` item's declaration line, its name the second
+ * group: the name its type follows, so not a `const fn`'s `fn` (#2584). */
+const constItem = /^\s*(?:pub(?:\([^)]*\))?\s+)?(const|static)\s+(?:mut\s+)?([A-Za-z_]\w*)\s*:/;
 
 /** A `use` item's first line. */
 const useItem = /^\s*(?:pub(?:\([^)]*\))?\s+)?use\s+()/;
@@ -755,7 +756,9 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
       // item, what names that item, searched in turn, so a variant added to
       // an enum a struct's field names selects what names the struct, not
       // every test (#2523). One searched already is its own search's.
-      const initializer = /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:const|static)\s+(?:mut\s+)?([A-Za-z_]\w*)/.exec(text)?.[1];
+      // A `const fn`'s line is a signature, not a constant's named `fn`,
+      // which searched in turn was too short a name, everything (#2584).
+      const initializer = constItem.exec(text)?.[2];
       const other = initializer !== undefined ? initializer !== name : held.length === 0 && !commentOnly(text) && !useLine.test(text) && itemOf(site.file, site.line) !== name;
       if (other) {
         const opened = initializer === undefined && inSignature(lines, site.line) ? following(site.file, site.line) : undefined;
@@ -1000,7 +1003,7 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
       // A constant or a static whose value alone changed, its name the
       // same: the functions holding it, and what reaches it where the item
       // layer knows (#2288).
-      const valued = (line: string) => line.match(/^\s*(?:pub(?:\([^)]*\))?\s+)?(?:const|static)\s+(?:mut\s+)?([A-Za-z_]\w*)\s*:/)?.[1];
+      const valued = (line: string) => constItem.exec(line)?.[2];
       const written = added.filter((line) => nestedItem.test(line));
       if (item !== undefined && map.items !== undefined && removed !== undefined && written.every((line) => valued(line) !== undefined && removed.some((was) => valued(was) === valued(line)))) {
         for (const f of holding(file, from)) touched.add(f);

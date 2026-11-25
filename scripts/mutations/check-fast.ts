@@ -120,4 +120,12 @@ export const mutations: Mutation[] = [
     replace: "          });\n          const readers",
     tests: ["test/timing.test.ts", "-t", "fail-fast stop ends the run within seconds"],
   },
+  {
+    name: "check-pool-never-yields",
+    breaks: "a check:fast that holds the machine's turn keeps it to its end however long a push waits, as three pushes waited about 1,600 s each behind a whole check (#2585)",
+    file: "scripts/checkFast.ts",
+    find: "      if (!cutting && pushWaits()) {\n",
+    replace: "      if (false) {\n",
+    tests: ["test/leases.test.ts", "-t", "finishes its third after it \\(check\\)"],
+  },
 ];

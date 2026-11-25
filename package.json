@@ -15,7 +15,7 @@
     "examples/next"
   ],
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks",
+    "prepare": "git config core.hooksPath .githooks && git config merge.changes-log.name \"TESTS.md's Changed on lines, both sides' kept\" && git config merge.changes-log.driver \"bun scripts/merge-changes.ts %O %A %B\"",
     "disk": "bun scripts/disk.ts",
     "definitions": "bun scripts/definitions.ts",
     "setup": "bun install && bunx --bun playwright install chromium",

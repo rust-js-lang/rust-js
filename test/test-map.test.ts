@@ -146,6 +146,15 @@ test("a constant's value, an array's length with it, is the change of the functi
   // code it compiles into, as an item's change is (#2288).
   const retyped: Change = { file: "src/a.rs", hunks: [[22, 1, ["pub(crate) const FLIPPED: [String; 2] = ["], ["pub(crate) const FLIPPED: [&str; 2] = ["]]] };
   expect(pick(map, [retyped], files, cases, sources())).toEqual({ ...asFunction, why: expect.any(String) } as never);
+  // Named by most of its crate's functions, 4 of its 6: its value's change
+  // is still theirs, which read it, inlined; its type's, everything, as an
+  // item most functions name is (#2288). Without the value's own rule, the
+  // item's search said both were everything, and the two answers were one
+  // in every row above.
+  const most = [4, 11, 13].map((line) => ({ file: "src/c.rs", line }));
+  const readers = pick(map, [{ file: "src/a.rs", hunks: [[15, 1]] }, { file: "src/c.rs", hunks: [[4, 1], [11, 1], [13, 1]] }], files, cases);
+  expect(pick(map, [grown], files, cases, sources(most))).toEqual({ ...readers, why: expect.any(String) } as never);
+  expect(pick(map, [retyped], files, cases, sources(most)).kind).toBe("all");
 });
 
 test("a new module of items nothing refers to selects nothing but what its users' changes do; one that may reach code no change names, everything (4ba38fa64's import_names.rs)", () => {
@@ -889,6 +898,29 @@ test("a variant of an enum a field or a signature names selects what names them"
   // The same picks, whatever the order its functions were found in.
   const sorted = (picked: ReturnType<typeof pick>) => (picked.kind === "picked" ? { ...picked, functions: [...picked.functions].sort(), why: "" } : picked);
   expect(sorted(pick(map, [variant], files, cases, sources))).toEqual(sorted(both));
+});
+
+// A struct moved out of a function to its module, as #2579's fix hoisted
+// `struct First` in reads.rs, named by a `const fn`'s signature: the
+// function it opens, not a constant named `fn`, too short a name to
+// search, and so everything (#2584: 1,041 s, twice, on the Mac mini).
+test("a moved struct named by a const fn's signature selects the function it opens", () => {
+  // src/a.rs: function 0 at 10-20; the struct at 22-25; the `const fn`'s
+  // signature at 29, opening function 1 at 30.
+  const text = Array.from({ length: 50 }, (_, i) => `// line ${i + 1}`);
+  text[21] = "struct First {";
+  text[22] = "    local: u32,";
+  text[23] = "    found: Option<bool>,";
+  text[24] = "}";
+  text[28] = "pub(crate) const fn first(of: &First) -> bool {";
+  const sources: Sources = {
+    text: (file) => (file === "src/a.rs" ? text.join("\n") : undefined),
+    naming: (word) => (word === "First" ? [22, 29].map((line) => ({ file: "src/a.rs", line })) : []),
+  };
+  // Its lines at the module, as the hoist rewrote them: a field's.
+  const moved: Change = { file: "src/a.rs", hunks: [[24, 1, ["    found: Option<bool>,"], ["        found: Option<bool>,"]]] };
+  const opened = pick(map, [{ file: "src/a.rs", hunks: [[31, 1]] }], files, cases);
+  expect(pick(map, [moved], files, cases, sources)).toEqual({ ...opened, why: expect.any(String) } as never);
 });
 
 // lisa agent's probe of #2288's rule (comment 7127339825): changes outside any

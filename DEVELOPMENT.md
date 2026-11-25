@@ -785,6 +785,11 @@ checked:
   its pattern names where its own names none, and names each it can't
   place; test/mutations.test.ts' refusal says where each went (ADR 1200,
   amended).
+- **Moved or rewritten code, rewrite its mutations' finds at once**: `bun
+  scripts/stale-finds.ts` names every mutation whose `find` no longer
+  applies once, each with its list and its find beside the file's nearest
+  text now (`<names..>` for some alone), and test/mutations.test.ts' "every
+  mutation applies" names them all, not the first (#2586).
 - **See the rebase finish before checking**: `git status` says `rebasing`
   while it waits on a conflict, and checks run then test a half-applied
   branch, which passes or fails for no reason of its own.
@@ -809,7 +814,11 @@ checked:
   `merge=binary` (`.gitattributes`): two commits that each bless it
   conflict on rebase, and it's blessed again from the rebased tree, never
   merged line by line, which once kept a stale row and turned `main` red
-  (66d8e6b2b).
+  (66d8e6b2b). TESTS.md's `Changed on` lines are merged by git itself,
+  both sides' kept, newest first, in a cherry-pick, a `git am -3` and a
+  rebase alike: its driver `changes-log` (scripts/merge-changes.ts,
+  .gitattributes), which `bun install` names in git's config; a conflict
+  in its table or prose still stops, yours to merge (#2587).
 - **After a rebase, check again only what the incoming commits touch**.
   With several agents pushing, `main` moves about as often as a
   `check:fast --all` takes (about 10 minutes under load), so a full re-run
@@ -894,6 +903,7 @@ checked:
 | Every mutation on the Mac, `bun run nightly mutations` | 65 min for 8,047 on the M3 Max (2026-10-30), the CPU 86% busy and its 16 GB full: 6.6 GB compressed, 1.3 GB swapped, 35% of the CPU the system's, each mutant's run starting bun, rust-js and Node | More memory, or a mutant's tests run in a process kept warm, as `bun test` with its compiler swapped, not started again for each |
 | A mutant's serde, shipped-crates and bound-maps tests (145 mutations) | Each builds its native program again in the mutant's own target, its wrapper `include!`ing a file beside it in a fixture there, so the path, and the kept build's key, is the mutant's; a serde build links serde's rlibs. The corpus's wrappers are kept by content in the checkout's target (#875) | The wrapper and the files it includes written to a `contentDirectory` of the checkout's, as `runNative` writes the corpus's |
 | `bun scripts/mutations.ts --changed=origin/main` of a large change, which a push judges since #2485 (check:fast's job, its `judged` phase) | More than five minutes even in three shards; CI's shards took 1 to 74 runner-minutes a push (2026-11-24's last ten checks), each round of a push past a moved `main` a new tree to judge | Shards picked to fit, by each mutation's usual time: CI's shards are dealt by it now (ADR 0093, amended), their count still by how many |
+| A local `check:fast --all` of a large branch, its "the change's mutations" job (#2403, 2026-11-25) | #2403's branch, four commits, 582 files: its check's every other job ended within about 9 min. Its mutation job, `scripts/mutations.ts --jobs=4` of 4,365 mutations, ran on alone past the check's 3,600 s limit, holding the machine's turn the while; three pushes waited about 1,600 s each behind it (#2585). A check now yields to a push between its jobs, but this job is one, so the push waits for it whole | The job's mutations judged as a push judges them (its `judged` phase, recorded by the tree), or as CI's shards are, by time; and its `--jobs` widened to the pool's idle cores at the check's tail, as #2499 asks of the iterator nets; or the job yielding between its batches on its parent's turn |
 | The nightly's wall, 2 h 48 min (nightly 43650311159, 2026-11-15), before it held 14 runners in lanes (ADR 0093, amended, 2026-11-17), its wall since to be measured | 91 jobs, 2,231 runner-minutes against the Free plan's 20 at once, so from minute 30 to 90 every slot is held and jobs wait: the mutation shards started 16 to 45 min in. GitHub's start, about 4 h after the cron's 19:00 UTC, is outside our control: from 2026-11-14 to 11-22 the scheduled runs started 22:52 to 02:17 UTC, 3.9 to 7.3 h late, and 11-23's never came; lisa agent dispatched it by hand at 02:00 UTC (45309220022). Moving the cron earlier only moves the queue; a night with no scheduled run by 02:00 UTC is dispatched by hand, `gh workflow run nightly.yml --ref main` | Fewer runner-minutes, below: the five longest jobs are the next five rows |
 | The nightly's mutations, 16 shards, 13–136 min each | 67% of the night's runner-minutes. Of the 10,410 mutations timed, the 210 whose site isn't in a function (`site`) are built alone, 600 of the 2,012 build-minutes, each a whole compile of the crate on CI until it was built incrementally (ADR 0093's amendment of 2026-11-16, #1959); about two a shard aren't caught by their tests and fell back to every corpus snapshot, 15 min each, without a test map on CI (`lent-string-iterator-kept`'s 709 s), each now judged by the cases CI's `test-map` job's map says reach it (ADR 0093, amended). Dealt by time since ADR 0093's amendment | A batch that can hold a site outside a function |
 | The nightly's metamorphic net, 3 machines, ~104 min each | 853 cases a machine, a median of 27 s each, 405 min summed in 4 parts: each rewrite of each case built natively again every night, as nothing native is kept between CI runs. Locally the corpus's part 1/8 is 236 s with the native and verified-run stores cold, 44.8 s with the natives warm, 5.6 s with both (Mac mini, load 2.0) | Kept since ADR 0567's amendment: a native program's run by its build's key beside what the build read, a few MB that CI caches, so a rewrite unchanged since the last night is neither built nor run. To measure: the first night with them |
@@ -1003,7 +1013,8 @@ checked:
   Each phase's time is printed, the first, `turn`, its wait for the
   machine's turn, which a push takes before any other run waiting, and
   which a mutation run lets go to it between batches (ADR 1146, amended,
-  #2516), as check:fast's and a mutation run's lines say theirs too, where
+  #2516) and a check:fast that took it between its jobs, those running
+  ended first (#2585), as check:fast's and a mutation run's lines say theirs too, where
   each took the turn itself (#2517); and one line of them is appended to the
   machine's log of times, outside the repository (`RUST_JS_DEV_TIMES`,
   `~/rust-js-dev-times.log` unless given; `RUST_JS_MACHINE` and

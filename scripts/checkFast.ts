@@ -33,7 +33,7 @@ import { ownCompiler, ownFolder } from "./own-compiler";
 import { said, strays } from "./strays";
 import { type CheckLogRun, checkLogRun } from "./checkLogs";
 import { expected, jobTimesStore, readJobTimes, recordJobTimes } from "./jobTimes";
-import { fairShare, holdLease, leaseStore, liveLeases, sharers } from "./leases";
+import { fairShare, holdLease, leaseStore, liveLeases, pushWaits, sharers, yieldToPush } from "./leases";
 import { elapsed, loadScale, median, shown, timed } from "./timing";
 import { devTimes, ownsTimes, slowest } from "./devTimes";
 
@@ -773,6 +773,18 @@ export function run(
   const next = async (): Promise<Job | undefined> => {
     for (;;) {
       if (pending.length === 0) return undefined;
+      // A push waits for the turn this run holds (`pushWaits`, of a check
+      // that took it itself, not a push's own): no job more is started;
+      // once those running end, the turn goes to the push and is waited for
+      // again, and the run goes on, no work lost, as a mutation run's
+      // batches do (#2516). Behind a whole check, three pushes waited about
+      // 1,600 s each; at its jobs' ends, 55 s on average, 171 s at most, of
+      // this machine's jobs (#2585).
+      if (!cutting && pushWaits()) {
+        if (running > 0) await new Promise<void>((wake) => waiting.push(wake));
+        else yieldToPush();
+        continue;
+      }
       const at = pending.findIndex((job) => running === 0 || (held + weight(job) <= share(cores) && heldMemory + job.memory <= share(budget)));
       if (at >= 0) return pending.splice(at, 1)[0];
       await new Promise<void>((wake) => waiting.push(wake));

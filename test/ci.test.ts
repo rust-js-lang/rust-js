@@ -18,7 +18,8 @@ import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Sc
 import { lostObject } from "../scripts/testMap";
 import { portRefusal, reactGate } from "../scripts/push";
 import { unrerunnable } from "../scripts/attribute";
-import { changedCases, PORT_DOES_NOT_COMPILE, ROWS_MOST_SHARDS, ROWS_PARTS, rowsShards, runs, sliceReport, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
+import { changedCases, PORT_DOES_NOT_COMPILE, ROWS_MOST_SHARDS, ROWS_PARTS, rowsShards, runs, sliceReport, sliceReports, touchesAsync, touchesConsumers, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
+import * as slices from "../scripts/iteratorSlice";
 import { browsers, drivesBrowser, junitReport, junitReports } from "../scripts/shard";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, unparted, verdict } from "../scripts/parts";
@@ -100,6 +101,25 @@ test("the readability passes run where readability-passes.yml's paths say, of --
   expect(named({ all: false, changed: ["test/getter-reads/counts.rs"], branch: [] })).toBe(true);
   expect(touchesReadability(["crates/rust-js-mir/src/tidying.rs", "docs/guide/README.md"])).toBe(false);
   expect(() => readabilityPaths("on:\n  push:\n")).toThrow("no `on.push.paths`");
+});
+
+// A net's paths name a Rust module whole: a folder's glob, `drops/**`,
+// with the module's own file, `drops.rs`, which holds its code too. The
+// drops' paths had the folder alone, so 845c1a3e9's change to
+// `check_drops_given` in drops.rs ran neither the consumer net nor the
+// async table in its push, and a push that selected everything found the
+// consumer net's known list stale (#2575).
+test("each net's paths take a module's own file with its folder", () => {
+  const catalogs = Object.entries(slices).filter((entry): entry is [string, string[]] => entry[0].endsWith("Paths") && Array.isArray(entry[1]));
+  expect(catalogs.map(([name]) => name)).toEqual(expect.arrayContaining(["iteratorPaths", "consumerPaths", "asyncPaths", "cellsPaths"]));
+  const halves = catalogs.flatMap(([name, paths]) =>
+    paths
+      .filter((path) => path.endsWith("/**") && existsSync(join(root, `${path.slice(0, -3)}.rs`)))
+      .filter((path) => !paths.some((other) => new Bun.Glob(other).match(`${path.slice(0, -3)}.rs`)))
+      .map((path) => `${name}: ${path} without ${path.slice(0, -3)}.rs`),
+  );
+  expect(halves).toEqual([]);
+  expect([touchesConsumers(["crates/rust-js-lower/src/drops.rs"]), touchesAsync(["crates/rust-js-lower/src/drops.rs"])]).toEqual([true, true]);
 });
 
 // Each family of tidy-stages' variants runs of its own paths: the

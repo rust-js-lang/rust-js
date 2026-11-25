@@ -163,22 +163,6 @@ export const mutations: Mutation[] = [
     tests: ["test/mutation-changes.test.ts", "-t", "a push type-checks the mutations of each file its change touches"],
   },
   {
-    name: "changes-merged-oldest-first",
-    breaks: "two pushes' TESTS.md lines are merged main's first, so the replayed change's, the newest, is below an older one",
-    file: "scripts/push.ts",
-    find: '    out.push(...[...added, ...kept].flatMap((line, at) => (at === 0 ? [line] : ["", line])));\n',
-    replace: '    out.push(...[...kept, ...added].flatMap((line, at) => (at === 0 ? [line] : ["", line])));\n',
-    tests: ["test/push.test.ts", "-t", "TESTS.md"],
-  },
-  {
-    name: "changes-merged-with-the-old-line",
-    breaks: "a TESTS.md line main rewrote is kept beside its rewrite, as the replayed change still had it, so the log says both counts",
-    file: "scripts/push.ts",
-    find: '    const added = theirs.filter((line) => line !== "" && !base.includes(line));\n',
-    replace: '    const added = theirs.filter((line) => line !== "");\n',
-    tests: ["test/push.test.ts", "-t", "TESTS.md"],
-  },
-  {
     name: "changes-log-conflict-stops-the-push",
     breaks: "a rebase's conflict in TESTS.md's `Changed on` lines stops the push, as almost every two pushes at once did (a dozen PR merges by hand, 2026-11-18)",
     file: "scripts/push.ts",

@@ -122,6 +122,14 @@ export const mutations: Mutation[] = [
     tests: ["test/test-map.test.ts", "-t", "a variant of an enum a field or a signature names"],
   },
   {
+    name: "test-map-const-fn-a-constant",
+    breaks: "a `const fn`'s signature naming a moved struct is read as a constant named `fn`, too short a name to search, and selects everything: #2579's hoisted `struct First`, 1,041 s a push, twice (#2584)",
+    file: "scripts/testMap.ts",
+    find: "      const initializer = constItem.exec(text)?.[2];\n",
+    replace: "      const initializer = /^\\s*(?:pub(?:\\([^)]*\\))?\\s+)?(?:const|static)\\s+(?:mut\\s+)?([A-Za-z_]\\w*)/.exec(text)?.[1];\n",
+    tests: ["test/test-map.test.ts", "-t", "a moved struct named by a const fn's signature"],
+  },
+  {
     name: "moved-file-diffed-without-renames",
     breaks: "the map's diffs read a moved file as a delete and a new file, so a move selects everything and its sites can't be placed (#2337)",
     file: "scripts/testMap.ts",
