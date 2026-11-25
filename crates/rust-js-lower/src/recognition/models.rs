@@ -128,21 +128,65 @@ pub enum Kind {
     Form(&'static [Stands]),
 }
 
+/// The net that holds a row of the catalog: whose run says it's right, and
+/// so whose drift may take it off. The twin net's whole run takes a row it
+/// holds off where no case imports it; a row another net holds it leaves
+/// alone, as its own net answers for it (ADR 1202, amended).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Net {
+    /// The twin net (ADR 1122): a case of it pits the helper against std's
+    /// body, or imports it in both builds.
+    Twin,
+    /// The boundary's tests (ADR 1192): a check of a value JS gives, which
+    /// no twin case reaches, as a case's functions take no value from JS.
+    Boundary,
+    /// `bun run std`'s sites (test/std-sites.test.ts): a model that reads
+    /// rows of `$stdSites`, std's sites of its function's panics, which no
+    /// table of the twin net reaches yet.
+    StdSites,
+}
+
+impl Net {
+    /// Its name, as the twin net reads it.
+    pub fn name(self) -> &'static str {
+        match self {
+            Net::Twin => "twin",
+            Net::Boundary => "boundary",
+            Net::StdSites => "std-sites",
+        }
+    }
+}
+
 /// One of the runtime's helpers, by its name, the export `$` and it, what
-/// it is, and a note, its ADR.
+/// it is, a note, its ADR, and the net that holds it.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Entry {
     pub helper: &'static str,
     pub kind: Kind,
     pub note: &'static str,
+    pub held: Net,
+}
+
+impl Entry {
+    /// The row, held by `net`, not the twin net.
+    pub const fn held(self, net: Net) -> Entry {
+        Entry { held: net, ..self }
+    }
 }
 
 use Kind::{Form, Glue, Model};
 use Proof::{Pitted, Unproven};
 use Stands::{Path, Row};
 
+/// A row of the catalog, which the twin net holds; `.held(net)` says
+/// another net does.
 const fn entry(helper: &'static str, kind: Kind, note: &'static str) -> Entry {
-    Entry { helper, kind, note }
+    Entry {
+        helper,
+        kind,
+        note,
+        held: Net::Twin,
+    }
 }
 
 /// The catalog, by helper, each on one line, which the twin net's bless
@@ -151,10 +195,10 @@ const fn entry(helper: &'static str, kind: Kind, note: &'static str) -> Entry {
 pub const MODELS: &[Entry] = &[
     entry("BTreeMap", Model(Unproven(Why::Collections), &[]), ""),
     entry("BTreeSet", Model(Unproven(Why::Collections), &[]), ""),
-    entry("CheckFailure", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
+    entry("CheckFailure", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
     entry("KeyMap", Model(Unproven(Why::Collections), &[]), ""),
     entry("KeySet", Model(Unproven(Why::Collections), &[]), ""),
-    entry("abort", Model(Unproven(Why::Outside), &[Row("panicNounwindNobacktrace")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("abort", Model(Unproven(Why::Outside), &[Row("panicNounwindNobacktrace")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("add", Model(Unproven(Why::Collections), &[]), ""),
     entry("advanceSlice", Model(Unproven(Why::JsOwn), &[]), "ADRs 0422, 0465: an array's iterator an adapter holds, advanced by index"),
     entry("andModify", Model(Unproven(Why::Collections), &[]), ""),
@@ -167,69 +211,69 @@ pub const MODELS: &[Entry] = &[
     entry("binarySearchBy", Model(Unproven(Why::Collections), &[]), ""),
     entry("borrow", Model(Unproven(Why::Cells), &[Path("core::cell::RefCell::borrow")]), ""),
     entry("borrowMut", Model(Unproven(Why::Cells), &[Path("core::cell::RefCell::borrow_mut")]), ""),
-    entry("brand", Glue, "ADR 1196: a brand of a type no other crate can make"),
-    entry("brandOf", Glue, "ADR 1196: a brand of a type no other crate can make"),
-    entry("brandsKey", Glue, "ADR 1196: a brand of a type no other crate can make"),
+    entry("brand", Glue, "ADR 1196: a brand of a type no other crate can make").held(Net::Boundary),
+    entry("brandOf", Glue, "ADR 1196: a brand of a type no other crate can make").held(Net::Boundary),
+    entry("brandsKey", Glue, "ADR 1196: a brand of a type no other crate can make").held(Net::Boundary),
     entry("btreeSet", Model(Unproven(Why::Collections), &[]), ""),
-    entry("bufReader", Model(Unproven(Why::Outside), &[Row("bufReaderStreamPosition")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("bufReader", Model(Unproven(Why::Outside), &[Row("bufReaderStreamPosition")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("byteLen", Model(Unproven(Why::Collections), &[]), ""),
-    entry("cannotUnwind", Model(Unproven(Why::Outside), &[Row("panicNounwind")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("cannotUnwind", Model(Unproven(Why::Outside), &[Row("panicNounwind")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("capacity", Model(Unproven(Why::Collections), &[]), ""),
     entry("catchUnwind", Glue, ""),
     entry("catchable", Glue, ""),
     entry("chars", Model(Unproven(Why::JsOwn), &[Path("core::str::Chars")]), "ADR 1117: a string's `Chars`, the runtime's lazy one"),
-    entry("checkAccessor", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkArray", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkAt", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkBig", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkBool", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkBoxedOption", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkBrand", Glue, "ADR 1196: a brand of a type no other crate can make"),
-    entry("checkCallback", Glue, "ADR 1195: a check of what a JS function gives back"),
-    entry("checkCell", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkChar", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkF32", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkF64", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkFailed", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkField", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkI128", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkI16", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkI32", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkI64", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkI8", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkInt", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkIntRanges", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkItem", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkLeaves", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkMap", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkNone", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkObject", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkOneOf", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkOption", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkPlace", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkRead", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkResult", Glue, "ADR 1195: a check of what a JS function gives back"),
-    entry("checkSet", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkShape", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkShown", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkStr", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkTag", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkTuple", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkU128", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkU16", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkU32", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkU64", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkU8", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkUnit", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
-    entry("checkWhole", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checkedBefore", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
+    entry("checkAccessor", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkArray", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkAt", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkBig", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkBool", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkBoxedOption", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkBrand", Glue, "ADR 1196: a brand of a type no other crate can make").held(Net::Boundary),
+    entry("checkCallback", Glue, "ADR 1195: a check of what a JS function gives back").held(Net::Boundary),
+    entry("checkCell", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkChar", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkF32", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkF64", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkFailed", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkField", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkI128", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkI16", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkI32", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkI64", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkI8", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkInt", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkIntRanges", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkItem", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkLeaves", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkMap", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkNone", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkObject", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkOneOf", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkOption", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkPlace", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkRead", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkResult", Glue, "ADR 1195: a check of what a JS function gives back").held(Net::Boundary),
+    entry("checkSet", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkShape", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkShown", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkStr", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkTag", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkTuple", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkU128", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkU16", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkU32", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkU64", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkU8", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkUnit", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
+    entry("checkWhole", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checkedBefore", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
     entry("checkedSplitAtMut", Model(Unproven(Why::Collections), &[]), ""),
-    entry("checking", Glue, "ADR 1194: a check of a value JS gives that holds others, whole"),
-    entry("checks", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary"),
+    entry("checking", Glue, "ADR 1194: a check of a value JS gives that holds others, whole").held(Net::Boundary),
+    entry("checks", Glue, "ADR 1192: a check of a value JS gives a Rust parameter, at the boundary").held(Net::Boundary),
     entry("chunksExactMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("chunksMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("clampBy", Model(Unproven(Why::Collections), &[]), ""),
-    entry("clampFloat", Model(Unproven(Why::Outside), &[Row("clamp")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("clampFloat", Model(Unproven(Why::Outside), &[Row("clamp")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("cleanup", Glue, ""),
     entry("clone", Model(Pitted, &[]), ""),
     entry("cloneFromSlice", Model(Unproven(Why::Collections), &[]), ""),
@@ -244,7 +288,7 @@ pub const MODELS: &[Entry] = &[
     entry("collectVec", Model(Unproven(Why::Consumers), &[]), ""),
     entry("collectsInPlace", Model(Unproven(Why::Consumers), &[]), ""),
     entry("consume", Model(Pitted, &[]), ""),
-    entry("copied", Model(Unproven(Why::Outside), &[Row("copiedCount"), Row("copiedLast")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("copied", Model(Unproven(Why::Outside), &[Row("copiedCount"), Row("copiedLast")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("copyFromSlice", Model(Unproven(Why::Collections), &[]), ""),
     entry("copyRange", Model(Unproven(Why::Collections), &[]), ""),
     entry("copyWithin", Model(Unproven(Why::Collections), &[]), ""),
@@ -270,11 +314,11 @@ pub const MODELS: &[Entry] = &[
     entry("dropItems", Glue, ""),
     entry("dropping", Glue, ""),
     entry("droppingIterator", Model(Unproven(Why::JsOwn), &[]), "ADR 0140, ADR 1136: a `dyn Iterator`'s JS iterator stepped dropping what it gives, as JS's own"),
-    entry("durationAdd", Model(Unproven(Why::Outside), &[Row("durationAdd")]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("durationNew", Model(Unproven(Why::Outside), &[Row("durationNew")]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("durationSub", Model(Unproven(Why::Outside), &[Row("durationSub")]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("encodeCharUtf16", Model(Unproven(Why::Outside), &[Row("encodeUtf16")]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("encodeUtf8", Model(Unproven(Why::Outside), &[Row("encodeUtf8")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("durationAdd", Model(Unproven(Why::Outside), &[Row("durationAdd")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
+    entry("durationNew", Model(Unproven(Why::Outside), &[Row("durationNew")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
+    entry("durationSub", Model(Unproven(Why::Outside), &[Row("durationSub")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
+    entry("encodeCharUtf16", Model(Unproven(Why::Outside), &[Row("encodeUtf16")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
+    entry("encodeUtf8", Model(Unproven(Why::Outside), &[Row("encodeUtf8")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("endEntry", Model(Unproven(Why::Collections), &[]), ""),
     entry("entry", Model(Unproven(Why::Collections), &[]), ""),
     entry("entryGet", Model(Unproven(Why::Collections), &[]), ""),
@@ -296,20 +340,20 @@ pub const MODELS: &[Entry] = &[
     entry("filterEnds", Model(Pitted, &[Path("core::iter::Filter")]), ""),
     entry("findBack", Model(Pitted, &[Path("core::iter::DoubleEndedIterator::rfind")]), ""),
     entry("findDropping", Model(Unproven(Why::Consumers), &[]), ""),
-    entry("flatLast", Model(Unproven(Why::Outside), &[Row("flattenLast")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("flatLast", Model(Unproven(Why::Outside), &[Row("flattenLast")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("flatMap", Model(Pitted, &[Path("core::iter::FlatMap"), Row("flattenCount")]), ""),
     entry("flattenEnds", Model(Pitted, &[Path("core::iter::Flatten")]), ""),
-    entry("fmtPrintFailed", Model(Unproven(Why::Outside), &[Row("printFailed")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("fmtPrintFailed", Model(Unproven(Why::Outside), &[Row("printFailed")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("foldBack", Model(Pitted, &[Path("core::iter::DoubleEndedIterator::rfold")]), ""),
     entry("foldDropping", Model(Unproven(Why::Consumers), &[]), ""),
     entry("foldOf", Model(Unproven(Why::Consumers), &[]), ""),
     entry("foldToArray", Model(Unproven(Why::Consumers), &[]), ""),
     entry("folded", Model(Unproven(Why::Consumers), &[]), ""),
-    entry("force", Model(Unproven(Why::Outside), &[Row("lazyCellPoisoned")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("force", Model(Unproven(Why::Outside), &[Row("lazyCellPoisoned")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("formatting", Model(Unproven(Why::Format), &[]), ""),
-    entry("fromDigit", Model(Unproven(Why::Outside), &[Row("fromDigit")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("fromDigit", Model(Unproven(Why::Outside), &[Row("fromDigit")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("getDisjointMut", Model(Unproven(Why::Collections), &[]), ""),
-    entry("getOrInit", Model(Unproven(Why::Outside), &[Row("onceCellReentrant")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("getOrInit", Model(Unproven(Why::Outside), &[Row("onceCellReentrant")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("given", Glue, ""),
     entry("givenDrop", Glue, ""),
     entry("grew", Model(Unproven(Why::Collections), &[]), ""),
@@ -354,7 +398,7 @@ pub const MODELS: &[Entry] = &[
     entry("lazyChain", Model(Pitted, &[Path("core::iter::Chain"), Row("chainCount"), Row("fnOnceCall")]), ""),
     entry("lazyChunkBy", Model(Unproven(Why::Iterators), &[Path("core::slice::ChunkBy")]), ""),
     entry("lazyChunkByMut", Model(Unproven(Why::Iterators), &[Path("core::slice::ChunkByMut")]), ""),
-    entry("lazyLockPoisoned", Model(Unproven(Why::Outside), &[Row("lazyLockPoisoned")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("lazyLockPoisoned", Model(Unproven(Why::Outside), &[Row("lazyLockPoisoned")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("lazyMapWhile", Model(Pitted, &[Path("core::iter::MapWhile")]), ""),
     entry("lazyRange", Model(Pitted, &[Path("core::ops::Range")]), ""),
     entry("lazyScan", Model(Pitted, &[Path("core::iter::Scan")]), ""),
@@ -389,7 +433,7 @@ pub const MODELS: &[Entry] = &[
     entry("next", Model(Unproven(Why::JsOwn), &[]), "ADR 0140: the step of any JS iterator, its item or `undefined`"),
     entry("nextBack", Model(Pitted, &[Path("core::iter::DoubleEndedIterator::next_back")]), ""),
     entry("nextBackSome", Model(Unproven(Why::JsOwn), &[]), "ADRs 0164, 0051: the step from its back of any JS iterator, its item boxed where it may look like `None`, of an `Option`'s items (#1826)"),
-    entry("nextMultipleOf", Model(Unproven(Why::Outside), &[Row("nextMultipleOf")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("nextMultipleOf", Model(Unproven(Why::Outside), &[Row("nextMultipleOf")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("nextSome", Model(Unproven(Why::JsOwn), &[]), "ADRs 0140, 0051: the step of any JS iterator, its item boxed where it may look like `None`"),
     entry("nth", Model(Unproven(Why::Consumers), &[]), ""),
     entry("nthBack", Model(Unproven(Why::Consumers), &[]), ""),
@@ -411,7 +455,7 @@ pub const MODELS: &[Entry] = &[
     entry("partition", Model(Unproven(Why::Consumers), &[]), ""),
     entry("partitionPoint", Model(Unproven(Why::Collections), &[]), ""),
     entry("pathJoin", Model(Unproven(Why::Collections), &[]), ""),
-    entry("pathSetExtension", Model(Unproven(Why::Outside), &[Row("pathExtension")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("pathSetExtension", Model(Unproven(Why::Outside), &[Row("pathExtension")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("peek", Model(Unproven(Why::Memory), &[Path("core::iter::Peekable::peek")]), "ADR 0561: `Peekable::peek`, whose body reaches memory"),
     entry("peekMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("peekMutDrop", Model(Unproven(Why::Collections), &[]), ""),
@@ -446,8 +490,8 @@ pub const MODELS: &[Entry] = &[
     entry("removeOpt", Model(Unproven(Why::Collections), &[]), ""),
     entry("removeOutOfBounds", Model(Unproven(Why::Collections), &[]), ""),
     entry("repeat", Model(Unproven(Why::Collections), &[]), "`vec![item; count]`, `Vec::from_elem`"),
-    entry("repeatItems", Model(Unproven(Why::Outside), &[Row("sliceRepeat")]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("repeatText", Model(Unproven(Why::Outside), &[Row("sliceRepeat")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("repeatItems", Model(Unproven(Why::Outside), &[Row("sliceRepeat")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
+    entry("repeatText", Model(Unproven(Why::Outside), &[Row("sliceRepeat")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("repeating", Model(Pitted, &[Path("core::iter::Repeat")]), ""),
     entry("repeatingN", Model(Pitted, &[Path("core::iter::RepeatN")]), ""),
     entry("replaceRange", Model(Unproven(Why::Collections), &[]), ""),
@@ -469,7 +513,7 @@ pub const MODELS: &[Entry] = &[
     entry("roomForHint", Model(Unproven(Why::Collections), &[Row("capacityOverflow"), Row("vecFromTrustedLen")]), ""),
     entry("rotateLeft", Model(Unproven(Why::Collections), &[Row("rotateLeft"), Row("vecDequeRotateLeft")]), ""),
     entry("rotateRight", Model(Unproven(Why::Collections), &[Row("rotateRight"), Row("vecDequeRotateRight")]), ""),
-    entry("seekDefaults", Model(Unproven(Why::Outside), &[Row("byteSliceConsume"), Row("vecDequeDrain")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("seekDefaults", Model(Unproven(Why::Outside), &[Row("byteSliceConsume"), Row("vecDequeDrain")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("selectNthUnstable", Model(Unproven(Why::Sort), &[Row("selectNth")]), ""),
     entry("setReplace", Model(Unproven(Why::Collections), &[]), ""),
     entry("setTake", Model(Unproven(Why::Collections), &[]), ""),
@@ -494,13 +538,13 @@ pub const MODELS: &[Entry] = &[
     entry("sortedKeys", Model(Unproven(Why::Collections), &[]), ""),
     entry("splice", Model(Unproven(Why::Collections), &[]), ""),
     entry("splicing", Model(Unproven(Why::Collections), &[]), ""),
-    entry("splitAt", Model(Unproven(Why::Outside), &[Row("strSplitAt")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("splitAt", Model(Unproven(Why::Outside), &[Row("strSplitAt")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("splitAtMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("splitChunkMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("splitEndMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("splitOff", Model(Unproven(Why::Collections), &[]), ""),
     entry("stdSites", Glue, ""),
-    entry("step", Model(Unproven(Why::Outside), &[Row("stepBy")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("step", Model(Unproven(Why::Outside), &[Row("stepBy")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("stepBy", Model(Pitted, &[Path("core::iter::StepBy")]), ""),
     entry("stepByEnds", Model(Pitted, &[Path("core::iter::StepBy")]), ""),
     entry("stepsOf", Model(Unproven(Why::JsOwn), &[]), "ADR 0570, amended (#2039): a type parameter's value std's compiled body is given, as it is, never armed to close at its end"),
@@ -508,14 +552,14 @@ pub const MODELS: &[Entry] = &[
     entry("strExtendWithin", Model(Unproven(Why::Collections), &[]), ""),
     entry("strPop", Model(Unproven(Why::Collections), &[]), ""),
     entry("strRemove", Model(Unproven(Why::Collections), &[]), ""),
-    entry("strSplitAtMut", Model(Unproven(Why::Outside), &[Row("strSplitAtMut")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("strSplitAtMut", Model(Unproven(Why::Outside), &[Row("strSplitAtMut")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("strSplitOff", Model(Unproven(Why::Collections), &[]), ""),
     entry("strTruncate", Model(Unproven(Why::Collections), &[]), ""),
     entry("stringPanic", Glue, ""),
     entry("swap", Model(Unproven(Why::Collections), &[Row("vecDequeSwap")]), ""),
     entry("swapRemove", Model(Unproven(Why::Collections), &[Row("swapRemove")]), ""),
     entry("swapWithSlice", Model(Unproven(Why::Collections), &[]), ""),
-    entry("tableRoomFor", Model(Unproven(Why::Outside), &[Row("hashTableCapacityOverflow")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("tableRoomFor", Model(Unproven(Why::Outside), &[Row("hashTableCapacityOverflow")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("take", Model(Unproven(Why::Collections), &[]), ""),
     entry("taking", Model(Pitted, &[Path("core::iter::Take")]), ""),
     entry("took", Glue, ""),
@@ -525,7 +569,7 @@ pub const MODELS: &[Entry] = &[
     entry("treeFrom", Model(Unproven(Why::Collections), &[]), ""),
     entry("treeFromSorted", Model(Unproven(Why::Collections), &[]), ""),
     entry("treeRange", Model(Unproven(Why::Collections), &[Row("btreeRange")]), ""),
-    entry("treeSearchBound", Model(Unproven(Why::Outside), &[Row("btreeRange")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("treeSearchBound", Model(Unproven(Why::Outside), &[Row("btreeRange")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("treeSplitOff", Model(Unproven(Why::Collections), &[]), ""),
     entry("truncate", Model(Unproven(Why::Collections), &[]), ""),
     entry("trustedZip", Model(Pitted, &[Path("core::iter::Zip")]), ""),
@@ -551,14 +595,14 @@ pub const MODELS: &[Entry] = &[
     entry("viewGet", Glue, ""),
     entry("viewRange", Glue, ""),
     entry("withCapacity", Model(Unproven(Why::Collections), &[]), ""),
-    entry("writeCloneOfSlice", Model(Unproven(Why::Outside), &[Row("writeCloneOfSlice")]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("writeCloneOfSlice", Model(Unproven(Why::Outside), &[Row("writeCloneOfSlice")]), "its rows of `$stdSites`, std's sites of its function's panics").held(Net::StdSites),
     entry("writeCopyOfSlice", Form(&[Row("writeCopyOfSlice")]), "the lowering's, std_types/slice.rs"),
     entry("zipEnds", Model(Pitted, &[Path("core::iter::Zip")]), ""),
 ];
 
 /// The catalog as JSON, which `rust-js --std-models` prints: each helper,
 /// whether it's glue, its proof and reason, the std items it stands for,
-/// and its note; and each reason's text.
+/// its note and the net that holds it; and each reason's text.
 pub fn json() -> String {
     let entries: Vec<serde_json::Value> = MODELS
         .iter()
@@ -588,6 +632,7 @@ pub fn json() -> String {
                 "why": why,
                 "standsFor": stands_for,
                 "note": entry.note,
+                "heldBy": entry.held.name(),
             })
         })
         .collect();

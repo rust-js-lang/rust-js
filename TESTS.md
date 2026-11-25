@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2403, ADR 1202 amended): test/twin-net.test.ts' "a whole run keeps a model outside the tables" is now "a whole run that imports no row another net holds keeps it", a site reader's and a boundary check's, and it gains "a row another net holds that a case pits is blessed `Pitted`, the twin net's": each row of models.rs says the net that holds it (`heldBy`), and the drift takes off only the twin net's; two mutations, one moved.
+
 Changed on 2026-11-25 (#2570, ADR 1201 amended): test/architecture-stopgaps.test.ts counts 46 stopgap refusals, the nine of Campaign 6's step 7, `Crossing::TypeFact`, among them.
 
 Changed on 2026-11-25 (Campaign 5 step 2a, ADR 1202 amended): test/twin-net.test.ts gains two tests, the runtime's exports the catalog doesn't name yet (1,183, at most) and a whole run keeps a model outside the tables no case imports; its measure falls to 207; each form is named by its row; a unit test of raised.rs, the catalog's rows are written; six mutations, two moved to scripts/mutations/lower/recognition/models/rows.ts.
