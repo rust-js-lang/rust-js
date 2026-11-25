@@ -1062,8 +1062,10 @@ jobs:
 
   # The consumer net (test/consumer-net.ts): each std method that takes an
   # iterator by value, of each source, as it is and with a closure's or a
-  # step's panic, in both builds against native Rust, but the `consumers:`
-  # rows of test/known/iterator-matrix/.
+  # step's panic, and of the crate's iterator and a map of it, an item's
+  # drop's and the source's own drop's, by each caller, a library's generic
+  # code's too (#2572), in both builds against native Rust, but the
+  # `consumers:` rows of test/known/iterator-matrix/.
   consumers:
     name: consumer net
     needs: mut-refs

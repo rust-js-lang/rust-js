@@ -17,6 +17,7 @@
 // (test/iterator-matrix.ts, ADR 1090 and 1092).
 
 import { adapters, consumers, stepAdapters, stepConsumers, type Case } from "./iterator-matrix";
+import { libraryCrate } from "./matrix-library";
 import { sources, type Site } from "./iterator-sources";
 import { stdRuns, stdWrites } from "./std-steps-catalog";
 
@@ -24,11 +25,10 @@ import { stdRuns, stdWrites } from "./std-steps-catalog";
 export type Path = "&mut" | "&mut dyn" | "Box" | "Box dyn" | "generic" | "impl" | "clone" | "cycle" | "trait" | "trait Box" | "trait &mut" | "Box Box" | "&mut Box" | "Box J" | "library" | "library Box";
 export const paths: Path[] = ["&mut", "&mut dyn", "Box", "Box dyn", "generic", "impl", "clone", "cycle", "trait", "trait Box", "trait &mut", "Box Box", "&mut Box", "Box J", "library", "library Box"];
 
-/** The crate a `library` path's consumer is the generic code of, compiled
- * apart, from its own JS and manifest, as a dependency's is (#2112 Change
- * A, step 2b′): what its generic code asks of the dictionary the case's
- * crate gives it. */
-export const libraryCrate = "paths_lib";
+/** The crate a `library` path's consumer is the generic code of
+ * (test/matrix-library.ts): what its generic code asks of the dictionary
+ * the case's crate gives it. */
+export { libraryCrate };
 
 /** What begins a function of a path case's that's the library's, not the
  * program's (`pathFns`), as `program` splits them. */

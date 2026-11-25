@@ -878,3 +878,30 @@ else. `test/iterator-rows.test.ts` holds both shapes; mutation
 ## Amendment: its known list is a directory, a file per issue (2026-11-21, #2260)
 
 Its known failures are `test/known/iterator-matrix/`, one file per issue, named for its heading, `1022.txt` or `difference-39.txt`, and read as one list by `knownText` ([1180](1180-a-known-list-is-a-directory-a-file-per-issue.md)).
+
+## Amendment: who drops what a consumer takes, the consumer net's drops (2026-11-25, #2572)
+
+A consumer that takes an iterator by value drops it in std's callee's frame,
+and rust-js decides who stands in for that drop: the helper's closing, or
+the caller after the call (#2572). The consumer net (test/consumer-net.ts)
+ran its sources as they are and with a closure's or a step's panic. Now,
+of the crate's iterator `Loud` and a map of it, it also runs:
+
+- **`item drop`:** an `L` item's second drop panics.
+- **`source drop`:** the source's own drop panics.
+- **The `library` caller:** generic code in a library given the library's
+  own iterator and items. Its cases' library is the prelude made public and
+  their generic functions, and their programs are apart (`consumerLibrary`).
+
+Each runs in both builds against native, guarded by `thread::panicking()`
+so a drop panics only once. A hash table's collect isn't run by the drops'
+variants, because its items drop as a panic unwinds in an order native Rust
+chooses each run.
+
+The first run found two wrong answers, each now a known row:
+- **#2574:** a fallible `sum`/`product` into a `Result` whose source's drop
+  panics leaves the kept `Err` undropped.
+- **#2575:** a library's generic `decode_utf16` of an iterator with a `Drop`
+  throws at its end, where one crate refuses it.
+
+The net grew from 14,024 cases to 15,260.

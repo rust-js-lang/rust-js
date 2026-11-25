@@ -37,7 +37,7 @@ test("each template has cases, each of its own id", () => {
   expect(templates.filter((t) => !cases.some((c) => c.template === t)).map((t) => t.name)).toEqual([]);
   expect(new Set(templates.map((t) => t.name)).size).toBe(templates.length);
   expect(new Set(cases.map((c) => c.id)).size).toBe(cases.length);
-  // Each variant is made: a closure's panic, a source's step's and an
-  // argument's.
-  expect(new Set(cases.map((c) => c.variant))).toEqual(new Set(["ok", "closure", "step", "arg step"]));
+  // Each variant is made: a closure's panic, a source's step's, an
+  // argument's, an item's drop's and the source's own drop's (#2572).
+  expect(new Set(cases.map((c) => c.variant))).toEqual(new Set(["ok", "closure", "step", "arg step", "item drop", "source drop"]));
 });

@@ -34,6 +34,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { Row } from "./iterator-matrix";
+import { libraryCrate } from "./matrix-library";
 
 // ── What std has ──────────────────────────────────────────────────────────
 
@@ -608,16 +609,30 @@ export function whyNot(m: StdMethod): string | undefined {
 // ── Its cases and programs ────────────────────────────────────────────────
 
 /** How a case runs: as it is; its closure panicking at its 2nd call; its
- * source's 2nd step panicking; or its argument's. */
-export type Variant = "ok" | "closure" | "step" | "arg step";
+ * source's 2nd step panicking; or its argument's; an item's 2nd drop
+ * panicking, of `L`s; or the source's own drop panicking, `Loud`'s: who
+ * drops what a consumer took as each unwinds, std's callee's frame or its
+ * caller's, one of them (#2572). */
+export type Variant = "ok" | "closure" | "step" | "arg step" | "item drop" | "source drop";
+
+/** The sources the drops' variants run of, the crate's own iterator and a
+ * map of it, of each caller: the panic points of #2572's matrix, which
+ * every source of them would double the net for. */
+const dropSources = new Set(["loud", "loud map"]);
+
+/** Whether a kind's items are `L`s, or hold them: what an item's drop
+ * panics of. */
+const holdsL = (kind: string) => /\bL\b/.test(kind);
 
 /** Who calls it: the case's own code, of its concrete types; generic code
  * given its source as a type parameter's value, `fn of<I: Iterator>(it:
  * I)`, which its caller makes a JS iterator of; or generic code that makes
  * it by a function it's given, `F: Fn() -> I`, whose `I` is given as it
  * is, with its dictionary (ADR 0411): a std function rust-js lowers itself
- * that's given it must step it by that dictionary (#1147). */
-export type Caller = "concrete" | "generic" | "generic made";
+ * that's given it must step it by that dictionary (#1147); or a
+ * library's generic code, of the library's own iterator and items, which
+ * its consumer compiles (ADR 0914), of the drops' sources (#2572). */
+export type Caller = "concrete" | "generic" | "generic made" | "library";
 
 export type ConsumerCase = Row & { template: Template; source: Source; arg?: Source; variant: Variant; caller: Caller };
 
@@ -634,9 +649,16 @@ export function consumerCases(): ConsumerCase[] {
         if ((template.closure || source.closure) && !source.empty && !source.one && !source.infinite) variants.push("closure");
         if (source.loud && !source.empty) variants.push("step");
         if (arg?.loud && !arg.empty) variants.push("arg step");
+        // Not of a hash table, whose items a panic drops in its order,
+        // native Rust's to choose each run (the file's note above).
+        if (dropSources.has(source.name) && !arg && !/\bHash(Map|Set)\b/.test(template.name)) {
+          if (holdsL(template.kind)) variants.push("item drop");
+          variants.push("source drop");
+        }
         // Generic code's callers, of each source as it is and as its step
         // panics: what it drops as it unwinds there too.
         const callers: Caller[] = template.kind === "none" ? ["concrete"] : template.made ? ["concrete", "generic made"] : ["concrete", "generic", "generic made"];
+        if (callers.includes("generic") && dropSources.has(source.name) && !arg) callers.push("library");
         for (const caller of callers) {
           for (const variant of caller === "concrete" ? variants : variants.filter((v) => v !== "closure")) {
             const id = [template.name, source.name, ...(arg ? [arg.name] : []), variant, ...(caller === "concrete" ? [] : [caller])].join(" | ");
@@ -668,6 +690,22 @@ static ARMED: AtomicU32 = AtomicU32::new(0);
 static CALLS: AtomicU32 = AtomicU32::new(0);
 /** The clones of a \`Loud\` made so far in the case. */
 static COPIES: AtomicU32 = AtomicU32::new(0);
+/** The drop of an \`L\` that panics, 0 for none, and the drops so far; and
+ * whether a \`Loud\`'s own drop panics. Never as a panic unwinds, which
+ * would abort, so each panics once. */
+static DROP_ARMED: AtomicU32 = AtomicU32::new(0);
+static DROPS: AtomicU32 = AtomicU32::new(0);
+static SOURCE_DROP_ARMED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/** The case's \`L\`s' \`n\`th drop panics. */
+fn arm_item_drop(n: u32) {
+    DROP_ARMED.store(n, Ordering::Relaxed);
+}
+
+/** The case's source's own drop panics, once. */
+fn arm_source_drop() {
+    SOURCE_DROP_ARMED.store(true, Ordering::Relaxed);
+}
 
 /** The case's closures' \`n\`th call panics. */
 fn arm(n: u32) {
@@ -697,6 +735,10 @@ impl Clone for L {
 impl Drop for L {
     fn drop(&mut self) {
         println!("drop {}", self.0);
+        let n = DROPS.fetch_add(1, Ordering::Relaxed) + 1;
+        if n == DROP_ARMED.load(Ordering::Relaxed) && !std::thread::panicking() {
+            panic!("item drop");
+        }
     }
 }
 
@@ -763,6 +805,9 @@ impl<I: Clone> Clone for Loud<I> {
 impl<I> Drop for Loud<I> {
     fn drop(&mut self) {
         self.say("drop");
+        if self.copy == 0 && !std::thread::panicking() && SOURCE_DROP_ARMED.swap(false, Ordering::Relaxed) {
+            panic!("source drop");
+        }
     }
 }
 
@@ -836,6 +881,9 @@ fn run(name: &str, case: fn()) {
     ARMED.store(0, Ordering::Relaxed);
     CALLS.store(0, Ordering::Relaxed);
     COPIES.store(0, Ordering::Relaxed);
+    DROP_ARMED.store(0, Ordering::Relaxed);
+    DROPS.store(0, Ordering::Relaxed);
+    SOURCE_DROP_ARMED.store(false, Ordering::Relaxed);
     match catch_unwind(case) {
         Ok(()) => println!("ended"),
         Err(payload) => println!("panicked: {}", said(&*payload)),
@@ -885,16 +933,25 @@ const itemTypes: Record<string, string> = {
 };
 
 /** A case's function, `case_<i>`, and of generic code's callers, the
- * generic function it calls, `generic_<i>`, whose body is the template's. */
+ * generic function it calls, `generic_<i>`, whose body is the template's:
+ * of a library's, in the library (`consumerLibrary`). */
 function caseFn(c: ConsumerCase, i: number): string {
+  const [own, generic] = caseParts(c, i);
+  return c.caller === "library" ? own : [own, ...(generic ? [generic] : [])].join("\n\n");
+}
+
+/** A case's own function, and its generic function, where it has one. */
+function caseParts(c: ConsumerCase, i: number): [string, string | undefined] {
   const lines: string[] = [];
   if (c.variant === "closure") lines.push("arm(2);");
+  if (c.variant === "item drop") lines.push("arm_item_drop(2);");
+  if (c.variant === "source drop") lines.push("arm_source_drop();");
   if (c.source.before) lines.push(c.source.before);
   const it = c.source.expr(c.variant === "step" ? 2 : 0);
   const arg = c.arg?.expr(c.variant === "arg step" ? 2 : 0) ?? "";
   if (c.caller === "concrete") {
     lines.push(c.template.text(it, arg));
-    return `fn case_${i}() {\n${indent(lines.join("\n"))}\n}`;
+    return [`fn case_${i}() {\n${indent(lines.join("\n"))}\n}`, undefined];
   }
   const item = itemTypes[c.template.kind];
   if (item === undefined) throw new Error(`no item type of ${c.template.kind}`);
@@ -903,15 +960,40 @@ function caseFn(c: ConsumerCase, i: number): string {
   const given = [c.caller === "generic made" ? "make: F" : "it: I", ...(c.arg ? ["arg: J"] : [])];
   const body = c.template.text(c.caller === "generic made" ? "make()" : "it", "arg");
   lines.push(`generic_${i}(${[c.caller === "generic made" ? `|| ${it}` : it, ...(c.arg ? [arg] : [])].join(", ")});`);
-  return `fn case_${i}() {\n${indent(lines.join("\n"))}\n}\n\nfn generic_${i}<${params.join(", ")}>(${given.join(", ")}) {\n${indent(body)}\n}`;
+  const visibility = c.caller === "library" ? "pub " : "";
+  return [`fn case_${i}() {\n${indent(lines.join("\n"))}\n}`, `${visibility}fn generic_${i}<${params.join(", ")}>(${given.join(", ")}) {\n${indent(body)}\n}`];
 }
+
+/** The prelude as a library has it, each item its consumer names public. */
+const libraryPrelude = prelude
+  .replace(/^(fn|struct|static) /gm, "pub $1 ")
+  .replace(/^pub struct (\w+)(<[^>]*>)?\((\w+)\);/gm, "pub struct $1$2(pub $3);");
+
+/** Of a batch of a library's cases, the library: the prelude and each
+ * case's generic function; `undefined` of a batch of the program's own. */
+export function consumerLibrary(cases: ConsumerCase[]): string | undefined {
+  if (cases[0]?.caller !== "library") return undefined;
+  return [libraryPrelude, ...cases.map((c, i) => caseParts(c, i)[1]!)].join("\n\n") + "\n";
+}
+
+/** Whether a case's generic code is a library's: its batches are apart. */
+export const ofLibrary = (c: ConsumerCase) => c.caller === "library";
 
 /** A program of `cases`, which runs each in turn. */
 export function consumerProgram(cases: ConsumerCase[]): string {
   const fns = cases.map((c, i) => caseFn(c, i));
   const main = `fn main() {\n${cases.map((c, i) => `    run(${JSON.stringify(c.id)}, case_${i});`).join("\n")}\n}`;
-  return [prelude, ...fns, main].join("\n\n") + "\n";
+  // A library's cases: the library's items, its prelude's, by their names.
+  const head = cases[0]?.caller === "library" ? libraryUses : prelude;
+  return [head, ...fns, main].join("\n\n") + "\n";
 }
+
+/** What a program of a library's cases names: the library's items, and
+ * what the prelude uses of std. */
+const libraryUses = `// Generated by test/consumer-net.ts: a library's generic code's cases.
+use std::fmt;
+use std::panic::{catch_unwind, AssertUnwindSafe};
+use ${libraryCrate}::*;`;
 
 /** What a run without `ITERATOR_MATRIX` covers, of a case (`slice()` in
  * test/iterator-matrix.ts): its template in its variant, and its source's

@@ -4,7 +4,7 @@
 // its own module, split from test/iterator-matrix.ts at its cap.
 
 import { asyncCases, asyncProgram, asyncStrata, type AsyncCase } from "./async-points";
-import { consumerCases, consumerProgram, consumerStrata, type ConsumerCase } from "./consumer-net";
+import { consumerCases, consumerLibrary, consumerProgram, consumerStrata, ofLibrary, type ConsumerCase } from "./consumer-net";
 import { copyCases, copyProgram, copyStrata, type CopyCase } from "./copy-matrix";
 import { formatCases, formatProgram, formatStrata, type FormatCase } from "./format-grid";
 import {
@@ -108,7 +108,10 @@ const asyncTable: TableOf<AsyncCase> = {
 const consumersTable: TableOf<ConsumerCase> = {
   cases: consumerCases,
   program: consumerProgram,
-  batches: (all) => batches(all),
+  library: consumerLibrary,
+  // A library's generic code's cases in programs of their own, each with
+  // its library (#2572).
+  batches: (all) => [...batches(all.filter((c) => !ofLibrary(c))), ...batches(all.filter(ofLibrary))],
   slice: (all) => slice(all, consumerStrata),
 };
 

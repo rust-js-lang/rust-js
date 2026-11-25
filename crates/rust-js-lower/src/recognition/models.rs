@@ -352,6 +352,7 @@ pub const MODELS: &[Entry] = &[
     entry("ordTreeSet", Model(Unproven(Why::Collections), &[]), ""),
     entry("out", Model(Unproven(Why::Format), &[]), ""),
     entry("panic", Glue, ""),
+    entry("panicking", Glue, ""),
     entry("parseBig", Model(Unproven(Why::Numbers), &[Row("fromStrRadix")]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("parseInt", Model(Unproven(Why::Numbers), &[Row("fromStrRadix")]), ""),
     entry("partialEq", Glue, ""),
@@ -502,6 +503,8 @@ pub const MODELS: &[Entry] = &[
     entry("withCapacity", Model(Unproven(Why::Collections), &[]), ""),
     entry("writeCloneOfSlice", Model(Unproven(Why::Outside), &[Row("writeCloneOfSlice")]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("writeCopyOfSlice", Form(&[Row("writeCopyOfSlice")]), "the lowering's, std_types/slice.rs"),
+    entry("writeDebugTuple", Model(Unproven(Why::Format), &[Path("core::fmt::Formatter::debug_tuple")]), ""),
+    entry("writeInteger", Model(Unproven(Why::Format), &[Path("core::fmt::Formatter::pad_integral")]), "an integer's `Display` or `Debug`"),
     entry("zipEnds", Model(Pitted, &[Path("core::iter::Zip")]), ""),
 ];
 
