@@ -17,10 +17,13 @@ test("each helper the catalog names is one the runtime declares", () => {
   const declared = new Set([...runtime.matchAll(/^(?:export )?(?:async )?(?:function\*? |class |const |let )(\$[A-Za-z0-9_$]*)/gm)].map((m) => m[1]));
   expect([...pittedHelpers(), ...Object.keys(sharedHelpers())].filter((helper) => !declared.has(helper))).toEqual([]);
 
-  // A form the lowering writes is named by the row of `$stdSites` it reads.
+  // A form the lowering writes that reads a row of `$stdSites` is named by
+  // it; one that stands for a std item alone, by its form, `toVec`.
   const sites = readFileSync(join(import.meta.dir, "..", "crates", "rust-js-program", "src", "runtime", "std_sites.js"), "utf8");
   const rows = new Set(Object.keys(JSON.parse(sites.slice(sites.indexOf("{"), sites.lastIndexOf("}") + 1))));
-  const forms = catalog().models.filter((entry) => entry.kind === "form").map((entry) => entry.helper);
+  const forms = catalog()
+    .models.filter((entry) => entry.kind === "form" && entry.standsFor.some((stands) => stands.startsWith("$stdSites.")))
+    .map((entry) => entry.helper);
   expect(forms.length).toBeGreaterThan(0);
   expect(forms.filter((form) => !rows.has(form))).toEqual([]);
 });
@@ -39,7 +42,7 @@ test("a whole run that imports no model outside the tables keeps it", () => {
 test("how many models stand for no std item yet", () => {
   const unbound = unboundModels();
   console.log(`${unbound.length} models stand for no std item yet`);
-  expect(unbound.length).toBeLessThanOrEqual(207);
+  expect(unbound.length).toBeLessThanOrEqual(204);
 });
 
 // Of the runtime's exports, those models.rs doesn't say are glue or a

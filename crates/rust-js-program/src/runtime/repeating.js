@@ -4,10 +4,13 @@
 // throws, a panic, as Rust drops a `Take` that holds it as it unwinds,
 // where JS's own `take` would be done with it (#708). Its hint std's,
 // `(usize::MAX, None)` (#246). Its lifecycle `$closing`'s, `$close`'s,
-// never taken (#870).
+// never taken (#870). Each clone given where std's step of it clones its
+// item, `clone(value, at)`, its row of `$stdSites.clonedAt`, so a
+// `RefCell`'s, which tracks its caller, raises at std's line of that step
+// (#2577): the one form of a clone a step makes.
 function $repeating(value, clone = (value) => value, drop) {
   const it = new $Steps(
-    () => ({ done: false, value: clone(value) }),
+    () => ({ done: false, value: clone(value, $stdSites.clonedAt["core::iter::Repeat::next"][0]) }),
     () => $close(it, () => drop?.(value)),
   );
   // Its value, std's `Repeat`'s one field, `element`, which std's compiled
@@ -16,7 +19,7 @@ function $repeating(value, clone = (value) => value, drop) {
   it.element = value;
   // Its clone, std's derived `Clone`, of a clone of its value, as a closure
   // cloned apart carries its own, `$clone`'s (repeat.rs:71, #1139).
-  $cloning(it, () => $repeating(clone(value), clone, drop));
+  $cloning(it, () => $repeating(clone(value, $stdSites.clonedAt["core::iter::sources::repeat::Repeat"][0]), clone, drop));
   it.sizeHint = () => [2 ** 32 - 1, undefined];
   // Std's `Repeat::advance_by`, which makes no item, so clones none: what
   // a `take(n)`'s `count` asks, and an `nth`, a clone of the next alone,
@@ -31,7 +34,10 @@ function $repeating(value, clone = (value) => value, drop) {
       },
       () => it.return(),
     );
-  $forward(it, undefined, { advanceBy: () => 0, count: infinite, last: infinite });
+  // Its `nth`, a clone of its value at `nth`'s own line, which advances
+  // past none (repeat.rs:101).
+  const nth = () => ({ done: false, value: clone(value, $stdSites.clonedAt["core::iter::Repeat::nth"][0]) });
+  $forward(it, undefined, { advanceBy: () => 0, nth, count: infinite, last: infinite });
   // Std's `Take<Repeat<T>>`, of `n` items each alike: its back steps its
   // front steps, its length what it has left (take.rs:335, #1139).
   const take = it.take;
@@ -59,7 +65,8 @@ function $backAsFront(it, len) {
 // last, which is `value` itself, as std's moves it; of a count of none,
 // `value` dropped at once, and else when it's closed before its last
 // (ADR 0513). A `$Steps`, as `$repeating` is (#708). Its hint exact, what
-// it has left, as std's (#246).
+// it has left, as std's (#246). Each clone given its step's line, as
+// `$repeating`'s (#2577).
 function $repeatingN(value, count, clone = (value) => value, drop) {
   let left = count;
   if (left === 0) drop?.(value);
@@ -67,7 +74,7 @@ function $repeatingN(value, count, clone = (value) => value, drop) {
     () => {
       if (left === 0) return { done: true, value: undefined };
       left--;
-      return { done: false, value: left === 0 ? value : clone(value) };
+      return { done: false, value: left === 0 ? value : clone(value, $stdSites.clonedAt["core::iter::RepeatN::next"][0]) };
     },
     () => {
       if (left > 0) {
@@ -112,6 +119,10 @@ function $repeatingN(value, count, clone = (value) => value, drop) {
   // Its clone, std's derived `Clone` of its count and its `Option` of its
   // value: a clone of its value where it has one left, none where it's
   // done, which drops nothing (repeat_n.rs:68, #1579).
-  $cloning(it, () => (left > 0 ? $repeatingN(clone(value), left, clone, drop) : $repeatingN(undefined, 0)));
+  $cloning(it, () =>
+    left > 0
+      ? $repeatingN(clone(value, $stdSites.clonedAt["core::iter::sources::repeat_n::RepeatN"][0]), left, clone, drop)
+      : $repeatingN(undefined, 0),
+  );
   return $owns(it, "nth", "last", "count");
 }

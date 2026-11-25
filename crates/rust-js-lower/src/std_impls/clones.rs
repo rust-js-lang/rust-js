@@ -140,6 +140,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// could tell a clone from it, and otherwise a copy of the parts that
     /// could, calling each hand-written `clone` on the way.
     pub fn clone_value(&mut self, place: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        // Std's clone of what a call of its is given, at its line, a
+        // `resize`'s of its value (`call_clone_site`, #2577).
+        if let Some(at) = self.call_clone_site(ty) {
+            return Expr::raised_at(at, || self.clone_value(place, ty, span, out));
+        }
         // What an `impl Trait` is arrives revealed, as MIR's types are
         // after analysis, a returned struct's or closure's, held or not
         // (`impl_trait_clone_held.rs`). A closure is its JS function, which shares what it captured: a
@@ -472,67 +477,72 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ))
     }
 
-    /// Where a `cloned()`'s item clone is placed, of the steps its value is
-    /// asked (`made_asked_steps`): the row of `clonedAt` each asked step of
-    /// std's `Cloned` reaches the item's clone at, where they're known and
-    /// one line, a `count()`'s `FnMut::call_mut` shim's; none where no asked
-    /// step clones one. Where they differ, a `next()` then a `count()`, or
-    /// aren't known, a `cloned()` collected, returned, stored or handed to
-    /// generic code, every step, whose rows are three lines, `Unknown`:
-    /// the call's line, as before, until std's
-    /// `Cloned` and `collect` are compiled (#1458), `located-otherwise`
-    /// against #2509 (Tu's decision). The one answer of it, which #1458's
-    /// form reads (#2509).
-    pub(crate) fn cloned_items(&self, steps: crate::recognition::Steps) -> ClonedItems {
-        let mut row: Option<(String, &'static str)> = None;
-        for step in steps.names() {
-            let key = format!("core::iter::adapters::cloned::Cloned::{step}");
-            let Some(site) = StdRow::ClonedAt.text(&key, 0) else {
-                continue;
-            };
-            match &row {
-                None => row = Some((key, site)),
-                Some((_, kept)) if *kept == site => {}
-                Some(_) => return ClonedItems::Unknown,
+    /// Where the std item the call the lowering makes is of clones
+    /// `item`, the site of its row of `clonedAt`, `$stdSites.clonedAt[row][0]`,
+    /// where `item` is a `RefCell` or may be one, whose clone tracks its
+    /// caller: of a function or a method the catalog binds, its path's
+    /// row (`models::path_of`), `Vec::resize`'s; of a call that makes an
+    /// iterator, `repeat_n`'s `RepeatN` or a `cloned()`'s `Cloned`, its
+    /// struct's path's row of each step asked of what it makes
+    /// (`made_asked_steps`) where they're one line. Where they're several,
+    /// or what's asked isn't known, a `cloned()` collected, returned, stored
+    /// or handed to generic code, every step, whose rows are three lines:
+    /// none, the call's line, as before, until std's `Cloned` and `collect`
+    /// are compiled (#1458), `located-otherwise` against #2509 (Tu's
+    /// decision). Asked once of a call, by the first clone made under it,
+    /// std's of what it's given; a clone that clone makes places its own
+    /// (`clone_site`). None of one `bun run std` wrote no row of (#2509,
+    /// #2577).
+    pub(crate) fn call_clone_site(&self, item: Ty<'tcx>) -> Option<Expr> {
+        let callee = self.calling.take()?;
+        if !self.part_may_be_cell(item) {
+            return None;
+        }
+        let row = match crate::recognition::models::path_of(self.tcx, callee) {
+            Some(path) if StdRow::ClonedAt.written(path, 0) => path.to_string(),
+            _ => {
+                let sig = self.tcx.fn_sig(callee).instantiate_identity().skip_normalization();
+                let made = (self.tcx.instantiate_bound_regions_with_erased(sig).output()).ty_adt_def()?;
+                let path = crate::recognition::models::path_of(self.tcx, made.did())?;
+                let mut row: Option<(String, &'static str)> = None;
+                for step in self.made_asked_steps().names() {
+                    let key = format!("{path}::{step}");
+                    let Some(site) = StdRow::ClonedAt.text(&key, 0) else {
+                        continue;
+                    };
+                    match &row {
+                        None => row = Some((key, site)),
+                        Some((_, kept)) if *kept == site => {}
+                        Some(_) => return None,
+                    }
+                }
+                row?.0
             }
-        }
-        match row {
-            Some((key, _)) => ClonedItems::At(key),
-            None => ClonedItems::Never,
-        }
+        };
+        StdRow::ClonedAt
+            .written(&row, 0)
+            .then(|| StdRow::ClonedAt.site_of(&row, 0))
     }
 
-    /// `clone_value` of `ty`, whose `item` std's code clones at `row`'s site
-    /// of `clonedAt` by `T::clone` through a `Fn*` shim: a `cloned()`'s
-    /// step's, `ty` the item; an `Option<&T>`'s `cloned`'s, `ty` the
-    /// `Option<T>`, `map(T::clone)`, never `Option`'s own clone's line; or
-    /// `extend_from_slice`'s. Where `item` is a `RefCell`, or may be one,
-    /// its clone, which tracks its caller, raises there; a nearer clone, a
-    /// `Vec`'s or a derive's, places its own (`clone_site`, #2509).
-    pub(crate) fn clone_value_at(
+    /// `clone_value` of `ty`, whose `item` the std item the call being made
+    /// is of clones (`call_clone_site`): an `Option<&T>`'s `cloned`'s, `ty`
+    /// the `Option<T>`, `map(T::clone)`, each part at that line, never
+    /// `Option`'s own clone's (#2509). Of `ty` the item, `clone_value`
+    /// reads it itself.
+    pub(crate) fn clone_value_given(
         &mut self,
         place: Expr,
         (ty, item): (Ty<'tcx>, Ty<'tcx>),
-        row: &str,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let Some(at) = self.clone_row_site(item, row) else {
+        let Some(at) = self.call_clone_site(item) else {
             return self.clone_value(place, ty, span, out);
         };
         Expr::raised_at(at, || match ty == item {
             true => self.clone_value(place, ty, span, out),
             false => self.clone_parts_of(place, ty, span, out),
         })
-    }
-
-    /// The site of `row`, a method's of `clonedAt`, where std's code of it
-    /// clones `item` by `T::clone` and `item` is a `RefCell` or may be one,
-    /// whose clone tracks its caller: `$stdSites.clonedAt[row][0]`. None
-    /// where it isn't, whose clone is made as it is, an `Option`'s by its
-    /// own form, or `bun run std` wrote none (#2509).
-    pub(crate) fn clone_row_site(&self, item: Ty<'tcx>, row: &str) -> Option<Expr> {
-        (self.part_may_be_cell(item) && StdRow::ClonedAt.written(row, 0)).then(|| StdRow::ClonedAt.site_of(row, 0))
     }
 
     /// The position of `ty`'s, a std enum's, `variant`'s part, the type
@@ -1041,6 +1051,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call(Expr::member(dictionary, "clone"), given)
     }
 
+    /// A clone a std iterator's step makes, `$repeating`'s, given where
+    /// that step clones it, `(value, at) => ..`, the site the runtime reads
+    /// of its step's row of `clonedAt` (repeating.js): of an item that is
+    /// a `RefCell` or may be one, whose clone tracks its caller, its clone
+    /// raised there; of another, `clone_fn`'s, which needs no site. The one
+    /// form of a clone a step makes (#2577).
+    pub fn stepped_clone_fn(&mut self, base: &str, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        // The call's own row is the steps', which the runtime gives.
+        self.calling.take();
+        if !self.part_may_be_cell(ty) {
+            return self.clone_fn(base, ty, span);
+        }
+        let name = self.unspelled(base);
+        let at = self.unspelled("at");
+        let mut body = Vec::new();
+        let value = Expr::raised_at(Expr::var(&at), || {
+            self.clone_value(Expr::var(&name), ty, span, &mut body)
+        });
+        body.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
+        // Its site where its clone reads it: a generic `T`'s dictionary
+        // clone that takes no location reads none, `(value) => ..`.
+        let mut reads = false;
+        js::visit_stmt_names(&body, &mut |read| reads |= *read == at);
+        let params = match reads {
+            true => vec![name.clone().into(), at.clone().into()],
+            false => vec![name.clone().into()],
+        };
+        Ok(Expr::arrow(params, body))
+    }
+
     pub fn clone_fn(&mut self, base: &str, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         // Its parameter unspelled, spelled by preparation apart from the
         // body's own names, so it's `value` where it can be, `const value$1 =
@@ -1060,14 +1100,4 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 pub(crate) fn trivially_cloned<'tcx>(tcx: ty::TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
     (tcx.lang_items().get(LangItem::TrivialClone))
         .is_some_and(|trivial| crate::recognition::trait_holds_in(tcx, typing_env, ty, trivial) == Some(true))
-}
-
-/// Where a `cloned()`'s item clone is placed (`cloned_items`, #2509).
-pub(crate) enum ClonedItems {
-    /// At one row of `clonedAt`, by its key, every asked step's.
-    At(String),
-    /// Nowhere: no asked step clones an item.
-    Never,
-    /// Not known, or several lines: the call's line, as before (#2509).
-    Unknown,
 }

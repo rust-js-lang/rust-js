@@ -906,8 +906,8 @@ export const mutations: Mutation[] = [
     name: "extend-from-slice-row-unread",
     breaks: "a `Vec`'s `extend_from_slice` of a `RefCell` mutably borrowed names the caller's line, not its `fold`'s `FnMut::call_mut` shim's (#2509)",
     file: "crates/rust-js-lower/src/combinators.rs",
-    find: "            return match cloned.and_then(|item| self.clone_row_site(item, \"alloc::vec::Vec::extend_from_slice\")) {\n",
-    replace: "            return match cloned.and_then(|item| self.clone_row_site(item, \"alloc::vec::Vec::extend_from_slice\")).filter(|_| false) {\n",
+    find: "            return match cloned.and_then(|item| self.call_clone_site(item)) {\n",
+    replace: "            return match cloned.and_then(|item| self.call_clone_site(item)).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_from_slice_of_a_borrowed_refcell_names_std_line\\.rs$"],
   },
 ];

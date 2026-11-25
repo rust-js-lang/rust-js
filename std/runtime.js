@@ -15504,9 +15504,15 @@ export const $stdSites = {
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
       null
     ],
+    "alloc::collections::vec_deque::VecDeque::resize": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
     "alloc::collections::vec_deque::into_iter::IntoIter": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
       null
+    ],
+    "alloc::slice::<[T]>::to_vec": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38"
     ],
     "alloc::vec::Vec": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
@@ -15514,6 +15520,15 @@ export const $stdSites = {
     ],
     "alloc::vec::Vec::extend_from_slice": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
+    ],
+    "alloc::vec::Vec::extend_from_within": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:3766:45"
+    ],
+    "alloc::vec::Vec::resize": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:3687:39"
+    ],
+    "alloc::vec::from_elem": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:3687:39"
     ],
     "alloc::vec::into_iter::IntoIter": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
@@ -15544,6 +15559,150 @@ export const $stdSites = {
     ],
     "core::io::cursor::Cursor": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/io/cursor.rs:288:36"
+    ],
+    "core::iter::Repeat::advance_back_by": [
+      null
+    ],
+    "core::iter::Repeat::advance_by": [
+      null
+    ],
+    "core::iter::Repeat::all": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::any": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::count": [
+      null
+    ],
+    "core::iter::Repeat::find": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::find_map": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::fold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::is_empty": [
+      null
+    ],
+    "core::iter::Repeat::last": [
+      null
+    ],
+    "core::iter::Repeat::len": [
+      null
+    ],
+    "core::iter::Repeat::max_by": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::min_by": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::next": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::next_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:129:27"
+    ],
+    "core::iter::Repeat::nth": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:101:27"
+    ],
+    "core::iter::Repeat::nth_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:142:27"
+    ],
+    "core::iter::Repeat::position": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::rfind": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:129:27"
+    ],
+    "core::iter::Repeat::rfold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:129:27"
+    ],
+    "core::iter::Repeat::rposition": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:129:27"
+    ],
+    "core::iter::Repeat::size_hint": [
+      null
+    ],
+    "core::iter::Repeat::try_fold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::try_rfold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:129:27"
+    ],
+    "core::iter::RepeatN::advance_back_by": [
+      null
+    ],
+    "core::iter::RepeatN::advance_by": [
+      null
+    ],
+    "core::iter::RepeatN::all": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::any": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::count": [
+      null
+    ],
+    "core::iter::RepeatN::find": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::find_map": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::fold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::is_empty": [
+      null
+    ],
+    "core::iter::RepeatN::last": [
+      null
+    ],
+    "core::iter::RepeatN::len": [
+      null
+    ],
+    "core::iter::RepeatN::max_by": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::min_by": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::next": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::next_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::nth": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::nth_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::position": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::rfind": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::rfold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::rposition": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::size_hint": [
+      null
+    ],
+    "core::iter::RepeatN::try_fold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::try_rfold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
     ],
     "core::iter::adapters::chain::Chain": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31",
@@ -15721,6 +15880,9 @@ export const $stdSites = {
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31",
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/successors.rs:40:10"
     ],
+    "core::mem::<[MaybeUninit<T>]>::write_clone_of_slice": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1242:41"
+    ],
     "core::mem::manually_drop::ManuallyDrop": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/manually_drop.rs:153:16"
     ],
@@ -15771,7 +15933,7 @@ export const $stdSites = {
     "core::option::Option": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
     ],
-    "core::option::Option<&_>::cloned": [
+    "core::option::Option::cloned": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
     ],
     "core::option::OptionFlatten": [
@@ -15807,6 +15969,9 @@ export const $stdSites = {
     "core::result::Result": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1898:27",
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1899:29"
+    ],
+    "core::slice::<[T]>::fill": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/specialize.rs:12:20"
     ],
     "core::slice::iter::ChunkBy": [
       null,
@@ -23818,10 +23983,13 @@ export function $lazySkipWhile(items, skip, drop) {
 // throws, a panic, as Rust drops a `Take` that holds it as it unwinds,
 // where JS's own `take` would be done with it (#708). Its hint std's,
 // `(usize::MAX, None)` (#246). Its lifecycle `$closing`'s, `$close`'s,
-// never taken (#870).
+// never taken (#870). Each clone given where std's step of it clones its
+// item, `clone(value, at)`, its row of `$stdSites.clonedAt`, so a
+// `RefCell`'s, which tracks its caller, raises at std's line of that step
+// (#2577): the one form of a clone a step makes.
 export function $repeating(value, clone = (value) => value, drop) {
   const it = new $Steps(
-    () => ({ done: false, value: clone(value) }),
+    () => ({ done: false, value: clone(value, $stdSites.clonedAt["core::iter::Repeat::next"][0]) }),
     () => $close(it, () => drop?.(value)),
   );
   // Its value, std's `Repeat`'s one field, `element`, which std's compiled
@@ -23830,7 +23998,7 @@ export function $repeating(value, clone = (value) => value, drop) {
   it.element = value;
   // Its clone, std's derived `Clone`, of a clone of its value, as a closure
   // cloned apart carries its own, `$clone`'s (repeat.rs:71, #1139).
-  $cloning(it, () => $repeating(clone(value), clone, drop));
+  $cloning(it, () => $repeating(clone(value, $stdSites.clonedAt["core::iter::sources::repeat::Repeat"][0]), clone, drop));
   it.sizeHint = () => [2 ** 32 - 1, undefined];
   // Std's `Repeat::advance_by`, which makes no item, so clones none: what
   // a `take(n)`'s `count` asks, and an `nth`, a clone of the next alone,
@@ -23845,7 +24013,10 @@ export function $repeating(value, clone = (value) => value, drop) {
       },
       () => it.return(),
     );
-  $forward(it, undefined, { advanceBy: () => 0, count: infinite, last: infinite });
+  // Its `nth`, a clone of its value at `nth`'s own line, which advances
+  // past none (repeat.rs:101).
+  const nth = () => ({ done: false, value: clone(value, $stdSites.clonedAt["core::iter::Repeat::nth"][0]) });
+  $forward(it, undefined, { advanceBy: () => 0, nth, count: infinite, last: infinite });
   // Std's `Take<Repeat<T>>`, of `n` items each alike: its back steps its
   // front steps, its length what it has left (take.rs:335, #1139).
   const take = it.take;
@@ -23873,7 +24044,8 @@ export function $backAsFront(it, len) {
 // last, which is `value` itself, as std's moves it; of a count of none,
 // `value` dropped at once, and else when it's closed before its last
 // (ADR 0513). A `$Steps`, as `$repeating` is (#708). Its hint exact, what
-// it has left, as std's (#246).
+// it has left, as std's (#246). Each clone given its step's line, as
+// `$repeating`'s (#2577).
 export function $repeatingN(value, count, clone = (value) => value, drop) {
   let left = count;
   if (left === 0) drop?.(value);
@@ -23881,7 +24053,7 @@ export function $repeatingN(value, count, clone = (value) => value, drop) {
     () => {
       if (left === 0) return { done: true, value: undefined };
       left--;
-      return { done: false, value: left === 0 ? value : clone(value) };
+      return { done: false, value: left === 0 ? value : clone(value, $stdSites.clonedAt["core::iter::RepeatN::next"][0]) };
     },
     () => {
       if (left > 0) {
@@ -23926,7 +24098,11 @@ export function $repeatingN(value, count, clone = (value) => value, drop) {
   // Its clone, std's derived `Clone` of its count and its `Option` of its
   // value: a clone of its value where it has one left, none where it's
   // done, which drops nothing (repeat_n.rs:68, #1579).
-  $cloning(it, () => (left > 0 ? $repeatingN(clone(value), left, clone, drop) : $repeatingN(undefined, 0)));
+  $cloning(it, () =>
+    left > 0
+      ? $repeatingN(clone(value, $stdSites.clonedAt["core::iter::sources::repeat_n::RepeatN"][0]), left, clone, drop)
+      : $repeatingN(undefined, 0),
+  );
   return $owns(it, "nth", "last", "count");
 }
 

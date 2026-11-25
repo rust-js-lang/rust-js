@@ -1984,7 +1984,10 @@ Differences:
   container's clone of a `RefCell`, where its clone clones it: std's line of
   std's, `option.rs:2280:31` of `Option`'s, a crate's derive's of its own
   (#2471); of an item std's method clones by `T::clone`, std's line of
-  it, an `Option<&T>`'s `cloned` and `extend_from_slice`'s, and a
+  it, an `Option<&T>`'s `cloned`, `extend_from_slice`'s, `resize`'s,
+  `vec![x; n]`'s, a slice's `fill`'s and `to_vec`'s,
+  `extend_from_within`'s, `write_clone_of_slice`'s, and each step's of a
+  `repeat` or a `repeat_n`, a clone of either its derive's (#2577); and a
   `cloned()`'s where every step its value is asked clones at one line,
   `function.rs:166:5` of a `count()` or a `fold`, `250:5` of a `next()`;
   of a `cloned()` collected, returned, stored, handed to generic code or

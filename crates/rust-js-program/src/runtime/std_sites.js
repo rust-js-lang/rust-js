@@ -309,9 +309,15 @@ const $stdSites = {
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
       null
     ],
+    "alloc::collections::vec_deque::VecDeque::resize": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
     "alloc::collections::vec_deque::into_iter::IntoIter": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
       null
+    ],
+    "alloc::slice::<[T]>::to_vec": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38"
     ],
     "alloc::vec::Vec": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
@@ -319,6 +325,15 @@ const $stdSites = {
     ],
     "alloc::vec::Vec::extend_from_slice": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
+    ],
+    "alloc::vec::Vec::extend_from_within": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:3766:45"
+    ],
+    "alloc::vec::Vec::resize": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:3687:39"
+    ],
+    "alloc::vec::from_elem": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:3687:39"
     ],
     "alloc::vec::into_iter::IntoIter": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
@@ -349,6 +364,150 @@ const $stdSites = {
     ],
     "core::io::cursor::Cursor": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/io/cursor.rs:288:36"
+    ],
+    "core::iter::Repeat::advance_back_by": [
+      null
+    ],
+    "core::iter::Repeat::advance_by": [
+      null
+    ],
+    "core::iter::Repeat::all": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::any": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::count": [
+      null
+    ],
+    "core::iter::Repeat::find": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::find_map": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::fold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::is_empty": [
+      null
+    ],
+    "core::iter::Repeat::last": [
+      null
+    ],
+    "core::iter::Repeat::len": [
+      null
+    ],
+    "core::iter::Repeat::max_by": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::min_by": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::next": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::next_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:129:27"
+    ],
+    "core::iter::Repeat::nth": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:101:27"
+    ],
+    "core::iter::Repeat::nth_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:142:27"
+    ],
+    "core::iter::Repeat::position": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::rfind": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:129:27"
+    ],
+    "core::iter::Repeat::rfold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:129:27"
+    ],
+    "core::iter::Repeat::rposition": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:129:27"
+    ],
+    "core::iter::Repeat::size_hint": [
+      null
+    ],
+    "core::iter::Repeat::try_fold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "core::iter::Repeat::try_rfold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:129:27"
+    ],
+    "core::iter::RepeatN::advance_back_by": [
+      null
+    ],
+    "core::iter::RepeatN::advance_by": [
+      null
+    ],
+    "core::iter::RepeatN::all": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::any": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::count": [
+      null
+    ],
+    "core::iter::RepeatN::find": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::find_map": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::fold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::is_empty": [
+      null
+    ],
+    "core::iter::RepeatN::last": [
+      null
+    ],
+    "core::iter::RepeatN::len": [
+      null
+    ],
+    "core::iter::RepeatN::max_by": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::min_by": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::next": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::next_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::nth": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::nth_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::position": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::rfind": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::rfold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::rposition": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::size_hint": [
+      null
+    ],
+    "core::iter::RepeatN::try_fold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "core::iter::RepeatN::try_rfold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
     ],
     "core::iter::adapters::chain::Chain": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31",
@@ -526,6 +685,9 @@ const $stdSites = {
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31",
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/successors.rs:40:10"
     ],
+    "core::mem::<[MaybeUninit<T>]>::write_clone_of_slice": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1242:41"
+    ],
     "core::mem::manually_drop::ManuallyDrop": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/manually_drop.rs:153:16"
     ],
@@ -576,7 +738,7 @@ const $stdSites = {
     "core::option::Option": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
     ],
-    "core::option::Option<&_>::cloned": [
+    "core::option::Option::cloned": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
     ],
     "core::option::OptionFlatten": [
@@ -612,6 +774,9 @@ const $stdSites = {
     "core::result::Result": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1898:27",
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1899:29"
+    ],
+    "core::slice::<[T]>::fill": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/specialize.rs:12:20"
     ],
     "core::slice::iter::ChunkBy": [
       null,

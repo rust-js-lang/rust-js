@@ -824,4 +824,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^dyn_shapes_shared.rs$"],
     snapshots: true,
   },
+  {
+    name: "mir-call-callee-untold",
+    breaks: "a call isn't told the std item it's of, so a clone made of what `Vec::resize` is given names the caller's line, not std's (#2577)",
+    file: "crates/rust-js-mir/src/dispatch.rs",
+    find: "        let outer = self.calling.replace(callee);\n",
+    replace: "        let outer = self.calling.replace(None);\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_resize_of_a_borrowed_refcell_names_std_line\\.rs$"],
+  },
 ];

@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2577, ADR 0427 amended): 19 corpus cases, each std item that clones what it's given of a borrowed `RefCell` naming std's line against native (`vec_resize_`, `vec_from_elem_`, `slice_fill_`, `slice_to_vec_`, `vec_extend_from_within_`, `vec_deque_resize_`, `write_clone_of_slice_`, `option_mut_cloned_`, and `repeat`'s and `repeat_n`'s steps and clones), and one of a nearer clone placing its own; test/std-sites.test.ts gains a test, each row of `clonedAt` the runtime reads by its key is one the walk writes; test/twin-net.test.ts's measure falls to 204; eleven mutations, one gone with the code it mutated, nine moved with `mir/dispatch/equalities.rs`.
+
 Changed on 2026-11-25 (#2581, ADR 0240 amended): test/crates.test.ts gains a test, a `pub use` of the crate's own static re-exported by its module's JS.
 
 Changed on 2026-11-25 (Campaign 5 step 2c-1, ADR 1202 amended): test/architecture-models.test.ts gains a third test, the compiler reads a row of `$stdSites` through its handle alone; two unit tests, raised.rs' `StdRow`'s rows are those written both ways and each its own, models.rs' each row is the catalog's; test/twin-net.test.ts's ratchet of exports falls to 1,179; seven mutations, two of them new, the stale finds of eleven retyped.

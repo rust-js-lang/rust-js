@@ -125,12 +125,4 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(adapters_marked_knowing_their_backs_by_their_makers|generic_chains_cloned_by_their_instances|generic_map_beside_a_cloned_map|generic_map_of_pub_code_beside_a_cloned_map|held_beneath_adapters_from_its_back|cloned_of_a_chain_stepped_from_its_back|chain_stepped_from_its_back_elsewhere|chain_under_a_held_map_from_its_back|chain_of_adapters_stepped_from_its_back|chain_sides_own_steps|rev_chain|array_cloned_stepped_from_its_back|cloned_items_from_both_ends|copied_given_to_generic_backs|copied_skip_take_and_filter_stepped_from_back|adapters_given_to_generic_backs|map_ends_size_hint|back_folds_of_sources_made_knowing_their_back|consumer_drops_what_is_left|adapters_own_work_that_panics).rs$"],
     snapshots: true,
   },
-  {
-    name: "cloned-items-at-unplaced",
-    breaks: "a `cloned()`'s item clone isn't placed at the row its asked steps share: `count()` names the caller's line, not `function.rs:166:5` (#2509)",
-    file: "crates/rust-js-lower/src/iterators/mir_steps/copies.rs",
-    find: "                crate::std_impls::ClonedItems::At(row) => {\n",
-    replace: "                crate::std_impls::ClonedItems::At(row) if false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_count_of_a_borrowed_refcell_names_std_line\\.rs$"],
-  },
 ];

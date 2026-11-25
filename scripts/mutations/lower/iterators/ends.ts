@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`repeat(vec![0])` gives the one `Vec` each time, where Rust clones it",
     file: "crates/rust-js-lower/src/iterators/ends.rs",
-    find: '                let clone = match self.needs_clone(item) {\n                    true => Some(self.clone_fn("value", item, span)?),\n',
+    find: '                let clone = match self.needs_clone(item) {\n                    true => Some(self.stepped_clone_fn("value", item, span)?),\n',
     replace:
       "                let clone = match self.needs_clone(item) {\n                    true => None,\n",
     tests: ["test/corpus.test.ts", "-t", "iterator_sources"],

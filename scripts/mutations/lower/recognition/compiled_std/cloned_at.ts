@@ -34,4 +34,20 @@ export const mutations: Mutation[] = [
     replace: "            &[\"iter\", \"traits\", \"double_ended\", \"NoSuchIterator\"],\n",
     tests: ["test/std-sites.test.ts"],
   },
+  {
+    name: "cloned-models-clone-nothing",
+    breaks: "no std item the catalog binds is seen to clone what it's given, so `Vec::resize`, `fill` and the rest have no row of `clonedAt` and a borrowed `RefCell`'s clone names the caller's line (#2577)",
+    file: "crates/rust-js-lower/src/recognition/compiled_std/cloned_at.rs",
+    find: "        .any(|tr| Some(tr.def_id()) == clone && type_parameter_of(tr.self_ty()).is_some())\n",
+    replace: "        .any(|_| false)\n",
+    tests: ["test/std-sites.test.ts"],
+  },
+  {
+    name: "cloned-models-allocator-unit",
+    breaks: "an impl's allocator parameter, `Vec<T, A>`'s `A`, is made `()`, not its default `Global`, so std's code of `extend_from_slice` and `VecDeque::resize` resolves to nothing and has no row (#2577)",
+    file: "crates/rust-js-lower/src/recognition/compiled_std/cloned_at.rs",
+    find: "    // The default of the self type's parameter it is, `Vec`'s `A = Global`.\n",
+    replace: "    return tcx.types.unit.into();\n",
+    tests: ["test/std-sites.test.ts"],
+  },
 ];

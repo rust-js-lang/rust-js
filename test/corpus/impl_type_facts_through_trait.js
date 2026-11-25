@@ -12,7 +12,7 @@
 // one a std method calls, `parse()`'s `FromStr::from_str`: its impl's,
 // whose facts its caller asks.
 
-import { $byteLen, $cellOf, $iter, $main, $traitImpl, $unwrapOk } from "@rust-js/std";
+import { $byteLen, $cellOf, $iter, $main, $stdSites, $traitImpl, $unwrapOk } from "@rust-js/std";
 
 function stackExtendT_extend(stack, iter, TSize) {
   for (const item of iter) {
@@ -73,7 +73,7 @@ function stackFromTSlice_from(items, TClone, TSize) {
   const sized = TSize === 0 ? 0 : items.length;
   return {
     items: items.map((item) =>
-      TClone.clone(item, "test/corpus/impl_type_facts_through_trait.rs:70:30"),
+      TClone.clone(item, $stdSites.clonedAt["alloc::slice::<[T]>::to_vec"][0]),
     ),
     sized,
   };

@@ -28,6 +28,20 @@ test("no committed JS rust-js wrote names a machine's own source", () => {
   expect(files.filter((file) => local.test(readFileSync(join(root, file), "utf8")))).toEqual([]);
 });
 
+// Each row of `clonedAt` the runtime reads by its key, a step's of
+// `$repeating`'s, is one `bun run std` writes: a key the walk names
+// otherwise, a catalog path changed, would read `undefined` and raise a
+// clone's panic nowhere (#2577).
+test("each row of clonedAt the runtime reads by its key is one std's walk writes", () => {
+  const sites = readFileSync(join(root, "crates/rust-js-program/src/runtime/std_sites.js"), "utf8");
+  const written = new Set(Object.keys(JSON.parse(sites.slice(sites.indexOf("{"), sites.lastIndexOf("}") + 1)).clonedAt));
+  const read = jsUnder("crates/rust-js-program/src/runtime")
+    .filter((file) => !file.endsWith("std_sites.js"))
+    .flatMap((file) => [...readFileSync(join(root, file), "utf8").matchAll(/\$stdSites\.clonedAt\["([^"]+)"\]/g)].map((m) => m[1]));
+  expect(read.length).toBeGreaterThan(4);
+  expect([...new Set(read)].filter((key) => !written.has(key))).toEqual([]);
+});
+
 test("std's bodies name std's files as the shipped std does, wherever its source is", () => {
   const dir = fixture("std-sites-bodies");
   const built = runSync(

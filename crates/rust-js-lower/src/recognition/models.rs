@@ -188,6 +188,7 @@ pub const MODELS: &[Entry] = &[
     entry("clone", Model(Pitted, &[]), ""),
     entry("cloneFromSlice", Model(Unproven(Why::Collections), &[]), ""),
     entry("cloneIntoVec", Model(Unproven(Why::Collections), &[]), ""),
+    entry("cloned", Form(&[Path("core::iter::adapters::cloned::Cloned")]), "the lowering's, iterators/mir_steps/copies.rs: a `cloned()`, a map of each item's clone"),
     entry("clonedAt", Form(&[Row(StdRow::ClonedAt)]), "the lowering's, std_impls/clones.rs: each std type's key is held to std's MIR by test/std-cloned-at.test.ts, not a case each; a few corpus cases cover its reader (Campaign 5 step 2c)"),
     entry("closing", Glue, ""),
     entry("cmp", Glue, ""),
@@ -241,10 +242,11 @@ pub const MODELS: &[Entry] = &[
     entry("exactLen", Model(Pitted, &[Path("core::iter::ExactSizeIterator::len"), Row(StdRow::ExactSizeLen)]), ""),
     entry("exchange", Glue, ""),
     entry("extend", Model(Unproven(Why::Collections), &[Row(StdRow::VecExtendTrusted)]), ""),
+    entry("extendFromSlice", Form(&[Path("alloc::vec::Vec::extend_from_slice")]), "the lowering's, combinators.rs: each item pushed, a clone"),
     entry("extendMap", Model(Unproven(Why::Collections), &[]), ""),
     entry("extendText", Model(Unproven(Why::Collections), &[]), ""),
     entry("extractIf", Model(Unproven(Why::Collections), &[]), ""),
-    entry("fill", Model(Unproven(Why::Collections), &[]), ""),
+    entry("fill", Model(Unproven(Why::Collections), &[Path("core::slice::<[T]>::fill")]), ""),
     entry("fillWith", Model(Unproven(Why::Collections), &[]), ""),
     entry("filterDropping", Model(Pitted, &[Path("core::iter::Filter")]), ""),
     entry("filterEnds", Model(Pitted, &[Path("core::iter::Filter")]), ""),
@@ -353,6 +355,7 @@ pub const MODELS: &[Entry] = &[
     entry("nth", Model(Unproven(Why::Consumers), &[]), ""),
     entry("nthBack", Model(Unproven(Why::Consumers), &[]), ""),
     entry("nthDropping", Model(Unproven(Why::Consumers), &[]), ""),
+    entry("optionCloned", Form(&[Path("core::option::Option::cloned")]), "the lowering's, std_types/option.rs: `map(T::clone)`"),
     entry("orInsert", Model(Unproven(Why::Collections), &[]), ""),
     entry("orInsertWith", Model(Unproven(Why::Collections), &[]), ""),
     entry("orInsertWithKey", Model(Unproven(Why::Collections), &[]), ""),
@@ -408,16 +411,16 @@ pub const MODELS: &[Entry] = &[
     entry("removeItem", Model(Unproven(Why::Collections), &[]), ""),
     entry("removeOpt", Model(Unproven(Why::Collections), &[]), ""),
     entry("removeOutOfBounds", Model(Unproven(Why::Collections), &[]), ""),
-    entry("repeat", Model(Unproven(Why::Collections), &[]), "`vec![item; count]`, `Vec::from_elem`"),
+    entry("repeat", Model(Unproven(Why::Collections), &[Path("alloc::vec::from_elem")]), "`vec![item; count]`, `Vec::from_elem`"),
     entry("repeatItems", Model(Unproven(Why::Outside), &[Row(StdRow::SliceRepeat)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("repeatText", Model(Unproven(Why::Outside), &[Row(StdRow::SliceRepeat)]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("repeating", Model(Pitted, &[Path("core::iter::Repeat")]), ""),
-    entry("repeatingN", Model(Pitted, &[Path("core::iter::RepeatN")]), ""),
+    entry("repeating", Model(Pitted, &[Path("core::iter::Repeat"), Row(StdRow::ClonedAt)]), "each step's clone at its row of `clonedAt`"),
+    entry("repeatingN", Model(Pitted, &[Path("core::iter::RepeatN"), Row(StdRow::ClonedAt)]), "each step's clone at its row of `clonedAt`"),
     entry("replaceRange", Model(Unproven(Why::Collections), &[]), ""),
     entry("replaceWith", Model(Unproven(Why::Collections), &[]), ""),
     entry("reserve", Model(Unproven(Why::Collections), &[]), ""),
     entry("reserveHint", Model(Unproven(Why::Collections), &[]), ""),
-    entry("resize", Model(Unproven(Why::Collections), &[]), ""),
+    entry("resize", Model(Unproven(Why::Collections), &[Path("alloc::vec::Vec::resize"), Path("alloc::collections::vec_deque::VecDeque::resize")]), ""),
     entry("resizeWith", Model(Unproven(Why::Collections), &[]), ""),
     entry("retain", Model(Unproven(Why::Collections), &[]), ""),
     entry("retainBack", Model(Unproven(Why::Collections), &[]), ""),
@@ -482,6 +485,7 @@ pub const MODELS: &[Entry] = &[
     entry("tableRoomFor", Model(Unproven(Why::Outside), &[Row(StdRow::HashTableCapacityOverflow)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("take", Model(Unproven(Why::Collections), &[]), ""),
     entry("taking", Model(Pitted, &[Path("core::iter::Take")]), ""),
+    entry("toVec", Form(&[Path("alloc::slice::<[T]>::to_vec")]), "the lowering's, items.rs and std_types/vec.rs: a map of each item's clone"),
     entry("took", Glue, ""),
     entry("traitImpl", Glue, ""),
     entry("treeAppend", Model(Unproven(Why::Collections), &[]), ""),
@@ -511,14 +515,14 @@ pub const MODELS: &[Entry] = &[
     entry("vecDequeRange", Form(&[Row(StdRow::VecDequeRange)]), "the lowering's, std_calls.rs"),
     entry("vecDequeSplitOff", Form(&[Row(StdRow::VecDequeSplitOff)]), "the lowering's, combinators.rs"),
     entry("vecDrain", Form(&[Row(StdRow::VecDrain)]), "the lowering's, std_types/text.rs, std_calls.rs"),
-    entry("vecExtendFromWithin", Form(&[Row(StdRow::VecExtendFromWithin)]), "the lowering's, std_types/text.rs, std_calls.rs"),
+    entry("vecExtendFromWithin", Form(&[Row(StdRow::VecExtendFromWithin), Path("alloc::vec::Vec::extend_from_within")]), "the lowering's, std_types/text.rs, std_calls.rs"),
     entry("vecExtractIf", Form(&[Row(StdRow::VecExtractIf)]), "the lowering's, std_types/slice.rs"),
     entry("view", Glue, ""),
     entry("viewGet", Glue, ""),
     entry("viewRange", Glue, ""),
     entry("withCapacity", Model(Unproven(Why::Collections), &[]), ""),
     entry("wrappingOp", Form(&[Row(StdRow::WrappingOp)]), "the lowering's, std_types/number.rs"),
-    entry("writeCloneOfSlice", Model(Unproven(Why::Outside), &[Row(StdRow::WriteCloneOfSlice)]), "its rows of `$stdSites`, std's sites of its function's panics"),
+    entry("writeCloneOfSlice", Model(Unproven(Why::Outside), &[Row(StdRow::WriteCloneOfSlice), Path("core::mem::<[MaybeUninit<T>]>::write_clone_of_slice")]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("writeCopyOfSlice", Form(&[Row(StdRow::WriteCopyOfSlice)]), "the lowering's, std_types/slice.rs"),
     entry("writeDebugTuple", Model(Unproven(Why::Format), &[Path("core::fmt::Formatter::debug_tuple")]), ""),
     entry("writeInteger", Model(Unproven(Why::Format), &[Path("core::fmt::Formatter::pad_integral")]), "an integer's `Display` or `Debug`"),
@@ -617,6 +621,18 @@ pub(crate) fn resolved(tcx: TyCtxt<'_>, path: &str) -> Option<DefId> {
         return Some(id);
     }
     let (method, parent) = parts.split_last()?;
+    // A slice's own, `core::slice::<[T]>::fill`, or of a slice of a type,
+    // `<[MaybeUninit<T>]>`'s: a method of the impls of a slice in its
+    // crate, of that name, the module before it where it's written.
+    if parent.last().is_some_and(|last| last.starts_with("<[")) {
+        let krate = super::std_crate_num(tcx, krate)?;
+        return (tcx
+            .incoherent_impls(rustc_middle::ty::fast_reject::SimplifiedType::Slice)
+            .iter())
+        .filter(|imp| imp.krate == krate)
+        .flat_map(|&imp| tcx.associated_item_def_ids(imp).iter().copied())
+        .find(|&item| tcx.item_name(item).as_str() == *method);
+    }
     let (kind, owner) = super::registry::by_path_kind(tcx, krate, parent)?;
     let items: Vec<DefId> = match kind {
         DefKind::Trait => tcx.associated_item_def_ids(owner).to_vec(),
@@ -647,6 +663,42 @@ fn rows_unnamed_of(models: &[Entry]) -> Vec<&'static str> {
         })
         .map(|row| row.name())
         .collect()
+}
+
+/// Each std item a model or a form of the catalog stands for, at its path:
+/// what `bun run std` walks of the catalog, a clone's site of each that
+/// clones what it's given (`compiled_std::cloned_at`, #2577).
+pub(crate) fn bound_paths() -> impl Iterator<Item = &'static str> {
+    (MODELS.iter())
+        .flat_map(|entry| match entry.kind {
+            Model(_, stands) | Form(stands) => stands,
+            Glue => &[],
+        })
+        .filter_map(|stands| match *stands {
+            Path(path) => Some(path),
+            Row(_) => None,
+        })
+}
+
+/// The path a model or a form of the catalog stands for `item` at, the
+/// std item a call the lowering makes is of, its row's key of `clonedAt`
+/// where std's code of it clones what it's given (#2577); of the methods a
+/// path names, each of its name, `Option<&T>`'s `cloned` and
+/// `Option<&mut T>`'s.
+pub(crate) fn path_of(tcx: TyCtxt<'_>, item: DefId) -> Option<&'static str> {
+    let name = tcx.opt_item_name(item)?;
+    bound_paths().find(|path| {
+        path.rsplit("::").next() == Some(name.as_str())
+            && resolved(tcx, path).is_some_and(|found| {
+                found == item
+                    || (tcx.opt_parent(found).zip(tcx.opt_parent(item))).is_some_and(|(a, b)| {
+                        tcx.def_kind(a) == DefKind::Impl { of_trait: false }
+                            && tcx.def_kind(b) == DefKind::Impl { of_trait: false }
+                            && tcx.type_of(a).skip_binder().ty_adt_def().map(|adt| adt.did())
+                                == tcx.type_of(b).skip_binder().ty_adt_def().map(|adt| adt.did())
+                    })
+            })
+    })
 }
 
 #[cfg(test)]

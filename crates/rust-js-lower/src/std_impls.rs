@@ -4,7 +4,7 @@
 //! `defaults`.
 
 mod clones;
-pub(crate) use clones::{ClonedItems, trivially_cloned};
+pub(crate) use clones::trivially_cloned;
 mod defaults;
 mod in_turn;
 mod not_equal;

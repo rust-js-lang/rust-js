@@ -1148,7 +1148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let cloned = self.needs_clone(item).then_some(item);
         // Each item's clone at `extend_from_slice`'s line of it (#2509).
         if self.is_std_type(into, crate::recognition::StdItem::Vec) {
-            return match cloned.and_then(|item| self.clone_row_site(item, "alloc::vec::Vec::extend_from_slice")) {
+            return match cloned.and_then(|item| self.call_clone_site(item)) {
                 Some(at) => Expr::raised_at(at, || self.pushed_each(collection, items, cloned, span, out)),
                 None => self.pushed_each(collection, items, cloned, span, out),
             };

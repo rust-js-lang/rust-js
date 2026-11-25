@@ -278,8 +278,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     list.push(arg());
                 }
                 let item = generic_args.type_at(0);
+                // Each step's clone at its own line (`stepped_clone_fn`,
+                // #2577).
                 let clone = match self.needs_clone(item) {
-                    true => Some(self.clone_fn("value", item, span)?),
+                    true => Some(self.stepped_clone_fn("value", item, span)?),
                     false => None,
                 };
                 let drop = self.drop_function(item, span)?;

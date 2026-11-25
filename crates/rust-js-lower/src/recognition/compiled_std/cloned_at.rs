@@ -317,18 +317,18 @@ pub(crate) fn cloned_by<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>
     ClonedBy::Std { key, parts }
 }
 
-/// Of each std method a runtime model stands for that clones an item,
-/// where it raises a borrowed `RefCell`'s panic, by the same walk: each
-/// step std's catalog names of a `cloned()`, `Cloned`'s, by its path,
-/// `core::iter::adapters::cloned::Cloned::next`, a fold's through
-/// `FnMut::call_mut`'s shim, `next`'s through `FnOnce::call_once`'s; an
-/// `Option<&T>`'s `cloned`; and a `Vec`'s `extend_from_slice`. Each a row of
-/// `clonedAt`, its item at 0, which the lowering reads by the steps a value
-/// is asked (`cloned_steps_row`, #2509).
+/// Of each std item a model of the catalog stands for that clones what it's
+/// given, where it raises a borrowed `RefCell`'s panic, by the same walk: a
+/// function or a method whose type parameter `Clone` bounds, `Vec::resize`'s
+/// `T`, its row by its path; an iterator whose `Iterator` impl does,
+/// `Repeat<A>`'s `A`, a `Cloned`'s `T`, a row of each step std's catalog
+/// names, by its path and the step's name. The rows are the catalog's
+/// (`models::bound_paths`), never a list of their own (#2577), each of `clonedAt`, its item
+/// at 0, which the lowering reads of the std item a call it lowers is of
+/// (`clone_row_of`, #2509).
 pub(super) fn cloned_methods(tcx: TyCtxt<'_>) -> Result<IndexMap<String, Vec<Option<String>>>, String> {
     let refcell = registry::by_path(tcx, StdCrate::Core, &["cell", "RefCell"]).ok_or("std has no `RefCell`")?;
     let cell = Ty::new_adt(tcx, tcx.adt_def(refcell), tcx.mk_args(&[tcx.types.u8.into()]));
-    let lent = Ty::new_imm_ref(tcx, tcx.lifetimes.re_erased, cell);
     let mut kept: IndexMap<String, Vec<Option<String>>> = IndexMap::default();
     // Of one whose walk finds several, the oracle's; each it has none of,
     // said at once.
@@ -341,16 +341,6 @@ pub(super) fn cloned_methods(tcx: TyCtxt<'_>) -> Result<IndexMap<String, Vec<Opt
             None
         }),
     };
-    // The steps of a `Cloned` of a `slice::Iter` of the cell.
-    let iter = registry::by_path(tcx, StdCrate::Core, &["slice", "iter", "Iter"]).ok_or("std has no `slice::Iter`")?;
-    let iter = Ty::new_adt(
-        tcx,
-        tcx.adt_def(iter),
-        tcx.mk_args(&[tcx.lifetimes.re_erased.into(), cell.into()]),
-    );
-    let cloned = registry::by_path(tcx, StdCrate::Core, &["iter", "adapters", "cloned", "Cloned"])
-        .ok_or("std has no `Cloned`")?;
-    let cloned = Ty::new_adt(tcx, tcx.adt_def(cloned), tcx.mk_args(&[iter.into()]));
     let traits = [
         Some(std_item(tcx, StdItem::Iterator)),
         registry::by_path(
@@ -364,63 +354,45 @@ pub(super) fn cloned_methods(tcx: TyCtxt<'_>) -> Result<IndexMap<String, Vec<Opt
             &["iter", "traits", "exact_size", "ExactSizeIterator"],
         ),
     ];
-    for step in crate::recognition::Steps::ALL.names() {
-        let Some(method) = (traits.iter().flatten()).find_map(|&trait_| {
-            (tcx.associated_items(trait_)
-                .filter_by_name_unhygienic(rustc_span::Symbol::intern(step)))
-            .find(|each| matches!(tcx.def_kind(each.def_id), DefKind::AssocFn))
-            .map(|each| each.def_id)
-        }) else {
+    for path in crate::recognition::models::bound_paths() {
+        let Some(item) = crate::recognition::models::resolved(tcx, path) else {
             continue;
         };
-        let key = format!("core::iter::adapters::cloned::Cloned::{step}");
-        let sites = method_sites(tcx, method, (cloned, None), cell)?;
-        kept.insert(key.clone(), vec![settled(&key, sites, &mut unsettled)]);
-    }
-    // `Option<&T>::cloned` and `Vec::extend_from_slice`, each of the impl
-    // whose self type it is.
-    let option = registry::by_path(tcx, StdCrate::Core, &["option", "Option"]).ok_or("std has no `Option`")?;
-    let vec = registry::by_path(tcx, StdCrate::Alloc, &["vec", "Vec"]).ok_or("std has no `Vec`")?;
-    for (key, adt, name, self_ty) in [
-        (
-            "core::option::Option<&_>::cloned",
-            option,
-            "cloned",
-            Ty::new_adt(tcx, tcx.adt_def(option), tcx.mk_args(&[lent.into()])),
-        ),
-        ("alloc::vec::Vec::extend_from_slice", vec, "extend_from_slice", {
-            // Its allocator its parameter's default, `Global`.
-            let allocator = tcx.generics_of(vec).param_at(1, tcx);
-            let allocator = tcx
-                .type_of(allocator.def_id)
-                .instantiate_identity()
-                .skip_normalization();
-            Ty::new_adt(tcx, tcx.adt_def(vec), tcx.mk_args(&[cell.into(), allocator.into()]))
-        }),
-    ] {
-        let name = rustc_span::Symbol::intern(name);
-        // The impl whose self type `self_ty` is, its arguments as they make
-        // it, `impl<T> Option<&T>`'s `T` the cell.
-        let (method, impl_args) = (tcx.inherent_impls(adt).iter())
-            .find_map(|&imp| {
-                use rustc_trait_selection::infer::TyCtxtInferExt;
-                let infcx = tcx.infer_ctxt().build(ty::TypingMode::non_body_analysis());
-                let fresh = infcx.fresh_args_for_item(rustc_span::DUMMY_SP, imp);
-                let of = tcx.type_of(imp).instantiate(tcx, fresh).skip_normalization();
-                let _unified = (infcx.at(&rustc_middle::traits::ObligationCause::dummy(), ty::ParamEnv::empty()))
-                    .eq(rustc_trait_selection::infer::DefineOpaqueTypes::No, of, self_ty)
-                    .ok()?;
-                let method = (tcx.associated_items(imp).filter_by_name_unhygienic(name))
-                    .next()?
-                    .def_id;
-                let args: Vec<ty::GenericArg<'_>> = (fresh.iter())
-                    .map(|arg| tcx.erase_and_anonymize_regions(infcx.deeply_resolve_ignoring_regions(arg)))
-                    .collect();
-                Some((method, args))
-            })
-            .ok_or_else(|| format!("std has no `{key}`"))?;
-        let sites = method_sites(tcx, method, (self_ty, Some(impl_args)), cell)?;
-        kept.insert(key.to_string(), vec![settled(key, sites, &mut unsettled)]);
+        match tcx.def_kind(item) {
+            DefKind::Struct | DefKind::Enum => {
+                let Some(self_ty) = iterator_of_cells(tcx, item, cell) else {
+                    continue;
+                };
+                // Each step's, where any clones a cell; of one none does, a
+                // `Cycle`'s of a slice's iterator, no rows.
+                let mut steps = Vec::new();
+                for step in crate::recognition::Steps::ALL.names() {
+                    let Some(method) = (traits.iter().flatten()).find_map(|&trait_| {
+                        (tcx.associated_items(trait_)
+                            .filter_by_name_unhygienic(rustc_span::Symbol::intern(step)))
+                        .find(|each| matches!(tcx.def_kind(each.def_id), DefKind::AssocFn))
+                        .map(|each| each.def_id)
+                    }) else {
+                        continue;
+                    };
+                    let key = format!("{path}::{step}");
+                    let sites = method_sites(tcx, method, (self_ty, None), cell)?;
+                    let site = settled(&key, sites, &mut unsettled);
+                    steps.push((key, site));
+                }
+                if steps.iter().any(|(_, site)| site.is_some()) {
+                    kept.extend(steps.into_iter().map(|(key, site)| (key, vec![site])));
+                }
+            }
+            DefKind::Fn | DefKind::AssocFn if clones_a_parameter(tcx, item) => {
+                let (self_ty, impl_args) = function_of_cells(tcx, item, cell);
+                let sites = method_sites(tcx, item, (self_ty, Some(impl_args)), cell)?;
+                if let Some(site) = settled(path, sites, &mut unsettled) {
+                    kept.insert(path.to_string(), vec![Some(site)]);
+                }
+            }
+            _ => {}
+        }
     }
     if !unsettled.is_empty() {
         return Err(format!(
@@ -429,6 +401,118 @@ pub(super) fn cloned_methods(tcx: TyCtxt<'_>) -> Result<IndexMap<String, Vec<Opt
         ));
     }
     Ok(kept)
+}
+
+/// Whether a type parameter of `item`, a function's or its impl's, is
+/// bounded by `Clone` in the clauses it's called under: what it's given it
+/// may clone.
+fn clones_a_parameter(tcx: TyCtxt<'_>, item: DefId) -> bool {
+    let clone = tcx.lang_items().clone_trait();
+    (tcx.clauses_of(item).instantiate_identity(tcx).into_iter())
+        .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause()?.no_bound_vars())
+        .any(|tr| Some(tr.def_id()) == clone && type_parameter_of(tr.self_ty()).is_some())
+}
+
+/// What a parameter of an impl, `at` of `generics`, is made of a `cell`, as
+/// its clauses take it: one `Clone` bounds the cell; one that's an
+/// `Iterator` of references to a parameter `Clone` bounds a slice's
+/// iterator of cells; one the impl's self type gives a parameter of its
+/// own that has a default, that default, `Vec<T, A>`'s `A`'s `Global`;
+/// another `()`. A lifetime is erased.
+fn of_cells<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (imp, clauses): (DefId, &[ty::Clause<'tcx>]),
+    param: &ty::GenericParamDef,
+    cell: Ty<'tcx>,
+) -> ty::GenericArg<'tcx> {
+    if !matches!(param.kind, ty::GenericParamDefKind::Type { .. }) {
+        return tcx.lifetimes.re_erased.into();
+    }
+    let clone = tcx.lang_items().clone_trait();
+    let iterator = tcx.get_diagnostic_item(rustc_span::sym::Iterator);
+    let bounded = |by: Option<DefId>, index: u32| {
+        (clauses.iter())
+            .filter_map(|clause| clause.as_trait_clause()?.no_bound_vars())
+            .any(|tr| Some(tr.def_id()) == by && type_parameter_of(tr.self_ty()) == Some(index))
+    };
+    // An iterator first, of one `Clone` bounds too, a `Cycle`'s `I`.
+    if bounded(iterator, param.index)
+        && let Some(iter) = registry::by_path(tcx, StdCrate::Core, &["slice", "iter", "Iter"])
+    {
+        return Ty::new_adt(
+            tcx,
+            tcx.adt_def(iter),
+            tcx.mk_args(&[tcx.lifetimes.re_erased.into(), cell.into()]),
+        )
+        .into();
+    }
+    if bounded(clone, param.index) {
+        return cell.into();
+    }
+    // The default of the self type's parameter it is, `Vec`'s `A = Global`.
+    if let ty::Adt(adt, args) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind() {
+        let own = tcx.generics_of(adt.did());
+        for (at, arg) in args.iter().enumerate() {
+            if let Some(given) = arg.as_type()
+                && type_parameter_of(given) == Some(param.index)
+                && let ty::GenericParamDefKind::Type { has_default: true, .. } = own.param_at(at, tcx).kind
+            {
+                return (tcx
+                    .type_of(own.param_at(at, tcx).def_id)
+                    .instantiate_identity()
+                    .skip_normalization())
+                .into();
+            }
+        }
+    }
+    tcx.types.unit.into()
+}
+
+/// `item`, an iterator struct whose `Iterator` impl bounds a parameter by
+/// `Clone`, made of a `cell` as that impl's clauses take it, `Repeat<A>`'s
+/// `Repeat` of the cell, `Cloned<I>`'s of a slice's iterator of cells;
+/// none of one whose impl bounds none, a `Map`'s, which clones nothing.
+fn iterator_of_cells<'tcx>(tcx: TyCtxt<'tcx>, item: DefId, cell: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    let iterator = std_item(tcx, StdItem::Iterator);
+    let imp = (tcx.trait_impls_of(iterator).non_blanket_impls().values().flatten().copied()).find(|&imp| {
+        matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(), ty::Adt(adt, _) if adt.did() == item)
+    })?;
+    if !clones_a_parameter(tcx, imp) {
+        return None;
+    }
+    let clauses: Vec<ty::Clause<'_>> = (tcx.clauses_of(imp).instantiate_identity(tcx).into_iter())
+        .map(|(clause, _)| clause.skip_normalization())
+        .collect();
+    let generics = tcx.generics_of(imp);
+    let args: Vec<ty::GenericArg<'_>> = (0..generics.count())
+        .map(|at| of_cells(tcx, (imp, &clauses), generics.param_at(at, tcx), cell))
+        .collect();
+    Some(
+        tcx.type_of(imp)
+            .instantiate(tcx, tcx.mk_args(&args))
+            .skip_normalization(),
+    )
+}
+
+/// `item`, a function, of a `cell`: a method's self type and its impl's
+/// arguments, each as `of_cells` makes it of the clauses the method is
+/// called under; a free function's, none, `()` its self type, unread.
+fn function_of_cells<'tcx>(tcx: TyCtxt<'tcx>, item: DefId, cell: Ty<'tcx>) -> (Ty<'tcx>, Vec<ty::GenericArg<'tcx>>) {
+    let Some(imp) = tcx.impl_of_assoc(item) else {
+        return (tcx.types.unit, Vec::new());
+    };
+    let clauses: Vec<ty::Clause<'_>> = (tcx.clauses_of(item).instantiate_identity(tcx).into_iter())
+        .map(|(clause, _)| clause.skip_normalization())
+        .collect();
+    let generics = tcx.generics_of(imp);
+    let args: Vec<ty::GenericArg<'_>> = (0..generics.count())
+        .map(|at| of_cells(tcx, (imp, &clauses), generics.param_at(at, tcx), cell))
+        .collect();
+    let self_ty = tcx
+        .type_of(imp)
+        .instantiate(tcx, tcx.mk_args(&args))
+        .skip_normalization();
+    (self_ty, args)
 }
 
 /// Where `method`, of a `self_ty` over a `cell`, raises a borrowed cell's
@@ -457,6 +541,7 @@ fn method_sites<'tcx>(
         .map(|(clause, _)| clause.skip_normalization())
         .collect();
     let fn_traits = [LangItem::Fn, LangItem::FnMut, LangItem::FnOnce].map(|item| tcx.lang_items().get(item));
+    let clone = tcx.lang_items().clone_trait();
     let try_trait = tcx.lang_items().get(LangItem::Try);
     for at in own {
         let param = generics.param_at(at, tcx);
@@ -477,7 +562,9 @@ fn method_sites<'tcx>(
             if !is_param(tr.self_ty()) {
                 continue;
             }
-            if fn_traits.contains(&Some(tr.def_id())) {
+            if Some(tr.def_id()) == clone {
+                args[at] = cell.into();
+            } else if fn_traits.contains(&Some(tr.def_id())) {
                 let ty::Tuple(inputs) = *tr.trait_ref.args.type_at(1).kind() else {
                     continue;
                 };

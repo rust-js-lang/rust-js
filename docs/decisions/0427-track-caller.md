@@ -611,8 +611,100 @@ Held by the corpus cases `cloned_count_`, `cloned_fold_`,
 `cloned_next_then_count_of_a_borrowed_refcell_names_its_call`. They are
 also held by test/std-cloned-at.test.ts' three new rows, and by the
 mutations `cloned-items-row-unread`, `cloned-items-mixed-guessed`, `steps-debug-info-read`,
-`cloned-items-at-unplaced`, `option-cloned-row-unread`,
+`option-cloned-row-unread`,
 `extend-from-slice-row-unread` and `cloned-methods-backs-unwalked`.
+
+## Amendment: each std item the catalog binds that clones what it's given is placed at std's line, the rows walked of the catalog (2026-11-25, #2577)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a panic named the
+caller's line where Rust names std's.
+
+The amendment above walked a hand list, `cloned_methods`: `Cloned`'s
+steps, an `Option<&T>`'s `cloned` and `Vec::extend_from_slice`. Nine
+more of the runtime's models clone what they're given by `T::clone`, and
+named their caller's line of a borrowed `RefCell`: `Vec::resize`
+(`vec/mod.rs:3687:39`), `vec![x; n]` (`from_elem`, the same line), a
+slice's `fill` (`clone_from`, `slice/specialize.rs:12:20`) and `to_vec`
+(`alloc/src/slice.rs:432:38`), `Vec::extend_from_within`
+(`vec/mod.rs:3766:45`), `VecDeque::resize` and `iter::repeat_n`
+(`repeat_n.rs:125:37`), `iter::repeat` (`repeat.rs:83:27` of `next`, `101`
+of `nth`), and `<[MaybeUninit<T>]>::write_clone_of_slice`
+(`mem/maybe_uninit.rs:1242:41`). A hand list goes stale as models are
+added, and this one had.
+
+- The rows are the catalog's ([1202](1202-one-catalog-of-the-runtimes-models.md)).
+  `bun run std` walks each std item a model or a form binds
+  (`models::bound_paths`) that clones what it's given: a function or a
+  method whose type parameter `Clone` bounds, its row by its path; an
+  iterator whose `Iterator` impl does, a row of each step of std's
+  catalog, by its path and the step's name. Each parameter is made of a
+  `RefCell<u8>` as the clauses take it (`of_cells`): one `Clone` bounds the
+  cell, an `Iterator` of references a slice's iterator of cells, one the
+  impl's self type gives a parameter of its own with a default that
+  default (`Vec`'s `A = Global`), another `()`. A model bound to its std
+  item has its row by construction, and the rest are #2513's measure,
+  ratcheted.
+- The catalog binds the nine, and four of the lowering's forms that
+  clone what std's code is given: `cloned`, `extendFromSlice`,
+  `optionCloned` and `toVec`. `models::resolved` reads a slice's own
+  method, `core::slice::<[T]>::fill`, of the impls of a slice in its
+  crate. `path_of` gives the path of a std item a call is of, of the
+  methods a path names each of its name, `Option<&T>`'s and
+  `Option<&mut T>`'s `cloned`.
+- One reader. MIR's call (`mir_call`) tells the lowering the std item
+  it's of while it lowers it (`FnCx::calling`), and the first clone made
+  under it, std's of what it's given, reads that item's row
+  (`call_clone_site`): its path's, or, of a call that makes an iterator,
+  its struct's of each step asked of what it makes where they're one
+  line. A clone that clone makes places its own (`clone_site`): `resize`
+  of `Vec`s of a cell names the `Vec`'s clone's line. The three readers
+  that named their rows by text, `extend_from_slice`'s, `Option`'s and
+  `cloned()`'s, read it so; `cloned_items` and its `ClonedItems` are gone.
+  `Option<&T>::cloned`'s row's key is its path,
+  `core::option::Option::cloned`, the one snapshot that moves.
+- A step's clone is given its step's site. A `repeat`'s steps clone at
+  four lines and a `take` asks several, so the steps asked don't say
+  one. The runtime knows each step it runs: `$repeating` and
+  `$repeatingN` give each clone the site of their step's row,
+  `clone(value, $stdSites.clonedAt["core::iter::Repeat::nth"][0])`, and a
+  clone of the iterator itself its derived `Clone`'s row. The lowering
+  writes such a clone of a cell `(value, at) => ..`, its clone raised at
+  `at` (`stepped_clone_fn`). It's the one form of a clone a step makes,
+  which `cloned()`'s steps can take up without a second one. A clone
+  that needs no site ignores it. test/std-sites.test.ts holds each row
+  the runtime reads by its key to one the walk writes.
+
+This is exact where the step that runs is known, as Tu's decision of
+#2509 asks, so no exception is added. A `cloned()`'s clone, which the
+lowering writes as a map, not the runtime, still keeps the call's line
+where its asked steps are several or unknown, as above, until #1458.
+
+A borrowed bare `RefCell` is moved into most of these only with its
+guard leaked (`mem::forget`, `RefMut::leak`), as the cases do; a
+`to_vec` and a `write_clone_of_slice` of a borrowed one are common.
+
+Held by the corpus cases `vec_resize_`, `vec_from_elem_`, `slice_fill_`,
+`slice_to_vec_`, `vec_extend_from_within_`, `vec_deque_resize_`,
+`repeat_n_`, `write_clone_of_slice_`, `option_mut_cloned_`,
+`repeat_next_`, `repeat_nth_`, `repeat_take_next_back_`,
+`repeat_take_collect_`, `repeat_clone_`, `repeat_n_nth_`,
+`repeat_n_next_back_`, `repeat_n_nth_back_`, `repeat_n_clone_` of a
+borrowed `RefCell` naming std's line, and
+`vec_resize_of_vecs_of_a_borrowed_refcell_names_the_inner_clones_line`,
+each against native. The mutations `cloned-models-clone-nothing`,
+`cloned-models-allocator-unit`, `models-slice-method-unresolved`,
+`models-path-of-one-impl`, `call-clone-site-kept`, `call-clone-site-unread`,
+`stepped-clone-reads-the-call`, `stepped-clone-unsited`,
+`mir-call-callee-untold`, `repeat-nth-at-next` and `repeat-clone-at-a-step`
+are caught. `cloned-items-at-unplaced` goes with the code it mutated: a
+`cloned()`'s item is the item its call's row places, so `clone_value`'s
+own read places it, and copies.rs calls it.
+
+docs/readability.txt is blessed for one share: `renamed x$1`, 425.1 to
+425.2 in 10,000 lines of the files both versions have. No rename was
+added. `option_cloned_of_a_borrowed_refcell_names_std_line.js` is 8 lines
+shorter, its row's key now fitting a line, with its two renames as they
+were.
 
 ## Amendment: a function made a value is placed by how its callee calls it, a trait's method whose impl may track it too (2026-11-24, #2522)
 

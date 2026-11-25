@@ -548,7 +548,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // (#2509).
                 match crate::recognition::option_cloned_kind(self.tcx, def_id) == Some(true) {
                     true => self.copy_if_needed(value, ty),
-                    false => self.clone_value_at(value, (ty, item), "core::option::Option<&_>::cloned", span, out)?,
+                    false => self.clone_value_given(value, (ty, item), span, out)?,
                 }
             }
             _ => return Ok(None),

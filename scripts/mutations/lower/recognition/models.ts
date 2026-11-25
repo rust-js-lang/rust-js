@@ -45,4 +45,20 @@ export const mutations: Mutation[] = [
     replace: "                Form(_) => format!(\"${}\", entry.helper),\n",
     tests: ["test/twin-net.test.ts", "-t", "each helper the catalog names is one the runtime declares"],
   },
+  {
+    name: "models-slice-method-unresolved",
+    breaks: "a slice's own method the catalog binds, `core::slice::<[T]>::fill`, names nothing where `bun run std` reads std, so it fails there (#2577)",
+    file,
+    find: "    if parent.last().is_some_and(|last| last.starts_with(\"<[\")) {\n",
+    replace: "    if false && parent.last().is_some_and(|last| last.starts_with(\"<[\")) {\n",
+    tests: ["test/std-sites.test.ts"],
+  },
+  {
+    name: "models-path-of-one-impl",
+    breaks: "of the methods a path names, only the one it resolves to is its, so `Option<&mut T>`'s `cloned` reads no row and names the caller's line, where `Option<&T>`'s names std's (#2577)",
+    file,
+    find: "                    || (tcx.opt_parent(found).zip(tcx.opt_parent(item))).is_some_and(|(a, b)| {\n",
+    replace: "                    || false && (tcx.opt_parent(found).zip(tcx.opt_parent(item))).is_some_and(|(a, b)| {\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_mut_cloned_of_a_borrowed_refcell_names_std_line\\.rs$"],
+  },
 ];

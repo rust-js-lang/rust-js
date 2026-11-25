@@ -110,7 +110,27 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         })
     }
 
+    /// A call, its callee the call the lowering makes is of while it's
+    /// lowered, which a clone made of what it's given reads its line of,
+    /// std's code of it's (`call_clone_site`, #2577); the one before it
+    /// again after, of a call made inside it.
     pub(super) fn mir_call(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        func: &Operand<'tcx>,
+        args: &[rustc_span::Spanned<Operand<'tcx>>],
+        destination: Place<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let callee = fn_def(func.ty(&state.body.local_decls, self.tcx)).map(|(callee, _)| callee);
+        let outer = self.calling.replace(callee);
+        let made = self.mir_call_of(state, func, args, destination, span, out);
+        self.calling.set(outer);
+        made
+    }
+
+    fn mir_call_of(
         &mut self,
         state: &mut State<'_, 'tcx>,
         func: &Operand<'tcx>,
