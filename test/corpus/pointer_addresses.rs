@@ -134,7 +134,9 @@ fn main() {
     println!("{} {}", hashed(p) == hashed(again), hashed(p) == hashed(second));
 
     // A reference's address is its object's; a zero-sized value's its
-    // alignment; a function's is the function's.
+    // alignment; a function's is the function's, never null, and the same
+    // pointer cast again is equal. Not its parity, nor its alignment, which
+    // Rust doesn't give: the linker's layout says (#2589).
     let referred: usize = unsafe { transmute(&record) };
     let unit: &() = &();
     let f = named as fn();
@@ -143,6 +145,6 @@ fn main() {
         referred == at,
         unit as *const () as usize,
         f as *const u8 == f as *const u8,
-        f as *const u8 as usize % 2
+        f as *const u8 as usize != 0
     );
 }

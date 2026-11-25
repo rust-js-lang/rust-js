@@ -117,11 +117,13 @@ function main() {
   console.log(`${hashed(p) === hashed(again)} ${hashed(p) === hashed(second)}`);
 
   // A reference's address is its object's; a zero-sized value's its
-  // alignment; a function's is the function's.
+  // alignment; a function's is the function's, never null, and the same
+  // pointer cast again is equal. Not its parity, nor its alignment, which
+  // Rust doesn't give: the linker's layout says (#2589).
   const referred = $addr(record, 12);
   const f = named;
   console.log(
-    `${referred === at} ${$addr($ptrFrom(1, 0), 0)} ${$ptrEq(f, f, 1)} ${$addr(f, 1) % 2}`,
+    `${referred === at} ${$addr($ptrFrom(1, 0), 0)} ${$ptrEq(f, f, 1)} ${$addr(f, 1) !== 0}`,
   );
 }
 //# sourceMappingURL=case.js.map
