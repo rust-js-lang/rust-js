@@ -27,6 +27,8 @@ export function exportNetTests(part: number) {
         expect(netted.problems).toEqual([]);
         // What no value was made of, said: a sealed struct's, a class's (#2594).
         if (Object.keys(netted.notGiven).length > 0) console.log(`${net.title}: not given ${JSON.stringify(netted.notGiven)}`);
+        // And where Rust's reads weren't compared, why (#2596).
+        if (netted.unread) console.log(`${net.title}: reads unread, ${netted.unread}`);
         // Oracle B decides each shape: none it can't, each said by why.
         expect(netted.shapes.why).toEqual({});
       }, underLoad(300_000));

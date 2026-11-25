@@ -150,6 +150,12 @@ pub(crate) struct Build {
     /// `test/tidy-stages.test.ts`' variant, and the metamorphic net's
     /// `observe-borrows` build.
     pub count_every_cell: bool,
+    /// `--js-reads`: every field read a getter's, `Known::Getter`, as of a
+    /// struct JS made, whatever `js_may_make` says, so each pass keeps each
+    /// read where Rust reads it (ADR 1022): the export net's oracle C runs
+    /// a crate so built, its proxies' log Rust's reads, beside the readable
+    /// build's (ADR 1204). A test hook, not a way to build.
+    pub js_reads: bool,
     /// `--without-moves`: rust-js's drop elaboration blind to moves, each
     /// drop dropping all of what it drops, a moved part too, to see that
     /// the comparison with rustc's refuses it (#2112's change D). A test
@@ -281,6 +287,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let without_intervals = flag(&mut ours, "--without-intervals");
     let without_moves = flag(&mut ours, "--without-moves");
     let count_every_cell = flag(&mut ours, "--count-every-cell");
+    let js_reads = flag(&mut ours, "--js-reads");
     let intervals_by_effects = flag(&mut ours, "--intervals-by-effects");
     let std_paths_first = flag(&mut ours, "--std-paths-first");
     let mut dependencies = Vec::new();
@@ -382,6 +389,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         without_mutated,
         without_intervals,
         count_every_cell,
+        js_reads,
         without_moves,
         intervals_by_effects,
         shadow,

@@ -14,6 +14,7 @@ import { calls, jsConforms, jsShow, printable, rustShow, type Giving, type NoneF
 import { compiler, fixture, nativeCrates, programFlags, run } from "./support";
 import { es2022, typeChecked } from "./type-checked";
 import { underLoad } from "../scripts/timing";
+import { buildFlags } from "./builds";
 
 /** A path a crate offers JS, as its manifest says. */
 export type Offered = {
@@ -101,14 +102,18 @@ function shapedOnly(path: Offered, small: boolean, giving: Giving): string[][] |
  * so 15 s, as the machine's load makes it, is room, not a wait. */
 const bigRunMs = underLoad(15_000);
 
-export type Netted = { problems: string[]; paths: number; calls: number; declared: number; shapes: { checked: number; unchecked: number; why: Record<string, number> }; notGiven: Record<string, number>; offered: Record<string, string[]> };
+export type Netted = { problems: string[]; paths: number; calls: number; declared: number; reads: number; volatiles: number; shapes: { checked: number; unchecked: number; why: Record<string, number> }; notGiven: Record<string, number>; unread?: string; offered: Record<string, string[]> };
 
 export function exportNet(cases: string, name: string, files: string[]): Netted {
   const dir = fixture(`export-net-${name}`);
   const out = join(dir, "js");
+  const reads = join(dir, "js-reads");
+  // Why Rust's reads weren't compared, where the reference build refuses
+  // a crate (oracle C): said, never passed.
+  let unread: string | undefined;
   const all = crates(cases, name, files);
   const problems: string[] = [];
-  const checked = { paths: 0, calls: 0, declared: 0 };
+  const checked = { paths: 0, calls: 0, declared: 0, reads: 0, volatiles: 0 };
   const shapes = { checked: 0, unchecked: 0, why: {} as Record<string, number> };
   // Each type of the crates' no value was made of, by why: said, never
   // dropped silently (oracle C).
@@ -122,12 +127,28 @@ export function exportNet(cases: string, name: string, files: string[]): Netted 
     // Each but the last a library, the last the crate the others are of, as
     // test/crates.ts' `chain` builds a pair's app.
     const library = i < all.length - 1 || all.length === 1;
-    run([compiler, "--declarations", crate.file, "-o", join(out, crate.name, "lib.js"), ...(library ? ["--library"] : []), "--manifest", manifest,
-      ...crate.uses.flatMap((u) => ["--dependency", join(out, u, "lib.manifest.json")]),
-      "--", "--crate-name", crate.name, ...(library ? [`--emit=metadata=${join(out, crate.name, `lib${crate.name}.rmeta`)}`] : []), "-Awarnings",
-      ...(crate.edition ? [`--edition=${crate.edition}`] : ["--edition=2024"]),
-      ...crate.uses.flatMap((u) => ["--extern", `${u}=${join(out, u, `lib${u}.rmeta`)}`]),
-      ...crate.uses.flatMap((u) => ["-L", `dependency=${join(out, u)}`])], 600_000);
+    // Built twice: as it is, and with every field read a getter's, each
+    // kept where Rust reads it (\`--js-reads\`, ADR 1022), oracle C's
+    // reference of Rust's reads.
+    for (const [into, flags] of [[out, []], [reads, [...buildFlags.reads]]] as const) {
+      // A crate the reference build refuses, or one after it, which reads
+      // its manifest: its reads not compared, and why said (\`unread\`).
+      if (into === reads && unread !== undefined) continue;
+      const compile = () => run([compiler, "--declarations", crate.file, "-o", join(into, crate.name, "lib.js"), ...(library ? ["--library"] : []), "--manifest", join(into, crate.name, "lib.manifest.json"), ...flags,
+        ...crate.uses.flatMap((u) => ["--dependency", join(into, u, "lib.manifest.json")]),
+        "--", "--crate-name", crate.name, ...(library ? [`--emit=metadata=${join(into, crate.name, `lib${crate.name}.rmeta`)}`] : []), "-Awarnings",
+        ...(crate.edition ? [`--edition=${crate.edition}`] : ["--edition=2024"]),
+        ...crate.uses.flatMap((u) => ["--extern", `${u}=${join(into, u, `lib${u}.rmeta`)}`]),
+        ...crate.uses.flatMap((u) => ["-L", `dependency=${join(into, u)}`])], 600_000);
+      if (into === out) compile();
+      else {
+        try {
+          compile();
+        } catch (error) {
+          unread = `${crate.name}: the --js-reads build refuses it: ${String(error).split("\n").find((line) => /^error: rust-js|panicked at/.test(line)) ?? String(error).split("\n")[1]}`;
+        }
+      }
+    }
     const offered: Offered[] = JSON.parse(readFileSync(manifest, "utf8")).offered_paths ?? [];
     const of = (p: Offered) => `${crate.name}::${p.rust.join("::")}`;
     listed[crate.name] = offered.map((p) => `${p.kind} ${p.rust.join("::")} -> ${p.js.join(".")}`);
@@ -164,9 +185,26 @@ export function exportNet(cases: string, name: string, files: string[]): Netted 
 import { $isPanic } from "@rust-js/std";
 // Run as \`proxies\`, each argument given as a counting proxy of what JS
 // made (test/counting-proxies.ts, oracle C), which must give what the
-// plain run gives.
-const proxied = process.argv[2] === "proxies";
-const { counted } = proxied ? (await import(${JSON.stringify(join(import.meta.dir, "counting-proxies.ts"))})).countingProxies() : { counted: (v) => v };
+// plain run gives, its log of reads printed; as \`volatile <file>\`, each
+// field the file's paths name, read once by Rust, a getter answering
+// another value after its first, which a second read would see.
+const mode = process.argv[2] ?? "plain";
+const once = mode === "volatile" ? new Set(JSON.parse((await import("node:fs")).readFileSync(process.argv[3], "utf8"))) : new Set();
+const { counted, note, log } = mode === "plain" ? { counted: (v) => v, note: () => {}, log: [] } : (await import(${JSON.stringify(join(import.meta.dir, "counting-proxies.ts"))})).countingProxies();
+// Another value of a primitive's kind, which its getter answers after the first.
+const other = (v) => (typeof v === "number" ? v + 1 : typeof v === "bigint" ? v + 1n : typeof v === "string" ? v + "!" : typeof v === "boolean" ? !v : v);
+// \`value\` with each field \`once\` names a getter of two answers.
+const volatile = (value, path) => {
+  if (value === null || typeof value !== "object") return value;
+  if (Array.isArray(value)) return value.map((item, i) => volatile(item, path + "[" + i + "]"));
+  const made = {};
+  for (const [key, v] of Object.entries(value)) {
+    const at = path + "." + key;
+    made[key] = once.has(at) && (v === null || typeof v !== "object") ? { $reads: [v, other(v)] } : volatile(v, at);
+  }
+  return made;
+};
+const given = (value, path) => counted(mode === "volatile" ? volatile(value, path) : value, path);
 ${jsShow}
 ${jsConforms}
 const types = ${JSON.stringify(types)};
@@ -177,6 +215,7 @@ const lines = [];
 // Its result's shape too, oracle B's: a line of its own, which no native
 // line matches.
 const said = (label, path, f, t, none) => {
+  note(label);
   if (at(path) === undefined) return void lines.push("\\u0001" + label + " missing");
   try {
     const v = f();
@@ -189,19 +228,42 @@ const said = (label, path, f, t, none) => {
 };
 ${values.map((p) => `lines.push("\\u0001" + ${JSON.stringify(`kind ${of(p)}`)} + " " + typeof at(${JSON.stringify(p.js)}));`).join("\n")}
 ${tested.map(({ p, given, label }) => p.kind === "function"
-    ? `said(${JSON.stringify(label)}, ${JSON.stringify(p.js)}, () => at(${JSON.stringify(p.js)})(${given.map((g, k) => `counted(${g.split("\u0000")[0]}, ${JSON.stringify(`${label}.arg${k}`)})`).join(", ")}), ${JSON.stringify(p.ty)}, ${JSON.stringify(p.result_none ?? "plain")});`
+    ? `said(${JSON.stringify(label)}, ${JSON.stringify(p.js)}, () => at(${JSON.stringify(p.js)})(${given.map((g, k) => `given(${g.split("\u0000")[0]}, ${JSON.stringify(`${label}.arg${k}`)})`).join(", ")}), ${JSON.stringify(p.ty)}, ${JSON.stringify(p.result_none ?? "plain")});`
     : `said(${JSON.stringify(label)}, ${JSON.stringify(p.js)}, () => at(${JSON.stringify(p.js)}), ${JSON.stringify(p.ty)}, "plain");`).join("\n")}
 lines.push("\\u0001counted " + count.checked + " " + count.unchecked);
 lines.push("\\u0001why " + JSON.stringify(count.why));
+if (mode === "proxies") lines.push("\\u0001reads " + JSON.stringify(log));
 // On a line of its own, past what a call printed without one.
 console.log("\\n" + lines.join("\\n"));
 `);
       const js = marked(run(["bun", harness], limit(small)));
+      // Its lines but the proxies' log.
+      const said = (lines: string[]) => lines.filter((l) => !l.startsWith("reads "));
+      const logOf = (lines: string[]) => JSON.parse(lines.find((l) => l.startsWith("reads "))?.slice("reads ".length) ?? "[]") as string[];
+      const differ = (a: string[], b: string[], what: (k: number) => string) =>
+        Array.from({ length: Math.max(a.length, b.length) }, (_, k) => k).filter((k) => a[k] !== b[k]).slice(0, 3).map(what);
       // And again, each argument a counting proxy: the same lines.
       const proxied = marked(run(["bun", harness, "proxies"], limit(small)));
-      const unlike = Array.from({ length: Math.max(js.length, proxied.length) }, (_, k) => k)
-        .filter((k) => js[k] !== proxied[k])
-        .map((k) => `given proxies, ${proxied[k] ?? "nothing"}, where given plain values, ${js[k] ?? "nothing"}`);
+      const unlike = differ(js, said(proxied), (k) => `given proxies, ${said(proxied)[k] ?? "nothing"}, where given plain values, ${js[k] ?? "nothing"}`);
+      if (unread === undefined) {
+        // Rust's reads, the \`--js-reads\` build's log: the readable build's
+        // must be it, read for read (oracle C).
+        const referenceHarness = join(reads, `net-${crate.name}.mjs`);
+        writeFileSync(referenceHarness, readFileSync(harness, "utf8"));
+        const reference = logOf(marked(run(["bun", referenceHarness, "proxies"], limit(small))));
+        const readable = logOf(proxied);
+        unlike.push(...differ(readable, reference, (k) => `reads: the readable build's ${readable[k] ?? "nothing"} where Rust's reads (--js-reads) are ${reference[k] ?? "nothing"}, at read ${k}`));
+        // And each field Rust reads once a getter of two answers: the same
+        // lines, as a second read would see the second.
+        const counts = new Map<string, number>();
+        for (const line of reference) if (line.startsWith("get ")) counts.set(line.slice(4), (counts.get(line.slice(4)) ?? 0) + 1);
+        const onceFile = join(out, `once-${crate.name}.json`);
+        writeFileSync(onceFile, JSON.stringify([...counts].filter(([, n]) => n === 1).map(([path]) => path)));
+        const volatileRun = said(marked(run(["bun", harness, "volatile", onceFile], limit(small))));
+        checked.reads += reference.length;
+        checked.volatiles += [...counts.values()].filter((n) => n === 1).length;
+        unlike.push(...differ(js, volatileRun, (k) => `given getters of a second answer where Rust reads once, ${volatileRun[k] ?? "nothing"}, where given plain values, ${js[k] ?? "nothing"}`));
+      }
       for (const [why, n] of Object.entries(giving.missing)) notGiven[why] = (notGiven[why] ?? 0) + n;
       if (compared.length === 0) return { js, native: [] as string[], unlike };
       const rustPath = (p: Offered) => `${crate.name}::${p.rust.join("::")}`;
@@ -271,5 +333,5 @@ ${compared.map(({ p, given, label }) => {
       for (const error of typeChecked(out, `net-${crate.name}.ts`, es2022)) problems.push(`${crate.name}'s .d.ts: ${error}`);
     }
   }
-  return { problems, ...checked, shapes, notGiven, offered: listed };
+  return { problems, ...checked, shapes, notGiven, unread, offered: listed };
 }

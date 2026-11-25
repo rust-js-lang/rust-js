@@ -370,3 +370,54 @@ reasons and the proxies' log.
 
 Mutation `offered-field-js-name-as-rust`: a field recorded by its Rust name
 gives JS `{ max_len }` where it reads `maxLen`, and native Rust disagrees.
+
+## Amendment: oracle C, Rust's reads and volatile getters (2026-11-25, the lead's step 2 of 2)
+
+Oracle C's second landing holds the reads a crate makes of what JS gives
+it to Rust's, on ADR 1022's own contract, so there's no second meaning of
+"a read".
+
+**The reference build.** `--js-reads` is a test hook, plumbed as
+`--count-every-cell` is, and `buildFlags.reads` in test/builds.ts. With
+it, `representation::fields_answered_by_getters`, the one place a field
+read is decided, answers true of every struct. Every field read is then
+`Known::Getter`, which ADR 1022 guarantees each pass keeps where Rust reads
+it. The net builds each crate twice, and runs the reference build given
+counting proxies. Its log of reads is Rust's.
+
+**The reads oracle.** The readable build's proxy log must equal the
+reference's, per call and read for read. A difference is a read
+`js_may_make` or `js_may_give` missed, or one a pass moved, merged or
+read again.
+
+**The volatile variant.** Each primitive field the reference reads exactly
+once is given as a getter of two answers: its plain value first, another
+after. The output must equal the plain run's, as a second read would see
+the second answer.
+
+**Its blind spot.** A read the lowering itself emits twice appears in both
+builds, so it equals itself and this oracle can't see it. getter-reads'
+hand-written `//@ logs` stay that class's oracle (#1908's kind). A MIR
+counter would see it, but it needs the printer to tell a read from a
+write's target; it earns that change if a P0 of the class turns up.
+
+**Where the reference build can't be made,** a case's reads aren't
+compared, and why is said (`Netted.unread`), never passed silently:
+
+- `library_identities_kept_apart` is refused under the hook (#1343's
+  `dyn Fn` addresses in a crate that counts an `Rc`).
+- `library_writes_a_dyn_errors_debug` and
+  `library_writes_an_io_error_piecewise` panic in `optional_call`, where a
+  dropped `Box<dyn Error>` field's getter read is a callee asserted to
+  have no effects: #2596 (P1). A struct that `js_may_make` holds could
+  take the same path in a normal build.
+
+**Results:** across the net's 226 cases, 952 reads compared and 93 fields
+given two answers, over 449 calls, with no problem found.
+
+Own case `object_arguments` gains `kept`, ADR 1022's shape: a `let` of a
+field Rust reads once, which a plain-data reading inlines at each use.
+
+Mutation `js-given-fields-read-as-plain`: `js_may_give` unasked, so tidy
+inlines `const x = p.x`; the reads differ from Rust's, and the volatile
+getters' second answers show.

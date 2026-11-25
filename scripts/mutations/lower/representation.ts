@@ -614,4 +614,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "process_termination_reports"],
   },
+  {
+    name: "js-given-fields-read-as-plain",
+    breaks: "a struct JS gives an export is read as plain data, `js_may_give` unasked, so tidy reads a field Rust reads once at each use, `let x = p.x` inlined, a getter's run each time: oracle C's reads, the readable build's log beside Rust's (`--js-reads`'s), and its volatile getters (ADRs 1022, 1204)",
+    file: "crates/rust-js-lower/src/representation.rs",
+    find: "            || matches!(ty.kind(), ty::Adt(adt, _) if self.krate.cell_borrows.pointers().js_may_give(adt.did()))\n",
+    replace: "            || false\n",
+    tests: ["test/export-net-5.test.ts", "-t", "export net: object_arguments"],
+  },
 ];

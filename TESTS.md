@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (ADR 1204 amended): oracle C's second landing: the export net builds each crate again with `--js-reads` (test/builds.ts `reads`), every field read a getter's, and holds the readable build's proxy log to it, read for read, and gives each field Rust reads once a getter of two answers; where the reference build can't be made, the reads unread, said (#2596).
+
 Changed on 2026-11-25 (ADR 1204 amended): oracle C's first landing: the export net gives a crate's types as arguments, made from their records, and runs each crate again given counting proxies, which must give alike; test/counting-proxies.ts, getter-reads' harness shared; test/oracle-c.test.ts, new, the push suite's; own case `object_arguments`.
 
 Changed on 2026-11-25 (#2595, ADR 0914 amended): one crate pair, a library generic function's constant of a struct of no size, against native; one mutation.

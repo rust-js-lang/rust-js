@@ -99,6 +99,9 @@ pub struct Caches {
     /// unchecked or checked only where it's made, `--count-every-cell`'s
     /// (#2491).
     pub count_every_cell: bool,
+    /// That every field read is a getter's, `--js-reads`'s (ADR 1204's
+    /// oracle C).
+    pub js_reads: bool,
     /// That what MIR's intervals keep is asked of the effects query too,
     /// `--intervals-by-effects`'s (#2112 B step 3a).
     pub intervals_by_effects: bool,
@@ -226,6 +229,8 @@ pub struct Flags {
     pub without_moves: bool,
     /// Whether every `RefCell` borrow is counted.
     pub count_every_cell: bool,
+    /// Whether every field read is a getter's.
+    pub js_reads: bool,
     /// Whether what they keep is asked of the effects query too.
     pub intervals_by_effects: bool,
     /// Whether the functions a recogniser takes are recorded.
@@ -285,6 +290,7 @@ fn start_keyed(gcx: usize, flags: Flags, hooks: &'static dyn MirHooks) -> Sessio
             without_intervals: flags.without_intervals,
             without_moves: flags.without_moves,
             count_every_cell: flags.count_every_cell,
+            js_reads: flags.js_reads,
             intervals_by_effects: flags.intervals_by_effects,
             shadows: shadows::Shadows::of(&flags.shadows),
             cell_form_wholes: OnceCell::new(),

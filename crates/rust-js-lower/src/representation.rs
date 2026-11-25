@@ -390,7 +390,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// 1022). What `project` says of each read of one, and a pattern's
     /// subject asks, read once where it's tested (#430).
     pub fn fields_answered_by_getters(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if self.krate.cell_borrows.pointers().js_may_make(adt.did()))
+        // `--js-reads`'s: every struct's, each read kept where Rust reads it,
+        // oracle C's reference (ADR 1204).
+        matches!(ty.kind(), ty::Adt(adt, _)
+            if crate::session::caches(self.tcx).js_reads
+                || self.krate.cell_borrows.pointers().js_may_make(adt.did()))
     }
 
     /// Whether a field of a `ty` value, a struct, may be a getter's as JS

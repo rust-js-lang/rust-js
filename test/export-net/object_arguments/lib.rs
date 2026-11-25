@@ -67,3 +67,10 @@ pub fn measured(s: Size) -> u32 {
 pub fn counted(points: &[Point]) -> usize {
     points.iter().filter(|p| p.x > p.y).count()
 }
+
+// A field Rust reads once, kept in a `let` its uses read (ADR 1022's
+// shape): read in place at each use, a getter's would run each time.
+pub fn kept(p: &Point) -> u32 {
+    let x = p.x;
+    if x > 3 { x * 2 } else { x + p.y }
+}

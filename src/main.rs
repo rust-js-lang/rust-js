@@ -140,6 +140,8 @@ struct RustJs {
     without_intervals: bool,
     /// `--count-every-cell`, every `RefCell` borrow counted (#2491).
     count_every_cell: bool,
+    /// `--js-reads`, every field read a getter's (ADR 1204's oracle C).
+    js_reads: bool,
     /// `--without-moves`, rust-js's drop elaboration blind to moves
     /// (#2112's change D).
     without_moves: bool,
@@ -416,6 +418,7 @@ impl RustJs {
             without_mutated: std::mem::take(&mut self.without_mutated),
             without_intervals: self.without_intervals,
             count_every_cell: self.count_every_cell,
+            js_reads: self.js_reads,
             without_moves: self.without_moves,
             intervals_by_effects: self.intervals_by_effects,
             records_recognized: self.recognizers_found.is_some(),
@@ -873,6 +876,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         without_mutated,
         without_intervals,
         count_every_cell,
+        js_reads,
         without_moves,
         intervals_by_effects,
         shadow,
@@ -951,6 +955,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         without_mutated,
         without_intervals,
         count_every_cell,
+        js_reads,
         without_moves,
         intervals_by_effects,
         shadow,
