@@ -1048,13 +1048,15 @@ pub fn stepped_by(e: &Expr) -> Option<(&Expr, i128)> {
 }
 
 /// What `for (x of e)` steps through of `e`, `$iter(xs)`'s or
-/// `Iterator.from(xs)`'s: `xs` itself.
+/// `Iterator.from(xs)`'s: `xs` itself. Of another, `e`, every fact its
+/// makers said of it kept, as a `Form` fact is never forgotten (#2602),
+/// though not the temporary that held it.
 pub fn iterated(e: Expr) -> Expr {
     let from = iterator_from(&e).is_some();
     match e.kind {
         js::ExprKind::Call(_, args) if from || is_stepped_items(&e) => args.into_iter().next().expect("one"),
         kind => Expr {
-            facts: its_facts(e.facts),
+            facts: e.facts,
             kind,
             span: e.span,
             held_as: Default::default(),
@@ -1234,3 +1236,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -115,3 +115,27 @@ runs as native Rust does.**
   `by_ref_steps`), `contracts-forget-too` (a contract checked of what's
   forgotten, caught by a `finally` of what never throws),
   `without-known-any-name` and `knowns-found-unwritten`.
+
+## Amendment: a rebuild keeps what was said (#2602)
+
+A `Form` fact is never forgotten, so no pass may drop one by rebuilding
+the expression it's of. `iterators::iterated` did. Of a value it doesn't
+unwrap (`$iter(xs)`'s or `Iterator.from(xs)`'s `xs`), it gave the same kind
+with only the iterator-value facts (`its_facts`), and lost every other.
+
+That was never decided. The function was written before facts existed, as
+`Expr { kind, span }`; facts were later added as `Facts::NONE`, and then
+the iterator-value facts were restored. So `entries(it.map(f))`'s
+`$mapEnds(..)` reached `entries_shown` without the marks its maker set.
+#2229's shadow found it: a mark set in `Expr::call` was gone at 3 reads.
+
+`iterated` now keeps the value's facts whole, though still not the
+temporary that held it (`held_as`, as a87448131 meant). No corpus output
+moved: the corpus (3,078 cases), the crate pairs and every iterator form
+are unchanged. Its unit test, `iterators::tests`, holds it, with the
+mutation `iterated-forgets-its-facts`.
+
+`mir/calls.rs`' `called_unbound` rebuilds a call with
+`pointers.call_facts(holder)` in place of the call's own facts. Keeping
+them there moved no corpus output either. It's left to #2602's follow-up:
+a check that every rebuild of a call carries its facts.

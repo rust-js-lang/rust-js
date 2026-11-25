@@ -519,4 +519,12 @@ export const mutations: Mutation[] = [
     replace: "            .any(|p| p.def_id() == iterator && p.skip_binder().self_ty() == ty && false)\n    {\n        return true;",
     tests: ["test/corpus.test.ts", "-t", "^items_stepped_through_their_bound\\.rs$"],
   },
+  {
+    name: "iterated-forgets-its-facts",
+    breaks: "what `iterated` gives of a value it doesn't unwrap keeps only its iterator-value facts, so `entries(it.map(f))`'s `$mapEnds(..)` loses every other fact its makers said, a `Form` fact its readers then read another form's JS of (#2602)",
+    file: "crates/rust-js-lower/src/iterators.rs",
+    find: "            facts: e.facts,\n            kind,\n",
+    replace: "            facts: its_facts(e.facts),\n            kind,\n",
+    unitTests: "iterators::tests::iterated_keeps_what_its_makers_said",
+  },
 ];
