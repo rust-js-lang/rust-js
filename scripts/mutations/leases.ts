@@ -72,8 +72,8 @@ export const mutations: Mutation[] = [
     name: "lock-wait-said-once",
     breaks: "a run waiting on a lock says so once, and its wait, which sleeps the process, is unseen after: a mutation run waited 50 minutes saying nothing more (#2418)",
     file: "scripts/leases.ts",
-    find: "      } else if (waiting && said !== undefined && Date.now() - said >= every) {",
-    replace: "      } else if (waiting && said !== undefined && Date.now() - said >= every * 1000) {",
+    find: "      } else if (waiting && said !== undefined && clock.now() - said >= every) {",
+    replace: "      } else if (waiting && said !== undefined && clock.now() - said >= every * 1000) {",
     tests: ["test/leases.test.ts", "-t", "a lock is one holder's at a time"],
   },
   {
@@ -131,5 +131,13 @@ export const mutations: Mutation[] = [
     find: "  if (at === 0 || !pushWaits()) return false;",
     replace: "  if (at === 0 || !pushWaits() || true) return false;",
     tests: ["test/leases.test.ts", "-t", "its third after it .names"],
+  },
+  {
+    name: "lock-wait-by-the-wall-clock",
+    breaks: "a lock's wait ends by the machine's clock where it's given its own, so a test's wait of ticks is said none under a loaded machine's oversleep (#2603)",
+    file: "scripts/leases.ts",
+    find: "      if (clock.now() > until) return undefined;\n",
+    replace: "      if (Date.now() > until) return undefined;\n",
+    tests: ["test/leases.test.ts", "-t", "a lock is one holder's at a time"],
   },
 ];

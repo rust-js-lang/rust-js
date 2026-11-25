@@ -428,13 +428,21 @@ export function leasedIn(dir: string, store = leaseStore): boolean {
   return liveLeases(store).some((lease) => real(lease.checkout) === real(dir));
 }
 
+/** What a wait reads its time of and sleeps by: the machine's, or a
+ * test's, whose time moves as its sleeps say (#2603). */
+export type Clock = { now: () => number; sleep: (ms: number) => void };
+const machineClock: Clock = { now: () => Date.now(), sleep: (ms) => Bun.sleepSync(ms) };
+
 /** `lock` taken, a directory made at once or not at all, and what lets it
  * go: one whose owner's process is gone is taken, as is one whose maker
  * named no owner 5 s past making it, gone between. Waited for up to `wait`
  * ms, `waiting` said as it starts to and again each `every` ms, with how
  * long and whose process holds it, by `say`: its wait sleeps the process,
  * so no timer of the run's says anything meanwhile, and a mutation run
- * that waited 50 minutes said it once (#2418). Past that, `undefined`. */
+ * that waited 50 minutes said it once (#2418). Past that, `undefined`.
+ * Its time is `clock`'s, the machine's but where a test gives its own: a
+ * wait asserted by the wall clock, a 200 ms one of ticks each 40 ms, said
+ * none where one `sleep` of a loaded machine overslept the window (#2603). */
 export function acquire(
   lock: string,
   {
@@ -443,11 +451,12 @@ export function acquire(
     every = 60_000,
     say = (line: string) => console.log(line),
     ahead,
-  }: { wait?: number; waiting?: string; every?: number; say?: (line: string) => void; ahead?: () => boolean } = {},
+    clock = machineClock,
+  }: { wait?: number; waiting?: string; every?: number; say?: (line: string) => void; ahead?: () => boolean; clock?: Clock } = {},
   stateOf: (lock: string) => LockState = lockState,
 ): (() => void) | undefined {
   const owner = join(lock, "owner");
-  const began = Date.now();
+  const began = clock.now();
   const until = began + wait;
   let said: number | undefined;
   for (;;) {
@@ -474,19 +483,19 @@ export function acquire(
         rmSync(lock, { recursive: true, force: true });
         continue;
       }
-      if (Date.now() > until) return undefined;
+      if (clock.now() > until) return undefined;
       if (waiting && said === undefined) {
         say(waiting);
-        said = Date.now();
-      } else if (waiting && said !== undefined && Date.now() - said >= every) {
+        said = clock.now();
+      } else if (waiting && said !== undefined && clock.now() - said >= every) {
         let holder = "";
         try {
           holder = `, held by process ${readFileSync(owner, "utf8").trim()}`;
         } catch {}
-        say(`${waiting}: ${Math.round((Date.now() - began) / 60_000)} min so far${holder}`);
-        said = Date.now();
+        say(`${waiting}: ${Math.round((clock.now() - began) / 60_000)} min so far${holder}`);
+        said = clock.now();
       }
-      Bun.sleepSync(25);
+      clock.sleep(25);
     }
   }
 }

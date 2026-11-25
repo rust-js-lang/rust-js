@@ -67,11 +67,17 @@ test("a lock is one holder's at a time, and one whose owner is gone, or never na
   expect(acquire(lock, { wait: 100 })).toBeUndefined();
   // And says it waits as it starts to and again each `every`, whose process
   // holds it: its wait sleeps the process, so no timer of the run's says
-  // anything meanwhile (#2418).
+  // anything meanwhile (#2418). Of a clock of its own, whose time is its
+  // sleeps': the machine's, loaded, overslept the whole wait in one sleep,
+  // and said no tick (#2603).
   const said: string[] = [];
-  expect(acquire(lock, { wait: 200, waiting: "waiting for the lock", every: 40, say: (line) => said.push(line) })).toBeUndefined();
-  expect(said[0]).toBe("waiting for the lock");
-  expect(said[1]).toBe(`waiting for the lock: 0 min so far, held by process ${process.pid}`);
+  let time = 0;
+  const slept: number[] = [];
+  const clock = { now: () => time, sleep: (ms: number) => { slept.push(ms); time += ms; } };
+  expect(acquire(lock, { wait: 200, waiting: "waiting for the lock", every: 40, say: (line) => said.push(line), clock })).toBeUndefined();
+  expect(said).toEqual(["waiting for the lock", ...Array(4).fill(`waiting for the lock: 0 min so far, held by process ${process.pid}`)]);
+  expect(slept.length).toBe(9);
+  expect(time).toBe(225);
   release!();
   expect(withLock(lock, () => "ran")).toBe("ran");
   expect(existsSync(lock)).toBe(false);
