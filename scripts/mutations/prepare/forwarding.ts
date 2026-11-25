@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "                if export {\n                    module.aliases.push((name.word().to_string(), name.word().to_string()));\n",
     replace: "                if false {\n                    module.aliases.push((name.word().to_string(), name.word().to_string()));\n",
-    tests: ["test/lowering-functions.test.ts", "-t", "JS can't call that only calls a module variable"],
+    tests: ["test/lowering-forwarding.test.ts", "-t", "JS can't call that only calls a module variable"],
   },
   {
     name: "forwarding-fields-this-read",
