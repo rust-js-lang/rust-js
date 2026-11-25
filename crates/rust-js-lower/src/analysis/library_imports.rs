@@ -21,12 +21,15 @@ pub(super) fn named(uses: &mut JsUses, foreign: &crate::library::Foreign<'_, '_>
             uses.named.insert(export, imported.name.clone());
         }
         // A split function's body, by its file, which a direct call of it
-        // calls past its checks (#2403, ADR 1193).
+        // calls past its checks (#2403, ADR 1193): named as its entry is,
+        // its name or the module's `use` of it (`imports_named`), so
+        // `createRequest$ as createFlightRequest`, not a name of its own a
+        // local or another library's body would take (#2403, ADR 1193).
         if let Some(unchecked) = &imported.unchecked {
             let export = (imported.from.clone(), unchecked.clone());
             uses.bound_to.entry(export.clone()).or_default();
             uses.imported.entry(export.clone()).or_default();
-            uses.named.insert(export, unchecked.clone());
+            uses.named.insert(export, imported.name.clone());
         }
     }
     // And through a library's module that re-exports it, by what that

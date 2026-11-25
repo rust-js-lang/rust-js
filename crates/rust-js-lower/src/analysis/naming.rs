@@ -294,6 +294,14 @@ pub(super) fn name_imports(
             (export_key, base)
         })
         .collect();
+    // A library's split function's body, which a direct call imports,
+    // where only JS's use of the function imports its entry (#2403, ADR
+    // 1193): named before its entry, so it has the word where both want
+    // it, `quoted$ as quoted`, not `quoted$1` beside an entry the module
+    // never imports.
+    let bodies: IndexSet<Export> = (foreign.all())
+        .filter_map(|imported| Some((imported.from.clone(), imported.unchecked.clone()?)))
+        .collect();
     taken
         .iter()
         .map(|(&module, items)| {
@@ -307,20 +315,24 @@ pub(super) fn name_imports(
             // module that holds it, its holder's import, `import
             // ReactSharedInternalsClient` (rd651).
             let mut held_uses = bindings::library_uses(tcx, foreign, module);
+            // A split function's body as its entry: `use dep::create_request
+            // as create_flight_request` is `import { createRequest$ as
+            // createFlightRequest }`, where a direct call calls the body
+            // (#2403, ADR 1193).
             let library_renamed: IndexMap<Export, &String> = (renamed.iter())
-                .filter_map(|(&id, alias)| {
-                    (foreign.import_key(id, module))
-                        .or_else(|| held_uses.swap_remove(&id))
-                        .map(|export| (export, alias))
+                .flat_map(|(&id, alias)| {
+                    let entry = (foreign.import_key(id, module)).or_else(|| held_uses.swap_remove(&id));
+                    let body =
+                        (foreign.unchecked(id)).filter(|(from, _)| entry.as_ref().is_some_and(|(by, _)| by == from));
+                    entry.into_iter().chain(body).map(move |export| (export, alias))
                 })
                 .collect();
             // What the module imports is named first, so it's named as it is
             // where another module imports another of its name: next/image's
             // `Image` there, next/legacy/image's here.
-            let (own, others): (Vec<_>, Vec<_>) = bases
-                .iter()
-                .partition(|(export, _)| uses.imported[*export].contains(&module));
-            let names = (own.into_iter().chain(others))
+            let mut ordered: Vec<&(&Export, String)> = bases.iter().collect();
+            ordered.sort_by_key(|(export, _)| (!uses.imported[*export].contains(&module), !bodies.contains(*export)));
+            let names = (ordered.into_iter())
                 .map(|(export, base)| {
                     // An import is named as the module renames what holds
                     // it: `use …::Link as NextLink` is `import NextLink from

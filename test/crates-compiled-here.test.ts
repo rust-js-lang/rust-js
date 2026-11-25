@@ -34,8 +34,9 @@ test("a consumer that grows a library's boxed tree calls the library's method", 
 test("a library's writer given as a value is its import", () => {
   const out = chain(pairs, "library_writers_given_options", ["dep", "app"]);
   const app = withoutBoundary(readFileSync(join(out, "app", "lib.js"), "utf8"));
-  // The body of `quoted`, split (#2403, ADR 1193), by its own name, beside the local `quoted`.
-  expect(app).toContain("  $writingInto(f, Joined.format, joined, quoted$, options);\n");
+  // The body of `quoted`, split (#2403, ADR 1193), imported as its entry
+  // is, `quoted$ as quoted`, beside another function's local `quoted`.
+  expect(app).toContain("  $writingInto(f, Joined.format, joined, quoted, options);\n");
 }, 300_000);
 
 // #1029: a closure a library's instance makes of a function rustc inlined

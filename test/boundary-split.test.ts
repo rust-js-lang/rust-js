@@ -110,6 +110,47 @@ test("a consumer's direct call calls the body its library's contract names", () 
   expect(lib.eight!(2)).toBe(16);
 });
 
+// A library's split function imported by a `use` that renames it is its
+// body under that name, `import { double$ as twice }`, as its entry's
+// import would be: the port's `create_request as create_flight_request`
+// lost its alias, `createRequest$ as createRequest$$1` beside the Fizz
+// one. And one the `use` doesn't rename is its body named as its entry
+// would be, so a local of the export's name is named as it was beside
+// the entry, apart from the import, not the import apart from it.
+test("a consumer's renaming use of a library's split function names its body's import as the use names it", async () => {
+  const at = join(dir, "renamed");
+  mkdirSync(join(at, "app"), { recursive: true });
+  writeFileSync(
+    join(at, "app.rs"),
+    `use dep::{double as twice, quadruple};
+
+fn double(n: u32) -> u32 {
+    n + 100
+}
+
+pub fn mixed(n: u32) -> u32 {
+    twice(n) + double(n) + quadruple(n)
+}
+
+pub fn shadowed(n: u32) -> u32 {
+    let quadrupled = quadruple(n);
+    let quadruple = quadrupled + 1;
+    quadruple
+}
+`,
+  );
+  run([compiler, join(at, "app.rs"), "-o", join(at, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js]);
+  const renamed = readFileSync(join(at, "app", "lib.js"), "utf8");
+  expect(renamed).toContain('import { double$ as twice, quadruple$ as quadruple } from "../../dep/lib.js";\n');
+  expect(renamed).toContain("function double(n) {");
+  expect(renamed).toContain("return (((twice(n) + double(n)) >>> 0) + quadruple(n)) >>> 0;");
+  expect(renamed).toContain("const quadruple$1 = (quadrupled + 1) >>> 0;");
+  const made = await import(join(at, "app", "lib.js"));
+  expect(made.mixed(1)).toBe(2 + 101 + 4);
+  expect(made.shadowed(1)).toBe(5);
+});
+
 test("a program's function only JS calls is one function; one Rust calls too is split, its body private", () => {
   expect(appJs).toMatch(/export function own\(n\) \{\n {2}\$checkU32\(n, "own\(n\)"\);\n {2}return/);
   expect(appJs).not.toContain("own$");

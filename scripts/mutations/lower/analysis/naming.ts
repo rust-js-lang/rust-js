@@ -762,8 +762,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `use .. as` of a binding through a library's module that holds it keeps the `const`'s name, react-markup's `import ReactSharedInternals` for `REACT_SHARED_INTERNALS as REACT_SHARED_INTERNALS_CLIENT` (rd651)",
     file: "crates/rust-js-lower/src/analysis/naming.rs",
-    find: "                        .or_else(|| held_uses.swap_remove(&id))\n",
-    replace: "",
+    find: "(foreign.import_key(id, module)).or_else(|| held_uses.swap_remove(&id));\n",
+    replace: "(foreign.import_key(id, module));\n",
     tests: ["test/cargo-link.test.ts", "-t", "holds a binding"],
   },
   {
@@ -908,5 +908,21 @@ export const mutations: Mutation[] = [
     find: "                    uses.globals.insert(bindings::first_name(path).to_string());\n",
     replace: "                    let _ = path;\n",
     tests: ["test/validate.test.ts", "-t", "named apart from a global its value reads"],
+  },
+  {
+    name: "split-body-unrenamed",
+    breaks: "a library's split function a `use` renames, `double as twice`, has its body imported by the export's name, `double$ as double`, the port's `create_request as create_flight_request` read as `createRequest$$1` (#2403, ADR 1193)",
+    file: "crates/rust-js-lower/src/analysis/naming.rs",
+    find: "                    entry.into_iter().chain(body).map(move |export| (export, alias))\n",
+    replace: "                    entry.into_iter().chain(body.filter(|_| false)).map(move |export| (export, alias))\n",
+    tests: ["test/boundary-split.test.ts", "-t", "a consumer's renaming use of a library's split function"],
+  },
+  {
+    name: "split-body-named-after-its-entry",
+    breaks: "a library's split function's body is named after its entry, which every module names too, so the body a module imports is given apart, `quoted$ as quoted$1`, beside the entry's `quoted` it never imports (#2403, ADR 1193)",
+    file: "crates/rust-js-lower/src/analysis/naming.rs",
+    find: "(!uses.imported[*export].contains(&module), !bodies.contains(*export))",
+    replace: "(!uses.imported[*export].contains(&module), false)",
+    tests: ["test/crates-compiled-here.test.ts", "-t", "a library's writer given as a value is its import"],
   },
 ];

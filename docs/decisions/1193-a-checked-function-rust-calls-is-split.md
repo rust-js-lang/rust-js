@@ -126,3 +126,32 @@ name, which shadows the star's; the module's `export * as ns from "./ns.js"` (#2
 ADR 1008 amended). Only where the library's module has such a function: else `export * as ns` of the
 library's file, as before. Held by `test/boundary-reach.test.ts`, `test/glob-reexports.test.ts` and the
 tree-shaking net (an unused member dropped, the shadowing forwarder's check kept, under Vite and Bun).
+
+## Amendment: a body's import is named as its entry's (2026-11-25)
+
+A consumer's direct call of a library's split function calls its body,
+imported by its file, `f$`. That import was named apart from its entry's,
+by the body's own name, so the module's `use` of it was lost: React's
+port's `use react_server::react_flight_server::{create_request as
+create_flight_request, ..}` read `import { createRequest$ as
+createRequest$$1 }` beside the Fizz server's `createRequest$ as
+createRequest`, 28 aliases lost and 130 names numbered apart over 13 files;
+and a local named after the call it holds took the name the import left
+free, ReactFiberRootScheduler's `const lanesToEventPriority =
+lanesToEventPriority$(nextLanes)` where it read `const value`.
+
+**A body's import is named as its entry's would be** (`library_imports.rs`,
+`naming.rs`): by the entry's name, and by the module's `use .. as` where it
+renames it, `import { double$ as twice }`. So a name is lost, or a local
+renamed, no more than beside the entry before the split.
+test/boundary-split.test.ts holds both, and mutations `split-body-named-apart`
+and `split-body-unrenamed`.
+
+Every module names every library export before lowering, the entry and its
+body both, and the first named takes the word: the body is named first, as
+a direct call imports it and only JS's use of the function imports the
+entry. Named after it, a consumer's `Debug` that passes the library's
+`quoted` on read `import { quoted$ as quoted$1 }` beside the entry's
+`quoted`, which it never imports, where another function's local `quoted`
+kept the import from reclaiming its word (test/crates-compiled-here.test.ts,
+mutation `split-body-named-after-its-entry`).
