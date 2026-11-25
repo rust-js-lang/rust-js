@@ -186,6 +186,8 @@ function offeredPath(path) {
     && (path.def === undefined || offeredDef(path.def))
     && (path.transparent === undefined || offeredType(path.transparent))
     && (path.variants === undefined || offeredEnum(path.variants))
+    && (path.positional === undefined || Array.isArray(path.positional) && path.positional.every(offeredType))
+    && (path.unit === undefined || path.unit !== null && typeof path.unit === "object" && tagKinds.has(path.unit.kind))
     && (path.type_params === undefined || Number.isInteger(path.type_params) && path.type_params >= 0)
     // #2573: a struct's fields, and a generic function's bounds.
     && (path.fields === undefined || Array.isArray(path.fields) && path.fields.every((field) => field !== null && typeof field === "object"
@@ -254,6 +256,15 @@ function offeredType(ty) {
       return offeredType(ty.of) && (ty.itself === undefined || typeof ty.itself === "boolean");
     case "dyn":
       return Array.isArray(ty.traits) && ty.traits.every((name) => typeof name === "string");
+    case "weak":
+      return offeredType(ty.of) && (ty.counted === undefined || typeof ty.counted === "boolean");
+    case "non_zero":
+    case "set":
+      return offeredType(ty.of);
+    case "pointer":
+      return offeredType(ty.of) && (ty.nullable === undefined || typeof ty.nullable === "boolean");
+    case "map":
+      return offeredType(ty.key) && offeredType(ty.value);
     case "iterator":
       return (ty.back === undefined || typeof ty.back === "boolean") && (ty.len === undefined || typeof ty.len === "boolean");
     case "param":

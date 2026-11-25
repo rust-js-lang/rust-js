@@ -103,6 +103,8 @@ fn walk<'tcx>(
             def: None,
             transparent: None,
             variants: None,
+            positional: Vec::new(),
+            unit: None,
         };
         match kind {
             // A module of its own JS reads only through a re-export of it.
@@ -187,6 +189,12 @@ fn walk<'tcx>(
                     def: Some(def_of(tcx, id)),
                     transparent,
                     variants: (kind == DefKind::Enum).then(|| enum_of(tcx, facts, id)),
+                    positional: if kind == DefKind::Struct {
+                        positional_of(tcx, facts, id)
+                    } else {
+                        Vec::new()
+                    },
+                    unit: (kind == DefKind::Struct).then(|| unit_of(tcx, id)).flatten(),
                     ..offered(OfferedKind::Type, Vec::new(), None, false)
                 });
             }
@@ -278,6 +286,46 @@ fn offered_type<'tcx>(tcx: TyCtxt<'tcx>, facts: &Facts<'_, 'tcx>, ty: Ty<'tcx>) 
         },
         ty::Adt(adt, args) if crate::recognition::is_std_def(tcx, adt.did(), StdItem::Arc) => OfferedType::Box {
             of: of(args.type_at(0)),
+        },
+        // A `Weak`, as its `Rc` is.
+        ty::Adt(adt, args) if crate::recognition::is_std_def(tcx, adt.did(), StdItem::RcWeak) => OfferedType::Weak {
+            of: of(args.type_at(0)),
+            counted: facts.counted.counts(tcx, args.type_at(0)),
+        },
+        ty::Adt(adt, args) if crate::recognition::is_std_def(tcx, adt.did(), StdItem::NonZero) => {
+            OfferedType::NonZero {
+                of: of(args.type_at(0)),
+            }
+        }
+        // A raw pointer or a `NonNull`, `raw_pointee`'s one answer: a raw one
+        // may be `ptr::null()`'s `null`, a `NonNull` never.
+        _ if let Some((pointee, _)) = crate::pointers::raw_pointee(tcx, ty) => OfferedType::Pointer {
+            of: of(pointee),
+            nullable: !matches!(ty.kind(), ty::Adt(adt, _) if crate::recognition::is_std_def(tcx, adt.did(), StdItem::NonNull)),
+        },
+        ty::Adt(adt, args)
+            if [StdItem::HashSet, StdItem::BTreeSet]
+                .into_iter()
+                .any(|item| crate::recognition::is_std_def(tcx, adt.did(), item)) =>
+        {
+            OfferedType::Set {
+                of: of(args.type_at(0)),
+            }
+        }
+        ty::Adt(adt, args)
+            if [StdItem::HashMap, StdItem::BTreeMap]
+                .into_iter()
+                .any(|item| crate::recognition::is_std_def(tcx, adt.did(), item)) =>
+        {
+            OfferedType::Map {
+                key: of(args.type_at(0)),
+                value: of(args.type_at(1)),
+            }
+        }
+        // An atomic, `{ value }` as a `Cell` is.
+        ty::Adt(adt, args) if crate::recognition::is_std_def(tcx, adt.did(), StdItem::Atomic) => OfferedType::Cell {
+            of: of(args.type_at(0)),
+            itself: false,
         },
         ty::Adt(adt, args) if crate::recognition::is_std_def(tcx, adt.did(), StdItem::Cell) => OfferedType::Cell {
             of: of(args.type_at(0)),
@@ -455,6 +503,45 @@ fn opaque<'tcx>(tcx: TyCtxt<'tcx>, facts: &Facts<'_, 'tcx>, id: DefId) -> Option
         inputs,
         output: Box::new(output),
     })
+}
+
+/// A tuple struct's fields' types, in order, where JS holds it as their
+/// array, `[a, b]` (`representation::numbered_struct`): not a class's,
+/// made by its constructor, nor a transparent one's, which is its field.
+fn positional_of<'tcx>(tcx: TyCtxt<'tcx>, facts: &Facts<'_, 'tcx>, id: DefId) -> Vec<OfferedType> {
+    let adt = tcx.adt_def(id);
+    if !crate::representation::numbered_struct(adt)
+        || crate::classes::is_class(tcx, id)
+        || crate::recognition::transparent_field(tcx, adt).is_some()
+    {
+        return Vec::new();
+    }
+    (adt.non_enum_variant().fields.iter())
+        .map(|field| {
+            offered_type(
+                tcx,
+                facts,
+                tcx.type_of(field.did).instantiate_identity().skip_normalization(),
+            )
+        })
+        .collect()
+}
+
+/// A unit struct's value, its `#[rust_js::name]`'s, or `undefined`
+/// (`bindings::unit_value`); `None` of a struct of fields.
+fn unit_of(tcx: TyCtxt<'_>, id: DefId) -> Option<rust_js_program::offered::OfferedTag> {
+    use rust_js_program::offered::OfferedTag;
+    let variant = tcx.adt_def(id).non_enum_variant();
+    if variant.ctor_kind() != Some(rustc_hir::def::CtorKind::Const) {
+        return None;
+    }
+    Some(
+        match crate::bindings::unit_value(tcx, id).map(|value| value.expr().kind) {
+            Some(rust_js_program::js::ExprKind::Str(name)) => OfferedTag::Str(name.to_string()),
+            Some(rust_js_program::js::ExprKind::Bool(b)) => OfferedTag::Bool(b),
+            _ => OfferedTag::Undefined,
+        },
+    )
 }
 
 /// Where a struct, an enum or a union is defined, its records' one key:

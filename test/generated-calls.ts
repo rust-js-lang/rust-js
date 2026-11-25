@@ -28,6 +28,11 @@ export type Tree =
   | { kind: "cell"; of: Tree; itself?: boolean }
   | { kind: "dyn"; traits: string[] }
   | { kind: "iterator"; back?: boolean; len?: boolean }
+  | { kind: "weak"; of: Tree; counted?: boolean }
+  | { kind: "non_zero"; of: Tree }
+  | { kind: "pointer"; of: Tree; nullable?: boolean }
+  | { kind: "set"; of: Tree }
+  | { kind: "map"; key: Tree; value: Tree }
   | { kind: "other"; rust: string };
 
 /** A value given alike: its JS literal and its Rust one. */
@@ -87,6 +92,11 @@ export function rustType(tree: Tree): string {
     case "cell": return `::std::cell::${tree.itself ? "RefCell" : "Cell"}<${rustType(tree.of)}>`;
     case "dyn": return `dyn ${tree.traits.join(" + ")}`;
     case "iterator": return "impl Iterator";
+    case "weak": return `::std::rc::Weak<${rustType(tree.of)}>`;
+    case "non_zero": return `::std::num::NonZero<${rustType(tree.of)}>`;
+    case "pointer": return `*const ${rustType(tree.of)}`;
+    case "set": return `::std::collections::HashSet<${rustType(tree.of)}>`;
+    case "map": return `::std::collections::HashMap<${rustType(tree.key)}, ${rustType(tree.value)}>`;
     case "other": return tree.rust;
   }
 }
@@ -144,6 +154,11 @@ export function values(tree: Tree, small = false): Given[] | undefined {
     case "cell":
     case "dyn":
     case "iterator":
+    case "weak":
+    case "non_zero":
+    case "pointer":
+    case "set":
+    case "map":
     case "other":
       return undefined;
   }
@@ -158,7 +173,7 @@ export function printable(tree: Tree): boolean {
     case "int": return tree.rust in ints;
     case "float": return tree.rust in floats;
     case "ref": return !tree.mutable && printable(tree.of);
-    case "box": case "fn": case "param": case "named": case "result": case "array": case "rc": case "cell": case "dyn": case "iterator": case "other": return false;
+    case "box": case "fn": case "param": case "named": case "result": case "array": case "rc": case "cell": case "dyn": case "iterator": case "weak": case "non_zero": case "pointer": case "set": case "map": case "other": return false;
     default: return true;
   }
 }
@@ -201,6 +216,8 @@ export type NoneForm = "plain" | "present" | "null" | "null_optional" | "nested"
 /** A struct's record as oracle B reads it: its fields, or its transparent
  * field's type, by its definition's key, `crate::path`. */
 export type Shaped = {
+  positional?: Tree[];
+  unit?: { kind: "str" | "bool" | "undefined"; value?: string | boolean };
   fields?: { js: string; ty: Tree; none?: NoneForm; property?: Tree }[];
   transparent?: Tree;
   variants?: {
@@ -242,6 +259,14 @@ export const shapeRows: [string, string][] = [
   ["an `Rc` whose count is read", "`{ value, strong, weak }`"],
   ["`Cell<T>`, `RefCell<T>`, `UnsafeCell<T>`", "`{ value }`, an `UnsafeCell`'s `get()` the cell itself; in a field, the property itself; a `RefCell` of an array, a `Map`, a `Set` or an object, that object"],
   ["`dyn Trait`", "`{ value, impl }`"],
+  ["`NonZero<T>`", "its number, as `T`'s"],
+  ["`Weak<T>`", "what its `Rc` is, the value itself or its counts' object; `null` of `Weak::new()`"],
+  ["a raw pointer, `NonNull<T>`", "a handle, its referent its `value`; a raw one's `null` of `ptr::null()`"],
+  ["an atomic, `AtomicU32`", "`{ value }`"],
+  ["`HashMap`, `BTreeMap`", "`Map`"],
+  ["`HashSet`, `BTreeSet`", "`Set`"],
+  ["tuple struct", "array `[a, b]`"],
+  ["unit struct", "`undefined`, or its `#[rust_js::name]` string"],
   ["`impl Iterator` given back, or std's iterator, `Chars`", "a JS iterator, spread by `[...it]`; of `impl DoubleEndedIterator`, `back()` its last item; of `impl ExactSizeIterator`, `len()` how many are left"],
   ["fieldless enum variant", "its name, `\"Red\"`; under a `#[repr(u8)]`, its number, its module's `const`, `Empty`"],
   ["enum variant with fields", "`{ TAG: \"Circle\", radius }`, `{ TAG: \"Square\", _0 }`"],
@@ -261,7 +286,18 @@ export const jsConforms = `function conforms(v, t, none, types, count, at = "", 
   const bad = (said) => ("the value" + at) + ": " + what(v) + ", not " + said;
   const checked = () => { count.checked++; return null; };
   const unchecked = (why) => { count.unchecked++; if (count.why) count.why[why] = (count.why[why] ?? 0) + 1; return null; };
-  if (depth > 8) return unchecked("deep");
+  // Past 1,000 places in: each object is held to a type once (below), so
+  // this bounds only the recursion, a list's three places a node.
+  if (depth > 1000) return unchecked("deep");
+  // An object already held to this type, or being, a cycle's or one shared:
+  // checked once.
+  if (v !== null && typeof v === "object") {
+    count.seen ??= new WeakMap();
+    const held = count.seen.get(v) ?? new Set();
+    if (held.has(t)) return null;
+    held.add(t);
+    count.seen.set(v, held);
+  }
   const inner = (x, ty, place, form = "plain", within = env) => conforms(x, ty, form, types, count, at + place, depth + 1, within);
   // Of each field of a struct or a variant, its object's, as its form says.
   const fieldsOf = (fields, name, here) => {
@@ -361,6 +397,31 @@ export const jsConforms = `function conforms(v, t, none, types, count, at = "", 
     // A \`dyn\` trait's pair, its value, \`undefined\` left out, and its impl.
     case "dyn":
       return v !== null && typeof v === "object" && v.impl !== null && typeof v.impl === "object" ? checked() : bad("a dyn's { value, impl }");
+    // A \`Weak\`, as its \`Rc\` is, or \`Weak::new()\`'s \`null\`.
+    case "weak":
+      if (v === null) return checked();
+      return inner(v, { kind: "rc", of: t.of, counted: t.counted }, "", none);
+    case "non_zero": {
+      const problem = inner(v, t.of, "", none);
+      if (problem) return problem;
+      return v === 0 || v === 0n ? bad("a NonZero's number, not 0") : checked();
+    }
+    // A handle whose \`value\` is its referent, never read here: a read may
+    // expose its address.
+    case "pointer":
+      if (v === null && t.nullable) return checked();
+      return v !== null && typeof v === "object" && "value" in v ? checked() : bad("a pointer's handle, of a value");
+    case "set":
+      if (!(v instanceof Set)) return bad("a Set");
+      for (const [i, x] of [...v].entries()) { const problem = inner(x, t.of, "[" + i + "]"); if (problem) return problem; }
+      return checked();
+    case "map":
+      if (!(v instanceof Map)) return bad("a Map");
+      for (const [i, [k, x]] of [...v].entries()) {
+        const problem = inner(k, t.key, ".keys[" + i + "]") ?? inner(x, t.value, ".get(" + i + ")");
+        if (problem) return problem;
+      }
+      return checked();
     case "iterator":
       if (v === null || typeof v !== "object" || typeof v.next !== "function" || typeof v[Symbol.iterator] !== "function") return bad("a JS iterator");
       if (t.back && typeof v.back !== "function") return bad("a DoubleEndedIterator's iterator, of back()");
@@ -404,6 +465,13 @@ export const jsConforms = `function conforms(v, t, none, types, count, at = "", 
         }
         return fieldsOf(variant.fields ?? [], name + "::" + variant.rust, here) ?? checked();
       }
+      // A tuple struct, its fields' array; a unit struct, its value.
+      if (shaped?.positional?.length) {
+        if (!Array.isArray(v) || v.length !== shaped.positional.length) return bad("an array of " + name + "'s " + shaped.positional.length + " fields");
+        for (const [i, item] of shaped.positional.entries()) { const problem = inner(v[i], item, "[" + i + "]", "plain", here); if (problem) return problem; }
+        return checked();
+      }
+      if (shaped?.unit) return tagIs(v, shaped.unit) ? checked() : bad(name + "'s value, " + (shaped.unit.kind === "undefined" ? "undefined" : JSON.stringify(shaped.unit.value)));
       if (!shaped?.fields?.length) return unchecked(shaped ? "named-no-fields" : "named-unrecorded:" + t.crate + "::" + name);
       if (v === null || typeof v !== "object" || Array.isArray(v)) return bad("an object of " + name + "'s fields");
       return fieldsOf(shaped.fields, name, here) ?? checked();

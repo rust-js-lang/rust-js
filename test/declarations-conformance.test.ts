@@ -141,6 +141,11 @@ function typeOf(tree: Tree, generics: Map<string, Ty | null>): Ty | null {
     case "cell":
     case "dyn":
     case "iterator":
+    case "weak":
+    case "non_zero":
+    case "pointer":
+    case "set":
+    case "map":
       return { k: "named", n: treeRust(tree) };
     default:
       return null;

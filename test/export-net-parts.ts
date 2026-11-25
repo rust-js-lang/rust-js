@@ -19,11 +19,14 @@ export function exportNetTests(part: number) {
         // Each of its own checks something of each kind.
         expect([netted.paths > 0, netted.calls > 0, netted.declared > 0, netted.shapes.checked > 0]).toEqual([true, true, true, true]);
         // And oracle B decides each shape of its own: none it can't.
-        expect(netted.shapes.unchecked).toBe(0);
+        expect(netted.shapes.why).toEqual({});
       }, underLoad(300_000));
     } else if (net.kind === "pair") {
       test(net.title, () => {
-        expect(exportNet(net.cases, net.name, net.files).problems).toEqual([]);
+        const netted = exportNet(net.cases, net.name, net.files);
+        expect(netted.problems).toEqual([]);
+        // Oracle B decides each shape: none it can't, each said by why.
+        expect(netted.shapes.why).toEqual({});
       }, underLoad(300_000));
     } else {
       // What a crate offers JS is found of Rust: each `pub` item of the root and

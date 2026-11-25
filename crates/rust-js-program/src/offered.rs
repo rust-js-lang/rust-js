@@ -74,6 +74,14 @@ pub struct OfferedPath {
     /// Of an enum, how JS holds its values and each variant (oracle B).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub variants: Option<OfferedEnum>,
+    /// Of a tuple struct that's an array, `[a, b]`, each field's type, in
+    /// order (oracle B).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub positional: Vec<OfferedType>,
+    /// Of a unit struct, its value: its `#[rust_js::name]`'s, or
+    /// `undefined` (`bindings::unit_value`, oracle B).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unit: Option<OfferedTag>,
 }
 
 /// How JS holds an enum's values, of `bindings`' answers (ADRs 0033,
@@ -322,12 +330,39 @@ pub enum OfferedType {
         #[serde(default, skip_serializing_if = "std::ops::Not::not")]
         counted: bool,
     },
-    /// A `Cell<T>` or a `RefCell<T>`: `{ value }`, or of a `RefCell` that's
+    /// A `Cell<T>`, a `RefCell<T>` or an atomic: `{ value }`, or of a `RefCell` that's
     /// the object it holds (`RefCells::is_value_cell`), that object.
     Cell {
         of: Box<OfferedType>,
         #[serde(default, skip_serializing_if = "std::ops::Not::not")]
         itself: bool,
+    },
+    /// A `Weak<T>`: what its `Rc` is, the value itself, or its counted
+    /// `Rc`'s box where the crate counts it; `null` of `Weak::new()`.
+    Weak {
+        of: Box<OfferedType>,
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        counted: bool,
+    },
+    /// A `NonZero<T>`: its number, as `T`'s.
+    NonZero {
+        of: Box<OfferedType>,
+    },
+    /// A raw pointer or a `NonNull<T>`: a handle whose `value` is its
+    /// referent; of a raw one, `null` too, `ptr::null()`'s.
+    Pointer {
+        of: Box<OfferedType>,
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        nullable: bool,
+    },
+    /// A `HashSet` or a `BTreeSet`: a `Set`.
+    Set {
+        of: Box<OfferedType>,
+    },
+    /// A `HashMap` or a `BTreeMap`: a `Map`.
+    Map {
+        key: Box<OfferedType>,
+        value: Box<OfferedType>,
     },
     /// A `dyn Trait` not of a function, `{ value, impl }`, by its traits.
     Dyn {

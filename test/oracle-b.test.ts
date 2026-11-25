@@ -29,7 +29,8 @@ const types: Record<string, Shaped> = {
 };
 const said = (v: unknown, t: Tree, none: NoneForm = "plain") => {
   const count = { checked: 0, unchecked: 0 };
-  return { problem: conforms(v, t, none, types, count), ...count };
+  const problem = conforms(v, t, none, types, count);
+  return { problem, checked: count.checked, unchecked: count.unchecked };
 };
 
 test("a value of its record's shape conforms, and one of another doesn't, though both print alike", () => {
@@ -121,6 +122,42 @@ test("std's types and closures are their guide rows' shapes", () => {
   const count = { checked: 0, unchecked: 0 };
   expect(conforms({ hits: 3 }, { kind: "named", crate: "dep", rust: ["Tally"] }, "plain", tally, count)).toBeNull();
   expect(conforms({ hits: { value: 3 } }, { kind: "named", crate: "dep", rust: ["Tally"] }, "plain", tally, count)).toBe("the value.hits: Object, not u8's integer number");
+});
+
+// The last shapes, as their rows say: a \`Weak\` as its \`Rc\` or \`null\`, a
+// \`NonZero\`'s number not 0, a pointer's handle, a \`Set\` and a \`Map\`, a
+// tuple struct's array, a unit struct's value; and an object held to its
+// type once, so a cycle ends (oracle B's full coverage).
+test("the last shapes are their rows', and a cycle is checked once", () => {
+  const u8 = int("u8");
+  expect(said(null, { kind: "weak", of: u8 }).problem).toBeNull();
+  expect(said(4, { kind: "weak", of: u8 }).problem).toBeNull();
+  expect(said(4, { kind: "weak", of: u8, counted: true }).problem).toBe("the value: number, not a counted Rc's { value, strong, weak }");
+  expect(said(3, { kind: "non_zero", of: u8 }).problem).toBeNull();
+  expect(said(0, { kind: "non_zero", of: u8 }).problem).toBe("the value: number, not a NonZero's number, not 0");
+  expect(said({ value: 1 }, { kind: "pointer", of: u8 }).problem).toBeNull();
+  expect(said(null, { kind: "pointer", of: u8 }).problem).toBe("the value: null, not a pointer's handle, of a value");
+  expect(said(null, { kind: "pointer", of: u8, nullable: true }).problem).toBeNull();
+  expect(said(new Set([1, 2]), { kind: "set", of: u8 }).problem).toBeNull();
+  expect(said([1, 2], { kind: "set", of: u8 }).problem).toBe("the value: an array, not a Set");
+  expect(said(new Map([[1, true]]), { kind: "map", key: u8, value: { kind: "bool" } }).problem).toBeNull();
+  expect(said(new Map([[1, 2]]), { kind: "map", key: u8, value: { kind: "bool" } }).problem).toBe("the value.get(0): number, not a boolean");
+  const shapes: Record<string, Shaped> = {
+    "dep::Pair": { positional: [u8, { kind: "str", owned: true }] },
+    "dep::Escape": { unit: { kind: "str", value: "escape-key" } },
+    "dep::Nothing": { unit: { kind: "undefined" } },
+    "dep::Node": { fields: [{ js: "next", ty: { kind: "option", of: { kind: "named", crate: "dep", rust: ["Node"] } } }] },
+  };
+  const of = (rust: string): Tree => ({ kind: "named", crate: "dep", rust: [rust] });
+  const says = (v: unknown, t: Tree) => conforms(v, t, "plain", shapes, { checked: 0, unchecked: 0 });
+  expect(says([1, "a"], of("Pair"))).toBeNull();
+  expect(says({ 0: 1, 1: "a" }, of("Pair"))).toBe("the value: Object, not an array of Pair's 2 fields");
+  expect(says("escape-key", of("Escape"))).toBeNull();
+  expect(says(undefined, of("Escape"))).toBe("the value: undefined, not Escape's value, \"escape-key\"");
+  expect(says(undefined, of("Nothing"))).toBeNull();
+  const cycle: { next?: unknown } = {};
+  cycle.next = cycle;
+  expect(says(cycle, of("Node"))).toBeNull();
 });
 
 // The records say what each needs of its owners: an \`impl ExactSizeIterator\`

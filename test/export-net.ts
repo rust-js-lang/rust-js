@@ -32,6 +32,8 @@ export type Offered = {
   def?: { crate: string; rust: string[] };
   transparent?: Tree;
   variants?: Shaped["variants"];
+  positional?: Tree[];
+  unit?: Shaped["unit"];
   result_none?: NoneForm;
 };
 
@@ -124,7 +126,7 @@ export function exportNet(cases: string, name: string, files: string[]): Netted 
     const offered: Offered[] = JSON.parse(readFileSync(manifest, "utf8")).offered_paths ?? [];
     const of = (p: Offered) => `${crate.name}::${p.rust.join("::")}`;
     listed[crate.name] = offered.map((p) => `${p.kind} ${p.rust.join("::")} -> ${p.js.join(".")}`);
-    for (const p of offered) if (p.kind === "type" && p.def) types[`${p.def.crate}::${p.def.rust.join("::")}`] = { fields: p.fields, transparent: p.transparent, variants: p.variants };
+    for (const p of offered) if (p.kind === "type" && p.def) types[`${p.def.crate}::${p.def.rust.join("::")}`] = { fields: p.fields, transparent: p.transparent, variants: p.variants, positional: p.positional, unit: p.unit };
     // Its JS: each value it offers, of its kind, and each call's result,
     // and native Rust's of the same calls, of the crate built natively: of
     // the values generated, or, where a run of them is past its time, a

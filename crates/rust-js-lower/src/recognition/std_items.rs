@@ -776,6 +776,9 @@ pub enum StdItem {
     IntoIterator,
     Iterator,
     DoubleEndedIterator,
+    /// `Rc`'s `Weak`.
+    RcWeak,
+    NonZero,
     /// `LazyCell` or `LazyLock`, which have no diagnostic items, as `OnceCell`.
     LazyCell,
     LinkedList,
@@ -854,6 +857,8 @@ impl StdItem {
             StdItem::IntoIterator => sym::IntoIterator,
             StdItem::Iterator => sym::Iterator,
             StdItem::DoubleEndedIterator => Symbol::intern("DoubleEndedIterator"),
+            StdItem::RcWeak => Symbol::intern("RcWeak"),
+            StdItem::NonZero => Symbol::intern("NonZero"),
             StdItem::LazyCell => Symbol::intern("LazyCell"),
             StdItem::LinkedList => Symbol::intern("LinkedList"),
             StdItem::LocalKey => Symbol::intern("LocalKey"),

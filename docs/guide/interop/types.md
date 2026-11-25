@@ -13,6 +13,7 @@ from your crate and what a binding must be given.
 | `usize` `isize` | number, 32 bits | [Numbers](#numbers) |
 | `u64` `i64` `u128` `i128` | BigInt, `5n` | [Numbers](#numbers) |
 | `f64`, `f32` | number (`f32` rounded by `Math.fround`) | [Numbers](#numbers) |
+| `NonZero<T>` | its number, as `T`'s | [Numbers](#numbers) |
 | `bool` | boolean | |
 | `char` | a string of one character | [Text](#text) |
 | `String`, `&str`, `Box<str>` | string | [Text](#text) |
@@ -39,7 +40,10 @@ from your crate and what a binding must be given.
 | `Result<T, E>` | `{ TAG: "Ok", _0 }`, `{ TAG: "Err", _0 }` | [Option and Result](#option-and-result) |
 | `Box<T>`, `Rc<T>`, `Arc<T>` | the value itself | [Pointers](#box-rc-and-arc) |
 | an `Rc` whose count is read | `{ value, strong, weak }` | [Pointers](#box-rc-and-arc) |
+| `Weak<T>` | what its `Rc` is, the value itself or its counts' object; `null` of `Weak::new()` | [Pointers](#box-rc-and-arc) |
+| a raw pointer, `NonNull<T>` | a handle, its referent its `value`; a raw one's `null` of `ptr::null()` | [Pointers](#box-rc-and-arc) |
 | `Cell<T>`, `RefCell<T>`, `UnsafeCell<T>` | `{ value }`, an `UnsafeCell`'s `get()` the cell itself; in a field, the property itself; a `RefCell` of an array, a `Map`, a `Set` or an object, that object | [Cells](#cell-and-refcell) |
+| an atomic, `AtomicU32` | `{ value }` | [Cells](#cell-and-refcell) |
 | `OnceCell<T>`, `OnceLock<T>` | `{ value }` of an `Option`; in a field, the property, absent until it's set | [OnceCell](#oncecell-and-oncelock) |
 | `&T` | the value | [References](#references) |
 | `&mut` to an object | the object, changed in place | [References](#references) |

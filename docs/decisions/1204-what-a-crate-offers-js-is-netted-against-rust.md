@@ -282,3 +282,44 @@ Own case `std_shapes`.
   `offered-cell-property-unsaid` mutate the records' facts.
 - `exact-size-iterator-unfound` mutates the lookup.
 - `once-field-boxed` follows its line to `property_of`.
+
+## Amendment: oracle B's full coverage (2026-11-25, the lead's ask)
+
+The last 26 unchecked shapes are recorded and checked, each against its
+guide row. The types table gains four rows, its text that of
+semantics.md's table and the pointers' sections:
+
+- **`NonZero<T>`:** its number, as `T`'s, never 0.
+- **`Weak<T>`:** what its `Rc` is, the value itself or its counts' object,
+  by `Counted::counts` of the same pointee; `null` of `Weak::new()`.
+- **A raw pointer or a `NonNull<T>`:** a handle whose `value` is its
+  referent (`pointers::raw_pointee`, the one answer of what's a raw
+  pointer). A raw one may be `null`; a `NonNull` never is. B tests the
+  `value` key without reading it, as a read may expose an address.
+- **An atomic:** `{ value }`, as a `Cell` is.
+
+These use rows the table already had:
+
+- **`HashSet` and `BTreeSet`:** a `Set`. A `$BTreeSet` extends `Set`.
+- **`HashMap` and `BTreeMap`:** a `Map`, each key and value conforming.
+- **A tuple struct:** its fields' array (`OfferedPath::positional`), not a
+  class's or a transparent one's. Its `numbered_struct` is the
+  representation's.
+- **A unit struct:** `undefined`, or its `#[rust_js::name]`'s value
+  (`OfferedPath::unit`, `bindings::unit_value`).
+
+**Depth and sharing.** B holds each object to a type once (`count.seen`),
+so a cycle ends and a value shared across a structure is checked once. Its
+depth guard is 1,000 places, which now bounds only recursion. At 8 it had
+counted a 30-node list's tail unchecked.
+
+**Results:** across the net's 223 cases, 986 shapes checked and none
+unchecked, with no problem found. Every case is now held to none unchecked
+(`shapes.why` empty), the crate pairs too.
+
+Own case `rest_shapes`.
+
+**Mutations:** `offered-unit-value-unsaid`, `offered-positional-unsaid`,
+`offered-weak-counted-unsaid` and `offered-raw-pointer-never-null`.
+`offered-rc-counted-unsaid` names its `Rc` arm, now that a `Weak`'s shares
+its line.
