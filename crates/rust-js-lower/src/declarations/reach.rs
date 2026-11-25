@@ -37,6 +37,12 @@ pub(crate) fn js_names(tcx: TyCtxt<'_>, id: DefId) -> bool {
             };
             tcx.visibility(id).is_public() && js_names(tcx, of)
         }
+        // An impl, the owner of its type parameters, has no visibility of its
+        // own, nor any in a library's metadata, where asking it is rustc's ICE
+        // (#2590): a trait's is named through its trait's exported dictionary,
+        // an inherent one where an item of it is.
+        DefKind::Impl { of_trait: true } => tcx.impl_opt_trait_id(id).is_some_and(|tr| js_names(tcx, tr)),
+        DefKind::Impl { of_trait: false } => (tcx.associated_item_def_ids(id).iter()).any(|&item| js_names(tcx, item)),
         _ => tcx.visibility(id).is_public(),
     }
 }

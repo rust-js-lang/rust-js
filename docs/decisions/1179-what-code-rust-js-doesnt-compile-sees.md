@@ -88,3 +88,26 @@ reached can't disagree.
 - **One answer for naming and holding.** A field JS can't name would be
   taken as JS's to write, losing facts no JS caller can break, by
   difference 60.
+
+## Amendment: an impl is named as what names it (#2590)
+
+`js_names` answered every kind but a function and a field by
+`tcx.visibility`. An impl is the owner of its type parameters, which the
+instances' facts ask about (`seen_whole`'s `Counted` and `Shared`), and an
+impl has no visibility. rustc gives the crate's own impls one, but a
+library's has none in its metadata. So an app using a library's generic
+impl, one of a `HashMap` of any hasher beside a `Vec` impl's method that
+clones `self`, crashed rustc: `missing visibility for {impl#3}`. It was
+found by the metamorphic net's library rewrite of
+`impl_asks_the_layout_of_a_type_of_its_parameters`.
+
+**A trait impl is named through its trait's exported dictionary, which
+JS names where it names the trait. An inherent impl is named where JS
+names one of its items.** One rule, of the crate's own impls and a
+library's alike.
+
+- **Unchanged for programs:** the corpus's 360 cases of generic impls run
+  as before, their snapshots unchanged.
+- **Pinned:** crate pair `library_generic_impls_owning_their_parameters`
+  runs as native, and ICEs without the change.
+- **Mutation:** `impl-visibility-asked`.
