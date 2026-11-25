@@ -8,14 +8,13 @@
 // borrow is checked (ADRs 0580, 0863).
 
 import {
+  $alreadyBorrowed,
   $borrow,
-  $borrowMut,
   $live,
   $madeEach,
   $main,
   $newCyclic,
   $rcDrop,
-  $unborrow,
   $unwindsOn,
   $upgrade,
   $weakClone,
@@ -51,16 +50,10 @@ function nodeClone_clone(node) {
 }
 
 function flip(cell) {
-  const borrowMut = $borrowMut(
-    cell,
-    "test/corpus/refcell_generic_borrow_meets_held.rs:25:10",
-    true,
-  );
-  try {
-    borrowMut.reverse();
-  } finally {
-    $unborrow(borrowMut);
+  if (cell.borrows) {
+    $alreadyBorrowed("test/corpus/refcell_generic_borrow_meets_held.rs:25:10");
   }
+  cell.reverse();
 }
 
 $main(main);

@@ -11,7 +11,6 @@
 
 import {
   $addr,
-  $borrow,
   $main,
   $ptr,
   $ptrTo,
@@ -19,7 +18,6 @@ import {
   $storedItems,
   $storedValue,
   $stringPanic,
-  $unborrow,
 } from "@rust-js/std";
 
 function ps() {
@@ -38,95 +36,28 @@ $main(main);
 
 function main() {
   const cell = { value: ps() };
-  const borrow = $borrow(
-    $storedValue(cell, 4),
-    "test/corpus/address_of_a_nested_field_through_a_deref.rs:27:33",
-    true,
-  );
-  try {
-    $storedItems(borrow.value, 8);
-  } catch (error) {
-    $unborrow(borrow);
-    throw error;
-  }
-  let base;
-  try {
-    base = $addr($ptrTo(borrow.value), 24);
-  } catch (error) {
-    $unborrow(borrow);
-    throw error;
-  }
-  let tmp;
-  try {
-    tmp = $borrow(
-      $storedValue(cell, 4),
-      "test/corpus/address_of_a_nested_field_through_a_deref.rs:28:42",
-    );
-  } catch (error) {
-    $unborrow(borrow);
-    throw error;
-  }
-  $stored($ptr(tmp.value, 2), 8);
-  console.log(`ref ${($addr($ptr(tmp.value[2], "a", 4, tmp.value, 20), 1) - base) >>> 0}`);
+  const value = $storedValue(cell, 4).value;
+  $storedItems(value, 8);
+  let base = $addr($ptrTo(value), 24);
+  const value$1 = $storedValue(cell, 4).value;
+  $stored($ptr(value$1, 2), 8);
+  console.log(`ref ${($addr($ptr(value$1[2], "a", 4, value$1, 20), 1) - base) >>> 0}`);
   const seen = [];
-  let tmp$1;
-  try {
-    tmp$1 = $borrow(
-      $storedValue(cell, 4),
-      "test/corpus/address_of_a_nested_field_through_a_deref.rs:30:22",
-    );
-  } catch (error) {
-    $unborrow(borrow);
-    throw error;
-  }
-  try {
-    $storedItems(tmp$1.value, 8);
-  } catch (error) {
-    $unborrow(borrow);
-    throw error;
-  }
-  const end = tmp$1.value.length;
-  for (let i = 0; i < end; i++) {
-    let tmp;
-    try {
-      tmp = $borrow(
-        $storedValue(cell, 4),
-        "test/corpus/address_of_a_nested_field_through_a_deref.rs:31:37",
+  const value$2 = $storedValue(cell, 4).value;
+  $storedItems(value$2, 8);
+  for (let i = 0; i < value$2.length; i++) {
+    const value = $storedValue(cell, 4).value;
+    if (i >= 3) {
+      throw $stringPanic(
+        `index out of bounds: the len is 3 but the index is ${i}`,
+        "test/corpus/address_of_a_nested_field_through_a_deref.rs:31:30",
       );
-    } catch (error) {
-      $unborrow(borrow);
-      throw error;
     }
-    if (i < 3) {
-      $stored($ptr(tmp.value, i), 8);
-      const value = ($addr($ptr(tmp.value[i], "b", 0, tmp.value, i * 8), 4) - base) >>> 0;
-      try {
-        seen.push(value);
-      } catch (error) {
-        $unborrow(borrow);
-        throw error;
-      }
-      continue;
-    }
-    $unborrow(borrow);
-    throw $stringPanic(
-      `index out of bounds: the len is 3 but the index is ${i}`,
-      "test/corpus/address_of_a_nested_field_through_a_deref.rs:31:30",
-    );
+    $stored($ptr(value, i), 8);
+    seen.push(($addr($ptr(value[i], "b", 0, value, i * 8), 4) - base) >>> 0);
   }
-  try {
-    console.log(`ref [${seen.join(", ")}]`);
-  } catch (error) {
-    $unborrow(borrow);
-    throw error;
-  }
-  let other;
-  try {
-    other = { value: ps() };
-  } catch (error) {
-    $unborrow(borrow);
-    throw error;
-  }
+  console.log(`ref [${seen.join(", ")}]`);
+  const other = { value: ps() };
   const held = $storedValue(other, 4);
   $storedItems(held.value, 8);
   base = $addr($ptrTo(held.value), 24);
@@ -150,9 +81,9 @@ function main() {
   base = $addr($ptrTo(items), 24);
   $storedItems(items, 8);
   $storedItems(items, 8);
-  const value = first(items);
-  $stored($ptr(value, 1), 8);
-  console.log(`returned ${($addr($ptr(value[1], "b", 0, value, 8), 4) - base) >>> 0}`);
+  const value$3 = first(items);
+  $stored($ptr(value$3, 1), 8);
+  console.log(`returned ${($addr($ptr(value$3[1], "b", 0, value$3, 8), 4) - base) >>> 0}`);
   $stored($ptr(items, 1), 8);
   $stored($ptr(items, 2), 8);
   console.log(`${items[1].a} ${items[2].b}`);
@@ -179,6 +110,5 @@ function main() {
   console.log(
     `wrapped ${($addr($ptr(wrapped[0][1], 1, 4, wrapped, 12), 4) - start) >>> 0} ${($addr($ptr(wrapped[0][1], 0, 0, wrapped, 8), 1) - $addr(second, 8)) >>> 0}`,
   );
-  $unborrow(borrow);
 }
 //# sourceMappingURL=case.js.map

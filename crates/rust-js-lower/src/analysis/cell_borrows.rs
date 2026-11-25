@@ -368,26 +368,6 @@ impl<'tcx> CellBorrows<'tcx> {
         }
     }
 
-    /// Whether calling a fn pointer of type `ptr` may ask of `held` by code
-    /// rust-js sees (`call_asks_seen`): what any function or closure it may
-    /// be may; of one it may be any of, the crate's too, what anything may
-    /// (#1669).
-    pub(crate) fn pointer_call_asks_seen(
-        &self,
-        recognition: &Recognition<'_, 'tcx>,
-        ptr: Ty<'tcx>,
-        held: Borrow<'tcx>,
-    ) -> bool {
-        let tcx = recognition.tcx;
-        let Some(may_be) = self.pointers.may_be(tcx, ptr) else {
-            return self.anything_asks(tcx, held);
-        };
-        may_be.iter().any(|&(f, args)| match tcx.is_closure_like(f) {
-            true => self.seen_asks(tcx, f, Some(args), held),
-            false => self.call_asks_seen(recognition, (f, f, args), None, held),
-        })
-    }
-
     /// Whether running `body`, of `args`, may ask of `held` by code rust-js
     /// sees (`seen`), its type parameters' cells of the call's types.
     fn seen_asks(
@@ -627,23 +607,20 @@ impl<'tcx> CellBorrows<'tcx> {
         (!given.any).then_some(given.bodies)
     }
 
-    /// Whether a field's read or write of `lhs`, in `thir`, may ask of
-    /// `held`: a getter or a setter of the program's answering it, of a
-    /// struct JS may make or give (`field_access_may_run`, #2113).
-    pub(crate) fn field_access_asks(
+    /// Whether a field's read or write of a value of `of`, a struct's, may
+    /// ask of `held`: JS's property access, which a getter or a setter of
+    /// the program's may answer, of a struct JS may make or give
+    /// (`read_may_run`, #2113), as `field_access_may_run` says of a THIR
+    /// field. By which struct it is, whatever its arguments, so of each
+    /// instance alike. What's at hand, THIR's question of a variable, isn't
+    /// asked: a value of the type may be any.
+    pub(crate) fn property_access_asks(
         &self,
         recognition: &Recognition<'_, 'tcx>,
-        (owner, thir, lhs): (DefId, &Thir<'tcx>, ExprId),
+        of: Ty<'tcx>,
         held: Borrow<'tcx>,
     ) -> bool {
-        let given = CallArgs {
-            thir,
-            args: &[],
-            at_hand: &self.at_hand,
-            pointers: Some(&self.pointers),
-        };
-        (field_access_may_run(recognition, given, lhs))
-            .is_some_and(|read| self.read_asks(recognition, owner, read, held))
+        read_may_run(recognition, Some(&self.pointers), of) && self.anything_asks(recognition.tcx, held)
     }
 
     /// Whether a property read of a value of `read`, in `owner`'s body, may

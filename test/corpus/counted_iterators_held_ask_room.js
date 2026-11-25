@@ -8,9 +8,7 @@
 // array's items bound (#1046).
 
 import {
-  $borrow,
   $catchable,
-  $cleanup,
   $foldOf,
   $foldToArray,
   $lazyRange,
@@ -28,7 +26,6 @@ import {
   $roomForHint,
   $sizeHint,
   $stepBy,
-  $unborrow,
   $unwound,
   iterator_rev,
   iterator_stepBy,
@@ -184,30 +181,15 @@ function main() {
       },
       usizeDebug,
     );
-    const cell = { value: n };
+    let cell = n;
     check(
       "repeat_n of a dropped value under a guard",
       () => {
-        const dropped = [2];
-        let borrow;
-        try {
-          borrow = $borrow(cell, "test/corpus/counted_iterators_held_ask_room.rs:82:51", true);
-        } catch (error) {
-          $cleanup(() => {
-            droppedDrop_drop(dropped);
-          }, error);
-          throw error;
-        }
-        let collect;
-        try {
-          collect = Array.from(
-            $roomForHint($repeatingN(dropped, borrow.value, undefined, droppedDrop_drop), 1, true),
-          );
-          for (const item of collect) {
-            droppedDrop_drop(item);
-          }
-        } finally {
-          $unborrow(borrow);
+        const collect = Array.from(
+          $roomForHint($repeatingN([2], cell, undefined, droppedDrop_drop), 1, true),
+        );
+        for (const item of collect) {
+          droppedDrop_drop(item);
         }
         return collect.length;
       },

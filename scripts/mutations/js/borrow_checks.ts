@@ -57,4 +57,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && itself {\n",
     tests: ["test/borrow-forms.test.ts", "-t", "a quiet let guard of a counted cell"],
   },
+  {
+    name: "borrow-check-only-leaves-its-cell",
+    breaks: "a borrow made only to be checked, its guard dropped unread, `let g = c.borrow(); drop(g);`, leaves its cell after the check, `c;`, a statement that does nothing (#2490)",
+    file: "crates/rust-js-program/src/js/borrow_checks.rs",
+    find: "                StmtKind::Expr(left) => !left.has_effects(),\n",
+    replace: "                StmtKind::Expr(left) => false && !left.has_effects(),\n",
+    tests: ["test/borrow-forms.test.ts", "-t", "a quiet let guard of a counted cell"],
+  },
 ];

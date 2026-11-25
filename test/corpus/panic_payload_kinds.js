@@ -9,6 +9,7 @@
 // `String`. Resumed, a payload keeps its kind.
 
 import {
+  $alreadyBorrowed,
   $assertFailed,
   $borrowMut,
   $catchUnwind,
@@ -167,8 +168,9 @@ function main() {
   shown("refcell", () => {
     const _a = $borrowMut(cell, "test/corpus/panic_payload_kinds.rs:97:27", true);
     try {
-      const _b = $borrowMut(cell, "test/corpus/panic_payload_kinds.rs:98:27", true);
-      $unborrow(_b);
+      if (cell.borrows) {
+        $alreadyBorrowed("test/corpus/panic_payload_kinds.rs:98:27");
+      }
     } finally {
       $unborrow(_a);
     }

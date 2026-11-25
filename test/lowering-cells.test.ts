@@ -127,9 +127,9 @@ impl Drop for Tick<'_> {
 pub fn ticked(n: i8) -> u32 {
     let ticks = Cell::new(0);
     let ticked = Ticked { values: RefCell::new(vec![n]) };
-    // A temporary dropped while the guard is held, its field unread: of a
-    // struct the runtime's cleanup is given, which #2115 takes JS to give,
-    // a field read would ask by itself.
+    // A temporary dropped while the guard is held, whose destructor sets
+    // only \`ticks\`: nothing it runs borrows \`values\`, so the guard asks
+    // nothing (#2490).
     ticked.values.borrow_mut().push({
         Tick(&ticks, n);
         n
@@ -176,7 +176,7 @@ pub fn derived(n: i32) -> usize {
   // checked (ADR 0863).
   expect(js).toContain("const guard = asked.values;");
   expect(js).toContain("$borrowMut(pushed.values, \"lib.rs:95:19\", true)");
-  expect(js).toContain("$borrowMut(ticked.values, \"lib.rs:117:19\", true)");
+  expect(js).toContain("  ticked.values.push(n);");
   const lib = await import(join(dir, "lib.js"));
   const items = [1, 2, 2, 3, 2].map((depth, i) => ({ depth, url: `#${i}` }));
   const root = lib.nested(items);

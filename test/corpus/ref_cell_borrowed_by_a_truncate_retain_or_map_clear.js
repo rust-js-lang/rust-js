@@ -8,7 +8,6 @@
 import {
   $BTreeMap,
   $borrow,
-  $borrowMut,
   $cleanup,
   $cmp,
   $dropItems,
@@ -32,51 +31,24 @@ function guardDrop_drop(guard) {
 }
 
 function keepFirst(g) {
-  const borrowMut = $borrowMut(
-    g,
-    "test/corpus/ref_cell_borrowed_by_a_truncate_retain_or_map_clear.rs:18:7",
-    true,
-  );
-  try {
-    $truncate(borrowMut, 1, guardDrop_drop);
-  } finally {
-    $unborrow(borrowMut);
-  }
+  $truncate(g, 1, guardDrop_drop);
 }
 
 function keepNone(g) {
-  const borrowMut = $borrowMut(
-    g,
-    "test/corpus/ref_cell_borrowed_by_a_truncate_retain_or_map_clear.rs:22:7",
-    true,
-  );
-  try {
-    $retain(borrowMut, () => false, guardDrop_drop);
-  } finally {
-    $unborrow(borrowMut);
-  }
+  $retain(g, () => false, guardDrop_drop);
 }
 
 function clearMap(g) {
-  const borrowMut = $borrowMut(
-    g,
-    "test/corpus/ref_cell_borrowed_by_a_truncate_retain_or_map_clear.rs:26:7",
-    true,
-  );
   try {
-    try {
-      $dropItems($sortedEntries(borrowMut, $cmp), ([, value]) => {
-        guardDrop_drop(value);
-      });
-    } catch (error) {
-      throw $unwindsOn(error);
-    } finally {
-      if ($live()) {
-        borrowMut.clear();
-      }
-    }
+    $dropItems($sortedEntries(g, $cmp), ([, value]) => {
+      guardDrop_drop(value);
+    });
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    $unborrow(borrowMut);
+    if ($live()) {
+      g.clear();
+    }
   }
 }
 

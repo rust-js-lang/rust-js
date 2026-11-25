@@ -44,17 +44,14 @@ function counted(step) {
   const countdown = {
     value: $dropping(
       (n) => {
-        const borrow = $borrow(this$$1.value, "test/corpus/self_handle_counted.rs:18:34", true);
-        const weak = borrow.value;
-        let countdown;
-        try {
-          countdown = $unwrap(
-            weak != null ? $upgrade(weak) : undefined,
-            "test/corpus/self_handle_counted.rs:18:76",
-          );
-        } finally {
-          $unborrow(borrow);
+        if (this$$1.value.borrows < 0) {
+          $alreadyMutablyBorrowed("test/corpus/self_handle_counted.rs:18:34");
         }
+        const { value: weak } = this$$1.value;
+        const countdown = $unwrap(
+          weak != null ? $upgrade(weak) : undefined,
+          "test/corpus/self_handle_counted.rs:18:76",
+        );
         let result;
         if (n < step) {
           result = BigInt(countdown.strong);

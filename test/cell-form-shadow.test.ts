@@ -450,3 +450,47 @@ fn main() {
   // The closure \`with_borrow_mut\` runs drops what borrows \`counts\`.
   expect(forms["cleared"]).toEqual([expect.stringMatching(/ counted counted let param std-runs-crate std-runs-crate$/)]);
 });
+
+// A class's flattened state used whole, moved out by `into_inner`, has no
+// flag to check and is never counted (ADR 1044): its whole use is its
+// declaration's to refuse or keep, so it defeats its borrows only alone,
+// never with the summaries, and the borrow keeps its declared form (Tu,
+// #2490's flip).
+test("a flattened state's whole use defeats its borrows alone, never with the summaries", () => {
+  const forms = formsOf(`use std::cell::RefCell;
+
+#[derive(Debug)]
+#[cfg_attr(rust_js, rust_js::tag = "status")]
+pub enum Status {
+    #[cfg_attr(rust_js, rust_js::name = "pending")]
+    Pending { tries: u32 },
+    #[cfg_attr(rust_js, rust_js::name = "halted")]
+    Halted,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Task {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub state: RefCell<Status>,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Task {
+    pub fn new(state: Status) -> Self {
+        Task { state: RefCell::new(state) }
+    }
+}
+
+fn halt(task: &Task) {
+    *task.state.borrow_mut() = Status::Halted;
+}
+
+fn main() {
+    let task = Task::new(Status::Pending { tries: 1 });
+    halt(&task);
+    println!("{:?}", task.state.into_inner());
+}
+`);
+  expect(forms["whole"]).toEqual(["Task::state used"]);
+  expect(forms["halt"]).toEqual(["declared counted quiet write param-field whole-use -"]);
+});

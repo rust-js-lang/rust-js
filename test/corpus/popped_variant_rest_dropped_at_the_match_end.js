@@ -6,39 +6,18 @@
 // stack: each variant's rest by the enum's own state, under the test of
 // its discriminant, as rustc's drop ladder drops it (#2177).
 
-import {
-  $alreadyMutablyBorrowed,
-  $borrowMut,
-  $cleanup,
-  $live,
-  $main,
-  $unborrow,
-  $unwindsOn,
-} from "@rust-js/std";
+import { $cleanup, $live, $main, $unwindsOn } from "@rust-js/std";
 
 function run(name, stack) {
   function popGroupEnd(concat) {
     let concat$live = true;
     let ast$live = false;
-    let stack$1;
-    try {
-      stack$1 = $borrowMut(
-        stack,
-        "test/corpus/popped_variant_rest_dropped_at_the_match_end.rs:31:36",
-        true,
-      );
-    } catch (error) {
-      $cleanup(() => {
-        console.log(`drop ${concat[0]}`);
-      }, error);
-      throw error;
-    }
+    const stack$1 = stack;
     let pop;
     try {
       pop = stack$1.pop();
     } catch (error) {
       $cleanup(() => {
-        $unborrow(stack$1);
         console.log(`drop ${concat[0]}`);
       }, error);
       throw error;
@@ -55,17 +34,13 @@ function run(name, stack) {
         result = { TAG: "Err", _0: pop.group[0] };
         console.log(`drop ${pop.group[0]}`);
         try {
-          try {
-            if (pop != null) {
-              if (pop.TAG === "Group") {
-                console.log(`drop ${pop.concat[0]}`);
-              }
-              pop$0$live = false;
+          if (pop != null) {
+            if (pop.TAG === "Group") {
+              console.log(`drop ${pop.concat[0]}`);
             }
             pop$0$live = false;
-          } finally {
-            $unborrow(stack$1);
           }
+          pop$0$live = false;
         } catch (error) {
           throw $unwindsOn(error);
         } finally {
@@ -81,49 +56,45 @@ function run(name, stack) {
     }
     try {
       try {
-        try {
-          if (pop != null) {
-            if (pop.TAG === "Group") {
-              if (pop$0$live) {
-                console.log(`drop ${pop.concat[0]}`);
-              }
+        if (pop != null) {
+          if (pop.TAG === "Group") {
+            if (pop$0$live) {
+              console.log(`drop ${pop.concat[0]}`);
             }
-            pop$0$live = false;
           }
           pop$0$live = false;
-          const groupState = stack$1.pop();
-          if (groupState == null) {
-            ast$live = false;
-            result = ast;
+        }
+        pop$0$live = false;
+        const groupState = stack$1.pop();
+        if (groupState == null) {
+          ast$live = false;
+          result = ast;
+        } else if (groupState.TAG === "Alternation") {
+          result = { TAG: "Err", _0: "two alternations" };
+        } else {
+          console.log(`unclosed ${groupState.group[0]} ${groupState.ignoreWhitespace}`);
+          result = { TAG: "Err", _0: groupState.group[0] };
+          console.log(`drop ${groupState.group[0]}`);
+        }
+        if (groupState != null) {
+          if (groupState.TAG === "Group") {
+            console.log(`drop ${groupState.concat[0]}`);
           } else if (groupState.TAG === "Alternation") {
-            result = { TAG: "Err", _0: "two alternations" };
-          } else {
-            console.log(`unclosed ${groupState.group[0]} ${groupState.ignoreWhitespace}`);
-            result = { TAG: "Err", _0: groupState.group[0] };
-            console.log(`drop ${groupState.group[0]}`);
+            console.log(`drop ${groupState._0[0]}`);
           }
-          if (groupState != null) {
-            if (groupState.TAG === "Group") {
-              console.log(`drop ${groupState.concat[0]}`);
-            } else if (groupState.TAG === "Alternation") {
-              console.log(`drop ${groupState._0[0]}`);
-            }
-          }
-        } catch (error) {
-          throw $unwindsOn(error);
-        } finally {
-          if ($live()) {
-            if (ast$live) {
-              if (ast.TAG === "Ok") {
-                console.log(`drop ${ast._0[0]}`);
-              }
+        }
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          if (ast$live) {
+            if (ast.TAG === "Ok") {
+              console.log(`drop ${ast._0[0]}`);
             }
           }
         }
-        ast$live = false;
-      } finally {
-        $unborrow(stack$1);
       }
+      ast$live = false;
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
@@ -144,12 +115,7 @@ function run(name, stack) {
     } else {
       console.log(`${name}: err ${value._0}`);
     }
-    if (stack.borrows < 0) {
-      $alreadyMutablyBorrowed("test/corpus/popped_variant_rest_dropped_at_the_match_end.rs:65:31");
-    }
-    const borrow = stack;
-    for (let i = 0; i < borrow.length; i++) {
-      const state = borrow[i];
+    for (const state of stack) {
       if (state.TAG === "Group") {
         console.log(`${name}: left a group after ${state.concat[0]}`);
       } else {

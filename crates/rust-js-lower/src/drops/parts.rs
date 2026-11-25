@@ -397,15 +397,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub fn momentary_borrows(&self) -> IndexSet<Span> {
         let key = std::ptr::from_ref(self.frame.thir) as usize;
         let spans = |facts: &Facts| -> IndexSet<Span> {
-            (facts.momentary.iter().chain(&facts.let_momentary))
-                .map(|&fun| self.frame.thir[fun].span)
-                .collect()
+            (facts.momentary.iter()).map(|&fun| self.frame.thir[fun].span).collect()
         };
         match self.drop_state.facts.get(&key) {
             Some(facts) => spans(facts),
             None => spans(&find_facts(
                 &self.drop_query(),
-                self.krate.cell_borrows,
+                (self.krate.cell_borrows, &self.cell_forms()),
                 self.frame.thir,
                 self.frame.owner,
             )),
@@ -421,7 +419,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let facts = Rc::new(find_facts(
             &self.drop_query(),
-            self.krate.cell_borrows,
+            (self.krate.cell_borrows, &self.cell_forms()),
             self.frame.thir,
             self.frame.owner,
         ));
@@ -444,7 +442,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub fn check_drop_facts(&self) -> R<()> {
         let facts = find_facts(
             &self.drop_query(),
-            self.krate.cell_borrows,
+            (self.krate.cell_borrows, &self.cell_forms()),
             self.frame.thir,
             self.frame.owner,
         );

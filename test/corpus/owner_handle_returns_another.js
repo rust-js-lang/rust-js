@@ -7,8 +7,6 @@
 // counted, and its cell a cell, as written (ADR 0317, amended).
 
 import {
-  $alreadyMutablyBorrowed,
-  $borrowMut,
   $cleanup,
   $dispose,
   $downgrade,
@@ -18,7 +16,6 @@ import {
   $main,
   $rcClone,
   $rcDrop,
-  $unborrow,
   $unwindsOn,
   $upgrade,
   $weakDrop,
@@ -28,9 +25,8 @@ function noop() {}
 
 function createRequest(name, onReady, kept) {
   const made = { value: { name: "kept", onReady }, strong: 1, weak: 0 };
-  let borrowMut;
   try {
-    borrowMut = $borrowMut(kept, "test/corpus/owner_handle_returns_another.rs:19:10", true);
+    kept.push($rcClone(made));
   } catch (error) {
     $cleanup(() => {
       $rcDrop(made, (value) => {
@@ -39,18 +35,6 @@ function createRequest(name, onReady, kept) {
     }, error);
     throw error;
   }
-  try {
-    borrowMut.push($rcClone(made));
-  } catch (error) {
-    $cleanup(() => {
-      $unborrow(borrowMut);
-      $rcDrop(made, (value) => {
-        $rcDrop(value.onReady, $dispose);
-      });
-    }, error);
-    throw error;
-  }
-  $unborrow(borrowMut);
   $rcDrop(made, (value) => {
     $rcDrop(value.onReady, $dispose);
   });
@@ -173,27 +157,8 @@ function main() {
     }, error);
     throw error;
   }
-  let borrow;
   try {
-    if (kept.borrows < 0) {
-      $alreadyMutablyBorrowed("test/corpus/owner_handle_returns_another.rs:48:10");
-    }
-    borrow = kept;
-  } catch (error) {
-    $cleanup(() => {
-      $rcDrop(request, (value) => {
-        $rcDrop(value.onReady, $dispose);
-      });
-      $dropItems(kept, (item) => {
-        $rcDrop(item, (value) => {
-          $rcDrop(value.onReady, $dispose);
-        });
-      });
-    }, error);
-    throw error;
-  }
-  try {
-    borrow.forEach((made) => complete(made.value));
+    kept.forEach((made) => complete(made.value));
   } catch (error) {
     $cleanup(() => {
       $rcDrop(request, (value) => {
@@ -221,24 +186,8 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp;
   try {
-    if (kept.borrows < 0) {
-      $alreadyMutablyBorrowed("test/corpus/owner_handle_returns_another.rs:50:10");
-    }
-    tmp = kept;
-  } catch (error) {
-    $cleanup(() => {
-      $dropItems(kept, (item) => {
-        $rcDrop(item, (value) => {
-          $rcDrop(value.onReady, $dispose);
-        });
-      });
-    }, error);
-    throw error;
-  }
-  try {
-    tmp.forEach((made) => complete(made.value));
+    kept.forEach((made) => complete(made.value));
   } catch (error) {
     $cleanup(() => {
       $dropItems(kept, (item) => {

@@ -11,7 +11,6 @@ import {
   $alreadyMutablyBorrowed,
   $borrow,
   $borrowMut,
-  $cleanup,
   $displayF64,
   $fieldCell,
   $live,
@@ -95,30 +94,17 @@ function forgetId() {
 
 function endLease() {
   const lease$1 = lease();
-  let borrowMut;
+  const value = lease$1.value;
   try {
-    borrowMut = $borrowMut(
-      lease$1.value,
-      "test/corpus/guard_value_read_before_write.rs:81:31",
-      true,
-    );
-  } catch (error) {
-    throw error;
-  }
-  try {
-    try {
-      if (borrowMut.value != null) {
-        console.log(`lease ${$displayF64(borrowMut.value[0])} ended`);
-      }
-    } catch (error) {
-      throw $unwindsOn(error);
-    } finally {
-      if ($live()) {
-        borrowMut.value = undefined;
-      }
+    if (value.value != null) {
+      console.log(`lease ${$displayF64(value.value[0])} ended`);
     }
+  } catch (error) {
+    throw $unwindsOn(error);
   } finally {
-    $unborrow(borrowMut);
+    if ($live()) {
+      value.value = undefined;
+    }
   }
 }
 
@@ -136,44 +122,23 @@ export function forgotten() {
 export function heldToTheEnd() {
   // Read only by its drop, past a call that writes the cell.
   const slot = $rcClone(lease());
-  let borrow;
-  try {
-    if (slot.value.borrows < 0) {
-      $alreadyMutablyBorrowed("test/corpus/guard_value_read_before_write.rs:97:28");
-    }
-    borrow = slot.value;
-  } catch (error) {
-    $cleanup(() => {
-      $rcDrop(slot, (value) => {
-        if (value.value != null) {
-          console.log(`lease ${$displayF64(value.value[0])} ended`);
-        }
-      });
-    }, error);
-    throw error;
-  }
+  const _held = slot.value.value;
   let result;
-  if (borrow.value == null) {
-    result = false;
-    $rcDrop(slot, (value) => {
-      if (value.value != null) {
-        console.log(`lease ${$displayF64(value.value[0])} ended`);
-      }
-    });
-    return result;
-  }
-  const _held = borrow.value;
   try {
-    try {
-      endLease();
-      result = true;
-    } catch (error) {
-      throw $unwindsOn(error);
-    } finally {
-      if ($live()) {
-        console.log(`lease ${$displayF64(_held[0])} ended`);
+    if (_held != null) {
+      try {
+        endLease();
+        result = true;
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          console.log(`lease ${$displayF64(_held[0])} ended`);
+        }
       }
+      return result;
     }
+    result = false;
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

@@ -8,7 +8,6 @@
 // make another of, which the `RefMut` it's reached through also counts).
 
 import {
-  $alreadyMutablyBorrowed,
   $borrowMut,
   $cleanup,
   $debugStr,
@@ -34,18 +33,9 @@ function entryDrop_drop(entry) {
 }
 
 function reset(slot, new$) {
-  const borrowMut = $borrowMut(
-    slot,
-    "test/corpus/ref_cell_borrowed_by_a_clone_froms_drop.rs:26:10",
-    true,
-  );
-  const old = borrowMut.value;
-  try {
-    borrowMut.value = $rcClone(new$);
-    $rcDrop(old, entryDrop_drop);
-  } finally {
-    $unborrow(borrowMut);
-  }
+  const old = slot.value;
+  slot.value = $rcClone(new$);
+  $rcDrop(old, entryDrop_drop);
 }
 
 $main(main);
@@ -62,9 +52,6 @@ function main() {
     try {
       held.push("cloning");
       reset(slot, new$);
-      if (slot.borrows < 0) {
-        $alreadyMutablyBorrowed("test/corpus/ref_cell_borrowed_by_a_clone_froms_drop.rs:36:24");
-      }
       held.push(slot.value.value.name);
     } finally {
       $unborrow(held);

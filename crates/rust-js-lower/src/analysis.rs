@@ -24,11 +24,11 @@ mod callers_decide;
 mod cell_borrows;
 mod cell_flow;
 mod cell_form;
-pub(super) use cell_form::{Proving, Today, TypeProofs, Whole, shadow_cell_forms_of, whole_uses};
+pub(super) use cell_form::{CellForms, Proving, Today, TypeProofs, Whole, shadow_cell_forms_of, whole_uses};
 mod chars_asked;
 mod vec_uses;
 pub(super) use cell_borrows::{
-    Borrow, Cell, CellBorrows, binding_runs_nothing, borrowed, may_be_cell, resolve_runs_nothing, unsized_in_place,
+    Borrow, Cell, CellBorrows, binding_runs_nothing, borrowed, may_be_cell, unsized_in_place,
 };
 pub(super) use cell_flow::CellClass;
 mod clones;

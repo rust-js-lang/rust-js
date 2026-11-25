@@ -8,7 +8,6 @@
 import {
   $alreadyBorrowed,
   $borrow,
-  $borrowMut,
   $cleanup,
   $dropItems,
   $main,
@@ -26,16 +25,7 @@ function pusherDrop_drop(pusher) {
 }
 
 function clearAll(g) {
-  const borrowMut = $borrowMut(
-    g,
-    "test/corpus/ref_cell_borrowed_mutably_by_a_clear_through_a_reference.rs:17:7",
-    true,
-  );
-  try {
-    $truncate(borrowMut, 0, pusherDrop_drop);
-  } finally {
-    $unborrow(borrowMut);
-  }
+  $truncate(g, 0, pusherDrop_drop);
 }
 
 $main(main);

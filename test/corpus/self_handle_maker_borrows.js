@@ -6,6 +6,7 @@
 // counted and checked, as written (ADR 0843, amended).
 
 import {
+  $alreadyMutablyBorrowed,
   $borrow,
   $borrowMut,
   $catchUnwind,
@@ -59,21 +60,14 @@ function hook() {
         if (n === 0) {
           return 0;
         }
-        const borrow = $borrow(
-          this$$1.value,
-          "test/corpus/self_handle_maker_borrows.rs:20:29",
-          true,
-        );
-        const weak = borrow.value;
-        let hook;
-        try {
-          hook = $unwrap(
-            weak != null ? $upgrade(weak) : undefined,
-            "test/corpus/self_handle_maker_borrows.rs:20:71",
-          );
-        } finally {
-          $unborrow(borrow);
+        if (this$$1.value.borrows < 0) {
+          $alreadyMutablyBorrowed("test/corpus/self_handle_maker_borrows.rs:20:29");
         }
+        const { value: weak } = this$$1.value;
+        const hook = $unwrap(
+          weak != null ? $upgrade(weak) : undefined,
+          "test/corpus/self_handle_maker_borrows.rs:20:71",
+        );
         let result;
         try {
           result = (hook.value(n - 1) + 2) >>> 0;

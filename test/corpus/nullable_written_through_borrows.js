@@ -13,7 +13,7 @@
 // `get_mut()`.
 
 import {
-  $borrow,
+  $alreadyMutablyBorrowed,
   $borrowMut,
   $cellReplace,
   $index,
@@ -21,7 +21,6 @@ import {
   $main,
   $nullableCell,
   $stdSites,
-  $unborrow,
   $unwindsOn,
   $withBorrow,
   $withBorrowMut,
@@ -127,8 +126,9 @@ function main() {
   CURRENT = noneOf(1) ?? null;
   const value = noneOf(1);
   $borrowMut(target, "test/corpus/nullable_written_through_borrows.rs:117:24").value = value;
-  const guard = $borrow(COUNTED, "test/corpus/nullable_written_through_borrows.rs:119:23", true);
-  $unborrow(guard);
+  if (COUNTED.borrows < 0) {
+    $alreadyMutablyBorrowed("test/corpus/nullable_written_through_borrows.rs:119:23");
+  }
   const value$1 = noneOf(1);
   $borrowMut(COUNTED, "test/corpus/nullable_written_through_borrows.rs:121:12").value = value$1;
   report("with, set");

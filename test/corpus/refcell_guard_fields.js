@@ -220,7 +220,10 @@ function borrowedAgain(first, second) {
   }
   let borrowMut;
   try {
-    borrowMut = $borrowMut(second, "test/corpus/refcell_guard_fields.rs:161:22", true);
+    if (second.borrows) {
+      $alreadyBorrowed("test/corpus/refcell_guard_fields.rs:161:22");
+    }
+    borrowMut = second;
   } finally {
     $unborrow(history);
   }

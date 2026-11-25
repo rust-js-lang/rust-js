@@ -70,25 +70,17 @@ function main() {
       $weakDrop(borrowMut.value);
       borrowMut.value = value;
       $unborrow(borrowMut);
-      const borrow = $borrow(
-        $fieldCell(leaf.value, "parent"),
-        "test/corpus/rc_dyn_listeners.rs:40:30",
-        true,
+      const upgrade = $upgrade(
+        $borrow($fieldCell(leaf.value, "parent"), "test/corpus/rc_dyn_listeners.rs:40:30").value,
       );
-      let parent;
-      try {
-        const upgrade = $upgrade(borrow.value);
-        function map(p) {
-          const result = p.value.name;
-          $rcDrop(p, (value) => {
-            $weakDrop(value.parent);
-          });
-          return result;
-        }
-        parent = (upgrade != null ? map(upgrade) : undefined) ?? "";
-      } finally {
-        $unborrow(borrow);
+      function map(p) {
+        const result = p.value.name;
+        $rcDrop(p, (value) => {
+          $weakDrop(value.parent);
+        });
+        return result;
       }
+      const parent = (upgrade != null ? map(upgrade) : undefined) ?? "";
       console.log(
         `${loggerListener_count($borrow(logger, "test/corpus/rc_dyn_listeners.rs:41:33").value)} ${leaf.value.name} ${parent}`,
       );

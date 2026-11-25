@@ -9,7 +9,6 @@ import {
   $alreadyBorrowed,
   $alreadyMutablyBorrowed,
   $borrow,
-  $borrowMut,
   $cleanup,
   $cmp,
   $downgrade,
@@ -39,19 +38,16 @@ function subscriptionDrop_drop(subscription) {
 }
 
 function subscribe(bus, f) {
-  const b = $borrowMut(bus.value, "test/corpus/subscriptions.rs:31:21", true);
+  if (bus.value.borrows) {
+    $alreadyBorrowed("test/corpus/subscriptions.rs:31:21");
+  }
+  const b = bus.value;
   const id = b.next;
   b.next = (b.next + 1) >>> 0;
-  let bus$1;
-  try {
-    b.handlers.set(id, f);
-    bus$1 = $downgrade(bus);
-  } finally {
-    $unborrow(b);
-  }
+  b.handlers.set(id, f);
   return {
     id,
-    bus: bus$1,
+    bus: $downgrade(bus),
   };
 }
 

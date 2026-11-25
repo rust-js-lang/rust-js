@@ -13,14 +13,12 @@
 
 import {
   $addr,
-  $borrow,
   $main,
   $ptr,
   $ptrOuter,
   $ptrTo,
   $stored,
   $storedItems,
-  $unborrow,
   $unwrap,
 } from "@rust-js/std";
 
@@ -117,19 +115,14 @@ function main() {
   console.log(`the field by reference ${(outer(slot.held) - sb) >>> 0}`);
 
   const cell = { a: 12, b: 13 };
-  const borrow = $borrow(cell, "test/corpus/address_of_an_option_payload.rs:70:24", true);
-  const value = $addr($ptrTo(borrow), 8);
+  const value = $addr($ptrTo(cell), 8);
   console.log(`cell ${(value - ofCell(cell)) >>> 0}`);
 
   $stored($ptr(o, "value", 0), undefined, 4);
   $stored($ptr(empty, "value", 0), undefined, 4);
   $stored($ptr(slot, "held", 0), undefined, 4);
-  try {
-    console.log(
-      `${o.value == null ? "None" : `Some(${pDebug_fmt(o.value)})`} ${empty.value == null ? "None" : `Some(${pDebug_fmt(empty.value)})`} (${pair[0] == null ? "None" : `Some(${pDebug_fmt(pair[0])})`}, ${pair[1]}) ${slot.tag} ${slot.held == null ? "None" : `Some(${pDebug_fmt(slot.held)})`}`,
-    );
-  } finally {
-    $unborrow(borrow);
-  }
+  console.log(
+    `${o.value == null ? "None" : `Some(${pDebug_fmt(o.value)})`} ${empty.value == null ? "None" : `Some(${pDebug_fmt(empty.value)})`} (${pair[0] == null ? "None" : `Some(${pDebug_fmt(pair[0])})`}, ${pair[1]}) ${slot.tag} ${slot.held == null ? "None" : `Some(${pDebug_fmt(slot.held)})`}`,
+  );
 }
 //# sourceMappingURL=case.js.map

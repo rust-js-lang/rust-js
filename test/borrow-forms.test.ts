@@ -219,7 +219,7 @@ test("a quiet let guard of a counted cell is checked, not counted, and no self-a
   const advance = caseJs("refcell_eq_through_guard");
   expect(advance).toContain("if (state.borrows) {\n    $alreadyBorrowed(\"refcell_eq_through_guard.rs:15:27\");\n  }");
   expect(advance).not.toContain("state = state;");
-  // One dropped unread, a check alone, stays a count and its release.
+  // One dropped unread is its check alone, no `COUNTED;` after it (#2490).
   const unread = caseJs("nullable_written_through_borrows");
-  expect(unread).toContain("const guard = $borrow(COUNTED, \"nullable_written_through_borrows.rs:119:23\", true);\n  $unborrow(guard);");
+  expect(unread).toContain("if (COUNTED.borrows < 0) {\n    $alreadyMutablyBorrowed(\"nullable_written_through_borrows.rs:119:23\");\n  }\n  const value$1 = noneOf(1);");
 });

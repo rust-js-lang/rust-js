@@ -177,6 +177,125 @@ forms are refused counted, and 1 runs wrongly: #2579. A counted guard's
 found only that case. Case ([0262](0262-when-rust-and-js-disagree.md)):
 none; a test hook changes no output.
 
+## Amendment: the flip, `CellForm` decides each borrow's count (2026-11-25, #2490)
+
+Tu's decision was "flip after two checks", and both passed. First, the 3
+variants observe-borrows refused at the 14 sites the flip counts were one
+case, refused in every build by its probe's generic `impl Observe for
+Rc<T>` (ADR 0852's wildcard and an untagged enum). A copy without
+`untagged` compiled and ran as native. Second, the port's 15 quieted
+sites, read against upstream React ab0d927, are borrows Rust can't
+contest.
+
+**One decider.** `CellForms` (`analysis/cell_form.rs`), proved once per
+crate and kept in the session's caches, answers whether each `RefCell`
+`borrow`, `borrow_mut` and `try_borrow` is counted. Each borrow is keyed
+by its body and the place its callee is written. Where two borrows are
+written at one place, the quieter answer holds only if each has it. A
+borrow is counted unless its guard's range is proved quiet with the
+summaries. A borrow proved quiet is checked where it's made (momentary),
+or left unchecked where no borrow of its cell can meet another. THIR's
+facts (`drops/facts.rs`) carry these answers and decide nothing. THIR's
+old decider is deleted whole, with its mutations: ADR 0328's momentary
+walk, ADR 0863's `let_held`, `Quiet` and `Seen`, and `ended_before`.
+`facts.rs` keeps what isn't a `RefCell` decision: what's refused of a
+body, and a `replace_with`'s momentary borrow.
+
+**What the proof reads, beyond phase 2.**
+- (a) A type parameter's value dropped while a guard's held asks
+  nothing where the body is given no drop of it that may ask
+  (`Proving::given_drops`, the `DropQuery` the body's lowering uses).
+- (b) ADR 0863's case N, a borrow that can't meet the loop's guard, is
+  read from THIR's shapes (`analysis/cell_form/shapes.rs`, `Shapes::unmet`),
+  asked where a second borrow is.
+- (c) A property read (#2113). A field's read or write, in the range, of a
+  struct of the program's or a binding's is JS's property access, which a
+  getter or a setter may answer. It's found by the MIR place's field
+  projection and its type (`CellBorrows::property_access_asks`), the
+  defeat `property-access`. A part of std's own, such as the `Box`
+  pointer MIR writes for `vec![x]`, isn't such a read. THIR's question of
+  a value at hand isn't asked here, so this side is the conservative one.
+- (d) Whether code rust-js can't see runs in the range, which a library
+  that borrows the cell unchecked refuses (ADR 0863), is carried per
+  borrow (`CellForms::seen`). A range is unseen where a call in it is one
+  `call_runs_unseen` or `pointer_call_runs_unseen` says may run unseen
+  code (a promise's resolve given what runs nothing excepted), or where
+  it suspends, runs assembly or tail-calls.
+- A flattened state's whole use defeats its borrows alone, never with the
+  summaries (Tu): its whole uses are its declaration's to refuse or keep.
+
+**Five proof bugs, found by running on the flipped compiler.**
+The corpus found four that no net had seen, and the suite found the
+fifth, (c):
+1. A moved-from guard's `Drop` ended the range (`refcell_let_guard_kept`).
+2. `mem::drop(v)` of another value ran no destructor
+   (`guard_ended_before_its_value_is_dropped_by_the_caller`).
+3. A `map_split` half's drop ended the range, and `Ref::map`'s borrow
+   stays counted, since its mapped guard releases a count (#1275,
+   `ref_cell_guards_mapped`).
+4. A `Result`'s or an `Option`'s payload move is a move-out only where
+   what moves holds a guard (`flattened_state_tried`'s `Err` arm).
+
+**Moves.**
+- Corpus: 31 cases lose counts and none gain. `rc_dyn_listeners`,
+  `rc_refcell_dyn_shared` and `trie_of_counted_rcs` now differ as a
+  library (a `.program.js` each), and `unsized_struct_fn` no longer does.
+- A borrow made only to be checked, its guard dropped unread, is its check
+  alone. Before, it left its cell behind as a statement, `c;`
+  (`borrow_checks_first`). This replaces #1815's "stays a count".
+- Tests: lowering-cells' `ticked` is no longer counted, since its `Tick`'s
+  destructor sets only `ticks`. borrow-forms' unread guard is its check.
+- The React port: 10 files, only removals of `$borrow`/`$already*`.
+  BusboyReading's `head = current.next;` stays after the `catch`, as
+  upstream writes it (#2591, `prepare/catches.rs`).
+
+**A shared guard's value, read as its cell.** A counted guard is a local,
+`const borrow = $borrow(cell)`, and tidy read each `borrow.value` where
+it's read. Uncounted, the guard is the cell itself, so its `Deref`'s
+value became a temporary that the cell's own `{ value }` key named:
+`const value = cell; $ptr(value[2], ..)`. `QuietCells::guarded`
+(`mir/local_facts.rs`) marks each `Deref` of a shared guard whose borrow
+isn't counted. `MirCx::temporaries_names` passes the marks to tidy as
+`TemporaryNames::guarded`, and `readable_temporaries` reads such a
+temporary as the cell where it's read, `$ptr(cell[2], "a", 4, cell, 20)`,
+where it reads the same and the program names nothing there. A
+`Ref`'s value can't change while the `Ref` lives. A mutable guard's is
+left as it was, the safe default; #2593 is to narrow that.
+
+**Readability.** The flip removes 483 lines of the corpus's and the
+snapshots' JS, `$borrow`, `$unborrow` and their `try`/`finally`.
+Counted like for like, renames fall from 18,343 to 18,330 and role
+fallbacks from 10,214 to 10,212. Their shares in 10,000 lines rise only
+by the denominator, 424.65 to 424.83 and 236.46 to 236.68, and
+docs/readability.txt is blessed for that alone. Two files still gain one:
+- address_of_a_nested_field_through_a_deref: `const value$1 =
+  $storedValue(cell, 4).value;`. A guard's value read through the
+  address-keeping helper doesn't read the same each time, and the source,
+  `&raw const (*cell.borrow())[2].a`, names nothing.
+- iterator_in_a_ref_cell_given_generic_code: a mutable guard's, #2593.
+
+The `+2`/`+2` of guard_value_read_before_write are #2579's new
+functions, not the flip's.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. A count that
+nothing can ask about changes no result, so JavaScript's form, no count,
+is taken. Where the proof can't show that nothing asks, the count stays.
+
+Held by:
+- test/cell-form-shadow.test.ts, its flattened whole-use fixture among
+  them;
+- test/builtins-runs-nothing.test.ts' #2113 rows;
+- the corpus's `flattened_state_tried_guard_kept_past_its_result_refused`
+  (a payload's move followed past its `Result`'s drop),
+  `guard_held_while_a_type_parameters_quiet_value_drops` (each instance's
+  destructor asked, `drops_given` the one answer of what a body is given)
+  and `replace_with_borrowing_another_cell` (a `replace_with`'s cell by
+  its flow's class);
+- test/crates.test.ts' library refusal;
+- the count-every-cell and observe-borrows nets;
+- the mutations of `cell_form.rs`, `cell_form/shapes.rs`, `facts.rs`,
+  `cell_borrows.rs`, `borrow_checks.rs` and `catches.rs`.
+
 ## Amendment: the `param-form` kind (2026-11-25, #2539)
 
 Campaign 6's step 0 adds the `param-form` shadow ([1203](1203-a-generic-instance-s-view-of-its-type-parameters-is-one-record.md)).

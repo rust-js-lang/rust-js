@@ -112,6 +112,9 @@ pub struct Caches {
     /// every borrow's range (`analysis::TypeProofs`), found once of the
     /// crate's bodies (#2490).
     pub(crate) cell_form_types: OnceCell<super::analysis::TypeProofs>,
+    /// Each `RefCell` borrow's form, `CellForm`'s proof's, of the crate's
+    /// bodies, found once (#2490's flip).
+    pub(crate) cell_forms: OnceCell<Rc<super::analysis::CellForms>>,
     /// What std's own code reaches of the crate's impls that take an
     /// iterator that `crate_impl_called_by` doesn't answer, found as the
     /// crate is analyzed (`instances::check_std_reach`), each said where the
@@ -286,6 +289,7 @@ fn start_keyed(gcx: usize, flags: Flags, hooks: &'static dyn MirHooks) -> Sessio
             shadows: shadows::Shadows::of(&flags.shadows),
             cell_form_wholes: OnceCell::new(),
             cell_form_types: OnceCell::new(),
+            cell_forms: OnceCell::new(),
             #[cfg(debug_assertions)]
             std_reach_unanswered: RefCell::default(),
             intervals: RefCell::default(),

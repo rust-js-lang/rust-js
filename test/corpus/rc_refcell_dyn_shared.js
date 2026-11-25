@@ -155,11 +155,7 @@ function main() {
   $unborrow(parent);
   let tmp$1;
   try {
-    tmp$1 = $borrow(
-      $fieldCell(leaf.value, "parent"),
-      "test/corpus/rc_refcell_dyn_shared.rs:86:49",
-      true,
-    );
+    tmp$1 = $borrow($fieldCell(leaf.value, "parent"), "test/corpus/rc_refcell_dyn_shared.rs:86:49");
   } catch (error) {
     $cleanup(() => {
       $rcDrop(leaf, (value) => {
@@ -179,11 +175,11 @@ function main() {
     });
     return result;
   }
+
   try {
     upgrade = $upgrade(tmp$1.value);
   } catch (error) {
     $cleanup(() => {
-      $unborrow(tmp$1);
       $rcDrop(leaf, (value) => {
         $weakDrop(value.parent);
       });
@@ -197,7 +193,6 @@ function main() {
     console.log(`${leaf.value.name} of ${(upgrade != null ? map(upgrade) : undefined) ?? ""}`);
   } catch (error) {
     $cleanup(() => {
-      $unborrow(tmp$1);
       $rcDrop(leaf, (value) => {
         $weakDrop(value.parent);
       });
@@ -207,8 +202,6 @@ function main() {
     }, error);
     throw error;
   }
-  $unborrow(tmp$1);
-
   const counter = { value: { value: { sum: 0 } }, strong: 1, weak: 0 };
   let tmp$2;
   try {

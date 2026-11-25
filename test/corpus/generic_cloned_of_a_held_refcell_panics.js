@@ -28,16 +28,11 @@ function main() {
   const numbers = [1, 2];
   console.log(`${copies(numbers, u8Clone)} ${made(numbers, u8Clone)}`);
   const items = [{ value: 1 }, { value: 2 }];
-  const held = $borrow(
+  $borrow(
     $index(items, 0, "test/corpus/generic_cloned_of_a_held_refcell_panics.rs:20:21"),
     "test/corpus/generic_cloned_of_a_held_refcell_panics.rs:20:25",
-    true,
   );
-  try {
-    console.log(`${copies(items, refCellClone)} ${made(items, refCellClone)}`);
-  } finally {
-    $unborrow(held);
-  }
+  console.log(`${copies(items, refCellClone)} ${made(items, refCellClone)}`);
   const _held = $borrowMut(
     $index(items, 1, "test/corpus/generic_cloned_of_a_held_refcell_panics.rs:23:22"),
     "test/corpus/generic_cloned_of_a_held_refcell_panics.rs:23:26",

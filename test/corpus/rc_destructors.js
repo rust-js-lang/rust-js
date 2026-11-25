@@ -6,18 +6,7 @@
 // function makes and gives back, and one of a value that holds such an
 // `Rc`, which drops because that one is counted.
 
-import {
-  $borrow,
-  $borrowMut,
-  $cleanup,
-  $index,
-  $live,
-  $main,
-  $rcClone,
-  $rcDrop,
-  $unborrow,
-  $unwindsOn,
-} from "@rust-js/std";
+import { $cleanup, $index, $live, $main, $rcClone, $rcDrop, $unwindsOn } from "@rust-js/std";
 
 function noisyDrop_drop(noisy) {
   console.log(`drop ${noisy[0]}`);
@@ -119,12 +108,7 @@ function main() {
   const cell = { value: [["x"]], strong: 1, weak: 0 };
   let other;
   try {
-    const borrowMut = $borrowMut(cell.value, "test/corpus/rc_destructors.rs:54:10", true);
-    try {
-      borrowMut.push(["y"]);
-    } finally {
-      $unborrow(borrowMut);
-    }
+    cell.value.push(["y"]);
     other = $rcClone(cell);
   } catch (error) {
     throw $unwindsOn(error);
@@ -137,15 +121,9 @@ function main() {
       });
     }
   }
+  console.log(`${other.value.length}`);
   try {
-    console.log(`${$borrow(other.value, "test/corpus/rc_destructors.rs:57:26").length}`);
-    const borrowMut = $borrowMut(other.value, "test/corpus/rc_destructors.rs:58:22", true);
-    let last;
-    try {
-      last = borrowMut.pop();
-    } finally {
-      $unborrow(borrowMut);
-    }
+    const last = other.value.pop();
     console.log(`popped ${last != null}`);
     if (last != null) {
       noisyDrop_drop(last);

@@ -19,7 +19,6 @@ crates/rust-js-lower/src/bindings/held.rs	1
 crates/rust-js-lower/src/calls.rs	2
 crates/rust-js-lower/src/crate_facts.rs	1
 crates/rust-js-lower/src/declarations/written.rs	1
-crates/rust-js-lower/src/drops/facts/quiet.rs	1
 crates/rust-js-lower/src/drops/ref_cells.rs	1
 crates/rust-js-lower/src/drops/types.rs	1
 crates/rust-js-lower/src/format_spec.rs	1

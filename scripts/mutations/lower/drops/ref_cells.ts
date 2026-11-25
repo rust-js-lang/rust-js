@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/drops/ref_cells.rs",
     find: "                typing_env: ty::TypingEnv::post_analysis(tcx, owner),\n",
     replace: "                typing_env: self.typing_env,\n",
-    tests: ["test/corpus.test.ts", "-t", "^const_param_drop_cells.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^deref_projection_generic.rs$"],
   },
   {
     name: "take-held-while-default-runs",
@@ -521,15 +521,6 @@ export const mutations: Mutation[] = [
     find: "                Some(Std::Borrow { lock: false, .. } | Std::TryBorrow { lock: false, .. }) => {\n",
     replace: "                Some(Std::TryBorrow { lock: false, .. }) => receiver.is_some_and(refcell),\n                Some(Std::Borrow { lock: false, .. }) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_tried.rs$"],
-  },
-  {
-    name: "walked-params-drop-nothing",
-    breaks:
-      "a type parameter a function is given a drop for drops nothing where its cells' borrows are counted, so a guard held while `let _it = it;` drops a `T` whose destructor asks of the cell isn't counted, and its `try_borrow()` is `Ok` (a wrong answer, #1321)",
-    file: "crates/rust-js-lower/src/drops/ref_cells.rs",
-    find: "                state.give(crate::traits::drop_slot(tcx, self.slots(), owner, index));\n",
-    replace: "                _ = index;\n",
-    tests: ["test/corpus.test.ts", "-t", "^guard_held_while_a_type_parameters_value_drops.rs$"],
   },
   {
     name: "instance-borrows-uncounted",

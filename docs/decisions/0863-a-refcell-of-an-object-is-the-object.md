@@ -1700,3 +1700,28 @@ the traits whose cell impl reads what it holds (`Clone`, the comparisons,
 `Debug`) was dropped: no program tells it apart, since a caller's instance
 is concrete.
 
+## Amendment: the proof decides each borrow's count (#2490)
+
+This ADR's rules are no longer answered by a walk of a body's THIR
+(`drops/facts.rs`' `momentary`, `let_held`, `Quiet` and `Seen`). They are
+answered by `CellForm`'s proof of each guard's range in MIR
+(`analysis/cell_form.rs`, [ADR 1199](1199-one-shadow-flag.md), amended).
+Which borrow of a cell may meet another is still `CellBorrows`'.
+- A guard a `let` holds and a temporary's guard are each held from their
+  borrow's return to their drop, each move to a local followed.
+- A guard that's only a call's receiver (ADR 0262's difference 39) and a
+  guard read only for a binding's argument (difference 44) are Tu's
+  exceptions, kept as before and named in the shadow.
+- Case N, a borrow only where the loop's item isn't found, is
+  `Shapes::unmet` (`analysis/cell_form/shapes.rs`).
+- Whether code rust-js can't see runs while a guard's held is
+  `CellForms::seen`, which a library that borrows the cell unchecked asks.
+- A property read of a struct JS may make or give is found by the MIR
+  place's type.
+
+One rule changes: #1815's guard a `let` drops unread, `let g =
+c.borrow(); drop(g);`, is now its check alone, not a count and its
+release. Both are Rust's behavior; the check alone reads as a person
+writes it.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. No result changes.

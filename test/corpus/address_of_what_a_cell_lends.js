@@ -13,8 +13,6 @@
 
 import {
   $addr,
-  $alreadyBorrowed,
-  $alreadyMutablyBorrowed,
   $borrow,
   $borrowMut,
   $cleanup,
@@ -102,27 +100,12 @@ function main() {
   }
   console.log(`number asked first ${(held - $addr($ptrTo(n), 8)) >>> 0}`);
   const one = { a: 5, b: 6 };
-  let guard;
-  try {
-    if (one.borrows) {
-      $alreadyBorrowed("test/corpus/address_of_what_a_cell_lends.rs:66:29");
-    }
-    guard = one;
-  } catch (error) {
-    $unborrow(borrow);
-    throw error;
-  }
+  let guard = one;
   const lent = $addr($ptrTo(guard), 8);
   const own = $addr($ptrOuter(one, 4), 12);
   console.log(`object ${(lent - own) >>> 0} ${($addr($ptrTo(one), 8) - own) >>> 0}`);
-  try {
-    p = $borrow(one, "test/corpus/address_of_what_a_cell_lends.rs:72:26", true);
-  } catch (error) {
-    $unborrow(borrow);
-    throw error;
-  }
+  p = one;
   console.log(`object field ${($addr($ptr(p, "b", 4), 4) - own) >>> 0}`);
-  $unborrow(p);
 
   // A `Cell`'s, at its start.
   const c = { value: { a: 7, b: 8 } };
@@ -265,9 +248,6 @@ function main() {
       "test/corpus/address_of_what_a_cell_lends.rs:115:23",
     );
     const seen = counter.seen;
-    if (one.borrows < 0) {
-      $alreadyMutablyBorrowed("test/corpus/address_of_what_a_cell_lends.rs:117:13");
-    }
     const props = { ...c.value };
     const value$1 = $storedValue(items, 4).value;
     const value$2 = $storedValue(shared, 4).value;

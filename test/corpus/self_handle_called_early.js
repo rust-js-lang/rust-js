@@ -6,7 +6,7 @@
 // it when it's called: counted, as written (ADR 0843, amended).
 
 import {
-  $borrow,
+  $alreadyMutablyBorrowed,
   $borrowMut,
   $catchUnwind,
   $cleanup,
@@ -45,21 +45,14 @@ function steps() {
         if (n === 0) {
           return 0;
         }
-        const borrow = $borrow(
-          this$$1.value,
-          "test/corpus/self_handle_called_early.rs:19:30",
-          true,
-        );
-        const weak = borrow.value;
-        let steps;
-        try {
-          steps = $unwrap(
-            weak != null ? $upgrade(weak) : undefined,
-            "test/corpus/self_handle_called_early.rs:19:72",
-          );
-        } finally {
-          $unborrow(borrow);
+        if (this$$1.value.borrows < 0) {
+          $alreadyMutablyBorrowed("test/corpus/self_handle_called_early.rs:19:30");
         }
+        const { value: weak } = this$$1.value;
+        const steps = $unwrap(
+          weak != null ? $upgrade(weak) : undefined,
+          "test/corpus/self_handle_called_early.rs:19:72",
+        );
         let result;
         try {
           result = (steps.value(n - 1) + 1) >>> 0;

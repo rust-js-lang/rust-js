@@ -7,6 +7,7 @@
 // guard, and a later one meets none, as natively (#1815).
 
 import {
+  $alreadyBorrowed,
   $alreadyMutablyBorrowed,
   $borrow,
   $borrowMut,
@@ -169,11 +170,12 @@ function main() {
     };
     let borrowMut;
     try {
-      borrowMut = $borrowMut(
-        stack.value,
-        "test/corpus/guard_ended_before_its_value_is_dropped_by_the_caller.rs:38:15",
-        true,
-      );
+      if (stack.value.borrows) {
+        $alreadyBorrowed(
+          "test/corpus/guard_ended_before_its_value_is_dropped_by_the_caller.rs:38:15",
+        );
+      }
+      borrowMut = stack.value;
     } catch (error) {
       $cleanup(() => {
         $rcDrop(loud, (value) => {
@@ -201,7 +203,6 @@ function main() {
       borrowMut.push(loud);
     } catch (error) {
       $cleanup(() => {
-        $unborrow(borrowMut);
         $rcDrop(stack, (value) => {
           $dropItems(value, (item) => {
             $rcDrop(item, (value) => {
@@ -216,7 +217,6 @@ function main() {
       }, error);
       throw error;
     }
-    $unborrow(borrowMut);
   }
   let taken;
   try {

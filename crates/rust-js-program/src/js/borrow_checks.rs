@@ -85,16 +85,30 @@ impl Stmt {
 /// its cell once its check is first, is the cell, read by its name where
 /// nothing after sets either or declares the cell's again. A variable that
 /// held it, its own cell, a guard a `let` holds named as the parameter it
-/// borrows, `state = $borrowMut(state)`, is the check alone (#1815).
+/// borrows, `state = $borrowMut(state)`, is the check alone (#1815); and so
+/// is a borrow made only to be checked, its guard dropped unread, `let g =
+/// c.borrow(); drop(g);`, whose statement is then its cell alone, `c;`,
+/// which does nothing (#2490).
 pub fn borrow_checks_first(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
         let checks = stmts[i].borrow_checks_first();
         let n = checks.len();
-        let itself = matches!(&stmts[i].kind, StmtKind::Assign(
-            Expr { kind: ExprKind::Var(to), .. },
-            Expr { kind: ExprKind::Var(cell), .. },
-        ) if n > 0 && to == cell);
+        let itself = n > 0
+            && match &stmts[i].kind {
+                StmtKind::Assign(
+                    Expr {
+                        kind: ExprKind::Var(to),
+                        ..
+                    },
+                    Expr {
+                        kind: ExprKind::Var(cell),
+                        ..
+                    },
+                ) => to == cell,
+                StmtKind::Expr(left) => !left.has_effects(),
+                _ => false,
+            };
         if itself {
             stmts.splice(i..=i, checks);
             i += n;
@@ -221,5 +235,24 @@ mod tests {
         };
         assert!(!checked(false));
         assert!(checked(true));
+    }
+
+    // `let g = c.borrow(); drop(g);`, its guard unread, is `$borrow(c);`: its
+    // check alone, `if (c.borrows < 0) ..`, with no `c;` after it (#2490).
+    #[test]
+    fn a_borrow_made_only_to_be_checked_is_its_check_alone() {
+        let cell = Name::declared("c".into());
+        let borrow = Expr::raised_at(Expr::str("lib.rs:1:1"), || {
+            Expr::momentary_borrow(Expr::var(&cell), false)
+        });
+        let mut stmts = vec![StmtKind::Expr(borrow).at(Span::NONE)];
+        borrow_checks_first(&mut stmts);
+        assert!(matches!(
+            stmts.as_slice(),
+            [Stmt {
+                kind: StmtKind::If(..),
+                ..
+            }]
+        ));
     }
 }

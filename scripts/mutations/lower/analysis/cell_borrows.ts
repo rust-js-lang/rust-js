@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/cell_borrows.rs",
     find: "            false => Called::Std(id, instance.args),\n",
     replace: "            false => Called::Any,\n",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_vec_element_places.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^exported_cell_filled_in_place.rs$"],
     snapshots: true,
   },
   {
@@ -353,7 +353,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/cell_borrows.rs",
     find: "                class: self.flow.class_of(thir, body, call),\n",
     replace: "                class: self.flow.class_of(thir, body, call).filter(|_| false),\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_borrow_of_own_cell.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^replace_with_borrowing_another_cell.rs$"],
     snapshots: true,
   },
   {
@@ -363,7 +363,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/cell_borrows.rs",
     find: "                _ => true,\n            })\n    }\n",
     replace: "                _ => false,\n            })\n    }\n",
-    tests: ["test/corpus.test.ts", "-t", "^flattened_state_replaced_with.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_by_a_thread_locals_clear.rs$"],
   },
   {
     name: "cell-call-runs-nothing-of-its-bounds",
@@ -372,7 +372,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/cell_borrows.rs",
     find: "        asks(recognition.tcx, &self.closed, theirs, held) || self.bounds_ask(recognition, called, held, drops)\n",
     replace: "        asks(recognition.tcx, &self.closed, theirs, held)\n",
-    tests: ["test/corpus.test.ts", "-t", "^(flattened_state_replaced_with|replace_with_held_across).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_by_a_thread_locals_clear.rs$"],
   },
   {
     name: "std-call-drops-unasked",
@@ -408,15 +408,6 @@ export const mutations: Mutation[] = [
     find: "        Called::Any => found.reach.and(Reach::Anything),\n",
     replace: "        Called::Any => found.reach.and(Reach::Unseen),\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_by_a_callback_a_function_runs.rs$"],
-  },
-  {
-    name: "pointer-of-any-asks-nothing-seen",
-    breaks:
-      "a fn pointer that may be any function, the crate's too, is taken to borrow nothing while a guard is held after the call's arguments, so a pointer popped from a `Vec` that borrows the cell never panics (#1669)",
-    file: "crates/rust-js-lower/src/analysis/cell_borrows.rs",
-    find: "        let Some(may_be) = self.pointers.may_be(tcx, ptr) else {\n            return self.anything_asks(tcx, held);\n        };\n        may_be.iter().any(|&(f, args)| match tcx.is_closure_like(f) {\n            true => self.seen_asks(",
-    replace: "        let Some(may_be) = self.pointers.may_be(tcx, ptr) else {\n            return false;\n        };\n        may_be.iter().any(|&(f, args)| match tcx.is_closure_like(f) {\n            true => self.seen_asks(",
-    tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_by_a_fn_pointer_argument.rs$"],
   },
   {
     name: "seen-std-given-any-unasked",
@@ -492,15 +483,7 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => true,\n",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "of tasks only the crate constructs is plain"],
   },
-  {
-    name: "held-field-read-unsettled",
-    breaks: "a field read in the body that holds a guard, `format!`'s own tuple's of a type parameter, isn't settled by its instances, so `Shown<T>`'s `lines` is counted across it (#2135)",
-    file: "crates/rust-js-lower/src/analysis/cell_borrows.rs",
-    find: ".is_some_and(|read| self.read_asks(recognition, owner, read, held))",
-    replace: ".is_some_and(|_| { let _ = owner; self.anything_asks(recognition.tcx, held) })",
-    tests: ["test/corpus.test.ts", "-t", "scope_struct_of_type_parameters"],
-    snapshots: true,
-  },
+
   {
     name: "runs-anything-loses-own-borrows",
     breaks: "a body that may run anything, a closure that drops the `Result` of its `try_borrow_mut()`, is asked only what unseen code may borrow, never its own borrows, so a borrow held across it isn't counted and the closure finds its cell free where Rust's finds it borrowed (#2450, #2451)",
@@ -515,7 +498,8 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/cell_borrows.rs",
     find: "        .listed_or_any()\n    }\n\n    /// What of the crate is a value at hand",
     replace: "        .listed_or_any()\n        .and(None)\n    }\n\n    /// What of the crate is a value at hand",
-    tests: ["test/cell-form-shadow.test.ts", "-t", "nothing can contest"],
+    tests: ["test/corpus.test.ts", "-t", "^guard_held_while_a_type_parameters_quiet_value_drops.rs$"],
+    snapshots: true,
   },
 ];
 

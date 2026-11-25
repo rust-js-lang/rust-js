@@ -1,9 +1,12 @@
-//@ compile-fail: a `RefCell` guard written whole by a closure that borrows its variable
+//@ compile-fail: a flattened state lent, or borrowed where another borrow of it may be
 // A flattened state's guard (ADR 1044), which counts nothing, written
 // whole by a closure with a plain cell's counted guard is refused, as any
 // guard so written is (#2475, m1-lisa's probe): the plain cell was never
 // released, and its next borrow panicked where Rust prints
-// `Pending { tries: 0 } Pending { tries: 9 }`.
+// `Pending { tries: 0 } Pending { tries: 9 }`. Its borrow is held while
+// the closure runs, which `CellForm`'s proof counts, so the flattened
+// state, which can't count, is refused first (#2490), the guard's write
+// after it.
 use std::cell::{RefCell, RefMut};
 
 #[derive(Debug)]

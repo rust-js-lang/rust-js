@@ -9,19 +9,15 @@
 // methods, which are those methods' functions.
 
 import {
-  $borrow,
-  $borrowMut,
   $byteLen,
   $cleanup,
   $dropItems,
-  $fieldCell,
   $live,
   $locationLine,
   $main,
   $pop,
   $some,
   $someValue,
-  $unborrow,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -107,38 +103,11 @@ function loudDrop_drop(loud) {
 
 const Stack = {
   push(stack, k, dropK) {
-    let items;
-    try {
-      items = $borrowMut(
-        $fieldCell(stack, "items"),
-        "test/corpus/scope_struct_of_type_parameters.rs:110:20",
-        true,
-      );
-    } catch (error) {
-      $cleanup(() => {
-        dropK?.(k);
-      }, error);
-      throw error;
-    }
-    try {
-      items.value.push(k);
-    } finally {
-      $unborrow(items);
-    }
+    stack.items.push(k);
   },
 
   pop(stack, dropK) {
-    const items = $borrowMut(
-      $fieldCell(stack, "items"),
-      "test/corpus/scope_struct_of_type_parameters.rs:114:33",
-      true,
-    );
-    let popped;
-    try {
-      popped = $pop(items.value);
-    } finally {
-      $unborrow(items);
-    }
+    const popped = $pop(stack.items);
     if (popped != null) {
       dropK?.($someValue(popped));
     }
@@ -178,21 +147,7 @@ function popTwice(items, more, dropT) {
     }, error);
     throw error;
   }
-  let borrow;
-  try {
-    borrow = $borrow(
-      $fieldCell(stack, "items"),
-      "test/corpus/scope_struct_of_type_parameters.rs:127:17",
-    );
-  } catch (error) {
-    $cleanup(() => {
-      $dropItems(stack.items, (item) => {
-        dropT?.(item);
-      });
-    }, error);
-    throw error;
-  }
-  const result = borrow.value.length;
+  const result = stack.items.length;
   $dropItems(stack.items, (item) => {
     dropT?.(item);
   });
@@ -201,38 +156,11 @@ function popTwice(items, more, dropT) {
 
 const Pile = {
   push(pile, k, dropK) {
-    let items;
-    try {
-      items = $borrowMut(
-        $fieldCell(pile, "items"),
-        "test/corpus/scope_struct_of_type_parameters.rs:136:20",
-        true,
-      );
-    } catch (error) {
-      $cleanup(() => {
-        dropK?.(k);
-      }, error);
-      throw error;
-    }
-    try {
-      items.value.push(k);
-    } finally {
-      $unborrow(items);
-    }
+    pile.items.push(k);
   },
 
   pop(pile, dropK) {
-    const items = $borrowMut(
-      $fieldCell(pile, "items"),
-      "test/corpus/scope_struct_of_type_parameters.rs:140:33",
-      true,
-    );
-    let popped;
-    try {
-      popped = items.value.pop();
-    } finally {
-      $unborrow(items);
-    }
+    const popped = pile.items.pop();
     if (popped != null) {
       dropK?.(popped);
     }
@@ -242,14 +170,10 @@ const Pile = {
 
 function popLoud() {
   const pile = { items: [["x"]] };
-  let items;
   try {
     Pile.push(pile, ["y"], loudDrop_drop);
     Pile.pop(pile, loudDrop_drop);
-    items = $borrow(
-      $fieldCell(pile, "items"),
-      "test/corpus/scope_struct_of_type_parameters.rs:152:16",
-    );
+    return pile.items.length;
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -259,7 +183,6 @@ function popLoud() {
       }
     }
   }
-  return items.value.length;
 }
 
 const Shown = {

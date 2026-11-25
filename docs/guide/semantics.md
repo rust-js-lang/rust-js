@@ -632,6 +632,12 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   ([0328](../decisions/0328-refcell-borrow-counts.md),
   [0580](../decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
   [0585](../decisions/0585-a-refcells-replace-holds-it-for-a-moment.md)).
+  Whether a borrow is counted is decided once, from MIR: counted unless
+  its guard's range, from the borrow to its drop, is shown to run nothing
+  that may ask, a getter of a struct JS may make or give among what may
+  ([1199](../decisions/1199-one-shadow-flag.md#amendment-the-flip-cellform-decides-each-borrows-count-2026-11-25-2490)).
+  A borrow made only to be checked, its guard dropped unread, is its
+  check alone.
   What can meet one is what may borrow a cell its flow says it can be:
   a queue's items walked while another queue, made apart, is pushed to
   are never checked, and a callback that may reach the walked queue,

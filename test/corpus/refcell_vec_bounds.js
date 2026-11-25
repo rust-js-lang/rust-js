@@ -136,9 +136,8 @@ function droppedBetween(queue, clearer) {
 
 function replacedBetween(queue, slots, other) {
   if (queue.length !== 0) {
-    let borrowMut;
     try {
-      borrowMut = $borrowMut(slots, "test/corpus/refcell_vec_bounds.rs:106:15", true);
+      $index(slots, 0, "test/corpus/refcell_vec_bounds.rs:106:27");
     } catch (error) {
       $cleanup(() => {
         clearerDrop_drop(other);
@@ -146,25 +145,13 @@ function replacedBetween(queue, slots, other) {
       throw error;
     }
     try {
-      try {
-        $index(borrowMut, 0, "test/corpus/refcell_vec_bounds.rs:106:27");
-      } catch (error) {
-        $cleanup(() => {
-          clearerDrop_drop(other);
-        }, error);
-        throw error;
-      }
-      try {
-        clearerDrop_drop(borrowMut[0]);
-      } catch (error) {
-        throw $unwindsOn(error);
-      } finally {
-        if ($live()) {
-          borrowMut[0] = other;
-        }
-      }
+      clearerDrop_drop(slots[0]);
+    } catch (error) {
+      throw $unwindsOn(error);
     } finally {
-      $unborrow(borrowMut);
+      if ($live()) {
+        slots[0] = other;
+      }
     }
     return $index(queue, 0, "test/corpus/refcell_vec_bounds.rs:107:30");
   }

@@ -6,7 +6,6 @@
 // `$storedIn` (#1114), beside `address_of_what_a_cell_lends`, which asks.
 
 import {
-  $borrow,
   $cleanup,
   $lock,
   $main,
@@ -33,40 +32,17 @@ $main(main);
 
 function main() {
   const cell = { a: 1, b: 2 };
-  const borrow = $borrow(cell, "test/corpus/pointers_into_a_cell_compared.rs:32:34", true);
-  let first = $ptrTo(borrow);
-  let tmp;
-  try {
-    tmp = $borrow(cell, "test/corpus/pointers_into_a_cell_compared.rs:33:35", true);
-  } catch (error) {
-    $unborrow(borrow);
-    throw error;
-  }
-  const second = $ptrTo(tmp);
-  try {
-    console.log(`cell ${$ptrEq(first, second, 8)}`);
-  } catch (error) {
-    $unborrow(tmp);
-    $unborrow(borrow);
-    throw error;
-  }
+  let first = $ptrTo(cell);
+  const second = $ptrTo(cell);
+  console.log(`cell ${$ptrEq(first, second, 8)}`);
   const lock = { value: { a: 3, b: 4 } };
-  let tmp$1;
-  try {
-    tmp$1 = $lock(lock, "test/corpus/pointers_into_a_cell_compared.rs:36:42");
-  } catch (error) {
-    $unborrow(tmp);
-    $unborrow(borrow);
-    throw error;
-  }
+  const value = $lock(lock, "test/corpus/pointers_into_a_cell_compared.rs:36:42");
   let guarded;
   try {
-    guarded = $ptr(tmp$1.value, "b", 0);
+    guarded = $ptr(value.value, "b", 0);
   } catch (error) {
     $cleanup(() => {
-      $unlock(tmp$1);
-      $unborrow(tmp);
-      $unborrow(borrow);
+      $unlock(value);
     }, error);
     throw error;
   }
@@ -78,9 +54,7 @@ function main() {
     p = $ptrTo($unwrap(o, "test/corpus/pointers_into_a_cell_compared.rs:39:24"));
   } catch (error) {
     $cleanup(() => {
-      $unlock(tmp$1);
-      $unborrow(tmp);
-      $unborrow(borrow);
+      $unlock(value);
     }, error);
     throw error;
   }
@@ -90,9 +64,7 @@ function main() {
     );
   } catch (error) {
     $cleanup(() => {
-      $unlock(tmp$1);
-      $unborrow(tmp);
-      $unborrow(borrow);
+      $unlock(value);
     }, error);
     throw error;
   }
@@ -100,14 +72,12 @@ function main() {
   const shown = { value: held[0], impl: pMeasured };
   const thin = $ptrTo(shown.value);
   // An item's pointer is stepped along its array.
-  const value = $ptrEq(thin, $ptr(held, 0, 0), 8);
+  const value$1 = $ptrEq(thin, $ptr(held, 0, 0), 8);
   try {
-    console.log(`thin ${value} ${shown.impl.size(shown.value)}`);
+    console.log(`thin ${value$1} ${shown.impl.size(shown.value)}`);
   } catch (error) {
     $cleanup(() => {
-      $unlock(tmp$1);
-      $unborrow(tmp);
-      $unborrow(borrow);
+      $unlock(value);
     }, error);
     throw error;
   }
@@ -117,25 +87,17 @@ function main() {
   ];
   first = $ptr(items, 0);
   try {
-    try {
-      try {
-        console.log(`stepped ${$ptrAdd(first, 1).value.a}`);
-        const counter = { count: 7 };
-        counter.count = (counter.count + 1) >>> 0;
-        console.log(
-          `${pDebug_fmt($borrow(cell, "test/corpus/pointers_into_a_cell_compared.rs:52:35"))} ${o == null ? "None" : `Some(${pDebug_fmt(o)})`} ${counter.count}`,
-        );
-      } catch (error) {
-        $poison(tmp$1);
-        throw error;
-      } finally {
-        $unborrow(tmp$1);
-      }
-    } finally {
-      $unborrow(tmp);
-    }
+    console.log(`stepped ${$ptrAdd(first, 1).value.a}`);
+    const counter = { count: 7 };
+    counter.count = (counter.count + 1) >>> 0;
+    console.log(
+      `${pDebug_fmt(cell)} ${o == null ? "None" : `Some(${pDebug_fmt(o)})`} ${counter.count}`,
+    );
+  } catch (error) {
+    $poison(value);
+    throw error;
   } finally {
-    $unborrow(borrow);
+    $unborrow(value);
   }
 }
 //# sourceMappingURL=case.js.map

@@ -7,7 +7,6 @@
 
 import {
   $borrow,
-  $borrowMut,
   $cleanup,
   $dropItems,
   $main,
@@ -25,16 +24,7 @@ function guardDrop_drop(guard) {
 }
 
 function clearAll(g) {
-  const borrowMut = $borrowMut(
-    g,
-    "test/corpus/ref_cell_borrowed_by_a_clear_through_a_reference.rs:17:7",
-    true,
-  );
-  try {
-    $truncate(borrowMut, 0, guardDrop_drop);
-  } finally {
-    $unborrow(borrowMut);
-  }
+  $truncate(g, 0, guardDrop_drop);
 }
 
 $main(main);

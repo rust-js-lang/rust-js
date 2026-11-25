@@ -7,9 +7,9 @@
 
 import {
   $BTreeMap,
+  $alreadyBorrowed,
   $alreadyMutablyBorrowed,
   $borrow,
-  $borrowMut,
   $cleanup,
   $cmp,
   $debugStr,
@@ -84,7 +84,10 @@ function insert(root, word) {
     const label = [borrow.label[0] + c];
     let borrowMut;
     try {
-      borrowMut = $borrowMut(cur.value, "test/corpus/trie_of_counted_rcs.rs:27:34", true);
+      if (cur.value.borrows) {
+        $alreadyBorrowed("test/corpus/trie_of_counted_rcs.rs:27:34");
+      }
+      borrowMut = cur.value;
     } catch (error) {
       $cleanup(() => {
         console.log(`drop ${$debugStr(label[0])}`);
@@ -100,7 +103,6 @@ function insert(root, word) {
       label$live = false;
     } catch (error) {
       $cleanup(() => {
-        $unborrow(borrowMut);
         if (label$live) {
           console.log(`drop ${$debugStr(label[0])}`);
         }
@@ -151,7 +153,6 @@ function insert(root, word) {
       );
     } catch (error) {
       $cleanup(() => {
-        $unborrow(borrowMut);
         $rcDrop(cur, dropNode);
       }, error);
       throw error;
@@ -160,12 +161,10 @@ function insert(root, word) {
       next = $rcClone($mutGet(entry._0[0], entry._0[1]).value);
     } catch (error) {
       $cleanup(() => {
-        $unborrow(borrowMut);
         $rcDrop(cur, dropNode);
       }, error);
       throw error;
     }
-    $unborrow(borrowMut);
     try {
       $rcDrop(cur, dropNode);
     } catch (error) {
@@ -407,7 +406,10 @@ function main() {
   }
   let borrowMut;
   try {
-    borrowMut = $borrowMut(a.value, "test/corpus/trie_of_counted_rcs.rs:64:19", true);
+    if (a.value.borrows) {
+      $alreadyBorrowed("test/corpus/trie_of_counted_rcs.rs:64:19");
+    }
+    borrowMut = a.value;
   } catch (error) {
     $cleanup(() => {
       $rcDrop(ab, dropNode);
@@ -423,7 +425,6 @@ function main() {
     taken = $remove(borrowMut.children, "c");
   } catch (error) {
     $cleanup(() => {
-      $unborrow(borrowMut);
       $rcDrop(ab, dropNode);
       $rcDrop(a, dropNode);
       if (root$live) {
@@ -432,7 +433,6 @@ function main() {
     }, error);
     throw error;
   }
-  $unborrow(borrowMut);
   console.log(`taken ${taken != null}`);
   try {
     if (taken != null) {

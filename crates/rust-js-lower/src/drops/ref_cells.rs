@@ -11,6 +11,7 @@ use super::*;
 use crate::analysis::{Borrow, Cell, CellClass};
 
 mod bound;
+mod cell_forms;
 mod instances;
 mod places;
 use bound::{BoundPlaces, bound_place, bound_ref_cells};
@@ -332,86 +333,6 @@ impl<'tcx> RefCells<'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// `CellForm`'s shadow of `body`, the MIR being lowered, where the
-    /// session records it (#2490, ADR 1199): each borrow's proof
-    /// (`analysis::shadow_cell_forms_of`) beside the form its lowering takes,
-    /// of `QuietCells`' blocks, those unchecked, `quiet`, and those checked
-    /// and not counted, `momentary`; else as `std_types/cell.rs` asks, a type
-    /// no borrow of which is counted unchecked; a flattened state as its
-    /// declaration says. The crate's fields used whole are found once.
-    pub fn shadow_cell_forms(
-        &self,
-        body: &rustc_middle::mir::Body<'tcx>,
-        (quiet, momentary): (
-            &IndexSet<rustc_middle::mir::BasicBlock>,
-            &IndexSet<rustc_middle::mir::BasicBlock>,
-        ),
-    ) {
-        use crate::analysis::Today;
-        use crate::session::ShadowKind;
-        if !crate::session::shadowing(self.tcx, ShadowKind::CellForm) {
-            return;
-        }
-        let recognition = self.recognition();
-        let drops = |ty| {
-            super::drop_runs(
-                recognition,
-                (self.krate.library, self.krate.closure_facts),
-                self.krate.counted,
-                ty,
-            )
-        };
-        let proving = crate::analysis::Proving {
-            recognition: &recognition,
-            borrows: self.krate.cell_borrows,
-            drops: &drops,
-        };
-        let today = |block, cell, field: Option<&'tcx ty::FieldDef>| match () {
-            _ if field.is_some_and(|field| crate::bindings::is_flattened_state_field(self.tcx, field)) => {
-                Today::Declared
-            }
-            _ if quiet.contains(&block) || self.quiet_ref_cell(cell, false) => Today::Unchecked,
-            _ if momentary.contains(&block) => Today::Momentary,
-            _ => Today::Counted,
-        };
-        let thir = (body.source.def_id() == self.frame.owner).then_some(self.frame.thir);
-        let caches = crate::session::caches(self.tcx);
-        let wholes = caches.cell_form_wholes.get_or_init(|| {
-            let bodies = (self.krate.bodies.values().chain(self.krate.closures.values()))
-                .filter(|body| body.def_id.is_local())
-                .filter_map(|body| body.mir.as_ref().map(|mir| &mir.body));
-            crate::analysis::whole_uses(&recognition, bodies)
-        });
-        for (&field, whole) in wholes {
-            crate::session::shadow(self.tcx, ShadowKind::CellForm, || {
-                let lent = if whole.lent_to_borrows {
-                    "lent-to-borrows"
-                } else {
-                    "used"
-                };
-                format!("whole\t{}\t{lent}\t{}", self.tcx.def_path_str(field), whole.why)
-            });
-        }
-        let proofs = caches.cell_form_types.get_or_init(|| {
-            let bodies = (self.krate.bodies.values().chain(self.krate.closures.values()))
-                .filter(|body| body.def_id.is_local())
-                .filter_map(|body| Some((&body.mir.as_ref()?.body, &body.thir)));
-            // Each body proved of its own typing.
-            let prove = |owner: DefId, each: &mut dyn FnMut(&crate::analysis::Proving<'_, '_, 'tcx>)| {
-                let recognition = crate::recognition::Recognition {
-                    typing_env: ty::TypingEnv::post_analysis(self.tcx, self.tcx.typeck_root_def_id(owner)),
-                    ..recognition
-                };
-                each(&crate::analysis::Proving {
-                    recognition: &recognition,
-                    ..proving
-                });
-            };
-            crate::analysis::TypeProofs::of_crate(self.tcx, bodies, &prove, wholes)
-        });
-        crate::analysis::shadow_cell_forms_of(&proving, body, (thir, wholes, proofs), &today);
-    }
-
     /// Whether a `RefCell` of type `ty` is the object it holds, not a
     /// `{ value }` box (ADR 0863): a `Vec`'s array, a map's `Map`, a set's
     /// `Set`, a struct's object (`holds_itself`), which its borrows read
@@ -558,6 +479,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (IndexSet::default(), IndexSet::default(), IndexSet::default());
         let mut classed = IndexSet::default();
         let flow = self.krate.cell_borrows.flow();
+        let forms = self.cell_forms();
         let mut unseen: Vec<(Ty<'tcx>, rustc_span::Span)> = Vec::new();
         let bodies = (self.krate.bodies.values().copied()).chain(self.krate.closures.values().copied());
         for body in bodies {
@@ -573,10 +495,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 trait_impls: self.krate.trait_impls,
                 foreign: self.krate.foreign,
             };
-            let mut state = TypeDrops::default();
-            for index in self.drops_taken(owner) {
-                state.give(crate::traits::drop_slot(tcx, self.slots(), owner, index));
-            }
+            let state = self.drops_given(owner);
             let query = without_dictionaries(
                 recognition,
                 (false, self.krate.closure_facts),
@@ -584,7 +503,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 &state,
             );
             let thir = &body.thir;
-            let facts = find_facts(&query, self.krate.cell_borrows, thir, body.def_id);
+            let facts = find_facts(&query, (self.krate.cell_borrows, &forms), thir, body.def_id);
             // A field a pattern binds by reference is that field's own place,
             // its binding's uses the field's; one bound otherwise is a value
             // of its own, lent (ADR 0863, amended, #503).
@@ -1127,7 +1046,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let held = match kind {
                 // A `try_borrow`'s too, its guard held as a borrow's (#687).
                 Some(Std::Borrow { lock: false, .. } | Std::TryBorrow { lock: false, .. }) => {
-                    !facts.momentary.contains(&fun) && !facts.let_held.contains(&fun)
+                    !facts.momentary.contains(&fun)
                 }
                 Some(Std::LocalBorrow { .. }) => {
                     let quiet = crate::analysis::borrowed(recognition, thir, id)
