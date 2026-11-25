@@ -217,7 +217,7 @@ async function wrong(rewrite: Rewrite, name: string, edition: string, target: "h
     // JS's is right where it's one of them: native run again, up to
     // `nativeTries` times, till one agrees with it (the loud triage's class
     // (b), ADR 1104, amended).
-    if (againAgrees(again, native, ran)) continue;
+    if (againAgrees(again, native, ran, hashOrdered(made.program + (made.library ?? "")))) continue;
     // A variant Miri finds undefined behaviour in, a loud rewrite's `Drop`
     // of a value `raw_pointers` reads twice through a pointer, has no answer
     // to compare: skipped, its reason tallied (#1453).
@@ -250,16 +250,34 @@ function undefinedVariant(variant: string, text: string, edition: string): boole
  * missed 1 time in 256. */
 const nativeTries = 8;
 
+/** How often of a program a hash table orders (`hashOrdered`), whose
+ * seed-picked order may be one of many, not of two: #2588's three entries
+ * sorted, the JS's order one of six, its output native's 14 times in 60,
+ * which 1 + 8 runs missed about 1 time in 11, red. Of 1 + 128, an output
+ * native gives 1 time in 24, a fourth entry's order, is missed about 1
+ * time in 240. A
+ * native run is milliseconds, and this many is asked only of a program a
+ * hash table orders whose JS disagreed. */
+const hashOrderTries = 128;
+
+/** Whether a program's output may be a hash table's order, by its random
+ * seed: it names std's `HashMap`, `HashSet` or `RandomState`. Asked only for
+ * how often to run native again; a program it misses keeps `nativeTries`. */
+function hashOrdered(program: string): boolean {
+  return /\b(?:HashMap|HashSet|RandomState)\b/.test(program);
+}
+
 /** Whether one of native Rust's runs again, `again`, up to `nativeTries`,
- * agrees with the JS's, `ran`: a program whose output std leaves to a
+ * or `hashOrderTries` of a program a hash table orders (`hashed`), agrees
+ * with the JS's, `ran`: a program whose output std leaves to a
  * random seed, a `HashMap`'s order, has more than one right answer. Or,
  * of them all, `native` first, where they differ only in a hash table's
  * drops, the JS's are those drops in another order (`agreesUpToHashOrder`,
  * #1453). */
-function againAgrees(again: (() => Run | string) | undefined, native: Run, ran: Run): boolean {
+function againAgrees(again: (() => Run | string) | undefined, native: Run, ran: Run, hashed: boolean): boolean {
   if (again === undefined) return false;
   const runs = [native];
-  for (let i = 0; i < nativeTries; i++) {
+  for (let i = 0; i < (hashed ? hashOrderTries : nativeTries); i++) {
     const rerun = again();
     if (typeof rerun === "string") continue;
     if (agree(ran, rerun)) return true;
@@ -280,6 +298,23 @@ const natives = [
   ["~loud 1 drop Holder", "~loud 2 drop Rect", "~loud 3 drop Circle(3)", "~loud 4 drop Dot", "end"],
   ["~loud 1 drop Holder", "~loud 2 drop Dot", "~loud 3 drop Rect", "~loud 4 drop Circle(3)", "end"],
 ].map((lines) => run(lines));
+
+// A program a hash table orders is run again till one of its seeds gives
+// the JS's output, one of many orders (#2588): its 20th run agrees, which
+// `nativeTries` alone never reaches; any other keeps `nativeTries`.
+firstPart("a hash table's program is run again till a seed gives the JS's output", () => {
+  const ran = run(["~loud 1 call 1", "~loud 2 call 1", "Some(1)"]);
+  const other = run(["~loud 1 call 1", "~loud 2 call 1", "~loud 3 call 1", "Some(1)"]);
+  const agreeingAt = (n: number) => {
+    let tries = 0;
+    return () => (++tries === n ? ran : other);
+  };
+  expect(againAgrees(agreeingAt(20), other, ran, true)).toBe(true);
+  expect(againAgrees(agreeingAt(20), other, ran, false)).toBe(false);
+  expect(againAgrees(agreeingAt(8), other, ran, false)).toBe(true);
+  expect(hashOrdered("let m: HashMap<u8, u8> = HashMap::new();")).toBe(true);
+  expect(hashOrdered("use std::collections::BTreeMap;")).toBe(false);
+});
 
 firstPart("a hash table's drops agree in another order", () => {
   const js = run(["~loud 1 drop Holder", "~loud 2 drop Dot", "~loud 3 drop Circle(3)", "~loud 4 drop Rect", "end"]);

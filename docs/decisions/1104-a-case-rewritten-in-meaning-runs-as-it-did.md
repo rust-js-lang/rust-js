@@ -570,3 +570,28 @@ cases join the corpus as `RefCell` cases with its fix, so both rewrites
 run over them too.
 
 ADR 0262's case: none. The compiler's JS is unchanged.
+
+## Amendment: a hash table's program is run again more often (#2588)
+
+`map_keyed_by_a_params_ref`'s loud rewrite went red on the nightly. Native
+called a `sort_by` comparator once more than the JS did. It wasn't a wrong
+answer.
+
+- **The sort model is std's:** a probe of each comparator call's count and
+  of a hash of every pair compared, stable and unstable sorts, of a small
+  `Freeze` item, a large one, a `Cell` and an item with a destructor, over
+  34 lengths around std's thresholds and five patterns, was native's
+  throughout. Corpus case `sort_comparisons_as_std_asks` keeps it.
+- **The JS's output is one native gives:** the sorted entries come from a
+  `HashMap`'s `into_iter()`. Native's comparator count follows its seed's
+  order: 2 calls on 21 of 60 seeds and 3 on 39, the JS's whole output
+  native's on 14 of 60.
+- **The net gave up too soon:** `nativeTries`, 8, was sized for two orders.
+  With the JS's output at about 1 seed in 4, 1 + 8 runs miss it about 1
+  time in 11.
+
+A program that names `HashMap`, `HashSet` or `RandomState` (`hashOrdered`)
+is now run again up to `hashOrderTries`, 128 times. An output native gives
+1 time in 24, a fourth entry's order, is then missed about 1 time in 240.
+Any other program keeps `nativeTries`, so a real disagreement costs no more
+than before. A test runs a program that agrees on its 20th try both ways.
