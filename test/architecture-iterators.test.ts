@@ -1088,3 +1088,16 @@ test("the runtime closes a source by $closeHolding or $closeBare alone", () => {
   expect(steps).toContain("function $closeHolding(it, ...held) {");
   expect(steps).toContain("function $closeBare(it) {");
 });
+
+// The back path names no in-place form's helper itself: `as_double_ended`
+// (iterators/knowing.rs) asks the in-place forms owner, `back_knowing_of`
+// and `InPlaceForm::callee`, for each adapter's back form and each made
+// value it reads, never spelling `$mapEnds` beside the owner's catalog
+// (#2216). The owner's helpers are its forms' names that are a helper's.
+test("the back path names no in-place form's helper, the owner's catalog alone", () => {
+  const owner = readFileSync(join(root, "crates/rust-js-lower/src/iterators/in_place_forms.rs"), "utf8");
+  const helpers = [...owner.matchAll(/InPlaceForm::\w+ => "(\$[A-Za-z]+)",/g)].map((m) => m[1]!);
+  expect(helpers.length).toBeGreaterThan(10);
+  const knowing = readFileSync(join(root, "crates/rust-js-lower/src/iterators/knowing.rs"), "utf8");
+  expect(helpers.filter((helper) => knowing.includes(`"${helper}"`))).toEqual([]);
+});

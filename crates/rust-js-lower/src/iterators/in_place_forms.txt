@@ -4,7 +4,9 @@
 # `<std type> | <form> | <where>`; each `where <name>: <APIs>`, what
 # answers it, each an owner of class 1 or 2 (#2112, #2200); each
 # `hint <std type> | <form> | <where>`, the form one made knowing its
-# hint alone is made as, chosen by a fact keyed by type (#2209).
+# hint alone is made as, chosen by a fact keyed by type (#2209); each
+# `back <std type> | <form>`, the form one made knowing its back is
+# made as (#2216).
 Map | $Steps.map | Always
 Cloned | $Steps.map | Always
 Inspect | $Steps.map | Always
@@ -69,3 +71,10 @@ hint Chain | $lazyChain | Always
 hint Rev | $rev | Always
 hint Flatten | $flatMap | Always
 hint FlatMap | $flatMap | Always
+back Map | $mapEnds
+back Cloned | $mapEnds
+back Inspect | $mapEnds
+back Filter | $filterEnds
+back Chain | $lazyChain
+back Flatten | $flattenEnds
+back FlatMap | $flattenEnds

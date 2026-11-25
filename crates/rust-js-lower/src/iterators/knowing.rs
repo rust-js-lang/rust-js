@@ -3,6 +3,7 @@
 //! struct takes are `compiled_steps.rs`'.
 
 use super::*;
+use crate::iterators::in_place_forms::{InPlaceForm, back_knowing_of};
 use crate::recognition::{OwnStep, Reach};
 use crate::temporary_names::Role;
 
@@ -628,8 +629,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // One made so already, `$skipping(source, n)` of `as_exact_size`'s
         // own, a `rev()`'s source (#385); not `closing`'s, given a drop.
         if let Some((_, skip)) = crate::recognition::counted_source(self.tcx, ty)
-            && (value.helper_call_of(if skip { "$skipping" } else { "$taking" }))
-                .is_some_and(|counted| !counted.given("drop"))
+            && (value.helper_call_of(counted_callee(skip))).is_some_and(|counted| !counted.given("drop"))
             && !self.counted_lacks_its_back(&value, ty, back)
         {
             return Ok(value);
@@ -654,7 +654,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let source_value = stepped_value(&source_value).unwrap_or(source_value);
             let source_value = self.as_exact_size(source_value, source.peel_refs(), back, span)?;
-            let name = if skip { "$skipping" } else { "$taking" };
+            let name = counted_callee(skip);
             return Ok(Expr::call_helper(
                 name,
                 [vec![source_value, n], drop.into_iter().collect()].concat(),
@@ -700,7 +700,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let source_value = stepped_value(source_value).unwrap_or_else(|| (**source_value).clone());
             let source_value = self.as_exact_size(source_value, source.peel_refs(), back, span)?;
-            return Ok(Expr::call_helper("$mapEnds", vec![source_value, f.clone()]));
+            return Ok(Expr::call_helper(back_form("Map"), vec![source_value, f.clone()]));
         }
         // A `rev()` made here, by its form (`reversal`, ADRs 0986, 0987):
         // `$rev` of its source, or of a range stepped from its end, made
@@ -808,7 +808,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some((&**source_value, each))
                 }
                 _ => value
-                    .helper_call_of("$flatMap")
+                    .helper_call_of(InPlaceForm::FlatMap.callee())
                     .and_then(|flat| Some((flat.arg("it")?, flat.arg("f")?))),
             }
             && let Some(inner) = made.or_else(|| self.iterator_item(source.peel_refs()))
@@ -866,7 +866,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(each) = each {
                 let source_value = self.as_double_ended(source_value.clone(), source.peel_refs(), span)?;
                 return Ok(Expr::call_helper(
-                    "$flattenEnds",
+                    back_form("Flatten"),
                     [vec![source_value], each, self.flatten_fusing(ty)].concat(),
                 ));
             }
@@ -876,14 +876,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // own and steps `b`'s then `a`'s from the back, as std's `Chain`
         // does (#739).
         if let Some((first, second)) = crate::recognition::chained_sources(self.tcx, ty)
-            && let Some(chain) = value.helper_call_of("$lazyChain")
+            && let Some(chain) = value.helper_call_of(InPlaceForm::LazyChain.callee())
             && let (Some(a), Some(b)) = (chain.arg("a"), chain.arg("b"))
         {
             let a = stepped_value(a).unwrap_or_else(|| a.clone());
             let b = stepped_value(b).unwrap_or_else(|| b.clone());
             let a = self.as_double_ended(a, first.peel_refs(), span)?;
             let b = self.as_double_ended(b, second, span)?;
-            return Ok(Expr::call_helper("$lazyChain", vec![a, b]));
+            return Ok(Expr::call_helper(back_form("Chain"), vec![a, b]));
         }
         if let Some(zipped) = self.zip_knowing(&value, ty, true, span)? {
             return Ok(zipped);
@@ -907,7 +907,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let [f] = args.as_slice()
         {
             let source_value = self.as_double_ended((**source_value).clone(), source.peel_refs(), span)?;
-            return Ok(Expr::call_helper("$mapEnds", vec![source_value, f.clone()]));
+            return Ok(Expr::call_helper(back_form("Map"), vec![source_value, f.clone()]));
         }
         // A `filter_map` made here, `src.map(f).filter(present)`, each kept
         // `Some` taken out of its box after, `.map($someValue)`, where it
@@ -1005,14 +1005,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (js::ExprKind::Member(source_value, method), [p]) if method == "filter" => {
                     Some(((**source_value).clone(), vec![p.clone()]))
                 }
-                _ => value.helper_call_of("$filterDropping").and_then(|filter| {
-                    let (source_value, keep, drop) = (filter.arg("it")?, filter.arg("keep")?, filter.arg("drop")?);
-                    Some((source_value.clone(), vec![keep.clone(), drop.clone()]))
-                }),
+                _ => value
+                    .helper_call_of(InPlaceForm::FilterDropping.callee())
+                    .and_then(|filter| {
+                        let (source_value, keep, drop) = (filter.arg("it")?, filter.arg("keep")?, filter.arg("drop")?);
+                        Some((source_value.clone(), vec![keep.clone(), drop.clone()]))
+                    }),
             };
             if let Some((source_value, given)) = filtered {
                 let source_value = self.as_double_ended(source_value, source.peel_refs(), span)?;
-                return Ok(Expr::call_helper("$filterEnds", [vec![source_value], given].concat()));
+                return Ok(Expr::call_helper(
+                    back_form("Filter"),
+                    [vec![source_value], given].concat(),
+                ));
             }
         }
         // A type of generic code's whose own bounds don't make it
@@ -1162,11 +1167,28 @@ fn counted_parts(value: &Expr, skip: bool) -> Option<(Expr, Expr, Option<Expr>)>
     // made `$taking` or `$skipping` where generic code asks its hint
     // (`made_knowing_its_hint`), of a source whose form may lack what its
     // back steps, given none (#2194).
-    let counted = value.helper_call_of(if skip { "$skipping" } else { "$taking" })?;
+    let counted = value.helper_call_of(counted_callee(skip))?;
     let (source, n) = (counted.arg("iter")?, counted.arg("n")?);
     match counted.arg("drop") {
         Some(drop) if skip => Some((source.clone(), n.clone(), Some(drop.clone()))),
         Some(_) => None,
         None => Some((source.clone(), n.clone(), None)),
+    }
+}
+
+/// The helper a std adapter, by its std type, is written as where it's
+/// made knowing its back: the in-place forms owner's answer (#2216).
+fn back_form(std: &str) -> &'static str {
+    back_knowing_of(std)
+        .expect("a back form of each adapter `as_double_ended` makes")
+        .callee()
+}
+
+/// The helper a `skip(n)` or a `take(n)` made knowing its length is
+/// written as, `$skipping` or `$taking`: the in-place forms owner's (#2216).
+fn counted_callee(skip: bool) -> &'static str {
+    match skip {
+        true => InPlaceForm::Skipping.callee(),
+        false => InPlaceForm::Taking.callee(),
     }
 }

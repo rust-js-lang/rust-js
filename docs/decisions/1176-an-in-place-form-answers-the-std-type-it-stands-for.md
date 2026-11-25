@@ -343,3 +343,27 @@ holds a hint asked by `Filter::count` and a collect. New mutations:
 `made-asks-every-step`, `steps-of-what-is-held-unasked`; a value moved or
 lent into another local, and a use the walk doesn't read, have none yet,
 as no in-place form is chosen of such a value until P4's flip.
+
+## Amendment: the back path asks the owner too (#2216)
+
+`as_double_ended` (iterators/knowing.rs) wrote its back-stepping helpers by
+name, `$mapEnds`, `$filterEnds`, `$flattenEnds`, `$lazyChain`, `$skipping`
+and `$taking`, and read made values by name (`$flatMap`, `$filterDropping`).
+That was a second catalog beside this owner's, which #2209 had made the hint
+path's.
+
+The owner now gives both:
+
+- **`back_knowing_of(std)`:** the form each std adapter is made as where it's
+  made knowing its back. The table's `back` rows hold it.
+- **`InPlaceForm::callee()`:** the helper a form is written as, its name,
+  spelled only here.
+
+knowing.rs asks them, and spells no form's helper.
+test/architecture-iterators.test.ts holds that. The change is
+byte-identical: the 331 corpus cases using these helpers, and their iterator
+forms. The table's bless path is mended too: since the crates split, it is
+the crate's own `src/iterators/in_place_forms.txt`.
+
+Mutation `back-form-of-a-filter-a-map`. The knowing.rs mutations follow the
+lines they mutate.

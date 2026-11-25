@@ -175,4 +175,12 @@ export const mutations: Mutation[] = [
     replace: "            true => InPlaceForm::StepsEnumerate,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_read_back_enumerated_asks_its_own_nth.rs$"],
   },
+  {
+    name: "back-form-of-a-filter-a-map",
+    breaks: "a `filter` made knowing its back is written as a map's back form, `$mapEnds(src, p)`, so stepping it from its back gives each item's `p` where std's `Filter` gives the items `p` keeps (#2216's back catalog)",
+    file: "crates/rust-js-lower/src/iterators/in_place_forms.rs",
+    find: "        \"Filter\" => InPlaceForm::FilterEnds,\n        \"Flatten\" | \"FlatMap\" => InPlaceForm::FlattenEnds,\n",
+    replace: "        \"Filter\" => InPlaceForm::MapEnds,\n        \"Flatten\" | \"FlatMap\" => InPlaceForm::FlattenEnds,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(held_revs_of_lazy_sources|rev_lazy_range|rev_of_closed_items|rev_given_to_generic_code)\\.rs$"],
+  },
 ];

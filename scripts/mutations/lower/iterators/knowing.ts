@@ -64,8 +64,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `$skipping` `as_exact_size` made already, a `rev()`'s source, is refused as an `ExactSizeIterator`: `first((0..10).skip(6).rev())` (#385)",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: "                .is_some_and(|counted| !counted.given(\"drop\"))\n",
-    replace: "                .is_some_and(|counted| !counted.given(\"drop\") && false)\n",
+    find: "            && (value.helper_call_of(counted_callee(skip))).is_some_and(|counted| !counted.given(\"drop\"))\n",
+    replace: "            && (value.helper_call_of(counted_callee(skip))).is_some_and(|counted| !counted.given(\"drop\") && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
     snapshots: true,
   },
@@ -281,9 +281,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`take(n).rev()` steps from the back as `skip(n)` does, giving what it should leave",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: '            let name = if skip { "$skipping" } else { "$taking" };\n',
-    replace:
-      '            let name = if skip || true { "$skipping" } else { "$taking" };\n',
+    find: "            let name = counted_callee(skip);\n",
+    replace: "            let name = counted_callee(skip || true);\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_counted.rs$"],
   },
   {
@@ -309,8 +308,8 @@ export const mutations: Mutation[] = [
     name: "chain-made-unstepped",
     breaks: "`rev()` of a chain made in place is refused",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: "            && let Some(chain) = value.helper_call_of(\"$lazyChain\")\n",
-    replace: "            && let Some(chain) = value.helper_call_of(\"$lazyChain\").filter(|_| false)\n",
+    find: "            && let Some(chain) = value.helper_call_of(InPlaceForm::LazyChain.callee())\n",
+    replace: "            && let Some(chain) = value.helper_call_of(InPlaceForm::LazyChain.callee()).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_chain.rs$"],
   },
   {
@@ -445,8 +444,8 @@ export const mutations: Mutation[] = [
     name: "flat-map-helper-backless",
     breaks: "a `$flatMap(src, each)` stepped from its back isn't made `$flattenEnds`, so an `rfold` of a mapped `Vec`'s flatten of what has a destructor folds it from its front (#644)",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: "                    .helper_call_of(\"$flatMap\")\n",
-    replace: "                    .helper_call_of(\"$flatMap\").filter(|_| false)\n",
+    find: "                    .helper_call_of(InPlaceForm::FlatMap.callee())\n",
+    replace: "                    .helper_call_of(InPlaceForm::FlatMap.callee()).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
   },
   {

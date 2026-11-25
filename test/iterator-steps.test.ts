@@ -418,11 +418,12 @@ const lentForms: [std: string, form: string, make: (s: Sources) => any][] = [
 /** The in-place forms' table, crates/rust-js-lower/src/iterators/in_place_forms.txt: of
  * each std type and form, where it's chosen; each `Where`'s APIs; and the
  * form of each std type made knowing its hint alone (`hint <std> | <form>`,
- * #2209). */
+ * #2209), or its back (`back <std> | <form>`, #2216). */
 const table = readFileSync(join(import.meta.dir, "../crates/rust-js-lower/src/iterators/in_place_forms.txt"), "utf8").split("\n");
 const hintRows = table.filter((line) => line.startsWith("hint ")).map((line) => line.slice("hint ".length).split(" | "));
+const backRows = table.filter((line) => line.startsWith("back ")).map((line) => line.slice("back ".length).split(" | "));
 const chosen = new Map(
-  table.filter((line) => !line.startsWith("#") && !line.startsWith("hint ") && line.includes(" | ")).map((line) => {
+  table.filter((line) => !line.startsWith("#") && !line.startsWith("hint ") && !line.startsWith("back ") && line.includes(" | ")).map((line) => {
     const [stdName, form, at] = line.split(" | ");
     return [`${stdName} | ${form}`, at!] as const;
   }),
@@ -592,6 +593,15 @@ test("the net runs each in-place form the owner names, and only those", () => {
 test("each form made knowing its hint alone is run over every source", () => {
   expect(hintRows.length).toBeGreaterThan(0);
   const wrong = hintRows.filter(([stdName, form, at]) => at !== "Always" || chosen.get(`${stdName} | ${form}`) !== "Always" || form === "$flattenEnds");
+  expect(wrong).toEqual([]);
+});
+
+// A form a std type made knowing its back is made as (`back_knowing_of`,
+// #2216) is one the owner chooses of that type, so the net runs it over
+// every source.
+test("each form made knowing its back is one the net runs over every source", () => {
+  expect(backRows.length).toBeGreaterThan(0);
+  const wrong = backRows.filter(([stdName, form]) => chosen.get(`${stdName} | ${form}`) !== "Always");
   expect(wrong).toEqual([]);
 });
 

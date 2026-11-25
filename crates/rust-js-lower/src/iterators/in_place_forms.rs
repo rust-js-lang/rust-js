@@ -242,8 +242,8 @@ impl InPlaceForm {
         }
     }
 
-    /// Its name as the net runs it.
-    #[cfg(test)]
+    /// Its name as the net runs it, and of a helper's form its callee
+    /// (`callee`).
     pub(crate) fn name(self) -> &'static str {
         match self {
             InPlaceForm::StepsMap => "$Steps.map",
@@ -281,6 +281,36 @@ impl InPlaceForm {
             InPlaceForm::FindMapFind => "$Steps.map.find",
         }
     }
+}
+
+impl InPlaceForm {
+    /// The runtime helper the form is written as, `$mapEnds`: its name,
+    /// where that's a helper's, the one place it's spelled, which a writer
+    /// or a reader of a made value asks, never naming it itself (#2216).
+    /// Not of a form JS writes as its own methods, `$Steps.map`, or one
+    /// a name describes, `$somes of ends`.
+    pub(crate) fn callee(self) -> &'static str {
+        let name = self.name();
+        assert!(!name.contains(['.', ' ']), "{name} is no helper's");
+        name
+    }
+}
+
+/// The form a std adapter, by the std type it is, `std`, is made as where
+/// it's made knowing its back, stepped from either end as std's adapter
+/// steps (`as_double_ended`, ADRs 0455, 0526, #739, #260): a map's, an
+/// inspect's and a clone's `$mapEnds`, a filter's `$filterEnds`, a
+/// flatten's `$flattenEnds`, a chain's `$lazyChain` of each made so. The
+/// back path's one catalog, beside the hint's (`hint_knowing_of`, #2216).
+/// `None` of another, which its own maker makes knowing its back.
+pub(crate) fn back_knowing_of(std: &str) -> Option<InPlaceForm> {
+    Some(match std {
+        "Map" | "Cloned" | "Inspect" => InPlaceForm::MapEnds,
+        "Filter" => InPlaceForm::FilterEnds,
+        "Flatten" | "FlatMap" => InPlaceForm::FlattenEnds,
+        "Chain" => InPlaceForm::LazyChain,
+        _ => return None,
+    })
 }
 
 /// The std type, as std_steps.txt names its row, of an adapter of type
@@ -347,7 +377,9 @@ pub(crate) fn table() -> String {
          # `<std type> | <form> | <where>`; each `where <name>: <APIs>`, what\n\
          # answers it, each an owner of class 1 or 2 (#2112, #2200); each\n\
          # `hint <std type> | <form> | <where>`, the form one made knowing its\n\
-         # hint alone is made as, chosen by a fact keyed by type (#2209).\n",
+         # hint alone is made as, chosen by a fact keyed by type (#2209); each\n\
+         # `back <std type> | <form>`, the form one made knowing its back is\n\
+         # made as (#2216).\n",
     );
     for form in InPlaceForm::ALL {
         for (std, at) in form.stands_for() {
@@ -367,6 +399,13 @@ pub(crate) fn table() -> String {
                 .map(|&(_, at)| at);
             let at = at.map_or_else(|| "not chosen".to_string(), |at| format!("{at:?}"));
             out.push_str(&format!("hint {std} | {} | {at}\n", form.name()));
+        }
+    }
+    let mut seen = Vec::new();
+    for std in (InPlaceForm::ALL.iter()).flat_map(|form| form.stands_for().iter().map(|&(std, _)| std)) {
+        if let Some(form) = back_knowing_of(std).filter(|_| !seen.contains(&std)) {
+            seen.push(std);
+            out.push_str(&format!("back {std} | {}\n", form.callee()));
         }
     }
     out
@@ -545,8 +584,7 @@ mod tests {
     fn in_place_forms() {
         let made = table();
         if std::env::var_os("BLESS").is_some() {
-            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("crates/rust-js-lower/src/iterators/in_place_forms.txt");
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/iterators/in_place_forms.txt");
             std::fs::write(path, &made).expect("the table written");
         } else {
             assert_eq!(
