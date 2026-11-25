@@ -212,9 +212,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `I: DoubleEndedIterator` given as it is is given no `Iterator` dictionary, and its `next()` is refused",
     file: "crates/rust-js-lower/src/traits.rs",
-    find: "        if !super::recognition::implies_iterator(tcx, tr.def_id) {\n            return None;\n        }\n        let iterator",
-    replace:
-      "        if true {\n            return None;\n        }\n        let iterator",
+    find: "        let implied = if super::recognition::implies_iterator(tcx, tr.def_id) {\n",
+    replace: "        let implied = if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^extension_bound_iterators.rs$"],
   },
   {
@@ -222,9 +221,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a type parameter given as it is bound by the crate's trait that extends `Iterator` is given no `Iterator` dictionary, and stepping it asks its trait's",
     file: "crates/rust-js-lower/src/traits.rs",
-    find: "        if !super::recognition::implies_iterator(tcx, tr.def_id) {\n            return None;\n        }\n        let iterator = ty::TraitRef",
-    replace:
-      "        if !super::recognition::is_iterator_extension(tcx, tr.def_id) {\n            return None;\n        }\n        let iterator = ty::TraitRef",
+    find: "        let implied = if super::recognition::implies_iterator(tcx, tr.def_id) {\n",
+    replace: "        let implied = if super::recognition::is_iterator_extension(tcx, tr.def_id) {\n",
     tests: ["test/corpus.test.ts", "-t", "^extension_trait_params.rs$"],
   },
   {

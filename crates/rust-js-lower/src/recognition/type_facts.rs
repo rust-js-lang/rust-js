@@ -72,6 +72,10 @@ pub enum TypeFact {
     RandomAccess,
     RandomAccessNoCoerce,
     TrustedLen,
+    /// Whether it's std's `TrustedStep`, by which std's compiled range
+    /// steps it, `RangeIteratorImpl`'s specialized impl (Campaign 5 step 3b):
+    /// each `Step` std has is.
+    TrustedStep,
     /// Of an iterator, the size and alignment of the items of the buffer
     /// std's `collect()` into a `Vec` may collect it in, in place, `[size,
     /// align]`, or none, `undefined`: what a collect a panic stops drops
@@ -114,7 +118,7 @@ pub enum TypeFact {
 
 impl TypeFact {
     /// Every fact: the one list of them.
-    pub(crate) const ALL: [TypeFact; 29] = [
+    pub(crate) const ALL: [TypeFact; 30] = [
         TypeFact::Size,
         TypeFact::Align,
         TypeFact::Name,
@@ -132,6 +136,7 @@ impl TypeFact {
         TypeFact::RandomAccess,
         TypeFact::RandomAccessNoCoerce,
         TypeFact::TrustedLen,
+        TypeFact::TrustedStep,
         TypeFact::InPlace,
         TypeFact::Eq,
         TypeFact::TriviallyCloned,
@@ -165,6 +170,7 @@ impl TypeFact {
             TypeFact::RandomAccess => "whether it's a `TrustedRandomAccess`",
             TypeFact::RandomAccessNoCoerce => "whether it's a `TrustedRandomAccessNoCoerce`",
             TypeFact::TrustedLen => "whether it's a `TrustedLen`",
+            TypeFact::TrustedStep => "whether it's a `TrustedStep`",
             TypeFact::VecCollect => "how std collects it into a `Vec`",
             TypeFact::Instance => "whether a counted `Rc` of it is its class's instance",
             TypeFact::InPlace => "the buffer std collects an iterator in place in",
@@ -212,6 +218,7 @@ impl TypeFact {
             TypeFact::RandomAccess => "RandomAccess",
             TypeFact::RandomAccessNoCoerce => "RandomAccessNoCoerce",
             TypeFact::TrustedLen => "TrustedLen",
+            TypeFact::TrustedStep => "TrustedStep",
             TypeFact::VecCollect => "VecCollect",
             TypeFact::Instance => "Instance",
             TypeFact::InPlace => "InPlace",

@@ -41,7 +41,11 @@ pub(super) fn built_of<'tcx>(
     // (#1389): not one rustc says here, of any types given (#1385).
     if matches!(
         fact,
-        TypeFact::RandomAccess | TypeFact::RandomAccessNoCoerce | TypeFact::TrustedLen | TypeFact::TriviallyCloned
+        TypeFact::RandomAccess
+            | TypeFact::RandomAccessNoCoerce
+            | TypeFact::TrustedLen
+            | TypeFact::TrustedStep
+            | TypeFact::TriviallyCloned
     ) {
         return crate::recognition::fact_trait(tcx, fact)
             .is_some_and(|fact_trait| crate::recognition::trait_holds_in(tcx, typing_env, ty, fact_trait).is_none());

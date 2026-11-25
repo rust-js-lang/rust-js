@@ -469,6 +469,8 @@ fn specialized_on(tcx: TyCtxt<'_>, trait_id: DefId, bound: DefId) -> Option<Type
         ("SpecTrustedRandomAccess", TypeFact::RandomAccessNoCoerce),
         // Its `Debug`, `Zip` alone of two random-access sides (#2252).
         ("ZipFmt", TypeFact::RandomAccessNoCoerce),
+        // A range's steps, by its bounds' `TrustedStep` (Campaign 5 step 3b).
+        ("RangeIteratorImpl", TypeFact::TrustedStep),
     ];
     let of_zip = |fact: TypeFact| {
         ZIPS.iter()
@@ -480,6 +482,7 @@ fn specialized_on(tcx: TyCtxt<'_>, trait_id: DefId, bound: DefId) -> Option<Type
         TypeFact::RandomAccess,
         TypeFact::RandomAccessNoCoerce,
         TypeFact::TrustedLen,
+        TypeFact::TrustedStep,
     ]
     .into_iter()
     .filter(|&fact| matches!(fact, TypeFact::Fused | TypeFact::OneShot) || of_zip(fact))
@@ -573,6 +576,7 @@ pub(crate) fn fact_trait(tcx: TyCtxt<'_>, fact: TypeFact) -> Option<DefId> {
             registry::by_path(tcx, StdCrate::Core, &["iter", "TrustedRandomAccessNoCoerce"])
         }
         TypeFact::TrustedLen => registry::by_path(tcx, StdCrate::Core, &["iter", "TrustedLen"]),
+        TypeFact::TrustedStep => registry::by_path(tcx, StdCrate::Core, &["iter", "TrustedStep"]),
         TypeFact::Eq => Some(super::std_item(tcx, StdItem::Eq)),
         TypeFact::TriviallyCloned => tcx.lang_items().get(LangItem::TrivialClone),
         _ => None,

@@ -310,7 +310,8 @@ pub fn bounds<'tcx>(
 /// A clause's bounds that are given evidence: its own, `bound_of`'s, after
 /// the `Iterator` a trait that extends it on a type parameter given as it
 /// is implies, `I: DoubleEndedIterator`'s or `T: Sorted`'s, as its
-/// supertrait (ADRs 0488, 0511).
+/// supertrait (ADRs 0488, 0511), and the `Step` a `T: TrustedStep` does,
+/// which std's range specialized on it steps by (Campaign 5 step 3b).
 fn bounds_of<'tcx>(
     tcx: TyCtxt<'tcx>,
     foreign: &super::library::Foreign<'_, 'tcx>,
@@ -320,11 +321,15 @@ fn bounds_of<'tcx>(
 ) -> impl Iterator<Item = ty::TraitRef<'tcx>> {
     let implied = clause.as_trait_clause().and_then(|p| {
         let tr = p.skip_binder().trait_ref;
-        if !super::recognition::implies_iterator(tcx, tr.def_id) {
+        let implied = if super::recognition::implies_iterator(tcx, tr.def_id) {
+            std_item(tcx, StdItem::Iterator)
+        } else if super::recognition::fact_trait(tcx, super::recognition::TypeFact::TrustedStep) == Some(tr.def_id) {
+            super::recognition::std_path_id(tcx, super::recognition::StdPath::IterStep)?
+        } else {
             return None;
-        }
-        let iterator = ty::TraitRef::new(tcx, std_item(tcx, StdItem::Iterator), [tr.self_ty()]);
-        bound_of(tcx, foreign, given, ty::Binder::dummy(iterator).upcast(tcx), id)
+        };
+        let implied = ty::TraitRef::new(tcx, implied, [tr.self_ty()]);
+        bound_of(tcx, foreign, given, ty::Binder::dummy(implied).upcast(tcx), id)
     });
     implied.into_iter().chain(bound_of(tcx, foreign, given, clause, id))
 }

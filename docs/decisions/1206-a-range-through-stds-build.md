@@ -2,7 +2,7 @@
 
 Date: 2026-11-25.
 
-Status: accepted, steps S0 and S1 of S3 (Campaign 5 step 3b, #1589). Amends
+Status: accepted, steps S0 to S2 of S3 (Campaign 5 step 3b, #1589). Amends
 [1202](1202-one-catalog-of-the-runtimes-models.md).
 
 ## Context
@@ -63,4 +63,11 @@ Std's build compiles `Range`'s and `RangeFrom`'s `Iterator` and
   impl's or the default (`in_std_dictionary`). It's unstable, so no program
   bounds it, and the plain build's output doesn't move; std's build compiles
   all thirteen without a refusal.
+- **S2.** Std's `TrustedStep` is a fact of a type, `TypeFact::TrustedStep`,
+  which `specialized_on` names as `RangeIteratorImpl`'s, so the fact picks
+  the impl rustc picks, a `TrustedStep`'s, which every `Step` std has is.
+  Its caller gives it as it gives `TrustedLen` (`relay`). A `T: TrustedStep`
+  bound is given as the `T: Step` it implies (`traits::bounds_of`), as
+  `I: DoubleEndedIterator` is given as its `I: Iterator` (ADR 0488): the
+  specialized impl's body steps by its caller's `Step`.
 

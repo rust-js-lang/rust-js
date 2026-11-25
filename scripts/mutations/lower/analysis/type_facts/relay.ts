@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "whether std clones a type built of a caller's, `(T, u8)`, as its bits isn't asked of the caller, so a generic `clone_from_slice` of it is refused (#2318)",
     file: "crates/rust-js-lower/src/analysis/type_facts/relay.rs",
-    find: "TypeFact::TrustedLen | TypeFact::TriviallyCloned\n",
-    replace: "TypeFact::TrustedLen\n",
+    find: "            | TypeFact::TriviallyCloned\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "clone_from_slice_trivial_panic"],
   },
   {
