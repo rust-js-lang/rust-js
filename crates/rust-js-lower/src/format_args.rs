@@ -317,15 +317,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         values: &mut std::vec::IntoIter<Expr>,
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
-        let Call { generic_args, span, .. } = call;
+        let Call {
+            generic_args,
+            span,
+            tys,
+            ..
+        } = call;
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
         Ok(Some(match known {
             Std::PanicDisplay { unreachable } => {
-                let ty = generic_args
-                    .types()
-                    .next()
-                    .expect("`panic_display` has a type argument");
+                // What it shows is its argument, `panic_display(x: &T)`'s
+                // `x` or `expect_failed(msg: &str)`'s `msg`, shown through
+                // its reference.
+                let ty = *tys.first().expect("a `panic_display` has its argument");
                 let shown = self.display_string(arg(), ty, span)?;
                 let shown = match unreachable {
                     true => join(vec![Expr::str("internal error: entered unreachable code: "), shown]),

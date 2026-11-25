@@ -957,7 +957,9 @@ fn walk(tcx: TyCtxt<'_>, called: &dyn Fn(StdPath) -> bool) -> rust_js_program::c
     }
     // And each function std keeps private that a compiled body calls,
     // `Fuse`'s `and_then_or_clear`, compiled with it, as its closures are:
-    // no program can name it, so no recognizer can rewrite it.
+    // no program can name it, so no recognizer rewrites it, but `io`'s and
+    // `Option::expect`'s panic, `expect_failed`, which one does.
+    let answered = |id| super::io::answered_io_fn(tcx, id) || super::std_items::is_expect_failed(tcx, id);
     let mut at = 0;
     while let Some(&def_id) = found.get_index(at) {
         at += 1;
@@ -976,7 +978,7 @@ fn walk(tcx: TyCtxt<'_>, called: &dyn Fn(StdPath) -> bool) -> rust_js_program::c
         for value in named_fns(body, &blocks) {
             if matches!(tcx.def_kind(value), DefKind::Fn)
                 && !tcx.visibility(value).is_public()
-                && !super::io::answered_io_fn(tcx, value)
+                && !answered(value)
                 && tcx.is_mir_available(value)
             {
                 found.insert(value);
@@ -1028,7 +1030,7 @@ fn walk(tcx: TyCtxt<'_>, called: &dyn Fn(StdPath) -> bool) -> rust_js_program::c
             };
             for called in called {
                 if matches!(tcx.def_kind(called), DefKind::Fn | DefKind::AssocFn)
-                    && !super::io::answered_io_fn(tcx, called)
+                    && !answered(called)
                     && ((!tcx.visibility(called).is_public()
                         && tcx.trait_of_assoc(called).is_none()
                         && tcx.trait_impl_of_assoc(called).is_none())

@@ -1134,3 +1134,14 @@ pub(crate) fn pure_std(tcx: TyCtxt<'_>, id: DefId) -> Option<PureStd> {
 pub(super) fn is_fmt_write_fn(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     of_std_crate(tcx, def_id, StdCrate::Core) && is_std_path(tcx, def_id, StdPath::FmtWriteFn)
 }
+
+/// Whether `def_id` is `Option::expect(msg)`'s panic, `expect_failed(msg)`,
+/// private to `core::option`, which is `panic_display(&msg)` behind its
+/// `#[track_caller]`: optimized MIR, std's compiled bodies' (`compiled_std`),
+/// calls it as itself, never inlined, so it's recognized, not compiled with
+/// them (#1589, ADR 1206).
+pub(super) fn is_expect_failed(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    of_std_crate(tcx, def_id, StdCrate::Core)
+        && tcx.item_name(def_id).as_str() == "expect_failed"
+        && std_path_under(tcx, def_id, StdPath::OptionMod)
+}

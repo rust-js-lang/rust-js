@@ -530,6 +530,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Some(Std::PanicDisplay { unreachable: true }));
         }
+        if super::std_items::is_expect_failed(tcx, def_id) {
+            return Some(Some(Std::PanicDisplay { unreachable: false }));
+        }
         if let Some(error) = print_of(tcx, def_id) {
             return Some(Some(Std::Print { error }));
         }
