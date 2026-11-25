@@ -102,13 +102,15 @@ pub(crate) fn trusted_len_asked<'tcx>(
     typing_env: ty::TypingEnv<'tcx>,
     iter: Ty<'tcx>,
 ) -> Vec<(Ty<'tcx>, crate::recognition::TypeFact)> {
-    use crate::recognition::{TypeFact, is_trusted_len, known_by_bounds, vec_collect_trusted_facts};
+    use crate::recognition::{TypeFact, known_by_bounds, vec_collect_trusted_facts};
     if !iter.has_param() || known_by_bounds(iter) {
         return Vec::new();
     }
     let facts = vec_collect_trusted_facts(tcx, typing_env, iter);
     let never = |&(part, fact): &(Ty<'tcx>, TypeFact)| {
-        fact == TypeFact::TrustedLen && !part.has_param() && !is_trusted_len(tcx, typing_env, part)
+        fact == TypeFact::TrustedLen
+            && !part.has_param()
+            && crate::recognition::trusted_len_in(tcx, typing_env, part) != Some(true)
     };
     if facts.iter().any(never) {
         return Vec::new();

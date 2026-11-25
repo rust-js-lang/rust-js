@@ -234,4 +234,20 @@ export const mutations: Mutation[] = [
     replace: "    OBSERVABLY_DEFAULT.iter().find(|row| row.path == path && false)\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "library-eq-of-a-filter-refused",
+    breaks: "a library's generic `eq` of a filter, which is never `TrustedLen`, is refused as one its consumers may give `TrustedLen` (#1182)",
+    file: "crates/rust-js-lower/src/recognition/specialization.rs",
+    find: "            ty::Adt(adt, _) => self.tcx.all_impls(trusted).any(|imp| {\n",
+    replace: "            ty::Adt(adt, _) => true || self.tcx.all_impls(trusted).any(|imp| {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a library's eq of what its consumers give compiles"],
+  },
+  {
+    name: "trusted-len-never-holds",
+    breaks: "recognition's one answer of whether a type is `TrustedLen` is never yes, so a `collect()` of a `TrustedLen`'s items, which std sizes by its upper bound, is sized as one that isn't (#2170, ADR 0940)",
+    file: "crates/rust-js-lower/src/recognition/specialization.rs",
+    find: "        Some(trusted) => trait_holds_in(tcx, typing_env, ty, trusted),\n",
+    replace: "        Some(trusted) => trait_holds_in(tcx, typing_env, ty, trusted).map(|_| false),\n",
+    tests: ["test/corpus.test.ts", "-t", "^(trait_default_flat_map_of_arrays_collects_trusted|vec_capacity_grown)\\.rs$"],
+  },
 ];

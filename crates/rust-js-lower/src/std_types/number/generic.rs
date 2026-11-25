@@ -250,7 +250,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let in_place = self.collects_in_place(Some(of), Some(item));
         let trusted = (in_place == Some(true)
             || crate::recognition::vec_collect_trusted_facts(self.tcx, self.typing_env, of).is_empty())
-        .then(|| crate::recognition::is_trusted_len(self.tcx, self.typing_env, of));
+        .then(|| self.recognition().trusted_len(of) == Some(true));
         // In place, `{ inPlace: n }`: of its source's items `n` bytes, the
         // buffer's capacity in its own items is its collect's (#1259).
         if let (Some(in_place), Some(trusted)) = (in_place, trusted) {

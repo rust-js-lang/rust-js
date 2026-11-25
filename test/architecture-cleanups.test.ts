@@ -86,3 +86,18 @@ test("no unwinding judge asks std_call_never_unwinds", () => {
     .filter((file) => /(?<!fn )\bstd_call_never_unwinds\s*\(/.test(uncommented(file)));
   expect(callers).toEqual(["crates/rust-js-lower/src/analysis/prepared.rs"]);
 });
+
+// "Is a type `TrustedLen`?" has one answerer, recognition's
+// `trusted_len_in` (`Recognition::trusted_len`), its tri-state each
+// caller's to decide, and `may_be_trusted_len` beside it (#2170): no
+// other looks up `TypeFact::TrustedLen`'s trait to select it, and
+// `is_trusted_len`, the second answer, is gone.
+test("one answerer of whether a type is TrustedLen", () => {
+  const uncommented = (path: string) => read(path).replace(/^\s*\/\/.*$/gm, "");
+  const files = compilerRustFiles().filter((file) => file.endsWith(".rs"));
+  const lookups = files.filter((file) =>
+    /fact_trait\(\s*[^,()]*,\s*(?:crate::recognition::)?TypeFact::TrustedLen\s*\)/.test(uncommented(file)),
+  );
+  expect(lookups).toEqual(["crates/rust-js-lower/src/recognition/specialization.rs"]);
+  expect(files.filter((file) => /\bis_trusted_len\b/.test(read(file)))).toEqual([]);
+});

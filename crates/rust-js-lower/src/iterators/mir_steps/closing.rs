@@ -260,13 +260,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // lengths first, and gives `false` of unequal ones with no item
         // stepped or compared (ADR 0992): each counted where it's made,
         // before it's stepped, as `len_in_place` counts it.
-        let trusted_len = crate::recognition::fact_trait(self.tcx, crate::recognition::TypeFact::TrustedLen);
         let other_iter = crate::recognition::iterator_type_of(self.tcx, self.typing_env, other_ty);
-        let trusted = trusted_len.is_some_and(|trusted| {
-            [iter_ty, other_iter]
-                .iter()
-                .all(|&ty| self.recognition().implements_trait(ty, trusted))
-        });
+        let trusted = [iter_ty, other_iter]
+            .iter()
+            .all(|&ty| self.recognition().trusted_len(ty) == Some(true));
         let lengths = match trusted {
             true => {
                 let mut spilled = Vec::new();
@@ -312,25 +309,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // may run code: its JS compares item by item, and no caller of it
         // is seen to refuse, so it's refused here (#1182, an interim refusal
         // till generic code is given each side's length).
-        // Of what holds a type parameter, which rustc can't prove of it here:
-        // a parameter's or an associated type's may be, and a type whose
-        // `TrustedLen` some impl gives, as its parameters may meet it, a
-        // `Map`'s; a `Filter`, which no impl gives, never is.
-        let may_be_trusted = |ty: Ty<'tcx>| {
-            trusted_len.is_some_and(|trusted| match *ty.kind() {
-                _ if !ty.has_param() => self.recognition().implements_trait(ty, trusted),
-                ty::Param(_) | ty::Alias(..) => true,
-                ty::Adt(adt, _) => self.tcx.all_impls(trusted).any(|imp| {
-                    matches!(*self.tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
-                        ty::Adt(of, _) if of.did() == adt.did())
-                }),
-                _ => true,
-            })
-        };
         let consumers_give = self.krate.library
             && (self.recognition().eq_sides(iter_ty, other_ty)).is_some_and(|sides| sides.contains(&EqSide::Built))
-            && may_be_trusted(iter_ty)
-            && may_be_trusted(other_iter)
+            && self.recognition().may_be_trusted_len(iter_ty)
+            && self.recognition().may_be_trusted_len(other_iter)
             && (self.frame.owner.as_local()).is_some_and(|own| {
                 self.tcx
                     .reachable_set(())
@@ -399,10 +381,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// std's wouldn't step or drop as JS's would.
     pub(crate) fn length_first(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let iter = crate::recognition::iterator_type_of(self.tcx, self.typing_env, ty);
-        let Some(trusted) = crate::recognition::fact_trait(self.tcx, TypeFact::TrustedLen) else {
-            return Ok(Expr::bool(false));
-        };
-        match self.recognition().trait_holds(iter, trusted) {
+        match self.recognition().trusted_len(iter) {
             Some(true) => {}
             Some(false) => return Ok(Expr::bool(false)),
             None => {

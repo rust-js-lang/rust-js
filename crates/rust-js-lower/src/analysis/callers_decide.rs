@@ -18,9 +18,7 @@
 //! Each where stepping runs code: a closure or a function, or items with a
 //! destructor.
 
-use crate::recognition::{
-    Recognition, StdItem, TypeFact, fact_trait, std_item, trait_method, zip_folds_to_the_shorter, zipped_sources,
-};
+use crate::recognition::{Recognition, StdItem, std_item, trait_method, zip_folds_to_the_shorter, zipped_sources};
 use crate::{Body, fn_def};
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::thir::ExprKind;
@@ -99,7 +97,6 @@ pub(super) fn refuse_what_callers_decide<'tcx>(
                 .extend(asks_of_call(body.def_id, callee, args));
         }
     }
-    let trusted_len = fact_trait(tcx, TypeFact::TrustedLen);
     let runs_code = |ty: Ty<'tcx>| {
         crate::recognition::steps_run_code(tcx, ty::TypingEnv::fully_monomorphized(), ty)
             || recognition.iterator_item(ty).is_some_and(&drops)
@@ -185,9 +182,7 @@ pub(super) fn refuse_what_callers_decide<'tcx>(
                     let (what, why) = match asked {
                         Asked::Eq(a, b) => {
                             let b = crate::recognition::iterator_type_of(tcx, typing_env, b);
-                            let trusted = trusted_len.is_some_and(|trusted| {
-                                [a, b].iter().all(|&ty| recognition.implements_trait(ty, trusted))
-                            });
+                            let trusted = [a, b].iter().all(|&ty| recognition.trusted_len(ty) == Some(true));
                             if !trusted || !(runs_code(a) || runs_code(b)) {
                                 continue;
                             }

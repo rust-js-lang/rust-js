@@ -314,7 +314,7 @@ pub(crate) fn vec_collect_trusted_facts<'tcx>(
     if known_by_bounds(of) {
         return vec![(of, TypeFact::TrustedLen)];
     }
-    if is_trusted_len(tcx, typing_env, of) {
+    if trusted_len_in(tcx, typing_env, of) == Some(true) {
         return Vec::new();
     }
     if let Some((source, made)) = flattened_source(tcx, of) {
@@ -322,7 +322,7 @@ pub(crate) fn vec_collect_trusted_facts<'tcx>(
             return Vec::new();
         };
         let source_facts = vec_collect_trusted_facts(tcx, typing_env, source);
-        if source_facts.is_empty() && !is_trusted_len(tcx, typing_env, source) {
+        if source_facts.is_empty() && trusted_len_in(tcx, typing_env, source) != Some(true) {
             return Vec::new();
         }
         let item_fact = match known_by_bounds(item) {
@@ -1021,6 +1021,30 @@ impl<'tcx> Recognition<'_, 'tcx> {
         trait_holds_in(self.tcx, self.typing_env, ty, trait_id)
     }
 
+    /// Whether `ty` is a `TrustedLen` here (`trusted_len_in`).
+    pub(crate) fn trusted_len(&self, ty: Ty<'tcx>) -> Option<bool> {
+        trusted_len_in(self.tcx, self.typing_env, ty)
+    }
+
+    /// Whether `ty` may be a `TrustedLen` as its callers give its type
+    /// parameters, which `iterators_eq` asks of what a library's consumers
+    /// may give it (#1182): one rustc knows whole as `trusted_len` says; a
+    /// parameter's or an associated type's may be, and a type whose
+    /// `TrustedLen` some impl gives, as its parameters may meet it, a
+    /// `Map`'s; a `Filter`, which no impl gives, never is (#2170, moved
+    /// from `iterators_eq`).
+    pub(crate) fn may_be_trusted_len(&self, ty: Ty<'tcx>) -> bool {
+        fact_trait(self.tcx, TypeFact::TrustedLen).is_some_and(|trusted| match *ty.kind() {
+            _ if !rustc_middle::ty::TypeVisitableExt::has_param(&ty) => self.trusted_len(ty) == Some(true),
+            ty::Param(_) | ty::Alias(..) => true,
+            ty::Adt(adt, _) => self.tcx.all_impls(trusted).any(|imp| {
+                matches!(*self.tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                    ty::Adt(of, _) if of.did() == adt.did())
+            }),
+            _ => true,
+        })
+    }
+
     /// Whether `ty`, a type of this body's type parameters, may have
     /// `trait_id`'s impl as its own bounds say: `Take<I>`'s
     /// `DoubleEndedIterator` where `I` is bound by `Iterator` alone may
@@ -1049,6 +1073,19 @@ impl<'tcx> Recognition<'_, 'tcx> {
             && self
                 .double_ended_iterator()
                 .is_some_and(|double_ended| !self.may_hold_by_bounds(ty, double_ended))
+    }
+}
+
+/// Whether `ty` is a `TrustedLen` in `typing_env`, whose `Vec::from_iter`
+/// sizes it by its upper bound (ADR 0940) and whose `eq` and `zip` std
+/// specializes: the one answer, `fact_trait`'s trait as `trait_holds_in`
+/// selects it (#2170). `None` of a type holding a parameter only its
+/// callers can say of (ADR 0975), which each caller decides; where none
+/// asks its callers, it's sized and compared as one that isn't.
+pub(crate) fn trusted_len_in<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> Option<bool> {
+    match fact_trait(tcx, TypeFact::TrustedLen) {
+        Some(trusted) => trait_holds_in(tcx, typing_env, ty, trusted),
+        None => Some(false),
     }
 }
 

@@ -63,9 +63,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `cycle()` of what's filtered, whose hint has a lower bound of 0, is taken to have no end once it gives an item, so its `collect()` panics `capacity overflow` where Rust asks a little room and goes on (#433, ADR 0940)",
     file: "crates/rust-js-lower/src/recognition/lengths.rs",
-    find: "        if exact\n            || crate::recognition::is_trusted_len(self.tcx, self.typing_env, ty)\n",
-    replace:
-      "        if true\n            || crate::recognition::is_trusted_len(self.tcx, self.typing_env, ty)\n",
+    find: "        if exact || self.trusted_len(ty) == Some(true) || self.endless_once_stepped(ty) == Some(true) {\n",
+    replace: "        if true || self.trusted_len(ty) == Some(true) || self.endless_once_stepped(ty) == Some(true) {\n",
     tests: endlessOnce,
   },
   {

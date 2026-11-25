@@ -762,8 +762,8 @@ export const mutations: Mutation[] = [  {
     name: "rc-slice-trusted-rest-last",
     breaks: "a `collect()` into an `Rc<[T]>` of a `TrustedLen` that panics as it steps drops what it wrote before what's left, a `Vec`'s order, where std's `from_iter_exact` drops what's left first (#1678)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/collect.rs",
-    find: "            && crate::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)\n        {\n            return Ok(first);\n        }\n",
-    replace: "            && crate::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)\n        {\n            return Ok(None);\n        }\n",
+    find: "            && self.recognition().trusted_len(iter_ty) == Some(true)\n        {\n            return Ok(first);\n        }\n",
+    replace: "            && self.recognition().trusted_len(iter_ty) == Some(true)\n        {\n            return Ok(None);\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_unwinding.rs$"],
   },
   {

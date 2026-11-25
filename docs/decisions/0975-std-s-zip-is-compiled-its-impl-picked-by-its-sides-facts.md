@@ -250,3 +250,46 @@ Since #2542 (ADR 1014, amended), the two pairs above hold their numbers
 alone; their consumers giving items that drop are refused, as one crate's
 own generic code is, in test/crates/refused/'s `_of_items_that_drop`
 pairs.
+
+## Amendment: one answer of `TrustedLen` (#2170)
+
+"Is this type `TrustedLen`?" had two answers that bottomed out in the same
+`traits::select`:
+
+- **`recognition::is_trusted_len`** said `false` of a type holding a
+  parameter, and didn't erase regions.
+- **`fact_trait(TypeFact::TrustedLen)` with `implements_trait` or
+  `trait_holds`** gave this ADR's tri-state.
+
+zip_folds.rs and `iterators_eq` had their own selects too.
+
+Now recognition gives one answer, in recognition/specialization.rs:
+
+- **`trusted_len_in(tcx, typing_env, ty)` / `Recognition::trusted_len(ty)`:**
+  `trait_holds_in` of `fact_trait`'s trait. Its `None` is each caller's to
+  decide.
+- **`may_be_trusted_len`:** whether a library's consumers may give a type
+  `TrustedLen`, moved unchanged from `iterators_eq`.
+
+`is_trusted_len` is deleted. No other file looks up the trait;
+test/architecture-cleanups.test.ts holds that.
+
+The change is byte-identical. Before anything moved, a shadow compared
+the two answers over the 1,732 corpus cases that collect, extend, zip,
+compare or count, the crate pairs, and their iterator forms (3,978
+answers). Every difference was the old `false` against the new `None`, at
+10 of `is_trusted_len`'s 17 call sites:
+
+- `lengths.rs`'s `counted_by_program` and its `endless_once_stepped` check;
+- `hint_asks.rs`'s collect and extend hints;
+- `collect.rs`'s capacity and sized-collect paths;
+- `specialization.rs`'s held facts;
+- `back_stepped/locals.rs`;
+- `combinators.rs`.
+
+There was no `true` against anything else, and no `Some` mismatch. Each
+former caller asks `== Some(true)`, or `!= Some(true)` where it negated, so
+`None` keeps its old meaning there.
+
+Mutation `trusted-len-never-holds`. `library-eq-of-a-filter-refused` moves
+with its code; the mutations on the migrated lines follow them.

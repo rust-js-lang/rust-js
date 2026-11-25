@@ -220,7 +220,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// (`room_item_size`), so no other collect takes a `TSize`.
     pub(crate) fn counted_by_program(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
-        is_trusted_len(self.tcx, self.typing_env, ty) && self.count_of_program(ty)
+        self.trusted_len(ty) == Some(true) && self.count_of_program(ty)
     }
 
     /// Whether the count of an iterator of type `ty` is the program's
@@ -572,10 +572,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let exact = self
             .exact_size_iterator()
             .is_some_and(|exact| self.implements_trait(ty, exact));
-        if exact
-            || crate::recognition::is_trusted_len(self.tcx, self.typing_env, ty)
-            || self.endless_once_stepped(ty) == Some(true)
-        {
+        if exact || self.trusted_len(ty) == Some(true) || self.endless_once_stepped(ty) == Some(true) {
             return Some(true);
         }
         if self.hints_no_lower_bound(ty) {
@@ -654,7 +651,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// a side whose type is known not to be `TrustedLen`. The one answer of
     /// what generic code's `eq` asks its callers and of how it's lowered.
     pub(crate) fn eq_sides(&self, this: Ty<'tcx>, other: Ty<'tcx>) -> Option<[EqSide<'tcx>; 2]> {
-        let trusted = super::fact_trait(self.tcx, TypeFact::TrustedLen)?;
         let into_iterator = super::std_item(self.tcx, StdItem::IntoIterator);
         // Of what an `impl Iterator` hides, revealed first as a body's MIR
         // is (`analysis::revealed`, #1142), in any typing environment, as std's
@@ -677,7 +673,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ if ty.has_param() => Some(EqSide::Built),
                 _ => {
                     let iter = super::iterator_type_of(self.tcx, self.typing_env, ty);
-                    self.implements_trait(iter, trusted).then_some(EqSide::Known)
+                    (self.trusted_len(iter) == Some(true)).then_some(EqSide::Known)
                 }
             }
         };

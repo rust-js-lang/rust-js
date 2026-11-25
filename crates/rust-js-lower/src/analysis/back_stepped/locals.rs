@@ -419,7 +419,7 @@ pub(super) fn stepped_locals<'tcx>(
                     let typing_env = ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(owner));
                     let grown = (recognition.vec_grown_by(callee, generic_args, typing_env))
                         .map(erased)
-                        .filter(|&grown| !crate::recognition::is_trusted_len(tcx, typing_env, grown));
+                        .filter(|&grown| crate::recognition::trusted_len_in(tcx, typing_env, grown) != Some(true));
                     // And each variable whose value it's made of, `let d =
                     // v.iter().map(f)` grown by `d.inspect(g)`, or a chain a
                     // variable holds whose parts' lengths std's sums: the

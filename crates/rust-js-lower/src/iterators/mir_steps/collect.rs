@@ -144,7 +144,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let counted = item.is_some()
             && self.is_vec_like(output)
             && (iter_ty.walk().any(|part| part.as_type().is_some_and(given_count)) && unmapped || program_counted)
-            && (crate::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty) || !runs_code(iter_ty))
+            && (self.recognition().trusted_len(iter_ty) == Some(true) || !runs_code(iter_ty))
             && !crate::iterators::is_stepped_items(&it)
             && self.range_kind(iter_ty).is_none()
             && !self.compiled_struct(iter_ty, &it);
@@ -342,7 +342,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && output.ty_adt_def().is_some()
             && let ty::Adt(_, args) = output.kind()
             && args.type_at(0).is_slice()
-            && crate::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)
+            && self.recognition().trusted_len(iter_ty) == Some(true)
         {
             return Ok(first);
         }
@@ -692,7 +692,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // takes it, its hint asked first, as `ToRcSlice` asks it
             // (`counted_slice_room`). Of another, std's
             // `collect::<Vec<T>>().into()`.
-            let exact = crate::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
+            let exact = self.recognition().trusted_len(iter_ty) == Some(true);
             // Of a type parameter's iterator, whether it's `TrustedLen` and
             // how std collects it as a `Vec` are its caller's, `ITrustedLen`
             // and `IVecCollect`: `$collectCounted` picks.
@@ -853,7 +853,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call_helper("$collectVec", args));
         }
         // What it asks of its hint as std grows a `Vec` of it (`grown_ask`).
-        let trusted = crate::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
+        let trusted = self.recognition().trusted_len(iter_ty) == Some(true);
         let grown = self.grown_ask(
             output,
             item,
@@ -1100,7 +1100,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || folds_by_dropping_nth_back
             || self.steps_lent_inclusive(iter_ty)
             || self.folds_held_function(iter_ty) && self.collects_in_place(Some(iter_ty), item) == Some(false))
-            && crate::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty);
+            && self.recognition().trusted_len(iter_ty) == Some(true);
         // Of std's struct that folds by a type parameter's `nth_back`, a
         // `take(n).rev()`'s of one, which asks another than its `next`
         // does: whether it's `TrustedLen` is its caller's, `ITrustedLen`,

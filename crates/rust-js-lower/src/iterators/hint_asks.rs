@@ -11,7 +11,7 @@
 mod unknown_extends;
 
 use super::*;
-use crate::recognition::{Recognition, TypeFact, is_trusted_len};
+use crate::recognition::{Recognition, TypeFact};
 use crate::temporary_names::Role;
 use rustc_middle::ty::TypeVisitableExt;
 pub(crate) use unknown_extends::refuse_unknown_capacity_extends;
@@ -150,7 +150,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         item: Ty<'tcx>,
         (shunted, keeps_capacity): (bool, bool),
     ) -> bool {
-        let trusted = !shunted && is_trusted_len(self.tcx, self.typing_env, iter_ty);
+        let trusted = !shunted && self.trusted_len(iter_ty) == Some(true);
         // Of a `dyn` or an opaque type, as `grown_ask` asks it of a value
         // Rust made, which no analysis of a type tells from a binding's.
         let reaches_own = self.hint_reaches_own_where(iter_ty, !shunted);
@@ -381,7 +381,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Option<Grown<'tcx>>> {
         let reaches_own = self.recognition().hint_reaches_own_where(iter_ty, !binding_made);
-        let trusted = is_trusted_len(self.tcx, self.typing_env, iter_ty);
+        let trusted = self.recognition().trusted_len(iter_ty) == Some(true);
         let endless = trusted && self.recognition().endless_by_type(iter_ty);
         let sized = |item: Ty<'tcx>| self.layout(item).is_some_and(|layout| layout.size.bytes() > 0);
         let asks_room = self.recognition().grows_as_vec(output);
@@ -472,7 +472,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some((side, item)) = kept else {
             return Ok((it, room(false, None)));
         };
-        let trusted = is_trusted_len(self.tcx, self.typing_env, iter_ty);
+        let trusted = self.recognition().trusted_len(iter_ty) == Some(true);
         if trusted {
             return Ok((it, room(true, None)));
         }
@@ -792,7 +792,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let iter_ty = crate::recognition::iterator_type_of(self.tcx, self.typing_env, iterable);
         self.recognition().grows_as_it_extends(into)
             && (self.recognition().hint_reaches_own_where(iter_ty, !binding_made)
-                || self.krate.keeps_capacity && !is_trusted_len(self.tcx, self.typing_env, iter_ty))
+                || self.krate.keeps_capacity && self.recognition().trusted_len(iter_ty) != Some(true))
     }
 
     /// `extend` of `collection`, of type `into`, by `items`, of type

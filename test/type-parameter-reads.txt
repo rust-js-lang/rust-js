@@ -70,7 +70,7 @@ crates/rust-js-mir/src/assign.rs	1
 crates/rust-js-mir/src/entries.rs	1
 crates/rust-js-mir/src/iter.rs	2
 crates/rust-js-lower/src/iterators/mir_steps/backs.rs	3
-crates/rust-js-lower/src/iterators/mir_steps/closing.rs	6
+crates/rust-js-lower/src/iterators/mir_steps/closing.rs	2
 crates/rust-js-lower/src/iterators/mir_steps/collect.rs	3
 crates/rust-js-lower/src/iterators/mir_steps/copies.rs	1
 crates/rust-js-lower/src/iterators/mir_steps/sources.rs	4
@@ -93,7 +93,7 @@ crates/rust-js-lower/src/recognition/lengths.rs	4
 # recognition/iterators.rs with `repeat_frame_row` (#2324, #2488).
 crates/rust-js-lower/src/recognition/own_steps.rs	2
 crates/rust-js-lower/src/recognition/sorts.rs	2
-crates/rust-js-lower/src/recognition/specialization.rs	2
+crates/rust-js-lower/src/recognition/specialization.rs	3
 crates/rust-js-lower/src/recognition/traits.rs	11
 crates/rust-js-lower/src/recognition/zip_folds.rs	1
 crates/rust-js-lower/src/recursive_fns.rs	1

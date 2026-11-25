@@ -307,14 +307,6 @@ export const mutations: Mutation[] = [
     tests: ["test/diagnostics.test.ts", "-t", "a library's eq of what its consumers give compiles"],
   },
   {
-    name: "library-eq-of-a-filter-refused",
-    breaks: "a library's generic `eq` of a filter, which is never `TrustedLen`, is refused as one its consumers may give `TrustedLen` (#1182)",
-    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
-    find: "                ty::Adt(adt, _) => self.tcx.all_impls(trusted).any(|imp| {\n",
-    replace: "                ty::Adt(adt, _) => true || self.tcx.all_impls(trusted).any(|imp| {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a library's eq of what its consumers give compiles"],
-  },
-  {
     name: "length-first-whole-uncounted",
     breaks: "a `Vec` given whole to generic code's `eq` isn't counted, so it's refused where std compares its length first (#1182)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",

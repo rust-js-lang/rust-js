@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2170, ADR 0975 amended): test/architecture-cleanups.test.ts gains a test that one answerer says whether a type is `TrustedLen`.
+
 Changed on 2026-11-25 (#2216, ADR 1176 amended): test/architecture-iterators.test.ts gains a test that the back path names no in-place form's helper.
 
 Changed on 2026-11-25 (#2584, #2585, #2586, #2587, #2575's paths; ADRs 1101, 1146 and 0093 amended): test/test-map.test.ts gains "a moved struct named by a const fn's signature selects the function it opens"; test/ci.test.ts gains "each net's paths take a module's own file with its folder"; test/mutations.test.ts gains "every stale find is said at once, beside its file's nearest text", and its "every mutation applies" names every stale find; test/push.test.ts gains a cherry-pick's TESTS.md merged by git's driver; test/leases.test.ts' yield test gains a fourth form, check:fast's pool; test/docs.test.ts' one test of the whole guide is a test of each page, and gains a test of how one is asked by `-t`; six mutations.

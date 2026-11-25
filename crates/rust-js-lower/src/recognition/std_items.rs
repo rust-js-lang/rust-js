@@ -386,15 +386,6 @@ pub(crate) fn gives_what_it_isnt_given(tcx: TyCtxt<'_>, id: DefId) -> bool {
         || (is_std_crate(tcx, id) && tcx.item_name(id).as_str().starts_with("downcast"))
 }
 
-/// Whether `ty` is a `TrustedLen`, whose `Vec::from_iter` sizes it by its
-/// upper bound, as rustc selects it (ADR 0940).
-pub(crate) fn is_trusted_len<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
-    super::fact_trait(tcx, TypeFact::TrustedLen).is_some_and(|trusted| {
-        let tr = ty::TraitRef::new(tcx, trusted, [ty]);
-        crate::traits::select(tcx, typing_env, tr).is_ok()
-    })
-}
-
 /// Whether a `TrustedLen` iterator of type `ty` may be longer than
 /// `usize::MAX`, whose hint std gives no upper bound, which its
 /// `extend_trusted` panics of, `capacity overflow`, before it pushes any

@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a zip whose sides are `TrustedLen` but not both `TrustedRandomAccess`, made in place, is the recognizers' `$lazyZip`, whose `collect()` runs the longer side's closure once more than std's `SpecFold` (#380)",
     file: "crates/rust-js-lower/src/recognition/zip_folds.rs",
-    find: "    (runs_code && (by_index || holds(a, trusted_len) && holds(b, trusted_len))).then_some(by_index)\n",
+    find: "    (runs_code && (by_index || trusted(a) && trusted(b))).then_some(by_index)\n",
     replace: "    (runs_code && by_index).then_some(by_index)\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_fold_steps_the_shorter.rs$"],
   },

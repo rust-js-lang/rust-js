@@ -1112,7 +1112,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let unbounded = onto_vec && crate::recognition::hint_may_be_unbounded(self.tcx, iter_ty);
         let folds_its_own = !crate::iterators::folds_as_it_steps(&items) || unbounded;
         if (onto_vec && call && folds_its_own || self.folds_held_function(iter_ty))
-            && crate::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)
+            && self.recognition().trusted_len(iter_ty) == Some(true)
         {
             let asked = unbounded.then(|| Expr::bool(true));
             return Ok(Expr::call_helper(

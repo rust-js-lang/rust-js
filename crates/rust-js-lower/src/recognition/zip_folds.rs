@@ -117,16 +117,9 @@ pub(crate) fn zip_folds_to_the_shorter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) ->
         .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
         .unwrap_or(ty);
     let (a, b) = zipped_sources(tcx, ty)?;
-    let (Some(trusted_len), Some(random_access)) = (
-        super::fact_trait(tcx, TypeFact::TrustedLen),
-        super::fact_trait(tcx, TypeFact::RandomAccess),
-    ) else {
-        return None;
-    };
-    let holds = |ty: Ty<'tcx>, tr: DefId| {
-        let tr = tcx.erase_and_anonymize_regions(ty::TraitRef::new(tcx, tr, [ty]));
-        crate::traits::select(tcx, typing_env, tr).is_ok()
-    };
+    let random_access = super::fact_trait(tcx, TypeFact::RandomAccess)?;
+    let holds = |ty: Ty<'tcx>| super::trait_holds_in(tcx, typing_env, ty, random_access) == Some(true);
+    let trusted = |ty: Ty<'tcx>| super::trusted_len_in(tcx, typing_env, ty) == Some(true);
     let iterator = std_item(tcx, StdItem::Iterator);
     let item = Ty::new_projection(tcx, ty::IsRigid::No, trait_method(tcx, iterator, "Item"), [a]);
     let item = tcx
@@ -140,8 +133,8 @@ pub(crate) fn zip_folds_to_the_shorter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) ->
     let runs_code = steps_run_code(tcx, typing_env, a)
         || a.walk().any(|part| part.as_type().is_some_and(clones_own))
         || item.needs_drop(tcx, typing_env);
-    let by_index = holds(a, random_access) && holds(b, random_access);
-    (runs_code && (by_index || holds(a, trusted_len) && holds(b, trusted_len))).then_some(by_index)
+    let by_index = holds(a) && holds(b);
+    (runs_code && (by_index || trusted(a) && trusted(b))).then_some(by_index)
 }
 
 /// Whether stepping an iterator of type `ty` runs code a program sees, as a
