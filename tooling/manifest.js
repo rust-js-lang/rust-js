@@ -179,8 +179,17 @@ function offeredPath(path) {
     && OFFERED_KINDS.has(path.kind)
     && (path.params === undefined || Array.isArray(path.params) && path.params.every(offeredType))
     && (path.ty === undefined || offeredType(path.ty))
-    && flag(path.generic) && flag(path.located) && flag(path.of_no_value)
-    && (path.type_params === undefined || Number.isInteger(path.type_params) && path.type_params >= 0);
+    && flag(path.generic) && flag(path.located) && flag(path.of_no_value) && flag(path.sealed)
+    && (path.type_params === undefined || Number.isInteger(path.type_params) && path.type_params >= 0)
+    // #2573: a struct's fields, and a generic function's bounds.
+    && (path.fields === undefined || Array.isArray(path.fields) && path.fields.every((field) => field !== null && typeof field === "object"
+      && typeof field.rust === "string" && typeof field.js === "string" && typeof field.written === "string" && offeredType(field.ty)))
+    && (path.bounds === undefined || Array.isArray(path.bounds) && path.bounds.every((bound) => bound !== null && typeof bound === "object"
+      && typeof bound.param === "string"
+      && (bound.traits === undefined || Array.isArray(bound.traits) && bound.traits.every((name) => typeof name === "string"))
+      && (bound.callable === undefined || offeredType(bound.callable))
+      && (bound.impls === undefined || Array.isArray(bound.impls) && bound.impls.every((imp) => imp !== null && typeof imp === "object"
+        && typeof imp.dictionary === "string" && offeredType(imp.ty)))));
 }
 
 /** An offered path's type (rust_js_program::offered's `OfferedType`), its
@@ -199,8 +208,16 @@ function offeredType(ty) {
     case "str":
       return typeof ty.owned === "boolean";
     case "option":
-    case "ref":
+    case "box":
       return offeredType(ty.of);
+    case "ref":
+      return offeredType(ty.of) && (ty.mutable === undefined || typeof ty.mutable === "boolean");
+    case "fn":
+      return Array.isArray(ty.inputs) && ty.inputs.every(offeredType) && offeredType(ty.output);
+    case "param":
+      return typeof ty.name === "string";
+    case "named":
+      return Array.isArray(ty.rust) && ty.rust.every((name) => typeof name === "string");
     case "vec":
       return offeredType(ty.of) && typeof ty.borrowed === "boolean";
     case "tuple":

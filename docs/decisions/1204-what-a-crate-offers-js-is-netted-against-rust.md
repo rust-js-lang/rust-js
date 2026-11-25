@@ -73,3 +73,42 @@ something of each kind, so it never passes having checked nothing.
 - Its first catch, on the crate pairs: a `pub use` of the crate's own
   static wrote no re-export, so a library root of a module and that `pub
   use` wrote no entry at all (#2581, fixed before this landed).
+
+## Amendment: declarations-conformance reads its signatures from the records (2026-11-25, #2573)
+
+declarations-conformance (ADR 1091) read each exported function's signature
+by a regex parse of its case's source, a second authority beside the
+records, which could disagree with them silently. It now reads the records.
+Its source parser is gone, about 250 lines, and its cases, call counts and
+`None` forms are unchanged: 36 cases, `None` given 23, 33 and 20 times, of
+16 cases.
+
+Its coverage needed four additions to the records, all additive in the
+manifest's contract and validated by tooling/manifest.js:
+
+- **`OfferedType::Ref`'s `mutable`,** and the type forms `Box`, `Fn` (of a
+  callable bound or a `dyn Fn`), `Param` and `Named`, the crate's types by
+  their paths.
+- **A struct's `fields`,** each by its Rust name, its JS name, its type and
+  its type as written; and whether it's `sealed`. The JS name is
+  `representation::variant_field`'s, the lowering's naming owner's, never
+  re-derived.
+- **A generic function's `bounds`,** each type parameter's traits, its
+  callable form, and of a trait of the crate's, each impl rustc has of it
+  (`all_impls`), by the type it's of and its dictionary's JS name,
+  `traits::impl_name`'s.
+
+A struct with a field a JS symbol names, a binding's (ADR 1051), gets no
+field records: its field has no text name a caller's literal could give.
+test/type-parameter-reads.txt counts offered.rs's two reads of a type
+parameter. They describe a signature for its callers, as declarations.rs'
+reads do, and make no JS form of generic code.
+
+Each case compiles twice: once for its records, which say its sealed
+structs, then with their makers. A type's name is rustc's answer, so a
+case's own `String` is its own type (#1875) by construction, and the test
+of that reads the records.
+
+Mutation `offered-type-leaf-flipped`, a `bool` recorded as a `u8`, is caught
+by both nets. `offered-dyn-fn-unread` and `offered-symbol-field-named` hold
+the `dyn Fn` reading and the symbol-named fields.

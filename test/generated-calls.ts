@@ -1,7 +1,7 @@
 // Calls generated of a Rust type, given alike by JS and by native Rust,
 // and their results printed alike by each (#2481): the export net's, and
 // declarations-conformance's after #2573. A type is a manifest's
-// `OfferedType` tree (`crates/rust-js-program/src/manifest.rs`): values of
+// `OfferedType` tree (`crates/rust-js-program/src/offered.rs`): values of
 // each plain form at its bounds and inside, each a JS literal and a Rust
 // one; and a printer of each side, which prints a float by its bits and a
 // string by its code points, so neither side's own formatting is compared.
@@ -16,7 +16,11 @@ export type Tree =
   | { kind: "unit" }
   | { kind: "option"; of: Tree }
   | { kind: "vec"; of: Tree; borrowed: boolean }
-  | { kind: "ref"; of: Tree }
+  | { kind: "ref"; of: Tree; mutable?: boolean }
+  | { kind: "box"; of: Tree }
+  | { kind: "fn"; inputs: Tree[]; output: Tree }
+  | { kind: "param"; name: string }
+  | { kind: "named"; rust: string[] }
   | { kind: "tuple"; items: Tree[] }
   | { kind: "other"; rust: string };
 
@@ -65,7 +69,11 @@ export function rustType(tree: Tree): string {
     case "unit": return "()";
     case "option": return `Option<${rustType(tree.of)}>`;
     case "vec": return tree.borrowed ? `&[${rustType(tree.of)}]` : `Vec<${rustType(tree.of)}>`;
-    case "ref": return `&${rustType(tree.of)}`;
+    case "ref": return `&${tree.mutable ? "mut " : ""}${rustType(tree.of)}`;
+    case "box": return `Box<${rustType(tree.of)}>`;
+    case "fn": return `impl Fn(${tree.inputs.map(rustType).join(", ")}) -> ${rustType(tree.output)}`;
+    case "param": return tree.name;
+    case "named": return tree.rust.join("::");
     case "tuple": return `(${tree.items.map(rustType).join(", ")}${tree.items.length === 1 ? "," : ""})`;
     case "other": return tree.rust;
   }
@@ -98,7 +106,10 @@ export function values(tree: Tree, small = false): Given[] | undefined {
       };
       return [list([]), list(of.slice(0, 1)), list(of.slice(0, 3))];
     }
+    // A `&mut`'s JS is a box or the object it points at, as its `.d.ts`
+    // says, declarations-conformance's to give (#2573): no value of these.
     case "ref": {
+      if (tree.mutable) return undefined;
       const of = values(tree.of, small);
       return of?.map((v) => ({ js: v.js, rust: `&${v.rust}` }));
     }
@@ -111,19 +122,25 @@ export function values(tree: Tree, small = false): Given[] | undefined {
         return { js: `[${items.map((v) => v.js).join(", ")}]`, rust: `(${items.map((v) => v.rust).join(", ")}${items.length === 1 ? "," : ""})` };
       });
     }
-    case "other": return undefined;
+    case "box":
+    case "fn":
+    case "param":
+    case "named":
+    case "other":
+      return undefined;
   }
 }
 
 /** Whether a result of `tree` is printed alike by both sides. */
 export function printable(tree: Tree): boolean {
   switch (tree.kind) {
-    case "option": case "vec": case "ref": return printable(tree.of);
+    case "option": case "vec": return printable(tree.of);
     // Of two or three, which `rustShow` prints.
     case "tuple": return (tree.items.length === 2 || tree.items.length === 3) && tree.items.every(printable);
     case "int": return tree.rust in ints;
     case "float": return tree.rust in floats;
-    case "other": return false;
+    case "ref": return !tree.mutable && printable(tree.of);
+    case "box": case "fn": case "param": case "named": case "other": return false;
     default: return true;
   }
 }

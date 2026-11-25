@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2573, ADR 1204 amended): test/declarations-conformance.test.ts reads its signatures from the manifest's `offered_paths`, its source parser gone, its 36 cases' calls and `None` forms unchanged; its own-names test reads the records.
+
 Changed on 2026-11-25 (#2481, ADR 1204): test/export-net.test.ts, new, nightly's: each path a crate offers JS, the manifest's `offered_paths`, in its JS and its `.d.ts` and giving what native Rust does, over its own cases and the crate pairs' table, and the offered paths of #2544's shapes exactly; test/generated-calls.ts, the values it gives.
 
 Changed on 2026-11-25 (#2581, ADR 0240 amended): test/crates.test.ts gains a test, a `pub use` of the crate's own static re-exported by its module's JS.

@@ -42,6 +42,53 @@ pub struct OfferedPath {
     /// `.d.ts` declares.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub of_no_value: bool,
+    /// Of a struct of named fields, each field, in order (#2573).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<OfferedField>,
+    /// Of a struct, whether it's sealed: `pub` with a field that isn't, so
+    /// no other crate makes one, nor TypeScript, whose declaration of it is
+    /// opaque (ADR 1187); a class, made by its constructor, isn't (#2573).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub sealed: bool,
+    /// Of a generic function, each type parameter's bounds, by rustc's
+    /// predicates of it (#2573).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub bounds: Vec<OfferedBound>,
+}
+
+/// A field of an offered struct: its Rust name, the name JS reads it by
+/// (the lowering's, `representation::variant_field`), its type, and its
+/// type as Rust writes it, which a maker of the struct is written with.
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct OfferedField {
+    pub rust: String,
+    pub js: String,
+    pub ty: OfferedType,
+    pub written: String,
+}
+
+/// What a generic function asks of one type parameter, `param`: the traits
+/// it's bound by, by their Rust paths; of an `Fn`, `FnMut` or `FnOnce`
+/// bound, the function it is (`callable`); and of a trait of the crate's,
+/// each impl of it rustc has, by the type it's of and its dictionary's JS
+/// name (`traits::words::impl_name`), which the function is given.
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct OfferedBound {
+    pub param: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub traits: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub callable: Option<OfferedType>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub impls: Vec<OfferedImpl>,
+}
+
+/// An impl of a crate's trait a generic function is given: the type it's
+/// of, and its dictionary's JS name, which its module exports.
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct OfferedImpl {
+    pub ty: OfferedType,
+    pub dictionary: String,
 }
 
 fn is_zero(n: &usize) -> bool {
@@ -93,9 +140,31 @@ pub enum OfferedType {
         of: Box<OfferedType>,
         borrowed: bool,
     },
-    /// `&T` of any other.
+    /// `&T` of any other, or a `&mut T`.
     Ref {
         of: Box<OfferedType>,
+        /// A `&mut`, whose JS is a box or the object it points at, as its
+        /// `.d.ts` says (ADR 1086, #2573).
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        mutable: bool,
+    },
+    /// `Box<T>`.
+    Box {
+        of: Box<OfferedType>,
+    },
+    /// A function a type parameter is bound to be, `F: Fn(u32) -> u32`.
+    Fn {
+        inputs: Vec<OfferedType>,
+        output: Box<OfferedType>,
+    },
+    /// A type parameter, by its name, which `OfferedPath::bounds` says.
+    Param {
+        name: String,
+    },
+    /// A struct, an enum or a union of the crate's, by its path from the
+    /// crate's root.
+    Named {
+        rust: Vec<String>,
     },
     Tuple {
         items: Vec<OfferedType>,

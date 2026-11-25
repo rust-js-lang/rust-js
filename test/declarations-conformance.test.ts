@@ -34,6 +34,7 @@ import { join } from "node:path";
 import { compiler, fixture, nativeBinary, programFlags, root, run } from "./support";
 import { readdirSync } from "node:fs";
 import { repoTypes, typeChecked } from "./type-checked";
+import type { Tree } from "./generated-calls";
 
 const cases = [
   "declared_signatures",
@@ -62,89 +63,148 @@ type Ty =
   | { k: "fn"; inputs: Ty[]; output: Ty }
   | { k: "named"; n: string };
 
-const numbers = ["u8", "u16", "u32", "usize", "i8", "i16", "i32", "isize", "f32", "f64"];
+// What the compiler says a crate offers JS, its manifest's `offered_paths`
+// (rust_js_program::offered, ADR 1204): each function's parameters, result
+// and bounds, each struct's fields and whether it's sealed, each by its JS
+// name, read of rustc's own answers, so no parse of the source decides a
+// signature apart from the compiler's (#2573).
+type Offered = {
+  rust: string[];
+  js: string[];
+  kind: "function" | "const" | "static" | "namespace" | "type";
+  params?: Tree[];
+  ty?: Tree;
+  fields?: { rust: string; js: string; ty: Tree; written: string }[];
+  sealed?: boolean;
+  type_params?: number;
+  bounds?: { param: string; traits?: string[]; callable?: Tree; impls?: { ty: Tree; dictionary: string }[] }[];
+};
 
-function tokens(text: string): string[] {
-  return text.match(/->|'[a-z_]+|[A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*|[&<>()[\],+:]/g) ?? [];
-}
+// What a bound of no trait of the case's asks, a `Clone` or an `Ord`, of
+// which a `u32` is one, given in its type parameter's place.
+const stdBounds = new Set(["Clone", "Copy", "PartialOrd", "PartialEq", "Ord", "Eq", "Debug", "Sized", "MetaSized"]);
 
-// The type names a case's own items take, declared or imported, which
-// hide std's prelude and primitive types of those names, as rustc resolves
-// them: a case's own `struct String` is no `std::string::String` (#1875).
-function ownNames(source: string): Set<string> {
-  const bare = source.replace(/\/\/[^\n]*/g, "");
-  const declared = [...bare.matchAll(/\b(?:struct|enum|union|type|trait)\s+([A-Za-z_]\w*)/g)].map((m) => m[1]);
-  // Of a `use`, each name it brings in: a path's last segment, or what it's
-  // renamed `as`; of std's, `use std::string::String`, only a rename, as
-  // the rest are std's own.
-  const imported = [...bare.matchAll(/\buse\s+([^;]*);/g)].flatMap((m) => {
-    const ofStd = /^(::)?(std|core|alloc)::/.test(m[1].trim());
-    const pattern = ofStd ? /\bas\s+([A-Za-z_]\w*)/g : /([A-Za-z_]\w*)\s*(?=[,}]|$)/g;
-    return [...m[1].matchAll(pattern)].map((n) => n[1]);
-  });
-  return new Set([...declared, ...imported].filter((name) => name !== "self"));
-}
-
-// A type `ts` writes from `at.i` on, its names resolved in `at.own`, the
-// case's own (`ownNames`).
-function parseType(ts: string[], at: { i: number; own: Set<string> }): Ty {
-  const t = ts[at.i++];
-  if (at.own.has(t)) return { k: "named", n: t };
-  if (t === "&") {
-    while (ts[at.i]?.startsWith("'")) at.i++;
-    const mut = ts[at.i] === "mut";
-    if (mut) at.i++;
-    return { k: "ref", mut, inner: parseType(ts, at) };
-  }
-  if (t === "(") {
-    const items: Ty[] = [];
-    while (ts[at.i] !== ")") {
-      items.push(parseType(ts, at));
-      if (ts[at.i] === ",") at.i++;
+// The records' type, `tree`, as a value's type here, each type parameter
+// its choice in `generics`; `null` of one it has none of.
+function typeOf(tree: Tree, generics: Map<string, Ty | null>): Ty | null {
+  const of = (inner: Tree) => typeOf(inner, generics);
+  switch (tree.kind) {
+    case "int":
+    case "float":
+      return { k: "num", n: tree.rust };
+    case "bool":
+      return { k: "bool" };
+    // A `&str`, which the records hold as one form, a reference to a `str`
+    // here.
+    case "str":
+      return tree.owned ? { k: "string" } : { k: "ref", mut: false, inner: { k: "str" } };
+    case "unit":
+      return { k: "tuple", items: [] };
+    case "option": {
+      const inner = of(tree.of);
+      return inner && { k: "opt", inner };
     }
-    at.i++;
-    return { k: "tuple", items };
+    case "vec": {
+      const inner = of(tree.of);
+      return inner && (tree.borrowed ? { k: "ref", mut: false, inner: { k: "slice", inner } } : { k: "vec", inner });
+    }
+    case "ref": {
+      const inner = of(tree.of);
+      return inner && { k: "ref", mut: tree.mutable === true, inner };
+    }
+    case "box": {
+      const inner = of(tree.of);
+      return inner && { k: "box", inner };
+    }
+    case "tuple": {
+      const items = tree.items.map(of);
+      return items.every((i) => i) ? { k: "tuple", items: items as Ty[] } : null;
+    }
+    case "fn": {
+      const inputs = tree.inputs.map(of);
+      const output = of(tree.output);
+      return inputs.every((i) => i) && output ? { k: "fn", inputs: inputs as Ty[], output } : null;
+    }
+    case "param":
+      return generics.get(tree.name) ?? null;
+    case "named":
+      return { k: "named", n: tree.rust.at(-1)! };
+    // Any other by its name, which no value is made of but a `None` of an
+    // `Option` of it.
+    case "other":
+      return { k: "named", n: tree.rust };
+    default:
+      return null;
   }
-  if (t === "[") {
-    const inner = parseType(ts, at);
-    at.i++;
-    return { k: "slice", inner };
-  }
-  if (t === "impl" || t === "dyn") {
-    const name = ts[at.i++];
-    if (!/^Fn(Mut|Once)?$/.test(name)) return { k: "named", n: `${t} ${name}` };
-    return parseFnBound(ts, at);
-  }
-  if (numbers.includes(t)) return { k: "num", n: t };
-  if (t === "bool") return { k: "bool" };
-  if (t === "str") return { k: "str" };
-  if (t === "String") return { k: "string" };
-  if ((t === "Vec" || t === "Option" || t === "Box") && ts[at.i] === "<") {
-    at.i++;
-    const inner = parseType(ts, at);
-    at.i++;
-    return t === "Vec" ? { k: "vec", inner } : t === "Option" ? { k: "opt", inner } : { k: "box", inner };
-  }
-  return { k: "named", n: t };
 }
 
-// `Fn(A, B) -> R`, its name read.
-function parseFnBound(ts: string[], at: { i: number; own: Set<string> }): Ty {
-  at.i++;
-  const inputs: Ty[] = [];
-  while (ts[at.i] !== ")") {
-    inputs.push(parseType(ts, at));
-    if (ts[at.i] === ",") at.i++;
+type Fn = { name: string; js: string; params: { name: string; ty: Ty }[]; output: Ty | null; dictionaries: string[] };
+
+// Each function of the crate's root the records say it offers, of each
+// choice of its type parameters: bound by a callable, that function; by
+// no trait of the case's, a `u32`; by one of the case's, each impl rustc
+// has of it in turn, a function of each, given that impl's dictionary by
+// the name the records give it.
+function functions(offered: Offered[]): Fn[] {
+  const found: Fn[] = [];
+  for (const path of offered.filter((p) => p.kind === "function" && p.rust.length === 1)) {
+    const generics = new Map<string, Ty | null>();
+    const ofTraits: [string, { ty: Tree; dictionary: string }[]][] = [];
+    for (const bound of path.bounds ?? []) {
+      if (bound.callable) generics.set(bound.param, typeOf(bound.callable, generics));
+      else if ((bound.impls ?? []).length > 0) ofTraits.push([bound.param, bound.impls!]);
+      else generics.set(bound.param, (bound.traits ?? []).every((t) => stdBounds.has(t.split("::").at(-1)!)) ? { k: "num", n: "u32" } : null);
+    }
+    let choices: { ty: Tree; dictionary: string }[][] = [[]];
+    for (const [, of] of ofTraits) choices = choices.flatMap((chosen) => of.map((imp) => [...chosen, imp]));
+    for (const chosen of choices) {
+      ofTraits.forEach(([param], i) => generics.set(param, typeOf(chosen[i].ty, generics)));
+      const params = (path.params ?? []).map((tree, i) => ({ name: `p${i}`, ty: typeOf(tree, generics) }));
+      const output = path.ty ? typeOf(path.ty, generics) : { k: "tuple" as const, items: [] };
+      if (params.length > 0 && params.every((p) => p.ty)) {
+        found.push({ name: path.rust[0], js: path.js[0], params: params as Fn["params"], output, dictionaries: chosen.map((imp) => imp.dictionary) });
+      }
+    }
   }
-  at.i++;
-  let output: Ty = { k: "tuple", items: [] };
-  if (ts[at.i] === "->") {
-    at.i++;
-    output = parseType(ts, at);
-  }
-  return { k: "fn", inputs, output };
+  return found;
 }
 
+type Struct = { name: string; fields: { name: string; js: string; ty: Ty; written: string }[]; sealed: boolean };
+
+// Each struct of named fields the records say, by its name, each field by
+// its Rust name, its JS name and its type; `sealed` as they say it.
+function structs(offered: Offered[]): Map<string, Struct> {
+  const found = new Map<string, Struct>();
+  // Of the root's, of no type parameters: a generic one's maker would be
+  // generic, which a caller's value can't choose for it.
+  for (const path of offered.filter((p) => p.kind === "type" && p.rust.length === 1 && !p.type_params && (p.fields ?? []).length > 0)) {
+    const fields = path.fields!.map((f) => ({ name: f.rust, js: f.js, ty: typeOf(f.ty, new Map()) ?? { k: "named" as const, n: f.written }, written: f.written }));
+    found.set(path.rust.at(-1)!, { name: path.rust.at(-1)!, fields, sealed: path.sealed === true });
+  }
+  return found;
+}
+
+// A crate's records: `dir`'s `lib.rs` compiled with its manifest.
+function records(dir: string): Offered[] {
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--manifest", join(dir, "lib.manifest.json"), "--", "--edition=2024", "-Awarnings"]);
+  return (JSON.parse(readFileSync(join(dir, "lib.manifest.json"), "utf8")).offered_paths ?? []) as Offered[];
+}
+
+// What a sealed struct's TypeScript caller has of one: its crate's own
+// maker's, as another crate's caller would, which the harness adds to the
+// crate, `pub fn make_clicks(n: u32) -> Clicks`, by the JS name the
+// records give it; none of one whose fields aren't each owned.
+const makerOf = (struct: Struct) => `make_${struct.name.replace(/[A-Z]/g, (c, i: number) => `${i ? "_" : ""}${c.toLowerCase()}`)}`;
+const owned = (ty: Ty): boolean => ty.k !== "ref" && ty.k !== "fn" && ty.k !== "slice" && !("inner" in ty && !owned(ty.inner)) && !(ty.k === "tuple" && !ty.items.every(owned));
+function makers(structsOf: Map<string, Struct>): string {
+  return [...structsOf.values()]
+    // Not of one of a lifetime, `Iter<'a>`, whose maker would need it.
+    .filter((s) => s.sealed && s.fields.every((f) => owned(f.ty) && !/'(?!static\b)\w/.test(f.written)))
+    .map((s) => `pub fn ${makerOf(s)}(${s.fields.map((f) => `${f.name}: ${f.written}`).join(", ")}) -> ${s.name} {\n    ${s.name} { ${s.fields.map((f) => f.name).join(", ")} }\n}\n`)
+    .join("");
+}
+
+// The `.d.ts` read as text, its declarations' brackets and lists.
 // What's between `open` and its close, from `from`, and where it ends.
 function enclosed(text: string, from: number, open: string, close: string): [string, number] {
   let depth = 0;
@@ -183,134 +243,8 @@ function split(text: string): string[] {
 // A function, its type parameters replaced, and the dictionaries of the
 // impls it's called with, by their JS names, `tallySlot`, which it's given
 // after its arguments, as its declaration takes them.
-type Fn = { name: string; params: { name: string; ty: Ty }[]; output: Ty | null; dictionaries: string[] };
-
-type Impl = { ty: Ty; dictionary: string };
-
-// Each impl of a trait of the case's, `impl Slot for Tally`, by its trait's
-// name: the type it's of and its dictionary's JS name, `tallySlot`, which
-// its module exports.
-function impls(source: string): Map<string, Impl[]> {
-  const found = new Map<string, Impl[]>();
-  const own = ownNames(source);
-  for (const m of source.matchAll(/^impl (\w+) for (\w+) \{/gm)) {
-    if (!new RegExp(`^pub trait ${m[1]}\\b`, "m").test(source)) continue;
-    const dictionary = `${m[2][0].toLowerCase()}${m[2].slice(1)}${m[1]}`;
-    found.set(m[1], [...(found.get(m[1]) ?? []), { ty: parseType(tokens(m[2]), { i: 0, own }), dictionary }]);
-  }
-  return found;
-}
-
-// Each top-level `pub fn`, its type parameters replaced: bound by `Fn`, its
-// function; of no other bound but std's, a `u32`; bound by a trait of the
-// case's, each of its impls' types in turn, a function of each, given that
-// impl's dictionary.
-function functions(source: string): Fn[] {
-  const found: Fn[] = [];
-  const implsOf = impls(source);
-  const own = ownNames(source);
-  for (const m of source.matchAll(/^pub fn (\w+)/gm)) {
-    let at = m.index! + m[0].length;
-    const generics: Record<string, Ty | null> = {};
-    const ofTraits: [string, Impl[]][] = [];
-    let bounds = "";
-    if (source[at] === "<") {
-      const [inside, end] = enclosed(source, at, "<", ">");
-      bounds = inside;
-      at = end;
-    }
-    const [params, afterParams] = enclosed(source, at, "(", ")");
-    const rest = source.slice(afterParams, source.indexOf("{", afterParams));
-    const [ret, where] = rest.split(/\bwhere\b/);
-    for (const bound of split(`${bounds},${where ?? ""}`)) {
-      const [name, ...said] = bound.split(":");
-      const by = said.join(":").trim();
-      const fnBound = /^(?:Fn|FnMut|FnOnce)\(/.exec(by);
-      generics[name.trim()] = fnBound ? parseFnBound(tokens(by), { i: 1, own }) : /^[A-Z][A-Za-z]*$/.test(name.trim()) && /^(?:(?:Clone|Copy|PartialOrd|PartialEq|Ord|Eq|Debug|'static)\s*\+?\s*)*$/.test(by) ? { k: "num", n: "u32" } : null;
-      if (implsOf.has(by)) ofTraits.push([name.trim(), implsOf.get(by)!]);
-    }
-    const replace = (ty: Ty): Ty | null => {
-      switch (ty.k) {
-        case "named":
-          return ty.n in generics ? generics[ty.n] : ty;
-        case "ref":
-        case "vec":
-        case "slice":
-        case "opt":
-        case "box": {
-          const inner = replace(ty.inner);
-          return inner && { ...ty, inner };
-        }
-        case "tuple": {
-          const items = ty.items.map(replace);
-          return items.every((i) => i) ? { k: "tuple", items: items as Ty[] } : null;
-        }
-        case "fn": {
-          const inputs = ty.inputs.map(replace);
-          const output = replace(ty.output);
-          return inputs.every((i) => i) && output ? { k: "fn", inputs: inputs as Ty[], output } : null;
-        }
-        default:
-          return ty;
-      }
-    };
-    // Each choice of an impl for each type parameter bound by a trait of the case's.
-    let choices: Impl[][] = [[]];
-    for (const [, of] of ofTraits) choices = choices.flatMap((chosen) => of.map((imp) => [...chosen, imp]));
-    for (const chosen of choices) {
-      ofTraits.forEach(([name], i) => {
-        generics[name] = chosen[i].ty;
-      });
-      const typed = split(params).map((p) => {
-        const colon = p.indexOf(":");
-        return { name: p.slice(0, colon).replace(/^mut\s+/, "").trim(), ty: replace(parseType(tokens(p.slice(colon + 1)), { i: 0, own })) };
-      });
-      const arrow = ret.indexOf("->");
-      const output = arrow < 0 ? { k: "tuple" as const, items: [] } : replace(parseType(tokens(ret.slice(arrow + 2)), { i: 0, own }));
-      const dictionaries = chosen.map((imp) => imp.dictionary);
-      if (typed.every((p) => p.ty) && typed.length > 0) found.push({ name: m[1], params: typed as Fn["params"], output, dictionaries });
-    }
-  }
-  return found;
-}
-
-type Struct = { name: string; fields: { name: string; ty: Ty; written: string }[]; sealed: boolean };
-
-// Each struct of named fields, each of a type it has a value of; `sealed`
-// where it's `pub` and a field isn't, which no other crate makes, nor
-// TypeScript, whose declaration is opaque (ADR 1187).
-function structs(source: string): Map<string, Struct> {
-  const found = new Map<string, Struct>();
-  // A class, made by its constructor (ADR 0761), is no sealed struct.
-  const classes = new Set([...source.matchAll(/rust_js::class\)?\]\s*(?:#\[[^\]]*\]\s*)*(?:pub )?struct (\w+)/g)].map((m) => m[1]));
-  const bare = source.replace(/#\[[^\]]*\]/g, "").replace(/\/\/[^\n]*/g, "");
-  const own = ownNames(source);
-  for (const m of bare.matchAll(/^(pub )?struct (\w+) \{/gm)) {
-    const [body] = enclosed(bare, m.index! + m[0].length - 1, "{", "}");
-    const written = split(body);
-    const fields = written.map((f) => {
-      const [name, ...ty] = f.replace(/^pub(\([^)]*\))?\s+/, "").split(":");
-      return { name: name.trim(), ty: parseType(tokens(ty.join(":")), { i: 0, own }), written: ty.join(":").trim() };
-    });
-    found.set(m[2], { name: m[2], fields, sealed: m[1] !== undefined && !classes.has(m[2]) && written.some((f) => !/^pub\s/.test(f)) });
-  }
-  return found;
-}
-
-// What a sealed struct's TypeScript caller has of one: its crate's own
-// maker's, `makeClicks(3)`, as another crate's caller would, which the
-// harness adds to the crate, `pub fn make_clicks(n: u32) -> Clicks`; none
-// of one whose fields aren't each owned.
-const makerOf = (struct: Struct) => `make_${struct.name.replace(/[A-Z]/g, (c, i: number) => `${i ? "_" : ""}${c.toLowerCase()}`)}`;
-const owned = (ty: Ty): boolean => ty.k !== "ref" && ty.k !== "fn" && ty.k !== "slice" && !("inner" in ty && !owned(ty.inner)) && !(ty.k === "tuple" && !ty.items.every(owned));
-function makers(structsOf: Map<string, Struct>): string {
-  return [...structsOf.values()]
-    .filter((s) => s.sealed && s.fields.every((f) => owned(f.ty)))
-    .map((s) => `pub fn ${makerOf(s)}(${s.fields.map((f) => `${f.name}: ${f.written}`).join(", ")}) -> ${s.name} {\n    ${s.name} { ${s.fields.map((f) => f.name).join(", ")} }\n}\n`)
-    .join("");
-}
-
-const camel = (name: string) => name.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
+// Each maker's JS name, `make_clicks`'s, as the case's records give it.
+const makerNames = new Map<string, string>();
 
 // How a declaration says a place takes a value: its type, and whether its
 // key or parameter may be left out, `x?: T`.
@@ -408,18 +342,18 @@ function value(ty: Ty, seed: number, variant: number, structsOf: Map<string, Str
       // Each field as its interface declares it, a key left out where its
       // `None` is no key at all.
       const declaredFields = ask.interfaces.get(struct.name);
-      const fields = struct.fields.map((f, i) => [f.name, value(f.ty, seed + i, variant, structsOf, { ...ask, decl: declaredFields?.get(camel(f.name)), depth: (ask.depth ?? 0) + 1 })] as const);
+      const fields = struct.fields.map((f, i) => [f, value(f.ty, seed + i, variant, structsOf, { ...ask, decl: declaredFields?.get(f.js), depth: (ask.depth ?? 0) + 1 })] as const);
       if (fields.some(([, v]) => !v)) return null;
       if (struct.sealed) {
         if (!struct.fields.every((f) => owned(f.ty))) return null;
         return {
-          rs: `${struct.name} { ${fields.map(([n, v]) => `${n}: ${v!.rs}`).join(", ")} }`,
-          ts: `${camel(makerOf(struct))}(${fields.map(([, v]) => (v!.absent ? "undefined" : v!.ts)).join(", ")})`,
+          rs: `${struct.name} { ${fields.map(([f, v]) => `${f.name}: ${v!.rs}`).join(", ")} }`,
+          ts: `${makerNames.get(makerOf(struct)) ?? makerOf(struct)}(${fields.map(([, v]) => (v!.absent ? "undefined" : v!.ts)).join(", ")})`,
         };
       }
       return {
-        rs: `${struct.name} { ${fields.map(([n, v]) => `${n}: ${v!.rs}`).join(", ")} }`,
-        ts: `{ ${fields.filter(([, v]) => !v!.absent).map(([n, v]) => `${camel(n)}: ${v!.ts}`).join(", ")} }`,
+        rs: `${struct.name} { ${fields.map(([f, v]) => `${f.name}: ${v!.rs}`).join(", ")} }`,
+        ts: `{ ${fields.filter(([, v]) => !v!.absent).map(([f, v]) => `${f.js}: ${v!.ts}`).join(", ")} }`,
       };
     }
   }
@@ -536,7 +470,7 @@ function tsShow(ty: Ty, x: string, structsOf: Map<string, Struct>, depth = 0): s
       // A sealed one's fields, which its opaque declaration doesn't name,
       // read of its JS to compare with Rust's (ADR 1187).
       const of = struct.sealed ? `(${x} as unknown as Record<string, any>)` : x;
-      return `"{" + [${struct.fields.map((f) => `${JSON.stringify(`"${camel(f.name)}":`)} + ${tsShow(f.ty, `${of}.${camel(f.name)}`, structsOf, depth)}`).join(", ")}].join(",") + "}"`;
+      return `"{" + [${struct.fields.map((f) => `${JSON.stringify(`"${f.js}":`)} + ${tsShow(f.ty, `${of}.${f.js}`, structsOf, depth)}`).join(", ")}].join(",") + "}"`;
     }
     default:
       return `show(${x})`;
@@ -555,7 +489,7 @@ function formsOf(params: { ty: Ty }[], decls: Decl[], structsOf: Map<string, Str
     if (ty.k !== "named" || depth > 3) return false;
     const struct = structsOf.get(ty.n);
     const fields = declaredInterfaces.get(ty.n);
-    return !!struct && !!fields && struct.fields.some((f) => admitted(f.ty, fields.get(camel(f.name)), form, depth + 1));
+    return !!struct && !!fields && struct.fields.some((f) => admitted(f.ty, fields.get(f.js), form, depth + 1));
   };
   return noneForms.filter((form) => params.some((p, i) => admitted(p.ty, decls[i], form, 0)));
 }
@@ -637,19 +571,26 @@ const formCases = new Set<string>();
 function conformance(name: string): number {
   const formsGiven: Record<NoneForm, number> = { null: 0, undefined: 0, absent: 0 };
   const file = join(root, "test/corpus", `${name}.rs`);
-  const source = readFileSync(file, "utf8");
   const dir = fixture(`declarations-conformance-${name}`);
-  const structsOf = structs(source);
-  writeFileSync(join(dir, "lib.rs"), `include!(${JSON.stringify(file)});\npub fn entry() {\n    main()\n}\n${makers(structsOf)}`);
-  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--edition=2024", "-Awarnings"]);
+  // Its records, then again with its sealed structs' makers, which the
+  // first's say: what it offers, by the compiler's answers (#2573).
+  const crate = (more: string) => writeFileSync(join(dir, "lib.rs"), `include!(${JSON.stringify(file)});\npub fn entry() {\n    main()\n}\n${more}`);
+  crate("");
+  const structsOf = structs(records(dir));
+  const made = makers(structsOf);
+  crate(made);
+  const offered = records(dir);
+  const makersMade = new Set([...made.matchAll(/^pub fn (\w+)/gm)].map((m) => m[1]));
+  makerNames.clear();
+  for (const path of offered) if (path.kind === "function" && makersMade.has(path.rust[0])) makerNames.set(path.rust[0], path.js[0]);
   const dts = readFileSync(join(dir, "lib.d.ts"), "utf8");
   const params = declared(dts);
   const declaredInterfaces = interfaces(dts);
   const rs: string[] = [];
   const tsLines: string[] = [];
   const imported = new Set<string>();
-  for (const fn of functions(source)) {
-    const jsName = camel(fn.name);
+  for (const fn of functions(offered).filter((fn) => !makersMade.has(fn.name) && fn.name !== "entry")) {
+    const jsName = fn.js;
     const declaredFn = params.get(jsName);
     if (!declaredFn || declaredFn.params.length !== fn.params.length + fn.dictionaries.length || !fn.output || !shown(fn.output, structsOf)) continue;
     // Some, and again with each `bool` the other way; then each `None`
@@ -713,7 +654,7 @@ function conformance(name: string): number {
   // Each struct shown by its fields, as its JS object's keys are.
   const shows = [...structsOf.values()]
     .filter((s) => shown({ k: "named", n: s.name }, structsOf))
-    .map((s) => `impl Show for ${s.name} {\n    fn show(&self) -> ::std::string::String {\n        ::std::format!("{{${s.fields.map((f) => `\\"${camel(f.name)}\\":{}`).join(",")}}}", ${s.fields.map((f) => `self.${f.name}.show()`).join(", ")})\n    }\n}`);
+    .map((s) => `impl Show for ${s.name} {\n    fn show(&self) -> ::std::string::String {\n        ::std::format!("{{${s.fields.map((f) => `\\"${f.js}\\":{}`).join(",")}}}", ${s.fields.map((f) => `self.${f.name}.show()`).join(", ")})\n    }\n}`);
   const native = `mod case {\n    include!(${JSON.stringify(file)});\n    ${harness}\n    ${shows.join("\n")}\n    pub fn conformance() {\n${rs.join("\n")}\n    }\n}\nfn main() {\n    case::conformance();\n}\n`;
   const built = nativeBinary(native, dir, [...programFlags("2024"), "-Awarnings"]);
   if ("error" in built) throw new Error(`${name}: ${built.error}`);
@@ -733,19 +674,40 @@ function conformance(name: string): number {
   return rs.length;
 }
 
-// The reader resolves a type's name as rustc does: a case's own `String`,
-// `Vec`, `Option` or `Box`, declared or imported, is its own type, not
-// std's, which it took by name (#1875); std's, imported by name, is std's.
+// A type's name is rustc's answer, not a reading of the source's: a case's
+// own `String`, `Vec`, `Option` or `Box`, declared or imported, is its own
+// type, not std's (#1875); std's, imported by name, is std's.
 test("a case's own type of a std type's name is its own", () => {
-  const read = (source: string, ty: string) => parseType(tokens(ty), { i: 0, own: ownNames(source) });
-  expect(read("pub fn f(s: String) {}", "String")).toEqual({ k: "string" });
-  expect(read("use std::string::String;\npub fn f(s: String) {}", "String")).toEqual({ k: "string" });
-  expect(read("pub struct String(u8);", "String")).toEqual({ k: "named", n: "String" });
-  expect(read("mod m { pub enum Option { A } }\nuse m::Option;", "Option<u32>")).toEqual({ k: "named", n: "Option" });
-  expect(read("use std::collections::HashMap as Vec;", "Vec<u8>")).toEqual({ k: "named", n: "Vec" });
-  expect(read("use crate::boxes::{Box, Other};", "Box<u8>")).toEqual({ k: "named", n: "Box" });
-  expect(read("type u32 = bool;", "&u32")).toEqual({ k: "ref", mut: false, inner: { k: "named", n: "u32" } });
-  expect(read("pub struct Wrap(u8);", "Vec<Box<String>>")).toEqual({ k: "vec", inner: { k: "box", inner: { k: "string" } } });
+  const dir = fixture("declarations-conformance-own-names");
+  writeFileSync(join(dir, "lib.rs"), `mod own {
+    pub struct String(pub u8);
+    pub enum Option { A }
+}
+use own::{Option, String};
+use std::collections::HashMap as Vec;
+pub fn own_string(s: String) -> u8 { s.0 }
+pub fn own_option(o: Option) -> u8 { match o { Option::A => 1 } }
+pub fn map_named_vec(v: Vec<u8, u8>) -> usize { v.len() }
+pub fn std_string(s: ::std::string::String, b: Box<::std::string::String>) -> usize { s.len() + b.len() }
+`);
+  const params = (name: string) => functions(records(dir)).find((fn) => fn.name === name)?.params.map((p) => p.ty);
+  expect(params("own_string")).toEqual([{ k: "named", n: "String" }]);
+  expect(params("own_option")).toEqual([{ k: "named", n: "Option" }]);
+  expect(params("map_named_vec")?.map((ty) => ty.k)).toEqual(["named"]);
+  expect(params("std_string")).toEqual([{ k: "string" }, { k: "box", inner: { k: "string" } }]);
+});
+
+// A `dyn Fn` is the function it is, its inputs and output rustc's, so a
+// case's `Option<&dyn Fn(u32)>` is called with one (#2573).
+test("a dyn Fn is read as the function it is", () => {
+  const dir = fixture("declarations-conformance-dyn-fn");
+  writeFileSync(join(dir, "lib.rs"), "pub fn call_dyn(f: &dyn Fn(u32) -> u32, g: Option<&dyn Fn(u8)>) -> u32 {\n    if let Some(g) = g {\n        g(2);\n    }\n    f(1)\n}\n");
+  const [fn] = functions(records(dir)).filter((fn) => fn.name === "call_dyn");
+  const u32: Ty = { k: "num", n: "u32" };
+  expect(fn?.params.map((p) => p.ty)).toEqual([
+    { k: "ref", mut: false, inner: { k: "fn", inputs: [u32], output: u32 } },
+    { k: "opt", inner: { k: "ref", mut: false, inner: { k: "fn", inputs: [{ k: "num", n: "u8" }], output: { k: "tuple", items: [] } } } },
+  ]);
 });
 
 test("each exported function's TypeScript caller type-checks and does what Rust does", () => {

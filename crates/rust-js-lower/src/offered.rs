@@ -83,6 +83,9 @@ fn walk(
             type_params: 0,
             of_no_value: false,
             located: false,
+            fields: Vec::new(),
+            sealed: false,
+            bounds: Vec::new(),
         };
         match kind {
             // A module of its own JS reads only through a re-export of it.
@@ -104,13 +107,18 @@ fn walk(
                     .collect();
                 let generic = tcx.generics_of(id).requires_monomorphization(tcx);
                 let located = crate::recognition::tracks_caller(tcx, id);
+                let bounds = bounds_of(tcx, id);
                 let function = offered(
                     OfferedKind::Function,
                     params,
                     Some(offered_type(tcx, signature.output())),
                     generic,
                 );
-                paths.push(OfferedPath { located, ..function });
+                paths.push(OfferedPath {
+                    located,
+                    bounds,
+                    ..function
+                });
             }
             // A thread-local's key, whose JS is its module's variable, its own
             // (ADR 0270): no value JS reads of it.
@@ -131,9 +139,15 @@ fn walk(
                         let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
                         !matches!(ty.kind(), ty::Adt(adt, _) if adt.is_phantom_data())
                     });
+                let (fields, sealed) = match kind {
+                    DefKind::Struct => fields_of(tcx, id),
+                    _ => (Vec::new(), false),
+                };
                 paths.push(OfferedPath {
                     type_params,
                     of_no_value,
+                    fields,
+                    sealed,
                     ..offered(OfferedKind::Type, Vec::new(), None, false)
                 });
             }
@@ -163,14 +177,20 @@ fn offered_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> OfferedType {
         },
         // A `&mut`, a box or the object it points at (ADR 1086), as JS gives
         // one: no value of this net's.
-        ty::Ref(_, _, rustc_middle::ty::Mutability::Mut) => OfferedType::Other { rust: ty.to_string() },
+        ty::Ref(_, inner, rustc_middle::ty::Mutability::Mut) => OfferedType::Ref {
+            of: of(*inner),
+            mutable: true,
+        },
         ty::Ref(_, inner, _) => match inner.kind() {
             ty::Str => OfferedType::Str { owned: false },
             ty::Slice(item) => OfferedType::Vec {
                 of: of(*item),
                 borrowed: true,
             },
-            _ => OfferedType::Ref { of: of(*inner) },
+            _ => OfferedType::Ref {
+                of: of(*inner),
+                mutable: false,
+            },
         },
         ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::String) => OfferedType::Str { owned: true },
         ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => OfferedType::Option {
@@ -182,6 +202,123 @@ fn offered_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> OfferedType {
                 borrowed: false,
             }
         }
+        ty::Adt(_, args) if ty.is_box() => OfferedType::Box {
+            of: of(args.type_at(0)),
+        },
+        // A `dyn Fn(u32) -> u32`, the function it is: its inputs of its
+        // trait's, its output of its projection.
+        ty::Dynamic(predicates, ..)
+            if let Some(principal) = predicates.principal()
+                && tcx.is_fn_trait(principal.def_id()) =>
+        {
+            let principal = tcx.instantiate_bound_regions_with_erased(principal);
+            let inputs = match principal.args.type_at(0).kind() {
+                ty::Tuple(items) => items.iter().map(|item| offered_type(tcx, item)).collect(),
+                _ => Vec::new(),
+            };
+            let output = (predicates.projection_bounds().next())
+                .and_then(|projection| tcx.instantiate_bound_regions_with_erased(projection).term.as_type())
+                .map_or(OfferedType::Unit, |ty| offered_type(tcx, ty));
+            OfferedType::Fn {
+                inputs,
+                output: Box::new(output),
+            }
+        }
+        ty::Param(param) => OfferedType::Param {
+            name: param.name.to_string(),
+        },
+        ty::Adt(adt, _) if adt.did().is_local() => OfferedType::Named {
+            rust: tcx.def_path_str(adt.did()).split("::").map(str::to_string).collect(),
+        },
         _ => OfferedType::Other { rust: ty.to_string() },
     }
+}
+
+/// A struct's named fields, each by its Rust name, its JS name, its type and
+/// its type as written; and whether it's sealed (`OfferedPath::sealed`).
+fn fields_of(tcx: TyCtxt<'_>, id: DefId) -> (Vec<rust_js_program::offered::OfferedField>, bool) {
+    let variant = tcx.adt_def(id).non_enum_variant();
+    // Of named fields, each named by text: a field a JS symbol names, a
+    // binding's, has no name a caller's literal gives (ADR 1051).
+    if variant.ctor.is_some()
+        || (variant.fields.iter()).any(|field| crate::bindings::field_key(tcx, field).name().is_none())
+    {
+        return (Vec::new(), false);
+    }
+    let fields = (variant.fields.iter().enumerate())
+        .map(|(i, field)| {
+            let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+            rust_js_program::offered::OfferedField {
+                rust: field.name.to_string(),
+                js: crate::representation::variant_field(tcx, variant, i),
+                ty: offered_type(tcx, ty),
+                written: ty.to_string(),
+            }
+        })
+        .collect();
+    let sealed = tcx.visibility(id).is_public()
+        && !crate::classes::is_class(tcx, id)
+        && variant.fields.iter().any(|field| !field.vis.is_public());
+    (fields, sealed)
+}
+
+/// What a generic function asks of each of its type parameters, by rustc's
+/// predicates of it: the traits it's bound by; of a callable bound, the
+/// function it is, its `Output` by the predicate's projection; and of a
+/// trait of the crate's, each impl of it rustc has (`all_impls`), by the
+/// type it's of and its dictionary's JS name (`traits::words::impl_name`).
+fn bounds_of(tcx: TyCtxt<'_>, id: DefId) -> Vec<rust_js_program::offered::OfferedBound> {
+    let generics = tcx.generics_of(id);
+    let predicates: Vec<_> = tcx.param_env(id).caller_bounds().collect();
+    let mut bounds = Vec::new();
+    for param in &generics.own_params {
+        let rustc_middle::ty::GenericParamDefKind::Type { .. } = param.kind else {
+            continue;
+        };
+        let of_param = |ty: Ty<'_>| matches!(ty.kind(), ty::Param(p) if p.index == param.index);
+        let mut traits = Vec::new();
+        let mut callable = None;
+        let mut impls = Vec::new();
+        for predicate in &predicates {
+            if let Some(trait_predicate) = predicate.as_trait_clause() {
+                let tr = tcx.instantiate_bound_regions_with_erased(trait_predicate).trait_ref;
+                if !of_param(tr.self_ty()) {
+                    continue;
+                }
+                traits.push(tcx.def_path_str(tr.def_id));
+                if tcx.is_fn_trait(tr.def_id) {
+                    let inputs = match tr.args.type_at(1).kind() {
+                        ty::Tuple(items) => items.iter().map(|item| offered_type(tcx, item)).collect(),
+                        _ => Vec::new(),
+                    };
+                    let output = (predicates.iter())
+                        .filter_map(|p| p.as_projection_clause())
+                        .map(|p| tcx.instantiate_bound_regions_with_erased(p))
+                        .find(|p| of_param(p.projection_term.self_ty()))
+                        .and_then(|p| p.term.as_type())
+                        .map_or(OfferedType::Unit, |ty| offered_type(tcx, ty));
+                    callable = Some(OfferedType::Fn {
+                        inputs,
+                        output: Box::new(output),
+                    });
+                }
+                if tr.def_id.is_local() {
+                    for imp in tcx.all_impls(tr.def_id).filter(|imp| imp.is_local()) {
+                        let self_ty = tcx.type_of(imp).instantiate_identity().skip_normalization();
+                        impls.push(rust_js_program::offered::OfferedImpl {
+                            ty: offered_type(tcx, self_ty),
+                            dictionary: crate::traits::impl_name(tcx, imp),
+                        });
+                    }
+                }
+            }
+        }
+        bounds.push(rust_js_program::offered::OfferedBound {
+            param: param.name.to_string(),
+            traits,
+            callable,
+            impls,
+        });
+    }
+    bounds
 }
