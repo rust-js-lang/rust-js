@@ -67,6 +67,7 @@ std_paths! {
     BoxedArrayIntoIter => "std::boxed::BoxedArrayIntoIter",
     CharMod => "std::char",
     CharDecodeUtf16 => "std::char::DecodeUtf16",
+    CharDecodeUtf16Fn => "std::char::decode_utf16",
     CharToLowercase => "std::char::ToLowercase",
     CharToUppercase => "std::char::ToUppercase",
     CmpMaxFn => "std::cmp::max",

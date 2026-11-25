@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2599, ADR 0327 amended): one corpus case, the free `std::char::decode_utf16` decoding as `char::decode_utf16` does, against native; one mutation.
+
 Changed on 2026-11-25 (#2572 step 4, ADR 1205 amended): test/architecture-iterators.test.ts gains a test, the runtime closes a source by `$closeHolding` or `$closeBare` alone; one corpus case, a `find` of a source whose drop panics, against native; 27 runtime mutations' finds follow the closes; test/known/iterator-matrix/2580.txt, empty since #2580's fix, is gone.
 
 Changed on 2026-11-25 (#2596, ADR 1022 amended): a dropped `dyn`'s pair is read once; test/oracle-c.test.ts gains its test, and the export net compares the reads of two crate pairs it left unread.

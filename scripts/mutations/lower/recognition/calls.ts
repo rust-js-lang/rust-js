@@ -749,4 +749,12 @@ export const mutations: Mutation[] = [
     replace: "            return Some(Std::Map(MapOp::ByPlace(PlaceOp::Index)));\n",
     tests: ["test/bound-maps.test.ts", "-t", "slice of a range of places"],
   },
+  {
+    name: "decode-utf16-free-function-unknown",
+    breaks: "`std::char::decode_utf16(units)`, the free function, isn't `char::decode_utf16`'s operation, so it's refused where the associated one compiles (#2599)",
+    file: "crates/rust-js-lower/src/recognition/calls.rs",
+    find: "        if item == Some(StdPath::CharDecodeUtf16Fn) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^decode_utf16_free_function_is_the_associated_ones\\.rs$"],
+  },
 ];

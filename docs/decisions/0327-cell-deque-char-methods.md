@@ -130,3 +130,13 @@ Rust's own tables, made of the pinned toolchain's std, not the JS engine's
 `\p{..}` and `toUpperCase()`, whose Unicode version may be another:
 `$isAlphabetic(c)`, `$toUppercase(s)` ([1163](1163-unicode-is-rusts-tables.md)).
 `is_control()` stays `/^\p{Cc}$/u`.
+
+## Amendment: the free `std::char::decode_utf16` (2026-11-25, #2599)
+
+`std::char::decode_utf16(units)`, the free function that `char::decode_utf16`
+supersedes but doesn't deprecate, is the same operation, recognized by its
+path (`StdPath::CharDecodeUtf16Fn`, `classify_fn`). It was refused, "does
+not support calling `std::char::decode_utf16` yet". Held by
+test/corpus/decode_utf16_free_function_is_the_associated_ones.rs and the
+mutation `decode-utf16-free-function-unknown`.
+

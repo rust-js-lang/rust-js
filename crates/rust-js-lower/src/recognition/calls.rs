@@ -147,6 +147,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if diagnostic("mem_forget") {
             return Some(Some(Std::Forget));
         }
+        // `std::char::decode_utf16(units)`, the free function, is
+        // `char::decode_utf16(units)`'s operation (ADR 0327, #2599).
+        if item == Some(StdPath::CharDecodeUtf16Fn) {
+            return Some(Some(Std::Text(TextOp::DecodeUtf16)));
+        }
         // The one thread there is yields to none (ADR 0142).
         // And a spin loop's hint, which no other thread waits on (#1285).
         if item == Some(StdPath::ThreadYieldNowFn) || item == Some(StdPath::HintSpinLoopFn) {
