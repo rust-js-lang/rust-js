@@ -176,6 +176,7 @@ const mirState: Record<string, string[]> = {
   "crates/rust-js-mir/src/dispatch.rs": ["at", "body", "called_into", "defaults", "flattened", "iter_locals", "locals"],
   "crates/rust-js-mir/src/drops.rs": ["body", "branches", "locals", "parts", "pending"],
   "crates/rust-js-mir/src/entries.rs": ["body", "locals", "thrown_writes"],
+  "crates/rust-js-mir/src/dispatch/equalities.rs": ["body"],
   "crates/rust-js-mir/src/dispatch/known_calls.rs": ["at", "body"],
   "crates/rust-js-mir/src/hints/clones.rs": ["locals"],
   "crates/rust-js-mir/src/hints/names.rs": ["locals"],

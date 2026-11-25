@@ -31,14 +31,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^closure_giving_back_a_write_error.rs$"],
   },
   {
-    name: "nested-flatten-unread",
-    breaks: "`flatten()` of a nested field is `$someValue(..)` of its box, not `entry.value` (#470)",
-    file: "crates/rust-js-mir/src/dispatch.rs",
-    find: "            && self.recognition().classify(def_id, generic_args) == Some(Std::OptionFlatten)\n        {\n            let place = x.place().expect(\"a place\");\n",
-    replace: "            && self.recognition().classify(def_id, generic_args) == Some(Std::OptionFlatten)\n            && false\n        {\n            let place = x.place().expect(\"a place\");\n",
-    tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
-  },
-  {
     name: "binding-impl-by-dictionary",
     breaks:
       "a std trait's method whose impl is a binding's, a `Duplex`'s `as_ref()` of its `Writable`, is called through a dictionary, which rust-js refuses, where it's the binding, the object itself (rd588)",
@@ -340,16 +332,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-options.test.ts", "-t", "compared with a Some"],
   },
   {
-    name: "some-equality-of-any",
-    breaks:
-      "an `==` of two `Option`s, either of which may be `null` or `undefined`, is `===`",
-    file: "crates/rust-js-mir/src/dispatch.rs",
-    find: "                place.projection.is_empty() && state.facts.options().made_some.contains(&place.local)\n",
-    replace:
-      "                place.projection.is_empty() || state.facts.options().made_some.contains(&place.local)\n",
-    tests: ["test/lowering-options.test.ts", "-t", "compared with a Some"],
-  },
-  {
     name: "clone-from-through-dictionary",
     breaks:
       "std's `clone_from` is asked of a `Clone` dictionary, which has only `clone`, and refused",
@@ -546,19 +528,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "registered-equality-loose",
-    breaks:
-      '`from_value(x) == Some(SymbolFor("k"))` is `x == Symbol.for("k")`, true of an object that turns into the symbol, which isn\'t one',
-    file: "crates/rust-js-mir/src/dispatch.rs",
-    find: "            .is_some_and(|equality| self.frame.facts.registered_equalities.contains(&equality)))\n",
-    replace: "            .is_some_and(|equality| false && self.frame.facts.registered_equalities.contains(&equality)))\n",
-    tests: [
-      "test/lowering-symbols.test.ts",
-      "-t",
-      "an == of a value read as the registry's symbol",
-    ],
-  },
-  {
     name: "getter-pending-past-lookup",
     breaks:
       "a getter's read MIR holds is read inside a binding's method call, after the method's lookup",
@@ -688,54 +657,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "nested-option-eq-loose",
-    breaks:
-      "two held `Option`s of `Option`s are compared `==`, so `None` and `Some(None)` are equal (ADR 1017)",
-    file: "crates/rust-js-mir/src/dispatch.rs",
-    find: "            Expr::bin(Op::Eq, a, b)\n        } else {\n",
-    replace: "            Expr::bin(Op::LooseEq, a, b)\n        } else {\n",
-    tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
-  },
-  {
-    name: "nested-option-eq-nones-unseen",
-    breaks:
-      "two held `Option`s of `Option`s of strings are compared as `Option<String>`s, so `None` and `Some(None)` are equal (ADR 1017)",
-    file: "crates/rust-js-mir/src/dispatch.rs",
-    find: "            Expr::cond(none, Expr::bin(Op::Eq, a, b), both)\n",
-    replace: "            { let _ = (none, a, b); both }\n",
-    tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
-  },
-  {
-    name: "nested-option-box-unpeeled",
-    breaks:
-      "two held `Option`s of `Option<Box<u32>>`s are compared through `$eq`, where `===` is their `==` (ADR 1017)",
-    file: "crates/rust-js-mir/src/dispatch.rs",
-    find: "            && (held.is_box() || self.is_rc(held) && self.counted_rc(held).is_none())\n",
-    replace: "            && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "nested-option-is-some-flipped",
-    breaks:
-      "`is_some()` of an `Option` of an `Option` held as its payload is `last === undefined`, a wrong answer",
-    file: "crates/rust-js-mir/src/dispatch.rs",
-    find: "            let op = if known == Std::IsSome { Op::Ne } else { Op::Eq };\n",
-    replace:
-      "            let op = if known == Std::IsSome { Op::Eq } else { Op::Ne };\n",
-    tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
-  },
-  {
-    name: "nested-option-eq-some-none-undefined",
-    breaks:
-      "`last == Some(None)` of an `Option` of an `Option` held as its payload is `last === undefined`, its `None`'s test, a wrong answer",
-    file: "crates/rust-js-mir/src/dispatch.rs",
-    find: "            return Ok(Some(Expr::bin(op, x, Expr::null())));\n",
-    replace:
-      "            return Ok(Some(Expr::bin(op, x, Expr::js_undefined())));\n",
-    tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
-  },
-  {
     name: "arguments-pointer-left-out",
     breaks: "a call through a pointer that may be a function reading `js::arguments()` leaves out its trailing `undefined`s (rd332)",
     file: "crates/rust-js-mir/src/dispatch.rs",
@@ -769,15 +690,6 @@ export const mutations: Mutation[] = [
     find: "                if form == NoneForm::Null && nulled.get(i) != Some(&true) {\n",
     replace: "                if form == NoneForm::Null {\n",
     tests: ["test/cross-crate-data.test.ts", "-t", "nullable parameter its calls give null"],
-  },
-  {
-    name: "held-is-some-undefined",
-    breaks:
-      "`is_some()` of a nullable field of what may be `undefined`, through a reference, is `!== undefined`, its `Some` a `None` (rd645)",
-    file: "crates/rust-js-mir/src/dispatch.rs",
-    find: "            let none = self.held_none(x.ty(state.body, self.tcx));\n",
-    replace: "            let none = Expr::js_undefined();\n",
-    tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
   },
   {
     name: "strict-is-none-of-a-borrow-loose",
