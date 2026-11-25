@@ -2264,3 +2264,14 @@ Held by the pair `consumer_collects_into_a_type_its_library_collects_into`
 (by name, by `collect()`, by a fallible `collect()`, beside the library's
 own use) against native Rust, and mutation `library-from-iter-unasked`
 (`lower/iterators/mir_steps/collect.ts`).
+
+## Amendment: a constant of a struct of no size (2026-11-25, #2595)
+
+A library's generic function a consumer compiles from its optimized MIR
+gives a constant whole, `Pred(Mode::Strict)`, which `mir_const_value`
+destructures. rustc gives a struct's variant too, its only one, so a
+struct of no size was `[0, "Strict"]` where the same value made in code
+is `["Strict"]`, and `==` of the two was `false`. Its variant's index is
+now an enum's alone. Held by test/crates/pairs/zero_sized_struct_constant_of_generic_code
+and the mutation `struct-constant-given-a-variant`.
+

@@ -444,4 +444,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^format_argument_read_before_its_variable_moves.rs$"],
   },
+  {
+    name: "struct-constant-given-a-variant",
+    breaks: "a constant of a struct of no size, in a library's generic code compiled from its optimized MIR, is given its only variant's index before its fields, `[0, \"Strict\"]`, so `==` of it and the same value made in code is `false` (#2595)",
+    file: "crates/rust-js-mir/src/operands.rs",
+    find: "                    if let Some(variant) = made.variant\n                        && ty.is_enum()\n",
+    replace: "                    if let Some(variant) = made.variant\n",
+    tests: ["test/crates-pairs-1.test.ts", "test/crates-pairs-2.test.ts", "test/crates-pairs-3.test.ts", "-t", "zero_sized_struct_constant_of_generic_code"],
+  },
 ];

@@ -795,7 +795,11 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                     && let Some(made) = self.tcx.try_destructure_mir_constant_for_user_output(value, ty)
                 {
                     let mut parts = Vec::new();
-                    if let Some(variant) = made.variant {
+                    // An enum's alone: rustc gives a struct's variant too, its
+                    // only one, `Some(0)` of a struct of no size (#2595).
+                    if let Some(variant) = made.variant
+                        && ty.is_enum()
+                    {
                         let index = ty::ValTree::from_scalar_int(self.tcx, variant.as_u32().into());
                         parts.push(ty::Const::new_value(self.tcx, index, self.tcx.types.u32));
                     }

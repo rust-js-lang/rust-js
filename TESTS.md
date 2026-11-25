@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2595, ADR 0914 amended): one crate pair, a library generic function's constant of a struct of no size, against native; one mutation.
+
 Changed on 2026-11-25 (ADR 1204 amended): oracle B's full coverage: the export net's every case, the crate pairs too, holds none of its shapes unchecked; own case `rest_shapes`; test/oracle-b.test.ts gains the last shapes' checks and a cycle's.
 
 Changed on 2026-11-25 (ADR 1204 amended): the export net's records say std's types and closures, which oracle B checks; own cases `enum_shapes` and `std_shapes`; test/oracle-b.test.ts gains the std forms' checks and a test of their records.
