@@ -198,12 +198,12 @@ function nested(log) {
   try {
     try {
       fails((log.value + 3) >>> 0);
-      return "";
     } catch (e) {
       $catchable(e);
       log.value = (log.value + 1) >>> 0;
       throw e;
     }
+    return "";
   } catch (thrown) {
     $catchable(thrown);
     log.value = (log.value + 10) >>> 0;

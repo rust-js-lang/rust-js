@@ -1191,3 +1191,61 @@ console.log(JSON.stringify([lib.assigned("1 + 2"), lib.assigned("("), log]));
   expect(out.stderr).toBe("");
   expect(out.stdout).toBe("[3,null,[3,null]]\n");
 });
+
+// React's busboy `flush`, `try { resolveFileComplete(..); } catch (error) {
+// busboyStream.destroy(error); return; } head = current.next;`: what the
+// program writes after an `if let Err(e) = catch_unwind(..) { ..; return }`
+// is after the `catch`, where the Rust has it, not moved into the `try`,
+// though it can't throw (#2591).
+test("what follows an Err arm that leaves is after the catch", () => {
+  const { js, dir } = compiled(
+    "unwind-err-leaves-rest-after",
+    `use std::cell::{Cell, RefCell};
+use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::rc::Rc;
+
+pub struct Node {
+    pub id: u32,
+    pub next: RefCell<Option<Rc<Node>>>,
+}
+
+fn work(node: &Node) {
+    assert!(node.id != 3, "three");
+}
+
+pub fn flush(head: Option<Rc<Node>>, done: &Cell<u32>) {
+    let head = RefCell::new(head);
+    loop {
+        let Some(current) = head.borrow().clone() else {
+            break;
+        };
+        if current.id > 9 {
+            return;
+        }
+        if let Err(error) = catch_unwind(AssertUnwindSafe(|| work(&current))) {
+            done.set(done.get() + u32::from(error.downcast_ref::<&str>().is_some()) * 100);
+            return;
+        }
+        *head.borrow_mut() = current.next.borrow().clone();
+        done.set(done.get() + 1);
+    }
+}
+
+pub fn list(n: u32) -> Option<Rc<Node>> {
+    (1..=n).rev().fold(None, |next, id| {
+        Some(Rc::new(Node {
+            id,
+            next: RefCell::new(next),
+        }))
+    })
+}
+`,
+  );
+  expect(js).toContain("      return;\n    }\n    head = current.next;\n    done.value = (done.value + 1) >>> 0;\n");
+  writeFileSync(
+    join(dir, "main.mjs"),
+    `import * as lib from "./lib.js";\nconst [a, b] = [{ value: 0 }, { value: 0 }];\nlib.flush(lib.list(2), a);\nlib.flush(lib.list(5), b);\nconsole.log(a.value, b.value);\n`,
+  );
+  const out = runSync([node!, join(dir, "main.mjs")], dir, 60_000);
+  expect(out.stdout).toBe("2 102\n");
+});

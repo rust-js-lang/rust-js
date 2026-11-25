@@ -421,9 +421,21 @@ fn chained_try_catch(
         return None;
     };
     let (tested, otherwise) = unchained(result, tested)?;
+    caught_before(made, &tested, &otherwise, (before, rest), ends)
+}
+
+/// `try_catch` of `made` and `tested`, an `if` of no `else`, before what
+/// `otherwise` runs, then `rest`: what it took of `otherwise` first, then
+/// of what followed the `if`.
+fn caught_before(
+    made: &Stmt,
+    tested: &Stmt,
+    otherwise: &[Stmt],
+    (before, rest): (&[Stmt], &[Stmt]),
+    ends: bool,
+) -> Option<(Vec<Stmt>, usize)> {
     let rest: Vec<Stmt> = otherwise.iter().chain(rest).cloned().collect();
-    let (mut caught, taken) = try_catch(made, &tested, before, &rest, ends)?;
-    // What it took of the `else` first, then of what followed the `if`.
+    let (mut caught, taken) = try_catch(made, tested, before, &rest, ends)?;
     let kept = otherwise.len().saturating_sub(taken);
     caught.extend(otherwise[otherwise.len() - kept..].iter().cloned());
     Some((caught, taken.saturating_sub(otherwise.len())))
@@ -500,6 +512,22 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     let StmtKind::Const(result, value) = &made.kind else {
         return None;
     };
+    // An `if` the program wrote of the `Err`, that leaves, `if let Err(e) =
+    // r { ..; return }`, whose `else` is what the program wrote after it,
+    // which doesn't read the value: what follows the `catch`, as upstream
+    // React's busboy `flush` writes it (#2591).
+    if let StmtKind::If(test, then, Some(otherwise)) = &tested.kind
+        && tested.facts.has(js::Known::Written)
+        && let Some((of, ok, eq)) = js::result::tested(test)
+        && ok != eq
+        && matches!(&of.kind, ExprKind::Var(v) if v == result)
+        && then.last().is_some_and(js::ends)
+        && js::mentions_of(otherwise, result) == 0
+    {
+        let mut alone = tested.clone();
+        alone.kind = StmtKind::If(test.clone(), then.clone(), None);
+        return caught_before(made, &alone, otherwise, (before, rest), ends);
+    }
     let (call, caught) = value.caught()?;
     // A `?:` of it returned, `unwrap_or(d)`'s, is the `if` of its arms,
     // each returned (ADR 0660).
@@ -564,7 +592,12 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
         (false, Some(otherwise)) => (otherwise, then, 0),
         (true, None) if !leaves(then) => (then, &[], 0),
         (true, None) if leaves(rest) => (then, rest, rest.len()),
-        (false, None) if leaves(then) => (rest, then, rest.len()),
+        // An `Err` arm that leaves, `if let Err(e) = r { ..; return }`, the
+        // `Ok`'s what follows where it reads the value, `let Ok(v) = r else
+        // { .. }`'s; else what follows is the program's after the `if`, so
+        // after the `catch`, as upstream React's busboy `flush` writes it
+        // (#2591).
+        (false, None) if leaves(then) && js::mentions_of(rest, result) > 0 => (rest, then, rest.len()),
         (false, None) => (&[], then, 0),
         // An `Ok` arm that leaves, `Ok(()) => return`, where what follows
         // reads the `Err`: what does, and what reads what that declares,
