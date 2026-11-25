@@ -185,6 +185,7 @@ function offeredPath(path) {
     && (path.result_none === undefined || offeredNones.has(path.result_none))
     && (path.def === undefined || offeredDef(path.def))
     && (path.transparent === undefined || offeredType(path.transparent))
+    && (path.variants === undefined || offeredEnum(path.variants))
     && (path.type_params === undefined || Number.isInteger(path.type_params) && path.type_params >= 0)
     // #2573: a struct's fields, and a generic function's bounds.
     && (path.fields === undefined || Array.isArray(path.fields) && path.fields.every((field) => field !== null && typeof field === "object"
@@ -202,6 +203,18 @@ function offeredPath(path) {
  * own `kind` and what each kind holds. */
 // What an `Option`'s `None` is in a place (`rust_js_program::offered::OfferedNone`).
 const offeredNones = new Set(["plain", "present", "null", "null_optional", "nested", "held"]);
+
+// How JS holds an enum's values (`rust_js_program::offered::OfferedEnum`).
+const enumForms = new Set(["tagged", "declared", "untagged", "keyed"]);
+const tagKinds = new Set(["str", "num", "bool", "null", "undefined"]);
+function offeredEnum(e) {
+  return e !== null && typeof e === "object" && enumForms.has(e.form) && typeof e.key === "string" && Array.isArray(e.variants)
+    && e.variants.every((v) => v !== null && typeof v === "object" && typeof v.rust === "string"
+      && v.tag !== null && typeof v.tag === "object" && tagKinds.has(v.tag.kind)
+      && (v.fields === undefined || Array.isArray(v.fields) && v.fields.every((field) => field !== null && typeof field === "object"
+        && typeof field.js === "string" && offeredType(field.ty) && (field.none === undefined || offeredNones.has(field.none))))
+      && (v.otherwise === undefined || typeof v.otherwise === "boolean"));
+}
 
 // Where a type is defined, its crate and its path from that crate's root.
 function offeredDef(def) {
@@ -230,9 +243,9 @@ function offeredType(ty) {
     case "fn":
       return Array.isArray(ty.inputs) && ty.inputs.every(offeredType) && offeredType(ty.output);
     case "param":
-      return typeof ty.name === "string";
+      return typeof ty.name === "string" && (ty.index === undefined || Number.isInteger(ty.index));
     case "named":
-      return offeredDef(ty);
+      return offeredDef(ty) && (ty.args === undefined || Array.isArray(ty.args) && ty.args.every(offeredType));
     case "vec":
       return offeredType(ty.of) && typeof ty.borrowed === "boolean";
     case "tuple":

@@ -60,6 +60,41 @@ test("a struct is its fields' object, each None as its field's form says; a tran
   expect(said({ value: 2.5 }, { kind: "named", crate: "dep", rust: ["Meters"] }).problem).toBe("the value: Object, not f64's number");
 });
 
+// Of each enum form as the records say it, a variant's JS: a tagged one's
+// tag or object of its tag, a declared tag's object, an untagged one's
+// payload, a generic one's of what it's given (#2481's enums).
+test("an enum's value is one of its variants in its form", () => {
+  const enums: Record<string, Shaped> = {
+    "dep::Shape": { variants: { form: "tagged", key: "TAG", variants: [
+      { rust: "Empty", tag: { kind: "str", value: "Empty" } },
+      { rust: "Square", tag: { kind: "str", value: "Square" }, fields: [{ js: "_0", ty: int("u32") }] },
+    ] } },
+    "dep::Job": { variants: { form: "declared", key: "status", variants: [
+      { rust: "Waiting", tag: { kind: "str", value: "Waiting" } },
+      { rust: "Done", tag: { kind: "str", value: "Done" }, fields: [{ js: "value", ty: int("u64") }] },
+    ] } },
+    "dep::Size": { variants: { form: "untagged", key: "TAG", variants: [
+      { rust: "Named", tag: { kind: "str", value: "Named" }, fields: [{ js: "_0", ty: { kind: "str", owned: true } }] },
+      { rust: "Exact", tag: { kind: "str", value: "Exact" }, fields: [{ js: "_0", ty: int("u32") }] },
+    ] } },
+    "dep::Held": { variants: { form: "tagged", key: "TAG", variants: [
+      { rust: "One", tag: { kind: "str", value: "One" }, fields: [{ js: "_0", ty: { kind: "param", name: "T", index: 0 } }] },
+    ] } },
+  };
+  const of = (rust: string, args?: Tree[]): Tree => ({ kind: "named", crate: "dep", rust: [rust], ...(args ? { args } : {}) });
+  const says = (v: unknown, t: Tree) => conforms(v, t, "plain", enums, { checked: 0, unchecked: 0 });
+  expect(says("Empty", of("Shape"))).toBeNull();
+  expect(says({ TAG: "Square", _0: 3 }, of("Shape"))).toBeNull();
+  expect(says({ TAG: "Empty" }, of("Shape"))).toBe('the value.TAG: "Empty", not a tag of Shape\'s');
+  expect(says({ TAG: "Square", _0: 3n }, of("Shape"))).toBe("the value._0: bigint, not u32's integer number");
+  expect(says({ status: "Waiting" }, of("Job"))).toBeNull();
+  expect(says("Waiting", of("Job"))).toBe("the value: string, not one of Job's variants, its tag or an object of its status");
+  expect(says(7, of("Size"))).toBeNull();
+  expect(says(true, of("Size"))).toBe("the value: boolean, not one of Size's variants' payloads");
+  expect(says({ TAG: "One", _0: 5n }, of("Held", [int("u64")]))).toBeNull();
+  expect(says({ TAG: "One", _0: 5 }, of("Held", [int("u64")]))).toBe("the value._0: number, not u64's BigInt");
+});
+
 test("a shape the records can't decide is counted unchecked, never passed unsaid", () => {
   expect(said({ TAG: "A" }, { kind: "named", crate: "dep", rust: ["Shape"] })).toEqual({ problem: null, checked: 0, unchecked: 1 });
   expect(said(undefined, opt(opt(int("u8"))))).toEqual({ problem: null, checked: 0, unchecked: 1 });

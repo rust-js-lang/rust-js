@@ -18,9 +18,19 @@ use rustc_span::kw;
 use rust_js_program::offered::{OfferedKind, OfferedPath, OfferedType};
 
 /// What the crate offers JS, in the order its root's children are.
-pub fn offered_paths(tcx: TyCtxt<'_>, foreign: &crate::library::Foreign<'_, '_>) -> Vec<OfferedPath> {
+pub fn offered_paths(
+    tcx: TyCtxt<'_>,
+    foreign: &crate::library::Foreign<'_, '_>,
+    flattened: &crate::bindings::Flattened,
+) -> Vec<OfferedPath> {
     let mut paths = Vec::new();
-    walk(tcx, foreign, (CRATE_DEF_ID.to_def_id(), &[]), (&[], &[]), &mut paths);
+    walk(
+        tcx,
+        (foreign, flattened),
+        (CRATE_DEF_ID.to_def_id(), &[]),
+        (&[], &[]),
+        &mut paths,
+    );
     paths
 }
 
@@ -36,7 +46,7 @@ fn children(tcx: TyCtxt<'_>, module: DefId) -> &[rustc_middle::middle::resolve::
 /// `paths`; not a module `within` it already, which re-exports itself.
 fn walk(
     tcx: TyCtxt<'_>,
-    foreign: &crate::library::Foreign<'_, '_>,
+    (foreign, flattened): (&crate::library::Foreign<'_, '_>, &crate::bindings::Flattened),
     (module, within): (DefId, &[DefId]),
     (rust, js): (&[String], &[String]),
     paths: &mut Vec<OfferedPath>,
@@ -90,6 +100,7 @@ fn walk(
             result_none: rust_js_program::offered::OfferedNone::Plain,
             def: None,
             transparent: None,
+            variants: None,
         };
         match kind {
             // A module of its own JS reads only through a re-export of it.
@@ -99,7 +110,7 @@ fn walk(
             DefKind::Mod => {
                 paths.push(offered(OfferedKind::Namespace, Vec::new(), None, false));
                 let within: Vec<DefId> = within.iter().copied().chain([id]).collect();
-                walk(tcx, foreign, (id, &within), (&rust_path, &js_path), paths);
+                walk(tcx, (foreign, flattened), (id, &within), (&rust_path, &js_path), paths);
             }
             DefKind::Fn => {
                 let signature = tcx
@@ -169,6 +180,7 @@ fn walk(
                     unoffered_fields,
                     def: Some(def_of(tcx, id)),
                     transparent,
+                    variants: (kind == DefKind::Enum).then(|| enum_of(tcx, id, flattened)),
                     ..offered(OfferedKind::Type, Vec::new(), None, false)
                 });
             }
@@ -247,11 +259,85 @@ fn offered_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> OfferedType {
         }
         ty::Param(param) => OfferedType::Param {
             name: param.name.to_string(),
+            index: param.index,
         },
-        ty::Adt(adt, _) if !crate::recognition::is_std_crate(tcx, adt.did()) => {
-            OfferedType::Named(def_of(tcx, adt.did()))
-        }
+        // Each of its generic arguments by its index, which its own record's
+        // `Param`s name: a lifetime's, which holds no value, `Other`.
+        ty::Adt(adt, args) if !crate::recognition::is_std_crate(tcx, adt.did()) => OfferedType::Named {
+            def: def_of(tcx, adt.did()),
+            args: (args.iter())
+                .map(|arg| match arg.as_type() {
+                    Some(ty) => offered_type(tcx, ty),
+                    None => OfferedType::Other { rust: arg.to_string() },
+                })
+                .collect(),
+        },
         _ => OfferedType::Other { rust: ty.to_string() },
+    }
+}
+
+/// How JS holds an enum's values, each the owner's answer: untagged
+/// (`is_untagged`), keyed (`Flattened::keyed`), of a declared tag
+/// (`declared_tag`) or tagged, its tag's key (`tag_key`), and each variant's
+/// tag (`variant_tag`, or an untagged one's of no fields `unit_value`), its
+/// fields by their JS names (`variant_field`) and whether it's an
+/// `otherwise` (`is_otherwise`).
+fn enum_of(
+    tcx: TyCtxt<'_>,
+    id: DefId,
+    flattened: &crate::bindings::Flattened,
+) -> rust_js_program::offered::OfferedEnum {
+    use rust_js_program::js::ExprKind;
+    use rust_js_program::offered::{OfferedEnum, OfferedEnumForm, OfferedField, OfferedTag, OfferedVariant};
+    let adt = tcx.adt_def(id);
+    let untagged = crate::bindings::is_untagged(tcx, id);
+    let form = if untagged {
+        OfferedEnumForm::Untagged
+    } else if flattened.keyed(tcx, adt).is_some() {
+        OfferedEnumForm::Keyed
+    } else if crate::bindings::declared_tag(tcx, id).is_some() {
+        OfferedEnumForm::Declared
+    } else {
+        OfferedEnumForm::Tagged
+    };
+    let tag_of = |expr: rust_js_program::js::Expr| match expr.kind {
+        ExprKind::Null => OfferedTag::Null,
+        ExprKind::Undefined => OfferedTag::Undefined,
+        ExprKind::Bool(b) => OfferedTag::Bool(b),
+        ExprKind::Num(n) => OfferedTag::Num(n),
+        ExprKind::Str(s) => OfferedTag::Str(s.to_string()),
+        _ => OfferedTag::Str(String::new()),
+    };
+    let variants = (adt.variants().iter())
+        .map(|variant| {
+            let tag = match untagged && variant.fields.is_empty() {
+                true => crate::untagged::unit_value(tcx, variant).map_or(OfferedTag::Str(String::new()), tag_of),
+                false => tag_of(crate::bindings::variant_tag(tcx, variant)),
+            };
+            let fields = (variant.fields.iter().enumerate())
+                .map(|(i, field)| {
+                    let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+                    OfferedField {
+                        rust: field.name.to_string(),
+                        js: crate::representation::variant_field(tcx, variant, i),
+                        ty: offered_type(tcx, ty),
+                        written: ty.to_string(),
+                        none: none_of(tcx, field),
+                    }
+                })
+                .collect();
+            OfferedVariant {
+                rust: variant.name.to_string(),
+                tag,
+                fields,
+                otherwise: crate::bindings::is_otherwise(tcx, variant.def_id),
+            }
+        })
+        .collect();
+    OfferedEnum {
+        form,
+        key: crate::bindings::tag_key(tcx, id),
+        variants,
     }
 }
 

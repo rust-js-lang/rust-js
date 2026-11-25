@@ -191,3 +191,41 @@ maker, a transparent struct, a struct of structs.
   facts.
 - aggregates.rs's `present-key-left-out`, a shape the printout can't see,
   is caught by the net's `struct_shapes` too.
+
+## Amendment: enums' records (2026-11-25, the lead's next landing)
+
+Oracle B counted an enum's value unchecked, as the records held no
+variants. Each enum's record now says how JS holds its values
+(`OfferedPath::variants`). Each fact is `bindings`' answer, as the `.d.ts`
+writer asks it:
+
+- **Its form:** `tagged`, `declared` (`#[rust_js::tag]`, `declared_tag`),
+  `untagged` (`is_untagged`) or `keyed` (`Flattened::keyed`, which holds a
+  library's keyed enums too).
+- **Its tag's key** (`tag_key`).
+- **Each variant's tag** (`variant_tag`: its name, its number under a
+  `#[repr(u8)]`, or a discriminated union's `true`/`false`). An untagged
+  variant of no fields has its value instead (`untagged::unit_value`).
+- **Each variant's fields,** by their JS names (`variant_field`) and
+  `None` forms, and whether it's an `otherwise` (`is_otherwise`).
+
+`Named` now carries its generic arguments by index, and `Param` its index,
+so B checks `Held<u64>`'s payload as a `u64`.
+
+**What B checks, by the guide's rows,** which `shapeRows` holds:
+
+- **Tagged:** a fieldless variant is its tag, and a variant with fields is
+  an object of its tag and its fields.
+- **Declared tag:** each variant is an object of its tag, and an
+  `otherwise` is the object it holds.
+- **Untagged:** one variant's payload or literal. Where no variant fits and
+  one can't be decided, it's counted unchecked.
+- **Keyed:** an object of one variant's fields.
+
+**Results:** across the net, 607 shapes checked and 169 unchecked, with no
+problem found. The unchecked are now std's types and closures, which the
+next landing records: `Rc`, iterators, `dyn` traits, `Result`, cells,
+`impl Fn`. Their per-case reasons come back as `shapes.why`.
+
+Own case `enum_shapes`. Mutations `offered-untagged-said-tagged` and
+`offered-variant-tag-unsaid`.

@@ -19,8 +19,8 @@ export type Tree =
   | { kind: "ref"; of: Tree; mutable?: boolean }
   | { kind: "box"; of: Tree }
   | { kind: "fn"; inputs: Tree[]; output: Tree }
-  | { kind: "param"; name: string }
-  | { kind: "named"; crate: string; rust: string[] }
+  | { kind: "param"; name: string; index?: number }
+  | { kind: "named"; crate: string; rust: string[]; args?: Tree[] }
   | { kind: "tuple"; items: Tree[] }
   | { kind: "other"; rust: string };
 
@@ -182,7 +182,15 @@ export type NoneForm = "plain" | "present" | "null" | "null_optional" | "nested"
 
 /** A struct's record as oracle B reads it: its fields, or its transparent
  * field's type, by its definition's key, `crate::path`. */
-export type Shaped = { fields?: { js: string; ty: Tree; none?: NoneForm }[]; transparent?: Tree };
+export type Shaped = {
+  fields?: { js: string; ty: Tree; none?: NoneForm }[];
+  transparent?: Tree;
+  variants?: {
+    form: "tagged" | "declared" | "untagged" | "keyed";
+    key: string;
+    variants: { rust: string; tag: { kind: "str" | "num" | "bool" | "null" | "undefined"; value?: string | number | boolean }; fields?: { js: string; ty: Tree; none?: NoneForm }[]; otherwise?: boolean }[];
+  };
+};
 
 /** The guide's rows of its types table (docs/guide/interop/types.md) each
  * shape `conforms` checks is held to, each its Rust cell and its JS one,
@@ -212,6 +220,10 @@ export const shapeRows: [string, string][] = [
   ["`Box<T>`, `Rc<T>`, `Arc<T>`", "the value itself"],
   ["`&T`", "the value"],
   ["closure, `fn` pointer, `dyn Fn`", "function"],
+  ["fieldless enum variant", "its name, `\"Red\"`; under a `#[repr(u8)]`, its number, its module's `const`, `Empty`"],
+  ["enum variant with fields", "`{ TAG: \"Circle\", radius }`, `{ TAG: \"Square\", _0 }`"],
+  ["`#[rust_js::tag = \"status\"]` enum", "`{ status: \"done\", value }`"],
+  ["`#[rust_js::untagged]` enum", "its payload itself"],
 ];
 
 /** Oracle B, as source a harness holds: `conforms(v, t, none, types,
@@ -221,13 +233,40 @@ export const shapeRows: [string, string][] = [
  * shape checked counts in `count.checked`, each it can't decide, an enum's,
  * a tuple struct's, a `&mut`'s, an `Option` of what may be `undefined`, in
  * `count.unchecked`: said, never passed unsaid. */
-export const jsConforms = `function conforms(v, t, none, types, count, at = "", depth = 0) {
+export const jsConforms = `function conforms(v, t, none, types, count, at = "", depth = 0, env = []) {
   const what = (x) => (x === null ? "null" : Array.isArray(x) ? "an array" : typeof x === "object" ? (x.constructor?.name ?? "an object") : typeof x);
   const bad = (said) => ("the value" + at) + ": " + what(v) + ", not " + said;
   const checked = () => { count.checked++; return null; };
-  const unchecked = () => { count.unchecked++; return null; };
-  if (depth > 8) return unchecked();
-  const inner = (x, ty, place, form = "plain") => conforms(x, ty, form, types, count, at + place, depth + 1);
+  const unchecked = (why) => { count.unchecked++; if (count.why) count.why[why] = (count.why[why] ?? 0) + 1; return null; };
+  if (depth > 8) return unchecked("deep");
+  const inner = (x, ty, place, form = "plain", within = env) => conforms(x, ty, form, types, count, at + place, depth + 1, within);
+  // Of each field of a struct or a variant, its object's, as its form says.
+  const fieldsOf = (fields, name, here) => {
+    for (const field of fields) {
+      const place = "." + field.js;
+      const has = field.js in v;
+      const form = field.none ?? "plain";
+      if (field.ty.kind === "option") {
+        // A field's \`None\`: left out where it's known there, else a key of
+        // \`undefined\` (ADR 0280), or its key written, as its form says.
+        if (!has && (form === "plain" || form === "null_optional" || form === "nested")) { count.checked++; continue; }
+        if (!has) return ("the value" + at) + place + ": no key, not its None's " + (form === "present" ? "undefined" : "null");
+      } else if (!has) return ("the value" + at) + place + ": no key, not " + name + "'s field";
+      const problem = inner(v[field.js], field.ty, place, form, here);
+      if (problem) return problem;
+    }
+    return null;
+  };
+  // A tag as JS writes it, a variant's.
+  const tagIs = (x, tag) => tag.kind === "null" ? x === null : tag.kind === "undefined" ? x === undefined : x === tag.value;
+  // Whether a check of \`v\` finds no problem, counted apart: an untagged
+  // enum's variant, tried in turn.
+  // "yes", "no", or "unknown" where it can't say.
+  const fits = (ty, here) => {
+    const apart = { checked: 0, unchecked: 0 };
+    if (conforms(v, ty, "plain", types, apart, at, depth + 1, here) !== null) return "no";
+    return apart.unchecked === 0 ? "yes" : "unknown";
+  };
   switch (t.kind) {
     case "int": {
       const wide = /^[iu](64|128)$/.test(t.rust);
@@ -249,13 +288,13 @@ export const jsConforms = `function conforms(v, t, none, types, count, at = "", 
     case "option": {
       const of = t.of;
       if (none === "nested") {
-        if (of.kind !== "option") return unchecked();
+        if (of.kind !== "option") return unchecked("nested-not-option");
         if (v === undefined || v === null) return checked();
         return inner(v, of.of, "");
       }
       if (none === "held") return v === null ? checked() : inner(v, of, "");
       // A \`Some\` of what may itself be \`undefined\` is boxed, a form the guide's table doesn't give.
-      if (of.kind === "option" || of.kind === "unit") return unchecked();
+      if (of.kind === "option" || of.kind === "unit") return unchecked("option-of-undefined");
       if (none === "null") return v === null ? checked() : inner(v, of, "");
       if (none === "null_optional") return v === null || v === undefined ? checked() : inner(v, of, "");
       return v === undefined ? checked() : inner(v, of, "");
@@ -268,30 +307,57 @@ export const jsConforms = `function conforms(v, t, none, types, count, at = "", 
       if (!Array.isArray(v) || v.length !== t.items.length) return bad("an array of " + t.items.length);
       for (const [i, item] of t.items.entries()) { const problem = inner(v[i], item, "[" + i + "]"); if (problem) return problem; }
       return checked();
-    case "ref": return t.mutable ? unchecked() : inner(v, t.of, "", none);
+    case "ref": return t.mutable ? unchecked("mut-ref") : inner(v, t.of, "", none);
+    // A type parameter, of what its \`Named\` gives it, in that one's scope.
+    case "param": {
+      const given = env[t.index ?? -1];
+      return given ? conforms(v, given.tree, none, types, count, at, depth + 1, given.env) : unchecked("param");
+    }
     case "box": return inner(v, t.of, "", none);
     case "fn": return typeof v === "function" ? checked() : bad("a function");
     case "named": {
       const shaped = types[t.crate + "::" + t.rust.join("::")];
-      if (shaped?.transparent) return inner(v, shaped.transparent, "", none);
-      if (!shaped?.fields?.length) return unchecked();
-      if (v === null || typeof v !== "object" || Array.isArray(v)) return bad("an object of " + t.rust.join("::") + "'s fields");
-      for (const field of shaped.fields) {
-        const place = "." + field.js;
-        const has = field.js in v;
-        const form = field.none ?? "plain";
-        if (field.ty.kind === "option") {
-          // A field's \`None\`: left out where it's known there, else a key of
-          // \`undefined\` (ADR 0280), or its key written, as its form says.
-          if (!has && (form === "plain" || form === "null_optional" || form === "nested")) { count.checked++; continue; }
-          if (!has) return ("the value" + at) + place + ": no key, not its None's " + (form === "present" ? "undefined" : "null");
-        } else if (!has) return ("the value" + at) + place + ": no key, not " + t.rust.join("::") + "'s field";
-        const problem = inner(v[field.js], field.ty, place, form);
-        if (problem) return problem;
+      const name = t.rust.join("::");
+      // Its own parameters, each of what it's given here.
+      const here = (t.args ?? []).map((tree) => ({ tree, env }));
+      if (shaped?.transparent) return inner(v, shaped.transparent, "", none, here);
+      const e = shaped?.variants;
+      if (e) {
+        const isObject = v !== null && typeof v === "object" && !Array.isArray(v);
+        if (e.form === "untagged") {
+          // Its payload itself, or a variant's of no fields its literal: one
+          // of them, each tried.
+          const fit = e.variants.map((variant) => variant.fields?.length
+            ? variant.fields.length === 1 ? fits(variant.fields[0].ty, here) : "unknown"
+            : tagIs(v, variant.tag) ? "yes" : "no");
+          if (fit.includes("yes")) return checked();
+          return fit.includes("unknown") ? unchecked("untagged-undecided") : bad("one of " + name + "'s variants' payloads");
+        }
+        if (e.form === "keyed") {
+          if (!isObject) return bad("an object of one of " + name + "'s variants' keys");
+          const found = e.variants.find((variant) => (variant.fields ?? []).length > 0 && variant.fields.every((field) => field.js in v));
+          if (!found) return unchecked("keyed-fieldless");
+          return fieldsOf(found.fields, name + "::" + found.rust, here) ?? checked();
+        }
+        // Tagged: a variant of no fields its tag itself, but of a declared
+        // tag's, an object of its tag; of fields, an object of its tag.
+        const declared = e.form === "declared";
+        const bare = e.variants.find((variant) => !declared && !(variant.fields ?? []).length && tagIs(v, variant.tag));
+        if (bare) return checked();
+        if (!isObject) return bad("one of " + name + "'s variants, its tag or an object of its " + e.key);
+        const variant = e.variants.find((variant) => !variant.otherwise && (declared || (variant.fields ?? []).length > 0) && tagIs(v[e.key], variant.tag));
+        if (!variant) {
+          const otherwise = e.variants.find((variant) => variant.otherwise);
+          if (otherwise?.fields?.length === 1) return inner(v, otherwise.fields[0].ty, "", "plain", here);
+          return ("the value" + at) + "." + e.key + ": " + JSON.stringify(v[e.key]) + ", not a tag of " + name + "'s";
+        }
+        return fieldsOf(variant.fields ?? [], name + "::" + variant.rust, here) ?? checked();
       }
-      return checked();
+      if (!shaped?.fields?.length) return unchecked(shaped ? "named-no-fields" : "named-unrecorded:" + t.crate + "::" + name);
+      if (v === null || typeof v !== "object" || Array.isArray(v)) return bad("an object of " + name + "'s fields");
+      return fieldsOf(shaped.fields, name, here) ?? checked();
     }
-    default: return unchecked();
+    default: return unchecked(t.kind + (t.kind === "other" ? ":" + t.rust.replace(/<.*/, "<..>") : ""));
   }
 }`;
 

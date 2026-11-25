@@ -71,6 +71,61 @@ pub struct OfferedPath {
     /// field's type (oracle B).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub transparent: Option<OfferedType>,
+    /// Of an enum, how JS holds its values and each variant (oracle B).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub variants: Option<OfferedEnum>,
+}
+
+/// How JS holds an enum's values, of `bindings`' answers (ADRs 0033,
+/// 0214, 0284, 0676, 0722, 1071): its form, its tag's key, each variant.
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct OfferedEnum {
+    pub form: OfferedEnumForm,
+    /// The key of a tagged one's tag, `TAG`, or its `#[rust_js::tag]`'s.
+    pub key: String,
+    pub variants: Vec<OfferedVariant>,
+}
+
+/// An enum's form in JS.
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum OfferedEnumForm {
+    /// A variant of no fields its tag, `"Red"` or its number; one of
+    /// fields an object of its tag and its fields, `{ TAG: "Circle", radius }`.
+    Tagged,
+    /// `#[rust_js::tag = "status"]`'s: each variant an object of its tag,
+    /// one of no fields too; an `otherwise`, the object it holds.
+    Declared,
+    /// `#[rust_js::untagged]`'s: each variant its payload itself, one of
+    /// no fields its literal, `null` or `undefined`.
+    Untagged,
+    /// Told by its keys (`Flattened::keyed`): each variant an object of its
+    /// fields alone.
+    Keyed,
+}
+
+/// A variant: its Rust name, its tag (`bindings::variant_tag`), or an
+/// untagged one's value of no fields (`untagged::unit_value`), each field,
+/// and whether it's a declared tag's `otherwise`.
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+pub struct OfferedVariant {
+    pub rust: String,
+    pub tag: OfferedTag,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fields: Vec<OfferedField>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub otherwise: bool,
+}
+
+/// A variant's tag as JS writes it.
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[serde(tag = "kind", content = "value", rename_all = "snake_case")]
+pub enum OfferedTag {
+    Str(String),
+    Num(f64),
+    Bool(bool),
+    Null,
+    Undefined,
 }
 
 /// Where a struct, an enum or a union is defined: its crate's name and its
@@ -226,13 +281,23 @@ pub enum OfferedType {
         inputs: Vec<OfferedType>,
         output: Box<OfferedType>,
     },
-    /// A type parameter, by its name, which `OfferedPath::bounds` says.
+    /// A type parameter, by its name, which `OfferedPath::bounds` says,
+    /// and its index among its item's generics, which a `Named`'s `args`
+    /// give it by.
     Param {
         name: String,
+        #[serde(default)]
+        index: u32,
     },
     /// A struct, an enum or a union of a crate's not std's, by where it's
-    /// defined, the key of its own record's `def`.
-    Named(OfferedDef),
+    /// defined, the key of its own record's `def`, and each of its generic
+    /// arguments by its index, a lifetime's `Other`.
+    Named {
+        #[serde(flatten)]
+        def: OfferedDef,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        args: Vec<OfferedType>,
+    },
     Tuple {
         items: Vec<OfferedType>,
     },

@@ -31,6 +31,7 @@ export type Offered = {
   fields?: { js: string; ty: Tree; none?: NoneForm }[];
   def?: { crate: string; rust: string[] };
   transparent?: Tree;
+  variants?: Shaped["variants"];
   result_none?: NoneForm;
 };
 
@@ -96,7 +97,7 @@ function shapedOnly(path: Offered, small: boolean): string[][] | undefined {
  * so 15 s, as the machine's load makes it, is room, not a wait. */
 const bigRunMs = underLoad(15_000);
 
-export type Netted = { problems: string[]; paths: number; calls: number; declared: number; shapes: { checked: number; unchecked: number }; offered: Record<string, string[]> };
+export type Netted = { problems: string[]; paths: number; calls: number; declared: number; shapes: { checked: number; unchecked: number; why: Record<string, number> }; offered: Record<string, string[]> };
 
 export function exportNet(cases: string, name: string, files: string[]): Netted {
   const dir = fixture(`export-net-${name}`);
@@ -104,7 +105,7 @@ export function exportNet(cases: string, name: string, files: string[]): Netted 
   const all = crates(cases, name, files);
   const problems: string[] = [];
   const checked = { paths: 0, calls: 0, declared: 0 };
-  const shapes = { checked: 0, unchecked: 0 };
+  const shapes = { checked: 0, unchecked: 0, why: {} as Record<string, number> };
   const listed: Record<string, string[]> = {};
   // Each struct's shape, of every crate's records so far, by where it's
   // defined: a crate's types are its dependencies' too.
@@ -123,7 +124,7 @@ export function exportNet(cases: string, name: string, files: string[]): Netted 
     const offered: Offered[] = JSON.parse(readFileSync(manifest, "utf8")).offered_paths ?? [];
     const of = (p: Offered) => `${crate.name}::${p.rust.join("::")}`;
     listed[crate.name] = offered.map((p) => `${p.kind} ${p.rust.join("::")} -> ${p.js.join(".")}`);
-    for (const p of offered) if (p.kind === "type" && p.def) types[`${p.def.crate}::${p.def.rust.join("::")}`] = { fields: p.fields, transparent: p.transparent };
+    for (const p of offered) if (p.kind === "type" && p.def) types[`${p.def.crate}::${p.def.rust.join("::")}`] = { fields: p.fields, transparent: p.transparent, variants: p.variants };
     // Its JS: each value it offers, of its kind, and each call's result,
     // and native Rust's of the same calls, of the crate built natively: of
     // the values generated, or, where a run of them is past its time, a
@@ -148,7 +149,7 @@ import { $isPanic } from "@rust-js/std";
 ${jsShow}
 ${jsConforms}
 const types = ${JSON.stringify(types)};
-const count = { checked: 0, unchecked: 0 };
+const count = { checked: 0, unchecked: 0, why: {} };
 const at = (path) => path.reduce((o, k) => (o == null ? undefined : o[k]), M);
 const lines = [];
 // A call of a path the JS lacks, which its kind's line says, is said missing.
@@ -170,6 +171,7 @@ ${tested.map(({ p, given, label }) => p.kind === "function"
     ? `said(${JSON.stringify(label)}, ${JSON.stringify(p.js)}, () => at(${JSON.stringify(p.js)})(${given.map((g) => g.split("\u0000")[0]).join(", ")}), ${JSON.stringify(p.ty)}, ${JSON.stringify(p.result_none ?? "plain")});`
     : `said(${JSON.stringify(label)}, ${JSON.stringify(p.js)}, () => at(${JSON.stringify(p.js)}), ${JSON.stringify(p.ty)}, "plain");`).join("\n")}
 lines.push("\\u0001counted " + count.checked + " " + count.unchecked);
+lines.push("\\u0001why " + JSON.stringify(count.why));
 // On a line of its own, past what a call printed without one.
 console.log("\\n" + lines.join("\\n"));
 `);
@@ -208,6 +210,7 @@ ${compared.map(({ p, given, label }) => {
     for (const line of js.filter((l) => / JS-ERROR /.test(l))) problems.push(`${line}: a JS exception, not a Rust panic`);
     // Oracle B: each value's JS shape its record's type says.
     for (const line of js.filter((l) => l.startsWith("shape "))) problems.push(`${line.slice("shape ".length)}: of the wrong JS shape`);
+    for (const [why, n] of Object.entries(JSON.parse(js.find((l) => l.startsWith("why "))?.slice(4) ?? "{}") as Record<string, number>)) shapes.why[why] = (shapes.why[why] ?? 0) + n;
     const counted = js.find((l) => l.startsWith("counted "))?.split(" ");
     if (counted) {
       shapes.checked += Number(counted[1]);
