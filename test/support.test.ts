@@ -703,6 +703,11 @@ test("a crate project being measured is never removed under its run, claimed bef
     writeFileSync(join(dir, name, "target", "lib.rlib"), Buffer.alloc(64 * 1024));
     writeFileSync(join(dir, name, "used"), "");
     utimesSync(join(dir, name, "used"), new Date(0), new Date(0));
+    // And its directory's own time, which the prune reads again before it
+    // removes it (`holdKept`): made in the same millisecond as the prune's
+    // `since`, its fraction past it, a fresh one was in use, and "free"
+    // stayed, a flake of a run of 1.8 ms (lily agent's pushes, 2026-11-25).
+    utimesSync(join(dir, name), new Date(0), new Date(0));
   };
   for (const name of ["held", "listed", "free"]) made(name);
   const left = () => readdirSync(dir).filter((name) => !claimMaking(name)).sort();
