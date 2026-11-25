@@ -126,6 +126,21 @@ test("a consumer giving a library's generic zip a closure std stops short of is 
   expect(native).toBe("[(2, 10), (4, 20)] [1, 2]\n[(1, 10), (2, 20)] 2\n");
 }, 300_000);
 
+// A library's generic `decode_utf16` of what its consumer gives, an
+// iterator with a `Drop`: std's `DecodeUtf16` drops it at the loop's end,
+// which the runtime's `$decodeUtf16` iterator, std's struct not compiled,
+// can't. One crate's own generic code is refused; so is a consumer's call
+// (#2575), where it compiled the library's function itself (ADR 0914) and
+// dropped the `iter` field the runtime's iterator hasn't, a `TypeError`.
+test("a consumer giving a library's decode_utf16 an iterator that drops is refused", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "library_decode_utf16_of_an_iterator_that_drops", ["dep", "app"], [
+    "giving `dep::decoded`'s `I` a type with a destructor, where it takes none",
+    "app.rs:28:5",
+    "app.rs:32:5",
+  ]);
+  expect(native).toBe("next own\nOk('a')\nnext own\nnext own\nErr(DecodeUtf16Error { code: 55296 })\nOk('b')\nnext own\ndrop own\nnext\nOk('c')\nnext\ndrop source\n");
+}, 300_000);
+
 // #1385's and #1389's shape, itertools' `MultiProduct::last`: a library's
 // zip of a `Vec<Held<I>>` with values, given items that drop, whose fold
 // std takes to the shorter side without stepping the first again. One

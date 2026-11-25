@@ -434,9 +434,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .or_default()
                     .extend(params);
             }
-            return Ok(());
         }
-        if callee.is_local() {
+        // Checked once the crate's lowered: its own functions, and a
+        // library's, which, where the crate compiles it itself (ADR 0914),
+        // its lowering here says what it takes none of, as of its own
+        // (#2575); not std's.
+        if callee.is_local() || !crate::recognition::is_std_crate(self.tcx, callee) {
             self.drops_observed.borrow_mut().checks.push(DropCheck {
                 caller: owner,
                 callee,

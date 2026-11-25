@@ -200,4 +200,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "a trait's method that takes no destructor"],
   },
+  {
+    name: "library-copy-drops-unchecked",
+    breaks: "a call of a library's function the crate compiles itself (ADR 0914) isn't checked against what its lowering here takes no destructor of: a consumer giving a library's generic `decode_utf16` an iterator that drops compiles, its drop never run (#2575)",
+    file: "crates/rust-js-lower/src/drops.rs",
+    find: "        if callee.is_local() || !crate::recognition::is_std_crate(self.tcx, callee) {\n",
+    replace: "        if callee.is_local() {\n",
+    tests: ["test/crates-refused.test.ts", "-t", "a consumer giving a library's decode_utf16 an iterator that drops"],
+  },
 ];

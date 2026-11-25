@@ -151,3 +151,31 @@ test/diagnostics.test.ts covers a default in impls of no, one and two type
 parameters, a generic call, an override and a generic call of the
 override. Corpus `trait_call_checks_the_impl_it_resolves_to_for_drops`
 holds the calls that resolve to a method that drops, against native Rust.
+
+## Amended 2026-11-25: a library's function the crate compiles itself (#2575)
+
+A consumer compiles its own copy of a library's generic function where
+its call gives more than the export takes, a type with a destructor
+among them (ADR 0914). The copy's lowering records what it takes none
+of, as the crate's own functions' does: a std call that takes a value
+with a destructor, `char::decode_utf16(it)`, whose runtime iterator,
+`$decodeUtf16`, can't drop what it holds. But a call was checked against
+those requirements only where its callee was the crate's own, and a
+library's export only against its manifest's `NoDrop`, which the
+library writes of what its own calls observed. So the consumer's call
+`dep::decoded(Loud { .. })` went unchecked, and its copy, given a drop
+for `I`, dropped `iter.iter`, a field the runtime's iterator hasn't:
+`TypeError` at the loop's end, where Rust drops the iterator.
+
+**Each call of a function not std's is checked once the crate is
+lowered, a library's too**: of one the crate compiles itself, its
+lowering here says what it takes none of; of one it doesn't, nothing is
+recorded, and the manifest's check is as before. The consumer's call is
+refused with one crate's words: "giving `dep::decoded`'s `I` a type with
+a destructor, where it takes none". ADR 0262's last row: Rust's drop
+can't be kept until the runtime's iterator drops what it holds, so a
+compile error.
+
+test/crates-refused.test.ts holds the pair,
+`library_decode_utf16_of_an_iterator_that_drops`, native-run, refused at
+both calls; mutation `library-copy-drops-unchecked`.
