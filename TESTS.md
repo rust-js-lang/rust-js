@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2581, ADR 0240 amended): test/crates.test.ts gains a test, a `pub use` of the crate's own static re-exported by its module's JS.
+
 Changed on 2026-11-25 (#2580, #2572 step 2, ADR 1205 amended): two corpus cases, generic code's fallible `sum` and `product` whose source's drop or step panics, against native; test/known/iterator-matrix/2580.txt lists no cell, its twelve native-equal; two mutations.
 
 Changed on 2026-11-25 (#2572 step 1, ADR 1205): one corpus case, a collection's own `from_iter` that panics part-way given a fallible `collect()`'s shunt, against native; `consumed_drop`'s mutations are scripts/mutations/lower/iterators/mir_steps/consumed.ts, thirteen of `dropped_after`'s moved with its rules and two new.
