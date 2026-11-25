@@ -33,6 +33,12 @@ export function partOf(name: string, count: number): number {
  * name can't follow. Three of some 23 s each of CI's 69 s (#2465). */
 export const cratePairParts = 3;
 
+/** The parts the export net runs in (test/export-net-parts.ts), a test
+ * file each (test/export-net-<i>.test.ts), each the tests a hash of its
+ * title puts in it (`partOf`): one file ran its 221 serially, 267 s of
+ * one core of the M1's eight. A fixed count, as `cratePairParts` is. */
+export const exportNetParts = 6;
+
 /** Shard `index`, from 1, of `count`, of items that take time: each, the
  * longest first, given to the shard with the least time so far, the first
  * of those that tie, by `seconds` of each, those it doesn't know the median
@@ -638,7 +644,7 @@ export const nightly = [
   "object-model",
   "iterator-matrix",
   "declarations-conformance",
-  "export-net",
+  ...Array.from({ length: exportNetParts }, (_, i) => `export-net-${i + 1}`),
   "fuzz",
   "match-trees",
   "packages",

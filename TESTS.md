@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (ADR 1204): test/export-net.test.ts is test/export-net-1.test.ts to `-6`, each the tests test/export-net-titles.ts puts in its part, nightly's; the net's 221 tests 31.7 s through the pool on the M1, from 267 s in one file.
+
 Changed on 2026-11-25 (#2573, ADR 1204 amended): test/declarations-conformance.test.ts reads its signatures from the manifest's `offered_paths`, its source parser gone, its 36 cases' calls and `None` forms unchanged; its own-names test reads the records.
 
 Changed on 2026-11-25 (#2481, ADR 1204): test/export-net.test.ts, new, nightly's: each path a crate offers JS, the manifest's `offered_paths`, in its JS and its `.d.ts` and giving what native Rust does, over its own cases and the crate pairs' table, and the offered paths of #2544's shapes exactly; test/generated-calls.ts, the values it gives.

@@ -10,6 +10,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:f
 import { join } from "node:path";
 
 import { cratePairParts, partOf } from "../scripts/shard";
+import { exportNetTitles } from "./export-net-titles";
 import { bunTest } from "./support";
 
 const root = join(import.meta.dir, "..");
@@ -44,7 +45,11 @@ function namesRead(file: string): { exists: boolean; names: string[]; complete: 
           ? readdirSync(join(root, "test/crates/pairs"))
               .filter((name) => partOf(name, cratePairParts) === Number(/(\d+)\.test\.ts$/.exec(file)![1]))
               .map((name) => `two crates: ${name}`)
-          : [];
+          : /^test\/export-net-(\d+)\.test\.ts$/.test(file)
+            ? exportNetTitles()
+                .filter((net) => net.part === Number(/(\d+)\.test\.ts$/.exec(file)![1]))
+                .map((net) => net.title)
+            : [];
   const complete = cases.length > 0 || (file.endsWith(".test.ts") && !/^\s*(?:test|it)(?:\.\w+)?\(\s*[^"\s]/m.test(source));
   return { exists, names: [...cases, ...[...source.matchAll(literal)].map((m) => JSON.parse(`"${m[1]}"`) as string)], complete };
 }

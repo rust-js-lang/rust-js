@@ -13,6 +13,7 @@ import { join } from "node:path";
 import { calls, jsShow, printable, rustShow, type Tree } from "./generated-calls";
 import { compiler, fixture, nativeCrates, programFlags, run } from "./support";
 import { es2022, typeChecked } from "./type-checked";
+import { underLoad } from "../scripts/timing";
 
 /** A path a crate offers JS, as its manifest says. */
 export type Offered = {
@@ -71,6 +72,11 @@ function called(path: Offered, small: boolean): string[][] | undefined {
  * `declared`, the paths read through the `.d.ts`: what a case of the
  * net's own holds above none, so it never passes having checked nothing;
  * `offered`, each crate's paths, `kind rust -> js`. */
+/** How long a run of a crate's calls of the values generated is given
+ * before it's run of small ones alone: each case's takes under a second,
+ * so 15 s, as the machine's load makes it, is room, not a wait. */
+const bigRunMs = underLoad(15_000);
+
 export type Netted = { problems: string[]; paths: number; calls: number; declared: number; offered: Record<string, string[]> };
 
 export function exportNet(cases: string, name: string, files: string[]): Netted {
@@ -101,6 +107,11 @@ export function exportNet(cases: string, name: string, files: string[]): Netted 
     const values = offered.filter((p) => valued(offered, p));
     // Its lines alone, marked, not what the functions it calls print.
     const marked = (text: string) => text.split("\n").filter((l) => l.startsWith("\u0001")).map((l) => l.slice(1));
+    // A run of the values generated is given `bigRunMs`: one of them past
+    // it, `squares(u32::MAX)`'s, is run again of small ones alone, never
+    // waited on to the small run's `120_000`, which once was the net's
+    // tail, 121 s of one pair's 153 s part.
+    const limit = (small: boolean) => (small ? 120_000 : bigRunMs);
     const netted = (small: boolean) => {
       const tested = offered.flatMap((p) => (called(p, small) ?? []).map((given, k) => ({ p, given, label: `${of(p)}#${k}` })));
       const harness = join(out, `net-${crate.name}.mjs`);
@@ -125,7 +136,7 @@ ${tested.map(({ p, given, label }) => p.kind === "function"
 // On a line of its own, past what a call printed without one.
 console.log("\\n" + lines.join("\\n"));
 `);
-      const js = marked(run(["bun", harness], 120_000));
+      const js = marked(run(["bun", harness], limit(small)));
       if (tested.length === 0) return { js, native: [] as string[] };
       const rustPath = (p: Offered) => `${crate.name}::${p.rust.join("::")}`;
       const main = `${rustShow}
@@ -139,7 +150,7 @@ ${tested.map(({ p, given, label }) => {
 `;
       const built = nativeCrates(all.slice(0, i + 1), main, programFlags("2024"));
       if ("error" in built) return { js, native: [] as string[], unbuilt: built.error };
-      return { js, native: marked(run([built.binary], 120_000)) };
+      return { js, native: marked(run([built.binary], limit(small))) };
     };
     let ran: ReturnType<typeof netted>;
     try {

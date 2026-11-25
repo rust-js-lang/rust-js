@@ -64,8 +64,11 @@ something of each kind, so it never passes having checked nothing.
 
 ## What holds it
 
-- `test/export-net.test.ts`: the own cases and the pairs; the offered
-  paths of #2544's shapes, exactly.
+- `test/export-net-1.test.ts` to `-6` (`exportNetParts`), each the tests
+  test/export-net-titles.ts puts in its part: the own cases and the pairs;
+  the offered paths of #2544's shapes, exactly. A run of the values
+  generated is given 15 s, as the load makes it, before it's run again of
+  small values alone.
 - Put back by hand, #2544's bug fails the net: each path through a
   dropped re-export is missing.
 - Mutations of `offered.rs`: `offered-namespace-unwalked`,

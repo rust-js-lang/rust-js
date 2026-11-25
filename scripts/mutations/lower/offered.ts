@@ -10,7 +10,7 @@ export const mutations: Mutation[] = [
     file,
     find: "                walk(tcx, foreign, (id, &within), (&rust_path, &js_path), paths);\n",
     replace: "",
-    tests: ["test/export-net.test.ts", "-t", "the paths a crate offers JS are its root's and each re-exported module's"],
+    tests: ["test/export-net-1.test.ts", "-t", "the paths a crate offers JS are its root's and each re-exported module's"],
   },
   {
     name: "offered-alias-ignored",
@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     file,
     find: "                crate::bindings::alias_name(tcx, used, name)\n",
     replace: "                crate::bindings::fn_name(tcx, id)\n",
-    tests: ["test/export-net.test.ts", "-t", "export net: reexports_alone"],
+    tests: ["test/export-net-5.test.ts", "-t", "export net: reexports_alone"],
   },
   {
     name: "offered-type-leaf-flipped",
@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     file,
     find: "        ty::Bool => OfferedType::Bool,\n",
     replace: "        ty::Bool => OfferedType::Int { rust: \"u8\".to_string() },\n",
-    tests: ["test/export-net.test.ts", "test/declarations-conformance.test.ts", "-t", "export net: one_crate|each exported function's TypeScript caller"],
+    tests: ["test/export-net-1.test.ts", "test/declarations-conformance.test.ts", "-t", "export net: one_crate|each exported function's TypeScript caller"],
   },
   {
     name: "offered-dyn-fn-unread",
