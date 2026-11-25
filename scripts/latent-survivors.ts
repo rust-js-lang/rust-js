@@ -1,8 +1,8 @@
 // A mutation that survives on the commit a push is checked against, its base,
 // isn't the push's: the push didn't make it survive, so it doesn't fail the
 // push's check (ADR 0093, amended). `scripts/mutations.ts --base=<sha>` asks
-// this of each survivor: each is run again at the base, in the run's own
-// checkout, by that commit's own runner. One that survives there too is latent,
+// this of each survivor: each is run again at the base, in a worktree of its
+// own, never the checkout under test (#2578), by that commit's own runner. One that survives there too is latent,
 // listed in `target/mutants/latent.json` and filed in one tracking issue
 // (`.github/workflows/rustc-tests.yml`'s `survivors`); one caught there, not
 // there at all, or whose run there doesn't end in its time is the push's, and
@@ -29,46 +29,52 @@ export function latentOf(here: Record<string, string>, atBase: Record<string, st
 /** How long the run at the base may take: past it, each is the push's. */
 export const baseLimit = 40 * 60_000;
 
-/** What a run keeps of its own in `work` that its runner at the base, in
- * the same checkout, writes over: put back once that's run. */
-const runsOwn = ["results.json", "timings.json"];
+/** Where `resultsAt` makes the base's worktree, of a run whose own is
+ * `work`: under its mutants' store, which the run's lock keeps from the
+ * prune as it runs. */
+export const baseTree = (work: string) => join(work, "base");
 
-/** Each of `names`' results at `base`, by its runner there, run in `root`,
- * the run's own checkout, checked out at the base and back: its crate built
- * where the run's was, into the same target, a build of what changed since
- * the base, where a worktree of its own, another path, built the crate whole
- * again, 283 to 320 s of a CI shard (#2222). Its runner takes the checkout's
- * mutants' lock, so the run gives it up first. None where the checkout has
- * changes of its own, which checking out the base would lose, where it
- * can't be set up, or where its run doesn't end within `baseLimit`; and
- * then `why`, which a CI log shows: six of a check's eight shards found
- * none and said nothing of it, each survivor the push's (#2341). Judged
- * by `map`, the commit of the test map the run read, where it read one: no
- * ancestor of the base, a commit of the push's, kept no map of the base in
- * CI, and the snapshot judge's error there took each verdict with it. */
+/** Each of `names`' results at `base`, by its runner there, run in a
+ * worktree of its own made at the base (`baseTree`), never in `root`, the
+ * checkout under test: check:fast's other jobs read its tree as this runs,
+ * and a checkout of the base there had them test the base's files with the
+ * change's compiler for about 80 s, a check failing or passing of a tree
+ * that wasn't the change (#2578). Its packages and target its own, so the
+ * base's crate is built whole, 283 to 320 s of a CI shard where the
+ * checkout's own build was reused (#2222): paid where a change's mutations
+ * have a survivor alone. Its results read where its runner wrote them, so
+ * the run's own are never written over. None where it can't be set up, or
+ * where its run doesn't end within `baseLimit`; and then `why`, which a CI
+ * log shows: six of a check's eight shards found none and said nothing of
+ * it, each survivor the push's (#2341). Judged by `map`, the commit of the
+ * test map the run read, where it read one: no ancestor of the base, a
+ * commit of the push's, kept no map of the base in CI, and the snapshot
+ * judge's error there took each verdict with it. */
 export async function resultsAt(root: string, work: string, base: string, names: string[], map?: string): Promise<{ results: Record<string, string>; why?: string }> {
   const git = (args: string[]) => run(["git", ...args], root, 120_000);
   const tail = (exit: { stdout: string; stderr: string }) => `${exit.stdout}\n${exit.stderr}`.trim().split("\n").slice(-30).join("\n");
-  const head = (await git(["rev-parse", "HEAD"])).stdout.trim();
-  const status = await git(["status", "--porcelain", "--untracked-files=no"]);
-  if (head === "" || status.code !== 0) return { results: {}, why: `git can't say the checkout's state: ${tail(status)}` };
-  if (status.stdout.trim() !== "") return { results: {}, why: `the checkout has changes of its own, which checking out the base would lose:\n${status.stdout.trim()}` };
-  const kept = runsOwn.filter((name) => existsSync(join(work, name))).map((name) => [name, readFileSync(join(work, name), "utf8")] as const);
-  for (const name of runsOwn) rmSync(join(work, name), { force: true });
+  const tree = baseTree(work);
+  // Gone, however the run ends, and one a killed run left before it.
+  const removeTree = async () => {
+    await git(["worktree", "remove", "--force", tree]);
+    rmSync(tree, { recursive: true, force: true });
+    await git(["worktree", "prune"]);
+  };
+  await removeTree();
   try {
-    const checkout = await git(["checkout", "--quiet", "--detach", base]);
-    if (checkout.code !== 0) return { results: {}, why: `git can't check out ${base}: ${tail(checkout)}` };
-    const install = await run(["bun", "install", "--frozen-lockfile"], root, 600_000);
+    const made = await git(["worktree", "add", "--quiet", "--detach", tree, base]);
+    if (made.code !== 0) return { results: {}, why: `git can't make a worktree at ${base}: ${tail(made)}` };
+    const install = await run(["bun", "install", "--frozen-lockfile"], tree, 600_000);
     if (install.code !== 0) return { results: {}, why: `its packages don't install at ${base}: ${tail(install)}` };
     // Of those the base has: one it doesn't is the push's, and its runner
     // refuses a name it doesn't know.
-    const listed = await run(["bun", "scripts/mutations.ts", "--list"], root, 600_000);
+    const listed = await run(["bun", "scripts/mutations.ts", "--list"], tree, 600_000);
     const there = new Set(listed.stdout.split("\n").map((line) => line.split("\t")[0]));
     const known = names.filter((name) => there.has(name));
     if (known.length === 0) return { results: {}, why: `its runner knows none of them (\`--list\` exited ${listed.code}): ${tail(listed)}` };
     // By the map the run read, where it read one (`namedMapEnv`).
-    const ran = await run(["bun", "scripts/mutations.ts", ...known], root, baseLimit, map === undefined ? {} : { [namedMapEnv]: map });
-    const at = join(work, "results.json");
+    const ran = await run(["bun", "scripts/mutations.ts", ...known], tree, baseLimit, map === undefined ? {} : { [namedMapEnv]: map });
+    const at = join(tree, "target", "mutants", "results.json");
     if (ran.timedOut || ran.signal) return { results: {}, why: `its run didn't end within ${baseLimit / 60_000} min: ${tail(ran)}` };
     if (!existsSync(at)) return { results: {}, why: `its run wrote no results.json (exited ${ran.code}): ${tail(ran)}` };
     const results = (JSON.parse(readFileSync(at, "utf8")) as Results).results;
@@ -76,12 +82,7 @@ export async function resultsAt(root: string, work: string, base: string, names:
     const survived = known.filter((name) => results[name]?.startsWith("SURVIVED"));
     return survived.length < known.length ? { results, why: `its run's end (exited ${ran.code}):\n${tail(ran)}` } : { results };
   } finally {
-    // Back as the run found it: the checkout, which was clean, its
-    // packages, and what the run wrote of its own.
-    await git(["checkout", "--quiet", "--force", "--detach", head]);
-    await run(["bun", "install", "--frozen-lockfile"], root, 600_000);
-    for (const name of runsOwn) rmSync(join(work, name), { force: true });
-    for (const [name, text] of kept) writeFileSync(join(work, name), text);
+    await removeTree();
   }
 }
 

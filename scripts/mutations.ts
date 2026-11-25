@@ -2928,10 +2928,9 @@ async function main() {
   if (harnessMissed.length > 0) process.exitCode = 1;
   // Of `--base=<sha>`, a survivor there too is latent, not this run's (ADR 0093, amended).
   const base = args.find((arg) => arg.startsWith("--base="))?.slice("--base=".length);
-  // Its runner there runs in this checkout and takes its mutants' lock,
-  // this run's mutants all judged (`resultsAt`).
-  if (base) released();
-  // Judged there by the map this run reads, as here (#2341).
+  // Its runner there runs in a worktree of its own under this run's
+  // mutants' store, which this run's lock keeps from the prune (`resultsAt`,
+  // #2578). Judged there by the map this run reads, as here (#2341).
   const map = base && rows.some(([, result]) => result.startsWith("SURVIVED")) ? headMapCommit() : undefined;
   const latent = base ? await latentSurvivors(root, work, base, Object.fromEntries(rows.map(([m, r]) => [m.name, r])), (name) => mutations.find((m) => m.name === name)?.breaks ?? "", map) : [];
   // A phase of its own where it ran, a survivor's run at the base, which

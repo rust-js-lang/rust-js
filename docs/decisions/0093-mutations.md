@@ -1624,3 +1624,39 @@ tree they passed on (`keptControls`; scripts/judged.ts' `treeOf`, the
 files a mutant's workspace is made of). Each control is of that tree alone,
 its compiler, its pin and its rows, so a second retirement of it builds the
 compiler and asks none of them again. Another tree's are none.
+
+## Amendment: a survivor's run at the base is in a worktree of its own (2026-11-25, #2578)
+
+A survivor's run at the base (`resultsAt`, scripts/latent-survivors.ts)
+checked the base out in the run's own checkout, and checked it back after,
+to build its crate where the run's was (#2222). That checkout is the one
+under test. check:fast's job of the change's mutations runs beside its
+other jobs, and the push's `judged` phase runs before the push compares
+the tree it checked. So:
+
+- for about 80 s, the other jobs tested the base's files with the
+  change's compiler: on the Mac mini 13 and 5 files failed in 0–3 s
+  (#2438), and a check can pass as wrongly;
+- a push whose change had a latent survivor was refused, its tree changed
+  while it was checked, and couldn't land at all.
+
+Now the base's runner runs in a worktree made at the base, under the run's
+mutants' store (`baseTree`), which the run's lock keeps from the prune,
+with its own packages and target. Its results are read where it wrote
+them, so the run's own `results.json` and `timings.json` are never written
+over. The worktree is removed however the run ends, and one a killed run
+left is removed as the next begins. The checkout's own changes no longer
+stop it, as nothing of the checkout moves.
+
+Its cost: the base's crate is built whole, 283 to 320 s of a CI shard
+(#2222's measure), where the checkout's build was reused. It's paid only
+where a change's mutations have a survivor. Correctness first.
+
+What holds it: test/survivors.test.ts, "a survivor's run at the base is
+the base's runner's, in a worktree of its own, and leaves the run's
+checkout as it is throughout". Its base's runner says the run's
+checkout's HEAD and files as it ran. Mutations `base-run-checks-out-the-checkout`,
+`base-run-by-the-checkouts-runner`, `base-run-leaves-its-results` and
+`base-run-leaves-its-worktree`. And "no script checks out, switches,
+stashes or resets the checkout it runs in", which names the scripts that
+move a checkout of their own (#2578's audit).

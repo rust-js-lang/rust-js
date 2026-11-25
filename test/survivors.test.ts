@@ -18,39 +18,85 @@ test("a survivor surviving at the base too is latent; one caught there, or not r
   expect(latentOf(here, {})).toEqual({ latent: [], ours: ["a", "b", "d"] });
 });
 
-// The base's run is in the run's own checkout, its crate built where the
-// run's was (#2222): checked out at the base and back, the run's own
-// results put back, and never where the checkout has changes of its own,
-// which checking out the base would lose.
-test("a survivor's run at the base leaves the run's checkout as it found it, and runs in none with changes of its own", async () => {
-  const dir = fixture("latent-in-place");
+// The base's run is in a worktree of its own, never the checkout under test
+// (#2578): check:fast's other jobs read that checkout's tree while its
+// mutation job runs, and its checkout of the base there and back had them
+// test the base's files with the change's compiler for about 80 s, failing
+// a check of the Mac mini's 13 files in 0–3 s, and as likely passing one.
+// The base's runner here says what the run's checkout was while it ran,
+// and which runner it is.
+test("a survivor's run at the base is the base's runner's, in a worktree of its own, and leaves the run's checkout as it is throughout", async () => {
+  const dir = fixture("latent-apart");
   const git = (...args: string[]) => runSync(["git", ...args], dir, 30_000);
   git("init", "--quiet");
   git("config", "user.email", "t@example.invalid");
   git("config", "user.name", "t");
+  writeFileSync(join(dir, ".gitignore"), ["target", "node_modules"].map((folder) => `/${folder}/\n`).join(""));
+  writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "latent-apart", private: true }));
+  mkdirSync(join(dir, "scripts"), { recursive: true });
+  const runner = (whose: string) =>
+    [
+      `import { execFileSync } from "node:child_process";`,
+      `import { mkdirSync, readFileSync, writeFileSync } from "node:fs";`,
+      `import { join } from "node:path";`,
+      `if (process.argv.includes("--list")) console.log("a\\tbreaks a");`,
+      `else {`,
+      `  const checkout = ${JSON.stringify(dir)};`,
+      `  const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: checkout }).toString().trim();`,
+      `  const said = [${JSON.stringify(whose)}, head, readFileSync(join(checkout, "a.txt"), "utf8").trim(), readFileSync("a.txt", "utf8").trim()].join(" ");`,
+      `  mkdirSync(join("target", "mutants"), { recursive: true });`,
+      `  writeFileSync(join("target", "mutants", "results.json"), JSON.stringify({ commit: "base", results: { a: \`SURVIVED: \${said}\` } }));`,
+      `}`,
+    ].join("\n");
+  writeFileSync(join(dir, "scripts", "mutations.ts"), runner("base's runner"));
   writeFileSync(join(dir, "a.txt"), "base\n");
-  git("add", "a.txt");
+  writeFileSync(join(dir, "b.txt"), "b\n");
+  git("add", ".");
   git("commit", "--quiet", "-m", "base");
   const base = git("rev-parse", "HEAD").stdout.trim();
+  writeFileSync(join(dir, "scripts", "mutations.ts"), runner("head's runner"));
   writeFileSync(join(dir, "a.txt"), "head\n");
   git("commit", "--quiet", "-am", "head");
   const head = git("rev-parse", "HEAD").stdout.trim();
   const work = join(dir, "target", "mutants");
   mkdirSync(work, { recursive: true });
   writeFileSync(join(work, "results.json"), "the run's own\n");
-  // No runner at the base: none of its results, said why, and all as it was.
-  const none = await resultsAt(dir, work, base, ["a"]);
-  expect(none.results).toEqual({});
-  // Said, whichever step found nothing there: its packages, or its runner.
-  expect(none.why).toMatch(/^(?:its runner knows none of them|its packages don't install)/);
+  // The checkout as it is, a change of its own among it, throughout and after:
+  // one the base has too, which a checkout of the base would carry.
+  writeFileSync(join(dir, "b.txt"), "changed\n");
+  expect(await resultsAt(dir, work, base, ["a"])).toEqual({ results: { a: `SURVIVED: base's runner ${head} head base` } });
   expect(git("rev-parse", "HEAD").stdout.trim()).toBe(head);
-  expect(readFileSync(join(dir, "a.txt"), "utf8")).toBe("head\n");
+  expect([readFileSync(join(dir, "a.txt"), "utf8"), readFileSync(join(dir, "b.txt"), "utf8")]).toEqual(["head\n", "changed\n"]);
   expect(readFileSync(join(work, "results.json"), "utf8")).toBe("the run's own\n");
-  // A change of the checkout's own: never checked out past it.
-  writeFileSync(join(dir, "a.txt"), "changed\n");
-  expect(await resultsAt(dir, work, base, ["a"])).toEqual({ results: {}, why: "the checkout has changes of its own, which checking out the base would lose:\nM a.txt" });
-  expect(readFileSync(join(dir, "a.txt"), "utf8")).toBe("changed\n");
-  expect(git("rev-parse", "HEAD").stdout.trim()).toBe(head);
+  // Its worktree gone, as git lists them and on the disk.
+  expect(git("worktree", "list", "--porcelain").stdout.split("\n").filter((line) => line.startsWith("worktree ")).length).toBe(1);
+  expect(readdirSync(work)).toEqual(["results.json"]);
+  // No runner at the base: none of its results, said why.
+  const bare = fixture("latent-apart-bare");
+  const bareGit = (...args: string[]) => runSync(["git", ...args], bare, 30_000);
+  bareGit("init", "--quiet");
+  bareGit("config", "user.email", "t@example.invalid");
+  bareGit("config", "user.name", "t");
+  writeFileSync(join(bare, "a.txt"), "base\n");
+  bareGit("add", "a.txt");
+  bareGit("commit", "--quiet", "-m", "base");
+  const none = await resultsAt(bare, join(bare, "target", "mutants"), bareGit("rev-parse", "HEAD").stdout.trim(), ["a"]);
+  expect(none.results).toEqual({});
+  expect(none.why).toMatch(/^(?:its runner knows none of them|its packages don't install)/);
+});
+
+// No script moves the checkout it runs in, as check:fast's jobs read it the
+// while: a checkout, a switch, a stash or a reset of it (#2578). The push's
+// own rebase, before its check, and the scripts that move a checkout of
+// their own, the ports' and the clones they fetch, are named.
+test("no script checks out, switches, stashes or resets the checkout it runs in", () => {
+  const theirOwn = new Set(["scripts/push.ts", "scripts/port.ts", "scripts/react-in-rust.ts", "scripts/rustc-tests.ts"]);
+  const moving = readdirSync(join(root, "scripts"))
+    .filter((file) => file.endsWith(".ts"))
+    .map((file) => `scripts/${file}`)
+    .filter((file) => !theirOwn.has(file))
+    .filter((file) => readFileSync(join(root, file), "utf8").split("\n").some((line) => !/^\s*(\/\/|\*)/.test(line) && /["'](?:checkout|switch|stash|reset)["']/.test(line)));
+  expect(moving).toEqual([]);
 });
 
 // The base's run reads the test map the run read, named to it, of a commit
