@@ -45,7 +45,7 @@ The user chose per-test verdicts over a crate's whole (2026-11-09), first
 as a compiler switch beside `--js-made-all`. A cut of the source does it
 with no compiler surface: a switch would have to tie each refusal to a
 test, and several are made before any function is lowered, an impl's
-evidence among them. Decided with the user, through thor agent.
+evidence among them. Decided with the user, through worker-01 agent.
 
 ## Consequences
 

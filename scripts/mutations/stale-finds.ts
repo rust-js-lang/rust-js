@@ -4,7 +4,7 @@ import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
     name: "stale-finds-first-alone",
-    breaks: "only the first stale find is said, so a code move's finds are rewritten one run at a time, as the lily agent's eight were (#2586)",
+    breaks: "only the first stale find is said, so a code move's finds are rewritten one run at a time, as the worker-03 agent's eight were (#2586)",
     file: "scripts/stale-finds.ts",
     find: "      stale.push({ name: m.name, list: `scripts/mutations/${list.path}`, file: m.file, problem: mutated.problem, near });\n",
     replace: "      stale.push({ name: m.name, list: `scripts/mutations/${list.path}`, file: m.file, problem: mutated.problem, near });\n      return stale;\n",

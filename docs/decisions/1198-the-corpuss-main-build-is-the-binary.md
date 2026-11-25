@@ -132,7 +132,7 @@ A decision the exported build alone shows, a cell counted where `entry`
 hands the crate to a caller, a copy kept, a nullable exit, was held by no
 snapshot once the binary's became the case's: the old snapshot was the
 wrapper's. The mutation `held-field-read-unsettled` survived so on main
-(m1-lisa's read, #2447 comment 7127662433): its counted `lines` shows in
+(worker-02 agent's read, #2447 comment 7127662433): its counted `lines` shows in
 `scope_struct_of_type_parameters`'s program build alone.
 
 - A case whose program JS isn't its binary's past what the wrapper adds

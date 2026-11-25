@@ -8,7 +8,7 @@ import { underLoad } from "../scripts/timing";
 import { buildCompiler, fixtureOf, root } from "./support";
 
 // A test of each page, so a mutation one page reaches runs that page
-// alone (`-t <page>`), about 5 s, not the whole guide's 40 s (lisa agent's
+// alone (`-t <page>`), about 5 s, not the whole guide's 40 s (worker-02 agent's
 // `offered-symbol-field-named`). One run of scripts/docs.ts checks every
 // page the run's tests are of, at once on the cores, as the whole guide
 // was checked; each test says its own page's problems.

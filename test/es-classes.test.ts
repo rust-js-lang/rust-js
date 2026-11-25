@@ -402,7 +402,7 @@ impl Built {
   }
 });
 
-// rd731, the user's decision relayed by thor agent: an ES class's field
+// rd731, the user's decision relayed by worker-01 agent: an ES class's field
 // declarations are apart from its first member by a blank line, as
 // upstream's and Prettier's are, though the Rust writes the struct's
 // fields and its `fn new` in other items; its doc comment after it.

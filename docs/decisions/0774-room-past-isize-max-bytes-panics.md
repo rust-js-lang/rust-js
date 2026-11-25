@@ -541,7 +541,7 @@ The amendments "a string's `repeat` is JS's own" and "a signed count of
 engine's `RangeError`, ADR 0262's exception, the guide's difference 24.
 Its results changed: std's hook named `<unknown>`, and a `catch_unwind`
 read no payload where std's is a `String`, `"capacity overflow"`
-(m1-lisa's grouping of #2453, #2487; #2511). The user reversed it
+(worker-02 agent's grouping of #2453, #2487; #2511). The user reversed it
 (2026-11-24): **a `str`'s or a `String`'s `repeat(n)` is `$repeatText(text,
 n)`**, which checks its bytes as std's `[u8]::repeat` does, its count past
 `usize::MAX` bytes a `String` panic at `slice.rs`'s `checked_mul`

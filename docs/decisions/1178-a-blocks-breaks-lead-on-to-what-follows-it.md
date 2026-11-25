@@ -1,6 +1,6 @@
 # 1178. A block's `break`s lead on to what follows it
 
-Status: Accepted (2026-11-21, the lead's go on lisa agent's design note for
+Status: Accepted (2026-11-21, the lead's go on worker-02 agent's design note for
 #2215, steps 1 and 2). Amends [0629](0629-a-match-of-constants-is-a-switch.md)'s
 label rule, D1, and [0754](0754-a-return-arms-go-on-to-is-in-each.md)
 (step 3: a call's `return` is in each path).
@@ -23,7 +23,7 @@ that may throw and a `return`. The 5 left came in two shapes.
   break l; } r = ..; } dropF?.(f); return r; } acc = init; } <the fold of
   the rest>`. Std has three: Peekable's, SkipWhile's and StepBy's. What
   follows the block is the rest of the fold, too long to copy into a
-  `break`. lisa agent's note proposed moving what follows an `if` whose
+  `break`. worker-02 agent's note proposed moving what follows an `if` whose
   `then` never goes on into its `else`. That alone takes none of the three
   away. The `if (none)` holding the `Continue` has a second way that goes
   on, so the drops and `return` after it still follow the `break`'s way.

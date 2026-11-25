@@ -63,7 +63,7 @@ test("every mutation applies to the compiler as it is, once", () => {
 
 // A code move leaves finds stale: each is said at once, with where its
 // file's text is nearest it now, so they're rewritten in one pass (#2586:
-// lily agent's eight runs of the test above, one stale find a run).
+// worker-03 agent's eight runs of the test above, one stale find a run).
 test("every stale find is said at once, beside its file's nearest text", () => {
   const files: Record<string, string> = {
     "src/a.rs": "fn a() {\n    let held = 1;\n    let kept = held + 2;\n}\n",

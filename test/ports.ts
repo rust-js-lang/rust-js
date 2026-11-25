@@ -1,6 +1,6 @@
 // A server a test starts, on a port no other process has: suites run at
 // once, and a port probed free, `listen(0)` then closed, and handed to a
-// server, was taken between the two by another suite's probe (lily agent's
+// server, was taken between the two by another suite's probe (worker-03 agent's
 // push: a Next test's EADDRINUSE on 55158, passing alone on rerun).
 import type { ChildProcess } from "node:child_process";
 import { createServer } from "node:net";

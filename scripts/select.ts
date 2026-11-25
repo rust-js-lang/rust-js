@@ -680,7 +680,7 @@ function differs(from: string, to: string, file: string): boolean {
  * (Tu's rule: quick, then push; CI's check covers the combination): the
  * change's own test files and corpus cases; and of a change to the
  * compiler's sources, never none, as two changes to one file are where
- * they most meet (lily agent's tidy refactor's cap ran nothing): the tests
+ * they most meet (worker-03 agent's tidy refactor's cap ran nothing): the tests
  * and cases the map, as of its commit, recorded running any function of
  * the files it changes, an approximation; or, where that's none, the whole
  * corpus. `capped` says which. */

@@ -60,7 +60,7 @@ test("a file over 1,350 lines that grew since main is told to be split first", (
   }
 });
 
-// lisa agent's check named three files others had grown on main: its
+// worker-02 agent's check named three files others had grown on main: its
 // `origin/main` was stale, so main's newer commits, which the branch was
 // rebased onto, looked like the branch's own.
 test("a file that looks grown against a stale origin/main says to fetch first", () => {

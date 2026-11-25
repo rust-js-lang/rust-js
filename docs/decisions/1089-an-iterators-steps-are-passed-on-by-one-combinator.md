@@ -1,6 +1,6 @@
 # 1089. An iterator's steps are passed on by one combinator, and std's steps are one catalog
 
-Status: Accepted (the user's decision, 2026-11-04, through thor agent: the
+Status: Accepted (the user's decision, 2026-11-04, through worker-01 agent: the
 OwnStep refactor). Amends [0669](0669-an-adapter-steps-its-source-as-stds-does.md)
 and [0465](0465-dropping-an-adapter-is-closing-it.md): how an adapter of
 the runtime passes a step on.

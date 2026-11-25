@@ -6,7 +6,7 @@
 use super::*;
 
 /// Of a body's THIR, where each borrow's call is and what holds its guard:
-/// its shape in the source, lisa's patterns' (#2490 comment 7132169613).
+/// its shape in the source, worker-02 agent's patterns' (#2490 comment 7132169613).
 pub(super) struct Shapes<'t, 'tcx> {
     thir: &'t Thir<'tcx>,
     /// Each expression's parent.

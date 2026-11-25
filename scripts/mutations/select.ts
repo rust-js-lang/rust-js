@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "select-others-workflow-everything",
-    breaks: "another agent's workflow, selector or map change since the map's commit runs everything here, though it changes how CI runs or which tests run, not what a local test does: most pushes ran all (m6-lily's), and every agent's check behind the selector's pushes",
+    breaks: "another agent's workflow, selector or map change since the map's commit runs everything here, though it changes how CI runs or which tests run, not what a local test does: most pushes ran all (worker-03 agent's), and every agent's check behind the selector's pushes",
     file: "scripts/select.ts",
     find: "      if (own(file)) return whole(`${file} is ${runsAll.what}`, file);",
     replace: "      return whole(`${file} is ${runsAll.what}`, file);",
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "sanity-cap-of-code-empty",
-    breaks: "a sanity pass of a change to the compiler's sources that the selector can't say of, and the map reaches nothing of, runs only its own test files, none, not the corpus: two changes to one file went unchecked (m6-lily's tidy refactor)",
+    breaks: "a sanity pass of a change to the compiler's sources that the selector can't say of, and the map reaches nothing of, runs only its own test files, none, not the corpus: two changes to one file went unchecked (worker-03 agent's tidy refactor)",
     file: "scripts/select.ts",
     find: '  return result([...new Set([...ownFiles, "test/corpus.test.ts"])], cases, "corpus");',
     replace: '  return result(ownFiles, ownCases, "corpus");',
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "push-selection-inherits-others-all",
-    breaks: "a push's check inherits another agent's `all`, an item of theirs since the map's commit, and runs every test of a test-only change (m1-lisa's push)",
+    breaks: "a push's check inherits another agent's `all`, an item of theirs since the map's commit, and runs every test of a test-only change (worker-02 agent's push)",
     file: "scripts/select.ts",
     find: "  if (!compiler || theirs.all) {",
     replace: "  if (theirs.all) return theirs;\n  if (!compiler) {",

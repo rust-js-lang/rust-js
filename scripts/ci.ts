@@ -247,7 +247,7 @@ function attributionOf(run: number, name: string): string[] {
 export const MUTATION_SHARDS = [1, 2, 4, 8, 16];
 
 /** What a mutation shard takes beside its mutations: its checkout, its
- * packages, the toolchain and the caches restored (lisa agent's measure of
+ * packages, the toolchain and the caches restored (worker-02 agent's measure of
  * main's checks, 2026-11-19). */
 export const SHARD_SETUP_SECONDS = 60;
 /** And the compiler as it is, built before any mutant: 87 to 130 s of

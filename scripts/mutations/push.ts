@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "line-set-conflict-stops-the-push",
-    breaks: "a rebase's conflict in a known list two changes each took a line off stops the push, as m1-lisa's #2054 and m6-lily's #2056 off the metamorphic net's list did (2026-11-18)",
+    breaks: "a rebase's conflict in a known list two changes each took a line off stops the push, as worker-02 agent's #2054 and worker-03 agent's #2056 off the metamorphic net's list did (2026-11-18)",
     file: "scripts/push.ts",
     find: "  return conflicts.every((file) => file in regenerated || stdGenerated(file) || ratchets.includes(file) || decision(file) || lineSet(file) || changesLog(file));\n",
     replace: "  return conflicts.every((file) => file in regenerated || stdGenerated(file) || ratchets.includes(file) || decision(file) || changesLog(file));\n",
@@ -380,7 +380,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "push-lists-loaded-itself",
-    breaks: "push loads the mutation lists itself, so a rebase over another agent's edit of one runs push again from the rebased tree, each of lily agent's 2c-1 push's three rounds (2ab5bb3f9)",
+    breaks: "push loads the mutation lists itself, so a rebase over another agent's edit of one runs push again from the rebased tree, each of worker-03 agent's 2c-1 push's three rounds (2ab5bb3f9)",
     file: "scripts/push.ts",
     find: '      named ??= new Set(askJudged(["files"]) as string[]);\n',
     replace: '      named ??= new Set((await import("./mutations")).mutations.map((m) => m.file));\n',

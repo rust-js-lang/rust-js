@@ -2,7 +2,7 @@
 // line a run of `bun run push`, `check:fast`, the corpus run on its own,
 // `scripts/mutations.ts` (`--retire` too) and React's port's regen, each
 // written by the run itself, however it ends, so no agent has to remember
-// to (lisa agent's night of numbers went with a compacted context). The one
+// to (worker-02 agent's night of numbers went with a compacted context). The one
 // writer: `<ISO> | <machine> | <agent> | <kind> | <sha> | total <s> |
 // <step> <s>, .. | select <outcome> | load <1m/5m/15m>, other runs <start>/<end>
 // | ok|fail | <note>` (DEVELOPMENT.md, "Pushing").

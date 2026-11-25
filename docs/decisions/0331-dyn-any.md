@@ -145,7 +145,7 @@ gone; `dyn_any_generic` holds it as `text_of_a_value_made_by_a_call` does.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): A where the dictionary
 says its type; D, rust-js's error, of a downcast to a type of a generic
-`Error` impl. The user's decision (2026-11-11), relayed by thor agent.
+`Error` impl. The user's decision (2026-11-11), relayed by worker-01 agent.
 
 A `dyn Error` is a pair too (ADR 0141), but its dictionary kept no type,
 so its downcasts were refused, and rand_core 0.5's `raw_os_error`, which

@@ -1,6 +1,6 @@
 # 1111. A session's caches of rustc's ids are the session's
 
-Status: Accepted (thor agent's choice of form B, 2026-11-09). Amends the
+Status: Accepted (worker-01 agent's choice of form B, 2026-11-09). Amends the
 memos of #884: `std_path`'s, `compiled_std`'s, `has_compiled_bodies`' and
 `compiled_provided_method`'s, and the run's flags of ADR 0932 and ADR 1105.
 

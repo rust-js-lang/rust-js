@@ -297,7 +297,7 @@ closed, `$closing($iterator(it, next), drop)`**, as a `Vec`'s source is:
 first step ends. One answer, `keyed_consumer_closes` (`iterators/mir_steps/collect.rs`,
 beside `consumed_function`, which it asks): `extreme_called` closes the iterator, and
 `dropped_after` drops nothing after the call. The user's decision, through
-thor agent: an existing form, no other changed.
+worker-01 agent: an existing form, no other changed.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
 Rust's order is kept; a refusal of valid Rust lifted. Held by corpus

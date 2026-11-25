@@ -1,6 +1,6 @@
 # 1113. A body's `impl Trait` is revealed where its MIR is taken
 
-Status: Accepted (thor agent's choice, 2026-11-10). Amends
+Status: Accepted (worker-01 agent's choice, 2026-11-10). Amends
 [0061](0061-generic-iterators.md): what an `impl Iterator` hides is read
 once, for a whole body, not by each rule that asks.
 

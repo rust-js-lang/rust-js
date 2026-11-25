@@ -96,7 +96,7 @@ So the heavy run keeps the machine's whole width, and what runs beside it runs n
 ## Amendment: the turn has an order, and a push goes first (#2516, 2026-11-24)
 
 The turn had no order: each waiter polled every 25 ms, and whichever polled
-first after it was let go took it. On 2026-11-24 the hulk agent's push of a
+first after it was let go took it. On 2026-11-24 the worker-04 agent's push of a
 fix for a red `main` waited 34 minutes behind a subagent's `--retire`, then
 behind that subagent's next one, started in the moment between.
 

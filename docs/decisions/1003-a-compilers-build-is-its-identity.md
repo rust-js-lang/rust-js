@@ -338,7 +338,7 @@ Since #2473, another build of rust-js builds a crate again in its unit's
 own directory, so the build reads the manifest the last one wrote there,
 which tells it what it may remove (ADR 0091). It read that manifest whole,
 library contract and all, by this compiler's schema. A kept app of the
-guide's (`docs-apps_0`, the lisa agent's run) failed with "missing field
+guide's (`docs-apps_0`, the worker-02 agent's run) failed with "missing field
 `crate`": its manifest was written by build 6338… and read by build ae1e…,
 before any check of the build. It wasn't a stale answer. The crate was
 built again as it should be, but the build failed on the old manifest for

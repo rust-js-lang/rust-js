@@ -50,7 +50,7 @@ in 65 s with the first run's runs kept. No wrong answer from what it deletes
 or adds. Of the eight, seven were the payload difference, and one a wrong
 answer:
 `fmt::Arguments::as_str()` of a format with a runtime argument is
-`Some(..)` in JS where native Rust's is `None`, filed for lisa agent.
+`Some(..)` in JS where native Rust's is `None`, filed for worker-02 agent.
 
 Held by `test/metamorphic.test.ts`' `emi-prune makes each block no run
 reaches unreachable!()` and `emi-insert adds code never run`.

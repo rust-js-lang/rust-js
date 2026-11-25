@@ -1689,8 +1689,8 @@ own, does. Mutations `fail-fast-stops-the-job-alone`,
 
 A code move, a split or a relay leaves mutations' finds stale, and
 test/mutations.test.ts' "every mutation applies" named the first alone:
-the lily agent's eight runs of it in one day, a stale find each, and six
-of the hulk agent's pushes refused in their fast phase. `bun
+the worker-03 agent's eight runs of it in one day, a stale find each, and six
+of the worker-04 agent's pushes refused in their fast phase. `bun
 scripts/stale-finds.ts [names..]` names every one whose `find` doesn't
 apply once, each with its list and its find beside its file's nearest
 text now (`nearest`: the window of its lines holding most of them, each

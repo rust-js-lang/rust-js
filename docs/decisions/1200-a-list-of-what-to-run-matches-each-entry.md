@@ -1,13 +1,13 @@
 # 1200. A list of what to run matches each entry, or the run fails
 
-Status: Accepted (2026-11-25, the lead's call, via the hulk agent).
+Status: Accepted (2026-11-25, the lead's call, via the worker-04 agent).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none. A harness's rule;
 no program's JS changes.
 
 ## Context
 
-The lily agent ran the metamorphic net with its cases given as
+The worker-03 agent ran the metamorphic net with its cases given as
 `test/corpus/...` paths, in a list `RUST_JS_CASES=i/n:<file>` names. The
 net takes a case's name, its file's: no case matched, it ran none, and it
 said "25 pass", which were its other tests'. A run of nothing that passes

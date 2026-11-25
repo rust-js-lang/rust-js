@@ -706,7 +706,7 @@ test("a crate project being measured is never removed under its run, claimed bef
     // And its directory's own time, which the prune reads again before it
     // removes it (`holdKept`): made in the same millisecond as the prune's
     // `since`, its fraction past it, a fresh one was in use, and "free"
-    // stayed, a flake of a run of 1.8 ms (lily agent's pushes, 2026-11-25).
+    // stayed, a flake of a run of 1.8 ms (worker-03 agent's pushes, 2026-11-25).
     utimesSync(join(dir, name), new Date(0), new Date(0));
   };
   for (const name of ["held", "listed", "free"]) made(name);
@@ -886,7 +886,7 @@ test("the stores inside the checkouts are held to the budget together, the least
 
 // A checkout past the budget with every stale entry gone keeps its working
 // set, what was used since its last check or in the last day: idle
-// worktrees' builds took lily agent's total to 100 of 40 GiB, so each check's
+// worktrees' builds took worker-03 agent's total to 100 of 40 GiB, so each check's
 // measure removed every corpus run and cache it was about to reuse, and
 // check:fast went from ~300 s to 630-809 s (#2163's regression). Only the
 // disk's floor takes from the working set; what's left is said, with its

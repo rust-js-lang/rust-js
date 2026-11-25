@@ -1,6 +1,6 @@
 # 1188. serde_path_to_error is a shipped crate: the reader keeps where it is
 
-Status: Accepted (2026-11-23, #2379; the lead, thor agent, approved for Tu
+Status: Accepted (2026-11-23, #2379; the lead, worker-01 agent, approved for Tu
 that serde_path_to_error be supported natively, idiomatic Rust in, with no
 API of rust-js's own). Extends [0529](0529-a-shipped-memchr-searches-bytes.md)
 and [1185](1185-getrandom-is-a-shipped-crate.md)'s catalog, and

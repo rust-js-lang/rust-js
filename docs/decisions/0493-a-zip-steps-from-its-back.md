@@ -59,7 +59,7 @@ a `rev()` of one is `$rev` of it, made knowing its back too. Its `len()`
 made here is the fewer of its sides', `Math.min(v.length, w.length)`
 (`len_in_place`).
 
-`$zipBack` is gone, the user's decision (through thor agent): a `rev()` of
+`$zipBack` is gone, the user's decision (through worker-01 agent): a `rev()` of
 a zip is `$rev($zipEnds(a, b))`, the one form, `rev_items`' of what's made
 knowing its back; `test/architecture-iterators.test.ts`' "a reversed zip
 has one form" refuses a `$zipBack` brought back. Value.rs's
@@ -78,7 +78,7 @@ builds, and `zip_from_back`. Mutations `zip-not-made-knowing-its-back`,
 with `zip-back-untrimmed` on the new trim. #400's rule, a
 `size_hint()` of a `rev()` sized in place only where what it's made of is,
 is gone with its mutation, `rev-sized-whatever-its-source` (the user's
-decision, through thor agent: no code left that no test holds): it held a
+decision, through worker-01 agent: no code left that no test holds): it held a
 `rev()` of a zip apart as `$zipBack` made in place had no hint, and
 `$rev($zipEnds(..))` has std's. Without it no answer changes, of the corpus
 or either iterator slice, and `zip_size_hints`' `rev()` of a zip reads

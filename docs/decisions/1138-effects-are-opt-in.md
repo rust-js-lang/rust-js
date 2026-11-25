@@ -56,7 +56,7 @@ anything else may do anything.
   interpolation: a class's `Display::fmt` is called as the crate's writer
   is, `p.toString()`, its padding `p.toString({ width: 4, align: "Right"
   })`, a `T: Display` given one `(value) => value.toString()` (one form for
-  every class's text, the user's decision, through thor agent). So a
+  every class's text, the user's decision, through worker-01 agent). So a
   template's interpolation runs nothing: what it shows is text, a number,
   a `bool`, or what a call gave, and `calls_only`, `has_effects` and
   `may_throw` see the code a value's text runs as the call it is.

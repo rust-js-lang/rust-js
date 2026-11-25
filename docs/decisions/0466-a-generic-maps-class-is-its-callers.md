@@ -212,7 +212,7 @@ concrete too. `HashMap::<[u8; 536870907], ()>::with_capacity`,
 runtime-package's test of room past wasm32's, was 536,870,907 parts, and
 its compile held 10.8 GB (8.6 GB of the one function alone), so a
 mutation's baseline, given half the machine's 10 GB budget, was stopped as
-it began and reported nothing (#1368, two runs in three of lily agent's). A
+it began and reported nothing (#1368, two runs in three of worker-03 agent's). A
 key of no type parameter, whose class is made where it's made, has no part
 a caller gives: `map_of_param` and `held_facts` take apart only one that
 mentions a type parameter (`mentions_param`), no answer changed. The

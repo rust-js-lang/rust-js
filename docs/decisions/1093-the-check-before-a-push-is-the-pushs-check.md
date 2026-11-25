@@ -253,7 +253,7 @@ its tests.
 ## Amendment (2026-11-25): a rebase carries the round's judging of what it didn't touch
 
 The record is by tree, and a rebase makes a new tree, so each round past
-a moved `main` judged the change's whole set again. The lily agent's 2c-1
+a moved `main` judged the change's whole set again. The worker-03 agent's 2c-1
 push (2ab5bb3f9) judged its 351 mutations in round 1's check, then again
 in each of three rounds past a moved `main`: 442, 444 and 445 s in the
 `judged` phase. None of the incoming commits touched its files, so about

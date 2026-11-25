@@ -1,7 +1,7 @@
 # 1121. oxc_formatter_core vendored, its `will_break` asking each interned element once
 
 Status: Accepted (#1269, 2026-11-11; the workaround here decided through
-thor agent, upstream's report left to the user).
+worker-01 agent, upstream's report left to the user).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none. No program's
 behaviour changes, nor its JS: only how long laying it out takes.

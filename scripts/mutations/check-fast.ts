@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "check-fast-sanity-uncapped",
-    breaks: "a sanity pass whose own change the selector can't say of runs lint, the nets and the builds too, not only its own test files and cases: past a rebase it costs more than the check (m1-lisa's 1,228 s)",
+    breaks: "a sanity pass whose own change the selector can't say of runs lint, the nets and the builds too, not only its own test files and cases: past a rebase it costs more than the check (worker-02 agent's 1,228 s)",
     file: "scripts/checkFast.ts",
     find: "  if (capped) return { jobs:",
     replace: "  if (false) return { jobs:",

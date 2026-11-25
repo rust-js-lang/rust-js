@@ -66,7 +66,7 @@ test("the change's mutations not judged on its tree are those it doesn't record"
 
 // A rebase past a round carries the round's judging onto the rebased tree
 // of each mutation whose own file, list and tests the commits it brought
-// leave alone: lily agent's 2c-1 push judged its same 351 mutations again
+// leave alone: worker-03 agent's 2c-1 push judged its same 351 mutations again
 // in each of three rounds past a moved `main`, 442–445 s each, none of the
 // incoming commits touching its files (2ab5bb3f9). One whose file, list,
 // named test, corpus case or Rust unit tests they touch is judged again.
@@ -94,7 +94,7 @@ test("a rebase over commits that leave a judged mutation's file, list and tests 
 
 // push asks scripts/judged.ts of the mutations in a process of its own,
 // loading no mutation list itself: a rebase's edit of one made it run again
-// from the rebased tree, each of lily agent's 2c-1 push's three (2ab5bb3f9).
+// from the rebased tree, each of worker-03 agent's 2c-1 push's three (2ab5bb3f9).
 test("push loads no mutation list itself", () => {
   const push = readFileSync(join(root, "scripts", "push.ts"), "utf8");
   expect(push.match(/import\(["']\.\/(?:mutations|judged)["']\)|from ["']\.\/(?:mutations|judged)["']/g)).toBeNull();

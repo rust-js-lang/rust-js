@@ -5,7 +5,7 @@ export const mutations: Mutation[] = [
   {
     name: "test-map-new-item-unsearched",
     breaks:
-      "a new free `fn helper` in a module whose functions name `helper`, a glob import's, selects nothing, though it now shadows the glob's (m1-lisa's probe, #2288)",
+      "a new free `fn helper` in a module whose functions name `helper`, a glob import's, selects nothing, though it now shadows the glob's (worker-02 agent's probe, #2288)",
     file: "scripts/testMap.ts",
     find: "        const names = sources.text(file) === undefined ? [] : definedIn(added)",
     replace: "        const names = sources.text(file) !== \"\" ? [] : definedIn(added)",
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "test-map-macro-body-unseen",
     breaks:
-      "a changed line of a `macro_rules!` body selects only its own line's item, not the macro's namers, though every expansion changes (m1-lisa's probe, #2288)",
+      "a changed line of a `macro_rules!` body selects only its own line's item, not the macro's namers, though every expansion changes (worker-02 agent's probe, #2288)",
     file: "scripts/testMap.ts",
     find: "      if (name !== undefined && (at === line || indent(text) < indent(own))) return name;",
     replace: "      if (name !== undefined && at < 0) return name;",
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
   {
     name: "test-map-attribute-above-unread",
     breaks:
-      "an attribute's line alone, `#[derive(..)]` flipped, isn't its item's below it, which the attribute decides of (m1-lisa's probe, #2288)",
+      "an attribute's line alone, `#[derive(..)]` flipped, isn't its item's below it, which the attribute decides of (worker-02 agent's probe, #2288)",
     file: "scripts/testMap.ts",
     find: "    if (/^\\s*#\\[/.test(linesOf(file)[line - 1] ?? \"\")) {",
     replace: "    if (/^\\s*#\\[/.test(linesOf(file)[line - 1] ?? \"\") && line < 0) {",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
   {
     name: "test-map-trait-impl-trait-unsearched",
     breaks:
-      "a new `impl Shows for Item` selects what names `Item` alone, not what's bound by `Shows`, which reaches the new impl without naming `Item` (m1-lisa's probe, #2288)",
+      "a new `impl Shows for Item` selects what names `Item` alone, not what's bound by `Shows`, which reaches the new impl without naming `Item` (worker-02 agent's probe, #2288)",
     file: "scripts/testMap.ts",
     find: "      if (ofTrait !== null) names.push(ofTrait[1]!, ofTrait[2]!);",
     replace: "      if (ofTrait !== null) names.push(ofTrait[2]!);",
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
   {
     name: "test-map-mod-beside-use-everything",
     breaks:
-      "a `mod moved;` beside `use moved::helper;` selects everything, its item not found, where the `use`'s answer says (m1-lisa's probe, #2288)",
+      "a `mod moved;` beside `use moved::helper;` selects everything, its item not found, where the `use`'s answer says (worker-02 agent's probe, #2288)",
     file: "scripts/testMap.ts",
     find: "        if (lines.some((line) => modLine.test(line)) && lines.every(",
     replace: "        if (lines.some((line) => modLine.test(line)) && false && lines.every(",
@@ -227,7 +227,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "selector-pure-addition-runs-all",
-    breaks: "a new `mod` or `fn` nothing refers to yet runs every test, m1-lisa's heap split's `mod derived;`",
+    breaks: "a new `mod` or `fn` nothing refers to yet runs every test, worker-02 agent's heap split's `mod derived;`",
     file: "scripts/testMap.ts",
     find: "      if (count === 0 && removed !== undefined && unreferencedOnly(added) && !insideAt(file, from)) {\n",
     replace: "      if (count === 0 && removed !== undefined && unreferencedOnly(added) && !insideAt(file, from) && false) {\n",

@@ -256,7 +256,7 @@ named, one that shrank or stays under it isn't, and one split under it
 leaves the list.
 
 Against a stale `origin/main`, main's newer commits, which a branch was
-rebased onto, look like the branch's own: lisa agent's check named three
+rebased onto, look like the branch's own: worker-02 agent's check named three
 files others had grown. Where a file looks grown, `origin` is asked where
 its `main` is (`staleMain`, `git ls-remote`, only then), and if the
 checkout's `origin/main` is behind it, the check says to fetch first in

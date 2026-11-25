@@ -978,7 +978,7 @@ source.
 The structure that enforces the contract has three parts:
 
 - **one runtime primitive** that consumes by value and owns S2's drop order
-  (lily agent, #734);
+  (worker-03 agent, #734);
 - **one lowering-side iterator value** that carries each value's facts, so
   no recognizer reads them from `Expr` shapes, spans or runtime properties
   (#730);

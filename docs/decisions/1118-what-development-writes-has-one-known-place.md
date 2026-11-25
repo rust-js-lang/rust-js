@@ -190,8 +190,8 @@ the code to scripts/mutations/kept.ts.
 
 ## Amendment: the floor and the caps are the disk's (#2505, 2026-11-24)
 
-The floor was 40 GiB on every disk. On the 256 GB Macs, thor's Mac mini
-(a 228 GiB volume, 42 GiB free) and lisa's M1, that's 18% of the disk, so
+The floor was 40 GiB on every disk. On the 256 GB Macs, worker-01 agent's Mac mini
+(a 228 GiB volume, 42 GiB free) and worker-02 agent's M1, that's 18% of the disk, so
 their stores kept nothing whenever a check's own writes took them under
 it, and the tests that ask a store to keep something failed for the disk,
 not the change (ioFH's push: 39.9 GB free, three files red). The native
@@ -296,7 +296,7 @@ floor and what the native builds keep past theirs, `diskProfile`):
 | test-maps: 8 of 164 MiB | 1.28 GiB | 1.28 GiB | 1.28 GiB |
 | The checkouts' budget | 39.1 GiB | 48.4 GiB | 67.2 GiB |
 
-On a 256 GB Mac the floor is what binds: thor's Mac mini, at 42 GiB free
+On a 256 GB Mac the floor is what binds: worker-01 agent's Mac mini, at 42 GiB free
 (#2505), has 22 GiB above its 20 GiB floor, about the M5 Pro's
 native-cache in use alone, so a working set that size takes it to the
 floor, where `holdKept` takes the least recently used of the working set,
@@ -315,7 +315,7 @@ checkout past the budget keeps its working set"; mutations
 
 ## Amendment (2026-11-25, #2562): an entry a run is using is removed only as its store removes it
 
-The stores' prune runs beside a check's jobs (#2498). On lily's M6 it removed
+The stores' prune runs beside a check's jobs (#2498). On worker-03 agent's M6 it removed
 the crate corpus's itertools project while that run was measuring it, 3
 checks of 3: "itertools' JS has no adaptors.js", and sccache's "Couldn't
 determine current working directory". The prune had listed the project by

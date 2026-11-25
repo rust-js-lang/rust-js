@@ -93,7 +93,7 @@ A dictionary now carries an `impl Trait`'s drop as it carries a named
 associated type's. Its key's word is its method's name, capitalized as
 an associated type's name is, so it reads as `$dropItem` does:
 `$dropHidden`, `$dropLoud` (`item_word`, traits/words.rs, which
-`item_fact_key` builds `HiddenConstSize` of for #1312; thor agent's
+`item_fact_key` builds `HiddenConstSize` of for #1312; worker-01 agent's
 decision for the user, 2026-11-11). Generic code reads it as any item's,
 `SSource.$dropHidden?.(it)`. An impl whose value drops nothing has
 none. Of std's compiled struct, which a dictionary makes the JS iterator

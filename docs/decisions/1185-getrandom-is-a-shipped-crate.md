@@ -1,6 +1,6 @@
 # 1185. getrandom is a shipped crate: Web Crypto's bytes, its `Error` its code
 
-Status: Accepted (2026-11-23, #2326; Tu approved lisa agent's design, that
+Status: Accepted (2026-11-23, #2326; Tu approved worker-02 agent's design, that
 getrandom go ADR 0529's memchr route; the lead approved the extension to
 its `Error`, the version fact, the backend rule and keeping getrandom in
 covered.txt). Extends [0529](0529-a-shipped-memchr-searches-bytes.md);

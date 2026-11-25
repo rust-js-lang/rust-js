@@ -1,7 +1,7 @@
 # 1092. The iterator protocol is one contract: what each step owes, what it drops, and which facts it carries
 
 Status: Accepted (the user's decision, 2026-11-05: #730, reshaped by
-lily agent's design review). This is the contract. The structural changes
+worker-03 agent's design review). This is the contract. The structural changes
 that enforce it are under "The owners", each landing as its own change.
 Extends
 [0669](0669-an-adapter-steps-its-source-as-stds-does.md),
@@ -398,7 +398,7 @@ answer judged by another call's span) were this gap.
 
 ## The owners
 
-The user adopted lily agent's design review (#730, 2026-11-05). A written
+The user adopted worker-03 agent's design review (#730, 2026-11-05). A written
 contract doesn't remove the bug class alone. It has two root causes, and
 each gets one owner:
 
@@ -409,7 +409,7 @@ each gets one owner:
   `last`, `collect` and `extend` goes through it. It takes `(init, f,
   unwind, ends)` and enforces S2's order on every path. Adapters only pass
   it on. An architecture test refuses a consume that doesn't go through it.
-  Owner: lily agent, through #734. It closes G1, G2 and G3, and G5 where `last`
+  Owner: worker-03 agent, through #734. It closes G1, G2 and G3, and G5 where `last`
   is one of its consumers.
 - **(b) Facts travel as side channels on JS shapes, spans and runtime
   properties:** `.of` (#721), the in-place mark and the outer span (#716),
@@ -571,7 +571,7 @@ writes, as `Known::Part` carries a tuple's part (#756):
 Step 1 adds the value, and its makers write through it: `stepped_ends`,
 `stepped_range_by`, `given_js_iterator`, `knowing_held`, `closed_by` and
 `lent_iterator`. No reader changes yet, and the JS is byte-identical.
-`$holding`'s maker, `closing_function`, stays lily agent's.
+`$holding`'s maker, `closing_function`, stays worker-03 agent's.
 
 Step 2 reads a range's bounds through the value. `stepped_range` and
 `stepped_from` move to value.rs and answer only of a call `emit()` marked
@@ -1169,7 +1169,7 @@ goes on. The points table found the frames that drifted (#843, #844, #845).
   throw unwinds. `$dropItems` is `$inTurnOf`'s.
 - **Std's default fold is one loop, `$foldBy(it, "next" | "back", ..)`**, the
   fallback a consumer reaches after the value's own `fold` or `rfold`
-  (lily agent's review: never a loop ahead of a step that exists, #834's
+  (worker-03 agent's review: never a loop ahead of a step that exists, #834's
   shape). `$Steps`' `fold`, `$foldDropping`'s and `$foldBack`'s were three.
   `$foldDropping`'s dropped what drops with `f` after what's left, where std
   drops `f` first. That was latent: only a bare `$iter`, which closes
@@ -1529,7 +1529,7 @@ that closed as its `fold` does, which dropped a source twice.
 Corpus cases `generic_code_steps_adapters_as_std`, the shapes through a
 generic function against native, and
 `collected_in_place_past_a_capturing_filter_whose_rejected_drop_panics`
-(#2056, lisa agent's). The five metamorphic `generic-instances` rewrites and
+(#2056, worker-02 agent's). The five metamorphic `generic-instances` rewrites and
 the `loud-drop` one leave `test/metamorphic-known.txt`. Mutations
 `closing-try-fold-by-next`, `flatten-ends-inners-forgotten` and
 `flatten-last-back-inner-forgotten` are caught. `$flattenEnds`'

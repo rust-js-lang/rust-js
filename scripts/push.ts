@@ -116,7 +116,7 @@ export function reactGate(changed: string[], incoming: string[] | undefined): "r
  * always; past a rebase, where the commits it brought, `incoming`, touch a
  * Rust source, a mutation list or the toolchain, any of which a `replace`
  * may read. Otherwise each `replace` type-checks as it did the round
- * before, its 22–93 s spent again on a moving `main` (lily agent's health
+ * before, its 22–93 s spent again on a moving `main` (worker-03 agent's health
  * check, 2026-11-20). */
 /** Whether a round runs the `fast` phase's tests again: the first always;
  * past a rebase, where the commits it brought, `incoming`, touch what they
@@ -434,7 +434,7 @@ async function main() {
   let named: ReadonlySet<string> | undefined;
   // The machine's log's line, written once, however the run ends: past
   // its end, a failure's, and a signal's, which stops `spawnSync`'s child
-  // and then runs here (lily agent's push of b355dc824 wrote none).
+  // and then runs here (worker-03 agent's push of b355dc824 wrote none).
   let written = !ownsTimes("push");
   // The push before this one ran again, its time and phases this line's too.
   const before = givenBefore(process.env);
@@ -747,7 +747,7 @@ export function beside(cmd: string[], log: string, env: Record<string, string> =
 
 /** A command of a phase, its output shown; refused where it fails. */
 /** Of a rebase that brought commits, the compiles that find a semantic
- * conflict in seconds, before any test (#2484, m1-lisa's design): the
+ * conflict in seconds, before any test (#2484, worker-02 agent's design): the
  * change removing or renaming what an incoming commit newly calls, which
  * git merges cleanly and only a full check or CI found, 567 s late on the
  * Mac mini. Each only where the change's own files, `own`, and the
@@ -885,7 +885,7 @@ export function lowerRatchets(text: string): string | undefined {
  * issue's file of one kept as a directory, `test/known/<list>/<issue>.txt`
  * (#2260), and the rustc suite's three (ADR 0089). Two changes that each
  * took a line off one conflict on rebase where the lines are neighbours:
- * lisa agent's #2054 and lily agent's #2056 off the metamorphic net's list
+ * worker-02 agent's #2054 and worker-03 agent's #2056 off the metamorphic net's list
  * stopped a push (2026-11-18). */
 export const lineSet = (file: string) =>
   /^test\/[\w-]+-known\.txt$/.test(file) ||

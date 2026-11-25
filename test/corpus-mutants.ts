@@ -181,7 +181,7 @@ function wrap(mutant: CorpusMutant, compiler: string, args: string[]): Wrapped {
   // First in the module, run before anything of its own: a binary's JS
   // calls `$main(main)` near its top, which ends the process at once where
   // `main` fails or aborts, so an edit at its end never ran there (#2447's
-  // first CI run, m1-lisa's read).
+  // first CI run, worker-02 agent's read).
   if (out !== undefined && "js" in edit && ofIt && code === 0) writeFileSync(out, `${edit.js}\n${readFileSync(out, "utf8")}`);
   return { code, stdout, stderr };
 }

@@ -145,7 +145,7 @@ function table(rows: Site[], by: (s: Site) => string): string {
   return lines.join("\n");
 }
 
-/** lisa's 22 patterns (#2490 comment 7132169613), each a predicate of a
+/** worker-02 agent's 22 patterns (#2490 comment 7132169613), each a predicate of a
  * borrow's line: they overlap, as hers do. */
 const temporary = (s: Site) => ["method", "read", "write", "argument", "other", "tail"].includes(s.shape);
 const defeated = (s: Site, ...kinds: string[]) => kinds.includes(s.defeatAlone);
@@ -224,7 +224,7 @@ for (const build of [...new Set(sites.map((s) => s.build))]) {
 }
 for (const build of [...new Set(sites.map((s) => s.build))]) {
   const of = sites.filter((s) => s.build === build);
-  console.log(`\n## ${build}, by lisa's patterns\n`);
+  console.log(`\n## ${build}, by worker-02 agent's patterns\n`);
   console.log(patternTable(of));
 }
 for (const build of [...new Set(sites.map((s) => s.build))]) {

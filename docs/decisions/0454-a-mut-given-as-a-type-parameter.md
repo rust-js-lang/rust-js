@@ -1055,7 +1055,7 @@ guard-given-alone-refused.
 
 The same write reached a guard by another route, a closure that captures
 its variable by reference: `let mut state = a.borrow_mut(); let other =
-b.borrow_mut(); (|| state = other)();` (m1-lisa's probe, #2475 comment
+b.borrow_mut(); (|| state = other)();` (worker-02 agent's probe, #2475 comment
 7127242310, a flattened state's guard; the Mac mini's, two plain cells and
 a plain struct field). The variable's release is decided by the guard its
 `let` gives it, uncounted where nothing can ask while it's held

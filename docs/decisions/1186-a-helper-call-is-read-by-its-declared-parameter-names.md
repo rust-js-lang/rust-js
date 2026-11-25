@@ -14,7 +14,7 @@ arguments: a simplification of `$withBorrow(key, f)`, a `$lent(it)`
 lent as it is, a `$fieldCell(o, "f")` read as `o.f`. Each read them by
 their shape: `[cell, raised]`, `args.len() == 2`, `args[4]`. #2292 gave
 85 helpers a location argument, `raisedAt`, and four passes stopped
-matching, each found as a wrong or lost form. lisa agent's audit of the 156
+matching, each found as a wrong or lost form. worker-02 agent's audit of the 156
 uses of `helper_name()` found about 80 reading a fixed shape. A helper
 that gains a parameter, or a call that gives an optional one, breaks
 each of them silently.
