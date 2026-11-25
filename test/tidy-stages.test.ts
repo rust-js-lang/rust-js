@@ -254,9 +254,7 @@ const leastDiffers: Record<string, string> = {};
 // The cases that run otherwise with every cell counted, each with its
 // issue: a list that only shrinks. Each case's JS as built is right; its
 // counted form, which the build doesn't take, is wrong (#2491).
-const cellsDiffer: Record<string, string> = {
-  "guard_value_read_before_write.rs": "#2579",
-};
+const cellsDiffer: Record<string, string> = {};
 
 /** A compile's JS, its map's line left out: what's run, and kept by. */
 const code = (js: string) => readFileSync(js, "utf8").replace(/^\/\/# sourceMappingURL=.*$/m, "");

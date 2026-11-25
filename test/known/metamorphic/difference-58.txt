@@ -18,6 +18,8 @@ plain std loud-drop drop_guard_restores_nullable_fields.rs
 plain std loud drop_guard_restores_taken_fields.rs
 plain std loud-call drop_guard_restores_taken_fields.rs
 plain std loud-drop drop_guard_restores_taken_fields.rs
+plain std loud-call guard_value_read_before_write.rs
+plain std loud-clone guard_value_read_before_write.rs
 plain std loud held_borrow_of_own_cell.rs
 plain std loud-call held_borrow_of_own_cell.rs
 plain std loud-drop held_borrow_of_own_cell.rs

@@ -3,6 +3,46 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "read-before-anything-runs-past-a-call",
+    breaks:
+      "a read past a call is taken for one before anything runs, so a counted guard's value is read after its `$unborrow` and the call that writes its cell, `chunk.id` after `touch` emptied it (#2579)",
+    file: "crates/rust-js-mir/src/queries/reads.rs",
+    find: "        next.extend(data.terminator().successors().map(|b| (b, true)));\n",
+    replace: "        next.extend(data.terminator().successors().map(|b| (b, ran)));\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "guard_value_read_before_write"],
+    env: { TIDY_VARIANTS: "cells" },
+  },
+  {
+    name: "read-before-anything-runs-past-what-does-nothing",
+    breaks:
+      "a statement that does nothing, a `StorageDead`, is taken to run code, so a counted guard's value is read before its release though nothing runs between, `const result = value.value; $unlock(value); return result;` (#2579)",
+    file: "crates/rust-js-mir/src/queries/reads.rs",
+    find: "    let inert = |statement: &mir::Statement<'_>| {\n        matches!(\n",
+    replace: "    let inert = |statement: &mir::Statement<'_>| {\n        false && matches!(\n",
+    tests: ["test/corpus.test.ts", "-t", "^(locks|lock_poisoning).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "read-before-anything-runs-blind-to-a-terminator's-reads",
+    breaks:
+      "a terminator's read past what ran is taken for one before it, so a counted guard's value given a call past another is read after its `$unborrow` (#2579)",
+    file: "crates/rust-js-mir/src/queries/reads.rs",
+    find: "        match first_use_by_terminator(body, block, local) {\n            Some(true) if ran => return false,\n",
+    replace: "        match first_use_by_terminator(body, block, local) {\n            Some(true) if false => return false,\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "guard_value_read_before_write"],
+    env: { TIDY_VARIANTS: "cells" },
+  },
+  {
+    name: "read-before-anything-runs-blind-to-reads",
+    breaks:
+      "a statement's read past what ran is taken for one before it, so a counted guard's value is read after its `$unborrow` and the call that writes its cell (#2579)",
+    file: "crates/rust-js-mir/src/queries/reads.rs",
+    find: "            match first_use(statement, at, local) {\n                Some(true) if ran => return false,\n",
+    replace: "            match first_use(statement, at, local) {\n                Some(true) if false => return false,\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "guard_value_read_before_write"],
+    env: { TIDY_VARIANTS: "cells" },
+  },
+  {
     name: "item-reach-of-another-local",
     breaks: "a write of another local's item, `other[0] = ..`, is taken to change what `cur[0]` reaches, so a place is held where it's made though nothing sets it (#1075)",
     file: "crates/rust-js-mir/src/queries/reads.rs",
@@ -38,8 +78,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a read of a local past where it's assigned again, a loop's `&mut found` made anew before it's read, is taken for one of the value written, so `found.push(v)` holds it first, `const f = found; f.push(v)` (#198)",
     file: "crates/rust-js-mir/src/queries/reads.rs",
-    find: "                Some(false) => continue 'blocks,\n",
-    replace: "                Some(false) => {}\n",
+    find: "                Some(true) => return true,\n                Some(false) => continue 'blocks,\n",
+    replace: "                Some(true) => return true,\n                Some(false) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^if_let_mut_else_assign.rs$"],
     snapshots: true,
   },

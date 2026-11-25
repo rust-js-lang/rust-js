@@ -373,9 +373,8 @@ export const mutations: Mutation[] = [  {
     breaks:
       "a value read in a branch that's done with is read again before a drop after it, where what it reads may not be, and JS throws: the playground's `rootFile.slice(0, -3);` before its borrow's release, the corpus's `root.slice(0, -3);`",
     file: "crates/rust-js-mir/src/temporaries.rs",
-    find: "                    (state.body.basic_blocks[block].terminator().successors()).any(|b| read_from(state.body, b, l))\n",
-    replace:
-      "                    (state.body.basic_blocks[block].terminator().successors()).any(|_| true)\n",
+    find: "                        read_from(state.body, b, l) && !(counted && read_before_anything_runs(state.body, b, l))\n",
+    replace: "                        !(counted && read_before_anything_runs(state.body, b, l))\n",
     tests: ["test/corpus.test.ts", "-t", "kept_read_past_branch"],
     snapshots: true,
   },
@@ -521,11 +520,21 @@ export const mutations: Mutation[] = [  {
     ],
   },
   {
+    name: "counted-guard-settled-where-nothing-runs",
+    breaks:
+      "a counted guard's value kept to be read in place is read before its release though nothing runs between, `const result = v.length; $unborrow(v); return result;` where `$unborrow(v); return v.length;` reads the same (#2579)",
+    file: "crates/rust-js-mir/src/temporaries.rs",
+    find: "                        read_from(state.body, b, l) && !(counted && read_before_anything_runs(state.body, b, l))\n",
+    replace: "                        read_from(state.body, b, l)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(refcell_borrows|locks|lock_poisoning).rs$"],
+    snapshots: true,
+  },
+  {
     name: "guard-settle-any-reference",
     breaks: "a guard's drop that writes nothing settles every read through any reference, set past where another branch reads it, `root ${parent.tag}` of an unset `parent` (#452)",
     file: "crates/rust-js-mir/src/temporaries.rs",
-    find: "        self.settle(state, &[block], Some(&guard), out);\n    }\n",
-    replace: "        self.settle(state, &[block], None, out);\n    }\n",
+    find: "        self.settle(state, &[block], Some((&guard, false)), out);\n",
+    replace: "        self.settle(state, &[block], None, out);\n",
     tests: ["test/corpus.test.ts", "-t", "returns_joined_past_blocks"],
   },
   {

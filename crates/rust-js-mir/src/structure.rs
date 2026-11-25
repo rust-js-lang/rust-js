@@ -606,9 +606,13 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 // What's dropped runs after what's made before it.
                 let mut dropped = Vec::new();
                 self.mir_drop(state, block, *place, false, span, &mut dropped)?;
+                let guard = place.projection.is_empty() && self.is_guard(state.body.local_decls[place.local].ty);
                 if !dropped.is_empty() {
                     self.flush(state, &mut out)?;
                     self.settle_reads(state, block, &mut out);
+                    if guard {
+                        self.settle_counted_guard_reads(state, (block, place.local), &mut out);
+                    }
                     // Of what runs something, which may panic (`unwinds`).
                     let unwinds = (state.facts.drops()).is_some_and(|drops| self.unwinds(state.body, drops, block));
                     let cleanup = match unwinds {
@@ -616,7 +620,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                         false => Vec::new(),
                     };
                     self.unwinding(dropped, cleanup, self.js_span(span), &mut out);
-                } else if place.projection.is_empty() && self.is_guard(state.body.local_decls[place.local].ty) {
+                } else if guard {
                     self.settle_guard_reads(state, (block, place.local), &mut out);
                 }
                 out.extend(self.mir_branch(state, block, *target)?);

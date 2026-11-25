@@ -235,7 +235,25 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) {
         let guard = state.locals.names[guard].clone();
-        self.settle(state, &[block], Some(&guard), out);
+        self.settle(state, &[block], Some((&guard, false)), out);
+    }
+
+    /// Each value kept to be read in place that reads through `guard`, a
+    /// counted guard `block` drops, writing its `$unborrow`, and is read
+    /// past something that may run code or write: read here, before the
+    /// release lets another borrow its cell and write it,
+    /// `let Some(chunk) = handler.chunk.borrow().clone() else ..` read
+    /// before `touch` empties it (#2579). One read before anything runs is
+    /// read where it's used, past the release, which changes nothing it
+    /// reads: `$unborrow(v); return v.length;`.
+    pub(super) fn settle_counted_guard_reads(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (block, guard): (BasicBlock, Local),
+        out: &mut Vec<Stmt>,
+    ) {
+        let guard = state.locals.names[guard].clone();
+        self.settle(state, &[block], Some((&guard, true)), out);
     }
 
     /// Each value kept to be read later that reads `moved`, which is moved
@@ -335,19 +353,21 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
 
     /// Each value kept to be read in place that reads through a shared
     /// reference, or `guard` alone where it's given, and is read past one of
-    /// `drops`: assigned here.
+    /// `drops`: assigned here. Of a counted guard, `(guard, true)`, only one
+    /// read past something that may run code or write.
     fn settle(
         &mut self,
         state: &mut State<'_, 'tcx>,
         drops: &[BasicBlock],
-        guard: Option<&js::Name>,
+        guard: Option<(&js::Name, bool)>,
         out: &mut Vec<Stmt>,
     ) {
         if drops.is_empty() {
             return;
         }
+        let counted = guard.is_some_and(|(_, counted)| counted);
         let references: IndexSet<js::Name> = match guard {
-            Some(guard) => IndexSet::from_iter([guard.clone()]),
+            Some((guard, _)) => IndexSet::from_iter([guard.clone()]),
             None => (state.body.local_decls.iter_enumerated())
                 .filter(|(_, decl)| decl.ty.is_ref())
                 .map(|(local, _)| &state.locals.names[local])
@@ -372,7 +392,9 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             .map(|(&l, _)| l)
             .filter(|&l| {
                 (drops.iter()).any(|&block| {
-                    (state.body.basic_blocks[block].terminator().successors()).any(|b| read_from(state.body, b, l))
+                    (state.body.basic_blocks[block].terminator().successors()).any(|b| {
+                        read_from(state.body, b, l) && !(counted && read_before_anything_runs(state.body, b, l))
+                    })
                 })
             })
             .collect();

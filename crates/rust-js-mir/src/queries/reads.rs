@@ -52,28 +52,58 @@ pub(crate) fn read_past(body: &mir::Body<'_>, at: mir::Location, local: Local) -
     read_in(body, at.block, at.statement_index + 1, local)
 }
 
+/// The first thing `statement` does with `local`: reads it, `Some(true)`,
+/// or assigns it, `Some(false)`. What's assigned is read first, then where
+/// it goes.
+fn first_use(statement: &mir::Statement<'_>, at: mir::Location, local: Local) -> Option<bool> {
+    let mut first = First { local, found: None };
+    match &statement.kind {
+        StatementKind::Assign(assign) => {
+            first.visit_rvalue(&assign.1, at);
+            if first.found.is_none() && assign.0.local == local {
+                first.found = Some(!assign.0.projection.is_empty());
+            }
+        }
+        _ => first.visit_statement(statement, at),
+    }
+    first.found
+}
+
+/// The first thing `block`'s terminator does with `local`, as `first_use`.
+fn first_use_by_terminator(body: &mir::Body<'_>, block: BasicBlock, local: Local) -> Option<bool> {
+    let data = &body.basic_blocks[block];
+    let mut first = First { local, found: None };
+    let at = mir::Location {
+        block,
+        statement_index: data.statements.len(),
+    };
+    first.visit_terminator(data.terminator(), at);
+    first.found
+}
+
+/// What a statement or a terminator does first with `local`.
+struct First {
+    local: Local,
+    found: Option<bool>,
+}
+
+impl<'tcx> Visitor<'tcx> for First {
+    fn visit_local(&mut self, local: Local, context: PlaceContext, _: mir::Location) {
+        if local != self.local || self.found.is_some() {
+            return;
+        }
+        self.found = match context {
+            PlaceContext::MutatingUse(MutatingUseContext::Store | MutatingUseContext::Call) => Some(false),
+            PlaceContext::NonUse(_) => None,
+            _ => Some(true),
+        };
+    }
+}
+
 /// Whether `local` is read in `from`, its statements from `start` on, its
 /// terminator unless `start` is past it, or a block it goes on to, before
 /// it's assigned again.
 fn read_in(body: &mir::Body<'_>, from: BasicBlock, start: usize, local: Local) -> bool {
-    /// The first thing a statement does with `local`: reads it, `Some(true)`,
-    /// or assigns it, `Some(false)`.
-    struct First {
-        local: Local,
-        found: Option<bool>,
-    }
-    impl<'tcx> Visitor<'tcx> for First {
-        fn visit_local(&mut self, local: Local, context: PlaceContext, _: mir::Location) {
-            if local != self.local || self.found.is_some() {
-                return;
-            }
-            self.found = match context {
-                PlaceContext::MutatingUse(MutatingUseContext::Store | MutatingUseContext::Call) => Some(false),
-                PlaceContext::NonUse(_) => None,
-                _ => Some(true),
-            };
-        }
-    }
     // Each block from its start, `from`'s too where a way goes back to it.
     let mut seen = IndexSet::default();
     let mut next = vec![(from, start)];
@@ -87,31 +117,14 @@ fn read_in(body: &mir::Body<'_>, from: BasicBlock, start: usize, local: Local) -
                 block,
                 statement_index: index,
             };
-            let mut first = First { local, found: None };
-            // What's assigned is read first, then where it goes.
-            match &statement.kind {
-                StatementKind::Assign(assign) => {
-                    first.visit_rvalue(&assign.1, at);
-                    if first.found.is_none() && assign.0.local == local {
-                        first.found = Some(!assign.0.projection.is_empty());
-                    }
-                }
-                _ => first.visit_statement(statement, at),
-            }
-            match first.found {
+            match first_use(statement, at, local) {
                 Some(true) => return true,
                 Some(false) => continue 'blocks,
                 None => {}
             }
         }
         if start <= data.statements.len() {
-            let mut first = First { local, found: None };
-            let at = mir::Location {
-                block,
-                statement_index: data.statements.len(),
-            };
-            first.visit_terminator(data.terminator(), at);
-            match first.found {
+            match first_use_by_terminator(body, block, local) {
                 Some(true) => return true,
                 Some(false) => continue,
                 None => {}
@@ -120,6 +133,60 @@ fn read_in(body: &mir::Body<'_>, from: BasicBlock, start: usize, local: Local) -
         next.extend(data.terminator().successors().map(|b| (b, 0)));
     }
     false
+}
+
+/// Whether each read of `local` from `from` on, before it's assigned again,
+/// comes before anything that may run code or write memory, on any way from
+/// `from` to it: in `from`, past only statements that do nothing. What a
+/// value read in place reads through a released guard is then the same at
+/// its read as at the release, which nothing can borrow and write between
+/// (#2579). What isn't known to do nothing, any terminator among them, is
+/// taken to run.
+pub(crate) fn read_before_anything_runs(body: &mir::Body<'_>, from: BasicBlock, local: Local) -> bool {
+    // A statement that does nothing: what isn't known to is taken to run.
+    let inert = |statement: &mir::Statement<'_>| {
+        matches!(
+            &statement.kind,
+            StatementKind::StorageLive(_)
+                | StatementKind::StorageDead(_)
+                | StatementKind::FakeRead(_)
+                | StatementKind::PlaceMention(_)
+                | StatementKind::AscribeUserType(..)
+                | StatementKind::Coverage(_)
+                | StatementKind::ConstEvalCounter
+                | StatementKind::BackwardIncompatibleDropHint { .. }
+                | StatementKind::Nop
+        )
+    };
+    // Each block from its start, and whether something ran on the way to it.
+    let mut seen = IndexSet::default();
+    let mut next = vec![(from, false)];
+    'blocks: while let Some((block, mut ran)) = next.pop() {
+        if !seen.insert((block, ran)) {
+            continue;
+        }
+        let data = &body.basic_blocks[block];
+        for (index, statement) in data.statements.iter().enumerate() {
+            let at = mir::Location {
+                block,
+                statement_index: index,
+            };
+            match first_use(statement, at, local) {
+                Some(true) if ran => return false,
+                Some(false) => continue 'blocks,
+                _ => {}
+            }
+            ran |= !inert(statement);
+        }
+        match first_use_by_terminator(body, block, local) {
+            Some(true) if ran => return false,
+            Some(false) => continue,
+            _ => {}
+        }
+        // Past a terminator, something may have run.
+        next.extend(data.terminator().successors().map(|b| (b, true)));
+    }
+    true
 }
 
 /// Whether `root` may be written on a way from `at`, where `local` is

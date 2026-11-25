@@ -1,6 +1,6 @@
 # 0451. A guard in generic code: its `Deref` a dictionary's, its drop given, what's read before it
 
-Status: Accepted; amended (what's read through a guard whose drop writes nothing, #452). Extends [0098](0098-destructors.md), [0328](0328-refcell-borrow-counts.md),
+Status: Accepted; amended (what's read through a guard whose drop writes nothing, #452; and through a counted guard, past what may run, #2579). Extends [0098](0098-destructors.md), [0328](0328-refcell-borrow-counts.md),
 [0394](0394-a-deref-bound.md) and [0397](0397-a-refcell-of-a-dyn.md).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N for a guard's
@@ -274,3 +274,43 @@ longer reached it. The corpus case
 `blanket_impl_method_drops_its_items_iterator.rs` does: without the slot, its call through `held_through`, a
 `K: Keeping`, drops nothing of its `Held`s' iterators, `drop 6` missing, where native
 Rust prints it. The mutation names both cases.
+
+## Amendment: what's read through a counted guard, past what may run (#2579)
+
+A P0, a wrong answer. Case ([0262](0262-when-rust-and-js-disagree.md)):
+results change, preserve Rust's. #452's settle ran only where a guard's
+drop writes nothing. With every cell counted (`--count-every-cell`,
+#2491's net), the same `let Some(chunk) = handler.chunk.borrow().clone()
+else { return 0.0; }; touch(handler); chunk.id` printed `$unborrow(borrow);
+touch(handler); return borrow.value.id;`, a TypeError where Rust prints 5.
+No default build was found to reach it, but the form is any site's that
+a decider counts.
+
+**A counted guard's drop, which writes `$unborrow` or `$unlock`, settles
+each value kept in place that reads through that guard and is read past
+something that may run code or write** (`temporaries::
+settle_counted_guard_reads`, from `structure.rs`'s `Drop`). The question
+is the body's, `queries::read_before_anything_runs`: whether each read of
+the value from the drop's target on comes in that block past only
+statements that do nothing (`StorageLive`, `StorageDead`, `FakeRead` and
+the like). Any other statement, an assignment among them, and any
+terminator are taken to run: what isn't known to do nothing settles. So
+a value read right after the release stays where it's used, which reads
+the same, as nothing can borrow and write the cell between:
+`$unborrow(v); return v.length;` of refcell_borrows, locks,
+lock_poisoning, borrow_errors_shown_by_debug and
+try_borrow_of_a_cell_never_contested, unchanged. Settling there too, as
+a first fix did, wrote `const result = v.length; $unborrow(v); return
+result;`, a temporary for nothing.
+
+Held by the cells variant of `guard_value_read_before_write`
+(test/tidy-stages.test.ts) against native Rust: the `Rc` clone read past
+`touch`, a `Copy` read past an assignment through the cell
+(`copied`), a clone read just past a call given nothing (`forgotten`) and
+one read only by its drop past a call (`held_to_the_end`). Mutations
+`counted-guard-read-after-release` (`structure.rs`),
+`counted-guard-settled-where-nothing-runs` (`temporaries.rs`),
+`read-before-anything-runs-past-a-call`,
+`read-before-anything-runs-past-what-does-nothing`,
+`read-before-anything-runs-blind-to-reads` and
+`read-before-anything-runs-blind-to-a-terminator's-reads` (`queries/reads.rs`).

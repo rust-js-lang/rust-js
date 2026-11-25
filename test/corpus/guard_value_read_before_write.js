@@ -11,10 +11,16 @@ import {
   $alreadyMutablyBorrowed,
   $borrow,
   $borrowMut,
+  $cleanup,
   $displayF64,
   $fieldCell,
+  $live,
+  $local,
   $main,
+  $rcClone,
+  $rcDrop,
   $unborrow,
+  $unwindsOn,
 } from "@rust-js/std";
 
 export function touch(handler) {
@@ -70,6 +76,118 @@ export function second(handler) {
   return chunk?.id ?? -1;
 }
 
+export function copied(slot) {
+  // A value copied out, read past what writes the cell (#2579).
+  const id = slot.value;
+  if (id == null) {
+    return 0;
+  }
+  slot.value = undefined;
+  return id;
+}
+
+const currentId = { value: [4] };
+const lease = $local(() => ({ value: { value: [6] }, strong: 1, weak: 0 }));
+
+function forgetId() {
+  currentId.value = undefined;
+}
+
+function endLease() {
+  const lease$1 = lease();
+  let borrowMut;
+  try {
+    borrowMut = $borrowMut(
+      lease$1.value,
+      "test/corpus/guard_value_read_before_write.rs:81:31",
+      true,
+    );
+  } catch (error) {
+    throw error;
+  }
+  try {
+    try {
+      if (borrowMut.value != null) {
+        console.log(`lease ${$displayF64(borrowMut.value[0])} ended`);
+      }
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        borrowMut.value = undefined;
+      }
+    }
+  } finally {
+    $unborrow(borrowMut);
+  }
+}
+
+export function forgotten() {
+  // Read just past a call given nothing, which writes the cell.
+  const slot = currentId;
+  const id = slot.value;
+  if (id == null) {
+    return 0;
+  }
+  forgetId();
+  return id[0];
+}
+
+export function heldToTheEnd() {
+  // Read only by its drop, past a call that writes the cell.
+  const slot = $rcClone(lease());
+  let borrow;
+  try {
+    if (slot.value.borrows < 0) {
+      $alreadyMutablyBorrowed("test/corpus/guard_value_read_before_write.rs:97:28");
+    }
+    borrow = slot.value;
+  } catch (error) {
+    $cleanup(() => {
+      $rcDrop(slot, (value) => {
+        if (value.value != null) {
+          console.log(`lease ${$displayF64(value.value[0])} ended`);
+        }
+      });
+    }, error);
+    throw error;
+  }
+  let result;
+  if (borrow.value == null) {
+    result = false;
+    $rcDrop(slot, (value) => {
+      if (value.value != null) {
+        console.log(`lease ${$displayF64(value.value[0])} ended`);
+      }
+    });
+    return result;
+  }
+  const _held = borrow.value;
+  try {
+    try {
+      endLease();
+      result = true;
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        console.log(`lease ${$displayF64(_held[0])} ended`);
+      }
+    }
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      $rcDrop(slot, (value) => {
+        if (value.value != null) {
+          console.log(`lease ${$displayF64(value.value[0])} ended`);
+        }
+      });
+    }
+  }
+  return result;
+}
+
 $main(main);
 
 function main() {
@@ -77,9 +195,12 @@ function main() {
   console.log(`${$displayF64(first(handler))}`);
   $borrowMut(
     $fieldCell(handler, "chunk"),
-    "test/corpus/guard_value_read_before_write.rs:54:20",
+    "test/corpus/guard_value_read_before_write.rs:108:20",
   ).value = { id: 7 };
   console.log(`${$displayF64(second(handler))}`);
   console.log(`${lend($fieldCell(handler, "chunk"))}`);
+  console.log(`${$displayF64(copied({ value: 3 }))}`);
+  console.log(`${$displayF64(forgotten())}`);
+  console.log(`${heldToTheEnd()}`);
 }
 //# sourceMappingURL=case.js.map

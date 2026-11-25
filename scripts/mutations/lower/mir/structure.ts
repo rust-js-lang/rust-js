@@ -5,6 +5,16 @@ const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
 
 export const mutations: Mutation[] = [
   {
+    name: "counted-guard-read-after-release",
+    breaks:
+      "a counted guard's value kept to be read in place is read after its `$unborrow`, past a call that writes its cell, `chunk.id` of `let Some(chunk) = cell.borrow().clone() else ..` after `touch` emptied it (#2579)",
+    file: "crates/rust-js-mir/src/structure.rs",
+    find: "                    if guard {\n                        self.settle_counted_guard_reads(state, (block, place.local), &mut out);\n                    }\n",
+    replace: "",
+    tests: ["test/tidy-stages.test.ts", "-t", "guard_value_read_before_write"],
+    env: { TIDY_VARIANTS: "cells" },
+  },
+  {
     name: "division-raised-at-its-assignment",
     breaks:
       "a division or remainder written to a place that's there already, `t.0 = t.1 / d`, `last = 17 % d`, panics naming where the assignment starts, not the division (#2366)",
@@ -514,8 +524,8 @@ export const mutations: Mutation[] = [
     name: "guard-drop-reads-unsettled",
     breaks: "what's read through a guard whose drop writes nothing is read where it's used, past a call that writes its cell, `borrow.value.id` after `touch` emptied it (#452)",
     file: "crates/rust-js-mir/src/structure.rs",
-    find: "                } else if place.projection.is_empty() && self.is_guard(state.body.local_decls[place.local].ty) {\n",
-    replace: "                } else if false && place.projection.is_empty() && self.is_guard(state.body.local_decls[place.local].ty) {\n",
+    find: "                } else if guard {\n",
+    replace: "                } else if false {\n",
     tests: ["test/corpus.test.ts", "-t", "guard_value_read_before_write"],
   },
   {
