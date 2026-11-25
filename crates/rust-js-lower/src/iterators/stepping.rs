@@ -126,6 +126,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ),
             crate::iterators::Shunted::Grown(size) => (items, Some(size)),
         };
+        self.fallible_collect_call(items, (target, item), (into, drop, rest_first, size), span)
+    }
+
+    /// The one maker of `$collectOptions`' and `$collectResults`' call
+    /// (#2572's first piece): `items`, of `item`s, collected into `target`,
+    /// an `Option` or a `Result`, stopped at the first `None` or `Err`; `into`
+    /// what makes the collection of the values, `drop` what drops each,
+    /// `rest_first` what drops what's left first (#423), `size` the values'
+    /// size its hint asks by (#848). Whether an item's `Some` is boxed and
+    /// what drops the `Err` it keeps are its item's, said here, so no caller
+    /// leaves one out: a `sum` that made `$collectResults` itself gave no
+    /// `dropErr`, and the `Err` was never dropped as its source's drop
+    /// panicked (#2574).
+    pub(crate) fn fallible_collect_call(
+        &mut self,
+        items: Expr,
+        (target, item): (Ty<'tcx>, Option<Ty<'tcx>>),
+        (into, drop, rest_first, size): (Option<Expr>, Option<Expr>, Option<Expr>, Option<Expr>),
+        span: Span,
+    ) -> R<Expr> {
         // Its arguments past `items`, each before one given given, as
         // `undefined` of an optional one, `false` of a flag.
         let given = |optional: Vec<(Option<Expr>, Expr)>| {

@@ -2349,3 +2349,21 @@ holds four such collects by `catch_unwind`, beside one that runs to its
 end. Mutations `collect-options-close-holds-nothing`,
 `collect-results-close-holds-nothing` and
 `collect-results-close-err-unheld`.
+
+## Amendment: a fallible collect's helpers have one maker (2026-11-25, #2574)
+
+`$collectResults` had two makers. `collect()`'s, stepping.rs', gave the
+`dropErr` #2564 added. `sum`'s and `product`'s, consumers.rs', made the
+call itself with none, so a fallible `sum` into a `Result` whose source's
+drop panicked left the kept `Err` undropped.
+
+`fallible_collect_call` is now the one maker of `$collectOptions`' and
+`$collectResults`' call. It says from the item itself whether a `Some` is
+boxed and what drops the `Err`, so no caller leaves one out.
+test/architecture-iterators.test.ts holds the two helper names to its file
+alone.
+
+Generic code's fallible `sum` is #2580: its source is dropped after the
+call, outside `try_process`'s frame, which is #2572's question of who drops
+a consumed iterator. Mutation `fallible-collect-err-undropped`;
+`fallible-sum-of-results-as-options` moves to the maker.

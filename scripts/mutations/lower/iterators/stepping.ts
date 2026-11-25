@@ -684,4 +684,22 @@ export const mutations: Mutation[] = [
     replace: "            && self\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "fallible-collect-err-undropped",
+    breaks:
+      "a fallible collect into a `Result`, and a fallible `sum` or `product`, is given no `dropErr`, so the `Err` it keeps is never dropped as closing its source panics (#2564, #2574)",
+    file: "crates/rust-js-lower/src/iterators/stepping.rs",
+    find: "                Some(ty::Adt(_, args)) if args.types().count() == 2 => self.std_drop_function(args.type_at(1), span)?,\n",
+    replace: "                Some(ty::Adt(_, args)) if false && args.types().count() == 2 => self.std_drop_function(args.type_at(1), span)?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^fallible_collect_drops_what_it_collected_as_its_close_panics.rs$"],
+  },
+  {
+    name: "fallible-sum-of-results-as-options",
+    breaks:
+      "`sum()` into a `Result`, and a `collect()` into one, collects as into an `Option`, so an `Err` is a value",
+    file: "crates/rust-js-lower/src/iterators/stepping.rs",
+    find: "        Ok(if self.option_of(target).is_some() {\n",
+    replace: "        Ok(if self.option_of(target).is_some() || true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^sum_fallible.rs$"],
+  },
 ];

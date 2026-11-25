@@ -107,16 +107,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^try_for_each.rs$"],
   },
   {
-    name: "fallible-sum-of-results-as-options",
-    breaks:
-      "`sum()` into a `Result` collects as into an `Option`, so an `Err` is a value",
-    file: "crates/rust-js-lower/src/iterators/mir_steps/consumers.rs",
-    find: '                None => Expr::call_helper("$collectResults", vec![it, into]),\n',
-    replace:
-      '                None => Expr::call_helper("$collectOptions", vec![it, Expr::bool(false), into]),\n',
-    tests: ["test/corpus.test.ts", "-t", "^sum_fallible.rs$"],
-  },
-  {
     name: "fallible-sum-refused",
     breaks:
       "`sum()` into an `Option` of numbers is refused, as a dictionary of no impl",

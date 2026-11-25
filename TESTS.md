@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2574, ADR 1092 amended): test/architecture-iterators.test.ts gains a test, a fallible collect's helpers made by one maker; test/known/iterator-matrix/2574.txt is gone, its concrete cases native-equal, and 2580.txt lists generic code's.
+
 Changed on 2026-11-25 (#2572, ADR 1090 amended): the consumer net gains #2572's matrix, an item's drop and the source's own drop panicking, of the crate's iterator and a map of it, by each caller and a library's generic code, 15,260 cases; test/known/iterator-matrix/ lists #2574's and #2575's.
 
 Changed on 2026-11-25 (#2570, ADR 1201 amended): test/architecture-stopgaps.test.ts counts 46 stopgap refusals, the nine of Campaign 6's step 7, `Crossing::TypeFact`, among them.

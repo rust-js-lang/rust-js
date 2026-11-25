@@ -39,10 +39,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![values.into()],
                 vec![StmtKind::Return(Some(total)).at(js::Span::NONE)],
             );
-            return Ok(match option {
-                Some(_) => Expr::call_helper("$collectOptions", vec![it, Expr::bool(false), into]),
-                None => Expr::call_helper("$collectResults", vec![it, into]),
-            });
+            // By the one maker of the fallible collect's call, which gives
+            // what drops the `Err` it keeps (#2574).
+            return self.fallible_collect_call(it, (output, item), (Some(into), None, None, None), span);
         }
         let unsupported = || self.unsupported(span, &format!("`{name}` of a `{output}`, from its MIR"));
         let (Some(item), Some(accumulation)) = (item, crate::recognition::accumulation_of(self.tcx, method)) else {

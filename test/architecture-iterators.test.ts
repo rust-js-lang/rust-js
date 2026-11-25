@@ -1015,3 +1015,22 @@ test("a consumer asks owns_its_step of count and last, never reaches_its_own", (
     .map((file) => `${file}: asks \`reaches_its_own\` of \`count\` or \`last\`; ask \`owns_its_step\`, the one answer of whether a consumer takes the form's own step`);
   expect(wrong).toEqual([]);
 });
+
+// A fallible collect's helpers, `$collectOptions` and `$collectResults`,
+// have one maker, `fallible_collect_call` (iterators/stepping.rs), which
+// says what drops the `Err` it keeps and whether a `Some` is boxed of the
+// item itself: a `sum` into a `Result` that made `$collectResults` its own
+// way gave no `dropErr`, and the `Err` was never dropped as its source's
+// drop panicked (#2574, #2572's first piece of one owner).
+test("a fallible collect's helpers have one maker", () => {
+  const makers = compilerRustFiles().flatMap((file) =>
+    [...read(file).matchAll(/"\$collect(?:Options|Results)"/g)].map(() => file),
+  );
+  expect([...new Set(makers)]).toEqual(["crates/rust-js-lower/src/iterators/stepping.rs"]);
+  const stepping = read("crates/rust-js-lower/src/iterators/stepping.rs");
+  const maker = stepping.slice(stepping.indexOf("pub(crate) fn fallible_collect_call("));
+  const body = maker.slice(0, maker.indexOf("\n    }\n"));
+  expect(body).toContain('Expr::helper("$collectOptions")');
+  expect(body).toContain('Expr::helper("$collectResults")');
+  expect(stepping.split('"$collect').length - 1).toBe(2);
+});

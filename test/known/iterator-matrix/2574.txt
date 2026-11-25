@@ -1,3 +1,0 @@
-#2574 P0: a fallible sum/product into a Result whose source's Drop panics leaves the kept Err's value undropped
-consumers:plain 167,177,342,1608,1760,1925,2725,9081
-consumers:std 167,177,342,1608,1760,1925,2725,9081
