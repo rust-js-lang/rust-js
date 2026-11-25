@@ -2722,3 +2722,10 @@ the crate's iterator, not of closing:
 - #2223: a `Box<I>` whose `I` another bound gives as it is is stepped
   as a JS iterator. It is listed in test/metamorphic-known.txt under the
   new case's `impl-owned` rewrite.
+
+## Amendment: who drops a consumed iterator is one answer (2026-11-25, #2572)
+
+Whether a consumer closes what it takes, and whether its caller drops it
+after the call, are one answer, `consumed_drop`, read by both sides
+([1205](1205-one-answer-of-who-drops-a-consumed-iterator.md)).
+

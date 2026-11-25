@@ -1,6 +1,7 @@
 //! What ends a chain from MIR by its items: a sum, a collection made, a
 //! position found, a fold.
 
+use super::consumed::Consumed;
 use super::*;
 use crate::recognition::models::rows::StdRow;
 use crate::temporary_names::Role;
@@ -773,9 +774,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // What's left of what it steps, dropped where it stops: closed,
             // where `fallible_collect_closes` says, which what's dropped
             // after the call asks too (#1647, #2561).
-            let it = match iter_ty {
-                Some(iter_ty) if self.fallible_collect_closes(output, iter_ty) => self.closing(it, iter_ty, span)?,
-                _ => it,
+            let it = match &iter_ty {
+                Some(iter_ty) => self.consumer_closing(it, Consumed::collecting(self.tcx, iter_ty, output), span)?,
+                None => it,
             };
             // What's left first, where std collects it otherwise than in
             // place, of values with a destructor (#423).

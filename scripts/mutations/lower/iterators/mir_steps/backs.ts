@@ -504,8 +504,8 @@ export const mutations: Mutation[] = [
     name: "rfold-receiver-unclosed",
     breaks: "what `rfold` takes isn't closed: a panic in its closure leaves a `Vec`'s rest and the crate's double-ended iterator undropped (#650)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
-    find: "            let it = match self.consumer_closes(Some(method), iter_ty, lent, dropping) {\n",
-    replace: "            let it = match false && self.consumer_closes(Some(method), iter_ty, lent, dropping) {\n",
+    find: "                super::consumed::ConsumedDrop::Closes => self.closing(it, iter_ty, span)?,\n",
+    replace: "                super::consumed::ConsumedDrop::Closes if false => self.closing(it, iter_ty, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^rfold_and_rev_close_what_they_step.rs$"],
   },
   {
@@ -572,7 +572,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`rfold` of a `&mut` to the crate's iterator, `by_ref().rfold(..)`, is its own `rfold`, which takes it, so it's dropped there and again by its owner (#747)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
-    find: "                false if lent => self.lent_iterator(it, arg_tys[0]),\n",
+    find: "                _ if lent => self.lent_iterator(it, arg_tys[0]),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
   },

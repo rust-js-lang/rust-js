@@ -96,7 +96,13 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                         true => this.lent_iterator(it, arg_tys[0]),
                         false if comb.holds_its_sources() => this.closing(it, iter_ty, span)?,
                         false if keeps_each => {
-                            this.consumer_closing(it, (method, iter_ty, false), dropping.is_some(), span)?
+                            let call = rust_js_lower::iterators::mir_steps::consumed::Consumed::of(
+                                def_id,
+                                method,
+                                (iter_ty, arg_tys, output),
+                                false,
+                            );
+                            this.consumer_closing(it, call, span)?
                         }
                         false => it,
                     };

@@ -207,15 +207,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "consumed-generic-refused",
-    breaks:
-      "generic code that consumes an iterator its caller gives a drop of, `items.into_iter().last()`, takes none, and a caller's destructor is refused",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "                self.has_generic_drop(receiver)\n                    || (compiled && self.holds_given_drops(receiver))\n",
-    replace: "                (compiled && self.holds_given_drops(receiver))\n",
-    tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
-  },
-  {
     name: "held-function-unclosed",
     breaks:
       "a `map(f)` of a function with a destructor isn't made closing, so its function is never dropped",
@@ -227,26 +218,6 @@ export const mutations: Mutation[] = [
       "-t",
       "^(held_function_drops|adapter_functions_dropped).rs$",
     ],
-  },
-  {
-    name: "consumed-held-function-kept",
-    breaks:
-      "a `map(f)` consumed by `collect` isn't dropped after, nor its function",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "            .is_some_and(|function| self.drops(function) != rust_js_lower::drops::Drops::Nothing);\n        // Or an adapter closed",
-    replace:
-      "            .is_some_and(|function| self.drops(function) != rust_js_lower::drops::Drops::Nothing && false);\n        // Or an adapter closed",
-    tests: ["test/corpus.test.ts", "-t", "^held_function_drops.rs$"],
-  },
-  {
-    name: "consumed-closed-adapter-refused",
-    breaks:
-      "`iter.take(2).collect()` of a type parameter given its drop is refused, its consumed `Take` not closed",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "                    || holds_function\n                    || closed\n            }\n",
-    replace: "                    || holds_function\n            }\n",
-    tests: ["test/corpus.test.ts", "-t", "^collect_of_an_impls_own_associated_type.rs$"],
-    snapshots: true,
   },
   {
     name: "mir-iterator-method-ungated",
@@ -276,26 +247,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^into_iter_held_as_it_is.rs$"],
   },
   {
-    name: "compiled-iterator-not-dropped-after",
-    breaks:
-      "a generic `Peekable` consumed, `p.sum()`'s, isn't dropped after by the drops it's given, so what it holds with a destructor is never dropped",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "                    || (compiled && self.holds_given_drops(receiver))\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^peekable_given_back_drops.rs$"],
-  },
-  {
-    name: "compiled-iterator-of-destructors-not-dropped-after",
-    breaks:
-      "a `Peekable` of a type with a destructor, consumed, isn't dropped after its method",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "            false => self.is_user_iterator(receiver) || compiled || holds_function,\n",
-    replace:
-      "            false => self.is_user_iterator(receiver) || holds_function,\n",
-    tests: ["test/corpus.test.ts", "-t", "^peekable_given_back_drops.rs$"],
-    snapshots: true,
-  },
-  {
     name: "size-hint-undictionaried",
     breaks:
       "`I::size_hint` in a compiled std body isn't given `I`'s dictionary, so a `Fuse` of the crate's iterator says `(0, None)`",
@@ -317,15 +268,6 @@ export const mutations: Mutation[] = [
       "-t",
       "a string's count of UTF-16 units is its length",
     ],
-  },
-  {
-    name: "own-fold-consumer-dropped-again",
-    breaks:
-      "an iterator the crate's own fold took and dropped is dropped again after its consumer",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "            return Ok(false);\n        }\n        let params_only",
-    replace: "        }\n        let params_only",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
   {
     name: "given-own-fold-dropped-again",
@@ -452,14 +394,6 @@ export const mutations: Mutation[] = [
     tests: ["test/std-package.test.ts"],
   },
   {
-    name: "last-output-holds-its-iterator",
-    breaks: "`last()`'s `Option<I::Item>` is taken to hold the `I` it consumed, so std's compiled `Skip::last` never drops its source and its caller's close drops it after the crate's own `last` did (#522)",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "        let holds = rust_js_lower::mut_refs::holds_outside_projections(output, receiver);\n",
-    replace: "        let holds = output.walk().any(|part| part.as_type() == Some(receiver));\n",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
     name: "generic-own-steps-unasked",
     breaks: "generic code's `last()`, `sum()` and `for_each` of a value given no dictionary drop it after, though the crate's own `fold` or `last` took it and dropped it (#522)",
     file: "crates/rust-js-mir/src/iter.rs",
@@ -475,14 +409,6 @@ export const mutations: Mutation[] = [
     find: "                None if self.is_unknown(receiver) => {\n",
     replace: "                None if matches!(receiver.kind(), ty::Param(_)) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_consumer_of_an_into_iter_takes_it.rs$"],
-  },
-  {
-    name: "consumed-closed-dropped-again",
-    breaks: "an iterator its consumer closes, the crate's with a `Drop` over items with one, is dropped after its `fold`, `for_each`, `count` or `last` too, so twice (#637)",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "            && (self.consumer_closes(method, receiver, false, dropping) || self.keyed_consumer_closes(method, arg_tys))\n",
-    replace: "            && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumed_own_iterator_dropped_once.rs$"],
   },
   {
     name: "dictionary-step-took-unasked",
@@ -561,14 +487,6 @@ export const mutations: Mutation[] = [
     find: "        if of_text && !own && !self.struct_hint_known(iter_ty) {\n",
     replace: "        if of_text && !own {\n",
     tests: ["test/corpus.test.ts", "-t", "^std_flatten.rs$"],
-  },
-  {
-    name: "keyed-extreme-dropped-after",
-    breaks: "`max_by_key` of a key that drops over the crate's iterator, given it closed, drops it after the call too, twice (#789)",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "            && (self.consumer_closes(method, receiver, false, dropping) || self.keyed_consumer_closes(method, arg_tys))\n",
-    replace: "            && self.consumer_closes(method, receiver, false, dropping)\n",
-    tests: ["test/corpus.test.ts", "-t", "^max_by_key_of_a_dropping_key_over_its_iterator.rs$"],
   },
   {
     name: "generic-own-iterator-into-iter-refused",
@@ -675,14 +593,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^collect_panic_drops_collected.rs$"],
   },
   {
-    name: "extend-taken-to-close",
-    breaks: "`v.extend(it)` of an iterator with a `Drop` of items with one is taken to close it, which no `extend` does, so it's never dropped (#1120)",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "        if !extends\n",
-    replace: "        if true\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
-  },
-  {
     name: "std-consumer-undropped",
     breaks: "an iterator with a destructor a std consumer takes by value, `m.extend(it)`'s of a map or `it.partition(f)`'s, isn't dropped after it: never dropped, or refused (#1120, #1122)",
     file: "crates/rust-js-mir/src/iter.rs",
@@ -757,14 +667,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "extend-by-fold-dropped-after",
-    breaks: "an `extend` by `for_each` of the crate's iterator with its own `fold` drops it after, though that `fold` took and dropped it: `set.extend(up())` drops `Up` twice (#1509)",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "            true => arg_tys.first().is_some_and(|&into| self.extends_by_fold(into)),\n",
-    replace: "            true => false,\n",
-    tests: ["test/corpus.test.ts", "-t", "^extend_by_fold_drops_once.rs$"],
-  },
-  {
     name: "cloned-apart-back-chain-unclosed",
     breaks: "a chain cloned apart stepped from its back steps its sides unclosed, so `Countdown(4).chain(Countdown(5)).next_back()` drops neither (#1506)",
     file: "crates/rust-js-mir/src/iter.rs",
@@ -780,14 +682,6 @@ export const mutations: Mutation[] = [
     find: "            return Ok(Expr::call_helper(\"$sizeHint\", vec![receiver]));\n        }\n        // Of a string's `char`s",
     replace: "        }\n        // Of a string's `char`s",
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_size_hints.rs$"],
-  },
-  {
-    name: "try-processed-dropped-after",
-    breaks: "what a fallible `collect()` gives the crate's `from_iter` is dropped after it in the build of std's bodies, though that `from_iter` kept or forgot it (#1588)",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "            && (self.try_processed_into(output, receiver)?.is_some() || self.fallible_collect_closes(output, receiver))\n",
-    replace: "            && (false || self.fallible_collect_closes(output, receiver))\n",
-    tests: ["test/iterator-forms.test.ts", "-t", "fallible_collect_into_own_from_iter with std"],
   },
   {
     name: "into-iter-count-reduced",
@@ -874,14 +768,5 @@ export const mutations: Mutation[] = [
     find: "            return Ok(Expr::call_located(Expr::helper(\"$count\"), given, repeats));",
     replace: "            return Ok(Expr::call_located(Expr::helper(\"$count\"), given, false && repeats));",
     tests: ["test/binaries.test.ts", "-t", "a `Repeat`'s `count` and `last` name where they're called"],
-  },
-  {
-    name: "fallible-collect-closed-and-dropped-after",
-    breaks:
-      "generic code's `collect()` into an `Option` or a `Result` of a type parameter's iterator, closed by the collect, is dropped after the call too, twice (#2561)",
-    file: "crates/rust-js-mir/src/iter.rs",
-    find: "            && (self.try_processed_into(output, receiver)?.is_some() || self.fallible_collect_closes(output, receiver))\n",
-    replace: "            && self.try_processed_into(output, receiver)?.is_some()\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_fallible_collect_drops_its_iterator_once.rs$"],
   },
 ];

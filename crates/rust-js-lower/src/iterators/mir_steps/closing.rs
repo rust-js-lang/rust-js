@@ -5,6 +5,11 @@ use super::*;
 use crate::recognition::OwnStep;
 use crate::recognition::{EqSide, TypeFact};
 
+/// A call of std's code an iterator is given to, as `dropping_source`
+/// takes it: its callee, its method and whether what it's given is lent;
+/// the iterator's type, the call's arguments' and what it gives.
+type Called<'c, 'tcx> = ((DefId, Option<IterMethod>, bool), (Ty<'tcx>, &'c [Ty<'tcx>], Ty<'tcx>));
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What's stepped as it is: `by_ref()` of the crate's iterator, a `&mut`
     /// to it, it itself, which its own `next` steps; and of a type parameter
@@ -44,7 +49,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (trait_id, crate::recognition::extension_entry(self.tcx, trait_id))
     }
 
-    /// The iterator `it`, of type `iter_ty`, a method is called on, of items
+    /// The iterator `it`, of type `iter_ty`, a method is called on, lent
+    /// where it's lent, `by_ref()`'s (`lent_iterator`), of items
     /// with a destructor, `dropping`, or not, `lent` or not: of an adapter,
     /// `take`'s or `map`'s, of one that owns what has one, its items or
     /// itself, a crate's iterator with a `Drop`, moved into it, `$closing`,
@@ -55,11 +61,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub fn dropping_source(
         &mut self,
         it: Expr,
-        (method, iter_ty, lent): (Option<IterMethod>, Ty<'tcx>, bool),
-        dropping: Option<Ty<'tcx>>,
-        name: &str,
-        span: Span,
+        ((callee, method, lent), (iter_ty, arg_tys, output)): Called<'_, 'tcx>,
+        (name, span): (&str, Span),
     ) -> R<Expr> {
+        // Lent, `by_ref()`'s: stepped through what can't close it.
+        let it = match lent {
+            true => self.lent_iterator(it, arg_tys.first().copied().unwrap_or(self.tcx.types.unit)),
+            false => it,
+        };
+        // Of items with a destructor, its own to drop as it's taken.
+        let dropping = (self.iterator_item(iter_ty)).filter(|&item| self.drops(item) != crate::drops::Drops::Nothing);
+        let call = super::consumed::Consumed::of(callee, method, (iter_ty, arg_tys, output), lent);
         // What `nth` and `advance_by` pass over, a `Vec`'s as one slice, by
         // `$slicing`, and a `skip`'s of one lent, which closes nothing of it,
         // where a `Drain`'s drops each (#703).
@@ -78,25 +90,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(it);
         }
         self.check_leaves_none(name, span)?;
-        self.consumer_closing(it, (method, iter_ty, lent), true, span)
-    }
-
-    /// `it`, what a consumer, `method`, of an `iter_ty`, `lent` or not, of
-    /// items with a destructor, `dropping`, takes: closed where it closes it
-    /// (`consumer_closes`), the one answer of who drops it, which
-    /// `dropped_after` asks too, else as it is, dropped after it by
-    /// `consumed_call`, never both (#1120, #1123).
-    pub fn consumer_closing(
-        &mut self,
-        it: Expr,
-        (method, iter_ty, lent): (Option<IterMethod>, Ty<'tcx>, bool),
-        dropping: bool,
-        span: Span,
-    ) -> R<Expr> {
-        match self.consumer_closes(method, iter_ty, lent, dropping) {
-            true => self.closing(it, iter_ty, span),
-            false => Ok(it),
-        }
+        self.consumer_closing(it, call, span)
     }
 
     /// Whether a consumer, `method`, of an `iter_ty`, `lent` or not, of

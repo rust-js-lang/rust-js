@@ -213,15 +213,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|vec_skipped_from_back_drops).rs$"],
   },
   {
-    name: "consumer-source-unclosed",
-    breaks:
-      "a consumer that takes each item of an owning source, `for_each`, `fold`, is given it unclosed, so a panic in its closure drops none of what's left (#422)",
-    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
-    find: "            true => self.closing(it, iter_ty, span),\n            false => Ok(it),\n        }\n    }\n",
-    replace: "            true => Ok(it),\n            false => Ok(it),\n        }\n    }\n",
-    tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
-  },
-  {
     name: "own-last-of-destructors-undropped",
     breaks:
       "`last()` of items with a destructor through a `chain` of the crate's iterators with their own `last` is the chain's own `last`, which drops neither side's `a` where `b` has one (#494)",
@@ -308,11 +299,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "eq-closes-unasked",
-    breaks: "`it.eq(other)` of the crate's iterator with a `Drop`, of items without one, is closed by `dropping_source` where `consumer_closes` says it's dropped after, so it's dropped twice (#1123)",
+    breaks: "an iterator of items without a destructor, `it.eq(other)`'s, is asked whether it leaves none, `check_leaves_none`, as one whose items drop is, and refused where it may (#2572)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        if dropping.is_none() {\n            return Ok(it);\n        }\n",
-    replace: "        if dropping.is_none() && method != Some(IterMethod::Eq) {\n            return Ok(it);\n        }\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
+    replace: "        if false {\n            return Ok(it);\n        }\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_size_hint\.rs$"],
   },
   {
     name: "closing-closes-again",

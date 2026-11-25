@@ -399,8 +399,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub fn extreme_called(
         &mut self,
         it: Expr,
-        (method, arg): (IterMethod, &mut dyn FnMut() -> Expr),
-        item: Option<Ty<'tcx>>,
+        (callee, method, arg): (DefId, IterMethod, &mut dyn FnMut() -> Expr),
+        (item, output): (Option<Ty<'tcx>>, Ty<'tcx>),
         arg_tys: &[Ty<'tcx>],
         span: Span,
     ) -> R<Expr> {
@@ -422,10 +422,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // before the function where its first step ends, after it where its
         // fold does, and before the kept key (`keyed_consumer_closes`, #789,
         // #1649).
-        let it = match self.keyed_consumer_closes(Some(method), arg_tys) {
-            true => self.closing(it, arg_tys[0], span)?,
-            false => it,
-        };
+        let call = super::consumed::Consumed::of(callee, Some(method), (arg_tys[0], arg_tys, output), false);
+        let it = self.consumer_closing(it, call, span)?;
         // Given as it is: its helper calls it with Rust's arguments alone,
         // `compare(kept, item)` or `key(item)`, as the recognizers' does.
         self.extreme_by_call((max, key), (it, f), item, ends, span)

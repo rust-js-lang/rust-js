@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
     name: "combinator-consumer-closes-unasked",
     breaks: "`it.partition(f)` of the crate's iterator with a `Drop` closes it as it ends, where `consumed_call` drops it after, so it's dropped twice (#1120)",
     file: "crates/rust-js-mir/src/std_calls/iterators.rs",
-    find: "                            this.consumer_closing(it, (method, iter_ty, false), dropping.is_some(), span)?\n",
+    find: "                            this.consumer_closing(it, call, span)?\n",
     replace: "                            this.closing(it, iter_ty, span)?\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_consumed_by_extend_unzip_partition_eq.rs$"],
   },

@@ -8,6 +8,7 @@ mod backs;
 pub use backs::reversed_in_body;
 mod closing;
 mod collect;
+pub mod consumed;
 pub mod consumers;
 mod copies;
 pub mod sources;

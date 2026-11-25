@@ -9,10 +9,11 @@
 // Its iterator half, collecting, consuming, closing, copying and the
 // sources an adapter steps, is the base's (`iterators::mir_steps`, #2299).
 use crate::MirCx;
+use rust_js_lower::iterators::mir_steps::consumed::{Consumed, ConsumedDrop};
 use rust_js_lower::iterators::mir_steps::consumers;
 
 use rust_js_lower::iterators::was_made_knowing_its_back as knows_back;
-use rust_js_lower::recognition::{OwnStep, Reach};
+use rust_js_lower::recognition::OwnStep;
 use rust_js_lower::temporary_names::Role;
 
 use rustc_middle::ty::{self, Mutability, Ty, TypeVisitableExt};
@@ -713,13 +714,10 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     }
 
     /// Whether an iterator taken by value, `items.fold(..)`'s, of a
-    /// `receiver` with something to drop, is dropped after its method, as
-    /// the method's end drops it and JS doesn't: consumed, `collect()`, then
-    /// dropped, by its own drop, the crate's own, arrayvec's `Drain`, or its
-    /// caller's, a generic iterator's it's given (ADRs 0421, 0464). One whose
-    /// result holds it, `map(f)`, is the result's to drop, closed to drop it,
-    /// as each std adapter is (ADR 0465); of a generic one given no drop, its
-    /// callers give none with a destructor (ADR 0190).
+    /// `receiver`, is dropped after its method, its caller's: `consumed_drop`'s
+    /// answer, `After` (#2572). Of a generic one nobody drops, which JS
+    /// can't drop as its method's end would, one its callers give none with
+    /// a destructor (ADR 0190).
     pub(crate) fn dropped_after(
         &mut self,
         def_id: DefId,
@@ -728,93 +726,24 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         given: Option<&Expr>,
         span: Span,
     ) -> R<bool> {
-        if self.drops(receiver) == rust_js_lower::drops::Drops::Nothing {
-            return Ok(false);
-        }
-        // What its consumer closes, which drops it there, at its end or as a
-        // panic unwinds: nothing after (#637), as `mir_iter_method` closes it.
-        let dropping =
-            (self.iterator_item(receiver)).is_some_and(|item| self.drops(item) != rust_js_lower::drops::Drops::Nothing);
         let method = self.recognition().iterator_method(def_id);
-        // Not `extend`'s, which never closes what it's given: dropped after
-        // it, what's left in it then too, as it unwinds as well (#1120).
-        let extends =
-            (self.tcx.trait_of_assoc(def_id)).is_some_and(|tr| rust_js_lower::recognition::is_extend(self.tcx, tr));
-        if !extends
-            && (self.consumer_closes(method, receiver, false, dropping) || self.keyed_consumer_closes(method, arg_tys))
+        let call = Consumed {
+            callee: def_id,
+            method,
+            iter_ty: receiver,
+            arg_tys,
+            output,
+            lent: false,
+            given,
+        };
+        let answer = self.consumed_drop(call, span)?;
+        if answer == ConsumedDrop::Nobody
+            && self.drops(receiver) != rust_js_lower::drops::Drops::Nothing
+            && self.drop_query().drops_but_params(receiver) == rust_js_lower::drops::Drops::Nothing
         {
-            return Ok(false);
-        }
-        // A `collect()` into an `Option` or a `Result` of a collection whose
-        // `from_iter` runs code gives it the iterator, in std's
-        // `GenericShunt`, its to drop or keep, nothing after (#1588); one
-        // that closes it drops it there, nothing after (#2561).
-        if method == Some(IterMethod::Collect)
-            && (self.try_processed_into(output, receiver)?.is_some() || self.fallible_collect_closes(output, receiver))
-        {
-            return Ok(false);
-        }
-        // What the crate's own `fold` is called by: it takes the iterator
-        // and drops it, so nothing's dropped after (#162). Not of an adapter
-        // that holds a function with a destructor, which it doesn't drop.
-        let own = match self.recognition().rfolds_what_it_consumes(def_id) {
-            true => self
-                .recognition()
-                .reaches_its_own(receiver, OwnStep::Rfold, Reach::Sure),
-            false => self.recognition().reaches_its_own(receiver, OwnStep::Fold, Reach::Sure),
-        };
-        // Or an `extend` by `for_each`, of a hash set's, a B-tree's or a
-        // list's, which reaches it too (#1509).
-        let folds = match extends {
-            true => arg_tys.first().is_some_and(|&into| self.extends_by_fold(into)),
-            false => self.consumes_by_fold(def_id, output),
-        };
-        if folds && own {
-            if (self.recognition().held_function(receiver))
-                .is_some_and(|function| self.drops(function) != rust_js_lower::drops::Drops::Nothing)
-            {
-                return Err(self.unsupported(
-                    span,
-                    "an adapter holding a closure with a destructor, over an iterator whose impl writes its own `fold`",
-                ));
-            }
-            return Ok(false);
-        }
-        let params_only = self.drop_query().drops_but_params(receiver) == rust_js_lower::drops::Drops::Nothing;
-        // And an adapter that holds a function with a destructor, `map(f)`'s,
-        // dropped with it (ADR 0485).
-        let holds_function = (self.recognition().held_function(receiver))
-            .is_some_and(|function| self.drops(function) != rust_js_lower::drops::Drops::Nothing);
-        // Or an adapter closed to drop what it holds, `take(n)`'s or
-        // `cycle()`'s, made of one given its drop, `$closing` as
-        // `closing_drop` makes it (ADR 0491).
-        let closed = (self.recognition().closed_on_drop(receiver)).is_some_and(|held| self.given_drop(held).is_some());
-        // A compiled std iterator's struct, `Peekable`'s, is dropped as a
-        // struct is, by its fields' drops, given where it holds only type
-        // parameters' values (ADR 0561).
-        let compiled = given.is_none_or(|given| self.compiled_struct(receiver, given));
-        let dropped = match params_only {
-            true => {
-                self.has_generic_drop(receiver)
-                    || (compiled && self.holds_given_drops(receiver))
-                    || holds_function
-                    || closed
-            }
-            // Not a `copied()` of one closed to drop what it holds, which is
-            // it (ADR 0547): consumed to its end, it's closed as it's done
-            // (ADR 0570).
-            false => self.is_user_iterator(receiver) || compiled || holds_function,
-        };
-        // What it gives that holds it: not an item of it, `Option<I::Item>`,
-        // `last()`'s, whose projection names `I` (#522).
-        let holds = rust_js_lower::mut_refs::holds_outside_projections(output, receiver);
-        if dropped && given.is_some() && !holds {
-            return Ok(true);
-        }
-        if params_only {
             self.require_consumed_drops_none(receiver, output);
         }
-        Ok(false)
+        Ok(answer == ConsumedDrop::After)
     }
 
     /// `it.map(f)` made in place: by what gives each as it is,
@@ -983,7 +912,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         // `nth_back(n)`, `rfold(init, f)` and `rfind(p)`: of what knows its
         // back, stepped from it, a generic one's too (ADRs 0429, 0455).
         if let Some(method) = std_method.filter(|method| method.steps_from_its_back()) {
-            return self.back_step(method, values, (iter_ty, output, arg_tys), span);
+            return self.back_step((def_id, method), values, (iter_ty, output, arg_tys), span);
         }
         // `next_back(&mut it)` and `len(&it)`: of what knows its back, a range, a `$iter`,
         // one held or made knowing it where it's held (ADRs 0071, 0549, #718); not a lazy one.
@@ -1037,13 +966,10 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             return Ok(Some(kept));
         }
         let it = self.method_source(receiver, receiver_ty, (std_method, output), span)?;
-        let it = match lent {
-            true => self.lent_iterator(it, receiver_ty),
-            false => it,
-        };
         let item = self.iterator_item(iter_ty);
         let dropping = item.filter(|&item| self.drops(item) != rust_js_lower::drops::Drops::Nothing);
-        let it = self.dropping_source(it, (std_method, iter_ty, lent), dropping, name, span)?;
+        let call = ((def_id, std_method, lent), (iter_ty, arg_tys, output));
+        let it = self.dropping_source(it, call, (name, span))?;
         let mut arg = || values.next().expect("rustc checked the arguments");
         // A function of the crate given as the callback, `filter(is_rule)`:
         // itself, which takes no more than it's given (ADR 0279).
@@ -1101,7 +1027,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 None => return Ok(None),
             },
             // Of its items as they come, which the helper steps (#179).
-            Some(m) if m.extreme() => self.extreme_called(it, (m, &mut arg), item, arg_tys, span)?,
+            Some(m) if m.extreme() => self.extreme_called(it, (def_id, m, &mut arg), (item, output), arg_tys, span)?,
             Some(IterMethod::Last) => self.last_called(it, iter_ty, item, span, made)?,
             Some(m @ (IterMethod::IsSorted | IterMethod::IsSortedBy | IterMethod::IsSortedByKey)) => match item {
                 Some(item) => self.sorted_called(it, (m, &mut arg, own), item, arg_tys, span)?,

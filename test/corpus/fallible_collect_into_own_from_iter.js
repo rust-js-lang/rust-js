@@ -631,7 +631,7 @@ function main() {
       {
         fromIter: (items, ITrustedLen, IInPlace, dropI) =>
           $tryProcessOptions(
-            $closing(items, dropI, false),
+            items,
             (iter) =>
               bagFromIteratorI32_fromIter(
                 iter,
@@ -954,14 +954,7 @@ function main() {
   let r;
   try {
     r = $tryProcessResults(
-      $closing(
-        $iter(value$6),
-        $dropEach((result) => {
-          if (result.TAG === "Err") {
-            loudDrop_drop(result._0);
-          }
-        }),
-      ),
+      $iter(value$6),
       (iter) =>
         pastFromIteratorI32_fromIter(
           iter,
@@ -1111,18 +1104,11 @@ function main() {
   }
   const caught = $catchUnwind(() => {
     const r = $tryProcessResults(
-      $closing(
-        $iter([
-          { TAG: "Ok", _0: 1 },
-          { TAG: "Err", _0: [4] },
-          { TAG: "Ok", _0: 2 },
-        ]),
-        $dropEach((result) => {
-          if (result.TAG === "Err") {
-            loudDrop_drop(result._0);
-          }
-        }),
-      ),
+      $iter([
+        { TAG: "Ok", _0: 1 },
+        { TAG: "Err", _0: [4] },
+        { TAG: "Ok", _0: 2 },
+      ]),
       (iter) =>
         pickyFromIteratorI32_fromIter(
           iter,

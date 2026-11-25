@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2572 step 1, ADR 1205): one corpus case, a collection's own `from_iter` that panics part-way given a fallible `collect()`'s shunt, against native; `consumed_drop`'s mutations are scripts/mutations/lower/iterators/mir_steps/consumed.ts, thirteen of `dropped_after`'s moved with its rules and two new.
+
 Changed on 2026-11-25 (#2590, ADR 1179 amended): the crate pairs gain `library_generic_impls_owning_their_parameters`, a library's generic impls, the owners of their type parameters, used by an app.
 
 Changed on 2026-11-25 (#2588, ADR 1104 amended): the metamorphic net runs a hash table's program again up to 128 times, not 8, and gains a test of it; corpus gains `sort_comparisons_as_std_asks`, each sort's comparator calls against native.

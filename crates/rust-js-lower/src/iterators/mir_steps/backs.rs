@@ -573,7 +573,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// look like `None`, what's found is their `Some` (ADR 0051).
     pub fn back_step(
         &mut self,
-        method: IterMethod,
+        (callee, method): (DefId, IterMethod),
         values: Vec<Expr>,
         (iter_ty, output, arg_tys): (Ty<'tcx>, Ty<'tcx>, &[Ty<'tcx>]),
         span: Span,
@@ -621,18 +621,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => None,
             };
             // `rfold(self)` takes it: closed where its consumer's closing
-            // drops it, at its end and as a panic unwinds, `consumer_closes`'
-            // one answer, as `fold`'s is (#637, #650).
+            // drops it, at its end and as a panic unwinds, `consumed_drop`'s
+            // one answer, as `fold`'s is (#637, #650, #2572).
             let lent = arg_tys.first().is_some_and(|ty| ty.is_mutable_ptr());
-            let dropping =
-                (self.iterator_item(iter_ty)).is_some_and(|item| self.drops(item) != crate::drops::Drops::Nothing);
             // Of a `&mut`, lent: its `rfold` is what it's to's `try_rfold`,
             // as std's `&mut I` gives it, never that one's own `rfold`, which
             // would take it from its owner (#747).
-            let it = match self.consumer_closes(Some(method), iter_ty, lent, dropping) {
-                true => self.closing(it, iter_ty, span)?,
-                false if lent => self.lent_iterator(it, arg_tys[0]),
-                false => it,
+            let call = super::consumed::Consumed::of(callee, Some(method), (iter_ty, arg_tys, output), lent);
+            let it = match self.consumed_drop(call, span)? {
+                super::consumed::ConsumedDrop::Closes => self.closing(it, iter_ty, span)?,
+                _ if lent => self.lent_iterator(it, arg_tys[0]),
+                _ => it,
             };
             // Of a function it moves into its fold, `$consume`'s (#734).
             let values: Vec<Expr> = values.collect();

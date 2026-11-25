@@ -302,8 +302,8 @@ export const mutations: Mutation[] = [
     name: "keyed-extreme-unclosed",
     breaks: "`max_by_key` of a key that drops over the crate's iterator with a destructor isn't given it closed, and nothing drops the iterator (#789)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/consumers.rs",
-    find: "            true => self.closing(it, arg_tys[0], span)?,\n",
-    replace: "            true => it,\n",
+    find: "        let it = self.consumer_closing(it, call, span)?;\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^max_by_key_of_a_dropping_key_over_its_iterator.rs$"],
   },
   {

@@ -617,3 +617,10 @@ whole corpus's JS is unchanged otherwise. Its `loud-drop` rewrite finds
 `Drop` as the collect closes it leaves what was collected undropped. It's
 listed known in test/known/metamorphic/2564.txt. Mutation
 `fallible-collect-closed-and-dropped-after`.
+
+## Amendment: who drops a consumed iterator is one answer (2026-11-25, #2572)
+
+Whether a consumer closes what it takes, and whether its caller drops it
+after the call, are one answer, `consumed_drop`, read by both sides
+([1205](1205-one-answer-of-who-drops-a-consumed-iterator.md)).
+
