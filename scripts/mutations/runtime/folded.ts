@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "folded-closes-nothing",
     breaks: "a chain a `String`'s collect folds isn't closed as a panic in its step unwinds, so its source and what it holds are never dropped (#1610)",
     file: "crates/rust-js-program/src/runtime/folded.js",
-    find: "      it.return?.();\n      return { done: true, value: undefined };\n",
+    find: "      $closeBare(it);\n      return { done: true, value: undefined };\n",
     replace: "      return { done: true, value: undefined };\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
     snapshots: true,

@@ -1,1 +1,0 @@
-#2580 P0: generic code's fallible sum/product into a Result whose source's Drop panics leaves the kept Err undropped

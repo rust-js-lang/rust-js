@@ -128,7 +128,7 @@ function $zipEnds(a, b, dropA, dropB, toShorter) {
       let pairs = Math.min(left.len(), right.len());
       const taken = {
         next: () => (pairs-- > 0 ? zipped.next() : { done: true, value: undefined }),
-        return: () => zipped.return(),
+        return: () => $closeBare(zipped),
       };
       return $foldBy(taken, "next", init, f, unwind, ends);
     };

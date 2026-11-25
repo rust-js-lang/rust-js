@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     name: "room-for-hint-unclosed",
     breaks: "a `collect()` into a `Vec` whose source's `size_hint` panics as its room is asked never drops the source, where `from_iter` drops what it took as it unwinds (#660)",
     file: "crates/rust-js-program/src/runtime/capacity.js",
-    find: "  const unwound = (asked, before) => $unwinds(asked, before, () => it.return?.());",
+    find: "  const unwound = (asked, before) => $unwinds(asked, before, () => $closeBare(it));",
     replace: "  const unwound = (asked, before) => $unwinds(asked, before);",
     tests: ["test/corpus.test.ts", "-t", "^collect_closes_what_its_hint_panics.rs$"],
   },

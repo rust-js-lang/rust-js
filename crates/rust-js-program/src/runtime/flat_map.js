@@ -37,7 +37,7 @@ function $flatMap(it, f, fusing) {
   const dropSource = () => {
     if (dropped) return;
     dropped = true;
-    it.return?.();
+    $closeBare(it);
   };
   // At its end, a source that isn't fused, which it doesn't hold, drops
   // itself; its function after it, as `Fuse` drops its `Map`.
@@ -77,7 +77,7 @@ function $flatMap(it, f, fusing) {
         () => {
           const front = inner;
           inner = undefined;
-          front?.return?.();
+          $closeBare(front);
         },
       ),
   );

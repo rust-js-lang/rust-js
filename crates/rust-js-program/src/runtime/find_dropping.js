@@ -10,6 +10,6 @@ function $findDropping(it, test, drop, boxed) {
   let item;
   const hit = it.tryFold(false, (_, x) => $kept(test, drop, x) && ((item = x), true), (hit) => hit);
   if (!hit) return undefined;
-  it.return?.();
+  $closeBare(it);
   return boxed ? $some(item) : item;
 }

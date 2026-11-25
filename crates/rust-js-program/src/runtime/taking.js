@@ -51,7 +51,7 @@ function $taking(iter, n, drop) {
     const k = taking.n;
     taking.n = 0;
     const counted = k === 0 ? 0 : $consumed(taking, () => k - $advanceByOf(taking.iter, k, dropItem));
-    taking.return();
+    $closeBare(taking);
     return counted;
   };
   // Std's `Take::nth(k)`: its source's `nth(k)` where it has more than `k`

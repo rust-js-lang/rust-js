@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     name: "take-while-fold-by-next",
     breaks: "a `take_while`'s fold steps it by `next`, not std's `try_fold`, so a `step_by` inside asks the crate's own `nth(0)` first (#214)",
     file: "crates/rust-js-program/src/runtime/lazy_take_while.js",
-    find: "    const folded = $consumed(taking, () => taking.tryFold(init, f, () => false, unwind), ends);\n    $closedAfter(ends, () => taking.return());\n    return folded;\n  };\n",
+    find: "    const folded = $consumed(taking, () => taking.tryFold(init, f, () => false, unwind), ends);\n    $closedAfter(ends, () => $closeBare(taking));\n    return folded;\n  };\n",
     replace: "    return $Steps.prototype.fold.call(taking, init, f, unwind, ends);\n  };\n",
     tests: ["test/corpus.test.ts", "-t", "^(discarded_drop_leaks_the_accumulator|step_by_compiled_source_nth).rs$"],
   },

@@ -1063,3 +1063,25 @@ test("who drops a consumed iterator is consumed_drop's answer alone", () => {
     "crates/rust-js-mir/src/iter.rs",
   ]);
 });
+
+// A source is closed one of two ways, each a named helper of steps.js:
+// `$closeHolding(it, ...held)`, a collector's, which drops what it holds
+// where the close panics, as std's callee's frame drops it, and
+// `$closeBare(it)`, of what holds nothing of its own beside it. No
+// `.return()` of a source is written elsewhere in the runtime, so a
+// collector can't close what it was given and leak what it made (#2564,
+// #2572).
+test("the runtime closes a source by $closeHolding or $closeBare alone", () => {
+  const runtime = files("crates/rust-js-program/src/runtime").filter((file) => file.endsWith(".js") && !file.endsWith("std_sites.js"));
+  const helpers = ["  return $unwinds(() => it.return?.(), ...held);", "  return it?.return?.();"];
+  const bare = runtime.flatMap((file) =>
+    read(file)
+      .split("\n")
+      .filter((line) => !line.trimStart().startsWith("//") && /\.return(\?\.)?\(/.test(line) && !helpers.includes(line))
+      .map((line) => `${file}: ${line.trim()}`),
+  );
+  expect(bare).toEqual([]);
+  const steps = read("crates/rust-js-program/src/runtime/steps.js");
+  expect(steps).toContain("function $closeHolding(it, ...held) {");
+  expect(steps).toContain("function $closeBare(it) {");
+});

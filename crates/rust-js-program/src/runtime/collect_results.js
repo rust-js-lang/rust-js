@@ -36,8 +36,8 @@ function $collectResults(items, into, drop, restFirst = false, size, dropErr) {
   // the `Vec` it made: where that close panics, what it collected is
   // dropped as the panic unwinds `from_iter`'s frame, then the `Err` kept,
   // by `dropErr`, a local of `try_process`'s (#2564).
-  $unwinds(
-    () => it.return?.(),
+  $closeHolding(
+    it,
     drop && (() => $dropItems(values, drop)),
     dropErr && (() => dropErr(failed._0)),
   );

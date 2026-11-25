@@ -173,7 +173,7 @@ function $isSortedBy(items, f, ends, drop) {
   const held = [
     ends,
     () => holding && ((holding = false), drop?.(last)),
-    () => it.return?.(),
+    () => $closeBare(it),
   ];
   let sorted = true;
   try {

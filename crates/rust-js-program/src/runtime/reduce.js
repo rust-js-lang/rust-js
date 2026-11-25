@@ -6,10 +6,10 @@
 function $reduce(it, f, boxed = false, unwind = undefined) {
   const first = $unwinds(
     () => it.next(),
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   if (first.done) {
-    it.return?.();
+    $closeBare(it);
     return undefined;
   }
   const value = $foldDropping(it, first.value, f, unwind);

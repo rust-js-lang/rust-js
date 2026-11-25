@@ -28,7 +28,7 @@ function $folded(it, firstByNext = false) {
   const folded = Iterator.from({
     next: () => listed().next(),
     return: () => {
-      it.return?.();
+      $closeBare(it);
       return { done: true, value: undefined };
     },
   });

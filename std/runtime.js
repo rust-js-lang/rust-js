@@ -1151,7 +1151,7 @@ export function $droppingIterator(it, drop) {
 export function $stepsAround(it) {
   const steps = new $Steps(
     () => it.next(),
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   steps.from = [it];
   steps.sizeHint = () => $sizeHint(it);
@@ -2190,10 +2190,10 @@ export function $readerDefaults(reader, readBuf) {
 export function $reduce(it, f, boxed = false, unwind = undefined) {
   const first = $unwinds(
     () => it.next(),
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   if (first.done) {
-    it.return?.();
+    $closeBare(it);
     return undefined;
   }
   const value = $foldDropping(it, first.value, f, unwind);
@@ -3773,7 +3773,7 @@ export function $sortedSteps(it, set) {
     },
     dropAfter: (drop) =>
       $inTurn(
-        () => it.return?.(),
+        () => $closeBare(it),
         () => peeked?.entry !== undefined && drop(peeked.entry),
       ),
   };
@@ -4345,7 +4345,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       this.ownNext = next;
       this.next = () => {
         const step = next();
-        if (step.done) this.return();
+        if (step.done) $closeBare(this);
         return step;
       };
     }
@@ -4414,20 +4414,20 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
   some(found) {
     let i = 0;
     const some = this.tryFold(false, (_, x) => found(x, i++), (hit) => hit);
-    if (some) this.return();
+    if (some) $closeBare(this);
     return some;
   }
   every(holds) {
     let i = 0;
     const every = this.tryFold(true, (_, x) => holds(x, i++), (held) => !held);
-    if (!every) this.return();
+    if (!every) $closeBare(this);
     return every;
   }
   find(found) {
     let i = 0;
     let item;
     const hit = this.tryFold(false, (_, x) => found(x, i++) && ((item = x), true), (hit) => hit);
-    if (hit) this.return();
+    if (hit) $closeBare(this);
     return item;
   }
   reduce(f, ...init) {
@@ -4452,7 +4452,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
         const step = this.next();
         return step.done ? step : { done: false, value: f(step.value, i++) };
       },
-      () => this.return(),
+      () => $closeBare(this),
     );
     mapped.from = [this];
     // Std's `Map::fold` and `try_fold`, its source's of each mapped; where
@@ -4479,7 +4479,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
         const found = this.tryFold(false, (_, x) => $kept(keep, drop, x, i++) && ((item = x), true), (found) => found);
         return found ? { done: false, value: item } : { done: true, value: undefined };
       },
-      () => this.return(),
+      () => $closeBare(this),
     );
     kept.from = [this];
     // Std's `Filter::fold` and `try_fold`, its source's of each kept.
@@ -4525,7 +4525,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
           // drops it there, held or not (#1507).
           if (step.done) {
             ended = true;
-            this.return();
+            $closeBare(this);
             return step;
           }
           inner = Iterator.from(f(step.value, i++));
@@ -4535,8 +4535,8 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       // order, the second though the first's drop throws (#743).
       () =>
         $inTurn(
-          () => this.return(),
-          () => inner?.return?.(),
+          () => $closeBare(this),
+          () => $closeBare(inner),
         ),
     );
     flat.from = [this];
@@ -4614,7 +4614,7 @@ export function $steppedHeld(items) {
 // tell that drop's panic, which leaks what it holds, from `keep`'s, which
 // drops it (#651).
 export function $filterDropping(it, keep, drop) {
-  const steps = it instanceof $Steps ? it : new $Steps(() => it.next(), () => it.return?.());
+  const steps = it instanceof $Steps ? it : new $Steps(() => it.next(), () => $closeBare(it));
   return steps.filter(keep, drop);
 }
 
@@ -4631,6 +4631,24 @@ export function $unwinds(run, ...drops) {
     $dropsUnwinding(drops);
     throw error;
   }
+}
+
+// Closes `it`, as std's callee drops what it was given before what it
+// made: where the close panics, each of `held`, what the callee holds then,
+// in its frame's drop order, is dropped as the panic unwinds. A
+// collector's close of its source, of what it holds (#2564, #2572).
+export function $closeHolding(it, ...held) {
+  return $unwinds(() => it.return?.(), ...held);
+}
+
+// Closes `it`, where there's one, as std drops what holds nothing of its
+// own beside it: an adapter or a source closing what it was given, a
+// `$Steps`'s close callback, a consumer whose frame keeps nothing past its
+// close. A close that panics unwinds with nothing of the caller's to drop.
+// One of the two forms of a source's close, `$closeHolding` the other: no
+// `.return()` is written elsewhere (#2572).
+export function $closeBare(it) {
+  return it?.return?.();
 }
 
 // Each of `drops` run in turn as a panic unwinds, the runtime's cleanup:
@@ -4702,7 +4720,7 @@ export function $kept(keep, drop, x, i, a, unwind) {
 // (#422, #423), after what drops with `f`, `ends`, as its frame drops `f`
 // before `self` (#710).
 export function $consumed(it, run, ends) {
-  return $unwinds(run, ends, () => it.return());
+  return $unwinds(run, ends, () => $closeBare(it));
 }
 
 // `close()` after `ends`, what drops with a fold's `f`, where it's given:
@@ -4717,7 +4735,7 @@ export function $closedAfter(ends, close) {
 // std's field order, by `$inTurn`: a chain's `a` then `b`, a zip's `a` then
 // `b` (#743). One let go, `undefined`, is none.
 export function $closeEach(...parts) {
-  $inTurn(...parts.map((part) => part && (() => part.return?.())));
+  $inTurn(...parts.map((part) => part && (() => $closeBare(part))));
 }
 
 // `ends`, what drops with a fold's `f`, run once however often it's asked:
@@ -4774,7 +4792,7 @@ export function $foldBy(it, by, init, f, unwind, ends) {
   it.hold?.();
   let folded = init;
   let stepping = false;
-  const close = () => it.return?.();
+  const close = () => $closeBare(it);
   const own = by === "next" && it.ownNext !== undefined;
   $unwinds(
     () => {
@@ -4956,7 +4974,7 @@ export function $lastDropping(it, drop, boxed, ends, raisedAt = undefined) {
   if (it.skipped !== undefined) {
     const source = $consumed(it, () => it.skipped());
     if (source !== undefined) return $lastDropping(source, drop, boxed);
-    it.return?.();
+    $closeBare(it);
     return undefined;
   }
   // Where `a`'s throws, a panic, `b` closed, as `last(self)` drops what it
@@ -4965,7 +4983,7 @@ export function $lastDropping(it, drop, boxed, ends, raisedAt = undefined) {
     const [a, b] = it.sides();
     const aLast = $unwinds(
       () => (a === undefined ? undefined : $lastDropping(a, drop, true)),
-      () => b.return?.(),
+      () => $closeBare(b),
     );
     const bLast = $unwinds(
       () => $lastDropping(b, drop, true),
@@ -5014,7 +5032,7 @@ export function $lastDropping(it, drop, boxed, ends, raisedAt = undefined) {
     if (front !== undefined) {
       $unwinds(
         () => take(() => front),
-        () => source?.return?.(),
+        () => $closeBare(source),
       );
     }
     if (source !== undefined && $ownMethod(source, "fold")) {
@@ -5156,7 +5174,7 @@ export function $consume(it, step, init, f, unwind, ends) {
   // as it's stepped to its end, a `step_by`'s or a `take`'s source's: std's
   // fold drops `self` whole after `f` (ADR 0570's statement end).
   it.hold?.();
-  const close = () => it.return?.();
+  const close = () => $closeBare(it);
   const folded = $unwinds(
     () => {
       if (step === "rfold") return $foldBack(it, init, f, unwind, once);
@@ -5260,7 +5278,7 @@ export function $foldToArray(it, drop, restFirst = false, inPlace = drop !== und
   // functions, whose drop's panic leaks what it collected, as std's
   // `from_iter` has made it its result by then (rust-lang/rust#47949).
   $collectEnded($inPlaceSource(it), items, drop);
-  it.return?.();
+  $closeBare(it);
   return folded;
 }
 
@@ -5275,7 +5293,7 @@ export function $eachOf(items, f) {
     () => {
       for (let step = it.next(); !step.done; step = it.next()) f(step.value);
     },
-    () => it.return?.(),
+    () => $closeBare(it),
   );
 }
 
@@ -5295,7 +5313,7 @@ export function $extendText(it, push) {
   $collectUnwinding(() => {
     for (let step = it.next(); !step.done; step = it.next()) push(step.value);
   }, it, pushed, undefined, false);
-  $collectEnded(() => it.return?.(), pushed, undefined);
+  $collectEnded(() => $closeBare(it), pushed, undefined);
 }
 
 // What's left of what a collect in place of `it` reuses the buffer of, a
@@ -5306,7 +5324,7 @@ export function $extendText(it, push) {
 // its `dropInner`, which drops what it holds there. No adapter's function
 // with it, which std drops after, unguarded (#852).
 export function $inPlaceSource(it) {
-  let drop = () => it.return?.();
+  let drop = () => $closeBare(it);
   for (let source = it; ; ) {
     const holder = source;
     const inner = holder.$steps?.inner?.(holder);
@@ -5315,7 +5333,7 @@ export function $inPlaceSource(it) {
       source = inner;
     } else if (holder.from?.[0]?.return !== undefined) {
       const from = holder.from[0];
-      drop = () => from.return();
+      drop = () => $closeBare(from);
       source = from;
     } else {
       return drop;
@@ -5348,7 +5366,7 @@ export function $collectDropping(it, drop, restFirst = false) {
   $collectUnwinding(run, it, items, drop, restFirst);
   // And at its end, as std's `collect` drops what it took then, what an
   // adapter that stops early left (ADR 0570), `$collectEnded`'s.
-  $collectEnded(() => it.return?.(), items, drop);
+  $collectEnded(() => $closeBare(it), items, drop);
   return items;
 }
 
@@ -5363,7 +5381,7 @@ export function $collectUnwinding(run, it, items, drop, restFirst) {
   const collected = () => {
     if (drop !== undefined) $dropItems(items, drop);
   };
-  const rest = () => it.return?.();
+  const rest = () => $closeBare(it);
   return restFirst ? $unwinds(run, rest, collected) : $unwinds(run, collected, rest);
 }
 
@@ -5468,7 +5486,7 @@ export function $findDropping(it, test, drop, boxed) {
   let item;
   const hit = it.tryFold(false, (_, x) => $kept(test, drop, x) && ((item = x), true), (hit) => hit);
   if (!hit) return undefined;
-  it.return?.();
+  $closeBare(it);
   return boxed ? $some(item) : item;
 }
 
@@ -5649,7 +5667,7 @@ export function $holding(it, drop, moved) {
   const own = $onceOf(drop);
   // What it steps, then its function, though the first's drop throws, a
   // panic, as `Map`'s drop glue drops `iter`, then `f` (#762).
-  const holding = $closing(it, (it) => $inTurn(() => it.return(), own));
+  const holding = $closing(it, (it) => $inTurn(() => $closeBare(it), own));
   if (moved === undefined) return holding;
   // A `flat_map`'s, its function given to what it steps to drop after its
   // source, before the inner iterators it holds, as `FlatMap`'s drop glue
@@ -5678,7 +5696,7 @@ export function $holding(it, drop, moved) {
   const movingAlone = (step, by) =>
     moving((init, f, unwind, ends, alone) => {
       if (alone === undefined || it[step] === undefined) return by(init, f, unwind, ends);
-      const close = () => holding.return();
+      const close = () => $closeBare(holding);
       const folded = $unwinds(() => it[step](init, f, unwind, ends, alone), ends, close);
       $closedAfter(ends, close);
       return folded;
@@ -5692,7 +5710,7 @@ export function $holding(it, drop, moved) {
     (holding.back === undefined
       ? undefined
       : (init, f, unwind, ends) =>
-          $foldBack({ back: () => holding.back(), return: () => holding.return() }, init, f, unwind, ends));
+          $foldBack({ back: () => holding.back(), return: () => $closeBare(holding) }, init, f, unwind, ends));
   if (rfold !== undefined) holding.rfold = movingAlone("rfold", rfold);
   // Its `count` and `last`, where what it steps has its own, a `filter`'s
   // `count`, std's sum of a `map` of its own, and a `flat_map`'s, std's
@@ -5896,7 +5914,7 @@ export function $skipping(iter, n, drop) {
       skipping.n = 0;
       const step = $consumed(skipping, () => passed(skipping.iter.nth(k - 1, dropItem), dropItem));
       if (step.done) {
-        skipping.return();
+        $closeBare(skipping);
         return 0;
       }
     }
@@ -5927,12 +5945,12 @@ export function $skipping(iter, n, drop) {
       skipping.n = 0;
       const step = $consumed(skipping, () => skipped(k, init, unwind, ends), ends);
       if (step.done) {
-        $closedAfter(ends, () => skipping.return());
+        $closedAfter(ends, () => $closeBare(skipping));
         return init;
       }
     }
     const folded = skipping.iter.fold(init, f, unwind, ends);
-    $closedAfter(ends, () => skipping.return());
+    $closedAfter(ends, () => $closeBare(skipping));
     return folded;
   };
   // And its `try_fold`, the same first step, then its source's.
@@ -5970,7 +5988,7 @@ export function $skipping(iter, n, drop) {
   const last = () => {
     const source = $consumed(skipping, () => skipping.skipped());
     if (source !== undefined) return $infinitelyAt($stdSites.skipLast[0], () => source.last());
-    skipping.return();
+    $closeBare(skipping);
     return { done: true, value: undefined };
   };
   // Std's `Skip::nth(k)`, its source's `nth(n + k)`, where that drops what
@@ -6108,7 +6126,7 @@ export function $taking(iter, n, drop) {
     const k = taking.n;
     taking.n = 0;
     const counted = k === 0 ? 0 : $consumed(taking, () => k - $advanceByOf(taking.iter, k, dropItem));
-    taking.return();
+    $closeBare(taking);
     return counted;
   };
   // Std's `Take::nth(k)`: its source's `nth(k)` where it has more than `k`
@@ -6571,7 +6589,7 @@ export function $nthBackOf(it, k, drop) {
 // `it` closed, `return()`, where it can be, as an adapter closed closes
 // what it steps (ADR 0465): done.
 export function $closed(it) {
-  it.return?.();
+  $closeBare(it);
   return { done: true, value: undefined };
 }
 
@@ -6728,7 +6746,7 @@ export function $stepBy(it, step, drop) {
   const fold = (init, f, unwind, ends) => {
     stepped.hold();
     const folded = $consumed(stepped, () => stepped.tryFold(init, f, () => false, unwind, ends), ends);
-    $closedAfter(ends, () => stepped.return());
+    $closedAfter(ends, () => $closeBare(stepped));
     return folded;
   };
   $forward(stepped, it, { nth, tryFold, fold });
@@ -6783,7 +6801,7 @@ export function $stepByEnds(it, step, drop) {
   const rfold = (init, f, unwind, ends) => {
     stepped.hold();
     const folded = $consumed(stepped, () => tryRfold(init, f, () => false, unwind, ends), ends);
-    $closedAfter(ends, () => stepped.return());
+    $closedAfter(ends, () => $closeBare(stepped));
     return folded;
   };
   $forward(stepped, it, { nthBack: (n) => stepped.skip(n * step + backIndex(), "back"), tryRfold, rfold });
@@ -7041,7 +7059,7 @@ export function $flattenEnds(it, each, ...rest) {
   const dropSource = () => {
     if (dropped) return;
     dropped = true;
-    it.return?.();
+    $closeBare(it);
   };
   const sourceEnded = () => {
     ended = true;
@@ -7068,7 +7086,7 @@ export function $flattenEnds(it, each, ...rest) {
   const taken = (own) => {
     const held = inner[own];
     inner[own] = undefined;
-    held?.return?.();
+    $closeBare(held);
   };
   // Its source, then the function a `$holding` gives it, then its inner
   // iterators, as `FlatMap`'s drop glue drops its `Map` first (#2241).
@@ -7515,7 +7533,7 @@ export function $lazyScan(items, init, f, handle = true, drop = undefined) {
     },
     () =>
       $closedAfter(
-        () => source.return?.(),
+        () => $closeBare(source),
         () => {
           if (dropped) return;
           dropped = true;
@@ -7546,7 +7564,7 @@ export function $lazyScan(items, init, f, handle = true, drop = undefined) {
   // What drops with `g`, `ends`, first (#734).
   const fold = (init, g, unwind, ends) => {
     const folded = $consumed(scanning, () => scanning.tryFold(init, g, () => false, unwind), ends);
-    $closedAfter(ends, () => scanning.return());
+    $closedAfter(ends, () => $closeBare(scanning));
     return folded;
   };
   $forward(scanning, source, { tryFold, fold });
@@ -10491,7 +10509,7 @@ export function $isSortedBy(items, f, ends, drop) {
   const held = [
     ends,
     () => holding && ((holding = false), drop?.(last)),
-    () => it.return?.(),
+    () => $closeBare(it),
   ];
   let sorted = true;
   try {
@@ -11679,7 +11697,7 @@ export function $decodeUtf16(units) {
       }
       return { done: false, value: { TAG: "Ok", _0: String.fromCharCode(unit, next.value) } };
     },
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   decoded.from = [it];
   // Std's: half its units' lower bound, rounded up, and the one it kept.
@@ -16883,7 +16901,7 @@ export function $roomForCounted(it, size, align, unbounded, layout) {
         throw $stringPanic("called `Result::unwrap()` on an `Err` value: LayoutError", layout);
       }
     },
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   return it;
 }
@@ -16911,7 +16929,7 @@ export function $leastCapacity(size) {
 // (#660). And as what it gives is stepped, where the `Vec` std makes is
 // full, the hint is asked again, as the `Vec` grows (#728).
 export function $roomForHint(it, size, trusted, endless = false, drop) {
-  const unwound = (asked, before) => $unwinds(asked, before, () => it.return?.());
+  const unwound = (asked, before) => $unwinds(asked, before, () => $closeBare(it));
   if (trusted) {
     unwound(() => {
       const [lower, upper] = $sizeHint(it);
@@ -16977,7 +16995,7 @@ export function $roomForHint(it, size, trusted, endless = false, drop) {
       length += 1;
       return step;
     },
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   steps.from = [it];
   // The capacity std's `Vec` has reached, none of no item, which
@@ -17019,7 +17037,7 @@ export function $reserveHint(it, size, align, of) {
         $tableRoomFor(had + (had === 0 ? lower : Math.ceil(lower / 2)), size, align);
       }
     },
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   return it;
 }
@@ -17163,7 +17181,7 @@ export function $grownBy(v, items, size, deque = false, drop, own = false, lost 
     },
     () => {
       ended();
-      return it.return?.();
+      return $closeBare(it);
     },
   );
   // Extended as std's `extend_trusted` extends a `Vec` by a `TrustedLen`
@@ -22724,7 +22742,7 @@ export function $extend(v, items, byFold = false, unbounded = false) {
     () => {
       for (let step = it.next(); !step.done; step = it.next()) v.push(step.value);
     },
-    () => it.return?.(),
+    () => $closeBare(it),
   );
 }
 
@@ -22996,7 +23014,7 @@ export function $splice(items, start, end, replacement, raisedAt, inclusive) {
 // taken out dropped and the tail put back, the `Drain`'s drop (#1940).
 export function $splicing(items, start, end, replacement, raisedAt, dropItem, inclusive) {
   const given = typeof replacement.next === "function" ? replacement : undefined;
-  $unwinds(() => $checkRange(start, end, items.length, raisedAt, inclusive), () => given?.return?.());
+  $unwinds(() => $checkRange(start, end, items.length, raisedAt, inclusive), () => $closeBare(given));
   const tail = items.splice(end);
   const removed = items.splice(start);
   const it =
@@ -23034,7 +23052,7 @@ export function $splicing(items, start, end, replacement, raisedAt, dropItem, in
   // The tail put back, then `replacement` closed, the rest of the
   // `Splice`'s drop, at its end and as a panic unwinds.
   const restored = () => $extend(items, tail);
-  const closed = () => it.return?.();
+  const closed = () => $closeBare(it);
   return $closing($iter(removed), (rest) => {
     $unwinds(
       () => {
@@ -23147,12 +23165,12 @@ export function $lazyChain(a, b) {
       if (first !== undefined) {
         const step = first.next();
         if (!step.done) return step;
-        first.return?.();
+        $closeBare(first);
         first = undefined;
       }
       if (second === undefined) return done;
       const step = second.next();
-      if (step.done && !chained.held) second.return?.();
+      if (step.done && !chained.held) $closeBare(second);
       return step;
     },
     () => $closeEach(first, second),
@@ -23171,7 +23189,7 @@ export function $lazyChain(a, b) {
         let folded = init;
         if (first !== undefined) {
           folded = $foldDropping(first, folded, f, unwind);
-          first.return?.();
+          $closeBare(first);
           first = undefined;
         }
         if (second === undefined) {
@@ -23179,7 +23197,7 @@ export function $lazyChain(a, b) {
           return folded;
         }
         folded = $foldDropping(second, folded, f, unwind, ends);
-        $closedAfter(ends, () => second.return?.());
+        $closedAfter(ends, () => $closeBare(second));
         return folded;
       },
       ends,
@@ -23215,7 +23233,7 @@ export function $lazyChain(a, b) {
       } else {
         n = left;
       }
-      first.return?.();
+      $closeBare(first);
       first = undefined;
     }
     if (second === undefined) return done;
@@ -23229,12 +23247,12 @@ export function $lazyChain(a, b) {
     if (first !== undefined) {
       folded = $lent(first).tryFold(folded, f, broke, unwind);
       if (broke(folded)) return folded;
-      first.return?.();
+      $closeBare(first);
       first = undefined;
     }
     if (second === undefined) return folded;
     folded = $lent(second).tryFold(folded, f, broke, unwind, ends);
-    if (!broke(folded) && !chained.held) second.return?.();
+    if (!broke(folded) && !chained.held) $closeBare(second);
     return folded;
   };
   // Std's `Chain::count`: `a`'s own `count`, then `b`'s, a `Take`'s
@@ -23260,7 +23278,7 @@ export function $lazyChain(a, b) {
     if (first !== undefined) {
       m = advanced(first, m, drop);
       if (m === 0) return 0;
-      first.return?.();
+      $closeBare(first);
       first = undefined;
     }
     return second === undefined ? m : advanced(second, m, drop);
@@ -23271,12 +23289,12 @@ export function $lazyChain(a, b) {
       if (second !== undefined) {
         const step = second.back();
         if (!step.done) return step;
-        second.return?.();
+        $closeBare(second);
         second = undefined;
       }
       if (first === undefined) return done;
       const step = first.back();
-      if (step.done && !chained.held) first.return?.();
+      if (step.done && !chained.held) $closeBare(first);
       return step;
     };
     // Std's `Chain::rfold`: `b`'s, then `a`'s, closed though `b`'s throws,
@@ -23290,7 +23308,7 @@ export function $lazyChain(a, b) {
           let folded = init;
           if (second !== undefined) {
             folded = $foldBack(second, folded, f, unwind);
-            second.return?.();
+            $closeBare(second);
             second = undefined;
           }
           if (first === undefined) {
@@ -23298,7 +23316,7 @@ export function $lazyChain(a, b) {
             return folded;
           }
           folded = $foldBack(first, folded, f, unwind, ends);
-          $closedAfter(ends, () => first.return?.());
+          $closedAfter(ends, () => $closeBare(first));
           first = undefined;
           return folded;
         },
@@ -23311,7 +23329,7 @@ export function $lazyChain(a, b) {
       if (second !== undefined) {
         folded = $tryRfoldOf(second, folded, f, broke, unwind);
         if (broke(folded)) return folded;
-        second.return?.();
+        $closeBare(second);
         second = undefined;
       }
       return first === undefined ? folded : $tryRfoldOf(first, folded, f, broke, unwind, ends);
@@ -23332,7 +23350,7 @@ export function $lazyChain(a, b) {
       if (second !== undefined) {
         m = backBy(second, m, drop);
         if (m === 0) return 0;
-        second.return?.();
+        $closeBare(second);
         second = undefined;
       }
       return first === undefined ? m : backBy(first, m, drop);
@@ -23347,7 +23365,7 @@ export function $lazyChain(a, b) {
           const step = second.back();
           if (!step.done) return step;
         }
-        second.return?.();
+        $closeBare(second);
         second = undefined;
       }
       if (first === undefined) return done;
@@ -23514,7 +23532,7 @@ export function $zipEnds(a, b, dropA, dropB, toShorter) {
       let pairs = Math.min(left.len(), right.len());
       const taken = {
         next: () => (pairs-- > 0 ? zipped.next() : { done: true, value: undefined }),
-        return: () => zipped.return(),
+        return: () => $closeBare(zipped),
       };
       return $foldBy(taken, "next", init, f, unwind, ends);
     };
@@ -23569,7 +23587,7 @@ export function $flatMap(it, f, fusing) {
   const dropSource = () => {
     if (dropped) return;
     dropped = true;
-    it.return?.();
+    $closeBare(it);
   };
   // At its end, a source that isn't fused, which it doesn't hold, drops
   // itself; its function after it, as `Fuse` drops its `Map`.
@@ -23609,7 +23627,7 @@ export function $flatMap(it, f, fusing) {
         () => {
           const front = inner;
           inner = undefined;
-          front?.return?.();
+          $closeBare(front);
         },
       ),
   );
@@ -23764,7 +23782,7 @@ export function $peekCell(peekable) {
 export function $rev(it) {
   const rev = new $Steps(
     () => it.back(),
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   rev.back = () => it.next();
   rev.from = [it];
@@ -23828,7 +23846,7 @@ export function $lazyTakeWhile(items, keep, drop) {
       ended = true;
       return { done: true, value: undefined };
     },
-    () => source.return?.(),
+    () => $closeBare(source),
   );
   taking.from = [source];
   // Where `keep` throws, a panic, the accumulator dropped by `unwind`
@@ -23850,7 +23868,7 @@ export function $lazyTakeWhile(items, keep, drop) {
   // with `f`, `ends` (#710).
   const fold = (init, f, unwind, ends) => {
     const folded = $consumed(taking, () => taking.tryFold(init, f, () => false, unwind), ends);
-    $closedAfter(ends, () => taking.return());
+    $closedAfter(ends, () => $closeBare(taking));
     return folded;
   };
   $forward(taking, source, { tryFold, fold });
@@ -23874,7 +23892,7 @@ export function $lazyMapWhile(items, f, present) {
       if (!step.done && present(value)) return { done: false, value };
       return { done: true, value: undefined };
     },
-    () => source.return?.(),
+    () => $closeBare(source),
   );
   mapping.from = [source];
   const tryFold = (init, g, broke, unwind, ends) => {
@@ -23897,7 +23915,7 @@ export function $lazyMapWhile(items, f, present) {
   // (#214), after what drops with `g`, `ends` (#710).
   const fold = (init, g, unwind, ends) => {
     const folded = $consumed(mapping, () => mapping.tryFold(init, g, () => false, unwind), ends);
-    $closedAfter(ends, () => mapping.return());
+    $closedAfter(ends, () => $closeBare(mapping));
     return folded;
   };
   $forward(mapping, source, { tryFold, fold });
@@ -23927,7 +23945,7 @@ export function $lazySkipWhile(items, skip, drop) {
       );
       return found ? { done: false, value: item } : { done: true, value: undefined };
     },
-    () => source.return?.(),
+    () => $closeBare(source),
   );
   // Where its first step's `skip` throws, a panic, what it's given dropped
   // as std's `fold(self, init, fold)` and `try_fold(&mut self, init, fold)`
@@ -23959,7 +23977,7 @@ export function $lazySkipWhile(items, skip, drop) {
         if (skipping) {
           const step = first(folded, unwind, ends);
           if (step.done) {
-            $closedAfter(ends, () => skipped.return());
+            $closedAfter(ends, () => $closeBare(skipped));
             return folded;
           }
           folded = f(folded, step.value);
@@ -24011,7 +24029,7 @@ export function $repeating(value, clone = (value) => value, drop) {
       () => {
         throw $panic("iterator is infinite", globalThis[$infiniteAtKey]);
       },
-      () => it.return(),
+      () => $closeBare(it),
     );
   // Its `nth`, a clone of its value at `nth`'s own line, which advances
   // past none (repeat.rs:101).
@@ -25179,7 +25197,7 @@ export function $lent(it, kind = "lent") {
   // 10 s (2026-11-17).
   const fold = (init, f, unwind, ends) => it.tryFold(init, f, () => false, unwind, ends);
   const rfold = (init, f, unwind, ends) => it.tryRfold(init, f, () => false, unwind, ends);
-  const lent = $forward(new $Steps(() => it.next(), owns ? () => it.return?.() : undefined), it, {
+  const lent = $forward(new $Steps(() => it.next(), owns ? () => $closeBare(it) : undefined), it, {
     nth: passed("nth"),
     advanceBy: passed("advanceBy") && $ownMethod(it, "advanceBy") ? "advanceBy" : undefined,
     tryFold: passed("tryFold"),
@@ -25350,7 +25368,7 @@ export function $folded(it, firstByNext = false) {
   const folded = Iterator.from({
     next: () => listed().next(),
     return: () => {
-      it.return?.();
+      $closeBare(it);
       return { done: true, value: undefined };
     },
   });
@@ -25644,8 +25662,8 @@ export function $collectResults(items, into, drop, restFirst = false, size, drop
   // the `Vec` it made: where that close panics, what it collected is
   // dropped as the panic unwinds `from_iter`'s frame, then the `Err` kept,
   // by `dropErr`, a local of `try_process`'s (#2564).
-  $unwinds(
-    () => it.return?.(),
+  $closeHolding(
+    it,
     drop && (() => $dropItems(values, drop)),
     dropErr && (() => dropErr(failed._0)),
   );
@@ -25691,7 +25709,7 @@ export function $collectOptions(items, boxed = false, into, drop, restFirst = fa
   // Closed, as std's `from_iter` drops the `GenericShunt` it's given before
   // the `Vec` it made: where that close panics, what it collected is
   // dropped as the panic unwinds `from_iter`'s frame (#2564).
-  $unwinds(() => it.return?.(), drop && (() => $dropItems(values, drop)));
+  $closeHolding(it, drop && (() => $dropItems(values, drop)));
   if (drop) $dropItems(values, drop);
   return undefined;
 }
@@ -25759,7 +25777,7 @@ export function $tryProcessing(items, isResidual, valueOf, collect, dropResidual
       }
       return { done: false, value: valueOf(item) };
     },
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   shunt.iter = it;
   // Std's `GenericShunt::size_hint`: none once a residual is kept, else
@@ -25795,7 +25813,7 @@ export function $shuntStep(it) {
   // Ended, it's done with, as a step of its `next` that's done closes it,
   // where what it holds drops as the collect's temporary does; held, its
   // owner drops it (#206).
-  if (!it.held) it.return?.();
+  if (!it.held) $closeBare(it);
   return { done: true, value: undefined };
 }
 
@@ -25975,11 +25993,11 @@ export function $extremeBy(items, compare, max, boxed, drop, ends) {
   // what it took.
   const first = $unwinds(
     () => it.next(),
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   // None, `reduce`'s `next()?`, which drops it (#242).
   if (first.done) {
-    it.return?.();
+    $closeBare(it);
     return undefined;
   }
   held = first.value;

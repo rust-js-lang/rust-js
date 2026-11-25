@@ -31,7 +31,7 @@ function $extend(v, items, byFold = false, unbounded = false) {
     () => {
       for (let step = it.next(); !step.done; step = it.next()) v.push(step.value);
     },
-    () => it.return?.(),
+    () => $closeBare(it),
   );
 }
 

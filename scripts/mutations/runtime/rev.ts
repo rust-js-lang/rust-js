@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "rev-unclosed",
     breaks: "a `Rev` dropped drops none of what it holds",
     file: "crates/rust-js-program/src/runtime/rev.js",
-    find: "    () => it.return?.(),\n",
+    find: "    () => $closeBare(it),\n",
     replace: "    () => {},\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
   },

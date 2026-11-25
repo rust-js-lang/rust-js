@@ -80,7 +80,7 @@ function $droppingIterator(it, drop) {
 function $stepsAround(it) {
   const steps = new $Steps(
     () => it.next(),
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   steps.from = [it];
   steps.sizeHint = () => $sizeHint(it);

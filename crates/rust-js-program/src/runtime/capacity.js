@@ -199,7 +199,7 @@ function $roomForCounted(it, size, align, unbounded, layout) {
         throw $stringPanic("called `Result::unwrap()` on an `Err` value: LayoutError", layout);
       }
     },
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   return it;
 }
@@ -227,7 +227,7 @@ function $leastCapacity(size) {
 // (#660). And as what it gives is stepped, where the `Vec` std makes is
 // full, the hint is asked again, as the `Vec` grows (#728).
 function $roomForHint(it, size, trusted, endless = false, drop) {
-  const unwound = (asked, before) => $unwinds(asked, before, () => it.return?.());
+  const unwound = (asked, before) => $unwinds(asked, before, () => $closeBare(it));
   if (trusted) {
     unwound(() => {
       const [lower, upper] = $sizeHint(it);
@@ -293,7 +293,7 @@ function $roomForHint(it, size, trusted, endless = false, drop) {
       length += 1;
       return step;
     },
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   steps.from = [it];
   // The capacity std's `Vec` has reached, none of no item, which
@@ -335,7 +335,7 @@ function $reserveHint(it, size, align, of) {
         $tableRoomFor(had + (had === 0 ? lower : Math.ceil(lower / 2)), size, align);
       }
     },
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   return it;
 }
@@ -479,7 +479,7 @@ function $grownBy(v, items, size, deque = false, drop, own = false, lost = false
     },
     () => {
       ended();
-      return it.return?.();
+      return $closeBare(it);
     },
   );
   // Extended as std's `extend_trusted` extends a `Vec` by a `TrustedLen`

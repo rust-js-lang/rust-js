@@ -31,7 +31,7 @@ export const mutations: Mutation[] = [
     name: "skip-while-fold-left-open",
     breaks: "`take(1).skip_while(..).count()` never drops what the `take`'s source has left, its fold's first step finding none (#242)",
     file: "crates/rust-js-program/src/runtime/lazy_skip_while.js",
-    find: "          if (step.done) {\n            $closedAfter(ends, () => skipped.return());\n            return folded;\n          }\n",
+    find: "          if (step.done) {\n            $closedAfter(ends, () => $closeBare(skipped));\n            return folded;\n          }\n",
     replace: "          if (step.done) {\n            return folded;\n          }\n",
     tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
   },

@@ -59,7 +59,7 @@ function $skipping(iter, n, drop) {
       skipping.n = 0;
       const step = $consumed(skipping, () => passed(skipping.iter.nth(k - 1, dropItem), dropItem));
       if (step.done) {
-        skipping.return();
+        $closeBare(skipping);
         return 0;
       }
     }
@@ -90,12 +90,12 @@ function $skipping(iter, n, drop) {
       skipping.n = 0;
       const step = $consumed(skipping, () => skipped(k, init, unwind, ends), ends);
       if (step.done) {
-        $closedAfter(ends, () => skipping.return());
+        $closedAfter(ends, () => $closeBare(skipping));
         return init;
       }
     }
     const folded = skipping.iter.fold(init, f, unwind, ends);
-    $closedAfter(ends, () => skipping.return());
+    $closedAfter(ends, () => $closeBare(skipping));
     return folded;
   };
   // And its `try_fold`, the same first step, then its source's.
@@ -133,7 +133,7 @@ function $skipping(iter, n, drop) {
   const last = () => {
     const source = $consumed(skipping, () => skipping.skipped());
     if (source !== undefined) return $infinitelyAt($stdSites.skipLast[0], () => source.last());
-    skipping.return();
+    $closeBare(skipping);
     return { done: true, value: undefined };
   };
   // Std's `Skip::nth(k)`, its source's `nth(n + k)`, where that drops what

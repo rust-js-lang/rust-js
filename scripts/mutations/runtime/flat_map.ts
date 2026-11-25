@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     name: "flat-map-inner-kept-as-source-drop-throws",
     breaks: "`$flatMap`'s inner iterator isn't dropped where its source's drop panics, where Rust's drop glue drops each field as it unwinds",
     file: "crates/rust-js-program/src/runtime/flat_map.js",
-    find: "        () => {\n          const front = inner;\n          inner = undefined;\n          front?.return?.();\n        },\n",
+    find: "        () => {\n          const front = inner;\n          inner = undefined;\n          $closeBare(front);\n        },\n",
     replace: "        () => {\n          inner = undefined;\n        },\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
   },

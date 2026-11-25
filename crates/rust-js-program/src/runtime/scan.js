@@ -20,7 +20,7 @@ function $lazyScan(items, init, f, handle = true, drop = undefined) {
     },
     () =>
       $closedAfter(
-        () => source.return?.(),
+        () => $closeBare(source),
         () => {
           if (dropped) return;
           dropped = true;
@@ -51,7 +51,7 @@ function $lazyScan(items, init, f, handle = true, drop = undefined) {
   // What drops with `g`, `ends`, first (#734).
   const fold = (init, g, unwind, ends) => {
     const folded = $consumed(scanning, () => scanning.tryFold(init, g, () => false, unwind), ends);
-    $closedAfter(ends, () => scanning.return());
+    $closedAfter(ends, () => $closeBare(scanning));
     return folded;
   };
   $forward(scanning, source, { tryFold, fold });

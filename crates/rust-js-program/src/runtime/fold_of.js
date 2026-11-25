@@ -36,7 +36,7 @@ function $consume(it, step, init, f, unwind, ends) {
   // as it's stepped to its end, a `step_by`'s or a `take`'s source's: std's
   // fold drops `self` whole after `f` (ADR 0570's statement end).
   it.hold?.();
-  const close = () => it.return?.();
+  const close = () => $closeBare(it);
   const folded = $unwinds(
     () => {
       if (step === "rfold") return $foldBack(it, init, f, unwind, once);
@@ -140,7 +140,7 @@ function $foldToArray(it, drop, restFirst = false, inPlace = drop !== undefined 
   // functions, whose drop's panic leaks what it collected, as std's
   // `from_iter` has made it its result by then (rust-lang/rust#47949).
   $collectEnded($inPlaceSource(it), items, drop);
-  it.return?.();
+  $closeBare(it);
   return folded;
 }
 
@@ -155,7 +155,7 @@ function $eachOf(items, f) {
     () => {
       for (let step = it.next(); !step.done; step = it.next()) f(step.value);
     },
-    () => it.return?.(),
+    () => $closeBare(it),
   );
 }
 
@@ -175,7 +175,7 @@ function $extendText(it, push) {
   $collectUnwinding(() => {
     for (let step = it.next(); !step.done; step = it.next()) push(step.value);
   }, it, pushed, undefined, false);
-  $collectEnded(() => it.return?.(), pushed, undefined);
+  $collectEnded(() => $closeBare(it), pushed, undefined);
 }
 
 // What's left of what a collect in place of `it` reuses the buffer of, a
@@ -186,7 +186,7 @@ function $extendText(it, push) {
 // its `dropInner`, which drops what it holds there. No adapter's function
 // with it, which std drops after, unguarded (#852).
 function $inPlaceSource(it) {
-  let drop = () => it.return?.();
+  let drop = () => $closeBare(it);
   for (let source = it; ; ) {
     const holder = source;
     const inner = holder.$steps?.inner?.(holder);
@@ -195,7 +195,7 @@ function $inPlaceSource(it) {
       source = inner;
     } else if (holder.from?.[0]?.return !== undefined) {
       const from = holder.from[0];
-      drop = () => from.return();
+      drop = () => $closeBare(from);
       source = from;
     } else {
       return drop;
@@ -228,7 +228,7 @@ function $collectDropping(it, drop, restFirst = false) {
   $collectUnwinding(run, it, items, drop, restFirst);
   // And at its end, as std's `collect` drops what it took then, what an
   // adapter that stops early left (ADR 0570), `$collectEnded`'s.
-  $collectEnded(() => it.return?.(), items, drop);
+  $collectEnded(() => $closeBare(it), items, drop);
   return items;
 }
 
@@ -243,6 +243,6 @@ function $collectUnwinding(run, it, items, drop, restFirst) {
   const collected = () => {
     if (drop !== undefined) $dropItems(items, drop);
   };
-  const rest = () => it.return?.();
+  const rest = () => $closeBare(it);
   return restFirst ? $unwinds(run, rest, collected) : $unwinds(run, collected, rest);
 }

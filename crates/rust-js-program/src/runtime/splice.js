@@ -30,7 +30,7 @@ function $splice(items, start, end, replacement, raisedAt, inclusive) {
 // taken out dropped and the tail put back, the `Drain`'s drop (#1940).
 function $splicing(items, start, end, replacement, raisedAt, dropItem, inclusive) {
   const given = typeof replacement.next === "function" ? replacement : undefined;
-  $unwinds(() => $checkRange(start, end, items.length, raisedAt, inclusive), () => given?.return?.());
+  $unwinds(() => $checkRange(start, end, items.length, raisedAt, inclusive), () => $closeBare(given));
   const tail = items.splice(end);
   const removed = items.splice(start);
   const it =
@@ -68,7 +68,7 @@ function $splicing(items, start, end, replacement, raisedAt, dropItem, inclusive
   // The tail put back, then `replacement` closed, the rest of the
   // `Splice`'s drop, at its end and as a panic unwinds.
   const restored = () => $extend(items, tail);
-  const closed = () => it.return?.();
+  const closed = () => $closeBare(it);
   return $closing($iter(removed), (rest) => {
     $unwinds(
       () => {

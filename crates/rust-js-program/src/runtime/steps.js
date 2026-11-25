@@ -73,7 +73,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       this.ownNext = next;
       this.next = () => {
         const step = next();
-        if (step.done) this.return();
+        if (step.done) $closeBare(this);
         return step;
       };
     }
@@ -142,20 +142,20 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
   some(found) {
     let i = 0;
     const some = this.tryFold(false, (_, x) => found(x, i++), (hit) => hit);
-    if (some) this.return();
+    if (some) $closeBare(this);
     return some;
   }
   every(holds) {
     let i = 0;
     const every = this.tryFold(true, (_, x) => holds(x, i++), (held) => !held);
-    if (!every) this.return();
+    if (!every) $closeBare(this);
     return every;
   }
   find(found) {
     let i = 0;
     let item;
     const hit = this.tryFold(false, (_, x) => found(x, i++) && ((item = x), true), (hit) => hit);
-    if (hit) this.return();
+    if (hit) $closeBare(this);
     return item;
   }
   reduce(f, ...init) {
@@ -180,7 +180,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
         const step = this.next();
         return step.done ? step : { done: false, value: f(step.value, i++) };
       },
-      () => this.return(),
+      () => $closeBare(this),
     );
     mapped.from = [this];
     // Std's `Map::fold` and `try_fold`, its source's of each mapped; where
@@ -207,7 +207,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
         const found = this.tryFold(false, (_, x) => $kept(keep, drop, x, i++) && ((item = x), true), (found) => found);
         return found ? { done: false, value: item } : { done: true, value: undefined };
       },
-      () => this.return(),
+      () => $closeBare(this),
     );
     kept.from = [this];
     // Std's `Filter::fold` and `try_fold`, its source's of each kept.
@@ -253,7 +253,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
           // drops it there, held or not (#1507).
           if (step.done) {
             ended = true;
-            this.return();
+            $closeBare(this);
             return step;
           }
           inner = Iterator.from(f(step.value, i++));
@@ -263,8 +263,8 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       // order, the second though the first's drop throws (#743).
       () =>
         $inTurn(
-          () => this.return(),
-          () => inner?.return?.(),
+          () => $closeBare(this),
+          () => $closeBare(inner),
         ),
     );
     flat.from = [this];
@@ -342,7 +342,7 @@ function $steppedHeld(items) {
 // tell that drop's panic, which leaks what it holds, from `keep`'s, which
 // drops it (#651).
 function $filterDropping(it, keep, drop) {
-  const steps = it instanceof $Steps ? it : new $Steps(() => it.next(), () => it.return?.());
+  const steps = it instanceof $Steps ? it : new $Steps(() => it.next(), () => $closeBare(it));
   return steps.filter(keep, drop);
 }
 
@@ -359,6 +359,24 @@ function $unwinds(run, ...drops) {
     $dropsUnwinding(drops);
     throw error;
   }
+}
+
+// Closes `it`, as std's callee drops what it was given before what it
+// made: where the close panics, each of `held`, what the callee holds then,
+// in its frame's drop order, is dropped as the panic unwinds. A
+// collector's close of its source, of what it holds (#2564, #2572).
+function $closeHolding(it, ...held) {
+  return $unwinds(() => it.return?.(), ...held);
+}
+
+// Closes `it`, where there's one, as std drops what holds nothing of its
+// own beside it: an adapter or a source closing what it was given, a
+// `$Steps`'s close callback, a consumer whose frame keeps nothing past its
+// close. A close that panics unwinds with nothing of the caller's to drop.
+// One of the two forms of a source's close, `$closeHolding` the other: no
+// `.return()` is written elsewhere (#2572).
+function $closeBare(it) {
+  return it?.return?.();
 }
 
 // Each of `drops` run in turn as a panic unwinds, the runtime's cleanup:
@@ -430,7 +448,7 @@ function $kept(keep, drop, x, i, a, unwind) {
 // (#422, #423), after what drops with `f`, `ends`, as its frame drops `f`
 // before `self` (#710).
 function $consumed(it, run, ends) {
-  return $unwinds(run, ends, () => it.return());
+  return $unwinds(run, ends, () => $closeBare(it));
 }
 
 // `close()` after `ends`, what drops with a fold's `f`, where it's given:
@@ -445,7 +463,7 @@ function $closedAfter(ends, close) {
 // std's field order, by `$inTurn`: a chain's `a` then `b`, a zip's `a` then
 // `b` (#743). One let go, `undefined`, is none.
 function $closeEach(...parts) {
-  $inTurn(...parts.map((part) => part && (() => part.return?.())));
+  $inTurn(...parts.map((part) => part && (() => $closeBare(part))));
 }
 
 // `ends`, what drops with a fold's `f`, run once however often it's asked:
@@ -502,7 +520,7 @@ function $foldBy(it, by, init, f, unwind, ends) {
   it.hold?.();
   let folded = init;
   let stepping = false;
-  const close = () => it.return?.();
+  const close = () => $closeBare(it);
   const own = by === "next" && it.ownNext !== undefined;
   $unwinds(
     () => {

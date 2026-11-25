@@ -61,7 +61,7 @@ function $decodeUtf16(units) {
       }
       return { done: false, value: { TAG: "Ok", _0: String.fromCharCode(unit, next.value) } };
     },
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   decoded.from = [it];
   // Std's: half its units' lower bound, rounded up, and the one it kept.

@@ -36,7 +36,7 @@ function $collectOptions(items, boxed = false, into, drop, restFirst = false, si
   // Closed, as std's `from_iter` drops the `GenericShunt` it's given before
   // the `Vec` it made: where that close panics, what it collected is
   // dropped as the panic unwinds `from_iter`'s frame (#2564).
-  $unwinds(() => it.return?.(), drop && (() => $dropItems(values, drop)));
+  $closeHolding(it, drop && (() => $dropItems(values, drop)));
   if (drop) $dropItems(values, drop);
   return undefined;
 }

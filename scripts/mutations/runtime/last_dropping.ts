@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
     name: "last-sides-b-unclosed",
     breaks: "a chain's `last` whose first side panics never drops its second (#647)",
     file: "crates/rust-js-program/src/runtime/last_dropping.js",
-    find: "      () => b.return?.(),\n",
+    find: "      () => $closeBare(b),\n",
     replace: "      () => undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_rev_last_folds\\.rs$"],
   },

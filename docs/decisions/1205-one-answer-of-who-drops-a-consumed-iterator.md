@@ -2,7 +2,7 @@
 
 Date: 2026-11-25.
 
-Status: accepted, steps 1 to 3 of 4 (#2572). Amends
+Status: accepted (#2572, its four steps). Amends
 [0465](0465-dropping-an-adapter-is-closing-it.md) and
 [0570](0570-a-closing-source-is-dropped-when-done.md).
 
@@ -94,6 +94,36 @@ with their lines (`consumed.ts`), each caught where it was. The test
 whether a consumer closes, `fn ..._closes`, is written in the compiler.
 MIR's `dropped_after` reads the answer. Its readers are `consumer_closing`
 (every closing site's), an `rfold`'s and `dropped_after`. No output moves.
+
+## Amendment: step 4, two forms of a source's close (2026-11-25)
+
+The runtime closed a source 88 ways, each `.return()` or `.return?.()`
+written where it closed. Now each is one of two helpers in steps.js:
+`$closeHolding(it, ...held)`, a collector's, which drops what it holds
+where the close panics, as std's callee's frame does; or `$closeBare(it)`,
+of what holds nothing of its own beside it. `$collectOptions` and
+`$collectResults`, which held what they collected by hand, take the
+first. The other 86 take the second, mechanically, so no behavior moves.
+A runtime test holds that no `.return(` is written outside the two
+helpers' bodies.
+
+`$closeBare` claims that what closes holds nothing, so each collector it
+closes was checked. The consumer net's `source drop` cells, run alone
+against std's bodies, import 14 of them, and 7 more through those
+helpers' calls (`$extremeBy`, `$consume`, `$foldBy`, `$collectUnwinding`,
+`$eachOf`, `$inPlaceSource`, `$consumed`). Of the rest:
+
+- `$stepsAround` and `$tryProcessing` close as a `$Steps`'s callback, an
+  adapter's, which holds nothing.
+- `$sortedSteps` drops its peeked entry beside the close by `$inTurn`,
+  whether or not the close panics.
+- `$roomForCounted` closes before anything is written.
+- `$decodeUtf16` of a source with a destructor is refused at compile time.
+- `$findDropping`'s found item is dropped as native drops it, which a
+  corpus case shows against native
+  (`find_of_a_source_whose_drop_panics_drops_what_it_found`).
+
+None changed behavior, so no P0 was found.
 
 ## Steps
 

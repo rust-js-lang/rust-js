@@ -20,7 +20,7 @@ function $lazySkipWhile(items, skip, drop) {
       );
       return found ? { done: false, value: item } : { done: true, value: undefined };
     },
-    () => source.return?.(),
+    () => $closeBare(source),
   );
   // Where its first step's `skip` throws, a panic, what it's given dropped
   // as std's `fold(self, init, fold)` and `try_fold(&mut self, init, fold)`
@@ -52,7 +52,7 @@ function $lazySkipWhile(items, skip, drop) {
         if (skipping) {
           const step = first(folded, unwind, ends);
           if (step.done) {
-            $closedAfter(ends, () => skipped.return());
+            $closedAfter(ends, () => $closeBare(skipped));
             return folded;
           }
           folded = f(folded, step.value);

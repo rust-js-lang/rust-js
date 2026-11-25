@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     name: "repeat-infinite-undropped",
     breaks: "`repeat(x).count()` panics leaving `x` undropped, where `count(self)` drops it as it unwinds (#1138)",
     file: "crates/rust-js-program/src/runtime/repeating.js",
-    find: "      () => it.return(),\n    );\n",
+    find: "      () => $closeBare(it),\n    );\n",
     replace: "      () => {},\n    );\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_count_panics.rs$"],
   },

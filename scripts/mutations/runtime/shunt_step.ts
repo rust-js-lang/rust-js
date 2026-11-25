@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "shunt-end-left-open",
     breaks: "a collect into an `Option` or a `Result` whose source a `take_while` stopped leaves it open, so what it holds isn't dropped where the collect's temporary is (#1004)",
     file: "crates/rust-js-program/src/runtime/shunt_step.js",
-    find: "  if (!it.held) it.return?.();\n",
+    find: "  if (!it.held) $closeBare(it);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_option_drops_what_take_while_left\\.rs$"],
   },

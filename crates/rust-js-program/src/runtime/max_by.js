@@ -63,11 +63,11 @@ function $extremeBy(items, compare, max, boxed, drop, ends) {
   // what it took.
   const first = $unwinds(
     () => it.next(),
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   // None, `reduce`'s `next()?`, which drops it (#242).
   if (first.done) {
-    it.return?.();
+    $closeBare(it);
     return undefined;
   }
   held = first.value;

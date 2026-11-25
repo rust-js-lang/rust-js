@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2572 step 4, ADR 1205 amended): test/architecture-iterators.test.ts gains a test, the runtime closes a source by `$closeHolding` or `$closeBare` alone; one corpus case, a `find` of a source whose drop panics, against native; 27 runtime mutations' finds follow the closes; test/known/iterator-matrix/2580.txt, empty since #2580's fix, is gone.
+
 Changed on 2026-11-25 (#2596, ADR 1022 amended): a dropped `dyn`'s pair is read once; test/oracle-c.test.ts gains its test, and the export net compares the reads of two crate pairs it left unread.
 
 Changed on 2026-11-25 (ADR 1204 amended): oracle C's second landing: the export net builds each crate again with `--js-reads` (test/builds.ts `reads`), every field read a getter's, and holds the readable build's proxy log to it, read for read, and gives each field Rust reads once a getter of two answers; where the reference build can't be made, the reads unread, said (#2596).

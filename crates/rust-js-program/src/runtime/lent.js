@@ -72,7 +72,7 @@ function $lent(it, kind = "lent") {
   // 10 s (2026-11-17).
   const fold = (init, f, unwind, ends) => it.tryFold(init, f, () => false, unwind, ends);
   const rfold = (init, f, unwind, ends) => it.tryRfold(init, f, () => false, unwind, ends);
-  const lent = $forward(new $Steps(() => it.next(), owns ? () => it.return?.() : undefined), it, {
+  const lent = $forward(new $Steps(() => it.next(), owns ? () => $closeBare(it) : undefined), it, {
     nth: passed("nth"),
     advanceBy: passed("advanceBy") && $ownMethod(it, "advanceBy") ? "advanceBy" : undefined,
     tryFold: passed("tryFold"),

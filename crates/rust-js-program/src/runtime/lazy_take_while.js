@@ -17,7 +17,7 @@ function $lazyTakeWhile(items, keep, drop) {
       ended = true;
       return { done: true, value: undefined };
     },
-    () => source.return?.(),
+    () => $closeBare(source),
   );
   taking.from = [source];
   // Where `keep` throws, a panic, the accumulator dropped by `unwind`
@@ -39,7 +39,7 @@ function $lazyTakeWhile(items, keep, drop) {
   // with `f`, `ends` (#710).
   const fold = (init, f, unwind, ends) => {
     const folded = $consumed(taking, () => taking.tryFold(init, f, () => false, unwind), ends);
-    $closedAfter(ends, () => taking.return());
+    $closedAfter(ends, () => $closeBare(taking));
     return folded;
   };
   $forward(taking, source, { tryFold, fold });
@@ -63,7 +63,7 @@ function $lazyMapWhile(items, f, present) {
       if (!step.done && present(value)) return { done: false, value };
       return { done: true, value: undefined };
     },
-    () => source.return?.(),
+    () => $closeBare(source),
   );
   mapping.from = [source];
   const tryFold = (init, g, broke, unwind, ends) => {
@@ -86,7 +86,7 @@ function $lazyMapWhile(items, f, present) {
   // (#214), after what drops with `g`, `ends` (#710).
   const fold = (init, g, unwind, ends) => {
     const folded = $consumed(mapping, () => mapping.tryFold(init, g, () => false, unwind), ends);
-    $closedAfter(ends, () => mapping.return());
+    $closedAfter(ends, () => $closeBare(mapping));
     return folded;
   };
   $forward(mapping, source, { tryFold, fold });

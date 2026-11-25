@@ -175,7 +175,7 @@ function $holding(it, drop, moved) {
   const own = $onceOf(drop);
   // What it steps, then its function, though the first's drop throws, a
   // panic, as `Map`'s drop glue drops `iter`, then `f` (#762).
-  const holding = $closing(it, (it) => $inTurn(() => it.return(), own));
+  const holding = $closing(it, (it) => $inTurn(() => $closeBare(it), own));
   if (moved === undefined) return holding;
   // A `flat_map`'s, its function given to what it steps to drop after its
   // source, before the inner iterators it holds, as `FlatMap`'s drop glue
@@ -204,7 +204,7 @@ function $holding(it, drop, moved) {
   const movingAlone = (step, by) =>
     moving((init, f, unwind, ends, alone) => {
       if (alone === undefined || it[step] === undefined) return by(init, f, unwind, ends);
-      const close = () => holding.return();
+      const close = () => $closeBare(holding);
       const folded = $unwinds(() => it[step](init, f, unwind, ends, alone), ends, close);
       $closedAfter(ends, close);
       return folded;
@@ -218,7 +218,7 @@ function $holding(it, drop, moved) {
     (holding.back === undefined
       ? undefined
       : (init, f, unwind, ends) =>
-          $foldBack({ back: () => holding.back(), return: () => holding.return() }, init, f, unwind, ends));
+          $foldBack({ back: () => holding.back(), return: () => $closeBare(holding) }, init, f, unwind, ends));
   if (rfold !== undefined) holding.rfold = movingAlone("rfold", rfold);
   // Its `count` and `last`, where what it steps has its own, a `filter`'s
   // `count`, std's sum of a `map` of its own, and a `flat_map`'s, std's

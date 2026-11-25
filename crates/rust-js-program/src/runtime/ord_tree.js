@@ -621,7 +621,7 @@ function $sortedSteps(it, set) {
     },
     dropAfter: (drop) =>
       $inTurn(
-        () => it.return?.(),
+        () => $closeBare(it),
         () => peeked?.entry !== undefined && drop(peeked.entry),
       ),
   };

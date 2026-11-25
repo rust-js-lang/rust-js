@@ -34,8 +34,8 @@ export const mutations: Mutation[] = [
     name: "collect-options-close-holds-nothing",
     breaks: "a `collect` into an `Option` stopped at a `None` drops nothing it collected where closing what it steps panics (#2564)",
     file: "crates/rust-js-program/src/runtime/collect_options.js",
-    find: "  $unwinds(() => it.return?.(), drop && (() => $dropItems(values, drop)));\n",
-    replace: "  it.return?.();\n",
+    find: "  $closeHolding(it, drop && (() => $dropItems(values, drop)));\n",
+    replace: "  $closeBare(it);\n",
     tests: ["test/corpus.test.ts", "-t", "^fallible_collect_drops_what_it_collected_as_its_close_panics.rs$"],
   },
 ];

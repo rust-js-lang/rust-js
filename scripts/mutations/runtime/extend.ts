@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "extend-unclosed-on-throw",
     breaks: "an `extend` whose iterator's closure panics leaves what's left of it undropped (#422)",
     file: "crates/rust-js-program/src/runtime/extend.js",
-    find: "    () => it.return?.(),\n  );\n}",
+    find: "    () => $closeBare(it),\n  );\n}",
     replace: "    () => undefined,\n  );\n}",
     tests: ["test/corpus.test.ts", "-t", "^(panic_mid_iteration_drops|consumer_closes_what_it_steps_on_a_panic|panic_part_way_drops).rs$"],
   },

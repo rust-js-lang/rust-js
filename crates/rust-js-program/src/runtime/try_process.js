@@ -61,7 +61,7 @@ function $tryProcessing(items, isResidual, valueOf, collect, dropResidual) {
       }
       return { done: false, value: valueOf(item) };
     },
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   shunt.iter = it;
   // Std's `GenericShunt::size_hint`: none once a residual is kept, else

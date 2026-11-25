@@ -47,8 +47,8 @@ export const mutations: Mutation[] = [
     name: "lazy-scan-drops-before-source",
     breaks: "a lazy `scan()` drops its function and state before what it steps, where `Scan { iter, f, state }` drops its source first (#760)",
     file: "crates/rust-js-program/src/runtime/scan.js",
-    find: "      $closedAfter(\n        () => source.return?.(),\n        () => {\n          if (dropped) return;\n          dropped = true;\n          drop(handle ? state.value : state);\n        },\n      ),\n",
-    replace: "      $closedAfter(\n        () => {\n          if (dropped) return;\n          dropped = true;\n          drop(handle ? state.value : state);\n        },\n        () => source.return?.(),\n      ),\n",
+    find: "      $closedAfter(\n        () => $closeBare(source),\n        () => {\n          if (dropped) return;\n          dropped = true;\n          drop(handle ? state.value : state);\n        },\n      ),\n",
+    replace: "      $closedAfter(\n        () => {\n          if (dropped) return;\n          dropped = true;\n          drop(handle ? state.value : state);\n        },\n        () => $closeBare(source),\n      ),\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_scan_drops_its_source_first.rs$"],
   },
   {

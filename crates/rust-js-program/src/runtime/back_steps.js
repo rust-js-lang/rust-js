@@ -120,7 +120,7 @@ function $nthBackOf(it, k, drop) {
 // `it` closed, `return()`, where it can be, as an adapter closed closes
 // what it steps (ADR 0465): done.
 function $closed(it) {
-  it.return?.();
+  $closeBare(it);
   return { done: true, value: undefined };
 }
 
@@ -277,7 +277,7 @@ function $stepBy(it, step, drop) {
   const fold = (init, f, unwind, ends) => {
     stepped.hold();
     const folded = $consumed(stepped, () => stepped.tryFold(init, f, () => false, unwind, ends), ends);
-    $closedAfter(ends, () => stepped.return());
+    $closedAfter(ends, () => $closeBare(stepped));
     return folded;
   };
   $forward(stepped, it, { nth, tryFold, fold });
@@ -332,7 +332,7 @@ function $stepByEnds(it, step, drop) {
   const rfold = (init, f, unwind, ends) => {
     stepped.hold();
     const folded = $consumed(stepped, () => tryRfold(init, f, () => false, unwind, ends), ends);
-    $closedAfter(ends, () => stepped.return());
+    $closedAfter(ends, () => $closeBare(stepped));
     return folded;
   };
   $forward(stepped, it, { nthBack: (n) => stepped.skip(n * step + backIndex(), "back"), tryRfold, rfold });
@@ -590,7 +590,7 @@ function $flattenEnds(it, each, ...rest) {
   const dropSource = () => {
     if (dropped) return;
     dropped = true;
-    it.return?.();
+    $closeBare(it);
   };
   const sourceEnded = () => {
     ended = true;
@@ -617,7 +617,7 @@ function $flattenEnds(it, each, ...rest) {
   const taken = (own) => {
     const held = inner[own];
     inner[own] = undefined;
-    held?.return?.();
+    $closeBare(held);
   };
   // Its source, then the function a `$holding` gives it, then its inner
   // iterators, as `FlatMap`'s drop glue drops its `Map` first (#2241).

@@ -32,7 +32,7 @@ function $repeating(value, clone = (value) => value, drop) {
       () => {
         throw $panic("iterator is infinite", globalThis[$infiniteAtKey]);
       },
-      () => it.return(),
+      () => $closeBare(it),
     );
   // Its `nth`, a clone of its value at `nth`'s own line, which advances
   // past none (repeat.rs:101).

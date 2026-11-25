@@ -20,6 +20,6 @@ function $shuntStep(it) {
   // Ended, it's done with, as a step of its `next` that's done closes it,
   // where what it holds drops as the collect's temporary does; held, its
   // owner drops it (#206).
-  if (!it.held) it.return?.();
+  if (!it.held) $closeBare(it);
   return { done: true, value: undefined };
 }

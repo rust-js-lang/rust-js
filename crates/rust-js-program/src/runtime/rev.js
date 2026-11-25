@@ -9,7 +9,7 @@
 function $rev(it) {
   const rev = new $Steps(
     () => it.back(),
-    () => it.return?.(),
+    () => $closeBare(it),
   );
   rev.back = () => it.next();
   rev.from = [it];

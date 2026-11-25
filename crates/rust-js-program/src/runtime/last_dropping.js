@@ -16,7 +16,7 @@ function $lastDropping(it, drop, boxed, ends, raisedAt = undefined) {
   if (it.skipped !== undefined) {
     const source = $consumed(it, () => it.skipped());
     if (source !== undefined) return $lastDropping(source, drop, boxed);
-    it.return?.();
+    $closeBare(it);
     return undefined;
   }
   // Where `a`'s throws, a panic, `b` closed, as `last(self)` drops what it
@@ -25,7 +25,7 @@ function $lastDropping(it, drop, boxed, ends, raisedAt = undefined) {
     const [a, b] = it.sides();
     const aLast = $unwinds(
       () => (a === undefined ? undefined : $lastDropping(a, drop, true)),
-      () => b.return?.(),
+      () => $closeBare(b),
     );
     const bLast = $unwinds(
       () => $lastDropping(b, drop, true),
@@ -74,7 +74,7 @@ function $lastDropping(it, drop, boxed, ends, raisedAt = undefined) {
     if (front !== undefined) {
       $unwinds(
         () => take(() => front),
-        () => source?.return?.(),
+        () => $closeBare(source),
       );
     }
     if (source !== undefined && $ownMethod(source, "fold")) {

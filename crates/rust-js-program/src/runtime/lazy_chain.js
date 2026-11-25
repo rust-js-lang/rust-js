@@ -23,12 +23,12 @@ function $lazyChain(a, b) {
       if (first !== undefined) {
         const step = first.next();
         if (!step.done) return step;
-        first.return?.();
+        $closeBare(first);
         first = undefined;
       }
       if (second === undefined) return done;
       const step = second.next();
-      if (step.done && !chained.held) second.return?.();
+      if (step.done && !chained.held) $closeBare(second);
       return step;
     },
     () => $closeEach(first, second),
@@ -47,7 +47,7 @@ function $lazyChain(a, b) {
         let folded = init;
         if (first !== undefined) {
           folded = $foldDropping(first, folded, f, unwind);
-          first.return?.();
+          $closeBare(first);
           first = undefined;
         }
         if (second === undefined) {
@@ -55,7 +55,7 @@ function $lazyChain(a, b) {
           return folded;
         }
         folded = $foldDropping(second, folded, f, unwind, ends);
-        $closedAfter(ends, () => second.return?.());
+        $closedAfter(ends, () => $closeBare(second));
         return folded;
       },
       ends,
@@ -91,7 +91,7 @@ function $lazyChain(a, b) {
       } else {
         n = left;
       }
-      first.return?.();
+      $closeBare(first);
       first = undefined;
     }
     if (second === undefined) return done;
@@ -105,12 +105,12 @@ function $lazyChain(a, b) {
     if (first !== undefined) {
       folded = $lent(first).tryFold(folded, f, broke, unwind);
       if (broke(folded)) return folded;
-      first.return?.();
+      $closeBare(first);
       first = undefined;
     }
     if (second === undefined) return folded;
     folded = $lent(second).tryFold(folded, f, broke, unwind, ends);
-    if (!broke(folded) && !chained.held) second.return?.();
+    if (!broke(folded) && !chained.held) $closeBare(second);
     return folded;
   };
   // Std's `Chain::count`: `a`'s own `count`, then `b`'s, a `Take`'s
@@ -136,7 +136,7 @@ function $lazyChain(a, b) {
     if (first !== undefined) {
       m = advanced(first, m, drop);
       if (m === 0) return 0;
-      first.return?.();
+      $closeBare(first);
       first = undefined;
     }
     return second === undefined ? m : advanced(second, m, drop);
@@ -147,12 +147,12 @@ function $lazyChain(a, b) {
       if (second !== undefined) {
         const step = second.back();
         if (!step.done) return step;
-        second.return?.();
+        $closeBare(second);
         second = undefined;
       }
       if (first === undefined) return done;
       const step = first.back();
-      if (step.done && !chained.held) first.return?.();
+      if (step.done && !chained.held) $closeBare(first);
       return step;
     };
     // Std's `Chain::rfold`: `b`'s, then `a`'s, closed though `b`'s throws,
@@ -166,7 +166,7 @@ function $lazyChain(a, b) {
           let folded = init;
           if (second !== undefined) {
             folded = $foldBack(second, folded, f, unwind);
-            second.return?.();
+            $closeBare(second);
             second = undefined;
           }
           if (first === undefined) {
@@ -174,7 +174,7 @@ function $lazyChain(a, b) {
             return folded;
           }
           folded = $foldBack(first, folded, f, unwind, ends);
-          $closedAfter(ends, () => first.return?.());
+          $closedAfter(ends, () => $closeBare(first));
           first = undefined;
           return folded;
         },
@@ -187,7 +187,7 @@ function $lazyChain(a, b) {
       if (second !== undefined) {
         folded = $tryRfoldOf(second, folded, f, broke, unwind);
         if (broke(folded)) return folded;
-        second.return?.();
+        $closeBare(second);
         second = undefined;
       }
       return first === undefined ? folded : $tryRfoldOf(first, folded, f, broke, unwind, ends);
@@ -208,7 +208,7 @@ function $lazyChain(a, b) {
       if (second !== undefined) {
         m = backBy(second, m, drop);
         if (m === 0) return 0;
-        second.return?.();
+        $closeBare(second);
         second = undefined;
       }
       return first === undefined ? m : backBy(first, m, drop);
@@ -223,7 +223,7 @@ function $lazyChain(a, b) {
           const step = second.back();
           if (!step.done) return step;
         }
-        second.return?.();
+        $closeBare(second);
         second = undefined;
       }
       if (first === undefined) return done;
