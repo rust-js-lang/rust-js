@@ -77,6 +77,39 @@ pub fn later() -> f64 {
   expect([lib.getTime(1), lib.later(), lib.scale(2), lib.first()]).toEqual([2, 2, 4, 4]);
 });
 
+// Of one JS can't call, in a module only `pub mod` paths reach (#2403
+// lever (3)), nothing's checked, so the function is the variable, exported
+// by its name.
+test("a function JS can't call that only calls a module variable's function is the variable, exported", async () => {
+  const dir = fixture("forwarding-functions-unchecked");
+  writeFileSync(join(dir, "lib.rs"), `pub mod clock {
+    thread_local! {
+        static GET_TIME: Box<dyn Fn(f64) -> f64> = if js::math::random() < 2.0 {
+            Box::new(|n| n + 1.0)
+        } else {
+            let k = js::math::random();
+            Box::new(move |n| n * k)
+        };
+    }
+
+    pub fn get_time(n: f64) -> f64 {
+        GET_TIME.with(|get_time| get_time(n))
+    }
+
+    pub fn later() -> f64 {
+        get_time(1.0)
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "clock.js"), "utf8");
+  expect(js).toContain("let getTime;\nif (Math.random() < 2) {\n  getTime = (n) => n + 1;\n");
+  expect(js).not.toContain("function getTime");
+  expect(js).toContain("\nexport { getTime };\n");
+  const clock = await import(join(dir, "clock.js"));
+  expect([clock.getTime(1), clock.later()]).toEqual([2, 2]);
+});
+
 // ADR 0607: a variable's field is given what a call gives in place,
 // \`more.has = work();\`, as React's scheduler has \`hasMoreWork =
 // flushWork(currentTime);\`: what makes the value can't make the variable

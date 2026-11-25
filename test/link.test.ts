@@ -37,6 +37,35 @@ test("late import aliases avoid locals, nested parameters and generated bindings
   expect(code).not.toContain("\0");
 });
 
+// The same of a function JS can't call, the crate's own (#2403 lever (3)):
+// unsplit, imported by its name, which the locals take, so given apart,
+// `add$1`, the first name free, not its base or nothing.
+test("late import aliases of a function JS can't call avoid locals and parameters", async () => {
+  const dir = fixture("link-names-unchecked");
+  const source = `
+    pub mod util { pub fn add(n: i32) -> i32 { n + 1 } }
+    pub(crate) fn add(n: i32) -> i32 { util::add(n) + 1 }
+    pub mod app {
+      pub fn run() -> i32 {
+        let add = 10;
+        let value = 20;
+        let f = |add: i32| super::util::add(add) + super::add(value);
+        f(add)
+      }
+      pub fn text() -> String { format!("answer={}", super::add(1)) }
+    }
+  `;
+  writeFileSync(join(dir, "lib.rs"), source);
+  writeFileSync(join(dir, "native.rs"), 'mod lib; fn main() { println!("{}", lib::app::run()); println!("{}", lib::app::text()); }');
+  run(["rustc", "--edition=2024", "-Awarnings", join(dir, "native.rs"), "-o", join(dir, "native")]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = await import(join(dir, "app.js"));
+  expect([String(js.run()), js.text()]).toEqual(run([join(dir, "native")]).trim().split("\n"));
+  const code = readFileSync(join(dir, "app.js"), "utf8");
+  expect(code).toContain('import { add as add$1 } from "./lib.js";');
+  expect(code).toContain("const f = (add) => (Util.add(add) + add$1(value)) | 0;");
+});
+
 test("a sparse cyclic graph emits only each module's actual imports", async () => {
   const dir = fixture("link-graph"), count = 32;
   writeFileSync(join(dir, "lib.rs"), Array.from({ length: count }, (_, i) => `
@@ -119,6 +148,52 @@ test("a string that spells a helper's name doesn't import it", () => {
   expect(code).toContain(`import { $bigLeadingZeros } from "@rust-js/std";`);
   expect(code).toContain(`"$bigTrailingZeros and $bigCountOnes"`);
   expect(code).toContain(`console.log("$bigCountOnes")`);
+});
+
+// The same of a function JS can't call, the crate's own (#2403 lever (3)):
+// unsplit, imported by its name, which the module-load statements' own
+// `value` keeps apart, `value$1`.
+test("module-load statements resolve imports of a function JS can't call around their local bindings", async () => {
+  buildReact();
+  const dir = fixture("link-on-load-unchecked");
+  writeFileSync(join(dir, "lib.rs"), `
+    pub(crate) fn value(n: u32) -> u32 { n + 1 }
+    pub mod load {
+      #[cfg_attr(rust_js, rust_js::link_name = "globalThis.auditSeedUnchecked")]
+      fn seed() -> u32 {
+          unreachable!()
+      }
+
+      #[cfg_attr(rust_js, rust_js::link_name = "globalThis.auditLoadedUnchecked")]
+      fn loaded(n: u32) {
+          unreachable!()
+      }
+      js::on_load! {
+        let value = seed();
+        loaded(value);
+        let read = |value: u32| super::value(value);
+        loaded(read(value));
+      }
+      pub fn ready() -> u32 { super::value(1) }
+    }
+  `);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"),
+    "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const code = readFileSync(join(dir, "load.js"), "utf8");
+  expect(code).toContain('import { value as value$1 } from "./mir.js";');
+  expect(code).toContain("const read = (value) => value$1(value);");
+  const seen: number[] = [];
+  const globals = globalThis as typeof globalThis & { auditSeedUnchecked?: () => number; auditLoadedUnchecked?: (n: number) => void };
+  globals.auditSeedUnchecked = () => 3;
+  globals.auditLoadedUnchecked = n => seen.push(n);
+  try {
+    const generated = await import(join(dir, "load.js"));
+    expect(seen).toEqual([3, 4]);
+    expect(generated.ready()).toBe(2);
+  } finally {
+    delete globals.auditSeedUnchecked;
+    delete globals.auditLoadedUnchecked;
+  }
 });
 
 // Module-load bodies are linked with functions and constants, including the

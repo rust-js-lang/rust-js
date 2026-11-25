@@ -362,6 +362,10 @@ pub use dep::assign::assign;
   expect(app).toContain('export { Circle } from "../dep/shapes.js";\nexport { default as assign } from "../dep/assign.js";\n');
   const module = await import(join(dir, "app", "lib.js"));
   expect([module.LIMIT, module.renamed(), module.version, new module.Circle(2).radius]).toEqual([9, 9, "19.3.0", 2]);
+  // The class another crate gives JS, which only `pub mod` paths reach in
+  // its own, is checked by its own JS, which keeps its `instanceof`
+  // (#2403 (Y)).
+  expect(() => new module.Circle("2")).toThrow("Circle.new(radius): expected");
   expect(module.assign).toBe(Object.assign);
 });
 
@@ -425,7 +429,9 @@ pub fn persists(_: Option<ChildSet>) -> bool {
 
 // React's ReactAct imports shared's `enqueueTask` as `queueMacrotask`, the
 // name its Rust `use` gives it: a library's item is named as the module's
-// `use` renames it, its default and its name alike (ADR 0202, amended).
+// `use` renames it, its default and its name alike (ADR 0202, amended). A
+// default JS may call is split, and still imported as the module it is,
+// never its body by name (ADR 1193).
 test("a library's item is imported by the name a use renames it to", async () => {
   const dir = fixture("cross-crate-renamed");
   const { app } = compiled(dir, `pub mod enqueue {
@@ -435,6 +441,8 @@ test("a library's item is imported by the name a use renames it to", async () =>
         }
     }
 }
+
+pub use enqueue::enqueue_task;
 
 pub fn helper() -> u32 {
     3

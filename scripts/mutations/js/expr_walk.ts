@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     "file": "crates/rust-js-program/src/js/expr_walk.rs",
     "find": "                        \"Math\" => name != \"random\",\n",
     "replace": "                        \"Math\" => true,\n",
-    "tests": ["test/lowering-iterators.test.ts", "-t", "a lazy chain from MIR spread once"]
+    "tests": ["test/lowering-iterators.test.ts", "-t", "js's Math.random"]
   },
   {
     name: "js-substitute-shadowed",
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/js/expr_walk.rs",
     find: "        // A read a getter may answer, which may do anything (ADRs 0672, 0750).\n        if self.facts.has(Known::Getter) {\n            return true;\n        }\n",
     replace: "",
-    tests: ["test/lowering-moves.test.ts", "-t", "a getter's read given to a binding's method runs before its lookup"],
+    tests: ["test/lowering-moves.test.ts", "-t", "unchecked read given to a binding's method"],
   },
   {
     name: "getter-read-reads-same",

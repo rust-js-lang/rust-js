@@ -162,6 +162,51 @@ pub fn nested(obj: &Unknown, source: &Unknown) {
   }
 });
 
+// The same of a getter whose value no check reads first, an `&Unknown`
+// (#2403): a result JS gives a number is checked where it's read, a call,
+// which this read's place never rested on. Read as it is, no check to
+// strip.
+test("a getter's unchecked read given to a binding's method runs before its lookup", async () => {
+  const dir = fixture("getter-unchecked-past-a-binding-method");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+#[cfg_attr(rust_js, rust_js::link_name = "get value")]
+fn value(this: &Unknown) -> &'static Unknown {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "send")]
+fn send(this: &Unknown, a: &Unknown, b: i32) {
+    unreachable!()
+}
+
+pub fn run(obj: &Unknown, source: &Unknown, flag: bool) {
+    send(obj, value(source), if flag { 1 } else { 2 });
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("  const value = source.value;\n  obj.send(value, flag ? 1 : 2);\n");
+  const lib = await import(join(dir, "lib.js"));
+  const events: string[] = [];
+  let n = 0;
+  const source = {
+    get value() {
+      events.push("argument getter");
+      n = 7;
+      return n;
+    },
+  };
+  const obj = {
+    get send() {
+      events.push("method lookup");
+      const seen = n;
+      return () => events.push(`call saw ${seen}`);
+    },
+  };
+  lib.run(obj, source, true);
+  expect(events).toEqual(["argument getter", "method lookup", "call saw 7"]);
+});
+
 // An `Option` a getter gives, tested and kept, `filter` and `is_some_and`'s
 // `o != null && o > 1 ? o : undefined`: read once, in a `const`, as Rust
 // reads it, not at each use: a getter may give another value, or count

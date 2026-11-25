@@ -370,6 +370,168 @@ pub fn ran(n: f64) -> f64 {
   expect(ran.trim()).toBe("12");
 });
 
+// The same of a class JS can't call, in a module only `pub mod` paths
+// reach, of the crate's alone (#2403 lever (3)): nothing's checked, so a
+// prototype's method that only passes its parameters on is the function it
+// calls, as it was before the checks (rd715).
+test("a prototype's method JS can't call that only passes its parameters on is the function it calls", async () => {
+  const { p, dir } = compiled("prototype-forwarding-unchecked", {
+    "lib.rs": `pub mod roots {
+    pub struct Seen {
+        pub targets: std::cell::RefCell<Vec<f64>>,
+    }
+
+    #[cfg_attr(rust_js, rust_js::class)]
+    pub(crate) struct HydrationRoot {
+        #[cfg_attr(rust_js, rust_js::name = "_internalRoot")]
+        pub internal_root: f64,
+    }
+
+    // Its prototype replaced, so a constructor function, whose prototype's
+    // method can be the function it calls: an ES class's are in its body,
+    // none forwarded (#2495). Its own, so its methods stay.
+    js::on_load! {
+        js::class::<HydrationRoot>().set_prototype(js::class::<HydrationRoot>().prototype());
+    }
+
+    impl js::Classed for HydrationRoot {
+        type Constructor = js::AnyConstructor;
+    }
+
+    #[cfg_attr(rust_js, rust_js::class)]
+    impl HydrationRoot {
+        pub fn new(internal_root: f64) -> Self {
+            HydrationRoot { internal_root }
+        }
+
+        #[cfg_attr(rust_js, rust_js::name = "unstable_scheduleHydration")]
+        pub fn unstable_schedule_hydration(&self, seen: &Seen, target: Option<f64>) {
+            schedule_hydration(seen, target);
+        }
+
+        pub fn twice(&self, n: f64) -> f64 {
+            doubled(n)
+        }
+
+        pub fn offset(&self, n: f64) -> f64 {
+            doubled(n) + self.internal_root
+        }
+
+        pub fn note(&self, n: f64) {
+            doubled(n);
+        }
+    }
+
+    fn schedule_hydration(seen: &Seen, target: Option<f64>) {
+        if let Some(target) = target {
+            seen.targets.borrow_mut().push(target);
+        }
+    }
+
+    fn doubled(n: f64) -> f64 {
+        n * 2.0
+    }
+
+    pub fn run(n: f64) -> (f64, f64, Vec<f64>) {
+        let root = HydrationRoot::new(n);
+        let seen = Seen {
+            targets: std::cell::RefCell::new(Vec::new()),
+        };
+        root.unstable_schedule_hydration(&seen, Some(n));
+        root.unstable_schedule_hydration(&seen, None);
+        (root.twice(n), root.offset(n), seen.targets.into_inner())
+    }
+}
+`,
+  });
+  expect(p.stderr).not.toContain("error");
+  expect(p.code).toBe(0);
+  const js = readFileSync(join(dir, "roots.js"), "utf8");
+  expect(js).not.toContain("$check");
+  expect(js).toContain("Object.defineProperty(HydrationRoot.prototype, \"unstable_scheduleHydration\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: scheduleHydration,\n");
+  expect(js).toContain("Object.defineProperty(HydrationRoot.prototype, \"twice\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: doubled,\n");
+  expect(js).toContain("Object.defineProperty(HydrationRoot.prototype, \"offset\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: function (n) {");
+  // Of `()`, its result isn't the function's.
+  expect(js).toContain("Object.defineProperty(HydrationRoot.prototype, \"note\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: function (n) {");
+  const ran = run(["node", "--input-type=module", "--eval", `
+    import { run } from ${JSON.stringify(join(dir, "roots.js"))};
+    console.log(JSON.stringify(run(3)));
+  `]);
+  expect(ran.trim()).toBe("[6,9,[3]]");
+});
+
+// And of one its module's load reads: its own module's declaration, not
+// another module's, nor a function its module makes the variable it calls
+// (rd715, ADR 0610).
+test("a prototype's method JS can't call passes its parameters on to a declaration its module's load can read", async () => {
+  const { p, dir } = compiled("prototype-forwarding-loaded-unchecked", {
+    "lib.rs": `pub mod roots {
+    pub mod other {
+        pub fn tripled(n: f64) -> f64 {
+            n * 3.0
+        }
+    }
+
+    thread_local! {
+        static RUN: fn(f64) -> f64 = if std::hint::black_box(true) { other::tripled } else { |n| n };
+    }
+
+    fn run_now(n: f64) -> f64 {
+        RUN.with(|f| f(n))
+    }
+
+    #[cfg_attr(rust_js, rust_js::class)]
+    pub(crate) struct Root {
+        pub n: f64,
+    }
+
+    // Its prototype replaced, so a constructor function, whose prototype's
+    // method can be the function it calls: an ES class's are in its body,
+    // none forwarded (#2495). Its own, so its methods stay.
+    js::on_load! {
+        js::class::<Root>().set_prototype(js::class::<Root>().prototype());
+    }
+
+    impl js::Classed for Root {
+        type Constructor = js::AnyConstructor;
+    }
+
+    #[cfg_attr(rust_js, rust_js::class)]
+    impl Root {
+        pub fn new(n: f64) -> Self {
+            Root { n }
+        }
+
+        pub fn thrice(&self, n: f64) -> f64 {
+            other::tripled(n)
+        }
+
+        pub fn run(&self, n: f64) -> f64 {
+            run_now(n)
+        }
+    }
+
+    pub fn ran(n: f64) -> f64 {
+        let root = Root::new(n);
+        root.thrice(n) + root.run(n)
+    }
+}
+`,
+  });
+  expect(p.stderr).not.toContain("error");
+  expect(p.code).toBe(0);
+  const js = readFileSync(join(dir, "roots.js"), "utf8");
+  expect(js).not.toContain("$check");
+  expect(js).toContain("Object.defineProperty(Root.prototype, \"thrice\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: function (n) {\n    return Other.tripled(n);\n  },\n");
+  expect(js).toContain("Object.defineProperty(Root.prototype, \"run\", {\n  writable: true,\n  enumerable: true,\n  configurable: true,\n  value: runNow,\n");
+  expect(js).toContain("function runNow(n) {\n  return run(n);\n}");
+  const ran = run(["node", "--input-type=module", "--eval", `
+    import { ran } from ${JSON.stringify(join(dir, "roots.js"))};
+    console.log(ran(2));
+  `]);
+  expect(ran.trim()).toBe("12");
+});
+
 // #596: ReactFlightClient's `create_response` is
 // `#[rust_js::nullable(bundler_config, ..)]`, and ReactNoopFlightClient
 // calls it through the namespace's value. Its forwarding method is that

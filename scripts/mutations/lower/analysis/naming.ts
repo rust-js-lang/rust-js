@@ -806,7 +806,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/analysis/naming.rs",
     find: "            Res::Def(_, item) if tcx.opt_parent(item) == Some(module) => Some(item),\n",
     replace: "            Res::Def(_, item) if tcx.opt_parent(item) == Some(module) && is_binding(tcx, item) => Some(item),\n",
-    tests: ["test/declarations-libraries.test.ts", "-t", "is its re-export"],
+    tests: ["test/declarations-libraries.test.ts", "-t", "JS can't call that only passes its parameters on to one instantiation"],
   },
   {
     name: "pub-use-import-preferred",

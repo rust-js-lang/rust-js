@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "                .find(|to| !mentioned.contains(to))\n",
     replace: "                .find(|to| !mentioned.contains(to) && !to.contains('$'))\n",
-    tests: ["test/link.test.ts", "-t", "late import aliases"],
+    tests: ["test/link.test.ts", "-t", "late import aliases of a function JS can't call"],
   },
   {
     name: "import-alias-old-word-kept",

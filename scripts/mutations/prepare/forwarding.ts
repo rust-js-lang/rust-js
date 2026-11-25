@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "                if export {\n                    module.aliases.push((name.word().to_string(), name.word().to_string()));\n",
     replace: "                if false {\n                    module.aliases.push((name.word().to_string(), name.word().to_string()));\n",
-    tests: ["test/lowering-functions.test.ts", "-t", "a function that only calls a module variable"],
+    tests: ["test/lowering-functions.test.ts", "-t", "JS can't call that only calls a module variable"],
   },
   {
     name: "forwarding-fields-this-read",
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "                    .filter_map(|method| class.forwarded(method))\n",
     replace: "                    .filter_map(|method| class.forwarded(method).filter(|_| false))\n",
-    tests: ["test/method-forwarding.test.ts", "-t", "a declaration its module's load can read"],
+    tests: ["test/method-forwarding.test.ts", "-t", "JS can't call passes its parameters on to a declaration"],
   },
   {
     name: "forwarding-function-comments-untaken",

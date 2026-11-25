@@ -105,11 +105,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy/moves.rs",
     find: "        if place.facts.has(js::Known::Getter) {\n",
     replace: "        if false {\n",
-    tests: [
-      "test/lowering-or-patterns.test.ts",
-      "-t",
-      "getter's value reads it once",
-    ],
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "unchecked value reads it once"],
   },
   {
     name: "mir-tidy-captured-kept",

@@ -108,6 +108,10 @@ test("a string is well-formed, a char one code point, a bool a boolean, an enum 
   expect(thrown(() => lib.label!("a", "b", "", true, "Open"))).toBe('TypeError: rust-js: label(c): expected a char, got ""');
   expect(thrown(() => lib.label!("a", "b", "c", 1, "Open"))).toBe("TypeError: rust-js: label(on): expected a bool, got 1");
   expect(thrown(() => lib.label!("a", "b", "c", true, "lost"))).toBe('TypeError: rust-js: label(status): expected "Open" | "shipped", got "lost"');
+  // A fieldless enum's is one statement of its names, no checker of its
+  // own, as a tagged enum's is (ADR 1194).
+  expect(js).toContain('  $checkOneOf(status, ["Open", "shipped"], "label(status)");\n');
+  expect(js).not.toContain("function checkStatus(");
 });
 
 test("an Option's None is what its form reads as one", () => {

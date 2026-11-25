@@ -85,6 +85,6 @@ export const mutations: Mutation[] = [
     file,
     find: "                _ if checked => vec![true; arg_places.len()],\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "a library's private type's impl is given to its generic code by a consumer"],
+    tests: ["test/boundary-split.test.ts", "-t", "through a renaming use"],
   },
 ];

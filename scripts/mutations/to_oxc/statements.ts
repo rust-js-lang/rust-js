@@ -449,7 +449,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            let mut value = match class.forwarded(f) {\n",
     replace: "            let mut value = match None::<js::Expr> {\n",
-    tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method that only passes its parameters on"],
+    tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method JS can't call that only passes its parameters on"],
   },
   {
     name: "es-class-fields-unprinted",

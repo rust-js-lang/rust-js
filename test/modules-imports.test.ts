@@ -153,6 +153,28 @@ export { half, double as unstable_double } from "./runtime.js";
   expect([lib.unstable_double(3), lib.half(3), lib.math.pi]).toEqual([6, 1.5, 3]);
 });
 
+// The same of a function JS can't call, in a module only `pub mod` paths
+// reach (#2403 lever (3)): unsplit, so its `pub use` and a `use` below it
+// name one function, and the `pub use` re-exports it from its module, not
+// the binding the `use` below imports, which the module hasn't imported
+// yet as it reads (rd705).
+test("a pub use above a use of its function JS can't call re-exports it from its module", () => {
+  const dir = fixture("reexports-as-written-unchecked");
+  writeFileSync(join(dir, "lib.rs"), "pub mod dev;\nmod shapes;\n");
+  writeFileSync(join(dir, "dev.rs"), `pub use crate::shapes::area;
+
+#[cfg_attr(rust_js, rust_js::name = "_areaDEV")]
+use crate::shapes::area as _area_dev;
+
+pub fn twice(circle: &crate::shapes::Circle) -> f64 {
+    _area_dev(circle) * 2.0
+}
+`);
+  writeFileSync(join(dir, "shapes.rs"), "pub struct Circle {\n    pub radius: f64,\n}\n\npub fn area(circle: &Circle) -> f64 {\n    circle.radius * circle.radius\n}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib"]);
+  expect(readFileSync(join(dir, "dev.js"), "utf8")).toContain('export { area } from "./shapes.js";\n\nimport { area as _areaDEV } from "./shapes.js";\n');
+});
+
 // The user's decision (2026-10-27), ADR 0256, amended: React's reconciler
 // Scheduler.js, `import * as Scheduler from 'scheduler'; export const now =
 // Scheduler.unstable_now;`. A `link_name`'s `* as Name` names the namespace

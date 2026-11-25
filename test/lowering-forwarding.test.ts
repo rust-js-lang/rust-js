@@ -105,6 +105,50 @@ pub fn count() -> u32 {
   expect(lib.count()).toBe(1221);
 });
 
+// The same of a function JS may call that checks nothing it's given, an
+// `&Unknown` any value is (#2403): exported by another name alone, it's
+// still a function of its own, not the variable, which a JS caller would
+// give past its parameters (ADR 0610, amended). Read as it is, no check to
+// strip.
+test("a function exported by another name alone that checks nothing stays a function", async () => {
+  const dir = fixture("forwarding-aliased-unchecked");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+
+thread_local! {
+    static RUN: fn(&Unknown) = if js::math::random() < 2.0 { |_| {} } else { |_| {} };
+}
+
+fn run_now(value: &Unknown) {
+    RUN.with(|f| f(value));
+}
+
+fn run_read(value: &Unknown) {
+    RUN.with(|f| f(value));
+}
+
+#[cfg_attr(rust_js, rust_js::name = "runLater")]
+pub use self::run_aliased as run_later;
+
+pub fn run_aliased(value: &Unknown) {
+    RUN.with(|f| f(value));
+}
+
+pub fn count(value: &Unknown) {
+    run_now(value);
+    run_read(value);
+    let given: fn(&Unknown) = run_now;
+    given(value);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const runRead = Math.random() < 2 ? () => {} : () => {};\n");
+  expect(js).toContain("\nfunction runAliased(value) {\n  runRead(value);\n}\n");
+  expect(js).toContain("\nexport { runAliased as runLater };\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.runLater({}), lib.count({})]).toEqual([undefined, undefined]);
+});
+
 // ADR 0610, amended (#533): alien-signals builds its system where its
 // module loads and takes it apart, `const { link, unlink, .. } =
 // createReactiveSystem(..)`. Its port's thread-local of the system and the
@@ -463,6 +507,144 @@ pub fn some<T>(x: Option<T>) -> bool {
   expect([lib.calledHere(1), lib.twice(1), lib.otherName(1), lib.apart(1), lib.commented(1), lib.default(1)]).toEqual([3, 6, 3, 3, 3, 3]);
   // What a JS caller gives past their parameters, none of theirs.
   expect([lib.twin(1), lib.count({ n: 4 }), lib.halved(8, 4), lib.held(5, 6), lib.counted(), lib.nested({ $someNone: 0 })]).toEqual([3, 4, 4, 1, 1, true]);
+});
+
+// The same forwarders where JS may call none of them, in a module only
+// `pub mod` paths reach (#2403 lever (3)): nothing's checked, so each that
+// only passes its parameters on is the function it calls, re-exported, as
+// it was before the checks (rd575), and each the test above keeps a
+// function is one still; one its module exports by another name alone
+// too, `renamed`, never its callee's variable (ADR 0610).
+test("a function JS can't call that only passes its parameters on to another module's is its re-export", async () => {
+  const dir = fixture("reexported-forwarders-unchecked");
+  writeFileSync(join(dir, "lib.rs"), "mod bound;\nmod caller;\nmod inner;\npub mod outer;\n");
+  writeFileSync(join(dir, "outer.rs"), `use crate::{bound, caller, inner};
+
+use js::Unknown;
+
+pub fn helper(n: f64) -> f64 {
+    inner::helper(n)
+}
+
+#[cfg_attr(rust_js, rust_js::name = "triple")]
+pub fn tripled(n: f64) -> f64 {
+    inner::helper(n)
+}
+
+pub fn called_here(n: f64) -> f64 {
+    inner::helper(n)
+}
+
+pub fn twice(n: f64) -> f64 {
+    called_here(n) * 2.0
+}
+
+pub fn renamed(n: f64) -> f64 {
+    inner::helper(n)
+}
+
+pub use self::renamed as other_name;
+
+#[inline(never)]
+pub fn apart(n: f64) -> f64 {
+    inner::helper(n)
+}
+
+pub fn plus_one(n: f64) -> f64 {
+    caller::plus_one(n)
+}
+
+fn own(n: f64) -> f64 {
+    n + 2.0
+}
+
+pub fn twin(n: f64) -> f64 {
+    own(n)
+}
+
+pub fn halved(n: f64) -> f64 {
+    bound::half(n)
+}
+
+pub fn count(counter: &inner::Counter) -> f64 {
+    counter.get()
+}
+
+pub fn held(n: u32) -> u32 {
+    inner::hold(n)
+}
+
+pub struct Guard(pub u32);
+
+impl Drop for Guard {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+
+pub fn guarded(guard: Guard) -> u32 {
+    inner::hold(guard)
+}
+
+pub fn counted(first: Option<&Unknown>) -> Option<&'static Unknown> {
+    inner::given(first)
+}
+
+pub fn nested(x: Option<Option<u32>>) -> bool {
+    inner::some(x)
+}
+`);
+  writeFileSync(join(dir, "inner.rs"), `use js::Unknown;
+
+pub fn helper(n: f64) -> f64 {
+    n * 3.0
+}
+
+pub struct Counter {
+    pub n: f64,
+}
+
+impl Counter {
+    pub fn get(&self) -> f64 {
+        self.n
+    }
+}
+
+pub fn hold<T>(value: T) -> u32 {
+    drop(value);
+    1
+}
+
+pub fn given(_first: Option<&Unknown>) -> Option<&'static Unknown> {
+    js::get(js::arguments(), "length")
+}
+
+pub fn some<T>(x: Option<T>) -> bool {
+    x.is_some()
+}
+`);
+  writeFileSync(join(dir, "caller.rs"), "pub fn plus_one(n: f64) -> f64 {\n    crate::outer::helper(n) + 1.0\n}\n");
+  writeFileSync(join(dir, "bound.rs"), '#[cfg_attr(rust_js, rust_js::link_name = "./math.js#half")]\npub fn half(n: f64) -> f64 {\n    let _ = n;\n    unreachable!()\n}\n');
+  writeFileSync(join(dir, "math.js"), "export function half(n, by = 2) {\n  return n / by;\n}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "outer.js"), "utf8");
+  // No check of a parameter; a binding's result, `half`'s, is checked
+  // wherever it's called (ADR 1195).
+  expect(js).not.toMatch(/^ {2}\$check\w*\(\w+, "/m);
+  expect(js).toContain('export { helper, helper as triple } from "./inner.js";\n');
+  expect(js).toContain('export { plusOne } from "./caller.js";\n');
+  for (const kept of ["calledHere(n)", "twice(n)", "apart(n)", "twin(n)", "count(counter)", "halved(n)", "held(n)", "counted(first)", "nested(x)"]) {
+    expect(js).toContain(`export function ${kept} {`);
+  }
+  expect(js).toContain("function renamed(n) {");
+  expect(js).not.toMatch(/function (helper|tripled|triple|plusOne)\b/);
+  expect(readFileSync(join(dir, "caller.js"), "utf8")).toContain('import * as Outer from "./outer.js";\n\nexport function plusOne(n) {\n  return Outer.helper(n) + 1;\n}');
+  const outer = await import(join(dir, "outer.js"));
+  const inner = await import(join(dir, "inner.js"));
+  expect([outer.helper, outer.triple, outer.plusOne(2)]).toEqual([inner.helper, inner.helper, 7]);
+  expect([outer.calledHere(1), outer.twice(1), outer.otherName(1), outer.apart(1)]).toEqual([3, 6, 3, 3]);
+  // What a JS caller gives past their parameters, none of theirs.
+  expect([outer.twin(1), outer.count({ n: 4 }), outer.halved(8, 4), outer.held(5, 6), outer.counted(), outer.otherName(1, 2), outer.nested({ $someNone: 0 })]).toEqual([3, 4, 4, 1, 1, 3, true]);
 });
 
 // ADR 0610, amended (#561): React's noop Flight client makes one instance
