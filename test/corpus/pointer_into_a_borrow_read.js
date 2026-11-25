@@ -6,49 +6,25 @@
 // temporary the `Ref` gives, is made first, never named where no JS
 // declares it (#1110).
 
-import { $alreadyMutablyBorrowed, $borrow, $main, $ptr, $unborrow } from "@rust-js/std";
+import { $main, $ptr } from "@rust-js/std";
 
 $main(main);
 
 function main() {
-  const cell = {
-    value: [
-      { a: 1, b: 10 },
-      { a: 2, b: 20 },
-      { a: 3, b: 30 },
-    ],
-  };
-  const borrow = $borrow(cell, "test/corpus/pointer_into_a_borrow_read.rs:16:31", true);
-  const a = $ptr(borrow.value[2], "a", 4, borrow.value, 20);
-  let tmp;
-  try {
-    tmp = $borrow(cell, "test/corpus/pointer_into_a_borrow_read.rs:17:31", true);
-  } catch (error) {
-    $unborrow(borrow);
-    throw error;
-  }
-  const b = $ptr(tmp.value[1], "b", 0, tmp.value, 8);
+  let cell = [
+    { a: 1, b: 10 },
+    { a: 2, b: 20 },
+    { a: 3, b: 30 },
+  ];
+  const a = $ptr(cell[2], "a", 4, cell, 20);
+  const b = $ptr(cell[1], "b", 0, cell, 8);
   console.log(`${a.value} ${b.value}`);
-  let tmp$1;
-  try {
-    if (cell.borrows < 0) {
-      $alreadyMutablyBorrowed("test/corpus/pointer_into_a_borrow_read.rs:21:25");
-    }
-    tmp$1 = cell;
-  } catch (error) {
-    $unborrow(tmp);
-    $unborrow(borrow);
-    throw error;
-  }
-  console.log(`${tmp$1.value[1].b}`);
+  console.log(`${cell[1].b}`);
   // Through an `Rc` too, read where it's made.
   let items = [
     { a: 4, b: 40 },
     { a: 5, b: 50 },
   ];
-  const value = items;
-  console.log(`${$ptr(value[1], "a", 4, value, 12).value}`);
-  $unborrow(tmp);
-  $unborrow(borrow);
+  console.log(`${$ptr(items[1], "a", 4, items, 12).value}`);
 }
 //# sourceMappingURL=case.js.map

@@ -94,4 +94,22 @@ export const mutations: Mutation[] = [
     replace: "                                None::<&Expr>.map(|source| &source.kind)\n",
     tests: ["test/library-kept-copies.test.ts", "-t", "literal, new box and constant"],
   },
+  {
+    name: "guarded-read-named-by-the-program-inlined",
+    breaks: "what a guard holds that the program names, `let Some(id) = *slot.borrow() else`, is read in place, `if (slot.value == null) .. const id = slot.value;`, its name lost (#2490)",
+    file: "crates/rust-js-mir/src/tidy/bindings/temporaries.rs",
+    find: "                        && suggested.get(name).is_none_or(Vec::is_empty) =>\n",
+    replace: "                        && true =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^tuple_of_taken_parts.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "guarded-read-of-what-reads-otherwise",
+    breaks: "what a guard holds, read through what doesn't read the same each time, a stored address's `$storedValue(cell, 4).value`, is read again at each use (#2490)",
+    file: "crates/rust-js-mir/src/tidy/bindings/temporaries.rs",
+    find: "                        && value.reads_same()\n                        && suggested",
+    replace: "                        && suggested",
+    tests: ["test/corpus.test.ts", "-t", "^address_of_a_nested_field_through_a_deref.rs$"],
+    snapshots: true,
+  },
 ];

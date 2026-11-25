@@ -20,7 +20,7 @@ impl<'tcx> MirCx<'_, '_, 'tcx> {
         &self,
         mir_body: &mir::Body<'tcx>,
         state: &State<'_, 'tcx>,
-    ) -> IndexMap<js::Name, Vec<String>> {
+    ) -> tidy::TemporaryNames {
         let called = self.calls_named_in_source(mir_body);
         let fields = self.struct_fields_given(mir_body);
         let mut taken_from: IndexMap<Local, Local> = IndexMap::default();
@@ -36,7 +36,7 @@ impl<'tcx> MirCx<'_, '_, 'tcx> {
                 }
             }
         }
-        (state.locals.names.iter_enumerated())
+        let suggested = (state.locals.names.iter_enumerated())
             .filter(|(_, name)| super::tidy::is_temporary(name))
             .map(|(local, name)| {
                 // What it was taken from, as far as that goes.
@@ -65,7 +65,11 @@ impl<'tcx> MirCx<'_, '_, 'tcx> {
                     .collect();
                 (name.clone(), names)
             })
-            .collect()
+            .collect();
+        tidy::TemporaryNames {
+            suggested,
+            guarded: guarded_temporaries(mir_body, state),
+        }
     }
 
     /// Each temporary a struct literal is given as a field, by that field's
@@ -198,4 +202,18 @@ impl<'tcx> MirCx<'_, '_, 'tcx> {
         let booleans = booleans.iter().map(js::Path::var).collect();
         (booleans, numbers, floats)
     }
+}
+
+/// Each temporary of `mir_body` that's what a shared guard whose borrow
+/// isn't counted holds, `*cell.borrow()`'s `Deref` (`QuietCells::guarded`):
+/// tidy reads it as the cell where nothing the program writes names it
+/// (`readable_temporaries`, #2490).
+fn guarded_temporaries(mir_body: &mir::Body<'_>, state: &State<'_, '_>) -> IndexSet<js::Name> {
+    (state.facts.quiet_cells().guarded.iter())
+        .filter_map(|&block| match &mir_body[block].terminator().kind {
+            mir::TerminatorKind::Call { destination, .. } => destination.as_local(),
+            _ => None,
+        })
+        .map(|local| state.locals.names[local].clone())
+        .collect()
 }

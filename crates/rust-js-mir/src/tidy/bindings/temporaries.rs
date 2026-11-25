@@ -17,7 +17,9 @@ use rust_js_lower::temporary_names::Role;
 /// `value`, `arg` or `tmp`, given apart where it must be: no word table
 /// of tidy's own (#1681 change 3). A value lowering spilled for a role is
 /// suggested where lowering spills it (`spill`, #890).
-pub(in crate::tidy) fn readable_temporaries(body: &mut Vec<Stmt>, suggested: &IndexMap<js::Name, Vec<String>>) {
+pub(in crate::tidy) fn readable_temporaries(body: &mut Vec<Stmt>, names: &crate::tidy::TemporaryNames) {
+    let suggested = &names.suggested;
+    guarded_reads_in_place(body, names);
     // What an element is given each as, `href={_5}` or a child, `{_6}`: the
     // prop's name, `href`, or `children`.
     let mut given: IndexMap<js::Name, String> = IndexMap::default();
@@ -126,4 +128,47 @@ pub(in crate::tidy) fn readable_temporaries(body: &mut Vec<Stmt>, suggested: &In
             }
         });
     }
+}
+
+/// `const _7 = cell.value;`, what a shared guard whose borrow isn't counted
+/// holds (`TemporaryNames::guarded`, #2490), that nothing the
+/// program writes names:
+/// read as the cell is, where it's read, `$ptr(cell[2], "a", 4, cell, 20)`
+/// of `&raw const (*cell.borrow())[2].a`, as a counted guard's
+/// `borrow.value` is, never a temporary named `value` by the cell's own
+/// key. Nothing writes the cell's value while the guard lives, and each
+/// read of the reference its `Deref` gave is while it does. One the
+/// program names, `let Some(id) = *slot.borrow() else`, keeps its name.
+fn guarded_reads_in_place(body: &mut Vec<Stmt>, names: &crate::tidy::TemporaryNames) {
+    let (suggested, guarded) = (&names.suggested, &names.guarded);
+    js::statement_lists(body, &mut |stmts| {
+        let mut i = 0;
+        while i < stmts.len() {
+            let read = match &stmts[i].kind {
+                StmtKind::Const(name, value)
+                    if guarded.contains(name)
+                        && is_temporary(name)
+                        && !name.is_unread()
+                        && value.reads_same()
+                        && suggested.get(name).is_none_or(Vec::is_empty) =>
+                {
+                    Some((name.clone(), value.clone()))
+                }
+                _ => None,
+            };
+            let Some((name, value)) = read else {
+                i += 1;
+                continue;
+            };
+            stmts.remove(i);
+            js::each_expr_mut(&mut stmts[i..], &mut |e| {
+                if matches!(&e.kind, ExprKind::Var(v) if *v == name) {
+                    *e = Expr {
+                        span: e.span,
+                        ..value.clone()
+                    };
+                }
+            });
+        }
+    });
 }

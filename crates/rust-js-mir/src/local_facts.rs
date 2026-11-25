@@ -134,6 +134,10 @@ pub(super) struct QuietCells {
     /// rd218).
     pub(super) momentary: IndexSet<BasicBlock>,
     pub(super) guards: IndexSet<Local>,
+    /// Each `Deref` of a shared guard among `guards`, `*cell.borrow()`'s:
+    /// what it holds, which nothing writes while it lives, is read as the
+    /// cell is, where it's read (`TemporaryNames::guarded`, #2490).
+    pub(super) guarded: IndexSet<BasicBlock>,
     /// Of `guards`, those of a borrow that's checked, `momentary`'s:
     /// `$borrow(c)`, which throws where it's made. The others are of a
     /// cell no borrow of which is counted, unchecked, the value itself
@@ -969,6 +973,20 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         for (block, dropped) in drops {
             if dropped.is_some_and(|place| place.projection.is_empty() && quiet.guards.contains(&place.local)) {
                 quiet.calls.insert(block);
+            }
+        }
+        // Each shared guard's `Deref`, given a reference to the guard.
+        for (block, data) in body.basic_blocks.iter_enumerated() {
+            if let TerminatorKind::Call { func, args, .. } = &data.terminator().kind
+                && let Some((def_id, generic_args)) = fn_def(func.ty(body, tcx))
+                && let Some(Std::GuardValue { mutable: false }) = self.recognition().classify(def_id, generic_args)
+                && let Some(lent) = args.first().and_then(|arg| arg.node.place())
+                && lent.projection.is_empty()
+                && let Some(Some(Rvalue::Ref(_, _, guard))) = assigned.get(&lent.local)
+                && guard.projection.is_empty()
+                && quiet.guards.contains(&guard.local)
+            {
+                quiet.guarded.insert(block);
             }
         }
         quiet

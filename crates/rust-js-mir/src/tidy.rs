@@ -90,6 +90,17 @@ pub(super) struct LetNames {
     pub(super) guards: Vec<(u32, u32)>,
 }
 
+/// What MIR says of its temporaries' names, for `finish` to give
+/// (`MirCx::temporaries_names`): the names its source suggests of each;
+/// and each that's what a shared guard whose borrow isn't counted holds,
+/// `*cell.borrow()`'s, read as the cell where nothing names it
+/// (`QuietCells::guarded`, #2490).
+#[derive(Default)]
+pub(crate) struct TemporaryNames {
+    pub(crate) suggested: IndexMap<js::Name, Vec<String>>,
+    pub(crate) guarded: IndexSet<js::Name>,
+}
+
 /// What MIR's lowering, and THIR, say of a body for tidying it.
 pub(super) struct Hints<'h> {
     /// The name of the function's return place.
@@ -142,7 +153,7 @@ pub(super) struct Hints<'h> {
     /// The function's parameters, which the `finish` stage takes apart.
     pub(super) params: &'h std::cell::RefCell<Vec<js::Pattern>>,
     /// The names MIR suggests of its temporaries, for `finish` to give.
-    pub(super) suggested: &'h IndexMap<rust_js_program::js::Name, Vec<String>>,
+    pub(super) suggested: &'h TemporaryNames,
     /// The locals the program names, and its `String`s, by name.
     pub(super) named: &'h Named,
     /// Its stages run again (`Again`).

@@ -331,4 +331,14 @@ export const mutations: Mutation[] = [
     replace: "                    true\n",
     tests: ["test/corpus.test.ts", "-t", "^guard_held_in_an_aggregate_written_whole.rs$"],
   },
+  {
+    name: "guarded-deref-never",
+    breaks: "what a shared guard whose borrow isn't counted holds is a temporary of its own, `const value = cell;`, not read as the cell, `$ptr(cell[2], \"a\", 4, cell, 20)` (#2490)",
+    file: "crates/rust-js-mir/src/local_facts.rs",
+    find: "                quiet.guarded.insert(block);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_into_a_borrow_read.rs$"],
+    snapshots: true,
+  },
+
 ];
