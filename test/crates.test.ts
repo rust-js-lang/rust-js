@@ -1271,3 +1271,16 @@ test("a library's trait method without a default, whose impl alone tracks its ca
   expect(refused.stderr.toString()).toContain("a library's trait method without a default that's given its caller's location through its dictionary");
   expect(refused.stderr.toString()).toContain("dep.rs:2:5");
 }, 300_000);
+
+// A library's root of a module and a `pub use` of its static, `pub use
+// counters::HITS`, is its entry, re-exporting it, as a `pub use` of a
+// function's is: a static of the crate's own was left out of what a `pub
+// use` re-exports, and the root wrote no `lib.js` at all, so a JS consumer
+// of the package had no `HITS` (#2581, found by the export net, #2481).
+test("a pub use of the crate's own static is re-exported by its module's JS", async () => {
+  const out = chain(pairs, "library_static_changing_in_place", ["dep", "app"]);
+  const entry = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  expect(entry).toContain('export { HITS } from "./counters.js";');
+  const dep = await import(join(out, "dep", "lib.js"));
+  expect(dep.HITS).toEqual({ value: 1 });
+}, 300_000);

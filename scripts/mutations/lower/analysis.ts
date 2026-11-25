@@ -84,8 +84,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`pub use priorities::IDLE` re-exports nothing, so `IDLE` isn't the module's",
     file: "crates/rust-js-lower/src/analysis.rs",
-    find: "DefKind::Fn | DefKind::Const, _)) => true,",
-    replace: "DefKind::Fn, _)) => true,",
+    find: "DefKind::Fn | DefKind::Const | DefKind::Static { .. }, _)) => true,",
+    replace: "DefKind::Fn | DefKind::Static { .. }, _)) => true,",
     tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
   },
   {
@@ -196,9 +196,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a module of only a `pub use` of a binding's static has no file, and its re-export is lost",
     file: "crates/rust-js-lower/src/analysis.rs",
-    find: "            Some(rustc_hir::def::Res::Def(DefKind::Static { .. }, id)) => is_binding(tcx, id),\n",
+    find: "            Some(rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const | DefKind::Static { .. }, _)) => true,\n",
     replace:
-      "            Some(rustc_hir::def::Res::Def(DefKind::Static { .. }, _)) => false,\n",
+      "            Some(rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const, _)) => true,\n",
     tests: ["test/modules.test.ts", "-t", "JS module's binding is re-exported"],
   },
   {
@@ -519,5 +519,13 @@ export const mutations: Mutation[] = [
     find: "            || super::reexports::reexports_library_namespace(tcx, module, &foreign);\n",
     replace: "            ;\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a module whose only item re-exports a library's module is a file"],
+  },
+  {
+    name: "own-static-not-reexported",
+    breaks: "a `pub use` of the crate's own static, `pub use counters::HITS`, is no re-export, and a library root of a module and it writes no entry, so a JS consumer of the package has no `HITS` (#2581)",
+    file: "crates/rust-js-lower/src/analysis.rs",
+    find: "            Some(rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const | DefKind::Static { .. }, _)) => true,\n",
+    replace: "            Some(rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const, _)) => true,\n            Some(rustc_hir::def::Res::Def(DefKind::Static { .. }, id)) => is_binding(tcx, id),\n",
+    tests: ["test/crates.test.ts", "-t", "a pub use of the crate's own static is re-exported by its module's JS"],
   },
 ];

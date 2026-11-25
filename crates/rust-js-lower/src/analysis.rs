@@ -1320,18 +1320,19 @@ pub fn analyze_crate<'a, 'tcx>(
 }
 
 /// Whether `item` is a `pub use` its module's JS re-exports (ADR 0240): of
-/// a function, the crate's, a library's or a binding's, or of a binding's
-/// `static`; and of the crate's module, its namespace, or a class (ADR 0240,
-/// amended).
+/// a function, a constant or a `static`, the crate's, a library's or a
+/// binding's; and of the crate's module, its namespace, or a class (ADR 0240,
+/// amended). A static of the crate's own was left out, and a library root
+/// of `pub use counters::HITS` wrote no entry at all (#2581).
 pub(super) fn is_reexport(tcx: TyCtxt<'_>, leaf: &crate::uses::UseLeaf<'_>) -> bool {
     let (crate::uses::Leaf::Single(_), path) = (leaf.kind, &leaf.path) else {
         return false;
     };
     tcx.visibility(leaf.def_id).is_public()
         && (match path.res.value_ns {
-            // A function's, and a constant's, its module's `const` (ADR 0596).
-            Some(rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const, _)) => true,
-            Some(rustc_hir::def::Res::Def(DefKind::Static { .. }, id)) => is_binding(tcx, id),
+            // A function's, a constant's, its module's `const` (ADR 0596),
+            // and a static's, its module's `const` of its value or its cell.
+            Some(rustc_hir::def::Res::Def(DefKind::Fn | DefKind::Const | DefKind::Static { .. }, _)) => true,
             _ => false,
         } || match path.res.type_ns {
             Some(rustc_hir::def::Res::Def(DefKind::Mod, id)) => id.is_local(),

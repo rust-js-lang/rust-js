@@ -218,3 +218,14 @@ mutations `unexpressed-reexport-unrefused`, restored, and
 `glob-within-the-crate-refused` and `public-glob-of-no-js-unsaid`, ADR
 0874's two renamed, as std's names no longer tell them apart
 (`lower/reexports.ts`).
+
+## Amendment: a static of the crate's own, or a library's, is re-exported too (2026-11-25, #2581)
+
+A `pub use` re-exported a static only where it was a binding's. Of the
+crate's own, `pub use counters::HITS`, it re-exported nothing. A library
+root of a module and that `pub use` wrote no entry at all, so a JS consumer
+of the package had no `HITS`, which the manifest's records said the crate
+offers. The export net (#2481) found it on the crate pairs. A `pub use` of
+a static now re-exports it, whichever crate's it is, as a function's and a
+constant's are: `export { HITS } from "./counters.js";`, its value its
+module's `const` of the value or of its cell.

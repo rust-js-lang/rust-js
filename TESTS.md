@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2581, ADR 0240 amended): test/crates.test.ts gains a test, a `pub use` of the crate's own static re-exported by its module's JS.
+
 Changed on 2026-11-25 (Campaign 5 step 2c-1, ADR 1202 amended): test/architecture-models.test.ts gains a third test, the compiler reads a row of `$stdSites` through its handle alone; two unit tests, raised.rs' `StdRow`'s rows are those written both ways and each its own, models.rs' each row is the catalog's; test/twin-net.test.ts's ratchet of exports falls to 1,179; seven mutations, two of them new, the stale finds of eleven retyped.
 
 Changed on 2026-11-25 (#2574, ADR 1092 amended): test/architecture-iterators.test.ts gains a test, a fallible collect's helpers made by one maker; test/known/iterator-matrix/2574.txt is gone, its concrete cases native-equal, and 2580.txt lists generic code's.
