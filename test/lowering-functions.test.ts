@@ -6,6 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { ownPeak } from "./child";
 import { buildReact, compiler, fixture, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
 
@@ -799,15 +800,16 @@ pub fn twice(p: &mut P) -> P {
 // memory about as large as it's long: the MIR intervals' walk kept a whole
 // state at each block, as large as the facts so far, 3,000 statements
 // taking 5.35 GB and 1,500 1.47 GB; its states share what they hold, 0.29
-// and 0.20 GB (#2310).
+// and 0.20 GB (#2310). Each compile's peak is its own (`ownPeak`), not the
+// test worker's it would be said to hold where Linux spawns it.
 test("a long function is lowered block by block", async () => {
   const peaks = [1500, 3000].map((length) => {
     const dir = fixture(`long-function-${length}`);
     const pushes = Array.from({ length }, (_, i) => `    v.push(n + ${i});`).join("\n");
     writeFileSync(join(dir, "lib.rs"), `pub fn long(n: u32) -> Vec<u32> {\n    let mut v = Vec::new();\n${pushes}\n    v\n}\n`);
-    const p = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], { stdout: "ignore", stderr: "pipe" });
-    expect(p.exitCode, p.stderr.toString()).toBe(0);
-    return { dir, maxRSS: p.resourceUsage.maxRSS };
+    const p = ownPeak([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], dir, 80_000);
+    expect(p.code, p.stderr).toBe(0);
+    return { dir, maxRSS: p.maxRSS };
   });
   const lib = await import(join(peaks[1].dir, "mir.js"));
   const items = lib.long(1);

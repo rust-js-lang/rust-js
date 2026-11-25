@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
-import { askedOf, childWarnings, compileFailure, footprintLimit, footprints, processTree, run, runSync, treeBytes, type Exit } from "./child";
+import { askedOf, childWarnings, compileFailure, footprintLimit, footprints, ownPeak, processTree, run, runSync, treeBytes, type Exit } from "./child";
 import { nativeCommand, nativeShare, runProcess } from "./programs";
 import { underLoad } from "../scripts/timing";
 import { contentDirectory, fixture, nativeBinary, run as setUp } from "./support";
@@ -332,4 +332,17 @@ test("a late child observation warns without guessing its lifetime", async () =>
 test("an external SIGKILL is not reported as a timeout", async () => {
   const answer=await run(["sh","-c","kill -KILL $$"],".",underLoad(2000));
   expect([answer.code,answer.signal,answer.timedOut]).toEqual([null,"SIGKILL",false]);
+});
+
+// A command's peak memory is its own, whatever the process that asks it
+// holds: spawned by a Bun of its own, so Linux's high-water mark of memory,
+// kept across `exec`, is that Bun's, never this test's (8b4a77c53's check
+// said a compile of 0.27 GB held 1.2 GB). On a Mac either would pass the
+// peak's check; the spawner's is held everywhere.
+test("a command's peak memory is its own, not its spawner's", () => {
+  const held = Buffer.alloc(512 * 2 ** 20, 1);
+  const peak = ownPeak(["sh", "-c", "exit 3"], ".", underLoad(10_000));
+  expect(held[held.length - 1]).toBe(1);
+  expect([peak.code, peak.spawner === process.pid]).toEqual([3, false]);
+  expect(peak.maxRSS).toBeLessThan(256 * 2 ** 20);
 });

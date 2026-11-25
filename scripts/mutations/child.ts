@@ -33,4 +33,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/child.test.ts", "-t", "a footprint that hangs is stopped past its limit"],
   },
+  {
+    name: "own-peak-spawned-by-the-asker",
+    breaks: "a command's peak memory is measured from the process that asks it, which Linux says held at least that process's memory: a compile of 0.27 GB said to hold 1.2 GB in CI's test job (8b4a77c53's check)",
+    file: "test/child.ts",
+    find: "  if (p.exitCode !== 0) throw new Error(`measuring ${cmd.join(\" \")}: ${p.stderr.toString()}`);\n  return JSON.parse(p.stdout.toString()) as Peak;\n",
+    replace:
+      "  const own = Bun.spawnSync(cmd, { cwd, stdout: \"ignore\", stderr: \"pipe\", timeout });\n  return { code: own.exitCode, stderr: own.stderr.toString(), maxRSS: own.resourceUsage.maxRSS, spawner: p.pid && process.pid };\n",
+    tests: ["test/child.test.ts", "-t", "a command's peak memory is its own"],
+  },
 ];

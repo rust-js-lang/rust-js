@@ -5,7 +5,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { runSync } from "./child";
+import { ownPeak, runSync } from "./child";
 import { agree, compileJs, runJs, runNative, runtimes } from "./programs";
 import { buildSerde } from "./serde-crate";
 import { buildCompiler, compiler, fixture, root, shadowLines } from "./support";
@@ -335,9 +335,10 @@ test("the MIR intervals of serde's derived bodies take what a compile does, not 
   const dir = fixture("inbox-memory");
   const log = join(dir, "shadow.txt");
   writeFileSync(log, "");
-  const p = Bun.spawnSync([compiler, "--shadow", `intervals=${log}`, "examples/inbox.rs", "-o", join(dir, "inbox.js"), "--", ...buildSerde()], { cwd: root, stdout: "ignore", stderr: "pipe" });
-  expect(p.exitCode, p.stderr.toString()).toBe(0);
-  expect(p.resourceUsage.maxRSS).toBeLessThan(2 * 2 ** 30);
+  // Its own peak, not the test worker's (`ownPeak`).
+  const p = ownPeak([compiler, "--shadow", `intervals=${log}`, "examples/inbox.rs", "-o", join(dir, "inbox.js"), "--", ...buildSerde()], root, 110_000);
+  expect(p.code, p.stderr).toBe(0);
+  expect(p.maxRSS).toBeLessThan(2 * 2 ** 30);
   const walked = shadowLines(log, "intervals").find((line) => line.startsWith("walked-for-callers\t"))?.split("\t");
   expect(walked).toBeDefined();
   const [, walks, bodies] = walked!.map(Number);

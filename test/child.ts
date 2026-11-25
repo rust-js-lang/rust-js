@@ -157,6 +157,31 @@ export function spawnedSync(cmd: string[], cwd: string, timeout: number, env: Re
   };
 }
 
+/** What `ownPeak` says of a command: how it ended, what it said on
+ * stderr, its peak memory in bytes, and the process that spawned it. */
+export type Peak = { code: number | null; stderr: string; maxRSS: number; spawner: number };
+
+/** `cmd`'s peak memory, its own, run in `cwd` for at most `timeout` ms.
+ * It's spawned by a Bun of its own, never this process: Linux keeps a
+ * process's high-water mark of memory across `exec`, its spawner's under
+ * `posix_spawn`, so a child of a test worker that has grown is said to
+ * have held at least the worker's memory: a compile of 0.27 GB was said
+ * to hold 1.2 GB in CI's test job (8b4a77c53's check), and under 1 GiB in
+ * the same job's second run of it. */
+export function ownPeak(cmd: string[], cwd: string, timeout: number): Peak {
+  const measure = `const [cmd, cwd, timeout] = JSON.parse(process.argv.at(-1));
+const p = Bun.spawnSync(cmd, { cwd, stdout: "ignore", stderr: "pipe", timeout });
+process.stdout.write(JSON.stringify({ code: p.exitCode, stderr: p.stderr.toString(), maxRSS: p.resourceUsage.maxRSS, spawner: process.pid }));`;
+  const p = Bun.spawnSync([process.execPath, "-e", measure, JSON.stringify([cmd, cwd, timeout])], {
+    cwd,
+    stdout: "pipe",
+    stderr: "pipe",
+    timeout: timeout + 10_000,
+  });
+  if (p.exitCode !== 0) throw new Error(`measuring ${cmd.join(" ")}: ${p.stderr.toString()}`);
+  return JSON.parse(p.stdout.toString()) as Peak;
+}
+
 /** `cmd`, as `runSync` runs it, without blocking the others running; and
  * stopped, `overgrown`, where it and every process it started, its own
  * group's or one of its own, hold more than `memoryCap` bytes together
