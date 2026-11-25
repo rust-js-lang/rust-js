@@ -1,3 +1,0 @@
-#2575 P0: a library's generic decode_utf16 of an iterator with a Drop throws a TypeError at its end
-consumers:plain 149,6779,12162
-consumers:std 149,6779,12162
