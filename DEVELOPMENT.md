@@ -949,7 +949,11 @@ checked:
   check judges of the change on the tree it pushes, or refuses, naming it
   (its `judged` phase: check:fast's job judges them and records them by
   the tree, scripts/judged.ts; any not on record are judged there, as of a
-  skipped check, #2485), refuses where `git diff
+  skipped check, #2485; past a rebase of the same patches, those judged on
+  the round's tree whose file, list and tests the incoming commits leave
+  alone carried onto the rebased one, `carryJudged`, CI judging them all
+  again; asked of scripts/judged.ts in a process of its own, so push loads
+  no mutation list), refuses where `git diff
   origin/main` holds a file no pushed commit changes, and pushes. It first
   fetches CI's test map of the nearest commit of `main` where it's nearer
   than the machine's. Where `main` moved while it checked, it rebases again

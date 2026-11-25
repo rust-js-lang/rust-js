@@ -394,4 +394,12 @@ export const mutations: Mutation[] = [
     replace: "remadeStd()) settled = { at: settled.at, untracked: settled.untracked };",
     tests: ["test/push.test.ts", "-t", "refuses a tree written while it was checked"],
   },
+  {
+    name: "push-lists-loaded-itself",
+    breaks: "push loads the mutation lists itself, so a rebase over another agent's edit of one runs push again from the rebased tree, each of lily agent's 2c-1 push's three rounds (2ab5bb3f9)",
+    file: "scripts/push.ts",
+    find: '      named ??= new Set(askJudged(["files"]) as string[]);\n',
+    replace: '      named ??= new Set((await import("./mutations")).mutations.map((m) => m.file));\n',
+    tests: ["test/judged.test.ts", "-t", "push loads no mutation list itself"],
+  },
 ];

@@ -82,7 +82,7 @@ import { selectionFile } from "./select";
 import { devTimes, ownsTimes } from "./devTimes";
 import { PORT_DOES_NOT_COMPILE, touchesPort } from "./iteratorSlice";
 import { refusal, undone } from "./push-guard";
-import { unjudgedSince } from "./judged";
+import { join } from "node:path";
 
 /** The phases, in the order they run. */
 export const phases = ["turn", "rebase", "gate", "fast", "build", "std", "mutants", "check", "sanity", "react", "judged", "files", "push"] as const;
@@ -514,6 +514,17 @@ async function main() {
         const again = spawnSync(process.execPath, [process.argv[1]!, ...process.argv.slice(2)], { stdio: "inherit", env: againEnv(process.env, round, took, remade) });
         process.exit(again.status ?? 1);
       }
+      // A rebase past a round that checked the same patches: the round's
+      // judged mutations whose own file, list and tests the commits it
+      // brought leave alone carried onto the rebased tree, as the round is
+      // (`carryJudged`), so the round past it judges again only what they
+      // could change, not the change's whole set. CI judges the pushed
+      // commit's whole set again: a carry wrong turns it red, never lands
+      // a change unjudged (ADR 1093, amended).
+      if (checked !== "" && checkedBase !== "" && checkedBase !== mainIs && roundRefused({ checked, base: checkedBase }, mainIs, git) === undefined) {
+        const { carried, of } = askJudged(["carry", checked, checkedBase, mainIs]) as { carried: string[]; of: number };
+        if (of > 0) console.log(`push: the round's judged mutations carried past the rebase: ${carried.length} of ${of}, the rest touched by what it brought`);
+      }
       // CI's map of the nearest commit of `main` it recorded, where it's
       // nearer than the machine's (scripts/testMap.ts's `fetchMap`), fetched
       // beside the round's fast tests, build, std and mutants, and waited
@@ -527,7 +538,7 @@ async function main() {
       const found = undone(process.cwd(), base, "HEAD");
       if (found.length > 0) throw new Refused(refusal(found));
       const since = checkedBase === "" ? undefined : lines(git("diff", "--name-only", checkedBase, base).out);
-      named ??= new Set((await import("./mutations")).mutations.map((m) => m.file));
+      named ??= new Set(askJudged(["files"]) as string[]);
       if (fastAgain(since, named)) run("fast", ["bun", "test", ...FAST_TESTS]);
       else console.log("push: the fast tests as the round before: the rebase's commits touch nothing they read");
       phase("fast");
@@ -616,12 +627,12 @@ async function main() {
       // naming it (scripts/judged.ts): #2512 landed with its rule changed
       // twice during its push, its mutations never run again on the tree
       // pushed, and none of a push's ran (#2485).
-      const unjudged = await unjudgedSince(process.cwd(), base);
+      const unjudged = askJudged(["unjudged", base]) as Unjudged;
       if (unjudged.wasm.length > 0) console.log(`push: CI's wasm job judges the change's mutations that read rust-js.wasm: ${unjudged.wasm.join(", ")}`);
       if (unjudged.names.length > 0) {
         console.log(`push: the change's mutations not judged on the tree it pushes, judged: ${unjudged.names.join(", ")}`);
         run("judged", ["bun", "scripts/mutations.ts", `--base=${base}`, ...unjudged.names]);
-        const left = (await unjudgedSince(process.cwd(), base)).names;
+        const left = (askJudged(["unjudged", base]) as Unjudged).names;
         if (left.length > 0) throw new Refused(judgedRefusal(left));
       }
       phase("judged");
@@ -778,6 +789,21 @@ export function gateRebase(
     }
   }
   return { ran: gates };
+}
+
+/** The change's mutations not judged on its tree, as scripts/judged.ts's
+ * `unjudgedSince` says them. */
+type Unjudged = { tree: string; names: string[]; wasm: string[] };
+
+/** What scripts/judged.ts says of the mutations, `args` its command, asked
+ * in a process of its own: push loads no mutation list itself, so a
+ * rebase's edit of one, another agent's commit's, doesn't make push run
+ * again from the rebased tree (`staleModules`), and what it asks is of the
+ * lists as they are (#2578's follow-up). */
+export function askJudged(args: string[], cwd = process.cwd()): unknown {
+  const asked = spawnSync(process.execPath, [join(import.meta.dir, "judged.ts"), ...args], { cwd, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  if (asked.status !== 0) throw new Error(`bun scripts/judged.ts ${args.join(" ")} failed:\n${asked.stderr}`);
+  return JSON.parse(asked.stdout.trim().split("\n").at(-1)!);
 }
 
 /** Why a push is refused whose mutations `left` weren't judged on the tree

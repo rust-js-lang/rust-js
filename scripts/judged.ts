@@ -86,3 +86,68 @@ export async function unjudgedSince(root: string, base: string): Promise<{ tree:
   const tree = treeOf(root);
   return { tree, ...unjudged(wasmSplit(await changedSince(base), false), judgedOn(tree, judgedFile)) };
 }
+
+/** What a judged mutation's verdict is of, besides the compiler: its own
+ * file, the list it's in, and the test files it names, each corpus case
+ * besides where it names the corpus's or is judged by its snapshots, and
+ * each Rust source where it's held by the compiler's unit tests. */
+export type Judgeable = { name: string; file: string; list: string; tests?: string[]; unitTests?: string; snapshots?: boolean };
+
+/** Whether `incoming`, the files a rebase's commits changed, touch what
+ * `m`'s verdict is of (`Judgeable`). */
+export function touchedBy(m: Judgeable, incoming: ReadonlySet<string>): boolean {
+  if (incoming.has(m.file) || incoming.has(m.list)) return true;
+  const tests = (m.tests ?? []).filter((arg) => /^test\/.+\.tsx?$/.test(arg));
+  if (tests.some((test) => incoming.has(test))) return true;
+  const corpus = m.snapshots === true || tests.includes("test/corpus.test.ts");
+  if (corpus && [...incoming].some((file) => file.startsWith("test/corpus/"))) return true;
+  return m.unitTests !== undefined && [...incoming].some((file) => file.endsWith(".rs"));
+}
+
+/** Of `from`, a round's tree, the mutations `file` records judged there
+ * that `incoming`, the files the commits a rebase brought changed, leave
+ * alone (`touchedBy`), recorded judged on `to`, the rebased tree, as the
+ * round's check is carried on past a rebase (#2484): a rebase then makes a
+ * push judge again only what the commits it brought could change, not its
+ * whole set. CI's check judges the pushed commit's whole set again, so a
+ * carry it disagrees with turns CI red; it never lands a change unjudged.
+ * What it carried, of how many judged there. */
+export function carryJudged(from: string, to: string, incoming: string[], among: Judgeable[], file: string): { carried: string[]; of: number } {
+  const judged = judgedOn(from, file);
+  const brought = new Set(incoming);
+  const carried = among.filter((m) => judged.has(m.name) && !touchedBy(m, brought)).map((m) => m.name);
+  if (carried.length > 0) recordJudged(to, carried, file);
+  return { carried, of: judged.size };
+}
+
+/** What `bun run push` asks of the mutations, in a process of its own, so
+ * push loads no mutation list: a rebase that edits one, as other agents'
+ * commits do, made push run again from the rebased tree (`staleModules`),
+ * its lists as they were before it (#2578's follow-up, the lead's ask).
+ * Each answer is a line of JSON.
+ *
+ *   bun scripts/judged.ts files                    each mutation's file
+ *   bun scripts/judged.ts unjudged <base>          `unjudgedSince`
+ *   bun scripts/judged.ts carry <checked> <from> <to>
+ *                                                  `carryJudged` of the tree
+ *                                                  of the commit a round
+ *                                                  checked onto this one's,
+ *                                                  past what `from..to`
+ *                                                  brought */
+if (import.meta.main) {
+  const [command, ...args] = process.argv.slice(2);
+  const root = process.cwd();
+  const answer = async (): Promise<unknown> => {
+    const { lists, judgedFile } = await import("./mutations");
+    if (command === "files" && args.length === 0) return [...new Set(lists.flatMap((list) => list.mutations.map((m) => m.file)))];
+    if (command === "unjudged" && args.length === 1) return await unjudgedSince(root, args[0]!);
+    if (command === "carry" && args.length === 3) {
+      const [checked, from, to] = args as [string, string, string];
+      const among = lists.flatMap(({ path, mutations }) => mutations.map((m) => ({ ...m, list: `scripts/mutations/${path}` })));
+      const incoming = git(root, ["diff", "--name-only", from, to]).split("\n").filter(Boolean);
+      return carryJudged(git(root, ["rev-parse", `${checked}^{tree}`]), treeOf(root), incoming, among, judgedFile);
+    }
+    throw new Error(`bun scripts/judged.ts files | unjudged <base> | carry <checked> <from> <to>, not ${[command, ...args].join(" ")}`);
+  };
+  console.log(JSON.stringify(await answer()));
+}

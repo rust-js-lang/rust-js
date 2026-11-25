@@ -249,3 +249,42 @@ moved `main` is a new tree, so a push's sanity round judges them again. CI's
 mutation shards took 1 to 74 runner-minutes a push over 2026-11-24's last
 ten checks, on 4-core machines; here they run in check:fast's pool beside
 its tests.
+
+## Amendment (2026-11-25): a rebase carries the round's judging of what it didn't touch
+
+The record is by tree, and a rebase makes a new tree, so each round past
+a moved `main` judged the change's whole set again. The lily agent's 2c-1
+push (2ab5bb3f9) judged its 351 mutations in round 1's check, then again
+in each of three rounds past a moved `main`: 442, 444 and 445 s in the
+`judged` phase. None of the incoming commits touched its files, so about
+22 min of the push was this.
+
+Now, where a round past a rebase is the same change, its commits patch for
+patch those the round before checked (`roundRefused`, as the round's
+check is carried, #2484), the mutations judged on that round's tree are
+recorded judged on the rebased one (`carryJudged`, scripts/judged.ts).
+That holds only for those whose own file, mutation list and named test
+files the commits it brought leave alone (`touchedBy`). One the corpus
+judges isn't carried past any change to a corpus case, nor one the
+compiler's unit tests hold past any Rust change. The round's check:fast
+and its `judged` phase then judge the rest.
+
+What the carry risks: a carried verdict can be wrong where an incoming
+commit changed what a mutation's tests read beyond those files, a
+helper, the compiler elsewhere. CI's check judges the pushed commit's
+whole set again (`changedSince` of the check's `since`), so a wrong carry
+turns CI red after the push. It never lands a change whose mutations
+weren't judged: the lead's acceptance, 2026-11-25.
+
+And push loads no mutation list itself. It asks scripts/judged.ts in a
+process of its own (`askJudged`: `files`, `unjudged <base>`, `carry
+<checked> <from> <to>`). Each of the 2c-1 push's three rounds ran push
+again from the rebased tree because the incoming commits edited mutation
+lists that push had loaded (`staleModules`). Now only push's own code, or
+a package change, does that.
+
+What holds it: test/judged.test.ts, "a rebase over commits that leave a
+judged mutation's file, list and tests alone carries it onto the rebased
+tree" and "push loads no mutation list itself". Mutations
+`judged-carried-past-its-test`, `-its-list`, `-its-file`, `-a-case`,
+`-rust` and `push-lists-loaded-itself`.

@@ -5,6 +5,7 @@ import type { Mutation } from "../mutations";
 const file = "scripts/judged.ts";
 const tree = ["test/judged.test.ts", "-t", "a working tree's tree is its files as they are"];
 const record = ["test/judged.test.ts", "-t", "what a run judged is recorded by its tree"];
+const carry = ["test/judged.test.ts", "-t", "a rebase over commits that leave"];
 
 export const mutations: Mutation[] = [
   {
@@ -54,5 +55,45 @@ export const mutations: Mutation[] = [
     find: "  return { names: run.map((m) => m.name).filter((name) => !judged.has(name)), wasm: elsewhere.map((m) => m.name) };\n",
     replace: "  return { names: run.map((m) => m.name), wasm: elsewhere.map((m) => m.name) };\n",
     tests: ["test/judged.test.ts", "-t", "the change's mutations not judged on its tree"],
+  },
+  {
+    name: "judged-carried-past-its-test",
+    breaks: "a rebase over a commit that changed a mutation's test carries its judging onto the rebased tree, so the push lands it unjudged by the test as it is",
+    file,
+    find: "  if (tests.some((test) => incoming.has(test))) return true;\n",
+    replace: "",
+    tests: carry,
+  },
+  {
+    name: "judged-carried-past-its-list",
+    breaks: "a rebase over a commit that changed a mutation's list, its `find` or its tests, carries the old entry's judging onto the rebased tree",
+    file,
+    find: "  if (incoming.has(m.file) || incoming.has(m.list)) return true;\n",
+    replace: "  if (incoming.has(m.file)) return true;\n",
+    tests: carry,
+  },
+  {
+    name: "judged-carried-past-its-file",
+    breaks: "a rebase over a commit that changed the code a mutation mutates carries its judging onto the rebased tree",
+    file,
+    find: "  if (incoming.has(m.file) || incoming.has(m.list)) return true;\n",
+    replace: "  if (incoming.has(m.list)) return true;\n",
+    tests: carry,
+  },
+  {
+    name: "judged-carried-past-a-case",
+    breaks: "a rebase over a commit that changed a corpus case carries the judging of a mutation the corpus judges onto the rebased tree",
+    file,
+    find: '  if (corpus && [...incoming].some((file) => file.startsWith("test/corpus/"))) return true;\n',
+    replace: "",
+    tests: carry,
+  },
+  {
+    name: "judged-carried-past-rust",
+    breaks: "a rebase over a commit that changed the compiler's Rust carries the judging of a mutation its unit tests hold onto the rebased tree",
+    file,
+    find: '  return m.unitTests !== undefined && [...incoming].some((file) => file.endsWith(".rs"));\n',
+    replace: "  return false;\n",
+    tests: carry,
   },
 ];
