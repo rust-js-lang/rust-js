@@ -6,7 +6,12 @@
 // (test/counting-proxies.ts). The export net runs them, nightly; this file
 // holds them on each push.
 import { expect, test } from "bun:test";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { buildFlags } from "./builds";
 import { countingProxies } from "./counting-proxies";
+import { compiler, fixture, run } from "./support";
 import { values, type Giving, type Tree } from "./generated-calls";
 
 const u8: Tree = { kind: "int", rust: "u8" };
@@ -61,4 +66,45 @@ test("a counting proxy logs each read, test and write by its path, and gives wha
   expect("x" in point).toBe(true);
   point.z = 3;
   expect(log).toEqual(["get arg0.x", "get arg0.inner", "get arg0.inner.y", "has arg0.x", "set arg0.z = 3"]);
+});
+
+// A dropped `dyn` field of a struct whose reads are a getter's, as the
+// reference build reads every struct (\`--js-reads\`) and the readable one a
+// struct JS may make: its pair read once, as Rust's drop reads it, where it
+// was read twice, its dictionary and its value, and the compiler panicked
+// (#2596).
+test("a dyn field's drop reads its pair once, a getter's read too", async () => {
+  const dir = fixture("oracle-c-dyn-drop");
+  writeFileSync(join(dir, "lib.rs"), `use std::error::Error;
+use std::fmt;
+#[derive(Debug)]
+pub struct Code(pub u32);
+impl fmt::Display for Code {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "code {}", self.0)
+    }
+}
+impl Error for Code {}
+impl Drop for Code {
+    fn drop(&mut self) {
+        println!("dropped {}", self.0);
+    }
+}
+pub struct Wrapped {
+    pub inner: Box<dyn Error + Send + Sync>,
+}
+pub fn wrapped(n: u32) -> Wrapped {
+    Wrapped { inner: Box::new(Code(n)) }
+}
+pub fn dropped(w: Wrapped) -> u32 {
+    drop(w);
+    1
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...buildFlags.reads, "--", "--crate-type", "lib", "--crate-name", "lib", "--edition=2024", "-Awarnings"]);
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  const lib = await import(pathToFileURL(join(dir, "lib.js")).href);
+  const { log, counted } = countingProxies();
+  expect(lib.dropped(counted(lib.wrapped(3), "w"))).toBe(1);
+  expect(log.filter((line) => line === "get w.inner")).toEqual(["get w.inner"]);
 });

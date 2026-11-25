@@ -410,7 +410,8 @@ compared, and why is said (`Netted.unread`), never passed silently:
   `library_writes_an_io_error_piecewise` panic in `optional_call`, where a
   dropped `Box<dyn Error>` field's getter read is a callee asserted to
   have no effects: #2596 (P1). A struct that `js_may_make` holds could
-  take the same path in a normal build.
+  take the same path in a normal build. Fixed since: the pair is read
+  once (ADR 1022, amended), and both pairs' reads are compared.
 
 **Results:** across the net's 226 cases, 952 reads compared and 93 fields
 given two answers, over 449 calls, with no problem found.

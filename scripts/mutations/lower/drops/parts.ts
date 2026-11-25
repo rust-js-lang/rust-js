@@ -375,4 +375,12 @@ export const mutations: Mutation[] = [
     replace: "    Some((part(\"$unborrow\"), part(\"$unborrow\")))\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
   },
+  {
+    name: "dyn-drop-pair-read-twice",
+    breaks: "a dropped `dyn`'s pair is read twice, its dictionary and its value, where Rust's drop reads it once: of a getter's read, a struct JS may make, `optional_call`'s callee is effectful and the compiler panics (#2596)",
+    file: "crates/rust-js-lower/src/drops/parts.rs",
+    find: "                    true => self.spill(Role::Value, value, out),\n",
+    replace: "                    true => value,\n",
+    tests: ["test/oracle-c.test.ts", "-t", "a dyn field's drop reads its pair once"],
+  },
 ];

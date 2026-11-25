@@ -288,7 +288,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Expr(Expr::call_helper("$disposeIterator", vec![value])).at(js_span));
             }
             // A `dyn`'s: its dictionary's `$drop`, if what it holds has one.
+            // Its pair read once, as Rust's drop reads it, where reading it
+            // may run code, a getter's of a struct JS may make: its dictionary
+            // and its value each read of the one read (#2596).
             ty::Dynamic(..) => {
+                let value = match value.has_effects() {
+                    true => self.spill(Role::Value, value, out),
+                    false => value,
+                };
                 let dictionary = Expr::member(value.clone(), js::DICTIONARY);
                 out.push(dyn_dropped(dictionary, Expr::held(value), js_span));
             }

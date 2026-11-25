@@ -625,3 +625,24 @@ unaffected. Held by `option_map_subject_written_through_a_kept_mut`
 (reduced by `scripts/reduce.ts` from `option_subject_of_a_cells_field`'s
 `observe-borrows` rewrite), that rewrite itself, and the mutation
 `subject-handle-unread`.
+
+## Amendment: a dropped `dyn`'s pair is read once (#2596)
+
+A struct's `Box<dyn Trait>` field is dropped through its pair's dictionary,
+`impl.$drop?.(value)`. That read the field twice, once for the dictionary
+and once for the value, where Rust's drop reads it once. Of a getter's read
+(this ADR's `Known::Getter`) the callee had an effect, and
+`Expr::optional_call`'s contract, a callee with no effects of its own,
+panicked the compiler. The export net's reference build (`--js-reads`, ADR
+1204), which reads every struct as one JS may make, found it in two crate
+pairs. A struct this ADR's owner says JS may make, holding such a field
+the crate drops, would take the same path.
+
+**The pair is read once where reading it may run code**
+(`drops/parts.rs`, spilled `const value = wrapped.inner;`), its dictionary
+and its value each of that one read. Of a read that runs nothing, the
+plain form is unchanged.
+
+test/oracle-c.test.ts drops one through a counting proxy and reads `inner`
+once. The corpus's 113 cases of a `dyn` and a `Drop` are unchanged.
+Mutation `dyn-drop-pair-read-twice`.
