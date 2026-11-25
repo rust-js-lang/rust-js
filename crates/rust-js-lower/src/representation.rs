@@ -24,6 +24,7 @@ use rustc_span::def_id::{DefId, LocalDefId};
 use rustc_span::{Span, Symbol};
 
 mod cells;
+pub use cells::property_of;
 mod consts;
 mod mut_ref;
 mod nones;

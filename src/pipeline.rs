@@ -1266,7 +1266,15 @@ pub fn lower_crate<'tcx>(
     let exported = library::exported_names(&lowered);
     Lowered::Crate(tcx.dcx().has_errors().is_none().then(|| {
         Box::new(Unlinked {
-            offered_paths: rust_js_lower::offered::offered_paths(tcx, &foreign, &flattened),
+            offered_paths: rust_js_lower::offered::offered_paths(
+                tcx,
+                &rust_js_lower::offered::Facts {
+                    foreign: &foreign,
+                    flattened: &flattened,
+                    counted: &counted,
+                    ref_cells: ref_cells.get().unwrap_or(&drops::RefCells::default()),
+                },
+            ),
             library: export_library.then(|| {
                 library::exports(
                     tcx,

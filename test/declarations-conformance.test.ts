@@ -34,7 +34,7 @@ import { join } from "node:path";
 import { buildReact, compiler, fixture, nativeBinary, programFlags, root, run, target } from "./support";
 import { readdirSync } from "node:fs";
 import { repoTypes, typeChecked } from "./type-checked";
-import type { Tree } from "./generated-calls";
+import { rustType as treeRust, type Tree } from "./generated-calls";
 
 const cases = [
   "declared_signatures",
@@ -131,9 +131,17 @@ function typeOf(tree: Tree, generics: Map<string, Ty | null>): Ty | null {
     case "named":
       return { k: "named", n: tree.rust.at(-1)! };
     // Any other by its name, which no value is made of but a `None` of an
-    // `Option` of it.
+    // `Option` of it: std's, which the records say by their forms (oracle
+    // B's), by the Rust type each is.
     case "other":
       return { k: "named", n: tree.rust };
+    case "result":
+    case "array":
+    case "rc":
+    case "cell":
+    case "dyn":
+    case "iterator":
+      return { k: "named", n: treeRust(tree) };
     default:
       return null;
   }

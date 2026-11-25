@@ -423,4 +423,12 @@ export const mutations: Mutation[] = [
     replace: "\"RangeInclusive\" => Some(false),",
     tests: ["test/corpus.test.ts", "-t", "^(extend_past_usize_max_panics_at_stds_line)\\.rs$"],
   },
+  {
+    name: "exact-size-iterator-unfound",
+    breaks: "std's `ExactSizeIterator` is asked by a diagnostic item it hasn't, so none is found: an `impl ExactSizeIterator` given back is recorded with no `len()`, and a held `Enumerate`'s back follows no `len` (#2481's std forms)",
+    file: "crates/rust-js-lower/src/recognition/std_items.rs",
+    find: "    super::registry::by_path(tcx, super::StdCrate::Core, &[\"iter\", \"ExactSizeIterator\"])\n",
+    replace: "    tcx.get_diagnostic_item(rustc_span::Symbol::intern(\"ExactSizeIterator\"))\n",
+    tests: ["test/oracle-b.test.ts", "-t", "the records say an iterator's methods"],
+  },
 ];

@@ -189,6 +189,10 @@ pub struct OfferedField {
     /// What its `None` is, of an `Option` field (oracle B).
     #[serde(default, skip_serializing_if = "OfferedNone::is_plain")]
     pub none: OfferedNone,
+    /// Of a cell field that's the property its cell holds, a `Cell`'s or a
+    /// `RefCell`'s, what the property is (`representation::property_of`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub property: Option<OfferedType>,
 }
 
 /// What a generic function asks of one type parameter, `param`: the traits
@@ -300,6 +304,43 @@ pub enum OfferedType {
     },
     Tuple {
         items: Vec<OfferedType>,
+    },
+    /// `Result<T, E>`.
+    Result {
+        ok: Box<OfferedType>,
+        err: Box<OfferedType>,
+    },
+    /// `[T; N]`.
+    Array {
+        of: Box<OfferedType>,
+        len: u64,
+    },
+    /// `Rc<T>`: the value itself, or where the crate counts it
+    /// (`Counted::counts`), `{ value, strong, weak }`.
+    Rc {
+        of: Box<OfferedType>,
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        counted: bool,
+    },
+    /// A `Cell<T>` or a `RefCell<T>`: `{ value }`, or of a `RefCell` that's
+    /// the object it holds (`RefCells::is_value_cell`), that object.
+    Cell {
+        of: Box<OfferedType>,
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        itself: bool,
+    },
+    /// A `dyn Trait` not of a function, `{ value, impl }`, by its traits.
+    Dyn {
+        traits: Vec<String>,
+    },
+    /// An iterator given back, `impl Iterator` or one of std's: a JS
+    /// iterator, its `back()` of a `DoubleEndedIterator`, its `len()` of an
+    /// `ExactSizeIterator`.
+    Iterator {
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        back: bool,
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        len: bool,
     },
     /// Any other, by its Rust name.
     Other {

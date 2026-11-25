@@ -46,6 +46,7 @@ from your crate and what a binding must be given.
 | `&mut` to a number, a string, an `Option` | a box `{ value }` | [References](#references) |
 | closure, `fn` pointer, `dyn Fn` | function | [Functions](#functions-and-trait-objects) |
 | `dyn Trait` | `{ value, impl }` | [Functions](#functions-and-trait-objects) |
+| `impl Iterator` given back, or std's iterator, `Chars` | a JS iterator, spread by `[...it]`; of `impl DoubleEndedIterator`, `back()` its last item; of `impl ExactSizeIterator`, `len()` how many are left | [Iterators](export-to-javascript.md#iterators) |
 | a JS type, `struct X(PhantomData<JsObject>)` | the JS object | [JS values](#js-values-jsobject-and-unknown) |
 | `js::Unknown` | any JS value | [JS values](#js-values-jsobject-and-unknown) |
 | `js::SymbolFor` | the registry's symbol, `Symbol.for(key)` | [Symbols](#symbols) |

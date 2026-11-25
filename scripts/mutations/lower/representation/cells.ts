@@ -33,9 +33,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `OnceCell` in a field is a `{ value }` of its own, `_ioInfo: {}` where it's made and `payload._ioInfo.value` where it's read",
     file: "crates/rust-js-lower/src/representation/cells.rs",
-    find: "        (self.is_std_type(ty, StdItem::OnceCell)).then(|| Ty::new_option(self.tcx, args.type_at(0)))\n",
-    replace:
-      "        (false && self.is_std_type(ty, StdItem::OnceCell)).then(|| Ty::new_option(self.tcx, args.type_at(0)))\n",
+    find: "    is(StdItem::OnceCell).then(|| Ty::new_option(tcx, args.type_at(0)))\n",
+    replace: "    (false && is(StdItem::OnceCell)).then(|| Ty::new_option(tcx, args.type_at(0)))\n",
     tests: ["test/corpus.test.ts", "-t", "^once_cell_fields.rs$"],
     snapshots: true,
   },

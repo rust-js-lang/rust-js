@@ -190,7 +190,8 @@ function offeredPath(path) {
     // #2573: a struct's fields, and a generic function's bounds.
     && (path.fields === undefined || Array.isArray(path.fields) && path.fields.every((field) => field !== null && typeof field === "object"
       && typeof field.rust === "string" && typeof field.js === "string" && typeof field.written === "string" && offeredType(field.ty)
-      && (field.none === undefined || offeredNones.has(field.none))))
+      && (field.none === undefined || offeredNones.has(field.none))
+      && (field.property === undefined || offeredType(field.property))))
     && (path.bounds === undefined || Array.isArray(path.bounds) && path.bounds.every((bound) => bound !== null && typeof bound === "object"
       && typeof bound.param === "string"
       && (bound.traits === undefined || Array.isArray(bound.traits) && bound.traits.every((name) => typeof name === "string"))
@@ -212,7 +213,8 @@ function offeredEnum(e) {
     && e.variants.every((v) => v !== null && typeof v === "object" && typeof v.rust === "string"
       && v.tag !== null && typeof v.tag === "object" && tagKinds.has(v.tag.kind)
       && (v.fields === undefined || Array.isArray(v.fields) && v.fields.every((field) => field !== null && typeof field === "object"
-        && typeof field.js === "string" && offeredType(field.ty) && (field.none === undefined || offeredNones.has(field.none))))
+        && typeof field.js === "string" && offeredType(field.ty) && (field.none === undefined || offeredNones.has(field.none))
+        && (field.property === undefined || offeredType(field.property))))
       && (v.otherwise === undefined || typeof v.otherwise === "boolean"));
 }
 
@@ -242,6 +244,18 @@ function offeredType(ty) {
       return offeredType(ty.of) && (ty.mutable === undefined || typeof ty.mutable === "boolean");
     case "fn":
       return Array.isArray(ty.inputs) && ty.inputs.every(offeredType) && offeredType(ty.output);
+    case "result":
+      return offeredType(ty.ok) && offeredType(ty.err);
+    case "array":
+      return offeredType(ty.of) && Number.isInteger(ty.len);
+    case "rc":
+      return offeredType(ty.of) && (ty.counted === undefined || typeof ty.counted === "boolean");
+    case "cell":
+      return offeredType(ty.of) && (ty.itself === undefined || typeof ty.itself === "boolean");
+    case "dyn":
+      return Array.isArray(ty.traits) && ty.traits.every((name) => typeof name === "string");
+    case "iterator":
+      return (ty.back === undefined || typeof ty.back === "boolean") && (ty.len === undefined || typeof ty.len === "boolean");
     case "param":
       return typeof ty.name === "string" && (ty.index === undefined || Number.isInteger(ty.index));
     case "named":

@@ -143,7 +143,7 @@ pub(crate) const CATALOGUE: &[Decision] = &[
     },
     Decision {
         name: "refcell-field",
-        owner: "crates/rust-js-lower/src/drops/ref_cells.rs holds_value",
+        owner: "crates/rust-js-lower/src/representation/cells.rs property_of",
         answers: &["holds-value", "cell"],
         typed: false,
     },

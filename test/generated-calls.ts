@@ -22,6 +22,12 @@ export type Tree =
   | { kind: "param"; name: string; index?: number }
   | { kind: "named"; crate: string; rust: string[]; args?: Tree[] }
   | { kind: "tuple"; items: Tree[] }
+  | { kind: "result"; ok: Tree; err: Tree }
+  | { kind: "array"; of: Tree; len: number }
+  | { kind: "rc"; of: Tree; counted?: boolean }
+  | { kind: "cell"; of: Tree; itself?: boolean }
+  | { kind: "dyn"; traits: string[] }
+  | { kind: "iterator"; back?: boolean; len?: boolean }
   | { kind: "other"; rust: string };
 
 /** A value given alike: its JS literal and its Rust one. */
@@ -75,6 +81,12 @@ export function rustType(tree: Tree): string {
     case "param": return tree.name;
     case "named": return tree.rust.join("::");
     case "tuple": return `(${tree.items.map(rustType).join(", ")}${tree.items.length === 1 ? "," : ""})`;
+    case "result": return `Result<${rustType(tree.ok)}, ${rustType(tree.err)}>`;
+    case "array": return `[${rustType(tree.of)}; ${tree.len}]`;
+    case "rc": return `::std::rc::Rc<${rustType(tree.of)}>`;
+    case "cell": return `::std::cell::${tree.itself ? "RefCell" : "Cell"}<${rustType(tree.of)}>`;
+    case "dyn": return `dyn ${tree.traits.join(" + ")}`;
+    case "iterator": return "impl Iterator";
     case "other": return tree.rust;
   }
 }
@@ -126,6 +138,12 @@ export function values(tree: Tree, small = false): Given[] | undefined {
     case "fn":
     case "param":
     case "named":
+    case "result":
+    case "array":
+    case "rc":
+    case "cell":
+    case "dyn":
+    case "iterator":
     case "other":
       return undefined;
   }
@@ -140,7 +158,7 @@ export function printable(tree: Tree): boolean {
     case "int": return tree.rust in ints;
     case "float": return tree.rust in floats;
     case "ref": return !tree.mutable && printable(tree.of);
-    case "box": case "fn": case "param": case "named": case "other": return false;
+    case "box": case "fn": case "param": case "named": case "result": case "array": case "rc": case "cell": case "dyn": case "iterator": case "other": return false;
     default: return true;
   }
 }
@@ -183,7 +201,7 @@ export type NoneForm = "plain" | "present" | "null" | "null_optional" | "nested"
 /** A struct's record as oracle B reads it: its fields, or its transparent
  * field's type, by its definition's key, `crate::path`. */
 export type Shaped = {
-  fields?: { js: string; ty: Tree; none?: NoneForm }[];
+  fields?: { js: string; ty: Tree; none?: NoneForm; property?: Tree }[];
   transparent?: Tree;
   variants?: {
     form: "tagged" | "declared" | "untagged" | "keyed";
@@ -220,6 +238,11 @@ export const shapeRows: [string, string][] = [
   ["`Box<T>`, `Rc<T>`, `Arc<T>`", "the value itself"],
   ["`&T`", "the value"],
   ["closure, `fn` pointer, `dyn Fn`", "function"],
+  ["`Result<T, E>`", "`{ TAG: \"Ok\", _0 }`, `{ TAG: \"Err\", _0 }`"],
+  ["an `Rc` whose count is read", "`{ value, strong, weak }`"],
+  ["`Cell<T>`, `RefCell<T>`, `UnsafeCell<T>`", "`{ value }`, an `UnsafeCell`'s `get()` the cell itself; in a field, the property itself; a `RefCell` of an array, a `Map`, a `Set` or an object, that object"],
+  ["`dyn Trait`", "`{ value, impl }`"],
+  ["`impl Iterator` given back, or std's iterator, `Chars`", "a JS iterator, spread by `[...it]`; of `impl DoubleEndedIterator`, `back()` its last item; of `impl ExactSizeIterator`, `len()` how many are left"],
   ["fieldless enum variant", "its name, `\"Red\"`; under a `#[repr(u8)]`, its number, its module's `const`, `Empty`"],
   ["enum variant with fields", "`{ TAG: \"Circle\", radius }`, `{ TAG: \"Square\", _0 }`"],
   ["`#[rust_js::tag = \"status\"]` enum", "`{ status: \"done\", value }`"],
@@ -246,13 +269,15 @@ export const jsConforms = `function conforms(v, t, none, types, count, at = "", 
       const place = "." + field.js;
       const has = field.js in v;
       const form = field.none ?? "plain";
-      if (field.ty.kind === "option") {
+      // A cell field that's the property its cell holds: that property.
+      const ty = field.property ?? field.ty;
+      if (ty.kind === "option") {
         // A field's \`None\`: left out where it's known there, else a key of
         // \`undefined\` (ADR 0280), or its key written, as its form says.
         if (!has && (form === "plain" || form === "null_optional" || form === "nested")) { count.checked++; continue; }
         if (!has) return ("the value" + at) + place + ": no key, not its None's " + (form === "present" ? "undefined" : "null");
       } else if (!has) return ("the value" + at) + place + ": no key, not " + name + "'s field";
-      const problem = inner(v[field.js], field.ty, place, form, here);
+      const problem = inner(v[field.js], ty, place, form, here);
       if (problem) return problem;
     }
     return null;
@@ -315,6 +340,32 @@ export const jsConforms = `function conforms(v, t, none, types, count, at = "", 
     }
     case "box": return inner(v, t.of, "", none);
     case "fn": return typeof v === "function" ? checked() : bad("a function");
+    case "result": {
+      if (v === null || typeof v !== "object" || (v.TAG !== "Ok" && v.TAG !== "Err")) return bad("a Result's { TAG: 'Ok' | 'Err', _0 }");
+      return inner(v._0, v.TAG === "Ok" ? t.ok : t.err, "._0") ?? checked();
+    }
+    case "array":
+      if (!Array.isArray(v) || v.length !== t.len) return bad("an array of " + t.len);
+      for (const [i, x] of v.entries()) { const problem = inner(x, t.of, "[" + i + "]"); if (problem) return problem; }
+      return checked();
+    // An \`Rc\`, the value itself, or where it's counted, its counts' object.
+    case "rc":
+      if (!t.counted) return inner(v, t.of, "", none);
+      if (v === null || typeof v !== "object" || typeof v.strong !== "number" || typeof v.weak !== "number" || !("value" in v)) return bad("a counted Rc's { value, strong, weak }");
+      return inner(v.value, t.of, ".value") ?? checked();
+    // A cell, \`{ value }\`, or a \`RefCell\` the object it holds, that object.
+    case "cell":
+      if (t.itself) return inner(v, t.of, "", none);
+      if (v === null || typeof v !== "object" || !("value" in v)) return bad("a cell's { value }");
+      return inner(v.value, t.of, ".value") ?? checked();
+    // A \`dyn\` trait's pair, its value, \`undefined\` left out, and its impl.
+    case "dyn":
+      return v !== null && typeof v === "object" && v.impl !== null && typeof v.impl === "object" ? checked() : bad("a dyn's { value, impl }");
+    case "iterator":
+      if (v === null || typeof v !== "object" || typeof v.next !== "function" || typeof v[Symbol.iterator] !== "function") return bad("a JS iterator");
+      if (t.back && typeof v.back !== "function") return bad("a DoubleEndedIterator's iterator, of back()");
+      if (t.len && typeof v.len !== "function") return bad("an ExactSizeIterator's iterator, of len()");
+      return checked();
     case "named": {
       const shaped = types[t.crate + "::" + t.rust.join("::")];
       const name = t.rust.join("::");

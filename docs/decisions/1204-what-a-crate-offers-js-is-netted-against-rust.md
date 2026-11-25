@@ -229,3 +229,56 @@ next landing records: `Rc`, iterators, `dyn` traits, `Result`, cells,
 
 Own case `enum_shapes`. Mutations `offered-untagged-said-tagged` and
 `offered-variant-tag-unsaid`.
+
+## Amendment: std's types and closures (2026-11-25, the lead's call)
+
+After the enums, oracle B's unchecked shapes were std's types and closures:
+`Rc` (52), iterators (56), `dyn` traits (27), `Result` (7), `impl Fn` and
+`fn` pointers (7), cells (4) and an array. The records now carry each form,
+every one of an owner's answers, and B checks each against its guide row:
+
+- **`Result`:** `{ TAG: "Ok" | "Err", _0 }`.
+- **`[T; N]`:** an array of exactly `N`.
+- **A `fn` pointer and an `impl Fn*`:** a function. The opaque type's
+  bounds give its inputs and output.
+- **A `dyn` trait:** `{ value, impl }`, its value left out where it's
+  `undefined`, a unit struct's (ADR 0280). `dyn Error + Send + Sync` follows
+  the same row.
+- **`Rc`:** the value itself, or `{ value, strong, weak }` where the crate
+  counts it. That fact is the instances' answer, `Counted::counts`, never
+  re-derived.
+- **`Cell` and `RefCell`:** `{ value }`. A `RefCell` held as the object it
+  holds is that object (`RefCells::is_value_cell`).
+- **A cell field:** the property itself (`OfferedField::property`). Its rule
+  moved to a `tcx`-level `representation::property_of` that
+  `FnCx::property_cell` and the records both ask, with its `refcell-field`
+  decision recorded there.
+- **An `impl Iterator` given back, or std's own, `Chars`:** a JS iterator,
+  its `back()` of an `impl DoubleEndedIterator`, its `len()` of an `impl
+  ExactSizeIterator`, by the opaque type's bounds and their supertraits.
+  The guide's types table had no row for it; the row is added, as the
+  export guide's Iterators section states.
+
+`recognition::exact_size_iterator_trait` asked a diagnostic item std doesn't
+give `ExactSizeIterator`, so it found none, ever. That also meant a held
+`Enumerate`'s back never followed a library's compiled `len` (ADR 0871). It
+finds the trait by its path now. The corpus's 197 cases of `enumerate()`
+run unchanged, plain and under every iterator form. `DoubleEndedIterator`
+is a `StdItem`.
+
+**Results:** across the net, 845 shapes checked and 26 unchecked, with no
+problem found. The unchecked left are tuple and unit structs, `Weak`,
+`NonZero`, `HashSet`, `NonNull` and `Atomic`.
+
+**Coverage elsewhere:** declarations-conformance reads the new kinds as
+named types, of which only a `None` is given. Its `None` forms are given 25,
+35 and 22 times, of 17 cases, more than before.
+
+Own case `std_shapes`.
+
+**Mutations:**
+
+- `offered-rc-counted-unsaid`, `offered-refcell-itself-unsaid` and
+  `offered-cell-property-unsaid` mutate the records' facts.
+- `exact-size-iterator-unfound` mutates the lookup.
+- `once-field-boxed` follows its line to `property_of`.

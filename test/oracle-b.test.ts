@@ -5,10 +5,10 @@
 // and wrong, it says what the guide's rows do. The export net runs it,
 // nightly; this file holds it on each push.
 import { expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { jsConforms, shapeRows, type NoneForm, type Shaped, type Tree } from "./generated-calls";
-import { root } from "./support";
+import { compiler, fixture, root, run } from "./support";
 
 const conforms = new Function(`${jsConforms}\nreturn conforms;`)() as (
   v: unknown, t: Tree, none: NoneForm, types: Record<string, Shaped>, count: { checked: number; unchecked: number },
@@ -93,6 +93,69 @@ test("an enum's value is one of its variants in its form", () => {
   expect(says(true, of("Size"))).toBe("the value: boolean, not one of Size's variants' payloads");
   expect(says({ TAG: "One", _0: 5n }, of("Held", [int("u64")]))).toBeNull();
   expect(says({ TAG: "One", _0: 5 }, of("Held", [int("u64")]))).toBe("the value._0: number, not u64's BigInt");
+});
+
+// Of std's types and closures, as the guide's rows say: a \`Result\`'s
+// object, an array of its length, an \`Rc\` itself or its counts' object, a
+// cell's \`{ value }\` or the object a \`RefCell\` is, a \`dyn\`'s pair, a JS
+// iterator of the methods its bounds give, and a cell field's property.
+test("std's types and closures are their guide rows' shapes", () => {
+  const u8 = int("u8");
+  expect(said({ TAG: "Ok", _0: 3 }, { kind: "result", ok: u8, err: { kind: "str", owned: true } }).problem).toBeNull();
+  expect(said({ TAG: "Err", _0: 3 }, { kind: "result", ok: u8, err: { kind: "str", owned: true } }).problem).toBe("the value._0: number, not a string");
+  expect(said([1, 2], { kind: "array", of: u8, len: 2 }).problem).toBeNull();
+  expect(said([1], { kind: "array", of: u8, len: 2 }).problem).toBe("the value: an array, not an array of 2");
+  expect(said(4, { kind: "rc", of: u8 }).problem).toBeNull();
+  expect(said(4, { kind: "rc", of: u8, counted: true }).problem).toBe("the value: number, not a counted Rc's { value, strong, weak }");
+  expect(said({ value: 4, strong: 1, weak: 0 }, { kind: "rc", of: u8, counted: true }).problem).toBeNull();
+  expect(said({ value: 4 }, { kind: "cell", of: u8 }).problem).toBeNull();
+  expect(said(4, { kind: "cell", of: u8 }).problem).toBe("the value: number, not a cell's { value }");
+  expect(said([4], { kind: "cell", of: { kind: "vec", of: u8, borrowed: false }, itself: true }).problem).toBeNull();
+  expect(said({ impl: {} }, { kind: "dyn", traits: ["Area"] }).problem).toBeNull();
+  expect(said(4, { kind: "dyn", traits: ["Area"] }).problem).toBe("the value: number, not a dyn's { value, impl }");
+  const plain = [1, 2][Symbol.iterator]();
+  expect(said(plain, { kind: "iterator" }).problem).toBeNull();
+  expect(said(plain, { kind: "iterator", back: true }).problem).toBe("the value: Iterator, not a DoubleEndedIterator's iterator, of back()");
+  expect(said([1, 2], { kind: "iterator" }).problem).toBe("the value: an array, not a JS iterator");
+  const tally: Record<string, Shaped> = { "dep::Tally": { fields: [{ js: "hits", ty: { kind: "cell", of: u8 }, property: u8 }] } };
+  const count = { checked: 0, unchecked: 0 };
+  expect(conforms({ hits: 3 }, { kind: "named", crate: "dep", rust: ["Tally"] }, "plain", tally, count)).toBeNull();
+  expect(conforms({ hits: { value: 3 } }, { kind: "named", crate: "dep", rust: ["Tally"] }, "plain", tally, count)).toBe("the value.hits: Object, not u8's integer number");
+});
+
+// The records say what each needs of its owners: an \`impl ExactSizeIterator\`
+// its \`len()\`, which no diagnostic item finds (\`exact_size_iterator_trait\`
+// by its path); an \`Rc\` whose count is read, counted; a cell field's
+// property (#2481's std forms).
+test("the records say an iterator's methods, an Rc's counting and a cell field's property", () => {
+  const dir = fixture("oracle-b-std-records");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+pub struct Tally {
+    pub hits: Cell<u32>,
+}
+pub fn upto(n: u32) -> impl DoubleEndedIterator<Item = u32> + ExactSizeIterator {
+    0..n
+}
+pub fn counted(n: u32) -> Rc<String> {
+    let first = Rc::new(n.to_string());
+    assert_eq!(Rc::strong_count(&first), 1);
+    first
+}
+pub fn shared(n: u32) -> Rc<u32> {
+    Rc::new(n)
+}
+pub fn tally(n: u32) -> Tally {
+    Tally { hits: Cell::new(n) }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "lib.manifest.json"), "--", "--crate-name", "lib", "--edition=2024", "-Awarnings"]);
+  const offered = JSON.parse(readFileSync(join(dir, "lib.manifest.json"), "utf8")).offered_paths as { rust: string[]; ty?: Tree; fields?: { property?: Tree }[] }[];
+  const of = (name: string) => offered.find((p) => p.rust[0] === name);
+  expect(of("upto")?.ty).toEqual({ kind: "iterator", back: true, len: true });
+  expect(of("counted")?.ty).toEqual({ kind: "rc", of: { kind: "str", owned: true }, counted: true });
+  expect(of("shared")?.ty).toEqual({ kind: "rc", of: { kind: "int", rust: "u32" } });
+  expect(of("Tally")?.fields?.[0]?.property).toEqual({ kind: "int", rust: "u32" });
 });
 
 test("a shape the records can't decide is counted unchecked, never passed unsaid", () => {

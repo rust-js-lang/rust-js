@@ -534,9 +534,10 @@ pub(crate) fn is_trait_self(param: ty::ParamTy) -> bool {
     param.name == rustc_span::symbol::kw::SelfUpper
 }
 
-/// std's `ExactSizeIterator`.
+/// std's `ExactSizeIterator`, by its path, `core::iter::ExactSizeIterator`:
+/// it has no diagnostic item, so asking one found none, ever.
 pub(crate) fn exact_size_iterator_trait(tcx: TyCtxt<'_>) -> Option<DefId> {
-    tcx.get_diagnostic_item(rustc_span::Symbol::intern("ExactSizeIterator"))
+    super::registry::by_path(tcx, super::StdCrate::Core, &["iter", "ExactSizeIterator"])
 }
 
 /// A trait only std can name: private to its crate, or unstable, which a
@@ -774,6 +775,7 @@ pub enum StdItem {
     Into,
     IntoIterator,
     Iterator,
+    DoubleEndedIterator,
     /// `LazyCell` or `LazyLock`, which have no diagnostic items, as `OnceCell`.
     LazyCell,
     LinkedList,
@@ -851,6 +853,7 @@ impl StdItem {
             StdItem::Into => sym::Into,
             StdItem::IntoIterator => sym::IntoIterator,
             StdItem::Iterator => sym::Iterator,
+            StdItem::DoubleEndedIterator => Symbol::intern("DoubleEndedIterator"),
             StdItem::LazyCell => Symbol::intern("LazyCell"),
             StdItem::LinkedList => Symbol::intern("LinkedList"),
             StdItem::LocalKey => Symbol::intern("LocalKey"),

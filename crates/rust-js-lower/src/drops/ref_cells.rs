@@ -446,15 +446,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.krate.ref_cells.get_or_find(|| self.find_ref_cells())
     }
 
-    /// Whether `field`, a struct's, holds its `RefCell`'s value as the
-    /// property, by its declaration (`RefCells::holds_value`, ADR 0863,
-    /// amended).
-    pub(crate) fn holds_value(&self, field: &ty::FieldDef) -> bool {
-        let holds = self.ref_cells().holds_value(self.tcx, field);
-        rust_js_program::decisions::record("refcell-field", if holds { "holds-value" } else { "cell" });
-        holds
-    }
-
     /// Whether `field`, a struct's `RefCell` field, is one no borrow of
     /// which can meet another (`RefCells::quiet_field`), so none is checked
     /// (ADR 0863, amended).

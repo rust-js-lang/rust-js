@@ -10,7 +10,7 @@ use super::super::recognition::StdItem;
 use rust_js_program::js;
 use rust_js_program::js::Expr;
 use rustc_middle::ty;
-use rustc_middle::ty::Ty;
+use rustc_middle::ty::{Ty, TyCtxt};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether field `i` of `ty` is a `#[rust_js::nullable]` field's `Cell`
@@ -148,13 +148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the cell is, and a `OnceCell`'s or `OnceLock`'s `Option<T>`, absent
     /// until it's set (ADR 0847). `None` of a field that's itself.
     pub fn property_cell(&self, field: Option<&ty::FieldDef>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-        let ty::Adt(_, args) = ty.kind() else { return None };
-        if self.is_std_type(ty, StdItem::Cell)
-            || field.is_some_and(|field| self.holds_value(field)) && !self.is_value_cell(ty)
-        {
-            return Some(args.type_at(0));
-        }
-        (self.is_std_type(ty, StdItem::OnceCell)).then(|| Ty::new_option(self.tcx, args.type_at(0)))
+        property_of(self.tcx, self.ref_cells(), field, ty)
     }
 
     /// Part `i` of `ty`'s array, of type `part`, read where it's `read`,
@@ -203,6 +197,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// Of a cell field's JS that's the property it holds, a handle on it,
 /// `Handle(x.f)`, or its one cell, `$fieldCell(x, "f")` (ADRs 0288, 0863):
 /// the struct's object and the field's key.
+/// `FnCx::property_cell`'s answer, of the crate's `RefCells`: what else
+/// asks it, the export net's records (`offered`), asks this.
+pub fn property_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    ref_cells: &crate::drops::RefCells<'tcx>,
+    field: Option<&ty::FieldDef>,
+    ty: Ty<'tcx>,
+) -> Option<Ty<'tcx>> {
+    let ty::Adt(adt, args) = ty.kind() else { return None };
+    let is = |item| crate::recognition::is_std_def(tcx, adt.did(), item);
+    // Whether a struct's field holds its `RefCell`'s value as the property,
+    // by its declaration (`RefCells::holds_value`, ADR 0863, amended).
+    let holds_value = |field: &ty::FieldDef| {
+        let holds = ref_cells.holds_value(tcx, field);
+        rust_js_program::decisions::record("refcell-field", if holds { "holds-value" } else { "cell" });
+        holds
+    };
+    if is(StdItem::Cell) || field.is_some_and(holds_value) && !ref_cells.is_value_cell(tcx, ty) {
+        return Some(args.type_at(0));
+    }
+    is(StdItem::OnceCell).then(|| Ty::new_option(tcx, args.type_at(0)))
+}
+
 pub(crate) fn property_of_cell(e: &Expr) -> Option<(Expr, String)> {
     match &e.kind {
         js::ExprKind::Handle(read, _) => match &read.kind {
