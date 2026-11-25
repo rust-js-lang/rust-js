@@ -28,13 +28,33 @@ test("each helper the catalog names is one the runtime declares", () => {
   expect(forms.filter((form) => !rows.has(form))).toEqual([]);
 });
 
-// A model `outside` the twin net's tables, which none reaches yet, isn't
-// taken off models.rs where no case imports it; glue nothing imports is.
-test("a whole run that imports no model outside the tables keeps it", () => {
+// A row another net holds, `bun run std`'s sites' or the boundary's tests',
+// isn't taken off models.rs where no case imports it; the twin net's own
+// glue nothing imports is (ADR 1202, amended).
+test("a whole run that imports no row another net holds keeps it", () => {
   const { unshare } = twinVerdict({ pitted: new Set(), unpitted: new Set() }, true);
+  const heldBy = Object.fromEntries(catalog().models.map((entry) => [entry.helper, entry.heldBy]));
+  expect([heldBy.$durationAdd, heldBy.$checks]).toEqual(["std-sites", "boundary"]);
   expect(unshare).not.toContain("$durationAdd");
-  expect(unshare.filter((helper) => sharedHelpers()[helper] === "outside")).toEqual([]);
+  expect(unshare).not.toContain("$checks");
+  expect(unshare.filter((helper) => heldBy[helper] !== "twin")).toEqual([]);
   expect(unshare.length).toBeGreaterThan(0);
+});
+
+// A case that pits a row another net holds pits it still: its bless writes
+// it `Pitted`, the twin net's to hold from then.
+test("a row another net holds that a case pits is blessed `Pitted`, the twin net's", () => {
+  const run = asListed();
+  run.unpitted.delete("$durationAdd");
+  run.pitted.add("$durationAdd");
+  const verdict = twinVerdict(run, true);
+  expect(verdict.pit).toEqual(["$durationAdd"]);
+  const source = readFileSync(catalogFile, "utf8");
+  const was = source.split("\n").find((line) => line.startsWith('    entry("durationAdd", '));
+  expect(was).toEndWith(".held(Net::StdSites),");
+  const blessed = blessedCatalog(source, verdict).split("\n");
+  expect(blessed.filter((line) => line.startsWith('    entry("durationAdd", '))).toEqual([was!.replace("Model(Unproven(Why::Outside), ", "Model(Pitted, ").replace(".held(Net::StdSites),", ",")]);
+  expect(blessed).toHaveLength(source.split("\n").length);
 });
 
 // #2513's measure: how many models stand for no std item yet, which each

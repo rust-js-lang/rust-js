@@ -159,3 +159,36 @@ pointers (#1458). `char::decode_utf16`'s `DecodeUtf16` compiles there,
 but generic code's `IntoIterator` handed to it doesn't cross (#2598), which
 Campaign 6's dictionaries crossing answers; it's left unproven until then.
 
+
+## Amended: each row says the net that holds it (2026-11-25)
+
+The twin net's whole run took off models.rs every unpitted row no case
+imports (`unshare`), as if the twin net were every row's one holder. It
+isn't: #2403's 51 boundary checkers (`$checks`, `$checkU8`, `$brand`, …)
+are glue no twin case reaches, as a case's functions take no value from JS,
+and the boundary's tests hold them; so the nightly's bless would have
+proposed taking all 51 off, and the runtime's exports' ratchet would then
+fail. Step 2a had met the same question for the site readers and answered
+it by a reason, `shared[helper] !== "outside"`: a second rule of who holds a
+row, read from why it's unproven.
+
+- Each row says which net holds it, `Entry::held`, a `Net`: `Twin`, the
+  twin net (ADR 1122); `Boundary`, the boundary's tests (ADR 1192); or
+  `StdSites`, `bun run std`'s sites, which refuse a row the catalog names
+  no reader of (`rows_unnamed`, step 2c-1). `entry(helper, kind, note)`
+  stays the one constructor, held by `Twin`; another net's row reads
+  `entry(..).held(Net::Boundary)`. `rust-js --std-models` prints it,
+  `"heldBy"`, and the twin net reads it there alone.
+- The drift takes off only a row the twin net holds. The `outside` rule is
+  gone: `outside` stays a reason, not a drift rule, and each site reader
+  `outside` the tables is `.held(Net::StdSites)`. Forms are no helper of
+  the runtime's and were never shared.
+- A twin case that pits a row another net holds pits it still: its bless
+  writes it `Pitted`, held by the twin net from then (its `.held(..)` gone),
+  as the twin net then answers for it.
+- Tests (test/twin-net.test.ts): "a whole run that imports no row another
+  net holds keeps it" (a site reader, `$durationAdd`, and a boundary check,
+  `$checks`) and "a row another net holds that a case pits is blessed
+  `Pitted`, the twin net's". Mutations: `twin-outside-unshared`, moved to
+  the holder's filter; `models-held-all-twin`, every row printed `twin`;
+  `twin-bless-blind-to-held-rows`, the bless not reading a held row's line.

@@ -38,6 +38,14 @@ export const mutations: Mutation[] = [
     unitTests: "recognition::models::tests::each_row_is_the_catalogs",
   },
   {
+    name: "models-held-all-twin",
+    breaks: "every row is printed held by the twin net, so its whole run's drift takes a row the boundary's tests or `bun run std`'s sites hold, `$checks`, `$durationAdd`, off models.rs",
+    file,
+    find: '                "heldBy": entry.held.name(),\n',
+    replace: '                "heldBy": Net::Twin.name(),\n',
+    tests: ["test/twin-net.test.ts", "-t", "a whole run that imports no row another net holds keeps it"],
+  },
+  {
     name: "models-form-as-a-helper",
     breaks: "a form the lowering writes is printed as a runtime helper, `$clonedAt`, which the runtime doesn't declare",
     file,

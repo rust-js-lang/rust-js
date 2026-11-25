@@ -36,7 +36,7 @@ export function importedHelpers(js: string): string[] {
 /** One helper of the runtime's as the one catalog says it
  * (crates/rust-js-lower/src/recognition/models.rs, ADR 1202): glue, or a
  * model of the std items it stands for, pitted or unproven for a reason. */
-export type Entry = { helper: string; kind: "glue" | "model" | "form"; pitted: boolean; why: string | null; standsFor: string[]; note: string };
+export type Entry = { helper: string; kind: "glue" | "model" | "form"; pitted: boolean; why: string | null; standsFor: string[]; note: string; heldBy: "twin" | "boundary" | "std-sites" };
 
 /** The catalog's file, which a whole run's drift is blessed into. */
 export const catalogFile = join(import.meta.dir, "..", "crates", "rust-js-lower", "src", "recognition", "models.rs");
@@ -104,7 +104,9 @@ export function helpersOf(dir = twinHelpers): { pitted: Set<string>; unpitted: S
  * - `drift`, of a whole run alone: a list out of date that hides no gap,
  *   which fails nothing and `blessedCatalog` writes. Each helper a case pits
  *   that `pitted` doesn't list goes on it, `pit`; each `shared` lists that
- *   a case pits now, or that nothing imports, comes off it, `unshare`.
+ *   a case pits now, or that nothing imports and the twin net holds
+ *   (`heldBy`), comes off it, `unshare`. A row another net holds, the
+ *   boundary's tests or `bun run std`'s sites, is that net's to answer for.
  *
  * The nightly's twin net was red four nights running to 2026-11-24 of
  * drift alone, each fixed by hand the next morning. */
@@ -124,10 +126,10 @@ export function twinVerdict(run: { pitted: Set<string>; unpitted: Set<string> },
     );
   }
   const pit = [...run.pitted].filter((helper) => !listed.has(helper)).sort();
-  // A model `outside` the twin net's tables, which none reaches yet, is no
-  // drift where no case imports it.
+  // A row another net holds is no drift where no case imports it.
+  const held = Object.fromEntries(catalog().models.map((entry) => [entry.helper, entry.heldBy]));
   const unshare = Object.keys(shared)
-    .filter((helper) => run.pitted.has(helper) || (!run.unpitted.has(helper) && shared[helper] !== "outside"))
+    .filter((helper) => run.pitted.has(helper) || (!run.unpitted.has(helper) && held[helper] === "twin"))
     .sort();
   const drift = [
     ...pit.map((helper) => (shared[helper] === undefined ? `${helper}: a case pits it against std's body: onto models.rs, \`Pitted\`` : `${helper}: a case pits it against std's body now: \`Pitted\` in models.rs`)),
@@ -137,12 +139,12 @@ export function twinVerdict(run: { pitted: Set<string>; unpitted: Set<string> },
 }
 
 /** The catalog's text, `source`, models.rs', with a whole run's drift
- * written into it: each of `pit` `Pitted`, its std items kept, a new one's
- * line put in its place in order; each of `unshare` that no case pits taken
- * off; every other line as it was. */
+ * written into it: each of `pit` `Pitted`, its std items kept, the twin
+ * net's to hold then, a new one's line put in its place in order; each of
+ * `unshare` that no case pits taken off; every other line as it was. */
 export function blessedCatalog(source: string, { pit, unshare }: { pit: string[]; unshare: string[] }): string {
   // Each line's helper, a bare name there, the export `$` and it.
-  const line = /^ {4}entry\("(\w+)", (Glue|Model\((?:Pitted|Unproven\(Why::\w+\)), (&\[[^\]]*\])\)), ("(?:[^"\\]|\\.)*")\),$/;
+  const line = /^ {4}entry\("(\w+)", (Glue|Model\((?:Pitted|Unproven\(Why::\w+\)), (&\[[^\]]*\])\)), ("(?:[^"\\]|\\.)*")\)(?:\.held\(Net::\w+\))?,$/;
   const lines = source.split("\n");
   const at = new Map<string, number>();
   lines.forEach((text, i) => {

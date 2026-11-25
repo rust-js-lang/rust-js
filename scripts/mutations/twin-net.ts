@@ -69,11 +69,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "twin-outside-unshared",
-    breaks: "a model outside the twin net's tables, which no case reaches yet, is drift where no case imports it, so blessing a whole run takes a site reader, `$durationAdd`, off models.rs",
+    breaks: "a row another net holds is drift where no case imports it, so blessing a whole run takes a site reader, `$durationAdd`, and a boundary check, `$checks`, off models.rs",
     file: "test/twin-net.ts",
-    find: '    .filter((helper) => run.pitted.has(helper) || (!run.unpitted.has(helper) && shared[helper] !== "outside"))\n',
+    find: '    .filter((helper) => run.pitted.has(helper) || (!run.unpitted.has(helper) && held[helper] === "twin"))\n',
     replace: "    .filter((helper) => run.pitted.has(helper) || !run.unpitted.has(helper))\n",
-    tests: ["test/twin-net.test.ts", "-t", "a whole run that imports no model outside the tables keeps it"],
+    tests: ["test/twin-net.test.ts", "-t", "a whole run that imports no row another net holds keeps it"],
+  },
+  {
+    name: "twin-bless-blind-to-held-rows",
+    breaks: "the bless doesn't read a row another net holds as a catalog's line, so a case that pits `$durationAdd` writes it a second line, `Pitted`, beside its own",
+    file: "test/twin-net.ts",
+    find: '("(?:[^"\\\\]|\\\\.)*")\\)(?:\\.held\\(Net::\\w+\\))?,$/;',
+    replace: '("(?:[^"\\\\]|\\\\.)*")\\),$/;',
+    tests: ["test/twin-net.test.ts", "-t", "a row another net holds that a case pits is blessed"],
   },
   {
     name: "twin-form-shared",
