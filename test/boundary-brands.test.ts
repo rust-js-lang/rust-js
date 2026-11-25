@@ -135,11 +135,18 @@ impl Drop for Guard<'_> {
     }
 }
 
+fn hold(guard: Guard<'_>) -> u32 {
+    let seen = guard.count.get();
+    drop(guard);
+    seen
+}
+
 pub fn guarded(count: &std::cell::Cell<u32>) -> u32 {
     let guard = Guard { count, by: 2 };
     let seen = guard.count.get();
     drop(guard);
-    seen
+    // One made whole, given to a function of the crate's.
+    seen + hold(Guard { count, by: 1 })
 }
 
 pub fn degrees(c: Celsius) -> f64 {
@@ -214,7 +221,8 @@ test("one Rust gives a callback, and one a callback gives back, are taken", () =
 
 test("a value that never leaves Rust, a guard holding a borrow, isn't branded", () => {
   expect(js).not.toContain("::Guard");
-  expect(lib.guarded!({ value: 1 })).toBe(1);
+  expect(js).toContain("hold({ count, by: 1 })");
+  expect(lib.guarded!({ value: 1 })).toBe(4);
 });
 
 test("a pub newtype of a number keeps its field check: no WeakSet holds a number", () => {

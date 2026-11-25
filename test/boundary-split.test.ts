@@ -123,3 +123,42 @@ test("TypeScript sees the entry alone", () => {
   expect(depDts).not.toContain("double$");
   expect(depDts).not.toContain("alone$");
 });
+
+// A split function's call is the body where Rust names it directly, even
+// by a `use` that renames it, `close as close_flight`, which its import
+// keeps: `import { close$ as closeFlight }`. Through another module that
+// re-exports it, `plugins::read(..)`, it's that module's entry, as its
+// file re-exports no body (rd137), so what Rust gives it is what Rust
+// made, branded, which the entry's check takes (ADR 1196).
+test("a split function's call through a renaming use is its body, and through a re-exporting module its entry", async () => {
+  const at = fixture("boundary-split-paths");
+  const files: Record<string, string> = {
+    "lib.rs": `pub mod client;
+pub mod markup;
+pub mod plugins;
+pub mod shared;
+
+pub use client::close;
+pub use shared::read;
+
+pub fn run(n: u32) -> u32 {
+    plugins::read(&shared::Token(n)) + markup::render(n)
+}
+`,
+    "client.rs": "pub fn close(n: u32) -> u32 {\n    n + 1\n}\n",
+    "markup.rs": "use crate::client::close as close_flight;\n\npub fn render(n: u32) -> u32 {\n    close_flight(n) * 10\n}\n",
+    "plugins.rs": "pub use crate::shared::read;\n",
+    "shared.rs": "pub struct Token(pub(crate) u32);\n\npub fn read(token: &Token) -> u32 {\n    token.0 + 1\n}\n",
+  };
+  for (const [file, text] of Object.entries(files)) writeFileSync(join(at, file), text);
+  run([compiler, join(at, "lib.rs"), "-o", join(at, "lib.js"), "--", "--crate-type=lib", "--edition=2024"]);
+  const markup = readFileSync(join(at, "markup.js"), "utf8");
+  expect(markup).toContain('import { close$ as closeFlight } from "./client.js";\n');
+  expect(markup).toContain("return (closeFlight(n) * 10) >>> 0;");
+  const root = readFileSync(join(at, "lib.js"), "utf8");
+  expect(root).toContain('import * as Plugins from "./plugins.js";\n');
+  expect(root).toMatch(/Plugins\.read\(\$brand\("lib#[0-9a-f]+::shared::Token", \[n\]\)\)/);
+  const made = await import(join(at, "lib.js"));
+  expect(made.run(2)).toBe(3 + 30);
+  expect(thrown(() => made.read([2]))).toBe("TypeError: rust-js: read(token): expected a Token Rust made, got an array");
+});

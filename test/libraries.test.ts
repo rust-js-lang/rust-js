@@ -410,7 +410,9 @@ pub fn run() -> String {
   mkdirSync(join(dir, "node_modules", "@rust-js"), { recursive: true });
   symlinkSync(shared, join(dir, "node_modules", "shared"), "dir");
   symlinkSync(stdDir, join(dir, "node_modules", "@rust-js", "std"), "dir");
-  const js = () => withoutBoundary(readFileSync(join(dir, "dom", "src", "lib.js"), "utf8"));
+  // As it is: `run` takes nothing, so nothing's checked, and its imports
+  // are laid out as the printer lays them out.
+  const js = () => readFileSync(join(dir, "dom", "src", "lib.js"), "utf8");
   const ran = () => run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(join(dir, "dom", "src", "lib.js"))})).run());`]).trim();
   const built = () => build(join(dir, "dom"));
   const native = join(dir, "native");

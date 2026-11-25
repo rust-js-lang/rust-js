@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     file,
     find: "            let local = crate::analysis::renamed_in(tcx, from)\n                .swap_remove(&id)\n                .unwrap_or_else(|| name.clone());\n",
     replace: "            let local = name.clone();\n",
-    tests: ["test/method-forwarding.test.ts", "-t", "a namespace's method that only passes its parameters on to its module's function"],
+    tests: ["test/boundary-split.test.ts", "-t", "through a renaming use"],
   },
   {
     name: "reexported-call-past-its-path",
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
     file,
     find: "        if symbol.export == js::NAMESPACE && *symbol != crate::module_symbol(target, js::NAMESPACE) {\n",
     replace: "        if false && symbol.export == js::NAMESPACE && *symbol != crate::module_symbol(target, js::NAMESPACE) {\n",
-    tests: ["test/modules-imports.test.ts", "-t", "a function called through its module is read through its namespace"],
+    tests: ["test/boundary-split.test.ts", "-t", "through a renaming use"],
   },
   {
     name: "namespace-method-unsplit",

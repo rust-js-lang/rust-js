@@ -245,6 +245,10 @@ pub mod entry {
     js::export_default!(start);
 }
 
+// JS may call it, so it's split, its file exporting its body too, which
+// the glob's every name doesn't count (ADR 1193).
+pub use console::bind_to_console;
+
 pub mod debug {
     pub fn check_eval(n: f64) -> f64 {
         n * 3.0
@@ -282,7 +286,7 @@ pub mod some {
   // Its default, which `export *` leaves out, the glob's `start`.
   expect(read("started.js")).toContain('export { default as start } from "../dep/entry.js";\n');
   const config = await import(join(dir, "app", "config.js"));
-  expect([Object.keys(config).sort(), config.bindToConsole(1), config.BADGE]).toEqual([["BADGE", "bindToConsole"], 2, 2]);
+  expect([Object.keys(config).sort(), config.bindToConsole(1), config.BADGE]).toEqual([["BADGE", "bindToConsole", "bindToConsole$"], 2, 2]);
   expect(Object.keys(await import(join(dir, "app", "some.js"))).sort()).toEqual(["checkEval", "other"]);
 });
 

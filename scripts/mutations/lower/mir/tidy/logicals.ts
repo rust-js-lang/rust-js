@@ -605,7 +605,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy/logicals.rs",
     find: "    read_of_a_path(e) && e.reads_same()\n",
     replace: "    read_of_a_path(e)\n",
-    tests: ["test/lowering-or-patterns.test.ts", "-t", "inside a chain reads it once"],
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "unchecked value reads it once"],
   },
   {
     name: "getter-read-a-path-oracle",

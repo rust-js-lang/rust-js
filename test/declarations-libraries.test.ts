@@ -197,19 +197,11 @@ encodeReply(Symbol());
   expect(errors[0]).toContain("caller.ts(4,");
 });
 
-// React's server entries: upstream's ReactFlightDOMServerNode re-exports
-// ReactFlightActionServer's `decodeAction`, generic over the bundler's
-// manifest, whose port takes webpack's. A function that only passes its
-// parameters on, in order, each as it is, to a plain function at one
-// instantiation is that function, re-exported by its own name, `export {
-// decode as decodeAction }`, and declared at that instantiation, `manifest:
-// ServerManifest`, not `M` (rd575, ADR 1064). One that does anything more,
-// or whose call is JS of its own, stays a function.
-test("a function that only passes its parameters on to one instantiation is its re-export", async () => {
-  const dir = fixture("declarations-forwarders");
-  compiled(dir, {
-    "dep.rs": "pub mod action;\npub mod server;\n",
-    "action.rs": `pub fn decode<M: ?Sized>(body: u32, _manifest: &M) -> u32 {
+/** A library of functions the app's forwarders pass their parameters on
+ * to (rd575). */
+const forwarded = {
+  "dep.rs": "pub mod action;\npub mod server;\n",
+  "action.rs": `pub fn decode<M: ?Sized>(body: u32, _manifest: &M) -> u32 {
     body + 1
 }
 
@@ -267,7 +259,7 @@ pub fn given(_first: Option<&js::Unknown>) -> Option<&'static js::Unknown> {
     js::get(js::arguments(), "length")
 }
 `,
-    "server.rs": `pub struct Manifest {
+  "server.rs": `pub struct Manifest {
     pub id: u32,
 }
 
@@ -276,7 +268,10 @@ pub fn decode(body: u32, manifest: &Manifest) -> u32 {
     crate::action::decode::<Manifest>(body, manifest)
 }
 `,
-  }, `use dep::action;
+};
+
+/** The app's forwarders, and functions that do more. */
+const forwarders = `use dep::action;
 
 pub struct ServerManifest {
     pub id: u32,
@@ -354,7 +349,19 @@ pub fn discards(n: u32) {
 pub fn generic<M: ?Sized>(body: u32, manifest: &M) -> u32 {
     action::decode(body, manifest)
 }
-`);
+`;
+
+// React's server entries: upstream's ReactFlightDOMServerNode re-exports
+// ReactFlightActionServer's `decodeAction`, generic over the bundler's
+// manifest, whose port takes webpack's. A function that only passes its
+// parameters on, in order, each as it is, to a plain function at one
+// instantiation is that function, re-exported by its own name, `export {
+// decode as decodeAction }`, and declared at that instantiation, `manifest:
+// ServerManifest`, not `M` (rd575, ADR 1064). One that does anything more,
+// or whose call is JS of its own, stays a function.
+test("a function that only passes its parameters on to one instantiation is its re-export", async () => {
+  const dir = fixture("declarations-forwarders");
+  compiled(dir, forwarded, forwarders);
   // No JS of the library may call `server::decode`, which checks nothing:
   // a re-export of the one it calls, as before the checks (#2403 lever (3)).
   const server = withoutBoundary(readFileSync(join(dir, "dep", "server.js"), "utf8"));
@@ -413,6 +420,45 @@ decodeAction(1, "manifest");
   expect([module.swapped(1, 2), module.wraps(3), module.holds([4]), module.shows(5), module.generic(6, {})]).toEqual([21, true, 1, "<5>", 7]);
   // What a JS caller gives past their parameters, none of theirs; `Some(None)`
   // as Rust's box of it is, `{ $someNone: 0 }`, which the check takes (#2403).
+  expect([module.holdsPlain(4, 5), module.counted(), module.nested({ $someNone: 0 })]).toEqual([1, 1, true]);
+});
+
+// The same forwarders where JS may call none of them, in a module only
+// `pub mod` paths reach (#2403 lever (3)): nothing's checked, so each that
+// only passes its parameters on is the function it calls, re-exported, as
+// it was before the checks (rd575), and the rest are functions of their
+// own.
+test("a function JS can't call that only passes its parameters on to one instantiation is its re-export", async () => {
+  const dir = fixture("declarations-forwarders-unchecked");
+  writeFileSync(join(dir, "forwarders.rs"), forwarders);
+  compiled(dir, forwarded, "pub mod forwarders;\n");
+  const js = readFileSync(join(dir, "app", "forwarders.js"), "utf8");
+  expect(js).not.toContain("$check");
+  // A run of them, from one module, one statement; a library's forwarder
+  // from its own file, which re-exports it. The library's module's import
+  // where its `use` is, first, then the runtime's, before the re-export
+  // placed there too (rd725).
+  expect(js).toContain('import * as Action from "../dep/action.js";\nimport { $cellOf } from "@rust-js/std";\nexport { decode as decodeAction');
+  expect(js).toContain('export { decode as decodeAction, decode as decodeFormState, ping } from "../dep/action.js";\n');
+  // One no `use` places where its function is, after the `Drop` impl's
+  // function written above it (ADR 1069).
+  expect(js).toContain('}\n\nexport { decode as serverDecode } from "../dep/server.js";\n');
+  for (const kept of ["swapped(a, b)", "wraps(x)", "logs(n)", "holds(guard)", "holdsPlain(n)", "nested(x)", "counted(first)", "shows(n)", "bumped(point)", "discards(n)", "generic(body, manifest)"]) {
+    expect(js).toContain(`export function ${kept} {`);
+  }
+  expect(js).not.toMatch(/function (decodeAction|decodeFormState|ping|serverDecode)\b/);
+  // What only a re-exported function read isn't imported.
+  expect(js).not.toContain("import * as Server");
+  const declarations = readFileSync(join(dir, "app", "forwarders.d.ts"), "utf8");
+  expect(declarations).toContain("export function decodeAction(body: number, serverManifest: ServerManifest): number;");
+  expect(declarations).toContain("export function serverDecode(body: number, manifest: Manifest): number;");
+  expect(declarations).not.toContain("export {");
+  const module = await import(join(dir, "app", "forwarders.js"));
+  const action = await import(join(dir, "dep", "action.js"));
+  const server = await import(join(dir, "dep", "server.js"));
+  expect([module.decodeAction, module.decodeFormState, module.ping, module.serverDecode]).toEqual([action.decode, action.decode, action.ping, server.decode]);
+  expect([module.decodeAction(1, { id: 2 }), module.serverDecode(5, { id: 1 }), module.swapped(1, 2), module.wraps(3), module.shows(5), module.generic(6, {})]).toEqual([2, 6, 21, true, "<5>", 7]);
+  // What a JS caller gives past their parameters, none of theirs.
   expect([module.holdsPlain(4, 5), module.counted(), module.nested({ $someNone: 0 })]).toEqual([1, 1, true]);
 });
 

@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare/import_names.rs",
     find: "            Item::Statements(stmts) => block(stmts, visitor),\n",
     replace: "            Item::Statements(_) => {}\n",
-    tests: ["test/link.test.ts", "-t", "module-load statements"],
+    tests: ["test/link.test.ts", "-t", "module-load statements resolve imports of a function JS can't call"],
   },
   {
     name: "arrow-params-unreserved",
@@ -33,6 +33,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-program/src/prepare/import_names.rs",
     find: "        match name.made_base().filter(|_| name.is_the_programs()) {\n",
     replace: "        match None::<&str> {\n",
-    tests: ["test/link.test.ts", "-t", "module-load statements resolve imports around their local bindings"],
+    tests: ["test/link.test.ts", "-t", "module-load statements resolve imports of a function JS can't call"],
   },
 ];

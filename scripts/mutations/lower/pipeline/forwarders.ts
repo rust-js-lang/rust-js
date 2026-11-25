@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "src/pipeline/forwarders.rs",
     find: "                && js_given.called(&recognition, &js_given.main(tcx, function), (target, args)) == Ok(None)\n",
     replace: "\n",
-    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "JS can't call that only passes its parameters on to"],
   },
   {
     name: "forwarders-arguments-unasked",
@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
     file: "src/pipeline/forwarders.rs",
     find: " && item.calling.drop_params().is_empty())\n",
     replace: ")\n",
-    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "JS can't call that only passes its parameters on to"],
   },
   {
     name: "forwarders-named-at-home",

@@ -456,6 +456,16 @@ pub fn forwarded(n: i32) -> i32 {
     GET.with(|get| get(n))
 }
 
+// One JS can't call, which checks nothing.
+#[inline(never)]
+fn forwarded_privately(n: i32) -> i32 {
+    GET.with(|get| get(n))
+}
+
+pub fn through(n: i32) -> i32 {
+    forwarded_privately(n)
+}
+
 pub fn coerced(value: f64) -> String {
     test_string_coercion(value)
 }
@@ -498,12 +508,13 @@ pub fn unknown_owner() -> String {
   expect(js).toContain("/**\n * Its docs,\n * over two lines.\n * @noinline\n */\nexport function long(n) {");
   expect(js).toContain("\nexport function hinted(n) {");
   expect(js).toContain("\nexport function always(n) {");
-  expect(js.match(/@noinline/g)?.length).toBe(7);
+  expect(js.match(/@noinline/g)?.length).toBe(8);
   // A function written in a body, its own comment before it (ADR 0649, amended).
   expect(js).toContain(
     "/** @noinline */\nexport function unknownOwner() {\n  /** @noinline */\n  function reactStackTopFrame() {\n    // The frame React's owner stack pops.\n",
   );
   expect(js).toContain("@noinline */\nexport function forwarded(n) {");
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("// One JS can't call, which checks nothing.\n/** @noinline */\nfunction forwardedPrivately(n) {\n  return get(n);\n}");
   // A function giving each variant its own name is called, not its
   // argument (ADR 0264).
   expect(js).toContain("  /** @noinline */\n  asStr(section) {");

@@ -8,7 +8,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { underLoad } from "../scripts/timing";
 import { performanceTrack } from "./ports-of";
-import { buildReact, compiler, fixture, root, run } from "./support";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 import { oneLine, withoutBoundary } from "./without-boundary";
 
 beforeAll(buildReact, 600_000);
@@ -517,6 +517,22 @@ pub fn rolled(prev: &[f64], more: &[f64]) -> usize {
   expect(oneLine(js)).toContain("const rolled = more.values().map((x) => x + Math.random());");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.joined([1], [1, 2, 3]), lib.squared([1], [2, 3]), lib.rolled([1], [2])]).toEqual([[1, 4, 6], [1, 4, 9], 2]);
+});
+
+// The same of `js`'s `Math.random()`, whose result no check reads first, as
+// the crate's own binding's is (#2403, ADR 1195): it does something, so the
+// stage stays lazy. Read as it is, no check to strip.
+test("a lazy chain's stage of js's Math.random() stays lazy", async () => {
+  const dir = fixture("chain-spread-random");
+  writeFileSync(join(dir, "lib.rs"), `pub fn rolled(prev: &[f64], more: &[f64]) -> usize {
+    let rolled = more.iter().map(|&x| x + js::math::random());
+    let all: Vec<f64> = prev.iter().cloned().chain(rolled).collect();
+    all.len()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("  const rolled = more.values().map((x) => x + Math.random());\n");
+  expect((await import(join(dir, "lib.js"))).rolled([1], [2])).toBe(2);
 });
 
 // A consumer that stops early, `position`, `any`, `find`, `all`, of an

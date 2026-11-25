@@ -590,7 +590,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/passed_on.rs",
     find: "    (mine.inputs_and_output == theirs.inputs_and_output).then_some((target, args))\n",
     replace: "    Some((target, args))\n",
-    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "JS can't call that only passes its parameters on to"],
   },
   {
     name: "counted-closure-ungated",
@@ -713,7 +713,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/passed_on.rs",
     find: "    if tcx.def_kind(function) != DefKind::Fn || generic {\n",
     replace: "    if tcx.def_kind(function) != DefKind::Fn {\n",
-    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "JS can't call that only passes its parameters on to"],
   },
   {
     name: "forwarder-of-its-own-module",
@@ -722,7 +722,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/passed_on.rs",
     find: "        || (target.is_local() && module(target) == module(function))\n",
     replace: "",
-    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "JS can't call that only passes its parameters on to"],
   },
   {
     name: "forwarded-call-out-of-line",
@@ -844,7 +844,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/passed_on.rs",
     find: "    (mine.inputs().get(1..) == Some(theirs.inputs()) && mine.output() == theirs.output()).then_some((target, args))\n",
     replace: "    (mine.inputs().get(1..) == Some(theirs.inputs())).then_some((target, args))\n",
-    tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method that only passes its parameters on"],
+    tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method JS can't call that only passes its parameters on"],
   },
   {
     name: "prototype-forwarding-unasked",
@@ -853,7 +853,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/passed_on.rs",
     find: "    if super::classes::member(tcx, method) != Some(super::classes::Member::Namespace) && !prototype {\n",
     replace: "    if super::classes::member(tcx, method) != Some(super::classes::Member::Namespace) {\n",
-    tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method that only passes its parameters on"],
+    tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method JS can't call that only passes its parameters on"],
   },
   {
     name: "prototype-forwarding-elsewhere",
@@ -862,7 +862,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/passed_on.rs",
     find: "    let elsewhere = prototype && module(target) != module(method);\n",
     replace: "    let elsewhere = false;\n",
-    tests: ["test/method-forwarding.test.ts", "-t", "a declaration its module's load can read"],
+    tests: ["test/method-forwarding.test.ts", "-t", "JS can't call passes its parameters on to a declaration"],
   },
   {
     name: "converting-unseen",

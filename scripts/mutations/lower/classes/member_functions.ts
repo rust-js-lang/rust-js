@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/classes/member_functions.rs",
     find: "        class.forwarding.push(name.to_owned());\n",
     replace: "",
-    tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method that only passes its parameters on"],
+    tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method JS can't call that only passes its parameters on"],
   },
   {
     name: "class-receiver-left-to-tidy",

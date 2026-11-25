@@ -521,11 +521,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/binding_calls.rs",
     find: "                    false => Expr::member(this, name).answered_by_a_getter(),\n",
     replace: "                    false => Expr::member(this, name),\n",
-    tests: [
-      "test/lowering-moves.test.ts",
-      "-t",
-      "a getter's read given to a binding's method runs before its lookup",
-    ],
+    tests: ["test/lowering-moves.test.ts", "-t", "unchecked read given to a binding's method"],
   },
   {
     name: "js-new-this-called",

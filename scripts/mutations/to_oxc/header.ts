@@ -251,6 +251,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "            (!at.is_none() && !reexport.at.is_none() && at.lo <= reexport.at.lo).then_some(local)\n",
     replace: "            (!at.is_none()).then_some(local)\n",
-    tests: ["test/modules-imports.test.ts", "-t", "re-exported as written"],
+    tests: ["test/modules-imports.test.ts", "-t", "JS can't call re-exports it from its module"],
   },
 ];

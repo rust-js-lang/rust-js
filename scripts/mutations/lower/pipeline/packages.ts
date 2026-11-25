@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     file: "src/pipeline/packages.rs",
     find: "    let only_forwarded = |local: &str| forwarded.contains(local) && !read.contains(local);\n",
     replace: "    let only_forwarded = |_: &str| false;\n",
-    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "is its re-export"],
+    tests: ["test/declarations-libraries.test.ts", "test/lowering-forwarding.test.ts", "-t", "JS can't call that only passes its parameters on to"],
   },
   {
     name: "reimport-left-in-package",

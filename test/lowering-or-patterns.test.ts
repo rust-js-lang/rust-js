@@ -152,6 +152,47 @@ pub fn capable<T: Input>(name: &str, input: &T, editable: bool) -> bool {
   expect([lib.capable("input", input, false), reads]).toEqual([true, 1]);
 });
 
+// The same of a getter whose text no check reads first (#2403, ADR 1195:
+// a binding's number is checked where its call returns, a call this read's
+// place never rested on). Read as it is, no check to strip.
+test("an or-pattern of a getter's unchecked value reads it once, in a chain too", async () => {
+  const dir = fixture("or-pattern-getter-unchecked");
+  writeFileSync(join(dir, "lib.rs"), `pub trait Thenable {
+    #[cfg_attr(rust_js, rust_js::link_name = "get status")]
+    fn status(&self) -> String {
+        unreachable!()
+    }
+}
+
+pub fn settled<T: Thenable>(thenable: &T) -> bool {
+    matches!(thenable.status().as_str(), "fulfilled" | "rejected")
+}
+
+pub trait Input {
+    #[cfg_attr(rust_js, rust_js::link_name = "get type")]
+    fn kind(&self) -> String {
+        unreachable!()
+    }
+}
+
+pub fn capable<T: Input>(name: &str, input: &T, editable: bool) -> bool {
+    !name.is_empty() && ((name == "input" && matches!(input.kind().as_str(), "text" | "search")) || name == "textarea" || editable)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`const status = thenable.status;
+  return status === "fulfilled" || status === "rejected";`);
+  expect(js.match(/input\.type/g)).toHaveLength(1);
+  const lib = await import(join(dir, "lib.js"));
+  let reads = 0;
+  const thenable = { get status() { reads += 1; return reads === 1 ? "pending" : "rejected"; } };
+  expect([lib.settled(thenable), reads]).toEqual([false, 1]);
+  reads = 0;
+  const input = { get type() { reads += 1; return "text"; } };
+  expect([lib.capable("input", input, false), reads]).toEqual([true, 1]);
+});
+
 // React DOM's getNextHydratable: a getter's value bound before the tests
 // of it, `let data = comment.data(); if data == A || .. { break; }`, stays
 // where it's bound, read once, and the test is as written, not its
