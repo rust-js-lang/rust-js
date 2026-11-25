@@ -50,10 +50,24 @@ pub struct OfferedPath {
     /// opaque (ADR 1187); a class, made by its constructor, isn't (#2573).
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub sealed: bool,
+    /// Of a struct whose `fields` aren't recorded, why: said, never left
+    /// out unsaid, so a net reading `fields` knows what it doesn't check
+    /// (#2573).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unoffered_fields: Option<UnofferedFields>,
     /// Of a generic function, each type parameter's bounds, by rustc's
     /// predicates of it (#2573).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub bounds: Vec<OfferedBound>,
+}
+
+/// Why a struct's fields aren't recorded (`OfferedPath::unoffered_fields`).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum UnofferedFields {
+    /// A field a JS symbol names (ADR 1051), whose key is the symbol, not
+    /// a string `js` gives: its records' key form is still to come (#2583).
+    SymbolKeyed,
 }
 
 /// A field of an offered struct: its Rust name, the name JS reads it by

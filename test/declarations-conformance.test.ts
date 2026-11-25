@@ -31,7 +31,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { compiler, fixture, nativeBinary, programFlags, root, run } from "./support";
+import { buildReact, compiler, fixture, nativeBinary, programFlags, root, run, target } from "./support";
 import { readdirSync } from "node:fs";
 import { repoTypes, typeChecked } from "./type-checked";
 import type { Tree } from "./generated-calls";
@@ -76,6 +76,7 @@ type Offered = {
   ty?: Tree;
   fields?: { rust: string; js: string; ty: Tree; written: string }[];
   sealed?: boolean;
+  unoffered_fields?: "symbol_keyed";
   type_params?: number;
   bounds?: { param: string; traits?: string[]; callable?: Tree; impls?: { ty: Tree; dictionary: string }[] }[];
 };
@@ -185,8 +186,8 @@ function structs(offered: Offered[]): Map<string, Struct> {
 }
 
 // A crate's records: `dir`'s `lib.rs` compiled with its manifest.
-function records(dir: string): Offered[] {
-  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--manifest", join(dir, "lib.manifest.json"), "--", "--edition=2024", "-Awarnings"]);
+function records(dir: string, flags: string[] = []): Offered[] {
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--manifest", join(dir, "lib.manifest.json"), "--", "--edition=2024", "-Awarnings", ...flags]);
   return (JSON.parse(readFileSync(join(dir, "lib.manifest.json"), "utf8")).offered_paths ?? []) as Offered[];
 }
 
@@ -709,6 +710,37 @@ test("a dyn Fn is read as the function it is", () => {
     { k: "opt", inner: { k: "ref", mut: false, inner: { k: "fn", inputs: [{ k: "num", n: "u8" }], output: { k: "tuple", items: [] } } } },
   ]);
 });
+
+// A struct of a field a JS symbol names (ADR 1051) says its fields aren't
+// offered, and why, so no reader of `fields` takes its silence for none: its
+// fields' key form is still to come (#2583).
+test("a struct of a symbol-keyed field says its fields aren't offered", () => {
+  const dir = fixture("declarations-conformance-symbol-keyed");
+  writeFileSync(join(dir, "lib.rs"), `use js::Symbol;
+
+thread_local! {
+    static RESPONSE: &'static Symbol = js::symbol::new(None);
+}
+
+pub struct Reason {
+    pub id: u32,
+    #[cfg_attr(rust_js, rust_js::name(RESPONSE))]
+    pub response: String,
+}
+
+pub struct Plain {
+    pub id: u32,
+}
+
+pub fn reason(id: u32) -> Reason {
+    Reason { id, response: String::new() }
+}
+`);
+  // Given the `js` crate, which the bindings' build makes.
+  buildReact();
+  const types = records(dir, ["--crate-type", "lib", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]).filter((p) => p.kind === "type").map((p) => [p.rust.join("::"), p.unoffered_fields ?? null, (p.fields ?? []).map((f) => f.js)]);
+  expect(types).toEqual([["Reason", "symbol_keyed", []], ["Plain", null, ["id"]]]);
+}, 600_000);
 
 test("each exported function's TypeScript caller type-checks and does what Rust does", () => {
   let calls = 0;

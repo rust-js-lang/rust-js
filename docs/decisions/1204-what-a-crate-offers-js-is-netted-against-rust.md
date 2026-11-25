@@ -98,8 +98,11 @@ manifest's contract and validated by tooling/manifest.js:
   (`all_impls`), by the type it's of and its dictionary's JS name,
   `traits::impl_name`'s.
 
-A struct with a field a JS symbol names, a binding's (ADR 1051), gets no
-field records: its field has no text name a caller's literal could give.
+A struct with a field a JS symbol names, a binding's (ADR 1051), records
+no fields and says why, `unoffered_fields: "symbol_keyed"`, so no net takes
+its silence for no fields. Its fields' own key form, a symbol key beside
+the string `js`, which the nets would construct and check, is still to come
+(#2583, P3).
 test/type-parameter-reads.txt counts offered.rs's two reads of a type
 parameter. They describe a signature for its callers, as declarations.rs'
 reads do, and make no JS form of generic code.
@@ -110,5 +113,6 @@ case's own `String` is its own type (#1875) by construction, and the test
 of that reads the records.
 
 Mutation `offered-type-leaf-flipped`, a `bool` recorded as a `u8`, is caught
-by both nets. `offered-dyn-fn-unread` and `offered-symbol-field-named` hold
-the `dyn Fn` reading and the symbol-named fields.
+by both nets. `offered-dyn-fn-unread`, `offered-symbol-field-named` and
+`offered-symbol-keyed-unsaid` hold the `dyn Fn` reading and the symbol-named
+fields.

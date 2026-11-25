@@ -85,6 +85,7 @@ fn walk(
             located: false,
             fields: Vec::new(),
             sealed: false,
+            unoffered_fields: None,
             bounds: Vec::new(),
         };
         match kind {
@@ -139,15 +140,16 @@ fn walk(
                         let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
                         !matches!(ty.kind(), ty::Adt(adt, _) if adt.is_phantom_data())
                     });
-                let (fields, sealed) = match kind {
+                let (fields, sealed, unoffered_fields) = match kind {
                     DefKind::Struct => fields_of(tcx, id),
-                    _ => (Vec::new(), false),
+                    _ => (Vec::new(), false, None),
                 };
                 paths.push(OfferedPath {
                     type_params,
                     of_no_value,
                     fields,
                     sealed,
+                    unoffered_fields,
                     ..offered(OfferedKind::Type, Vec::new(), None, false)
                 });
             }
@@ -235,15 +237,32 @@ fn offered_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> OfferedType {
 }
 
 /// A struct's named fields, each by its Rust name, its JS name, its type and
-/// its type as written; and whether it's sealed (`OfferedPath::sealed`).
-fn fields_of(tcx: TyCtxt<'_>, id: DefId) -> (Vec<rust_js_program::offered::OfferedField>, bool) {
+/// its type as written; whether it's sealed (`OfferedPath::sealed`); and
+/// of one whose fields aren't recorded, why.
+fn fields_of(
+    tcx: TyCtxt<'_>,
+    id: DefId,
+) -> (
+    Vec<rust_js_program::offered::OfferedField>,
+    bool,
+    Option<rust_js_program::offered::UnofferedFields>,
+) {
     let variant = tcx.adt_def(id).non_enum_variant();
-    // Of named fields, each named by text: a field a JS symbol names, a
-    // binding's, has no name a caller's literal gives (ADR 1051).
-    if variant.ctor.is_some()
-        || (variant.fields.iter()).any(|field| crate::bindings::field_key(tcx, field).name().is_none())
-    {
-        return (Vec::new(), false);
+    let sealed = tcx.visibility(id).is_public()
+        && !crate::classes::is_class(tcx, id)
+        && variant.fields.iter().any(|field| !field.vis.is_public());
+    // Of named fields alone, a tuple struct's JS its positions.
+    if variant.ctor.is_some() {
+        return (Vec::new(), sealed, None);
+    }
+    // A field a JS symbol names (ADR 1051) has no text `js`: the struct
+    // says its fields aren't offered, and why.
+    if (variant.fields.iter()).any(|field| crate::bindings::field_key(tcx, field).name().is_none()) {
+        return (
+            Vec::new(),
+            sealed,
+            Some(rust_js_program::offered::UnofferedFields::SymbolKeyed),
+        );
     }
     let fields = (variant.fields.iter().enumerate())
         .map(|(i, field)| {
@@ -256,10 +275,7 @@ fn fields_of(tcx: TyCtxt<'_>, id: DefId) -> (Vec<rust_js_program::offered::Offer
             }
         })
         .collect();
-    let sealed = tcx.visibility(id).is_public()
-        && !crate::classes::is_class(tcx, id)
-        && variant.fields.iter().any(|field| !field.vis.is_public());
-    (fields, sealed)
+    (fields, sealed, None)
 }
 
 /// What a generic function asks of each of its type parameters, by rustc's

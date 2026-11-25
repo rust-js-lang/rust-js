@@ -180,6 +180,7 @@ function offeredPath(path) {
     && (path.params === undefined || Array.isArray(path.params) && path.params.every(offeredType))
     && (path.ty === undefined || offeredType(path.ty))
     && flag(path.generic) && flag(path.located) && flag(path.of_no_value) && flag(path.sealed)
+    && (path.unoffered_fields === undefined || path.unoffered_fields === "symbol_keyed")
     && (path.type_params === undefined || Number.isInteger(path.type_params) && path.type_params >= 0)
     // #2573: a struct's fields, and a generic function's bounds.
     && (path.fields === undefined || Array.isArray(path.fields) && path.fields.every((field) => field !== null && typeof field === "object"

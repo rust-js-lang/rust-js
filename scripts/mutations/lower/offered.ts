@@ -44,4 +44,12 @@ export const mutations: Mutation[] = [
     replace: "crate::bindings::field_key(tcx, field).name().is_none() && false)",
     tests: ["test/docs.test.ts", "-t", "each guide page's output fences are what the compiler makes"],
   },
+  {
+    name: "offered-symbol-keyed-unsaid",
+    breaks: "a struct of a field a JS symbol names records no fields and no reason, its silence read as no fields at all, the hole the lead asked be said (#2573)",
+    file,
+    find: "Some(rust_js_program::offered::UnofferedFields::SymbolKeyed)",
+    replace: "None",
+    tests: ["test/declarations-conformance.test.ts", "-t", "a struct of a symbol-keyed field says its fields aren't offered"],
+  },
 ];
