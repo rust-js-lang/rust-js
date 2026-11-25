@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
     find: '    ("Iterator", "enumerate"),\n    ("Iterator", "map"),\n    ("Iterator", "filter"),\n',
     replace: '    ("Iterator", "enumerate"),\n    ("Iterator", "map"),\n',
-    tests: ["test/iterator-forms.test.ts", "-t", "^rev_of_lazy_chains with"],
+    tests: ["test/compiled-std.test.ts", "-t", "the catalogue kept is the walk's of each of its groups"],
   },
   {
     name: "flat-map-not-held",
