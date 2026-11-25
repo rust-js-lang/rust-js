@@ -270,6 +270,7 @@ std_paths! {
     IterScan => "std::iter::Scan",
     IterSkip => "std::iter::Skip",
     IterSkipWhile => "std::iter::SkipWhile",
+    IterStep => "std::iter::Step",
     IterStepBy => "std::iter::StepBy",
     IterSuccessors => "std::iter::Successors",
     IterTake => "std::iter::Take",

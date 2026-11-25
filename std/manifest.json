@@ -363,6 +363,78 @@
         ]
       },
       {
+        "key": "core::iter::range::{impl#0}",
+        "rust_path": "rust_js_std::<char as core::iter::Step>",
+        "module": [
+          "iter"
+        ],
+        "export": "charStep",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#0}::backward_checked",
+        "rust_path": "rust_js_std::<char as core::iter::Step>::backward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "charStep_backwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#0}::backward_overflowing",
+        "rust_path": "rust_js_std::<char as core::iter::Step>::backward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "charStep_backwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#0}::backward_unchecked",
+        "rust_path": "rust_js_std::<char as core::iter::Step>::backward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "charStep_backwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#0}::forward_checked",
+        "rust_path": "rust_js_std::<char as core::iter::Step>::forward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "charStep_forwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#0}::forward_overflowing",
+        "rust_path": "rust_js_std::<char as core::iter::Step>::forward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "charStep_forwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#0}::forward_unchecked",
+        "rust_path": "rust_js_std::<char as core::iter::Step>::forward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "charStep_forwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#0}::steps_between",
+        "rust_path": "rust_js_std::<char as core::iter::Step>::steps_between",
+        "module": [
+          "iter"
+        ],
+        "export": "charStep_stepsBetween",
+        "member": null
+      },
+      {
         "key": "core::io::cursor::{impl#3}",
         "rust_path": "rust_js_std::<core::io::Cursor<T> as core::clone::Clone>",
         "module": [
@@ -14432,6 +14504,1086 @@
         ]
       },
       {
+        "key": "core::iter::range::{impl#52}",
+        "rust_path": "rust_js_std::<i128 as core::iter::Step>",
+        "module": [
+          "iter"
+        ],
+        "export": "i128Step",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#52}::backward",
+        "rust_path": "rust_js_std::<i128 as core::iter::Step>::backward",
+        "module": [
+          "iter"
+        ],
+        "export": "i128Step_backward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#52}::backward_checked",
+        "rust_path": "rust_js_std::<i128 as core::iter::Step>::backward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "i128Step_backwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#52}::backward_overflowing",
+        "rust_path": "rust_js_std::<i128 as core::iter::Step>::backward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "i128Step_backwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#52}::backward_unchecked",
+        "rust_path": "rust_js_std::<i128 as core::iter::Step>::backward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "i128Step_backwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#52}::forward",
+        "rust_path": "rust_js_std::<i128 as core::iter::Step>::forward",
+        "module": [
+          "iter"
+        ],
+        "export": "i128Step_forward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#52}::forward_checked",
+        "rust_path": "rust_js_std::<i128 as core::iter::Step>::forward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "i128Step_forwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#52}::forward_overflowing",
+        "rust_path": "rust_js_std::<i128 as core::iter::Step>::forward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "i128Step_forwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#52}::forward_unchecked",
+        "rust_path": "rust_js_std::<i128 as core::iter::Step>::forward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "i128Step_forwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#52}::steps_between",
+        "rust_path": "rust_js_std::<i128 as core::iter::Step>::steps_between",
+        "module": [
+          "iter"
+        ],
+        "export": "i128Step_stepsBetween",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#44}",
+        "rust_path": "rust_js_std::<i16 as core::iter::Step>",
+        "module": [
+          "iter"
+        ],
+        "export": "i16Step",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#44}::backward",
+        "rust_path": "rust_js_std::<i16 as core::iter::Step>::backward",
+        "module": [
+          "iter"
+        ],
+        "export": "i16Step_backward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#44}::backward_checked",
+        "rust_path": "rust_js_std::<i16 as core::iter::Step>::backward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "i16Step_backwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#44}::backward_overflowing",
+        "rust_path": "rust_js_std::<i16 as core::iter::Step>::backward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "i16Step_backwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#44}::backward_unchecked",
+        "rust_path": "rust_js_std::<i16 as core::iter::Step>::backward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "i16Step_backwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#44}::forward",
+        "rust_path": "rust_js_std::<i16 as core::iter::Step>::forward",
+        "module": [
+          "iter"
+        ],
+        "export": "i16Step_forward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#44}::forward_checked",
+        "rust_path": "rust_js_std::<i16 as core::iter::Step>::forward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "i16Step_forwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#44}::forward_overflowing",
+        "rust_path": "rust_js_std::<i16 as core::iter::Step>::forward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "i16Step_forwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#44}::forward_unchecked",
+        "rust_path": "rust_js_std::<i16 as core::iter::Step>::forward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "i16Step_forwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#44}::steps_between",
+        "rust_path": "rust_js_std::<i16 as core::iter::Step>::steps_between",
+        "module": [
+          "iter"
+        ],
+        "export": "i16Step_stepsBetween",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#46}",
+        "rust_path": "rust_js_std::<i32 as core::iter::Step>",
+        "module": [
+          "iter"
+        ],
+        "export": "i32Step",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#46}::backward",
+        "rust_path": "rust_js_std::<i32 as core::iter::Step>::backward",
+        "module": [
+          "iter"
+        ],
+        "export": "i32Step_backward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#46}::backward_checked",
+        "rust_path": "rust_js_std::<i32 as core::iter::Step>::backward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "i32Step_backwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#46}::backward_overflowing",
+        "rust_path": "rust_js_std::<i32 as core::iter::Step>::backward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "i32Step_backwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#46}::backward_unchecked",
+        "rust_path": "rust_js_std::<i32 as core::iter::Step>::backward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "i32Step_backwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#46}::forward",
+        "rust_path": "rust_js_std::<i32 as core::iter::Step>::forward",
+        "module": [
+          "iter"
+        ],
+        "export": "i32Step_forward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#46}::forward_checked",
+        "rust_path": "rust_js_std::<i32 as core::iter::Step>::forward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "i32Step_forwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#46}::forward_overflowing",
+        "rust_path": "rust_js_std::<i32 as core::iter::Step>::forward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "i32Step_forwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#46}::forward_unchecked",
+        "rust_path": "rust_js_std::<i32 as core::iter::Step>::forward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "i32Step_forwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#46}::steps_between",
+        "rust_path": "rust_js_std::<i32 as core::iter::Step>::steps_between",
+        "module": [
+          "iter"
+        ],
+        "export": "i32Step_stepsBetween",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#50}",
+        "rust_path": "rust_js_std::<i64 as core::iter::Step>",
+        "module": [
+          "iter"
+        ],
+        "export": "i64Step",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#50}::backward",
+        "rust_path": "rust_js_std::<i64 as core::iter::Step>::backward",
+        "module": [
+          "iter"
+        ],
+        "export": "i64Step_backward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#50}::backward_checked",
+        "rust_path": "rust_js_std::<i64 as core::iter::Step>::backward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "i64Step_backwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#50}::backward_overflowing",
+        "rust_path": "rust_js_std::<i64 as core::iter::Step>::backward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "i64Step_backwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#50}::backward_unchecked",
+        "rust_path": "rust_js_std::<i64 as core::iter::Step>::backward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "i64Step_backwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#50}::forward",
+        "rust_path": "rust_js_std::<i64 as core::iter::Step>::forward",
+        "module": [
+          "iter"
+        ],
+        "export": "i64Step_forward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#50}::forward_checked",
+        "rust_path": "rust_js_std::<i64 as core::iter::Step>::forward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "i64Step_forwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#50}::forward_overflowing",
+        "rust_path": "rust_js_std::<i64 as core::iter::Step>::forward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "i64Step_forwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#50}::forward_unchecked",
+        "rust_path": "rust_js_std::<i64 as core::iter::Step>::forward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "i64Step_forwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#50}::steps_between",
+        "rust_path": "rust_js_std::<i64 as core::iter::Step>::steps_between",
+        "module": [
+          "iter"
+        ],
+        "export": "i64Step_stepsBetween",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#42}",
+        "rust_path": "rust_js_std::<i8 as core::iter::Step>",
+        "module": [
+          "iter"
+        ],
+        "export": "i8Step",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#42}::backward",
+        "rust_path": "rust_js_std::<i8 as core::iter::Step>::backward",
+        "module": [
+          "iter"
+        ],
+        "export": "i8Step_backward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#42}::backward_checked",
+        "rust_path": "rust_js_std::<i8 as core::iter::Step>::backward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "i8Step_backwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#42}::backward_overflowing",
+        "rust_path": "rust_js_std::<i8 as core::iter::Step>::backward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "i8Step_backwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#42}::backward_unchecked",
+        "rust_path": "rust_js_std::<i8 as core::iter::Step>::backward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "i8Step_backwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#42}::forward",
+        "rust_path": "rust_js_std::<i8 as core::iter::Step>::forward",
+        "module": [
+          "iter"
+        ],
+        "export": "i8Step_forward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#42}::forward_checked",
+        "rust_path": "rust_js_std::<i8 as core::iter::Step>::forward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "i8Step_forwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#42}::forward_overflowing",
+        "rust_path": "rust_js_std::<i8 as core::iter::Step>::forward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "i8Step_forwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#42}::forward_unchecked",
+        "rust_path": "rust_js_std::<i8 as core::iter::Step>::forward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "i8Step_forwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#42}::steps_between",
+        "rust_path": "rust_js_std::<i8 as core::iter::Step>::steps_between",
+        "module": [
+          "iter"
+        ],
+        "export": "i8Step_stepsBetween",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#48}",
+        "rust_path": "rust_js_std::<isize as core::iter::Step>",
+        "module": [
+          "iter"
+        ],
+        "export": "isizeStep",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#48}::backward",
+        "rust_path": "rust_js_std::<isize as core::iter::Step>::backward",
+        "module": [
+          "iter"
+        ],
+        "export": "isizeStep_backward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#48}::backward_checked",
+        "rust_path": "rust_js_std::<isize as core::iter::Step>::backward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "isizeStep_backwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#48}::backward_overflowing",
+        "rust_path": "rust_js_std::<isize as core::iter::Step>::backward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "isizeStep_backwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#48}::backward_unchecked",
+        "rust_path": "rust_js_std::<isize as core::iter::Step>::backward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "isizeStep_backwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#48}::forward",
+        "rust_path": "rust_js_std::<isize as core::iter::Step>::forward",
+        "module": [
+          "iter"
+        ],
+        "export": "isizeStep_forward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#48}::forward_checked",
+        "rust_path": "rust_js_std::<isize as core::iter::Step>::forward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "isizeStep_forwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#48}::forward_overflowing",
+        "rust_path": "rust_js_std::<isize as core::iter::Step>::forward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "isizeStep_forwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#48}::forward_unchecked",
+        "rust_path": "rust_js_std::<isize as core::iter::Step>::forward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "isizeStep_forwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#48}::steps_between",
+        "rust_path": "rust_js_std::<isize as core::iter::Step>::steps_between",
+        "module": [
+          "iter"
+        ],
+        "export": "isizeStep_stepsBetween",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#51}",
+        "rust_path": "rust_js_std::<u128 as core::iter::Step>",
+        "module": [
+          "iter"
+        ],
+        "export": "u128Step",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#51}::backward",
+        "rust_path": "rust_js_std::<u128 as core::iter::Step>::backward",
+        "module": [
+          "iter"
+        ],
+        "export": "u128Step_backward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#51}::backward_checked",
+        "rust_path": "rust_js_std::<u128 as core::iter::Step>::backward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "u128Step_backwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#51}::backward_overflowing",
+        "rust_path": "rust_js_std::<u128 as core::iter::Step>::backward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "u128Step_backwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#51}::backward_unchecked",
+        "rust_path": "rust_js_std::<u128 as core::iter::Step>::backward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "u128Step_backwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#51}::forward",
+        "rust_path": "rust_js_std::<u128 as core::iter::Step>::forward",
+        "module": [
+          "iter"
+        ],
+        "export": "u128Step_forward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#51}::forward_checked",
+        "rust_path": "rust_js_std::<u128 as core::iter::Step>::forward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "u128Step_forwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#51}::forward_overflowing",
+        "rust_path": "rust_js_std::<u128 as core::iter::Step>::forward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "u128Step_forwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#51}::forward_unchecked",
+        "rust_path": "rust_js_std::<u128 as core::iter::Step>::forward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "u128Step_forwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#51}::steps_between",
+        "rust_path": "rust_js_std::<u128 as core::iter::Step>::steps_between",
+        "module": [
+          "iter"
+        ],
+        "export": "u128Step_stepsBetween",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#43}",
+        "rust_path": "rust_js_std::<u16 as core::iter::Step>",
+        "module": [
+          "iter"
+        ],
+        "export": "u16Step",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#43}::backward",
+        "rust_path": "rust_js_std::<u16 as core::iter::Step>::backward",
+        "module": [
+          "iter"
+        ],
+        "export": "u16Step_backward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#43}::backward_checked",
+        "rust_path": "rust_js_std::<u16 as core::iter::Step>::backward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "u16Step_backwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#43}::backward_overflowing",
+        "rust_path": "rust_js_std::<u16 as core::iter::Step>::backward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "u16Step_backwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#43}::backward_unchecked",
+        "rust_path": "rust_js_std::<u16 as core::iter::Step>::backward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "u16Step_backwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#43}::forward",
+        "rust_path": "rust_js_std::<u16 as core::iter::Step>::forward",
+        "module": [
+          "iter"
+        ],
+        "export": "u16Step_forward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#43}::forward_checked",
+        "rust_path": "rust_js_std::<u16 as core::iter::Step>::forward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "u16Step_forwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#43}::forward_overflowing",
+        "rust_path": "rust_js_std::<u16 as core::iter::Step>::forward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "u16Step_forwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#43}::forward_unchecked",
+        "rust_path": "rust_js_std::<u16 as core::iter::Step>::forward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "u16Step_forwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#43}::steps_between",
+        "rust_path": "rust_js_std::<u16 as core::iter::Step>::steps_between",
+        "module": [
+          "iter"
+        ],
+        "export": "u16Step_stepsBetween",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#45}",
+        "rust_path": "rust_js_std::<u32 as core::iter::Step>",
+        "module": [
+          "iter"
+        ],
+        "export": "u32Step",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#45}::backward",
+        "rust_path": "rust_js_std::<u32 as core::iter::Step>::backward",
+        "module": [
+          "iter"
+        ],
+        "export": "u32Step_backward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#45}::backward_checked",
+        "rust_path": "rust_js_std::<u32 as core::iter::Step>::backward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "u32Step_backwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#45}::backward_overflowing",
+        "rust_path": "rust_js_std::<u32 as core::iter::Step>::backward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "u32Step_backwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#45}::backward_unchecked",
+        "rust_path": "rust_js_std::<u32 as core::iter::Step>::backward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "u32Step_backwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#45}::forward",
+        "rust_path": "rust_js_std::<u32 as core::iter::Step>::forward",
+        "module": [
+          "iter"
+        ],
+        "export": "u32Step_forward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#45}::forward_checked",
+        "rust_path": "rust_js_std::<u32 as core::iter::Step>::forward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "u32Step_forwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#45}::forward_overflowing",
+        "rust_path": "rust_js_std::<u32 as core::iter::Step>::forward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "u32Step_forwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#45}::forward_unchecked",
+        "rust_path": "rust_js_std::<u32 as core::iter::Step>::forward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "u32Step_forwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#45}::steps_between",
+        "rust_path": "rust_js_std::<u32 as core::iter::Step>::steps_between",
+        "module": [
+          "iter"
+        ],
+        "export": "u32Step_stepsBetween",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#49}",
+        "rust_path": "rust_js_std::<u64 as core::iter::Step>",
+        "module": [
+          "iter"
+        ],
+        "export": "u64Step",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#49}::backward",
+        "rust_path": "rust_js_std::<u64 as core::iter::Step>::backward",
+        "module": [
+          "iter"
+        ],
+        "export": "u64Step_backward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#49}::backward_checked",
+        "rust_path": "rust_js_std::<u64 as core::iter::Step>::backward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "u64Step_backwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#49}::backward_overflowing",
+        "rust_path": "rust_js_std::<u64 as core::iter::Step>::backward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "u64Step_backwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#49}::backward_unchecked",
+        "rust_path": "rust_js_std::<u64 as core::iter::Step>::backward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "u64Step_backwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#49}::forward",
+        "rust_path": "rust_js_std::<u64 as core::iter::Step>::forward",
+        "module": [
+          "iter"
+        ],
+        "export": "u64Step_forward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#49}::forward_checked",
+        "rust_path": "rust_js_std::<u64 as core::iter::Step>::forward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "u64Step_forwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#49}::forward_overflowing",
+        "rust_path": "rust_js_std::<u64 as core::iter::Step>::forward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "u64Step_forwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#49}::forward_unchecked",
+        "rust_path": "rust_js_std::<u64 as core::iter::Step>::forward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "u64Step_forwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#49}::steps_between",
+        "rust_path": "rust_js_std::<u64 as core::iter::Step>::steps_between",
+        "module": [
+          "iter"
+        ],
+        "export": "u64Step_stepsBetween",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#41}",
+        "rust_path": "rust_js_std::<u8 as core::iter::Step>",
+        "module": [
+          "iter"
+        ],
+        "export": "u8Step",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#41}::backward",
+        "rust_path": "rust_js_std::<u8 as core::iter::Step>::backward",
+        "module": [
+          "iter"
+        ],
+        "export": "u8Step_backward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#41}::backward_checked",
+        "rust_path": "rust_js_std::<u8 as core::iter::Step>::backward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "u8Step_backwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#41}::backward_overflowing",
+        "rust_path": "rust_js_std::<u8 as core::iter::Step>::backward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "u8Step_backwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#41}::backward_unchecked",
+        "rust_path": "rust_js_std::<u8 as core::iter::Step>::backward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "u8Step_backwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#41}::forward",
+        "rust_path": "rust_js_std::<u8 as core::iter::Step>::forward",
+        "module": [
+          "iter"
+        ],
+        "export": "u8Step_forward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#41}::forward_checked",
+        "rust_path": "rust_js_std::<u8 as core::iter::Step>::forward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "u8Step_forwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#41}::forward_overflowing",
+        "rust_path": "rust_js_std::<u8 as core::iter::Step>::forward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "u8Step_forwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#41}::forward_unchecked",
+        "rust_path": "rust_js_std::<u8 as core::iter::Step>::forward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "u8Step_forwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#41}::steps_between",
+        "rust_path": "rust_js_std::<u8 as core::iter::Step>::steps_between",
+        "module": [
+          "iter"
+        ],
+        "export": "u8Step_stepsBetween",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#47}",
+        "rust_path": "rust_js_std::<usize as core::iter::Step>",
+        "module": [
+          "iter"
+        ],
+        "export": "usizeStep",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#47}::backward",
+        "rust_path": "rust_js_std::<usize as core::iter::Step>::backward",
+        "module": [
+          "iter"
+        ],
+        "export": "usizeStep_backward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#47}::backward_checked",
+        "rust_path": "rust_js_std::<usize as core::iter::Step>::backward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "usizeStep_backwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#47}::backward_overflowing",
+        "rust_path": "rust_js_std::<usize as core::iter::Step>::backward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "usizeStep_backwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#47}::backward_unchecked",
+        "rust_path": "rust_js_std::<usize as core::iter::Step>::backward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "usizeStep_backwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#47}::forward",
+        "rust_path": "rust_js_std::<usize as core::iter::Step>::forward",
+        "module": [
+          "iter"
+        ],
+        "export": "usizeStep_forward",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#47}::forward_checked",
+        "rust_path": "rust_js_std::<usize as core::iter::Step>::forward_checked",
+        "module": [
+          "iter"
+        ],
+        "export": "usizeStep_forwardChecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#47}::forward_overflowing",
+        "rust_path": "rust_js_std::<usize as core::iter::Step>::forward_overflowing",
+        "module": [
+          "iter"
+        ],
+        "export": "usizeStep_forwardOverflowing",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#47}::forward_unchecked",
+        "rust_path": "rust_js_std::<usize as core::iter::Step>::forward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "usizeStep_forwardUnchecked",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#47}::steps_between",
+        "rust_path": "rust_js_std::<usize as core::iter::Step>::steps_between",
+        "module": [
+          "iter"
+        ],
+        "export": "usizeStep_stepsBetween",
+        "member": null
+      },
+      {
         "key": "alloc::io::buf_read::BufRead::lines",
         "rust_path": "rust_js_std::alloc::io::BufRead::lines",
         "module": [
@@ -16005,6 +17157,78 @@
         ]
       },
       {
+        "key": "core::iter::range::Step::backward",
+        "rust_path": "rust_js_std::core::iter::Step::backward",
+        "module": [
+          "iter"
+        ],
+        "export": "step_backward",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::Step::backward_unchecked",
+        "rust_path": "rust_js_std::core::iter::Step::backward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "step_backwardUnchecked",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::Step::forward",
+        "rust_path": "rust_js_std::core::iter::Step::forward",
+        "module": [
+          "iter"
+        ],
+        "export": "step_forward",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::Step::forward_unchecked",
+        "rust_path": "rust_js_std::core::iter::Step::forward_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "step_forwardUnchecked",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::step_by::{impl#0}::new",
         "rust_path": "rust_js_std::core::iter::StepBy::<I>::new",
         "module": [
@@ -17119,6 +18343,19 @@
       "core::iter::adapters::zip::{impl#3}",
       "core::iter::adapters::zip::{impl#4}",
       "core::iter::adapters::zip::{impl#5}",
+      "core::iter::range::{impl#0}",
+      "core::iter::range::{impl#41}",
+      "core::iter::range::{impl#42}",
+      "core::iter::range::{impl#43}",
+      "core::iter::range::{impl#44}",
+      "core::iter::range::{impl#45}",
+      "core::iter::range::{impl#46}",
+      "core::iter::range::{impl#47}",
+      "core::iter::range::{impl#48}",
+      "core::iter::range::{impl#49}",
+      "core::iter::range::{impl#50}",
+      "core::iter::range::{impl#51}",
+      "core::iter::range::{impl#52}",
       "core::iter::sources::repeat::{impl#0}",
       "core::iter::sources::repeat::{impl#1}",
       "core::iter::sources::repeat::{impl#4}",
@@ -17337,6 +18574,19 @@
         "RepeatNInner",
         "FlattenCompat",
         "Zip",
+        "u8Step",
+        "i8Step",
+        "u16Step",
+        "i16Step",
+        "u32Step",
+        "i32Step",
+        "usizeStep",
+        "isizeStep",
+        "u64Step",
+        "i64Step",
+        "u128Step",
+        "i128Step",
+        "charStep",
         "peekableIterator_next",
         "peekableIterator_nth",
         "peekableIterator_last",
@@ -17627,6 +18877,125 @@
         "successorsIterator_sizeHint",
         "successorsClone_clone",
         "successorsDebug_fmt",
+        "u8Step_stepsBetween",
+        "i8Step_stepsBetween",
+        "u16Step_stepsBetween",
+        "i16Step_stepsBetween",
+        "u32Step_stepsBetween",
+        "i32Step_stepsBetween",
+        "usizeStep_stepsBetween",
+        "isizeStep_stepsBetween",
+        "u64Step_stepsBetween",
+        "i64Step_stepsBetween",
+        "u128Step_stepsBetween",
+        "i128Step_stepsBetween",
+        "charStep_stepsBetween",
+        "u8Step_forwardChecked",
+        "i8Step_forwardChecked",
+        "u16Step_forwardChecked",
+        "i16Step_forwardChecked",
+        "u32Step_forwardChecked",
+        "i32Step_forwardChecked",
+        "usizeStep_forwardChecked",
+        "isizeStep_forwardChecked",
+        "u64Step_forwardChecked",
+        "i64Step_forwardChecked",
+        "u128Step_forwardChecked",
+        "i128Step_forwardChecked",
+        "charStep_forwardChecked",
+        "u8Step_forwardOverflowing",
+        "i8Step_forwardOverflowing",
+        "u16Step_forwardOverflowing",
+        "i16Step_forwardOverflowing",
+        "u32Step_forwardOverflowing",
+        "i32Step_forwardOverflowing",
+        "usizeStep_forwardOverflowing",
+        "isizeStep_forwardOverflowing",
+        "u64Step_forwardOverflowing",
+        "i64Step_forwardOverflowing",
+        "u128Step_forwardOverflowing",
+        "i128Step_forwardOverflowing",
+        "charStep_forwardOverflowing",
+        "u8Step_backwardChecked",
+        "i8Step_backwardChecked",
+        "u16Step_backwardChecked",
+        "i16Step_backwardChecked",
+        "u32Step_backwardChecked",
+        "i32Step_backwardChecked",
+        "usizeStep_backwardChecked",
+        "isizeStep_backwardChecked",
+        "u64Step_backwardChecked",
+        "i64Step_backwardChecked",
+        "u128Step_backwardChecked",
+        "i128Step_backwardChecked",
+        "charStep_backwardChecked",
+        "u8Step_backwardOverflowing",
+        "i8Step_backwardOverflowing",
+        "u16Step_backwardOverflowing",
+        "i16Step_backwardOverflowing",
+        "u32Step_backwardOverflowing",
+        "i32Step_backwardOverflowing",
+        "usizeStep_backwardOverflowing",
+        "isizeStep_backwardOverflowing",
+        "u64Step_backwardOverflowing",
+        "i64Step_backwardOverflowing",
+        "u128Step_backwardOverflowing",
+        "i128Step_backwardOverflowing",
+        "charStep_backwardOverflowing",
+        "u8Step_forward",
+        "i8Step_forward",
+        "u16Step_forward",
+        "i16Step_forward",
+        "u32Step_forward",
+        "i32Step_forward",
+        "usizeStep_forward",
+        "isizeStep_forward",
+        "u64Step_forward",
+        "i64Step_forward",
+        "u128Step_forward",
+        "i128Step_forward",
+        "u8Step_backward",
+        "i8Step_backward",
+        "u16Step_backward",
+        "i16Step_backward",
+        "u32Step_backward",
+        "i32Step_backward",
+        "usizeStep_backward",
+        "isizeStep_backward",
+        "u64Step_backward",
+        "i64Step_backward",
+        "u128Step_backward",
+        "i128Step_backward",
+        "u8Step_forwardUnchecked",
+        "i8Step_forwardUnchecked",
+        "u16Step_forwardUnchecked",
+        "i16Step_forwardUnchecked",
+        "u32Step_forwardUnchecked",
+        "i32Step_forwardUnchecked",
+        "usizeStep_forwardUnchecked",
+        "isizeStep_forwardUnchecked",
+        "u64Step_forwardUnchecked",
+        "i64Step_forwardUnchecked",
+        "u128Step_forwardUnchecked",
+        "i128Step_forwardUnchecked",
+        "charStep_forwardUnchecked",
+        "u8Step_backwardUnchecked",
+        "i8Step_backwardUnchecked",
+        "u16Step_backwardUnchecked",
+        "i16Step_backwardUnchecked",
+        "u32Step_backwardUnchecked",
+        "i32Step_backwardUnchecked",
+        "usizeStep_backwardUnchecked",
+        "isizeStep_backwardUnchecked",
+        "u64Step_backwardUnchecked",
+        "i64Step_backwardUnchecked",
+        "u128Step_backwardUnchecked",
+        "i128Step_backwardUnchecked",
+        "charStep_backwardUnchecked",
+        "step_forward",
+        "step_backward",
+        "step_forwardUnchecked",
+        "step_backwardUnchecked",
         "iterator_peekable",
         "iterator_fuse",
         "iterator_rev",
@@ -17785,8 +19154,8 @@
       ],
       "links": [
         {
-          "start": 902,
-          "end": 914,
+          "start": 939,
+          "end": 951,
           "file": "runtime.js"
         }
       ],
@@ -17955,7 +19324,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "43c700ffae707b05"
+      "hash": "29154dd625051319"
     },
     {
       "file": "iter.js.map",

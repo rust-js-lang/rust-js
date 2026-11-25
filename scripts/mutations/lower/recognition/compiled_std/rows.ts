@@ -35,4 +35,12 @@ export const mutations: Mutation[] = [
     replace: "    let bucket = impls.non_blanket_impls().get(&SimplifiedType::Str);\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
+  {
+    name: "primitive-impls-of-no-char",
+    breaks: "a catalog row of each primitive's impl of its trait leaves out `char`'s, so `char`'s `Step` isn't compiled and a range of `char`s has no dictionary (ADR 1206)",
+    file: "crates/rust-js-lower/src/recognition/compiled_std/rows.rs",
+    find: "SimplifiedType::Int(_) | SimplifiedType::Uint(_) | SimplifiedType::Char",
+    replace: "SimplifiedType::Int(_) | SimplifiedType::Uint(_)",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
     name: "flatten-count-uncompiled",
     breaks: "std's `Flatten::count` isn't compiled, so a held one, and every one in the build of std's structs, is counted by std's default, each inner iterator stepped by `next`, not by its own `count` (#736)",
     file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
-    find: "    (StdPath::IterFlatMap, Some(\"Iterator\"), \"count\"),\n",
+    find: "    (Of::Struct(StdPath::IterFlatMap), Some(\"Iterator\"), \"count\"),\n",
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     name: "io-lines-uncompiled",
     breaks: "std's `Lines` iterator isn't compiled, so `lines()` is no iterator (#1156)",
     file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
-    find: "    (StdPath::IoLines, Some(\"Iterator\"), \"next\"),\n",
+    find: "    (Of::Struct(StdPath::IoLines), Some(\"Iterator\"), \"next\"),\n",
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a held zip's `clone()` isn't std's compiled `Zip::clone`: the std package isn't what its catalog makes, and with std's structs alone it's refused (ADR 0975)",
     file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
-    find: '    (StdPath::IterZip, Some("Clone"), "clone"),\n',
+    find: '    (Of::Struct(StdPath::IterZip), Some("Clone"), "clone"),\n',
     replace: "",
     tests: ["test/std-package.test.ts"],
   },
@@ -73,7 +73,7 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Copied`'s `next_back` isn't compiled: the build of std's structs alone refuses a `copied()` stepped from its back, `the DoubleEndedIterator of a Copied<slice::Iter>` (ADR 0938)",
     file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
-    find: '    (StdPath::IterCopied, Some("DoubleEndedIterator"), "next_back"),\n',
+    find: '    (Of::Struct(StdPath::IterCopied), Some("DoubleEndedIterator"), "next_back"),\n',
     replace: "",
     tests: [
       "test/iterator-forms.test.ts",
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Cloned`'s `__iterator_get_unchecked` isn't compiled: the build of std's structs alone refuses a `cloned()` std's zip reads by index, `reading a Cloned<slice::Iter<D>> by its index` (#727, ADR 0938)",
     file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
-    find: '    (StdPath::IterCloned, Some("Iterator"), "__iterator_get_unchecked"),\n',
+    find: '    (Of::Struct(StdPath::IterCloned), Some("Iterator"), "__iterator_get_unchecked"),\n',
     replace: "",
     tests: [
       "test/iterator-forms.test.ts",
@@ -316,7 +316,7 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Take::advance_back_by` isn't compiled, so a compiled `take(n).rev()` counted runs the trait's default, its source's `nth_back` one at a time, not one `advance_back_by` that drops a `Vec`'s as one slice (#2125)",
     file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
-    find: '    (StdPath::IterTake, Some("DoubleEndedIterator"), "advance_back_by"),\n',
+    find: '    (Of::Struct(StdPath::IterTake), Some("DoubleEndedIterator"), "advance_back_by"),\n',
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
@@ -325,7 +325,7 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Repeat::nth` isn't compiled, so std's compiled `Repeat` steps by the trait's default `nth`, cloning `x` at each step it passes, where std's clones it once (#1569)",
     file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
-    find: '    (StdPath::IterRepeat, Some("Iterator"), "nth"),\n',
+    find: '    (Of::Struct(StdPath::IterRepeat), Some("Iterator"), "nth"),\n',
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
@@ -341,7 +341,7 @@ export const mutations: Mutation[] = [
     name: "successors-debug-uncompiled",
     breaks: "`{:?}` of a `Successors` is refused: std's `Debug` of it isn't compiled (#2252)",
     file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
-    find: "    (StdPath::IterSuccessors, Some(\"Debug\"), \"fmt\"),\n",
+    find: "    (Of::Struct(StdPath::IterSuccessors), Some(\"Debug\"), \"fmt\"),\n",
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
   },
@@ -379,5 +379,13 @@ export const mutations: Mutation[] = [
     find: "        _ if id == compiled_provided_method(tcx, \"Iterator\", \"unzip\") => args.types().skip(3).all(filled),\n",
     replace: "        _ if id == compiled_provided_method(tcx, \"Iterator\", \"unzip\") => args.types().skip(3).any(filled),\n",
     tests: ["test/corpus.test.ts", "-t", "^unzip_fills_each_side_as_std_extends_it.rs$"],
+  },
+  {
+    name: "step-forward-checked-uncompiled",
+    breaks: "each integer's and `char`'s `Step::forward_checked`, std's own, isn't compiled into `@rust-js/std`, so a range's compiled steps have no `Step` dictionary to step by (ADR 1206)",
+    file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
+    find: '    (Of::Primitives, Some("Step"), "forward_checked"),\n',
+    replace: "",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
 ];

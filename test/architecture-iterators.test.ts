@@ -803,7 +803,9 @@ test("the compiled std catalogue is asked of a type, not a definition", () => {
 // The compiled std catalogue names each type by its `StdPath` row and
 // finds it by that row's `DefId` (`std_path_id`), and asks a type which it
 // is by `std_path_item`, never the text of its path, `std::iter::Map`
-// stripped or compared (#1681 change 2, the DefId step).
+// stripped or compared (#1681 change 2, the DefId step). A row of methods
+// is keyed by `Of`, std's struct by its `StdPath` or each primitive's impl
+// of the row's trait (ADR 1206).
 test("the compiled std catalogue names its types by StdPath, never a path's text", () => {
   for (const file of ["crates/rust-js-lower/src/recognition/compiled_std.rs", "crates/rust-js-lower/src/recognition/compiled_std/rows.rs"]) {
     const text = read(file);
@@ -811,8 +813,9 @@ test("the compiled std catalogue names its types by StdPath, never a path's text
   }
   const catalog = read("crates/rust-js-lower/src/recognition/compiled_std.rs");
   for (const name of ["COMPILED_STD", "COMPILED_STD_IO", "COMPILED_STD_NET", "HELD_COMPILED", "MEANING_ONLY"]) {
-    expect([name, new RegExp(`const ${name}: &\\[\\(?StdPath[,\\]]`).test(catalog)]).toEqual([name, true]);
+    expect([name, new RegExp(`const ${name}: &\\[\\(?(?:StdPath|Of)[,\\]]`).test(catalog)]).toEqual([name, true]);
   }
+  expect(/enum Of \{\n    Struct\(StdPath\),\n    Primitives,\n\}/.test(catalog)).toBe(true);
 });
 
 // What JS's own iterator forms know, an `Iterator.prototype`'s and a range's

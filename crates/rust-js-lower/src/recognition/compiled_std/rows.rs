@@ -10,13 +10,14 @@ use super::{
     COMPILED_STD, COMPILED_STD_FNS, COMPILED_STD_IO, COMPILED_STD_IO_PROVIDED, COMPILED_STD_NET, COMPILED_STD_PROVIDED,
     COMPILED_STD_TUPLES, HELD_COMPILED, PROVED_LINKS, std_iter_trait,
 };
-use super::{StdCrate, StdPath, registry, std_path_id};
+use super::{Of, StdCrate, StdPath, registry, std_path_id};
 use rust_js_program::collections::IndexMap;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 
-/// A row of a type's methods: its type's name, its trait's, its method's.
-pub(crate) type MethodRow = (StdPath, Option<&'static str>, &'static str);
+/// A row of a type's methods: what they're of, its trait's name, its
+/// method's.
+pub(crate) type MethodRow = (Of, Option<&'static str>, &'static str);
 
 /// The catalog's rows, each resolved.
 pub struct Rows {
@@ -52,6 +53,20 @@ impl Rows {
     }
 }
 
+/// A row's method of each of `impls`: one at least, or the row names
+/// nothing on this toolchain.
+fn of_impls(tcx: TyCtxt<'_>, row: MethodRow, impls: &[DefId]) -> Vec<DefId> {
+    let found: Vec<DefId> = (impls.iter())
+        .flat_map(|&imp| tcx.associated_items(imp).in_definition_order())
+        .filter(|item| matches!(item.kind, ty::AssocKind::Fn { .. }) && item.name().as_str() == row.2)
+        .map(|item| item.def_id)
+        .collect();
+    if found.is_empty() {
+        unresolved(row);
+    }
+    found
+}
+
 /// A row that names nothing on this toolchain.
 fn unresolved(row: impl std::fmt::Debug) -> ! {
     panic!(
@@ -72,10 +87,34 @@ fn impls_for(tcx: TyCtxt<'_>, trait_def: DefId, adt: DefId) -> Vec<DefId> {
         .collect()
 }
 
+/// The impls of `trait_def` for a primitive type, an integer or `char`, in
+/// `all_impls`' order: each in the bucket rustc keeps under its simplified
+/// type.
+fn primitive_impls(tcx: TyCtxt<'_>, trait_def: DefId) -> Vec<DefId> {
+    use rustc_middle::ty::fast_reject::SimplifiedType;
+    (tcx.trait_impls_of(trait_def).non_blanket_impls().iter())
+        .filter(|(simplified, _)| {
+            matches!(
+                simplified,
+                SimplifiedType::Int(_) | SimplifiedType::Uint(_) | SimplifiedType::Char
+            )
+        })
+        .flat_map(|(_, impls)| impls.iter().copied())
+        .collect()
+}
+
 /// Each row of the catalog, resolved.
 pub(super) fn resolve(tcx: TyCtxt<'_>) -> Rows {
     let methods = |row: MethodRow| -> Vec<DefId> {
-        let (item, trait_name, method) = row;
+        let (of, trait_name, _) = row;
+        let item = match of {
+            Of::Struct(item) => item,
+            Of::Primitives => {
+                let trait_def =
+                    (trait_name.and_then(|name| std_iter_trait(tcx, name))).unwrap_or_else(|| unresolved(row));
+                return of_impls(tcx, row, &primitive_impls(tcx, trait_def));
+            }
+        };
         // Of a std crate this session doesn't load, `alloc` of a
         // `#![no_std]` crate's, the rows are none of its, not unresolved:
         // the table's (`std_path_id`), which refuses one of none while
@@ -99,15 +138,7 @@ pub(super) fn resolve(tcx: TyCtxt<'_>) -> Rows {
                 impls_for(tcx, trait_def, adt)
             }
         };
-        let found: Vec<DefId> = (impls.iter())
-            .flat_map(|&imp| tcx.associated_items(imp).in_definition_order())
-            .filter(|item| matches!(item.kind, ty::AssocKind::Fn { .. }) && item.name().as_str() == method)
-            .map(|item| item.def_id)
-            .collect();
-        if found.is_empty() {
-            unresolved(row);
-        }
-        found
+        of_impls(tcx, row, &impls)
     };
     let provided_of = |trait_def: DefId, method: &str| {
         (tcx.associated_items(trait_def).in_definition_order())

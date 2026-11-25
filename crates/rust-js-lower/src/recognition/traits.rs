@@ -141,6 +141,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // generic code's `==` and `<` are those, never `cmp` (#944).
             || self.tcx.is_diagnostic_item(sym::Ord, id)
             || self.tcx.is_lang_item(id, LangItem::PartialOrd)
+            // `Step`'s its `Clone` and `PartialOrd`, a range's compiled
+            // `Iterator`'s `start < end` (Campaign 5 step 3b).
+            || std_path_item(self.tcx, id) == Some(StdPath::IterStep)
     }
 
     /// Of those, std's.
@@ -435,6 +438,10 @@ pub fn operational(tcx: TyCtxt<'_>, foreign: &crate::library::Foreign<'_, '_>, i
         // `range.start_bound()` of an `R: RangeBounds<usize>`, arrayvec's
         // `drain`: its dictionary's, a range's bounds as `Bound`s.
         || is_std_def(tcx, id, StdItem::RangeBounds)
+        // A range's `Iterator` of an `A: Step`, std's compiled body's, its
+        // bounds stepped by its dictionary, std's own impl's of an integer
+        // or `char` (Campaign 5 step 3b): unstable, no program bounds it.
+        || std_path_item(tcx, id) == Some(StdPath::IterStep)
         // `v[i]` of an `I: SliceIndex<[T]>`: its dictionary's (ADR 0418).
         || is_std_def(tcx, id, StdItem::SliceIndex)
         // `&s[i]` of an `S: Index<usize>`, rand's `SliceChooseIter`: its
@@ -1159,6 +1166,9 @@ pub(crate) fn in_std_dictionary(tcx: TyCtxt<'_>, id: DefId) -> bool {
         // itself, which a call on a type parameter may reach, so it's not
         // the default over `Self`: std's `Vec`'s `extend_reserve` (#2414).
         || super::is_compiled_std(tcx, id) && super::overridden_in_reach(tcx, id)
+        // A `Step`'s every method, its impl's or its default, each compiled
+        // (Campaign 5 step 3b).
+        || tcx.trait_of_assoc(id).is_some_and(|tr| std_path_item(tcx, tr) == Some(StdPath::IterStep))
 }
 
 /// Which of std's adapter `adapter`'s type arguments are iterators it

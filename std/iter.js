@@ -41,6 +41,7 @@ import {
   $optionTry,
   $overflowing,
   $panic,
+  $partiallyOrdered,
   $peekableHint,
   $provided,
   $rem,
@@ -52,6 +53,7 @@ import {
   $someValue,
   $stdIterator,
   $stdSites,
+  $stringPanic,
   $took,
   $traitImpl,
   $tryFoldInto,
@@ -975,6 +977,187 @@ const $cycleClone = new WeakMap();
 const $cycleDebug = new WeakMap();
 const $successorsClone = new WeakMap();
 const $successorsDebug = new WeakMap();
+
+export const u8Step = {
+  Clone: () => ({ clone: (value) => value }),
+  PartialOrd: () => $partiallyOrdered,
+  stepsBetween: u8Step_stepsBetween,
+  forwardChecked: u8Step_forwardChecked,
+  forwardOverflowing: u8Step_forwardOverflowing,
+  forward: u8Step_forward,
+  forwardUnchecked: u8Step_forwardUnchecked,
+  backwardChecked: u8Step_backwardChecked,
+  backwardOverflowing: u8Step_backwardOverflowing,
+  backward: u8Step_backward,
+  backwardUnchecked: u8Step_backwardUnchecked,
+};
+
+export const i8Step = {
+  Clone: () => ({ clone: (value) => value }),
+  PartialOrd: () => $partiallyOrdered,
+  stepsBetween: i8Step_stepsBetween,
+  forwardChecked: i8Step_forwardChecked,
+  forwardOverflowing: i8Step_forwardOverflowing,
+  forward: i8Step_forward,
+  forwardUnchecked: i8Step_forwardUnchecked,
+  backwardChecked: i8Step_backwardChecked,
+  backwardOverflowing: i8Step_backwardOverflowing,
+  backward: i8Step_backward,
+  backwardUnchecked: i8Step_backwardUnchecked,
+};
+
+export const u16Step = {
+  Clone: () => ({ clone: (value) => value }),
+  PartialOrd: () => $partiallyOrdered,
+  stepsBetween: u16Step_stepsBetween,
+  forwardChecked: u16Step_forwardChecked,
+  forwardOverflowing: u16Step_forwardOverflowing,
+  forward: u16Step_forward,
+  forwardUnchecked: u16Step_forwardUnchecked,
+  backwardChecked: u16Step_backwardChecked,
+  backwardOverflowing: u16Step_backwardOverflowing,
+  backward: u16Step_backward,
+  backwardUnchecked: u16Step_backwardUnchecked,
+};
+
+export const i16Step = {
+  Clone: () => ({ clone: (value) => value }),
+  PartialOrd: () => $partiallyOrdered,
+  stepsBetween: i16Step_stepsBetween,
+  forwardChecked: i16Step_forwardChecked,
+  forwardOverflowing: i16Step_forwardOverflowing,
+  forward: i16Step_forward,
+  forwardUnchecked: i16Step_forwardUnchecked,
+  backwardChecked: i16Step_backwardChecked,
+  backwardOverflowing: i16Step_backwardOverflowing,
+  backward: i16Step_backward,
+  backwardUnchecked: i16Step_backwardUnchecked,
+};
+
+export const u32Step = {
+  Clone: () => ({ clone: (value) => value }),
+  PartialOrd: () => $partiallyOrdered,
+  stepsBetween: u32Step_stepsBetween,
+  forwardChecked: u32Step_forwardChecked,
+  forwardOverflowing: u32Step_forwardOverflowing,
+  forward: u32Step_forward,
+  forwardUnchecked: u32Step_forwardUnchecked,
+  backwardChecked: u32Step_backwardChecked,
+  backwardOverflowing: u32Step_backwardOverflowing,
+  backward: u32Step_backward,
+  backwardUnchecked: u32Step_backwardUnchecked,
+};
+
+export const i32Step = {
+  Clone: () => ({ clone: (value) => value }),
+  PartialOrd: () => $partiallyOrdered,
+  stepsBetween: i32Step_stepsBetween,
+  forwardChecked: i32Step_forwardChecked,
+  forwardOverflowing: i32Step_forwardOverflowing,
+  forward: i32Step_forward,
+  forwardUnchecked: i32Step_forwardUnchecked,
+  backwardChecked: i32Step_backwardChecked,
+  backwardOverflowing: i32Step_backwardOverflowing,
+  backward: i32Step_backward,
+  backwardUnchecked: i32Step_backwardUnchecked,
+};
+
+export const usizeStep = {
+  Clone: () => ({ clone: (value) => value }),
+  PartialOrd: () => $partiallyOrdered,
+  stepsBetween: usizeStep_stepsBetween,
+  forwardChecked: usizeStep_forwardChecked,
+  forwardOverflowing: usizeStep_forwardOverflowing,
+  forward: usizeStep_forward,
+  forwardUnchecked: usizeStep_forwardUnchecked,
+  backwardChecked: usizeStep_backwardChecked,
+  backwardOverflowing: usizeStep_backwardOverflowing,
+  backward: usizeStep_backward,
+  backwardUnchecked: usizeStep_backwardUnchecked,
+};
+
+export const isizeStep = {
+  Clone: () => ({ clone: (value) => value }),
+  PartialOrd: () => $partiallyOrdered,
+  stepsBetween: isizeStep_stepsBetween,
+  forwardChecked: isizeStep_forwardChecked,
+  forwardOverflowing: isizeStep_forwardOverflowing,
+  forward: isizeStep_forward,
+  forwardUnchecked: isizeStep_forwardUnchecked,
+  backwardChecked: isizeStep_backwardChecked,
+  backwardOverflowing: isizeStep_backwardOverflowing,
+  backward: isizeStep_backward,
+  backwardUnchecked: isizeStep_backwardUnchecked,
+};
+
+export const u64Step = {
+  Clone: () => ({ clone: (value) => value }),
+  PartialOrd: () => $partiallyOrdered,
+  stepsBetween: u64Step_stepsBetween,
+  forwardChecked: u64Step_forwardChecked,
+  forwardOverflowing: u64Step_forwardOverflowing,
+  forward: u64Step_forward,
+  forwardUnchecked: u64Step_forwardUnchecked,
+  backwardChecked: u64Step_backwardChecked,
+  backwardOverflowing: u64Step_backwardOverflowing,
+  backward: u64Step_backward,
+  backwardUnchecked: u64Step_backwardUnchecked,
+};
+
+export const i64Step = {
+  Clone: () => ({ clone: (value) => value }),
+  PartialOrd: () => $partiallyOrdered,
+  stepsBetween: i64Step_stepsBetween,
+  forwardChecked: i64Step_forwardChecked,
+  forwardOverflowing: i64Step_forwardOverflowing,
+  forward: i64Step_forward,
+  forwardUnchecked: i64Step_forwardUnchecked,
+  backwardChecked: i64Step_backwardChecked,
+  backwardOverflowing: i64Step_backwardOverflowing,
+  backward: i64Step_backward,
+  backwardUnchecked: i64Step_backwardUnchecked,
+};
+
+export const u128Step = {
+  Clone: () => ({ clone: (value) => value }),
+  PartialOrd: () => $partiallyOrdered,
+  stepsBetween: u128Step_stepsBetween,
+  forwardChecked: u128Step_forwardChecked,
+  forwardOverflowing: u128Step_forwardOverflowing,
+  forward: u128Step_forward,
+  forwardUnchecked: u128Step_forwardUnchecked,
+  backwardChecked: u128Step_backwardChecked,
+  backwardOverflowing: u128Step_backwardOverflowing,
+  backward: u128Step_backward,
+  backwardUnchecked: u128Step_backwardUnchecked,
+};
+
+export const i128Step = {
+  Clone: () => ({ clone: (value) => value }),
+  PartialOrd: () => $partiallyOrdered,
+  stepsBetween: i128Step_stepsBetween,
+  forwardChecked: i128Step_forwardChecked,
+  forwardOverflowing: i128Step_forwardOverflowing,
+  forward: i128Step_forward,
+  forwardUnchecked: i128Step_forwardUnchecked,
+  backwardChecked: i128Step_backwardChecked,
+  backwardOverflowing: i128Step_backwardOverflowing,
+  backward: i128Step_backward,
+  backwardUnchecked: i128Step_backwardUnchecked,
+};
+
+export const charStep = {
+  Clone: () => ({ clone: (value) => value }),
+  PartialOrd: () => $partiallyOrdered,
+  stepsBetween: charStep_stepsBetween,
+  forwardChecked: charStep_forwardChecked,
+  forwardOverflowing: charStep_forwardOverflowing,
+  forwardUnchecked: charStep_forwardUnchecked,
+  backwardChecked: charStep_backwardChecked,
+  backwardOverflowing: charStep_backwardOverflowing,
+  backwardUnchecked: charStep_backwardUnchecked,
+};
+
 const $tuple2Extend = new WeakMap();
 const $flattenCompatDebug = new WeakMap();
 
@@ -10823,6 +11006,1164 @@ export function successorsDebug_fmt(successors, options, TDebug, dropT, dropF) {
   });
   struct.finish();
   return f.done();
+}
+
+export function u8Step_stepsBetween(start, end) {
+  if (start <= end) {
+    const value = end - start;
+    return [value, value];
+  }
+  return [0, undefined];
+}
+
+export function i8Step_stepsBetween(start, end) {
+  if (start <= end) {
+    const value = end - start;
+    return [value, value];
+  }
+  return [0, undefined];
+}
+
+export function u16Step_stepsBetween(start, end) {
+  if (start <= end) {
+    const value = end - start;
+    return [value, value];
+  }
+  return [0, undefined];
+}
+
+export function i16Step_stepsBetween(start, end) {
+  if (start <= end) {
+    const value = end - start;
+    return [value, value];
+  }
+  return [0, undefined];
+}
+
+export function u32Step_stepsBetween(start, end) {
+  if (start <= end) {
+    const value = end - start;
+    return [value, value];
+  }
+  return [0, undefined];
+}
+
+export function i32Step_stepsBetween(start, end) {
+  if (start <= end) {
+    const value = ((end - start) | 0) >>> 0;
+    return [value, value];
+  }
+  return [0, undefined];
+}
+
+export function usizeStep_stepsBetween(start, end) {
+  if (start <= end) {
+    const value = end - start;
+    return [value, value];
+  }
+  return [0, undefined];
+}
+
+export function isizeStep_stepsBetween(start, end) {
+  if (start <= end) {
+    const value = ((end - start) | 0) >>> 0;
+    return [value, value];
+  }
+  return [0, undefined];
+}
+
+export function u64Step_stepsBetween(start, end) {
+  if (start <= end) {
+    const value = BigInt.asUintN(64, end - start);
+    if (value > 4294967295n) {
+      return [4294967295, undefined];
+    }
+    const value$1 = Number(BigInt.asUintN(32, value));
+    return [value$1, value$1];
+  }
+  return [0, undefined];
+}
+
+export function i64Step_stepsBetween(start, end) {
+  if (start <= end) {
+    const exact = end - start;
+    const value = $overflowing(
+      BigInt.asIntN(64, exact),
+      exact,
+      -9223372036854775808n,
+      9223372036854775807n,
+    );
+    const value$1 = value[0];
+    if (value[1]) {
+      return [4294967295, undefined];
+    }
+    if (value$1 >= 0n) {
+      if (value$1 <= 4294967295n) {
+        const value = Number(BigInt.asUintN(32, value$1));
+        return [value, value];
+      }
+    }
+    return [4294967295, undefined];
+  }
+  return [0, undefined];
+}
+
+export function u128Step_stepsBetween(start, end) {
+  if (start <= end) {
+    const value = BigInt.asUintN(128, end - start);
+    if (value > 4294967295n) {
+      return [4294967295, undefined];
+    }
+    const value$1 = Number(BigInt.asUintN(32, value));
+    return [value$1, value$1];
+  }
+  return [0, undefined];
+}
+
+export function i128Step_stepsBetween(start, end) {
+  if (start <= end) {
+    const exact = end - start;
+    const value = $overflowing(
+      BigInt.asIntN(128, exact),
+      exact,
+      -170141183460469231731687303715884105728n,
+      170141183460469231731687303715884105727n,
+    );
+    const value$1 = value[0];
+    if (value[1]) {
+      return [4294967295, undefined];
+    }
+    if (value$1 >= 0n) {
+      if (value$1 <= 4294967295n) {
+        const value = Number(BigInt.asUintN(32, value$1));
+        return [value, value];
+      }
+    }
+    return [4294967295, undefined];
+  }
+  return [0, undefined];
+}
+
+export function charStep_stepsBetween(start, end) {
+  start = start.codePointAt(0);
+  end = end.codePointAt(0);
+  if (start <= end) {
+    const count = end - start;
+    if (start < 55296) {
+      if (57344 <= end) {
+        const steps = (count - 2048) >>> 0;
+        return [steps, steps];
+      }
+    }
+    const steps = count;
+    return [steps, steps];
+  }
+  return [0, undefined];
+}
+
+export function u8Step_forwardChecked(start, n) {
+  if (n > 255) {
+    return;
+  }
+  if ($overflowing((start + n) & 255, start + n, 0, 255)[1]) {
+    return;
+  }
+  return (start + n) & 255;
+}
+
+export function i8Step_forwardChecked(start, n) {
+  if (n > 255) {
+    return;
+  }
+  const value = ((start + ((n << 24) >> 24)) << 24) >> 24;
+  if (value >= start) {
+    return value;
+  }
+}
+
+export function u16Step_forwardChecked(start, n) {
+  if (n > 65535) {
+    return;
+  }
+  if ($overflowing((start + n) & 65535, start + n, 0, 65535)[1]) {
+    return;
+  }
+  return (start + n) & 65535;
+}
+
+export function i16Step_forwardChecked(start, n) {
+  if (n > 65535) {
+    return;
+  }
+  const value = ((start + ((n << 16) >> 16)) << 16) >> 16;
+  if (value >= start) {
+    return value;
+  }
+}
+
+export function u32Step_forwardChecked(start, n) {
+  if ($overflowing((start + n) >>> 0, start + n, 0, 4294967295)[1]) {
+    return;
+  }
+  return (start + n) >>> 0;
+}
+
+export function i32Step_forwardChecked(start, n) {
+  const value = (start + (n | 0)) | 0;
+  if (value >= start) {
+    return value;
+  }
+}
+
+export function usizeStep_forwardChecked(start, n) {
+  if ($overflowing((start + n) >>> 0, start + n, 0, 4294967295)[1]) {
+    return;
+  }
+  return (start + n) >>> 0;
+}
+
+export function isizeStep_forwardChecked(start, n) {
+  const value = (start + (n | 0)) | 0;
+  if (value >= start) {
+    return value;
+  }
+}
+
+export function u64Step_forwardChecked(start, n) {
+  const value = BigInt(n);
+  const exact = start + value;
+  if ($overflowing(BigInt.asUintN(64, exact), exact, 0n, 18446744073709551615n)[1]) {
+    return;
+  }
+  return BigInt.asUintN(64, start + value);
+}
+
+export function i64Step_forwardChecked(start, n) {
+  const exact = start + BigInt(n);
+  const value = $overflowing(
+    BigInt.asIntN(64, exact),
+    exact,
+    -9223372036854775808n,
+    9223372036854775807n,
+  );
+  if (value[1]) {
+    return;
+  }
+  return value[0];
+}
+
+export function u128Step_forwardChecked(start, n) {
+  const value = BigInt(n);
+  const exact = start + value;
+  if (
+    $overflowing(BigInt.asUintN(128, exact), exact, 0n, 340282366920938463463374607431768211455n)[1]
+  ) {
+    return;
+  }
+  return BigInt.asUintN(128, start + value);
+}
+
+export function i128Step_forwardChecked(start, n) {
+  const exact = start + BigInt(n);
+  const value = $overflowing(
+    BigInt.asIntN(128, exact),
+    exact,
+    -170141183460469231731687303715884105728n,
+    170141183460469231731687303715884105727n,
+  );
+  if (value[1]) {
+    return;
+  }
+  return value[0];
+}
+
+export function charStep_forwardChecked(start, count) {
+  start = start.codePointAt(0);
+  if ($overflowing((start + count) >>> 0, start + count, 0, 4294967295)[1]) {
+    return;
+  }
+  let tmp = (start + count) >>> 0;
+  if (start < 55296) {
+    if (55296 <= tmp) {
+      if ($overflowing((tmp + 2048) >>> 0, tmp + 2048, 0, 4294967295)[1]) {
+        return;
+      }
+      tmp = (tmp + 2048) >>> 0;
+    }
+  }
+  if (tmp <= 1114111) {
+    return String.fromCodePoint(tmp);
+  }
+}
+
+export function u8Step_forwardOverflowing(start, n) {
+  if (n > 255) {
+    return [(start + (n & 255)) & 255, true];
+  }
+  return $overflowing((start + n) & 255, start + n, 0, 255);
+}
+
+export function i8Step_forwardOverflowing(start, n) {
+  if (n > 255) {
+    return [((start + (((n & 255) << 24) >> 24)) << 24) >> 24, true];
+  }
+  const value = (n << 24) >> 24;
+  const value$1 = $overflowing(((start + value) << 24) >> 24, start + value, -128, 127);
+  return [value$1[0], value$1[1] !== value < 0];
+}
+
+export function u16Step_forwardOverflowing(start, n) {
+  if (n > 65535) {
+    return [(start + (n & 65535)) & 65535, true];
+  }
+  return $overflowing((start + n) & 65535, start + n, 0, 65535);
+}
+
+export function i16Step_forwardOverflowing(start, n) {
+  if (n > 65535) {
+    return [((start + (((n & 65535) << 16) >> 16)) << 16) >> 16, true];
+  }
+  const value = (n << 16) >> 16;
+  const value$1 = $overflowing(((start + value) << 16) >> 16, start + value, -32768, 32767);
+  return [value$1[0], value$1[1] !== value < 0];
+}
+
+export function u32Step_forwardOverflowing(start, n) {
+  return [(start + n) >>> 0, false];
+}
+
+export function i32Step_forwardOverflowing(start, n) {
+  const value = n | 0;
+  const value$1 = $overflowing((start + value) | 0, start + value, -2147483648, 2147483647);
+  return [value$1[0], value$1[1] !== value < 0];
+}
+
+export function usizeStep_forwardOverflowing(start, n) {
+  const [_3, _4] = $overflowing((start + n) >>> 0, start + n, 0, 4294967295);
+  return [_3, _4];
+}
+
+export function isizeStep_forwardOverflowing(start, n) {
+  const value = n | 0;
+  const [_6, _7] = $overflowing((start + value) | 0, start + value, -2147483648, 2147483647);
+  return [_6, _7 !== value < 0];
+}
+
+export function u64Step_forwardOverflowing(start, n) {
+  return [BigInt.asUintN(64, start + BigInt(n)), false];
+}
+
+export function i64Step_forwardOverflowing(start, n) {
+  const value = BigInt.asIntN(64, BigInt(n));
+  const exact = start + value;
+  const value$1 = $overflowing(
+    BigInt.asIntN(64, exact),
+    exact,
+    -9223372036854775808n,
+    9223372036854775807n,
+  );
+  return [value$1[0], value$1[1] !== value < 0n];
+}
+
+export function u128Step_forwardOverflowing(start, n) {
+  return [BigInt.asUintN(128, start + BigInt(n)), false];
+}
+
+export function i128Step_forwardOverflowing(start, n) {
+  const value = BigInt.asIntN(128, BigInt(n));
+  const exact = start + value;
+  const value$1 = $overflowing(
+    BigInt.asIntN(128, exact),
+    exact,
+    -170141183460469231731687303715884105728n,
+    170141183460469231731687303715884105727n,
+  );
+  return [value$1[0], value$1[1] !== value < 0n];
+}
+
+export function charStep_forwardOverflowing(start, count) {
+  const c = charStep_forwardChecked(start, count);
+  if (c != null) {
+    return [c, false];
+  }
+  return ["\u{10ffff}", true];
+}
+
+export function u8Step_backwardChecked(start, n) {
+  if (n > 255) {
+    return;
+  }
+  if (start < n) {
+    return;
+  }
+  return (start - n) & 255;
+}
+
+export function i8Step_backwardChecked(start, n) {
+  if (n > 255) {
+    return;
+  }
+  const value = ((start - ((n << 24) >> 24)) << 24) >> 24;
+  if (value <= start) {
+    return value;
+  }
+}
+
+export function u16Step_backwardChecked(start, n) {
+  if (n > 65535) {
+    return;
+  }
+  if (start < n) {
+    return;
+  }
+  return (start - n) & 65535;
+}
+
+export function i16Step_backwardChecked(start, n) {
+  if (n > 65535) {
+    return;
+  }
+  const value = ((start - ((n << 16) >> 16)) << 16) >> 16;
+  if (value <= start) {
+    return value;
+  }
+}
+
+export function u32Step_backwardChecked(start, n) {
+  if (start < n) {
+    return;
+  }
+  return (start - n) >>> 0;
+}
+
+export function i32Step_backwardChecked(start, n) {
+  const value = (start - (n | 0)) | 0;
+  if (value <= start) {
+    return value;
+  }
+}
+
+export function usizeStep_backwardChecked(start, n) {
+  if (start < n) {
+    return;
+  }
+  return (start - n) >>> 0;
+}
+
+export function isizeStep_backwardChecked(start, n) {
+  const value = (start - (n | 0)) | 0;
+  if (value <= start) {
+    return value;
+  }
+}
+
+export function u64Step_backwardChecked(start, n) {
+  const value = BigInt(n);
+  if (start < value) {
+    return;
+  }
+  return BigInt.asUintN(64, start - value);
+}
+
+export function i64Step_backwardChecked(start, n) {
+  const exact = start - BigInt(n);
+  const value = $overflowing(
+    BigInt.asIntN(64, exact),
+    exact,
+    -9223372036854775808n,
+    9223372036854775807n,
+  );
+  if (value[1]) {
+    return;
+  }
+  return value[0];
+}
+
+export function u128Step_backwardChecked(start, n) {
+  const value = BigInt(n);
+  if (start < value) {
+    return;
+  }
+  return BigInt.asUintN(128, start - value);
+}
+
+export function i128Step_backwardChecked(start, n) {
+  const exact = start - BigInt(n);
+  const value = $overflowing(
+    BigInt.asIntN(128, exact),
+    exact,
+    -170141183460469231731687303715884105728n,
+    170141183460469231731687303715884105727n,
+  );
+  if (value[1]) {
+    return;
+  }
+  return value[0];
+}
+
+export function charStep_backwardChecked(start, count) {
+  start = start.codePointAt(0);
+  if (start < count) {
+    return;
+  }
+  let tmp = (start - count) >>> 0;
+  if (start >= 57344) {
+    if (57344 > tmp) {
+      if (tmp < 2048) {
+        return;
+      }
+      tmp = (tmp - 2048) >>> 0;
+    }
+  }
+  return String.fromCodePoint(tmp);
+}
+
+export function u8Step_backwardOverflowing(start, n) {
+  if (n > 255) {
+    return [(start - (n & 255)) & 255, true];
+  }
+  return $overflowing((start - n) & 255, start - n, 0, 255);
+}
+
+export function i8Step_backwardOverflowing(start, n) {
+  if (n > 255) {
+    return [((start - (((n & 255) << 24) >> 24)) << 24) >> 24, true];
+  }
+  const value = (n << 24) >> 24;
+  const value$1 = $overflowing(((start - value) << 24) >> 24, start - value, -128, 127);
+  return [value$1[0], value$1[1] !== value < 0];
+}
+
+export function u16Step_backwardOverflowing(start, n) {
+  if (n > 65535) {
+    return [(start - (n & 65535)) & 65535, true];
+  }
+  return $overflowing((start - n) & 65535, start - n, 0, 65535);
+}
+
+export function i16Step_backwardOverflowing(start, n) {
+  if (n > 65535) {
+    return [((start - (((n & 65535) << 16) >> 16)) << 16) >> 16, true];
+  }
+  const value = (n << 16) >> 16;
+  const value$1 = $overflowing(((start - value) << 16) >> 16, start - value, -32768, 32767);
+  return [value$1[0], value$1[1] !== value < 0];
+}
+
+export function u32Step_backwardOverflowing(start, n) {
+  return [(start - n) >>> 0, false];
+}
+
+export function i32Step_backwardOverflowing(start, n) {
+  const value = n | 0;
+  const value$1 = $overflowing((start - value) | 0, start - value, -2147483648, 2147483647);
+  return [value$1[0], value$1[1] !== value < 0];
+}
+
+export function usizeStep_backwardOverflowing(start, n) {
+  const [_3, _4] = $overflowing((start - n) >>> 0, start - n, 0, 4294967295);
+  return [_3, _4];
+}
+
+export function isizeStep_backwardOverflowing(start, n) {
+  const value = n | 0;
+  const [_6, _7] = $overflowing((start - value) | 0, start - value, -2147483648, 2147483647);
+  return [_6, _7 !== value < 0];
+}
+
+export function u64Step_backwardOverflowing(start, n) {
+  return [BigInt.asUintN(64, start - BigInt(n)), false];
+}
+
+export function i64Step_backwardOverflowing(start, n) {
+  const value = BigInt.asIntN(64, BigInt(n));
+  const exact = start - value;
+  const value$1 = $overflowing(
+    BigInt.asIntN(64, exact),
+    exact,
+    -9223372036854775808n,
+    9223372036854775807n,
+  );
+  return [value$1[0], value$1[1] !== value < 0n];
+}
+
+export function u128Step_backwardOverflowing(start, n) {
+  return [BigInt.asUintN(128, start - BigInt(n)), false];
+}
+
+export function i128Step_backwardOverflowing(start, n) {
+  const value = BigInt.asIntN(128, BigInt(n));
+  const exact = start - value;
+  const value$1 = $overflowing(
+    BigInt.asIntN(128, exact),
+    exact,
+    -170141183460469231731687303715884105728n,
+    170141183460469231731687303715884105727n,
+  );
+  return [value$1[0], value$1[1] !== value < 0n];
+}
+
+export function charStep_backwardOverflowing(start, count) {
+  const c = charStep_backwardChecked(start, count);
+  if (c != null) {
+    return [c, false];
+  }
+  return ["\x00", true];
+}
+
+export function u8Step_forward(start, n) {
+  if (n > 255 || $overflowing((start + n) & 255, start + n, 0, 255)[1]) {
+    throw $panic(
+      "attempt to add with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return (start + (n & 255)) & 255;
+}
+
+export function i8Step_forward(start, n) {
+  if (n > 255 || ((start + ((n << 24) >> 24)) << 24) >> 24 < start) {
+    throw $panic(
+      "attempt to add with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return ((start + ((n << 24) >> 24)) << 24) >> 24;
+}
+
+export function u16Step_forward(start, n) {
+  if (n > 65535 || $overflowing((start + n) & 65535, start + n, 0, 65535)[1]) {
+    throw $panic(
+      "attempt to add with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return (start + (n & 65535)) & 65535;
+}
+
+export function i16Step_forward(start, n) {
+  if (n > 65535 || ((start + ((n << 16) >> 16)) << 16) >> 16 < start) {
+    throw $panic(
+      "attempt to add with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return ((start + ((n << 16) >> 16)) << 16) >> 16;
+}
+
+export function u32Step_forward(start, n) {
+  if ($overflowing((start + n) >>> 0, start + n, 0, 4294967295)[1]) {
+    throw $panic(
+      "attempt to add with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return (start + n) >>> 0;
+}
+
+export function i32Step_forward(start, n) {
+  if (((start + (n | 0)) | 0) < start) {
+    throw $panic(
+      "attempt to add with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return (start + (n | 0)) | 0;
+}
+
+export function usizeStep_forward(start, n) {
+  if ($overflowing((start + n) >>> 0, start + n, 0, 4294967295)[1]) {
+    throw $panic(
+      "attempt to add with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return (start + n) >>> 0;
+}
+
+export function isizeStep_forward(start, n) {
+  const result = (start + (n | 0)) | 0;
+  if (result >= start) {
+    return result;
+  }
+  throw $panic(
+    "attempt to add with overflow",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+  );
+}
+
+export function u64Step_forward(start, n) {
+  const value = BigInt(n);
+  const exact = start + value;
+  if ($overflowing(BigInt.asUintN(64, exact), exact, 0n, 18446744073709551615n)[1]) {
+    throw $panic(
+      "attempt to add with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return BigInt.asUintN(64, start + value);
+}
+
+export function i64Step_forward(start, n) {
+  const value = BigInt(n);
+  const exact = start + value;
+  if (
+    $overflowing(BigInt.asIntN(64, exact), exact, -9223372036854775808n, 9223372036854775807n)[1]
+  ) {
+    throw $panic(
+      "attempt to add with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return BigInt.asIntN(64, start + value);
+}
+
+export function u128Step_forward(start, n) {
+  const value = BigInt(n);
+  const exact = start + value;
+  if (
+    $overflowing(BigInt.asUintN(128, exact), exact, 0n, 340282366920938463463374607431768211455n)[1]
+  ) {
+    throw $panic(
+      "attempt to add with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return BigInt.asUintN(128, start + value);
+}
+
+export function i128Step_forward(start, n) {
+  const value = BigInt(n);
+  const exact = start + value;
+  if (
+    $overflowing(
+      BigInt.asIntN(128, exact),
+      exact,
+      -170141183460469231731687303715884105728n,
+      170141183460469231731687303715884105727n,
+    )[1]
+  ) {
+    throw $panic(
+      "attempt to add with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return BigInt.asIntN(128, start + value);
+}
+
+export function u8Step_backward(start, n) {
+  if (n > 255 || start < n) {
+    throw $panic(
+      "attempt to subtract with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return (start - (n & 255)) & 255;
+}
+
+export function i8Step_backward(start, n) {
+  if (n > 255 || ((start - ((n << 24) >> 24)) << 24) >> 24 > start) {
+    throw $panic(
+      "attempt to subtract with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return ((start - ((n << 24) >> 24)) << 24) >> 24;
+}
+
+export function u16Step_backward(start, n) {
+  if (n > 65535 || start < n) {
+    throw $panic(
+      "attempt to subtract with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return (start - (n & 65535)) & 65535;
+}
+
+export function i16Step_backward(start, n) {
+  if (n > 65535 || ((start - ((n << 16) >> 16)) << 16) >> 16 > start) {
+    throw $panic(
+      "attempt to subtract with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return ((start - ((n << 16) >> 16)) << 16) >> 16;
+}
+
+export function u32Step_backward(start, n) {
+  if (start < n) {
+    throw $panic(
+      "attempt to subtract with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return (start - n) >>> 0;
+}
+
+export function i32Step_backward(start, n) {
+  if (((start - (n | 0)) | 0) > start) {
+    throw $panic(
+      "attempt to subtract with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return (start - (n | 0)) | 0;
+}
+
+export function usizeStep_backward(start, n) {
+  if (start < n) {
+    throw $panic(
+      "attempt to subtract with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return (start - n) >>> 0;
+}
+
+export function isizeStep_backward(start, n) {
+  const result = (start - (n | 0)) | 0;
+  if (result <= start) {
+    return result;
+  }
+  throw $panic(
+    "attempt to subtract with overflow",
+    "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+  );
+}
+
+export function u64Step_backward(start, n) {
+  const value = BigInt(n);
+  if (start < value) {
+    throw $panic(
+      "attempt to subtract with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return BigInt.asUintN(64, start - value);
+}
+
+export function i64Step_backward(start, n) {
+  const value = BigInt(n);
+  const exact = start - value;
+  if (
+    $overflowing(BigInt.asIntN(64, exact), exact, -9223372036854775808n, 9223372036854775807n)[1]
+  ) {
+    throw $panic(
+      "attempt to subtract with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return BigInt.asIntN(64, start - value);
+}
+
+export function u128Step_backward(start, n) {
+  const value = BigInt(n);
+  if (start < value) {
+    throw $panic(
+      "attempt to subtract with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return BigInt.asUintN(128, start - value);
+}
+
+export function i128Step_backward(start, n) {
+  const value = BigInt(n);
+  const exact = start - value;
+  if (
+    $overflowing(
+      BigInt.asIntN(128, exact),
+      exact,
+      -170141183460469231731687303715884105728n,
+      170141183460469231731687303715884105727n,
+    )[1]
+  ) {
+    throw $panic(
+      "attempt to subtract with overflow",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/range.rs:554:1",
+    );
+  }
+  return BigInt.asIntN(128, start - value);
+}
+
+export function u8Step_forwardUnchecked(start, n) {
+  return (start + (n & 255)) & 255;
+}
+
+export function i8Step_forwardUnchecked(start, n) {
+  const value = ((n & 255) << 24) >> 24;
+  const value$1 = $overflowing(((start + value) << 24) >> 24, start + value, -128, 127);
+  if (value$1[1] !== value < 0) {
+    throw $panic(
+      "internal error: entered unreachable code",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/hint.rs:104:5",
+    );
+  }
+  return value$1[0];
+}
+
+export function u16Step_forwardUnchecked(start, n) {
+  return (start + (n & 65535)) & 65535;
+}
+
+export function i16Step_forwardUnchecked(start, n) {
+  const value = ((n & 65535) << 16) >> 16;
+  const value$1 = $overflowing(((start + value) << 16) >> 16, start + value, -32768, 32767);
+  if (value$1[1] !== value < 0) {
+    throw $panic(
+      "internal error: entered unreachable code",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/hint.rs:104:5",
+    );
+  }
+  return value$1[0];
+}
+
+export function u32Step_forwardUnchecked(start, n) {
+  return (start + n) >>> 0;
+}
+
+export function i32Step_forwardUnchecked(start, n) {
+  const value = n | 0;
+  const value$1 = $overflowing((start + value) | 0, start + value, -2147483648, 2147483647);
+  if (value$1[1] !== value < 0) {
+    throw $panic(
+      "internal error: entered unreachable code",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/hint.rs:104:5",
+    );
+  }
+  return value$1[0];
+}
+
+export function usizeStep_forwardUnchecked(start, n) {
+  return (start + n) >>> 0;
+}
+
+export function isizeStep_forwardUnchecked(start, n) {
+  const value = n | 0;
+  const [_7, _8] = $overflowing((start + value) | 0, start + value, -2147483648, 2147483647);
+  if (_8 !== value < 0) {
+    throw $panic(
+      "internal error: entered unreachable code",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/hint.rs:104:5",
+    );
+  }
+  return _7;
+}
+
+export function u64Step_forwardUnchecked(start, n) {
+  return BigInt.asUintN(64, start + BigInt(n));
+}
+
+export function i64Step_forwardUnchecked(start, n) {
+  const value = BigInt.asIntN(64, BigInt(n));
+  const exact = start + value;
+  const value$1 = $overflowing(
+    BigInt.asIntN(64, exact),
+    exact,
+    -9223372036854775808n,
+    9223372036854775807n,
+  );
+  if (value$1[1] !== value < 0n) {
+    throw $panic(
+      "internal error: entered unreachable code",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/hint.rs:104:5",
+    );
+  }
+  return value$1[0];
+}
+
+export function u128Step_forwardUnchecked(start, n) {
+  return BigInt.asUintN(128, start + BigInt(n));
+}
+
+export function i128Step_forwardUnchecked(start, n) {
+  const value = BigInt.asIntN(128, BigInt(n));
+  const exact = start + value;
+  const value$1 = $overflowing(
+    BigInt.asIntN(128, exact),
+    exact,
+    -170141183460469231731687303715884105728n,
+    170141183460469231731687303715884105727n,
+  );
+  if (value$1[1] !== value < 0n) {
+    throw $panic(
+      "internal error: entered unreachable code",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/hint.rs:104:5",
+    );
+  }
+  return value$1[0];
+}
+
+export function charStep_forwardUnchecked(start, count) {
+  start = start.codePointAt(0);
+  let res = (start + count) >>> 0;
+  if (start < 55296) {
+    if (55296 <= res) {
+      res = (res + 2048) >>> 0;
+    }
+  }
+  return String.fromCodePoint(res);
+}
+
+export function u8Step_backwardUnchecked(start, n) {
+  return (start - (n & 255)) & 255;
+}
+
+export function i8Step_backwardUnchecked(start, n) {
+  const value = ((n & 255) << 24) >> 24;
+  const value$1 = $overflowing(((start - value) << 24) >> 24, start - value, -128, 127);
+  if (value$1[1] !== value < 0) {
+    throw $panic(
+      "internal error: entered unreachable code",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/hint.rs:104:5",
+    );
+  }
+  return value$1[0];
+}
+
+export function u16Step_backwardUnchecked(start, n) {
+  return (start - (n & 65535)) & 65535;
+}
+
+export function i16Step_backwardUnchecked(start, n) {
+  const value = ((n & 65535) << 16) >> 16;
+  const value$1 = $overflowing(((start - value) << 16) >> 16, start - value, -32768, 32767);
+  if (value$1[1] !== value < 0) {
+    throw $panic(
+      "internal error: entered unreachable code",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/hint.rs:104:5",
+    );
+  }
+  return value$1[0];
+}
+
+export function u32Step_backwardUnchecked(start, n) {
+  return (start - n) >>> 0;
+}
+
+export function i32Step_backwardUnchecked(start, n) {
+  const value = n | 0;
+  const value$1 = $overflowing((start - value) | 0, start - value, -2147483648, 2147483647);
+  if (value$1[1] !== value < 0) {
+    throw $panic(
+      "internal error: entered unreachable code",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/hint.rs:104:5",
+    );
+  }
+  return value$1[0];
+}
+
+export function usizeStep_backwardUnchecked(start, n) {
+  return (start - n) >>> 0;
+}
+
+export function isizeStep_backwardUnchecked(start, n) {
+  const value = n | 0;
+  const [_7, _8] = $overflowing((start - value) | 0, start - value, -2147483648, 2147483647);
+  if (_8 !== value < 0) {
+    throw $panic(
+      "internal error: entered unreachable code",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/hint.rs:104:5",
+    );
+  }
+  return _7;
+}
+
+export function u64Step_backwardUnchecked(start, n) {
+  return BigInt.asUintN(64, start - BigInt(n));
+}
+
+export function i64Step_backwardUnchecked(start, n) {
+  const value = BigInt.asIntN(64, BigInt(n));
+  const exact = start - value;
+  const value$1 = $overflowing(
+    BigInt.asIntN(64, exact),
+    exact,
+    -9223372036854775808n,
+    9223372036854775807n,
+  );
+  if (value$1[1] !== value < 0n) {
+    throw $panic(
+      "internal error: entered unreachable code",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/hint.rs:104:5",
+    );
+  }
+  return value$1[0];
+}
+
+export function u128Step_backwardUnchecked(start, n) {
+  return BigInt.asUintN(128, start - BigInt(n));
+}
+
+export function i128Step_backwardUnchecked(start, n) {
+  const value = BigInt.asIntN(128, BigInt(n));
+  const exact = start - value;
+  const value$1 = $overflowing(
+    BigInt.asIntN(128, exact),
+    exact,
+    -170141183460469231731687303715884105728n,
+    170141183460469231731687303715884105727n,
+  );
+  if (value$1[1] !== value < 0n) {
+    throw $panic(
+      "internal error: entered unreachable code",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/hint.rs:104:5",
+    );
+  }
+  return value$1[0];
+}
+
+export function charStep_backwardUnchecked(start, count) {
+  start = start.codePointAt(0);
+  let res = (start - count) >>> 0;
+  if (start >= 57344) {
+    if (57344 > res) {
+      res = (res - 2048) >>> 0;
+    }
+  }
+  return String.fromCodePoint(res);
+}
+
+export function step_forward(start, count, SelfStep, SelfClone, SelfPartialOrd, dropSelf) {
+  const value = SelfStep.forwardChecked(start, count);
+  if (value == null) {
+    throw $stringPanic(
+      "overflow in `Step::forward`",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:971:21",
+    );
+  }
+  return $someValue(value);
+}
+
+export function step_backward(start, count, SelfStep, SelfClone, SelfPartialOrd, dropSelf) {
+  const value = SelfStep.backwardChecked(start, count);
+  if (value == null) {
+    throw $stringPanic(
+      "overflow in `Step::backward`",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:971:21",
+    );
+  }
+  return $someValue(value);
+}
+
+export function step_forwardUnchecked(start, count, SelfStep, SelfClone, SelfPartialOrd, dropSelf) {
+  return $provided(SelfStep, "forward", [start, count], () =>
+    step_forward(start, count, SelfStep, SelfStep.Clone(), SelfStep.PartialOrd(), dropSelf),
+  );
+}
+
+export function step_backwardUnchecked(
+  start,
+  count,
+  SelfStep,
+  SelfClone,
+  SelfPartialOrd,
+  dropSelf,
+) {
+  return $provided(SelfStep, "backward", [start, count], () =>
+    step_backward(start, count, SelfStep, SelfStep.Clone(), SelfStep.PartialOrd(), dropSelf),
+  );
 }
 
 export function iterator_peekable(self, SelfIterator = { next: $next }, dropSelf, dropSelfItem) {

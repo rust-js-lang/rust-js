@@ -2,7 +2,7 @@
 
 Date: 2026-11-25.
 
-Status: accepted, step S0 of S3 (Campaign 5 step 3b, #1589). Amends
+Status: accepted, steps S0 and S1 of S3 (Campaign 5 step 3b, #1589). Amends
 [1202](1202-one-catalog-of-the-runtimes-models.md).
 
 ## Context
@@ -48,3 +48,19 @@ Std's build compiles `Range`'s and `RangeFrom`'s `Iterator` and
   through its reference, `tys[0]`, the same rule for both. A consumer's
   copy of a library's `.expect(..)` lowers from the library's own body,
   `$unwrap`, so only std's build reaches it.
+- **S1.** Std's own `Step` of each integer and `char` is compiled into
+  `@rust-js/std`, the dictionary a range's compiled body steps its bounds
+  by. A runtime model of `Step` would leave the proof resting on a model.
+  The catalog's one table of rows (`compiled_std.rs`) keys a row by what its
+  methods are of: `Of::Struct(StdPath)`, std's struct as before, or
+  `Of::Primitives`, each std impl of the row's trait for an integer or
+  `char`, the impls rustc keeps under a primitive's simplified type. That
+  extends the table's key; it adds no second table. `Step`'s nine methods
+  are its rows, and its four defaults are `COMPILED_STD_PROVIDED`'s, as
+  `char` writes neither `forward` nor `backward`. `Step` is operational
+  (`recognition::operational`), holds its `Clone` and `PartialOrd`
+  (`holds_supertraits`), and its dictionary holds every method, each its
+  impl's or the default (`in_std_dictionary`). It's unstable, so no program
+  bounds it, and the plain build's output doesn't move; std's build compiles
+  all thirteen without a refusal.
+
