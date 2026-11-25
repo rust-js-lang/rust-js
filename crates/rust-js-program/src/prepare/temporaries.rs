@@ -28,14 +28,6 @@ pub(super) fn spelled(module: &mut js::Module) {
         .map(|word| Name::module(word).root().to_string())
         .filter(|root| !top.contains(root))
         .collect();
-    // The module's own items' words, a split function's entry among them.
-    let declared: IndexSet<String> = (module.items.iter())
-        .filter_map(|item| match item {
-            js::Item::Function(function) => Some(&function.name),
-            _ => item.declared_name(),
-        })
-        .map(|name| name.word().to_string())
-        .collect();
     for item in &mut module.items {
         apart_where_declared_again(item);
         let mut suggested: Vec<Name> = Vec::new();
@@ -64,14 +56,9 @@ pub(super) fn spelled(module: &mut js::Module) {
         // `reclaim::spelled` spells one of an item with no tree.
         let mut words: IndexSet<String> = top.iter().chain(&reclaimed).cloned().collect();
         names_mut(item, true, &mut |name| _ = words.insert(name.word().to_string()));
-        // A split function's body the item reads, `checkedDiv$`, reads its
-        // entry's word too, `checkedDiv`, the module's own: no local takes it,
-        // as none would where the item called the entry (#2403, ADR 1193).
-        let entries_read: IndexSet<String> = (words.iter())
-            .filter_map(|word| word.strip_suffix('$'))
-            .filter(|entry| declared.contains(*entry))
-            .map(str::to_string)
-            .collect();
+        // A split function's body the item reads, `checkedDiv$`: no
+        // temporary takes its entry's word (`reclaim::entries_read`).
+        let entries_read = super::reclaim::entries_read(item);
         let mut spelled: IndexMap<String, String> = IndexMap::default();
         for name in suggested {
             let from = name.word();

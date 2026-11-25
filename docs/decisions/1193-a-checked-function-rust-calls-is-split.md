@@ -154,4 +154,7 @@ entry. Named after it, a consumer's `Debug` that passes the library's
 `quoted` on read `import { quoted$ as quoted$1 }` beside the entry's
 `quoted`, which it never imports, where another function's local `quoted`
 kept the import from reclaiming its word (test/crates-compiled-here.test.ts,
-mutation `split-body-named-after-its-entry`).
+mutation `split-body-named-after-its-entry`). No temporary is named for an
+entry whose body its item reads, the module's own or an import's, its own
+name's too (`reclaim::entries_read`); no local reclaims the module's own
+entry's word but its item's own, as before the split.

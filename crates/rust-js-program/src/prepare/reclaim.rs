@@ -439,24 +439,19 @@ fn locals(item: &mut js::Item, own: &IndexSet<String>) {
         }
     });
     declared.sort_by_key(|local| (!programs.contains(local.word()), !arrows.contains(local.word())));
-    // Each of the module's own entries whose split body the item reads,
-    // `label` of `label$(false)`: a word it reads, as it read the entry's
-    // before the split, so no local reclaims it (#2403, ADR 1193).
-    // Never of its own name, a body's, `contentSegment$`, which never calls
-    // its entry: its local reclaims that word, as main's did.
+    // Of the entries the item reads, the module's own, whose word its
+    // module has: the item read it before the split, so no local reclaims
+    // it. Not an import's, which an import alias gives way to a local of,
+    // as it did before the split, `import { add as add$1 }`; nor its own
+    // name's, a body's, `contentSegment$`, which never calls its entry:
+    // its local takes that word, as main's did.
     let itself = match &*item {
-        js::Item::Function(function) => Some(function.name.word().to_string()),
+        js::Item::Function(function) => function.name.word().strip_suffix('$').map(str::to_string),
         _ => None,
     };
-    let mut entries_read: IndexSet<String> = IndexSet::default();
-    names_mut(item, true, &mut |name| {
-        if itself.as_deref() != Some(name.word())
-            && let Some(entry) = name.word().strip_suffix('$')
-            && own.contains(entry)
-        {
-            entries_read.insert(entry.to_string());
-        }
-    });
+    let entries_read: IndexSet<String> = (entries_read(item).into_iter())
+        .filter(|entry| own.contains(entry) && itself.as_ref() != Some(entry))
+        .collect();
     for local in declared {
         // As it's spelled now, of one given way above.
         let now = renamed
@@ -545,6 +540,27 @@ pub(super) fn mentions(module: &mut js::Module) -> IndexSet<String> {
     names.extend(module.default_export.iter().cloned());
     names.extend(module.aliases.iter().map(|(local, _)| local.clone()));
     names
+}
+
+/// Each entry whose split body `item` reads, `label` of `label$(false)`,
+/// the module's own or one it imports, its own name's too, `parse` of
+/// `parse$`'s: a word it reads, as it read the entry's before the split,
+/// so no temporary is named for it (#2403, ADR 1193). React's `const value
+/// = lanesToEventPriority$(..)` was `const lanesToEventPriority`, the
+/// imported body's entry's word; the guide's `parse$` read `const parse =
+/// $parseInt(..)`. `locals` reclaims fewer of them.
+pub(super) fn entries_read(item: &mut js::Item) -> IndexSet<String> {
+    let mut entries: IndexSet<String> = IndexSet::default();
+    names_mut(item, true, &mut |name| {
+        // A module's name, its own function's or an import's: a local's
+        // given apart, `String$`, is no body.
+        if name.is_module()
+            && let Some(entry) = name.word().strip_suffix('$')
+        {
+            entries.insert(entry.to_string());
+        }
+    });
+    entries
 }
 
 /// The names `item` declares, anywhere in it, and with `reads` those it

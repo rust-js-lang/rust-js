@@ -203,3 +203,44 @@ pub fn run(n: u32) -> u32 {
   expect(made.run(2)).toBe(3 + 30);
   expect(thrown(() => made.read([2]))).toBe("TypeError: rust-js: read(token): expected a Token Rust made, got an array");
 });
+
+// A temporary named after the call that made it, `find` of `find(meta)`
+// (ADR 0569), isn't named for a split function's entry whose body it holds,
+// one its module imports as one of its own: React's ReactFiberRootScheduler
+// read `const lanesToEventPriority = lanesToEventPriority$(nextLanes)`,
+// taking the word the import's entry is named, where it read `const value`
+// before the split.
+test("a temporary of an imported split function's body isn't named for its entry", async () => {
+  const at = fixture("boundary-split-temporary");
+  writeFileSync(
+    join(at, "lib.rs"),
+    `pub mod lanes {
+    pub fn find_pair(text: &str) -> Option<(usize, usize)> {
+        let at = text.find(':')?;
+        Some((at, text.len() - at - 1))
+    }
+}
+
+pub mod scheduler {
+    use crate::lanes::find_pair;
+
+    pub fn second(text: &str) -> usize {
+        let Some((_, rest)) = find_pair(text) else {
+            return 0;
+        };
+        rest * 10
+    }
+}
+
+pub use lanes::find_pair;
+pub use scheduler::second;
+`,
+  );
+  run([compiler, join(at, "lib.rs"), "-o", join(at, "lib.js"), "--", "--crate-type=lib", "--edition=2024"]);
+  const scheduler = readFileSync(join(at, "scheduler.js"), "utf8");
+  expect(scheduler).toContain('import { findPair$ as findPair } from "./lanes.js";\n');
+  expect(scheduler).toContain("  const value = findPair(text);\n");
+  const made = await import(join(at, "lib.js"));
+  expect([made.second("ab:cde"), made.second("none")]).toEqual([30, 0]);
+});
+
