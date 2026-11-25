@@ -10,7 +10,7 @@
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { calls, jsShow, printable, rustShow, type Tree } from "./generated-calls";
+import { calls, jsConforms, jsShow, printable, rustShow, type NoneForm, type Shaped, type Tree } from "./generated-calls";
 import { compiler, fixture, nativeCrates, programFlags, run } from "./support";
 import { es2022, typeChecked } from "./type-checked";
 import { underLoad } from "../scripts/timing";
@@ -26,6 +26,12 @@ export type Offered = {
   type_params?: number;
   located?: boolean;
   of_no_value?: boolean;
+  // Oracle B's (ADR 1204): a struct's fields and where it's defined, a
+  // transparent one's field, a function's result's `None`.
+  fields?: { js: string; ty: Tree; none?: NoneForm }[];
+  def?: { crate: string; rust: string[] };
+  transparent?: Tree;
+  result_none?: NoneForm;
 };
 
 type Crate = { name: string; file: string; uses: string[]; edition?: string };
@@ -66,6 +72,19 @@ function called(path: Offered, small: boolean): string[][] | undefined {
   return undefined;
 }
 
+/** A function JS calls for its result's shape alone, oracle B's (ADR
+ * 1204), or a constant or static it reads: one `called` leaves out as
+ * native's printer can't print what it gives, a struct's, an enum's, a
+ * `Box`'s, given the values `calls` makes of its parameters. */
+function shapedOnly(path: Offered, small: boolean): string[][] | undefined {
+  if (called(path, small) || !path.ty) return undefined;
+  if (path.kind === "function") {
+    if (path.generic || path.located) return undefined;
+    return calls(path.params ?? [], small)?.map((given) => given.map((v) => `${v.js}\u0000${v.rust}`));
+  }
+  return path.kind === "const" || path.kind === "static" ? [[]] : undefined;
+}
+
 /** What the net checked of a case, and each problem it found: none where
  * each crate's JS and `.d.ts` offer what Rust does. `paths`, the values
  * found in the JS; `calls`, the results compared with native Rust's;
@@ -77,7 +96,7 @@ function called(path: Offered, small: boolean): string[][] | undefined {
  * so 15 s, as the machine's load makes it, is room, not a wait. */
 const bigRunMs = underLoad(15_000);
 
-export type Netted = { problems: string[]; paths: number; calls: number; declared: number; offered: Record<string, string[]> };
+export type Netted = { problems: string[]; paths: number; calls: number; declared: number; shapes: { checked: number; unchecked: number }; offered: Record<string, string[]> };
 
 export function exportNet(cases: string, name: string, files: string[]): Netted {
   const dir = fixture(`export-net-${name}`);
@@ -85,7 +104,11 @@ export function exportNet(cases: string, name: string, files: string[]): Netted 
   const all = crates(cases, name, files);
   const problems: string[] = [];
   const checked = { paths: 0, calls: 0, declared: 0 };
+  const shapes = { checked: 0, unchecked: 0 };
   const listed: Record<string, string[]> = {};
+  // Each struct's shape, of every crate's records so far, by where it's
+  // defined: a crate's types are its dependencies' too.
+  const types: Record<string, Shaped> = {};
   for (const [i, crate] of all.entries()) {
     const manifest = join(out, crate.name, "lib.manifest.json");
     // Each but the last a library, the last the crate the others are of, as
@@ -100,6 +123,7 @@ export function exportNet(cases: string, name: string, files: string[]): Netted 
     const offered: Offered[] = JSON.parse(readFileSync(manifest, "utf8")).offered_paths ?? [];
     const of = (p: Offered) => `${crate.name}::${p.rust.join("::")}`;
     listed[crate.name] = offered.map((p) => `${p.kind} ${p.rust.join("::")} -> ${p.js.join(".")}`);
+    for (const p of offered) if (p.kind === "type" && p.def) types[`${p.def.crate}::${p.def.rust.join("::")}`] = { fields: p.fields, transparent: p.transparent };
     // Its JS: each value it offers, of its kind, and each call's result,
     // and native Rust's of the same calls, of the crate built natively: of
     // the values generated, or, where a run of them is past its time, a
@@ -113,36 +137,49 @@ export function exportNet(cases: string, name: string, files: string[]): Netted 
     // tail, 121 s of one pair's 153 s part.
     const limit = (small: boolean) => (small ? 120_000 : bigRunMs);
     const netted = (small: boolean) => {
-      const tested = offered.flatMap((p) => (called(p, small) ?? []).map((given, k) => ({ p, given, label: `${of(p)}#${k}` })));
+      const tested = offered.flatMap((p) => [
+        ...(called(p, small) ?? []).map((given, k) => ({ p, given, label: `${of(p)}#${k}`, native: true })),
+        ...(shapedOnly(p, small) ?? []).map((given, k) => ({ p, given, label: `${of(p)}#${k}`, native: false })),
+      ]);
+      const compared = tested.filter((t) => t.native);
       const harness = join(out, `net-${crate.name}.mjs`);
       writeFileSync(harness, `import * as M from "./${crate.name}/lib.js";
 import { $isPanic } from "@rust-js/std";
 ${jsShow}
+${jsConforms}
+const types = ${JSON.stringify(types)};
+const count = { checked: 0, unchecked: 0 };
 const at = (path) => path.reduce((o, k) => (o == null ? undefined : o[k]), M);
 const lines = [];
 // A call of a path the JS lacks, which its kind's line says, is said missing.
-const said = (label, path, f, t) => {
+// Its result's shape too, oracle B's: a line of its own, which no native
+// line matches.
+const said = (label, path, f, t, none) => {
   if (at(path) === undefined) return void lines.push("\\u0001" + label + " missing");
   try {
-    lines.push("\\u0001" + label + " " + show(f(), t));
+    const v = f();
+    lines.push("\\u0001" + label + " " + show(v, t));
+    const problem = conforms(v, t, none, types, count);
+    if (problem !== null) lines.push("\\u0001shape " + label + " " + problem);
   } catch (e) {
     lines.push("\\u0001" + label + " " + ($isPanic(e) ? "panic: " + e.message : "JS-ERROR " + (e?.name ?? typeof e) + ": " + (e?.message ?? String(e))));
   }
 };
 ${values.map((p) => `lines.push("\\u0001" + ${JSON.stringify(`kind ${of(p)}`)} + " " + typeof at(${JSON.stringify(p.js)}));`).join("\n")}
 ${tested.map(({ p, given, label }) => p.kind === "function"
-    ? `said(${JSON.stringify(label)}, ${JSON.stringify(p.js)}, () => at(${JSON.stringify(p.js)})(${given.map((g) => g.split("\u0000")[0]).join(", ")}), ${JSON.stringify(p.ty)});`
-    : `said(${JSON.stringify(label)}, ${JSON.stringify(p.js)}, () => at(${JSON.stringify(p.js)}), ${JSON.stringify(p.ty)});`).join("\n")}
+    ? `said(${JSON.stringify(label)}, ${JSON.stringify(p.js)}, () => at(${JSON.stringify(p.js)})(${given.map((g) => g.split("\u0000")[0]).join(", ")}), ${JSON.stringify(p.ty)}, ${JSON.stringify(p.result_none ?? "plain")});`
+    : `said(${JSON.stringify(label)}, ${JSON.stringify(p.js)}, () => at(${JSON.stringify(p.js)}), ${JSON.stringify(p.ty)}, "plain");`).join("\n")}
+lines.push("\\u0001counted " + count.checked + " " + count.unchecked);
 // On a line of its own, past what a call printed without one.
 console.log("\\n" + lines.join("\\n"));
 `);
       const js = marked(run(["bun", harness], limit(small)));
-      if (tested.length === 0) return { js, native: [] as string[] };
+      if (compared.length === 0) return { js, native: [] as string[] };
       const rustPath = (p: Offered) => `${crate.name}::${p.rust.join("::")}`;
       const main = `${rustShow}
 fn main() {
     std::panic::set_hook(Box::new(|_| {}));
-${tested.map(({ p, given, label }) => {
+${compared.map(({ p, given, label }) => {
     const expr = p.kind === "function" ? `${rustPath(p)}(${given.map((g) => g.split("\u0000")[1]).join(", ")})` : p.kind === "static" ? `&${rustPath(p)}` : rustPath(p);
     return `    let said = shown(|| ${expr});\n    println!("\\n\\u{1}{} {}", ${JSON.stringify(label)}, said);`;
   }).join("\n")}
@@ -169,10 +206,17 @@ ${tested.map(({ p, given, label }) => {
       if (kind === "undefined" || (expected !== undefined && kind !== expected)) problems.push(`${of(p)}: JS ${p.js.join(".")} is ${kind}, not a ${p.kind}`);
     }
     for (const line of js.filter((l) => / JS-ERROR /.test(l))) problems.push(`${line}: a JS exception, not a Rust panic`);
+    // Oracle B: each value's JS shape its record's type says.
+    for (const line of js.filter((l) => l.startsWith("shape "))) problems.push(`${line.slice("shape ".length)}: of the wrong JS shape`);
+    const counted = js.find((l) => l.startsWith("counted "))?.split(" ");
+    if (counted) {
+      shapes.checked += Number(counted[1]);
+      shapes.unchecked += Number(counted[2]);
+    }
     if ("unbuilt" in ran && ran.unbuilt) problems.push(`${crate.name}: native Rust's calls didn't build: ${ran.unbuilt.split("\n").slice(0, 6).join(" | ")}`);
     for (const line of native) {
       const label = line.slice(0, line.indexOf(" "));
-      const ours = js.find((l) => l.startsWith(`${label} `));
+      const ours = js.find((l) => l.startsWith(`${label} `) && !l.startsWith("shape "));
       checked.calls++;
       if (ours !== line && !/ (JS-ERROR |missing$)/.test(ours ?? "")) problems.push(`${label}: JS gives ${ours?.slice(label.length + 1) ?? "nothing"}, native Rust ${line.slice(label.length + 1)}`);
     }
@@ -195,5 +239,5 @@ ${tested.map(({ p, given, label }) => {
       for (const error of typeChecked(out, `net-${crate.name}.ts`, es2022)) problems.push(`${crate.name}'s .d.ts: ${error}`);
     }
   }
-  return { problems, ...checked, offered: listed };
+  return { problems, ...checked, shapes, offered: listed };
 }

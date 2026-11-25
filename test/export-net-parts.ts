@@ -17,7 +17,9 @@ export function exportNetTests(part: number) {
         const netted = exportNet(net.cases, net.name, net.files);
         expect(netted.problems).toEqual([]);
         // Each of its own checks something of each kind.
-        expect([netted.paths > 0, netted.calls > 0, netted.declared > 0]).toEqual([true, true, true]);
+        expect([netted.paths > 0, netted.calls > 0, netted.declared > 0, netted.shapes.checked > 0]).toEqual([true, true, true, true]);
+        // And oracle B decides each shape of its own: none it can't.
+        expect(netted.shapes.unchecked).toBe(0);
       }, underLoad(300_000));
     } else if (net.kind === "pair") {
       test(net.title, () => {

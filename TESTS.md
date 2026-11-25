@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (ADR 1204 amended): oracle B, test/oracle-b.test.ts, new, the push suite's: the export net's checker of each value's JS shape, held to the guide's types table; the export net's own case `struct_shapes`.
+
 Changed on 2026-11-25 (ADR 1204): test/export-net.test.ts is test/export-net-1.test.ts to `-6`, each the tests test/export-net-titles.ts puts in its part, nightly's; the net's 221 tests 31.7 s through the pool on the M1, from 267 s in one file.
 
 Changed on 2026-11-25 (#2573, ADR 1204 amended): test/declarations-conformance.test.ts reads its signatures from the manifest's `offered_paths`, its source parser gone, its 36 cases' calls and `None` forms unchanged; its own-names test reads the records.

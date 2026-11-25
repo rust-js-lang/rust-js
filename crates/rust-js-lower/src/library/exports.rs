@@ -4,6 +4,13 @@
 
 use super::*;
 
+/// A crate's canonical name, as its manifest says it, `name` (the
+/// crate's own of `LOCAL_CRATE`): what a fact naming another crate's item
+/// keys it by, the export net's records' `OfferedDef` (ADR 1204).
+pub fn canonical_crate_name(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> String {
+    tcx.crate_name(krate).to_string()
+}
+
 /// The items another crate can reach that its JS exports, `exported`
 /// (`exported_names`), and the impls it calls through them; and the
 /// bindings its modules hold, which a consumer naming one through its

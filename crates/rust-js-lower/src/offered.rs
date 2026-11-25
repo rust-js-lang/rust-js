@@ -87,6 +87,9 @@ fn walk(
             sealed: false,
             unoffered_fields: None,
             bounds: Vec::new(),
+            result_none: rust_js_program::offered::OfferedNone::Plain,
+            def: None,
+            transparent: None,
         };
         match kind {
             // A module of its own JS reads only through a re-export of it.
@@ -115,9 +118,16 @@ fn walk(
                     Some(offered_type(tcx, signature.output())),
                     generic,
                 );
+                // Its result's `None`, as its `#[rust_js::nullable]` says.
+                let result_none =
+                    match crate::representation::none_form(tcx, crate::representation::NonePlace::FnResult(id)) {
+                        crate::representation::NoneForm::Null => rust_js_program::offered::OfferedNone::Null,
+                        _ => rust_js_program::offered::OfferedNone::Plain,
+                    };
                 paths.push(OfferedPath {
                     located,
                     bounds,
+                    result_none,
                     ..function
                 });
             }
@@ -144,12 +154,21 @@ fn walk(
                     DefKind::Struct => fields_of(tcx, id),
                     _ => (Vec::new(), false, None),
                 };
+                // A transparent struct's JS, its field's.
+                let transparent = (kind == DefKind::Struct).then(|| tcx.adt_def(id)).and_then(|adt| {
+                    crate::recognition::transparent_field(tcx, adt).map(|i| {
+                        let field = &adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(i)];
+                        offered_type(tcx, tcx.type_of(field.did).instantiate_identity().skip_normalization())
+                    })
+                });
                 paths.push(OfferedPath {
                     type_params,
                     of_no_value,
                     fields,
                     sealed,
                     unoffered_fields,
+                    def: Some(def_of(tcx, id)),
+                    transparent,
                     ..offered(OfferedKind::Type, Vec::new(), None, false)
                 });
             }
@@ -229,10 +248,37 @@ fn offered_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> OfferedType {
         ty::Param(param) => OfferedType::Param {
             name: param.name.to_string(),
         },
-        ty::Adt(adt, _) if adt.did().is_local() => OfferedType::Named {
-            rust: tcx.def_path_str(adt.did()).split("::").map(str::to_string).collect(),
-        },
+        ty::Adt(adt, _) if !crate::recognition::is_std_crate(tcx, adt.did()) => {
+            OfferedType::Named(def_of(tcx, adt.did()))
+        }
         _ => OfferedType::Other { rust: ty.to_string() },
+    }
+}
+
+/// Where a struct, an enum or a union is defined, its records' one key:
+/// its crate's name and its path from that crate's root.
+fn def_of(tcx: TyCtxt<'_>, id: DefId) -> rust_js_program::offered::OfferedDef {
+    rust_js_program::offered::OfferedDef {
+        krate: crate::library::canonical_crate_name(tcx, id.krate),
+        rust: (tcx.def_path(id).data.iter())
+            .filter_map(|segment| segment.data.get_opt_name())
+            .map(|name| name.to_string())
+            .collect(),
+    }
+}
+
+/// What a field's `None` is, of its owner's one answer, `none_form`, and
+/// whether its key is written, `#[rust_js::present]`'s other axis.
+fn none_of(tcx: TyCtxt<'_>, field: &rustc_middle::ty::FieldDef) -> rust_js_program::offered::OfferedNone {
+    use crate::representation::{NoneForm, NonePlace, none_form};
+    use rust_js_program::offered::OfferedNone;
+    match none_form(tcx, NonePlace::Field(field, None)) {
+        NoneForm::Value => OfferedNone::Held,
+        NoneForm::Optional => OfferedNone::NullOptional,
+        NoneForm::Null => OfferedNone::Null,
+        NoneForm::Nested => OfferedNone::Nested,
+        NoneForm::Undefined | NoneForm::Either if crate::bindings::is_present(tcx, field) => OfferedNone::Present,
+        NoneForm::Undefined | NoneForm::Either => OfferedNone::Plain,
     }
 }
 
@@ -272,6 +318,7 @@ fn fields_of(
                 js: crate::representation::variant_field(tcx, variant, i),
                 ty: offered_type(tcx, ty),
                 written: ty.to_string(),
+                none: none_of(tcx, field),
             }
         })
         .collect();

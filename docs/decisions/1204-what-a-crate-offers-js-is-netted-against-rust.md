@@ -119,3 +119,75 @@ Mutation `offered-type-leaf-flipped`, a `bool` recorded as a `u8`, is caught
 by both nets. `offered-dyn-fn-unread`, `offered-symbol-field-named` and
 `offered-symbol-keyed-unsaid` hold the `dyn Fn` reading and the symbol-named
 fields.
+
+## Amendment: oracle B, each value's JS shape (2026-11-25, the lead's design)
+
+Oracle A compares what JS prints with what native Rust prints. Its printer
+is lenient, so a value of the wrong JS shape passed wherever the printout
+agreed: a `u64` as a number, a `Vec` as a typed array. And a struct's or an
+enum's result, which the printer can't print, was never called at all.
+
+**Oracle B holds each value the net reads to its record's type, by the
+guide's types table.** `conforms` (test/generated-calls.ts) checks:
+
+- **Numbers:** a number, an integer in range, of 32 bits or less; a BigInt
+  of 64 and 128; an `f32` that `Math.fround` leaves alone.
+- **Text and unit:** a `char` is one code point, a string is a string, and
+  `()` is `undefined`.
+- **Collections:** a `Vec` or slice is an array (`Array.isArray`), and a
+  tuple is an array of exactly its length.
+- **Pointers and functions:** a `Box` or `&T` is its value, and a `Fn` is a
+  function.
+- **An `Option`** is held to its place's `None` form.
+- **A struct of recorded fields** is an object of its fields' JS keys, each
+  conforming. A `#[repr(transparent)]` struct is its field.
+
+Each shape names its guide row, `shapeRows`. test/oracle-b.test.ts finds
+each row in docs/guide/interop/types.md as written, and checks the checker
+on right and wrong values. That file runs on every push.
+
+**What B can't decide, it counts as unchecked rather than passing it
+silently:**
+
+- enums, for which there are no variant records yet;
+- a tuple struct's fields;
+- a `&mut`'s box;
+- an `Option` of what may itself be `undefined`, whose `Some` is `$some`'s
+  box, a form the guide's table doesn't give.
+
+Each own case of the net leaves none unchecked. Across the net's 220 cases,
+B checks 521 shapes and leaves 173 unchecked.
+
+**The facts the records add.** All are additive, and `parseManifest`
+validates them:
+
+- **`OfferedField::none`, a field's `None` form.** It comes from the `None`
+  owner's one answer, `representation::none_form` of `NonePlace::Field`,
+  with `#[rust_js::present]`'s key axis. The forms are `plain`, `present`,
+  `null`, `null_optional`, `nested` and `held`.
+- **`OfferedPath::result_none`,** a function's result's form, from
+  `none_form` of `NonePlace::FnResult`.
+- **`OfferedPath::def`,** where a struct, an enum or a union is defined:
+  its crate's canonical name (`library::canonical_crate_name`) and its path
+  there. `OfferedType::Named` names a type by the same key wherever it's
+  offered, a dependency's type in its app's signatures too.
+- **`OfferedPath::transparent`,** a transparent struct's field type, from
+  `recognition::transparent_field`.
+
+A plain field's `None` is a key left out where it's known there, or a key
+of `undefined` where it's computed. ADR 0280 decided this (case A), and B
+accepts both.
+
+The net now calls a function whose result the printer can't print, for its
+shape alone (`shapedOnly`), with no native line. Such a call throwing a JS
+exception that's not a Rust panic is oracle D's problem, as before.
+
+Own case `struct_shapes`: a field of each `None` form, a literal-`None`
+maker, a transparent struct, a struct of structs.
+
+**Mutations:**
+
+- `offered-nullable-said-plain` and `offered-transparent-unsaid` mutate B's
+  facts.
+- aggregates.rs's `present-key-left-out`, a shape the printout can't see,
+  is caught by the net's `struct_shapes` too.

@@ -20,7 +20,7 @@ export type Tree =
   | { kind: "box"; of: Tree }
   | { kind: "fn"; inputs: Tree[]; output: Tree }
   | { kind: "param"; name: string }
-  | { kind: "named"; rust: string[] }
+  | { kind: "named"; crate: string; rust: string[] }
   | { kind: "tuple"; items: Tree[] }
   | { kind: "other"; rust: string };
 
@@ -174,6 +174,124 @@ export const jsShow = `function show(v, t) {
     case "ref": return show(v, t.of);
     case "tuple": return Array.isArray(v) ? "(" + t.items.map((item, i) => show(v[i], item)).join(", ") + ")" : "not-a-tuple(" + typeof v + ")";
     default: return "unprintable";
+  }
+}`;
+
+/** What an `Option`'s `None` is in a place (`OfferedNone`). */
+export type NoneForm = "plain" | "present" | "null" | "null_optional" | "nested" | "held";
+
+/** A struct's record as oracle B reads it: its fields, or its transparent
+ * field's type, by its definition's key, `crate::path`. */
+export type Shaped = { fields?: { js: string; ty: Tree; none?: NoneForm }[]; transparent?: Tree };
+
+/** The guide's rows of its types table (docs/guide/interop/types.md) each
+ * shape `conforms` checks is held to, each its Rust cell and its JS one,
+ * which test/oracle-b.test.ts finds in the guide: the checker a mirror of
+ * the guide's contract, never of the compiler's representation code, so a
+ * value of the wrong shape fails though native's printout agrees (oracle
+ * B, ADR 1204). */
+export const shapeRows: [string, string][] = [
+  ["`u8` `u16` `u32` `i8` `i16` `i32`", "number, wrapped after each operation"],
+  ["`usize` `isize`", "number, 32 bits"],
+  ["`u64` `i64` `u128` `i128`", "BigInt, `5n`"],
+  ["`f64`, `f32`", "number (`f32` rounded by `Math.fround`)"],
+  ["`bool`", "boolean"],
+  ["`char`", "a string of one character"],
+  ["`String`, `&str`, `Box<str>`", "string"],
+  ["`()`", "`undefined`"],
+  ["`Vec<T>`, `[T; N]`, `&[T]`, `VecDeque<T>`", "array"],
+  ["tuple `(A, B)`", "array `[a, b]`"],
+  ["struct with named fields", "object `{ x, y }`"],
+  ["`#[repr(transparent)]` struct", "its field"],
+  ["`Option<T>`", "the value, or `undefined`; a field's `None` left out where its struct is made, `point?: T`"],
+  ["`#[rust_js::present]` `Option<T>` field", "the value, or `undefined`, its key written, `point: T \\| undefined`"],
+  ["`#[rust_js::nullable]` `Option<T>`", "the value, or `null`"],
+  ["`#[rust_js::nullable]` `#[rust_js::optional]` field", "absent until it's set, then the value or `null`"],
+  ["`#[rust_js::nullable]` `Option<Option<T>>` field", "absent for `None`, `null` for `Some(None)`, else the value"],
+  ["`#[rust_js::nullable]` field of an `Option` of what may be `undefined`, `()` or such an untagged enum", "`null` for `None`, else the value, `undefined` too"],
+  ["`Box<T>`, `Rc<T>`, `Arc<T>`", "the value itself"],
+  ["`&T`", "the value"],
+  ["closure, `fn` pointer, `dyn Fn`", "function"],
+];
+
+/** Oracle B, as source a harness holds: `conforms(v, t, none, types,
+ * count)`, the first way `v` isn't of `t`'s JS shape as `shapeRows`' rows
+ * say, by its place, `.1[0]`, or `null`; `none`, its `Option`'s `None`
+ * form; `types`, each struct's `Shaped` by its definition's key. Each
+ * shape checked counts in `count.checked`, each it can't decide, an enum's,
+ * a tuple struct's, a `&mut`'s, an `Option` of what may be `undefined`, in
+ * `count.unchecked`: said, never passed unsaid. */
+export const jsConforms = `function conforms(v, t, none, types, count, at = "", depth = 0) {
+  const what = (x) => (x === null ? "null" : Array.isArray(x) ? "an array" : typeof x === "object" ? (x.constructor?.name ?? "an object") : typeof x);
+  const bad = (said) => ("the value" + at) + ": " + what(v) + ", not " + said;
+  const checked = () => { count.checked++; return null; };
+  const unchecked = () => { count.unchecked++; return null; };
+  if (depth > 8) return unchecked();
+  const inner = (x, ty, place, form = "plain") => conforms(x, ty, form, types, count, at + place, depth + 1);
+  switch (t.kind) {
+    case "int": {
+      const wide = /^[iu](64|128)$/.test(t.rust);
+      if (wide ? typeof v !== "bigint" : typeof v !== "number" || !Number.isInteger(v)) return bad(t.rust + "'s " + (wide ? "BigInt" : "integer number"));
+      const bits = BigInt(/size$/.test(t.rust) ? 32 : Number(t.rust.slice(1)));
+      const signed = t.rust[0] === "i";
+      const n = BigInt(v);
+      if (n < (signed ? -(1n << (bits - 1n)) : 0n) || n > (signed ? (1n << (bits - 1n)) - 1n : (1n << bits) - 1n)) return bad(t.rust + "'s range");
+      return checked();
+    }
+    case "float":
+      if (typeof v !== "number") return bad(t.rust + "'s number");
+      if (t.rust === "f32" && !Number.isNaN(v) && Math.fround(v) !== v) return bad("an f32, rounded by Math.fround");
+      return checked();
+    case "bool": return typeof v === "boolean" ? checked() : bad("a boolean");
+    case "char": return typeof v === "string" && [...v].length === 1 ? checked() : bad("a string of one character");
+    case "str": return typeof v === "string" ? checked() : bad("a string");
+    case "unit": return v === undefined ? checked() : bad("undefined");
+    case "option": {
+      const of = t.of;
+      if (none === "nested") {
+        if (of.kind !== "option") return unchecked();
+        if (v === undefined || v === null) return checked();
+        return inner(v, of.of, "");
+      }
+      if (none === "held") return v === null ? checked() : inner(v, of, "");
+      // A \`Some\` of what may itself be \`undefined\` is boxed, a form the guide's table doesn't give.
+      if (of.kind === "option" || of.kind === "unit") return unchecked();
+      if (none === "null") return v === null ? checked() : inner(v, of, "");
+      if (none === "null_optional") return v === null || v === undefined ? checked() : inner(v, of, "");
+      return v === undefined ? checked() : inner(v, of, "");
+    }
+    case "vec":
+      if (!Array.isArray(v)) return bad("an array");
+      for (const [i, x] of v.entries()) { const problem = inner(x, t.of, "[" + i + "]"); if (problem) return problem; }
+      return checked();
+    case "tuple":
+      if (!Array.isArray(v) || v.length !== t.items.length) return bad("an array of " + t.items.length);
+      for (const [i, item] of t.items.entries()) { const problem = inner(v[i], item, "[" + i + "]"); if (problem) return problem; }
+      return checked();
+    case "ref": return t.mutable ? unchecked() : inner(v, t.of, "", none);
+    case "box": return inner(v, t.of, "", none);
+    case "fn": return typeof v === "function" ? checked() : bad("a function");
+    case "named": {
+      const shaped = types[t.crate + "::" + t.rust.join("::")];
+      if (shaped?.transparent) return inner(v, shaped.transparent, "", none);
+      if (!shaped?.fields?.length) return unchecked();
+      if (v === null || typeof v !== "object" || Array.isArray(v)) return bad("an object of " + t.rust.join("::") + "'s fields");
+      for (const field of shaped.fields) {
+        const place = "." + field.js;
+        const has = field.js in v;
+        const form = field.none ?? "plain";
+        if (field.ty.kind === "option") {
+          // A field's \`None\`: left out where it's known there, else a key of
+          // \`undefined\` (ADR 0280), or its key written, as its form says.
+          if (!has && (form === "plain" || form === "null_optional" || form === "nested")) { count.checked++; continue; }
+          if (!has) return ("the value" + at) + place + ": no key, not its None's " + (form === "present" ? "undefined" : "null");
+        } else if (!has) return ("the value" + at) + place + ": no key, not " + t.rust.join("::") + "'s field";
+        const problem = inner(v[field.js], field.ty, place, form);
+        if (problem) return problem;
+      }
+      return checked();
+    }
+    default: return unchecked();
   }
 }`;
 

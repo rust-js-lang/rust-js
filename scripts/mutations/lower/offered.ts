@@ -52,4 +52,20 @@ export const mutations: Mutation[] = [
     replace: "None",
     tests: ["test/declarations-conformance.test.ts", "-t", "a struct of a symbol-keyed field says its fields aren't offered"],
   },
+  {
+    name: "offered-nullable-said-plain",
+    breaks: "a `#[rust_js::nullable]` field's `None` is recorded as a plain one's, `undefined`, where JS writes `null`: oracle B, reading the records, holds the field to the wrong form (ADR 1204)",
+    file,
+    find: "        NoneForm::Null => OfferedNone::Null,\n",
+    replace: "        NoneForm::Null => OfferedNone::Plain,\n",
+    tests: ["test/export-net-3.test.ts", "-t", "export net: struct_shapes"],
+  },
+  {
+    name: "offered-transparent-unsaid",
+    breaks: "a `#[repr(transparent)]` struct's record says nothing of its field, so oracle B can't decide its JS and counts it unchecked, which the net's own cases hold at none (ADR 1204)",
+    file,
+    find: "                    crate::recognition::transparent_field(tcx, adt).map(|i| {\n",
+    replace: "                    crate::recognition::transparent_field(tcx, adt).filter(|_| false).map(|i| {\n",
+    tests: ["test/export-net-3.test.ts", "-t", "export net: struct_shapes"],
+  },
 ];

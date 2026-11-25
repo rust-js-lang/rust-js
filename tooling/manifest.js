@@ -181,10 +181,15 @@ function offeredPath(path) {
     && (path.ty === undefined || offeredType(path.ty))
     && flag(path.generic) && flag(path.located) && flag(path.of_no_value) && flag(path.sealed)
     && (path.unoffered_fields === undefined || path.unoffered_fields === "symbol_keyed")
+    // Oracle B's: a result's `None`, a type's definition, a transparent struct's field.
+    && (path.result_none === undefined || offeredNones.has(path.result_none))
+    && (path.def === undefined || offeredDef(path.def))
+    && (path.transparent === undefined || offeredType(path.transparent))
     && (path.type_params === undefined || Number.isInteger(path.type_params) && path.type_params >= 0)
     // #2573: a struct's fields, and a generic function's bounds.
     && (path.fields === undefined || Array.isArray(path.fields) && path.fields.every((field) => field !== null && typeof field === "object"
-      && typeof field.rust === "string" && typeof field.js === "string" && typeof field.written === "string" && offeredType(field.ty)))
+      && typeof field.rust === "string" && typeof field.js === "string" && typeof field.written === "string" && offeredType(field.ty)
+      && (field.none === undefined || offeredNones.has(field.none))))
     && (path.bounds === undefined || Array.isArray(path.bounds) && path.bounds.every((bound) => bound !== null && typeof bound === "object"
       && typeof bound.param === "string"
       && (bound.traits === undefined || Array.isArray(bound.traits) && bound.traits.every((name) => typeof name === "string"))
@@ -195,6 +200,15 @@ function offeredPath(path) {
 
 /** An offered path's type (rust_js_program::offered's `OfferedType`), its
  * own `kind` and what each kind holds. */
+// What an `Option`'s `None` is in a place (`rust_js_program::offered::OfferedNone`).
+const offeredNones = new Set(["plain", "present", "null", "null_optional", "nested", "held"]);
+
+// Where a type is defined, its crate and its path from that crate's root.
+function offeredDef(def) {
+  return def !== null && typeof def === "object" && (def.crate === undefined || typeof def.crate === "string")
+    && Array.isArray(def.rust) && def.rust.every((name) => typeof name === "string");
+}
+
 function offeredType(ty) {
   if (ty === null || typeof ty !== "object") return false;
   switch (ty.kind) {
@@ -218,7 +232,7 @@ function offeredType(ty) {
     case "param":
       return typeof ty.name === "string";
     case "named":
-      return Array.isArray(ty.rust) && ty.rust.every((name) => typeof name === "string");
+      return offeredDef(ty);
     case "vec":
       return offeredType(ty.of) && typeof ty.borrowed === "boolean";
     case "tuple":

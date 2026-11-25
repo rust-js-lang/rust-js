@@ -16,7 +16,7 @@ mod written_into;
 pub(super) use bound::bound;
 pub use compiled_here::merging;
 pub use elided::elided_through_calls;
-pub use exports::exports;
+pub use exports::{canonical_crate_name, exports};
 pub use internal::{internal_exports, internal_state};
 use shapes::head_key;
 pub(super) use shapes::shapes;

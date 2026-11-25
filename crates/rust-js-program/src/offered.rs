@@ -59,6 +59,58 @@ pub struct OfferedPath {
     /// predicates of it (#2573).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub bounds: Vec<OfferedBound>,
+    /// Of a function, what its result's `None` is, `#[rust_js::nullable]`'s
+    /// `null` or the plain `undefined` (oracle B, ADR 1204).
+    #[serde(default, skip_serializing_if = "OfferedNone::is_plain")]
+    pub result_none: OfferedNone,
+    /// Of a struct, an enum or a union, where it's defined, which a
+    /// `Named` type names it by, wherever it's offered (oracle B).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub def: Option<OfferedDef>,
+    /// Of a `#[repr(transparent)]` struct, whose JS is its field's, that
+    /// field's type (oracle B).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transparent: Option<OfferedType>,
+}
+
+/// Where a struct, an enum or a union is defined: its crate's name and its
+/// path from that crate's root, `rust_js_lower::offered`'s one key of it.
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+pub struct OfferedDef {
+    /// Additive: a manifest of an earlier build names none, read as `""`.
+    #[serde(rename = "crate", default, skip_serializing_if = "String::is_empty")]
+    pub krate: String,
+    pub rust: Vec<String>,
+}
+
+/// What an `Option`'s `None` is in a place, of the attributes' owner's
+/// answers (`bindings::nullable`, ADRs 0196, 0810, 1017, 1161): the
+/// guide's rows of `Option<T>` (oracle B).
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum OfferedNone {
+    /// `undefined`, a field's key left out where it's made.
+    #[default]
+    Plain,
+    /// `undefined`, a field's key written, `#[rust_js::present]`.
+    Present,
+    /// `null`, `#[rust_js::nullable]`.
+    Null,
+    /// A field absent until it's set, then `null` or the value,
+    /// `#[rust_js::nullable]` `#[rust_js::optional]`.
+    NullOptional,
+    /// An `Option<Option<T>>` field's: absent for `None`, `null` for
+    /// `Some(None)`, else the value.
+    Nested,
+    /// An `Option` of a value that may be `undefined`: `null` for `None`,
+    /// else the value, `undefined` too.
+    Held,
+}
+
+impl OfferedNone {
+    pub fn is_plain(&self) -> bool {
+        *self == OfferedNone::Plain
+    }
 }
 
 /// Why a struct's fields aren't recorded (`OfferedPath::unoffered_fields`).
@@ -79,6 +131,9 @@ pub struct OfferedField {
     pub js: String,
     pub ty: OfferedType,
     pub written: String,
+    /// What its `None` is, of an `Option` field (oracle B).
+    #[serde(default, skip_serializing_if = "OfferedNone::is_plain")]
+    pub none: OfferedNone,
 }
 
 /// What a generic function asks of one type parameter, `param`: the traits
@@ -175,11 +230,9 @@ pub enum OfferedType {
     Param {
         name: String,
     },
-    /// A struct, an enum or a union of the crate's, by its path from the
-    /// crate's root.
-    Named {
-        rust: Vec<String>,
-    },
+    /// A struct, an enum or a union of a crate's not std's, by where it's
+    /// defined, the key of its own record's `def`.
+    Named(OfferedDef),
     Tuple {
         items: Vec<OfferedType>,
     },
