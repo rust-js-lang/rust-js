@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (ADR 1204 amended): oracle C's first landing: the export net gives a crate's types as arguments, made from their records, and runs each crate again given counting proxies, which must give alike; test/counting-proxies.ts, getter-reads' harness shared; test/oracle-c.test.ts, new, the push suite's; own case `object_arguments`.
+
 Changed on 2026-11-25 (#2595, ADR 0914 amended): one crate pair, a library generic function's constant of a struct of no size, against native; one mutation.
 
 Changed on 2026-11-25 (ADR 1204 amended): oracle B's full coverage: the export net's every case, the crate pairs too, holds none of its shapes unchecked; own case `rest_shapes`; test/oracle-b.test.ts gains the last shapes' checks and a cycle's.

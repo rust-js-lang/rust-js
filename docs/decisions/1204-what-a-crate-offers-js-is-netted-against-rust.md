@@ -323,3 +323,50 @@ Own case `rest_shapes`.
 `offered-weak-counted-unsaid` and `offered-raw-pointer-never-null`.
 `offered-rc-counted-unsaid` names its `Rc` arm, now that a `Weak`'s shares
 its line.
+
+## Amendment: oracle C, objects and proxies (2026-11-25, the lead's step 1 of 2)
+
+Until now the net gave only plain values: numbers, text, `Option`s,
+arrays. No object JS made reached an export, so a function taking a struct
+was never called. Oracle C's first landing:
+
+**Objects from the records.** The one generator (`values`) makes each of a
+crate's types from its record, a JS literal of its guide row's form beside
+the Rust literal of the same value:
+
+- a struct's object of its fields' JS keys, a nullable field's `None` its
+  `null`;
+- a tuple struct's array, and a unit struct's value;
+- each enum variant in its form, a tag or an object of its tag, an
+  untagged one's payload, a keyed one's fields.
+
+A type's Rust literal names it by the path a crate offers it at, the
+first crate's. Oracle A then calls the functions that take them and
+compares them with native Rust.
+
+**Not given, and said.** A type the generator makes no value of is counted
+per case by why (`Netted.notGiven`) and printed, never dropped silently:
+
+- sealed, which no other crate makes (6 across the net);
+- a `#[rust_js::class]` (3; `OfferedPath::class`, `classes::is_class`);
+- a struct of a cell field that's its property (19);
+- also generic, unnamed, an `otherwise`, and a nested `None`.
+
+Makers for these are #2594 (P3).
+
+**The proxies variant.** The harness runs again in a fresh process, each
+argument a counting proxy (`test/counting-proxies.ts`, getter-reads'
+harness moved out to be the one both nets use). Its lines must equal the
+plain run's. The proxies' log is kept for the second landing, `--js-reads`
+and the volatile variant.
+
+**Results:** across the net's 224 cases, 422 calls, about 30 more of them
+of objects, with no problem found. Own case `object_arguments`: structs by
+value and by reference, a nullable field, a tuple struct, a unit struct,
+and each enum form.
+
+test/oracle-c.test.ts, the push suite's, holds the generator's forms and
+reasons and the proxies' log.
+
+Mutation `offered-field-js-name-as-rust`: a field recorded by its Rust name
+gives JS `{ max_len }` where it reads `maxLen`, and native Rust disagrees.

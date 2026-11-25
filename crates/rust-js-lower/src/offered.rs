@@ -105,6 +105,7 @@ fn walk<'tcx>(
             variants: None,
             positional: Vec::new(),
             unit: None,
+            class: false,
         };
         match kind {
             // A module of its own JS reads only through a re-export of it.
@@ -195,6 +196,7 @@ fn walk<'tcx>(
                         Vec::new()
                     },
                     unit: (kind == DefKind::Struct).then(|| unit_of(tcx, id)).flatten(),
+                    class: kind == DefKind::Struct && crate::classes::is_class(tcx, id),
                     ..offered(OfferedKind::Type, Vec::new(), None, false)
                 });
             }

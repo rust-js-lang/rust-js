@@ -186,6 +186,7 @@ function offeredPath(path) {
     && (path.def === undefined || offeredDef(path.def))
     && (path.transparent === undefined || offeredType(path.transparent))
     && (path.variants === undefined || offeredEnum(path.variants))
+    && flag(path.class)
     && (path.positional === undefined || Array.isArray(path.positional) && path.positional.every(offeredType))
     && (path.unit === undefined || path.unit !== null && typeof path.unit === "object" && tagKinds.has(path.unit.kind))
     && (path.type_params === undefined || Number.isInteger(path.type_params) && path.type_params >= 0)

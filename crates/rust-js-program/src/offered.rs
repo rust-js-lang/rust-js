@@ -78,6 +78,10 @@ pub struct OfferedPath {
     /// order (oracle B).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub positional: Vec<OfferedType>,
+    /// Of a `#[rust_js::class]`, made by its constructor, never a literal
+    /// of its fields (`classes::is_class`, oracle C).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub class: bool,
     /// Of a unit struct, its value: its `#[rust_js::name]`'s, or
     /// `undefined` (`bindings::unit_value`, oracle B).
     #[serde(default, skip_serializing_if = "Option::is_none")]

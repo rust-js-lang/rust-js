@@ -10,7 +10,7 @@
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { calls, jsConforms, jsShow, printable, rustShow, type NoneForm, type Shaped, type Tree } from "./generated-calls";
+import { calls, jsConforms, jsShow, printable, rustShow, type Giving, type NoneForm, type Shaped, type Tree } from "./generated-calls";
 import { compiler, fixture, nativeCrates, programFlags, run } from "./support";
 import { es2022, typeChecked } from "./type-checked";
 import { underLoad } from "../scripts/timing";
@@ -28,12 +28,14 @@ export type Offered = {
   of_no_value?: boolean;
   // Oracle B's (ADR 1204): a struct's fields and where it's defined, a
   // transparent one's field, a function's result's `None`.
-  fields?: { js: string; ty: Tree; none?: NoneForm }[];
+  fields?: { rust?: string; js: string; ty: Tree; none?: NoneForm; property?: Tree }[];
   def?: { crate: string; rust: string[] };
   transparent?: Tree;
   variants?: Shaped["variants"];
   positional?: Tree[];
   unit?: Shaped["unit"];
+  sealed?: boolean;
+  class?: boolean;
   result_none?: NoneForm;
 };
 
@@ -65,11 +67,11 @@ function valued(offered: Offered[], path: Offered): boolean {
 
 /** A function JS calls and native Rust calls alike, given the same values,
  * or a constant or static it reads: of plain types alone, not generic. */
-function called(path: Offered, small: boolean): string[][] | undefined {
+function called(path: Offered, small: boolean, giving: Giving): string[][] | undefined {
   if (path.kind === "function") {
     // Nor one whose JS takes its caller's location after its arguments.
     if (path.generic || path.located || !path.ty || !printable(path.ty)) return undefined;
-    return calls(path.params ?? [], small)?.map((given) => given.map((v) => `${v.js}\u0000${v.rust}`));
+    return calls(path.params ?? [], small, giving)?.map((given) => given.map((v) => `${v.js}\u0000${v.rust}`));
   }
   if ((path.kind === "const" || path.kind === "static") && path.ty && printable(path.ty)) return [[]];
   return undefined;
@@ -79,11 +81,11 @@ function called(path: Offered, small: boolean): string[][] | undefined {
  * 1204), or a constant or static it reads: one `called` leaves out as
  * native's printer can't print what it gives, a struct's, an enum's, a
  * `Box`'s, given the values `calls` makes of its parameters. */
-function shapedOnly(path: Offered, small: boolean): string[][] | undefined {
-  if (called(path, small) || !path.ty) return undefined;
+function shapedOnly(path: Offered, small: boolean, giving: Giving): string[][] | undefined {
+  if (called(path, small, giving) || !path.ty) return undefined;
   if (path.kind === "function") {
     if (path.generic || path.located) return undefined;
-    return calls(path.params ?? [], small)?.map((given) => given.map((v) => `${v.js}\u0000${v.rust}`));
+    return calls(path.params ?? [], small, giving)?.map((given) => given.map((v) => `${v.js}\u0000${v.rust}`));
   }
   return path.kind === "const" || path.kind === "static" ? [[]] : undefined;
 }
@@ -99,7 +101,7 @@ function shapedOnly(path: Offered, small: boolean): string[][] | undefined {
  * so 15 s, as the machine's load makes it, is room, not a wait. */
 const bigRunMs = underLoad(15_000);
 
-export type Netted = { problems: string[]; paths: number; calls: number; declared: number; shapes: { checked: number; unchecked: number; why: Record<string, number> }; offered: Record<string, string[]> };
+export type Netted = { problems: string[]; paths: number; calls: number; declared: number; shapes: { checked: number; unchecked: number; why: Record<string, number> }; notGiven: Record<string, number>; offered: Record<string, string[]> };
 
 export function exportNet(cases: string, name: string, files: string[]): Netted {
   const dir = fixture(`export-net-${name}`);
@@ -108,6 +110,9 @@ export function exportNet(cases: string, name: string, files: string[]): Netted 
   const problems: string[] = [];
   const checked = { paths: 0, calls: 0, declared: 0 };
   const shapes = { checked: 0, unchecked: 0, why: {} as Record<string, number> };
+  // Each type of the crates' no value was made of, by why: said, never
+  // dropped silently (oracle C).
+  const notGiven: Record<string, number> = {};
   const listed: Record<string, string[]> = {};
   // Each struct's shape, of every crate's records so far, by where it's
   // defined: a crate's types are its dependencies' too.
@@ -126,7 +131,13 @@ export function exportNet(cases: string, name: string, files: string[]): Netted 
     const offered: Offered[] = JSON.parse(readFileSync(manifest, "utf8")).offered_paths ?? [];
     const of = (p: Offered) => `${crate.name}::${p.rust.join("::")}`;
     listed[crate.name] = offered.map((p) => `${p.kind} ${p.rust.join("::")} -> ${p.js.join(".")}`);
-    for (const p of offered) if (p.kind === "type" && p.def) types[`${p.def.crate}::${p.def.rust.join("::")}`] = { fields: p.fields, transparent: p.transparent, variants: p.variants, positional: p.positional, unit: p.unit };
+    // Each type's shape, and the path a caller names it by, the first crate's
+    // to offer it, its own before an app's re-export of it.
+    for (const p of offered) {
+      if (p.kind !== "type" || !p.def) continue;
+      const key = `${p.def.crate}::${p.def.rust.join("::")}`;
+      types[key] = { path: types[key]?.path ?? `${crate.name}::${p.rust.join("::")}`, sealed: p.sealed, class: p.class, fields: p.fields, transparent: p.transparent, variants: p.variants, positional: p.positional, unit: p.unit };
+    }
     // Its JS: each value it offers, of its kind, and each call's result,
     // and native Rust's of the same calls, of the crate built natively: of
     // the values generated, or, where a run of them is past its time, a
@@ -140,14 +151,22 @@ export function exportNet(cases: string, name: string, files: string[]): Netted 
     // tail, 121 s of one pair's 153 s part.
     const limit = (small: boolean) => (small ? 120_000 : bigRunMs);
     const netted = (small: boolean) => {
+      // Values of the crate's types too, from their records (oracle C), each
+      // it gives none of counted by why.
+      const giving: Giving = { types, missing: {} };
       const tested = offered.flatMap((p) => [
-        ...(called(p, small) ?? []).map((given, k) => ({ p, given, label: `${of(p)}#${k}`, native: true })),
-        ...(shapedOnly(p, small) ?? []).map((given, k) => ({ p, given, label: `${of(p)}#${k}`, native: false })),
+        ...(called(p, small, giving) ?? []).map((given, k) => ({ p, given, label: `${of(p)}#${k}`, native: true })),
+        ...(shapedOnly(p, small, giving) ?? []).map((given, k) => ({ p, given, label: `${of(p)}#${k}`, native: false })),
       ]);
       const compared = tested.filter((t) => t.native);
       const harness = join(out, `net-${crate.name}.mjs`);
       writeFileSync(harness, `import * as M from "./${crate.name}/lib.js";
 import { $isPanic } from "@rust-js/std";
+// Run as \`proxies\`, each argument given as a counting proxy of what JS
+// made (test/counting-proxies.ts, oracle C), which must give what the
+// plain run gives.
+const proxied = process.argv[2] === "proxies";
+const { counted } = proxied ? (await import(${JSON.stringify(join(import.meta.dir, "counting-proxies.ts"))})).countingProxies() : { counted: (v) => v };
 ${jsShow}
 ${jsConforms}
 const types = ${JSON.stringify(types)};
@@ -170,7 +189,7 @@ const said = (label, path, f, t, none) => {
 };
 ${values.map((p) => `lines.push("\\u0001" + ${JSON.stringify(`kind ${of(p)}`)} + " " + typeof at(${JSON.stringify(p.js)}));`).join("\n")}
 ${tested.map(({ p, given, label }) => p.kind === "function"
-    ? `said(${JSON.stringify(label)}, ${JSON.stringify(p.js)}, () => at(${JSON.stringify(p.js)})(${given.map((g) => g.split("\u0000")[0]).join(", ")}), ${JSON.stringify(p.ty)}, ${JSON.stringify(p.result_none ?? "plain")});`
+    ? `said(${JSON.stringify(label)}, ${JSON.stringify(p.js)}, () => at(${JSON.stringify(p.js)})(${given.map((g, k) => `counted(${g.split("\u0000")[0]}, ${JSON.stringify(`${label}.arg${k}`)})`).join(", ")}), ${JSON.stringify(p.ty)}, ${JSON.stringify(p.result_none ?? "plain")});`
     : `said(${JSON.stringify(label)}, ${JSON.stringify(p.js)}, () => at(${JSON.stringify(p.js)}), ${JSON.stringify(p.ty)}, "plain");`).join("\n")}
 lines.push("\\u0001counted " + count.checked + " " + count.unchecked);
 lines.push("\\u0001why " + JSON.stringify(count.why));
@@ -178,7 +197,13 @@ lines.push("\\u0001why " + JSON.stringify(count.why));
 console.log("\\n" + lines.join("\\n"));
 `);
       const js = marked(run(["bun", harness], limit(small)));
-      if (compared.length === 0) return { js, native: [] as string[] };
+      // And again, each argument a counting proxy: the same lines.
+      const proxied = marked(run(["bun", harness, "proxies"], limit(small)));
+      const unlike = Array.from({ length: Math.max(js.length, proxied.length) }, (_, k) => k)
+        .filter((k) => js[k] !== proxied[k])
+        .map((k) => `given proxies, ${proxied[k] ?? "nothing"}, where given plain values, ${js[k] ?? "nothing"}`);
+      for (const [why, n] of Object.entries(giving.missing)) notGiven[why] = (notGiven[why] ?? 0) + n;
+      if (compared.length === 0) return { js, native: [] as string[], unlike };
       const rustPath = (p: Offered) => `${crate.name}::${p.rust.join("::")}`;
       const main = `${rustShow}
 fn main() {
@@ -190,8 +215,8 @@ ${compared.map(({ p, given, label }) => {
 }
 `;
       const built = nativeCrates(all.slice(0, i + 1), main, programFlags("2024"));
-      if ("error" in built) return { js, native: [] as string[], unbuilt: built.error };
-      return { js, native: marked(run([built.binary], limit(small))) };
+      if ("error" in built) return { js, native: [] as string[], unbuilt: built.error, unlike };
+      return { js, native: marked(run([built.binary], limit(small))), unlike };
     };
     let ran: ReturnType<typeof netted>;
     try {
@@ -210,6 +235,8 @@ ${compared.map(({ p, given, label }) => {
       if (kind === "undefined" || (expected !== undefined && kind !== expected)) problems.push(`${of(p)}: JS ${p.js.join(".")} is ${kind}, not a ${p.kind}`);
     }
     for (const line of js.filter((l) => / JS-ERROR /.test(l))) problems.push(`${line}: a JS exception, not a Rust panic`);
+    // Oracle C: a call given counting proxies gives what it gives plain.
+    for (const line of ran.unlike) problems.push(line);
     // Oracle B: each value's JS shape its record's type says.
     for (const line of js.filter((l) => l.startsWith("shape "))) problems.push(`${line.slice("shape ".length)}: of the wrong JS shape`);
     for (const [why, n] of Object.entries(JSON.parse(js.find((l) => l.startsWith("why "))?.slice(4) ?? "{}") as Record<string, number>)) shapes.why[why] = (shapes.why[why] ?? 0) + n;
@@ -244,5 +271,5 @@ ${compared.map(({ p, given, label }) => {
       for (const error of typeChecked(out, `net-${crate.name}.ts`, es2022)) problems.push(`${crate.name}'s .d.ts: ${error}`);
     }
   }
-  return { problems, ...checked, shapes, offered: listed };
+  return { problems, ...checked, shapes, notGiven, offered: listed };
 }

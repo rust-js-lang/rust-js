@@ -70,8 +70,11 @@ const escaped = (text: string, quote: string) =>
     return cp >= 0x20 && cp < 0x7f && c !== quote && c !== "\\" ? c : `\\u{${cp.toString(16)}}`;
   }).join("");
 
+const outerRustType = (tree: Tree, giving?: Giving): string => rustType(tree, giving);
+
 /** The Rust type `tree` is, as a literal of it names it. */
-export function rustType(tree: Tree): string {
+export function rustType(tree: Tree, giving?: Giving): string {
+  const rustType = (inner: Tree) => outerRustType(inner, giving);
   switch (tree.kind) {
     case "int": case "float": return tree.rust;
     case "bool": return "bool";
@@ -84,7 +87,9 @@ export function rustType(tree: Tree): string {
     case "box": return `Box<${rustType(tree.of)}>`;
     case "fn": return `impl Fn(${tree.inputs.map(rustType).join(", ")}) -> ${rustType(tree.output)}`;
     case "param": return tree.name;
-    case "named": return tree.rust.join("::");
+    // A crate's type by the path a caller names it by, where the records
+    // give one.
+    case "named": return giving?.types[tree.crate + "::" + tree.rust.join("::")]?.path ?? tree.rust.join("::");
     case "tuple": return `(${tree.items.map(rustType).join(", ")}${tree.items.length === 1 ? "," : ""})`;
     case "result": return `Result<${rustType(tree.ok)}, ${rustType(tree.err)}>`;
     case "array": return `[${rustType(tree.of)}; ${tree.len}]`;
@@ -101,9 +106,102 @@ export function rustType(tree: Tree): string {
   }
 }
 
-/** Values of `tree`, each given alike, or `undefined` of a type it has
- * none of: another's, a `()` parameter. */
-export function values(tree: Tree, small = false): Given[] | undefined {
+/** What \`values\` makes a crate's types of (oracle C): each type's record
+ * by its definition's key, and each type it gives no value of, counted by
+ * why, never silently: "sealed", which no other crate makes; "unnamed", of
+ * no path a caller names; "generic"; "cell field"; "otherwise"; "nested
+ * None". */
+export type Giving = { types: Record<string, Shaped>; missing: Record<string, number> };
+
+/** A tag as JS writes it, a variant's or a unit struct's. */
+const tagJs = (tag: { kind: string; value?: string | number | boolean }) =>
+  tag.kind === "null" ? "null" : tag.kind === "undefined" ? "undefined" : JSON.stringify(tag.value);
+
+/** Values of a crate's type, each a JS literal of its guide row's form and
+ * the Rust literal of the same value, of its record in \`giving\`: a
+ * struct's fields, a tuple struct's array, a unit struct's value, each
+ * enum variant; \`undefined\` of one it makes none of, counted by why. */
+function made(tree: Extract<Tree, { kind: "named" }>, small: boolean, giving: Giving | undefined): Given[] | undefined {
+  if (!giving) return undefined;
+  const not = (why: string) => {
+    giving.missing[why] = (giving.missing[why] ?? 0) + 1;
+    return undefined;
+  };
+  const shaped = giving.types[tree.crate + "::" + tree.rust.join("::")];
+  if (!shaped?.path) return not("unnamed");
+  if (shaped.sealed) return not("sealed");
+  if (shaped.class) return not("class");
+  if (tree.args?.length) return not("generic");
+  type Field = { rust?: string; js: string; ty: Tree; none?: NoneForm; property?: Tree };
+  // Each field's values, a \`None\` as its form writes it; \`undefined\` where
+  // one has none.
+  const fieldValues = (fields: Field[]): Given[][] | undefined => {
+    const each: Given[][] = [];
+    for (const field of fields) {
+      if (field.property) return not("cell field");
+      const form = field.none ?? "plain";
+      if (form === "nested" || form === "held") return not("nested None");
+      const of = values(field.ty, small, giving);
+      if (!of) return undefined;
+      each.push(form === "null" && field.ty.kind === "option" ? of.map((v) => (v.js === "undefined" ? { ...v, js: "null" } : v)) : of);
+    }
+    return each;
+  };
+  // Up to three values: each field's \`i\`th in turn.
+  const combos = (each: Given[][]) => Array.from({ length: Math.min(3, Math.max(1, ...each.map((v) => v.length))) }, (_, i) => each.map((v) => v[i % v.length]!));
+  const named = (fields: Field[]) => !fields.every((field) => /^\d+$/.test(field.rust ?? ""));
+  if (shaped.unit) return [{ js: tagJs(shaped.unit), rust: shaped.path }];
+  if (shaped.transparent) {
+    const of = values(shaped.transparent, small, giving);
+    return of?.slice(0, 3).map((v) => ({ js: v.js, rust: `${shaped.path}(${v.rust})` }));
+  }
+  if (shaped.positional?.length) {
+    const each = shaped.positional.map((item) => values(item, small, giving));
+    if (each.some((v) => !v)) return undefined;
+    return combos(each as Given[][]).map((items) => ({ js: `[${items.map((v) => v.js).join(", ")}]`, rust: `${shaped.path}(${items.map((v) => v.rust).join(", ")})` }));
+  }
+  const e = shaped.variants;
+  if (e) {
+    const out: Given[] = [];
+    for (const variant of e.variants) {
+      if (variant.otherwise) {
+        not("otherwise");
+        continue;
+      }
+      const fields = variant.fields ?? [];
+      const rustOf = (items: Given[]) =>
+        fields.length === 0 ? `${shaped.path}::${variant.rust}`
+        : named(fields) ? `${shaped.path}::${variant.rust} { ${fields.map((field, i) => `${field.rust}: ${items[i]!.rust}`).join(", ")} }`
+        : `${shaped.path}::${variant.rust}(${items.map((v) => v.rust).join(", ")})`;
+      const jsOf = (items: Given[]) => {
+        const props = fields.map((field, i) => `${JSON.stringify(field.js)}: ${items[i]!.js}`);
+        if (e.form === "untagged") return fields.length === 0 ? tagJs(variant.tag) : fields.length === 1 ? items[0]!.js : undefined;
+        if (e.form === "keyed") return `{ ${props.join(", ")} }`;
+        if (e.form === "tagged" && fields.length === 0) return tagJs(variant.tag);
+        return `{ ${[`${JSON.stringify(e.key)}: ${tagJs(variant.tag)}`, ...props].join(", ")} }`;
+      };
+      const each = fieldValues(fields);
+      if (!each) continue;
+      for (const items of combos(each).slice(0, fields.length ? 2 : 1)) {
+        const js = jsOf(items);
+        if (js !== undefined) out.push({ js, rust: rustOf(items) });
+      }
+    }
+    return out.length ? out : undefined;
+  }
+  if (!shaped.fields?.length) return not("unrecorded");
+  const each = fieldValues(shaped.fields);
+  if (!each) return undefined;
+  return combos(each).map((items) => ({
+    js: `{ ${shaped.fields!.map((field, i) => `${JSON.stringify(field.js)}: ${items[i]!.js}`).join(", ")} }`,
+    rust: `${shaped.path} { ${shaped.fields!.map((field, i) => `${field.rust}: ${items[i]!.rust}`).join(", ")} }`,
+  }));
+}
+
+/** Values of \`tree\`, each given alike, or \`undefined\` of a type it has
+ * none of: another's, a \`()\` parameter; of a crate's type, \`giving\`'s
+ * records (\`made\`). */
+export function values(tree: Tree, small = false, giving?: Giving): Given[] | undefined {
   switch (tree.kind) {
     case "int": {
       // Of small ones alone, where a call of a bound runs past its time.
@@ -116,14 +214,14 @@ export function values(tree: Tree, small = false): Given[] | undefined {
     case "str": return strings.map((s) => ({ js: `"${escaped(s, '"')}"`, rust: tree.owned ? `String::from("${escaped(s, '"')}")` : `"${escaped(s, '"')}"` }));
     case "unit": return undefined;
     case "option": {
-      const of = values(tree.of, small);
-      return of && [{ js: "undefined", rust: `None::<${rustType(tree.of)}>` }, ...of.slice(0, 2).map((v) => ({ js: v.js, rust: `Some(${v.rust})` }))];
+      const of = values(tree.of, small, giving);
+      return of && [{ js: "undefined", rust: `None::<${rustType(tree.of, giving)}>` }, ...of.slice(0, 2).map((v) => ({ js: v.js, rust: `Some(${v.rust})` }))];
     }
     case "vec": {
-      const of = values(tree.of, small);
+      const of = values(tree.of, small, giving);
       if (!of) return undefined;
       const list = (items: Given[]) => {
-        const made = `Vec::<${rustType(tree.of)}>::from([${items.map((v) => v.rust).join(", ")}])`;
+        const made = `Vec::<${rustType(tree.of, giving)}>::from([${items.map((v) => v.rust).join(", ")}])`;
         return { js: `[${items.map((v) => v.js).join(", ")}]`, rust: tree.borrowed ? `&${made}[..]` : made };
       };
       return [list([]), list(of.slice(0, 1)), list(of.slice(0, 3))];
@@ -132,11 +230,11 @@ export function values(tree: Tree, small = false): Given[] | undefined {
     // says, declarations-conformance's to give (#2573): no value of these.
     case "ref": {
       if (tree.mutable) return undefined;
-      const of = values(tree.of, small);
+      const of = values(tree.of, small, giving);
       return of?.map((v) => ({ js: v.js, rust: `&${v.rust}` }));
     }
     case "tuple": {
-      const each = tree.items.map((item) => values(item, small));
+      const each = tree.items.map((item) => values(item, small, giving));
       if (each.some((v) => v === undefined)) return undefined;
       const count = Math.max(...each.map((v) => v!.length));
       return Array.from({ length: count }, (_, i) => {
@@ -144,10 +242,11 @@ export function values(tree: Tree, small = false): Given[] | undefined {
         return { js: `[${items.map((v) => v.js).join(", ")}]`, rust: `(${items.map((v) => v.rust).join(", ")}${items.length === 1 ? "," : ""})` };
       });
     }
+    case "named":
+      return made(tree, small, giving);
     case "box":
     case "fn":
     case "param":
-    case "named":
     case "result":
     case "array":
     case "rc":
@@ -181,8 +280,8 @@ export function printable(tree: Tree): boolean {
 /** The calls given a function of `params`: as many as its parameter of
  * the most values has, each parameter's values in turn, of small ones
  * alone where `small`; `undefined` where one has none. */
-export function calls(params: Tree[], small = false): Given[][] | undefined {
-  const each = params.map((param) => values(param, small));
+export function calls(params: Tree[], small = false, giving?: Giving): Given[][] | undefined {
+  const each = params.map((param) => values(param, small, giving));
   if (each.some((v) => v === undefined)) return undefined;
   const count = Math.min(8, Math.max(1, ...each.map((v) => v!.length)));
   return Array.from({ length: count }, (_, i) => each.map((v) => v![i % v!.length]!));
@@ -216,14 +315,19 @@ export type NoneForm = "plain" | "present" | "null" | "null_optional" | "nested"
 /** A struct's record as oracle B reads it: its fields, or its transparent
  * field's type, by its definition's key, `crate::path`. */
 export type Shaped = {
+  /** The Rust path a caller names it by, \`dep::Point\`, as a crate offers
+   * it; and whether it's sealed, which no other crate makes. */
+  path?: string;
+  sealed?: boolean;
+  class?: boolean;
   positional?: Tree[];
   unit?: { kind: "str" | "bool" | "undefined"; value?: string | boolean };
-  fields?: { js: string; ty: Tree; none?: NoneForm; property?: Tree }[];
+  fields?: { rust?: string; js: string; ty: Tree; none?: NoneForm; property?: Tree }[];
   transparent?: Tree;
   variants?: {
     form: "tagged" | "declared" | "untagged" | "keyed";
     key: string;
-    variants: { rust: string; tag: { kind: "str" | "num" | "bool" | "null" | "undefined"; value?: string | number | boolean }; fields?: { js: string; ty: Tree; none?: NoneForm }[]; otherwise?: boolean }[];
+    variants: { rust: string; tag: { kind: "str" | "num" | "bool" | "null" | "undefined"; value?: string | number | boolean }; fields?: { rust?: string; js: string; ty: Tree; none?: NoneForm }[]; otherwise?: boolean }[];
   };
 };
 

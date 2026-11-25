@@ -140,4 +140,12 @@ export const mutations: Mutation[] = [
     replace: "            nullable: false,\n",
     tests: ["test/export-net-6.test.ts", "-t", "export net: rest_shapes"],
   },
+  {
+    name: "offered-field-js-name-as-rust",
+    breaks: "a struct's field is recorded by its Rust name as JS's, `max_len` for `maxLen`, so the export net gives JS an object it reads `undefined` of: oracle C's objects, compared with native Rust (#2481)",
+    file,
+    find: "                rust: field.name.to_string(),\n                js: crate::representation::variant_field(tcx, variant, i),\n",
+    replace: "                rust: field.name.to_string(),\n                js: field.name.to_string(),\n",
+    tests: ["test/export-net-5.test.ts", "-t", "export net: object_arguments"],
+  },
 ];
