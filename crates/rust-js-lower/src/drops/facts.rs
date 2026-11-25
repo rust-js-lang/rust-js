@@ -84,6 +84,11 @@ pub(super) fn find_facts<'tcx>(
     if let Some(root) = thir.exprs.last_index() {
         finder.visit_expr(&thir[root]);
     }
+    // `--count-every-cell`'s: no borrow is momentary, each counted (#2491).
+    if crate::session::caches(cx.recognition.tcx).count_every_cell {
+        finder.facts.momentary.clear();
+        finder.facts.let_momentary.clear();
+    }
     finder.facts
 }
 

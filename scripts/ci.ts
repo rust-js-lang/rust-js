@@ -19,7 +19,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSyn
 import { join } from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 
-import { changedCases, changePicks, ROWS_PARTS, rowsShards, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
+import { changedCases, changePicks, ROWS_PARTS, rowsShards, touchesAsync, touchesCells, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
 import { changedSince, controlRuns, corpusCaseNames, type Mutation, mutationFile, mutations, TESTS_AS_IT_IS, testSet, testTimeout, wasmSplit } from "./mutations";
 import { outcome, type Selection, selectChange, suiteFiles } from "./select";
 import { downloaded } from "./artifacts";
@@ -471,6 +471,7 @@ async function plan(given?: string, testShardsGiven?: string) {
   console.log(`port=${touchesPort(changed)}`);
   console.log(`memory=${touchesMemory(changed)}`);
   console.log(`intervals=${touchesIntervals(changed)}`);
+  console.log(`cells=${touchesCells(changed)}`);
   console.log(`mutations=${mutating}`);
   console.log(`mutation_timings=${timings}`);
   const testTimes = plannedTestTimings();

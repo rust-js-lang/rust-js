@@ -92,6 +92,7 @@ jobs:
       numbers: ${{ steps.plan.outputs.numbers }}
       memory: ${{ steps.plan.outputs.memory }}
       intervals: ${{ steps.plan.outputs.intervals }}
+      cells: ${{ steps.plan.outputs.cells }}
       declarations: ${{ steps.plan.outputs.declarations }}
       async: ${{ steps.plan.outputs.async }}
       consumers: ${{ steps.plan.outputs.consumers }}
@@ -406,7 +407,7 @@ jobs:
     needs: [plan, build]
     if: >-
       ${{ !inputs.nightly && (needs.plan.outputs.formatting == 'true' ||
-      needs.plan.outputs.numbers == 'true' || needs.plan.outputs.memory == 'true' || needs.plan.outputs.intervals == 'true' || needs.plan.outputs.declarations == 'true' ||
+      needs.plan.outputs.numbers == 'true' || needs.plan.outputs.memory == 'true' || needs.plan.outputs.intervals == 'true' || needs.plan.outputs.cells == 'true' || needs.plan.outputs.declarations == 'true' ||
       needs.plan.outputs.async == 'true' || needs.plan.outputs.std == 'true' || needs.plan.outputs.cases == 'true' || needs.plan.outputs.crates == 'true' ||
       needs.plan.outputs.port == 'true') }}
     runs-on: ubuntu-latest
@@ -460,6 +461,15 @@ jobs:
         if: needs.plan.outputs.intervals == 'true'
         background: true
         run: bun scripts/iteratorSlice.ts run intervals 1
+      # The cells' variant (test/tidy-stages.test.ts, #2491), of a change
+      # to what decides a `RefCell` borrow's form (`cellsPaths`): its few
+      # cases with every borrow counted, against native Rust. The
+      # nightly's `stages` runs every case's.
+      - name: cells' variant
+        id: cells
+        if: needs.plan.outputs.cells == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run cells 1
       # Every TypeScript caller of the declarations (#822), of a change to
       # what a `None` is at the JS boundary (`declarationPaths`).
       - name: declarations' TypeScript callers

@@ -16,6 +16,7 @@ import { cases, corpus, directives } from "./corpus-cases";
 import { knownHeading, knownText, root, target } from "./support";
 import { runSync } from "./child";
 import { compileJs, hookSays, runJs, runNative, runtimes, type Run } from "./programs";
+import { buildFlags } from "./builds";
 import { same } from "./oracle";
 
 /** Each rewrite, `metamorph`'s: `main`'s body outlined; each `let` of a
@@ -267,7 +268,7 @@ export function readKnown(text = knownText("metamorphic")): Known[] {
     const words = line.split(" ");
     const [name, rewrite] = [words.at(-1)!, words.at(-2)!];
     const builds = words.slice(0, -2);
-    if (issue === undefined || !(rewrites as readonly string[]).includes(rewrite) || !name.endsWith(".rs") || builds.length === 0 || builds.some((b) => b !== "plain" && b !== "std")) {
+    if (issue === undefined || !(rewrites as readonly string[]).includes(rewrite) || !name.endsWith(".rs") || builds.length === 0 || builds.some((b) => !Object.hasOwn(buildFlags, b))) {
       throw new Error(`test/known/metamorphic: \`${line}\` isn't \`<builds> <rewrite> <case.rs>\` under an \`#<issue>\` or a \`#difference <number>\``);
     }
     known.push({ issue, builds, rewrite, name });

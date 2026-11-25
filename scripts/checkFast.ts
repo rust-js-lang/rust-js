@@ -25,7 +25,7 @@ import { compilerCrates, isCompilerSource } from "./compiler-crates";
 import { floorBytes } from "../test/bounded";
 import { freeBytes } from "../tooling/bounded.js";
 import { childWarnings, guarded, stopGroup } from "../test/child";
-import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins, type Family } from "./iteratorSlice";
+import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesCells, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins, type Family } from "./iteratorSlice";
 import { OWNER_PAGE, ownerTable, sourceLine } from "./owners";
 import { outcome, readOnly, recordSanity, selectChange, selectionFile, shadowMissed, suiteFiles } from "./select";
 import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, peakGB, pooledParts } from "./shard";
@@ -267,6 +267,7 @@ export function touchesReadability(files: string[], paths = readabilityPaths()):
 export const variantFamilies: Record<Family, (files: string[]) => boolean> = {
   readability: (files) => touchesReadability(files),
   intervals: touchesIntervals,
+  cells: touchesCells,
 };
 
 /** The check's jobs, through the pool at once: of `--all`, or a change the
@@ -299,6 +300,9 @@ export function jobs({ all, changed, branch, mutations, extra, cores, picked, fo
   // them, runs the intervals' variant of the same cases' net: its few
   // cases without their proofs (#2112 B), of `--all` too only then.
   const intervals = variantFamilies.intervals(touched);
+  // A change to what decides a `RefCell` borrow's form runs the cells'
+  // variant: its few cases with every cell counted (#2491).
+  const cells = variantFamilies.cells(touched);
   // A change to what a `&mut` is, or to an operation on one, runs the `&mut`
   // matrix's sample against native Rust (ADR 1086).
   const mutRefs = all || touched.some((file) => /^src\/lower\/(representation\/mut_ref|mut_refs|mir\/(assign|entries|places|rvalues|closures)|std_types\/cell)\.rs$/.test(file));
@@ -457,6 +461,7 @@ export function jobs({ all, changed, branch, mutations, extra, cores, picked, fo
       ...everyFile,
       ...(tidy ? [job("readability passes", ["bun", "test", "test/tidy-stages.test.ts", "test/getter-reads.test.ts"], { weight: 2, env: { TIDY_VARIANTS: "readability" } })] : []),
       ...(intervals ? [job(runs.intervals[0].name, ["bun", "scripts/iteratorSlice.ts", "run", "intervals", "1"], { ci: "bun scripts/iteratorSlice.ts run intervals" })] : []),
+      ...(cells ? [job(runs.cells[0].name, ["bun", "scripts/iteratorSlice.ts", "run", "cells", "1"], { ci: "bun scripts/iteratorSlice.ts run cells" })] : []),
       ...(mutRefs ? [job("the `&mut` matrix's sample", ["bun", "test", "test/mut-ref-matrix.test.ts"])] : []),
       // In a part a core, `RUST_JS_CASES=i/n`: one `bun test` of its 321
       // programs, one after another, took 270 s.

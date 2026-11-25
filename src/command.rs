@@ -141,6 +141,15 @@ pub(crate) struct Build {
     /// fact the intervals kept past a write (#2112 B). A test hook, not a
     /// way to build: `test/tidy-stages.test.ts`' variant.
     pub without_intervals: bool,
+    /// `--count-every-cell`: every `RefCell` borrow the crate makes counted,
+    /// `$borrow(c)`, none unchecked or checked only where it's made, whatever
+    /// today's deciders prove quiet (a flattened state keeps its declared
+    /// form), to see that each case runs the same: a run that differs is a
+    /// borrow the deciders called quiet that another could meet, or a
+    /// count that's wrong (#2491). A test hook, not a way to build:
+    /// `test/tidy-stages.test.ts`' variant, and the metamorphic net's
+    /// `observe-borrows` build.
+    pub count_every_cell: bool,
     /// `--without-moves`: rust-js's drop elaboration blind to moves, each
     /// drop dropping all of what it drops, a moved part too, to see that
     /// the comparison with rustc's refuses it (#2112's change D). A test
@@ -271,6 +280,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let no_thir_hints = flag(&mut ours, "--no-thir-hints");
     let without_intervals = flag(&mut ours, "--without-intervals");
     let without_moves = flag(&mut ours, "--without-moves");
+    let count_every_cell = flag(&mut ours, "--count-every-cell");
     let intervals_by_effects = flag(&mut ours, "--intervals-by-effects");
     let std_paths_first = flag(&mut ours, "--std-paths-first");
     let mut dependencies = Vec::new();
@@ -371,6 +381,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         without_recognizers,
         without_mutated,
         without_intervals,
+        count_every_cell,
         without_moves,
         intervals_by_effects,
         shadow,

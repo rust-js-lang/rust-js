@@ -138,6 +138,8 @@ struct RustJs {
     without_mutated: Vec<String>,
     /// `--without-intervals`, nothing MIR's intervals prove taken (#2112 B).
     without_intervals: bool,
+    /// `--count-every-cell`, every `RefCell` borrow counted (#2491).
+    count_every_cell: bool,
     /// `--without-moves`, rust-js's drop elaboration blind to moves
     /// (#2112's change D).
     without_moves: bool,
@@ -413,6 +415,7 @@ impl RustJs {
             without_recognizers: std::mem::take(&mut self.without_recognizers),
             without_mutated: std::mem::take(&mut self.without_mutated),
             without_intervals: self.without_intervals,
+            count_every_cell: self.count_every_cell,
             without_moves: self.without_moves,
             intervals_by_effects: self.intervals_by_effects,
             records_recognized: self.recognizers_found.is_some(),
@@ -869,6 +872,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         props_replayed,
         without_mutated,
         without_intervals,
+        count_every_cell,
         without_moves,
         intervals_by_effects,
         shadow,
@@ -946,6 +950,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         recognizers_found,
         without_mutated,
         without_intervals,
+        count_every_cell,
         without_moves,
         intervals_by_effects,
         shadow,

@@ -256,6 +256,30 @@ export const intervalsPaths = [
 
 const intervalsGlobs = intervalsPaths.map((path) => new Bun.Glob(path));
 
+/** What decides a `RefCell` borrow's form, as globs of the repository's
+ * paths: today's deciders, the proof that's to replace them, and the
+ * borrows' lowering, whose change runs the cells' variant of
+ * test/tidy-stages.test.ts, each case with every cell counted (#2491). */
+export const cellsPaths = [
+  "crates/rust-js-lower/src/drops/ref_cells.rs",
+  "crates/rust-js-lower/src/drops/facts.rs",
+  "crates/rust-js-lower/src/analysis/cell_borrows.rs",
+  "crates/rust-js-lower/src/analysis/cell_borrows/**",
+  "crates/rust-js-lower/src/analysis/cell_form.rs",
+  "crates/rust-js-lower/src/analysis/cell_form/**",
+  "crates/rust-js-lower/src/analysis/cell_flow.rs",
+  "crates/rust-js-lower/src/analysis/plain_locals.rs",
+  "crates/rust-js-lower/src/std_types/cell.rs",
+  "crates/rust-js-mir/src/local_facts.rs",
+];
+
+const cellsGlobs = cellsPaths.map((path) => new Bun.Glob(path));
+
+/** Whether a change of `files` touches what decides a borrow's form. */
+export function touchesCells(files: string[]): boolean {
+  return files.some((file) => cellsGlobs.some((glob) => glob.match(file)));
+}
+
 /** Whether a change of `files` touches the facts MIR's intervals keep. */
 export function touchesIntervals(files: string[]): boolean {
   return files.some((file) => intervalsGlobs.some((glob) => glob.match(file)));
@@ -263,7 +287,7 @@ export function touchesIntervals(files: string[]): boolean {
 
 /** The families of test/tidy-stages.test.ts' variants, each run by a push
  * of its own code (scripts/checkFast.ts' `variantFamilies`). */
-export const families = ["readability", "intervals"] as const;
+export const families = ["readability", "intervals", "cells"] as const;
 export type Family = (typeof families)[number];
 
 /** What drops, and what drops as a panic unwinds, as globs of the
@@ -517,6 +541,9 @@ export const runs = {
   // test/tidy-stages.test.ts' intervals family: its few cases, each
   // without MIR's intervals' proofs, against native Rust (#2112 B).
   intervals: [{ name: "the intervals' variant", file: "test/tidy-stages.test.ts", env: { TIDY_VARIANTS: "intervals" } }],
+  // test/tidy-stages.test.ts' cells family: its few cases, each with every
+  // `RefCell` borrow counted, against native Rust (#2491).
+  cells: [{ name: "the cells' variant", file: "test/tidy-stages.test.ts", env: { TIDY_VARIANTS: "cells" } }],
   // Each table against std's own bodies, no native run (#1205): each
   // table's slice, as a push's run of it against native Rust takes, the
   // whole net 9 min on CI's machine; `twinsAll`, all of each but the
@@ -718,7 +745,7 @@ if (import.meta.main) {
   const [command, of, count, list] = args.filter((arg) => !arg.startsWith("--shard="));
   const [index, shards] = (args.find((arg) => arg.startsWith("--shard="))?.slice("--shard=".length) ?? "1/1").split("/").map(Number);
   if (command !== "run" || !(of in runs || of === "rows") || !(index >= 1 && index <= shards))
-    throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|paths|forms|format|numbers|declarations|async|consumers|memory|intervals|twins|twinsAll|rows [parts [cases]] [--shard=i/n] | metamorphic [parts [since]]");
+    throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|paths|forms|format|numbers|declarations|async|consumers|memory|intervals|cells|twins|twinsAll|rows [parts [cases]] [--shard=i/n] | metamorphic [parts [since]]");
   const parts = count === undefined ? caseParts(machine().cores * 2) : Number(count);
   process.exit((await run(of as keyof typeof runs | "rows", parts, list, { index, count: shards })) ? 0 : 1);
 }

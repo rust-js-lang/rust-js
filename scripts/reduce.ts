@@ -30,6 +30,7 @@ import { run } from "../test/child";
 import { agree, compileJs, jsLimit, runJs, runNative, runtimes, show } from "../test/programs";
 import { buildRewriter, rewriter } from "../test/metamorphic";
 import { root, target } from "../test/support";
+import { buildFlags, type Build } from "../test/builds";
 import { installMiri, mayBeUndefined, miriInstalled, miriSysroot, undefinedBehaviour } from "../test/miri";
 import { atOnce, memoryBudget, peakGB } from "./shard";
 
@@ -49,14 +50,15 @@ export type Failure =
  * Rust's run doesn't end (`rejected`); Miri finds it's undefined behaviour,
  * whose native run prints what it happens to (`undefined`); or rust-js runs
  * it as native Rust does (`passes`). */
-export function failure(file: string, build: "plain" | "std", edition: string, dir: string): Failure | NotAFailure {
+
+export function failure(file: string, build: Build, edition: string, dir: string): Failure | NotAFailure {
   mkdirSync(dir, { recursive: true });
   // Run afresh, a variant's: each its own program, which its check holds
   // to a share of memory a kept run wouldn't be (test/native-outcomes.ts).
   const native = runNative(file, dir, edition, "host", [], { fresh: true });
   if (typeof native === "string" || typeof native.outcome === "string") return "rejected";
   if (mayBeUndefined(readFileSync(file, "utf8")) && undefinedBehaviour(file, edition) !== undefined) return "undefined";
-  const compiled = compileJs(file, dir, edition, "binary", {}, build === "std" ? ["--std-iterators"] : []);
+  const compiled = compileJs(file, dir, edition, "binary", {}, [...buildFlags[build]]);
   if (!("js" in compiled)) {
     const error = compiled.error.split("\n").find((line) => line.startsWith("error")) ?? compiled.reason;
     return { kind: compiled.kind, error: error.trim() };
@@ -145,7 +147,7 @@ export type Reduced = { program: string; failure: Failure; from: number; to: num
 export async function reduce(
   file: string,
   { build = "plain", edition = "2024", oracle = "same", budget = 600, jobs = reduceJobs(), memory = memoryBudget() }: {
-    build?: "plain" | "std";
+    build?: Build;
     edition?: string;
     oracle?: string;
     budget?: number;
@@ -228,15 +230,15 @@ if (import.meta.main) {
     const at = args.indexOf(name);
     return at >= 0 ? args[at + 1] : undefined;
   };
-  const build = (flag("--build") ?? "plain") as "plain" | "std";
+  const build = (flag("--build") ?? "plain") as Build;
   const edition = flag("--edition") ?? "2024";
   const check = flag("--check");
   if (check !== undefined) {
     console.log(JSON.stringify(failure(check, build, edition, join(check, "..", "run"))));
   } else {
     const file = args.find((arg, i) => !arg.startsWith("--") && (i === 0 || !args[i - 1].startsWith("--")));
-    if (file === undefined || !["plain", "std"].includes(build)) {
-      console.error("bun scripts/reduce.ts <case.rs> [--build plain|std] [--edition <year>] [--oracle same|differs|error:<text>] [--budget <s>] [--jobs <n>] [--memory <GB>] [--out <file>]");
+    if (file === undefined || !Object.hasOwn(buildFlags, build)) {
+      console.error("bun scripts/reduce.ts <case.rs> [--build plain|std|cells] [--edition <year>] [--oracle same|differs|error:<text>] [--budget <s>] [--jobs <n>] [--memory <GB>] [--out <file>]");
       process.exit(64);
     }
     const reduced = await reduce(file, {

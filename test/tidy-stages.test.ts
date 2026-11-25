@@ -129,6 +129,20 @@ const fewIntervals = [
   "macro_repeated_index_keeps_each_check.rs",
   "bridged_port_shapes.rs",
 ];
+// Of the cells' variant: cases whose borrows today's deciders leave
+// unchecked or checked only where they're made, of a field's guard, a
+// thread-local's, a guard held across a call and a guard dropped late
+// (#2490's P0s, #2491).
+const fewCells = [
+  "refcell_field_cloned_while_borrowed.rs",
+  "refcell_guard_lent_as_a_dyn_after_get_mut.rs",
+  "generic_cloned_of_a_held_refcell_panics.rs",
+  "borrow_errors_shown_by_debug.rs",
+  "cell_reached_through_a_call.rs",
+  "cell_alias_in_a_closure.rs",
+  // A counted guard's value read before its release (#2579).
+  "guard_value_read_before_write.rs",
+];
 
 /** The families whose variants this run makes: `TIDY_VARIANTS`' one, or
  * every family. */
@@ -142,6 +156,7 @@ const familiesRun: Family[] = (() => {
 /** A test of a family's variants, run where its family's are. */
 const readabilityTest = test.if(familiesRun.includes("readability"));
 const intervalsTest = test.if(familiesRun.includes("intervals"));
+const cellsTest = test.if(familiesRun.includes("cells"));
 
 const which = partSetting("TIDY_STAGES");
 if (which !== undefined && which !== "corpus" && which !== "programs") {
@@ -157,7 +172,7 @@ function whole(name: string, otherwise: number): number {
   return Number(value);
 }
 
-const fewOf: Record<Family, string[]> = { readability: few, intervals: fewIntervals };
+const fewOf: Record<Family, string[]> = { readability: few, intervals: fewIntervals, cells: fewCells };
 const chosen = which === "corpus" ? caseShard(cases) : which === "programs" ? [] : [...new Set(familiesRun.flatMap((family) => fewOf[family]))];
 const start = whole("FUZZ_START", 1);
 const seeds = which === "programs" ? Array.from({ length: whole("FUZZ_SEEDS", 12) }, (_, i) => start + i) : [];
@@ -222,6 +237,7 @@ function variants(fired: string[], found: string[], recognized: string[] = []): 
     ...(recognized.filter((path) => unrecognizedDiffers[path] === undefined)).map((path) => ({ name: `without the recogniser of ${path}`, flags: ["--without-recognizer", path], family })),
     { name: "without the THIR hints", flags: ["--no-thir-hints"], family },
     { name: "without the intervals", flags: ["--without-intervals"], family: "intervals" },
+    { name: "with every cell counted", flags: ["--count-every-cell"], family: "cells" },
     {
       name: `after ${stageEnds()[0]}, without any of preparation's rewrites`,
       flags: ["--tidy-until", stageEnds()[0], ...all.flatMap((pass) => ["--prepare-without", pass])],
@@ -234,6 +250,13 @@ function variants(fired: string[], found: string[], recognized: string[] = []): 
 // with its issue: a list that only shrinks. Each case's JS as built is
 // right; its least variant runs what a later pass takes away.
 const leastDiffers: Record<string, string> = {};
+
+// The cases that run otherwise with every cell counted, each with its
+// issue: a list that only shrinks. Each case's JS as built is right; its
+// counted form, which the build doesn't take, is wrong (#2491).
+const cellsDiffer: Record<string, string> = {
+  "guard_value_read_before_write.rs": "#2579",
+};
 
 /** A compile's JS, its map's line left out: what's run, and kept by. */
 const code = (js: string) => readFileSync(js, "utf8").replace(/^\/\/# sourceMappingURL=.*$/m, "");
@@ -333,19 +356,32 @@ async function differences(file: string, dir: string, edition: string, native: R
       // And a std function whose recogniser is left out is refused, as
       // rust-js has no other model of it: what's wanted of one (ADR 1128).
       const unrecognized = flags[0] === "--without-recognizer";
-      if (compiled.kind === "rejected" && (tidied || unrecognized)) continue;
+      // And a borrow of a cell whose declaration gives its form, a class's
+      // flattened state (ADR 1044) or an exported thread-local's `export
+      // let`, which counts none, is refused counted, as rust-js refuses one
+      // that can't be momentary: no JS is made to be wrong (#2491).
+      const declared = flags[0] === "--count-every-cell";
+      if (compiled.kind === "rejected" && (tidied || unrecognized || declared)) continue;
       problems.push(`${name}: rust-js failed: ${compiled.error.split("\n").slice(0, 6).join("\n")}`);
       continue;
     }
     // Without the intervals, the JS a build makes is the build's, which
     // the corpus runs: of a case whose proofs left nothing out, no run.
     if (flags[0] === "--without-intervals" && code(compiled.js) === code(full.js)) continue;
+    // With every cell counted, of a case whose borrows were each counted
+    // already, the same: no run (#2491).
+    if (flags[0] === "--count-every-cell" && code(compiled.js) === code(full.js)) continue;
     // The same JS, of any variant, runs the same: it's run once.
     const key = runKey(["readability variant", code(compiled.js), native.bytes.stdout, native.bytes.stderr, show(native.outcome), await shared(compiled.js)]);
     if (verified(key)) continue;
     const [runtime, cmd] = runtimes[0];
     const ran = runJs(cmd, compiled.js, dir, `${runtime}-${flags.join("-").replaceAll(/[^A-Za-z0-9]+/g, "_").slice(0, 80)}`, jsLimit(native));
     const agrees = agree(ran, native);
+    const cellsListed = flags[0] === "--count-every-cell" ? cellsDiffer[basename(file)] : undefined;
+    if (cellsListed !== undefined) {
+      if (agrees) problems.push(`${name}: runs as native Rust does now; take ${basename(file)} off \`cellsDiffer\` (${cellsListed})`);
+      continue;
+    }
     if (name === least && listed !== undefined) {
       if (agrees) problems.push(`${name}: runs as native Rust does now; take ${basename(file)} off \`leastDiffers\` (${listed})`);
       continue;
@@ -357,7 +393,7 @@ async function differences(file: string, dir: string, edition: string, native: R
 }
 
 test("the cases a run of a few names are the corpus's", () => {
-  for (const name of [...few, ...fewIntervals]) expect(cases).toContain(name);
+  for (const name of [...few, ...fewIntervals, ...fewCells]) expect(cases).toContain(name);
 });
 
 // A compile without the intervals takes none of their proofs, so the
@@ -375,6 +411,55 @@ intervalsTest("a case's JS without the intervals keeps the checks they leave out
   const [built, without] = await Promise.all([at(name, []), at(name, ["--without-intervals"])]);
   expect(without).not.toBe(built);
   expect(await at("calculator.rs", ["--without-intervals"])).toBe(await at("calculator.rs", []));
+});
+
+// A compile with every cell counted takes none of today's quiet forms, so
+// the variant above runs each borrow counted (#2491): a field's, a
+// thread-local's, a local's of a type no borrow of which is counted, and
+// one checked only where it's made, each `$borrow`'d and released.
+cellsTest("a case's JS with every cell counted counts each borrow today's deciders leave quiet", async () => {
+  buildCompiler();
+  const dir = fixture("cells-counted");
+  const file = join(dir, "counted.rs");
+  writeFileSync(
+    file,
+    `use std::cell::RefCell;
+
+struct Counter {
+    hits: RefCell<Vec<u32>>,
+}
+
+thread_local! {
+    static LOG: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
+}
+
+fn main() {
+    let c = Counter { hits: RefCell::new(vec![]) };
+    c.hits.borrow_mut().push(1);
+    let n = c.hits.borrow().len();
+    LOG.with_borrow_mut(|log| log.push(format!("{n}")));
+    let local = RefCell::new(3);
+    *local.borrow_mut() += 1;
+    println!("{} {} {}", n, LOG.with_borrow(|l| l.len()), local.borrow());
+    let cells = vec![RefCell::new(1)];
+    *cells[0].borrow_mut() += 1;
+    println!("{}", cells[0].borrow());
+}
+`,
+  );
+  const at = async (flags: string[]) => {
+    const compiled = await compile(file, dir, "2024", flags);
+    if (!("js" in compiled)) throw new Error(compiled.error);
+    return code(compiled.js);
+  };
+  const [built, counted] = await Promise.all([at([]), at(["--count-every-cell"])]);
+  expect(built).not.toContain("$withBorrowMut(");
+  expect(counted).toMatch(/\$borrowMut\(\s*c\.hits,/);
+  expect(counted).toMatch(/\$withBorrowMut\(\s*log,/);
+  expect(counted).toContain("const local = { value: 3 };");
+  expect(counted).toMatch(/const n = borrow\.length;\s*\$unborrow\(borrow\);/);
+  // A `RefCell` of a type no borrow of which is counted, an item's.
+  expect(counted).toMatch(/\$borrowMut\(\s*\$index\(/);
 });
 
 readabilityTest("a stage's end is the last of its passes", () => {

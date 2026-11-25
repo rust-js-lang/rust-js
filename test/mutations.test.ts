@@ -279,12 +279,14 @@ test("every source file of more than 80 lines has mutations, or says why it need
 // what to run is (`refuseUnmatched`), in a push's first seconds, `fast`.
 test("each mutation's tests are a file there and a test of it its pattern names", async () => {
   const said = new Map(
-    mutations.flatMap((m): [string, [string, string | undefined]][] => {
+    mutations.flatMap((m): [string, [string, string | undefined, boolean]][] => {
       const [file, ...args] = m.tests ?? [];
       if (file === undefined) return [];
       const at = args.indexOf("-t");
       const pattern = at < 0 ? undefined : args[at + 1];
-      return [[`${m.name}: ${file}${pattern === undefined ? "" : ` -t ${pattern}`}`, [file, pattern]]];
+      // One given settings of its own, `METAMORPHIC=all`'s, runs tests
+      // Bun's listing without them doesn't have: judged by the file's text.
+      return [[`${m.name}: ${file}${pattern === undefined ? "" : ` -t ${pattern}`}`, [file, pattern, m.env !== undefined]]];
     }),
   );
   const base = runSync(["git", "merge-base", "HEAD", "origin/main"], root, 30_000).stdout.trim();
@@ -294,13 +296,13 @@ test("each mutation's tests are a file there and a test of it its pattern names"
   const listed = listedTests(unread, join(fixture("test-listings"), "reports"));
   let refused = "";
   try {
-    refuseUnmatched([...said.keys()], (entry) => said.has(entry) && namesATest(...said.get(entry)!, listed), { list: "the mutations' `tests`", what: "a file there and a test of it" });
+    refuseUnmatched([...said.keys()], (entry) => said.has(entry) && namesATest(said.get(entry)![0], said.get(entry)![1], said.get(entry)![2] ? undefined : listed), { list: "the mutations' `tests`", what: "a file there and a test of it" });
   } catch (error) {
     refused = (error as Error).message;
     // Where each went, the one other file with a test it names (#2485).
     const files = [...new Bun.Glob("test/**/*.test.ts").scanSync(root)];
-    const moved = [...said].flatMap(([entry, [file, pattern]]) => {
-      const to = pattern === undefined || namesATest(file, pattern, listed) ? undefined : movedTo(file, pattern, files);
+    const moved = [...said].flatMap(([entry, [file, pattern, given]]) => {
+      const to = pattern === undefined || namesATest(file, pattern, given ? undefined : listed) ? undefined : movedTo(file, pattern, files);
       return to === undefined ? [] : [`${entry} → ${to}`];
     });
     if (moved.length > 0) refused += `\nmoved, which \`bun scripts/mutations.ts --remap\` writes in their lists: ${moved.join(", ")}`;

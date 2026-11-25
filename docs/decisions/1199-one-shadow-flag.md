@@ -146,6 +146,37 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): none; a shadow changes
 no output. Held by test/cell-form-shadow.test.ts and the mutations of
 `cell_form.rs`, `cell_borrows.rs` and `cell_borrows/unproven.rs`.
 
+## Amendment: the count-every-cell net (2026-11-25, #2491)
+
+`rust-js --count-every-cell`, a test hook as `--without-intervals` is,
+compiles every `RefCell` borrow counted, whatever today's deciders prove.
+Two roots do it. drops/facts.rs keeps no borrow momentary, and
+analysis.rs' thread-local `quiet` answers no, so no thread-local is its
+module's variable. Between them, every field's, item's and local's borrow
+takes the counted form: mutations removing the switch from
+`RefCells::quiet`, `quiet_field` and `quiet_class` changed no JS, so it
+lives only at those two roots. A declared form (a class's flattened
+state, ADR 1044, or an exported thread-local's `export let`) keeps its
+declaration and is refused counted, which the nets accept: no JS is made
+to be wrong.
+
+Two nets run it. test/tidy-stages.test.ts' `cells` family runs its few
+cases per push of a change to `cellsPaths` (scripts/iteratorSlice.ts),
+and every case nightly. test/metamorphic.test.ts' `observe-borrows` gets a
+third build, `cells`. With a flag at every cell, it holds each flag the
+probes print after each statement to native Rust's at every site, those
+today's deciders leave unchecked included. That is the flip's own safety
+check: the sites a flip quiets are held counted here. The builds are one
+catalog, test/builds.ts' `buildFlags`, which the reducer and the
+metamorphic net read.
+
+First sweep, of 2,966 cases: 2,936 run as native Rust does, 29 declared
+forms are refused counted, and 1 runs wrongly: #2579. A counted guard's
+`let Some(x) = cell.borrow().clone() else` read the guard's value after
+`$unborrow` and a write. observe-borrows' 1,145 variants in three builds
+found only that case. Case ([0262](0262-when-rust-and-js-disagree.md)):
+none; a test hook changes no output.
+
 ## Amendment: the `param-form` kind (2026-11-25, #2539)
 
 Campaign 6's step 0 adds the `param-form` shadow ([1203](1203-a-generic-instance-s-view-of-its-type-parameters-is-one-record.md)).

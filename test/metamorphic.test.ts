@@ -25,6 +25,7 @@ import { buildCompiler, caseShard, firstPart, fixture, knownFileOf, root } from 
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
 import { shard } from "../scripts/shard";
 import { partSetting } from "./part-settings";
+import { buildFlags, type Build } from "./builds";
 
 beforeAll(() => {
   buildCompiler();
@@ -57,10 +58,18 @@ const chosen = new Set(caseShard(picked.map(({ name }) => name), cases));
 const netHarness = ["metamorphic.test.ts", "metamorphic.ts"].map((file) => readFileSync(join(import.meta.dir, file), "utf8"));
 
 /** The two builds: the default, and std's iterator structs (ADR 0908). */
-const builds: [string, string[]][] = [
-  ["plain", []],
-  ["std", ["--std-iterators"]],
+const builds: [Build, string[]][] = [
+  ["plain", [...buildFlags.plain]],
+  ["std", [...buildFlags.std]],
 ];
+
+/** The builds of `rewrite`: both, and of `observe-borrows` a third, every
+ * `RefCell` borrow counted, `cells` (`--count-every-cell`, #2491): there
+ * each cell has its flag, so each flag the probes print after each
+ * statement is held to native Rust's at every site, a borrow today's
+ * deciders leave unchecked too, which a flip to quieter forms would. */
+const buildsOf = (rewrite: Rewrite): [Build, string[]][] =>
+  rewrite === "observe-borrows" ? [...builds, ["cells", [...buildFlags.cells]]] : builds;
 
 /** `METAMORPHIC_TALLY=<file>`: a line of what each rewrite of each case
  * made, `<rewrite> <case> <what>`, `unchanged`, `all` or `first` tried,
@@ -163,7 +172,7 @@ async function wrong(rewrite: Rewrite, name: string, edition: string, target: "h
   }
   if (native === undefined || made === undefined) return undefined;
   const problems = new Map<string, string>();
-  for (const [build, flags] of builds) {
+  for (const [build, flags] of buildsOf(rewrite)) {
     const own = join(dir, build);
     mkdirSync(own, { recursive: true });
     let compiled: ReturnType<typeof compileJs>;
@@ -339,7 +348,7 @@ for (const { name, edition, native } of all.filter(({ name }) => chosen.has(name
     const failing: { at: number; reduction: Reduction }[] = [];
     for (const rewrite of rewritesRun) {
       const found = await wrong(rewrite, name, edition, native);
-      for (const [build] of builds) {
+      for (const [build] of buildsOf(rewrite)) {
         const listedAs = known.find((k) => k.name === name && k.rewrite === rewrite && k.builds.includes(build));
         const problem = found?.problems.get(build);
         // One whose native output its seed decides, difference 5's, runs as

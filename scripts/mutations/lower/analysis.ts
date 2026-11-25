@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "count-every-cell-leaves-thread-locals-quiet",
+    breaks: "`--count-every-cell` leaves a thread-local its module's variable, its borrows unchecked (#2491)",
+    file: "crates/rust-js-lower/src/analysis.rs",
+    find: "        if crate::session::caches(tcx).count_every_cell {\n            return false;\n        }\n        let held",
+    replace: "        let held",
+    tests: ["test/tidy-stages.test.ts", "-t", "with every cell counted"],
+    env: { TIDY_VARIANTS: "cells" },
+  },
+  {
     name: "type-constants-unexported",
     breaks: "a `pub` type's `pub` constants are no property of its object, so JS can't name `ReactiveFlags.RecursedCheck` (#498)",
     file: "crates/rust-js-lower/src/analysis.rs",

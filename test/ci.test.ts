@@ -83,7 +83,7 @@ test("each push's lint job checks std/ is what its sources make, after the compi
 // alone, went red on `main` unseen (801d40c55, 336984bff).
 // Of a change to the iterators' code, the formatting code, the numbers' and the pointers', whose
 // jobs check.yml runs where its change is one (scripts/iteratorSlice.ts).
-const checkJobs = jobs({ all: true, changed: [], branch: ["crates/rust-js-program/src/runtime/steps.js", "crates/rust-js-program/src/runtime/pad.js", "crates/rust-js-program/src/runtime/div.js", "crates/rust-js-emit/src/typescript.rs", "crates/rust-js-lower/src/analysis/awaits.rs", "crates/rust-js-lower/src/unions.rs", "crates/rust-js-lower/src/analysis/intervals/state.rs", "test/corpus/array_map.rs"], extra: [], cores: 4 });
+const checkJobs = jobs({ all: true, changed: [], branch: ["crates/rust-js-program/src/runtime/steps.js", "crates/rust-js-program/src/runtime/pad.js", "crates/rust-js-program/src/runtime/div.js", "crates/rust-js-emit/src/typescript.rs", "crates/rust-js-lower/src/analysis/awaits.rs", "crates/rust-js-lower/src/unions.rs", "crates/rust-js-lower/src/analysis/intervals/state.rs", "crates/rust-js-lower/src/drops/ref_cells.rs", "test/corpus/array_map.rs"], extra: [], cores: 4 });
 const ranHere = checkJobs.jobs;
 
 // The readability passes' oracles run of a change to tidy, preparation or
@@ -115,6 +115,12 @@ test("the intervals' variant runs where intervalsPaths say, and the readability 
   expect(tidy).toContain("readability passes");
   expect(tidy).not.toContain("the intervals' variant");
   expect(variantFamilies.intervals(["crates/rust-js-lower/src/copies.rs"])).toBe(false);
+  // The cells' of a change to what decides a borrow's form (#2491).
+  const cells = named(["crates/rust-js-lower/src/drops/ref_cells.rs"]);
+  expect(cells).toContain("the cells' variant");
+  expect(cells).not.toContain("the intervals' variant");
+  expect(named(["crates/rust-js-mir/src/local_facts.rs"])).toContain("the cells' variant");
+  expect(variantFamilies.cells(["crates/rust-js-lower/src/analysis/intervals/state.rs"])).toBe(false);
 });
 
 // `--all` runs the metamorphic net's push sample in parts, as the corpus's,
@@ -922,7 +928,7 @@ test("the WASM build takes rustc's crates as built where the cache holds the sam
 // names each (dev-loop change 3).
 test("the short nets are the steps of the jobs of nets, each where its change runs it, each failure named", () => {
   const listed = nets();
-  expect(listed.map((net) => net.id)).toEqual(["iterators", "conformance", "paths", "copies", "consumers", "twins", "format", "numbers", "memory", "intervals", "declarations", "async", "std", "metamorphic", "crates", "port"]);
+  expect(listed.map((net) => net.id)).toEqual(["iterators", "conformance", "paths", "copies", "consumers", "twins", "format", "numbers", "memory", "intervals", "cells", "declarations", "async", "std", "metamorphic", "crates", "port"]);
   type Step = { id?: string; if?: string; background?: boolean; "wait-all"?: null };
   const workflow = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { if?: string; steps: Step[] }> };
   expect(Object.keys(workflow.jobs).filter((name) => name.startsWith("nets"))).toEqual([...NET_JOBS]);

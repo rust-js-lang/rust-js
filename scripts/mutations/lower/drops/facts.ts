@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "count-every-cell-keeps-momentary",
+    breaks: "`--count-every-cell` keeps a borrow checked only where it's made, never counted (#2491)",
+    file: "crates/rust-js-lower/src/drops/facts.rs",
+    find: "    if crate::session::caches(cx.recognition.tcx).count_every_cell {\n",
+    replace: "    if false {\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "with every cell counted"],
+    env: { TIDY_VARIANTS: "cells" },
+  },
+  {
     name: "drop-let-value-context",
     breaks:
       "a `let`'s value is taken as its block's, so a closure that holds a value with a destructor, made for a `let`, is refused",

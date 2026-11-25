@@ -95,6 +95,10 @@ pub struct Caches {
     /// That this session's drop elaboration is blind to moves,
     /// `--without-moves`'s (#2112's change D).
     pub without_moves: bool,
+    /// That every `RefCell` borrow this session compiles is counted, none
+    /// unchecked or checked only where it's made, `--count-every-cell`'s
+    /// (#2491).
+    pub count_every_cell: bool,
     /// That what MIR's intervals keep is asked of the effects query too,
     /// `--intervals-by-effects`'s (#2112 B step 3a).
     pub intervals_by_effects: bool,
@@ -217,6 +221,8 @@ pub struct Flags {
     pub without_intervals: bool,
     /// Whether the drop elaboration is blind to moves.
     pub without_moves: bool,
+    /// Whether every `RefCell` borrow is counted.
+    pub count_every_cell: bool,
     /// Whether what they keep is asked of the effects query too.
     pub intervals_by_effects: bool,
     /// Whether the functions a recogniser takes are recorded.
@@ -275,6 +281,7 @@ fn start_keyed(gcx: usize, flags: Flags, hooks: &'static dyn MirHooks) -> Sessio
             without_mutated: flags.without_mutated.into_iter().collect(),
             without_intervals: flags.without_intervals,
             without_moves: flags.without_moves,
+            count_every_cell: flags.count_every_cell,
             intervals_by_effects: flags.intervals_by_effects,
             shadows: shadows::Shadows::of(&flags.shadows),
             cell_form_wholes: OnceCell::new(),

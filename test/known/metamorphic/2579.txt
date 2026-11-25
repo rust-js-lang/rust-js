@@ -1,0 +1,2 @@
+#2579 P0: a counted guard's `let Some(x) = cell.borrow().clone() else` reads the guard's value after `$unborrow` and a write
+cells observe-borrows guard_value_read_before_write.rs

@@ -895,6 +895,10 @@ pub fn analyze_crate<'a, 'tcx>(
     // borrow asks of, and a `with_borrow_mut`'s or a `with`'s mutably (ADR
     // 0580, amended).
     let quiet = |given: plain_locals::Given<'tcx>, key: DefId, mutable: bool| {
+        // `--count-every-cell`'s: no thread-local's borrow is quiet (#2491).
+        if crate::session::caches(tcx).count_every_cell {
+            return false;
+        }
         let held = Borrow::of(Cell::Key(key), mutable);
         match given {
             plain_locals::Given::Closure(closure) => {
