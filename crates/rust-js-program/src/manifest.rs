@@ -264,6 +264,65 @@ impl Manifest {
     }
 }
 
+/// What a build over an earlier one reads of the manifest that one wrote
+/// at its path (ADR 0091): the input and output it was of, and the files it
+/// wrote, by their bytes, which this build may remove. Of another build of
+/// the compiler too, whose manifest holds other fields: Cargo builds a crate
+/// again in place where rust-js's build changed (ADR 1003, amended, #2473),
+/// so a build reads the last one's, and its contract, written by another
+/// compiler's schema, is none of this build's to read. Read whole, as
+/// `Manifest::read_from` reads it, a field the other compiler's library
+/// hadn't refused the build: "missing field `crate`" (2026-11-25, a kept
+/// app of the guide's).
+#[derive(Deserialize)]
+pub struct Previous {
+    /// The manifest's own version, which a host reads it by: another is
+    /// refused, as `Manifest::read` refuses it.
+    pub version: u32,
+    pub input: PathBuf,
+    pub output: PathBuf,
+    pub artifacts: Vec<Artifact>,
+}
+
+/// Which compiler wrote the manifest at `path`, read alone: what a
+/// consumer refuses another build's manifest by, before it reads the rest
+/// by its own schema, which another build's may not be (#2473).
+pub fn compiler_of(path: &Path) -> Result<Option<Compiler>, String> {
+    #[derive(Deserialize)]
+    struct Written {
+        #[serde(default)]
+        compiler: Option<Compiler>,
+    }
+    let written: Written =
+        serde_json::from_slice(&std::fs::read(path).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+    Ok(written.compiler)
+}
+
+impl Previous {
+    /// The manifest at `path` as an earlier build's, its paths resolved
+    /// against its directory, as `Manifest::read_from` resolves them.
+    pub fn read_from(path: &Path) -> Result<Self, String> {
+        let mut previous: Self =
+            serde_json::from_slice(&std::fs::read(path).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
+        if previous.version != VERSION {
+            return Err(format!(
+                "unsupported manifest version {}; expected {VERSION}",
+                previous.version
+            ));
+        }
+        let dir = path.parent().ok_or("a manifest has a directory")?;
+        let abs = |path: &mut PathBuf| {
+            if path.is_relative() {
+                *path = dir.join(&*path);
+            }
+        };
+        abs(&mut previous.input);
+        abs(&mut previous.output);
+        previous.artifacts.iter_mut().for_each(|a| abs(&mut a.file));
+        Ok(previous)
+    }
+}
+
 /// An artifact's `hash`: what a build wrote, so a later one removes only
 /// what's still as written, and a consumer sees a library's file changed.
 pub fn fingerprint(bytes: &[u8]) -> String {

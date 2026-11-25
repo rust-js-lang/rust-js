@@ -331,3 +331,24 @@ script's and the procedural macro's done), the precondition of #2403's
 `cargo-build-identity-unchecked`, `cargo-version-without-identity`, `cargo-version-without-build` and
 `cargo-version-without-printer`.
 
+
+## Amendment: a crate built again in place reads only what the last build wrote (2026-11-25)
+
+Since #2473, another build of rust-js builds a crate again in its unit's
+own directory, so the build reads the manifest the last one wrote there,
+which tells it what it may remove (ADR 0091). It read that manifest whole,
+library contract and all, by this compiler's schema. A kept app of the
+guide's (`docs-apps_0`, the lisa agent's run) failed with "missing field
+`crate`": its manifest was written by build 6338… and read by build ae1e…,
+before any check of the build. It wasn't a stale answer. The crate was
+built again as it should be, but the build failed on the old manifest for
+no reason of its own. Now it reads `manifest::Previous` alone: the input,
+the output and the files written, the one record ADR 0091 needs, of any
+build. And a consumer reads a library manifest's compiler first
+(`manifest::compiler_of`), refusing another build's by its build before it
+reads the rest, which is of that build's schema: test/cargo-link.test.ts'
+row of a contract it can't read, mutation
+`dependency-of-another-build-read-whole-first`. Test: test/cargo-workspace.test.ts' "another rust-js
+builds each crate for the target again, under the same names, and none for
+the host", its manifests rewritten as another build's, of a contract this
+compiler can't read. Mutation `previous-manifest-read-whole`.

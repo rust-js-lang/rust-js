@@ -202,6 +202,17 @@ test("another rust-js builds each crate for the target again, under the same nam
     const recorded = cargoArtifacts(profile).filter((f) => basename(f).startsWith(`${name}-`) && f.endsWith(".d"));
     expect(recorded.map((f) => readFileSync(f, "utf8").includes("# env-dep:RUST_JS_BUILD=rust-js: "))).toEqual([true]);
   }
+  // What the last build wrote is another build's, of its own schema, here
+  // a library contract this compiler's lacks each field of: the build over
+  // it reads only what it wrote, which it may remove. A kept app of the
+  // guide's failed, "missing field `crate`", reading the whole of the one
+  // the last compiler wrote (2026-11-25).
+  const written = readdirSync(join(profile, "rust-js")).map((unit) => join(profile, "rust-js", unit, "lib.manifest.json")).filter((file) => existsSync(file));
+  expect(written.length).toBeGreaterThan(0);
+  for (const file of written) {
+    const was = JSON.parse(readFileSync(file, "utf8"));
+    writeFileSync(file, JSON.stringify({ ...was, compiler: { ...was.compiler, build: "another" }, library: { another: true } }));
+  }
   writeFileSync(module, `${readFileSync(module, "utf8")}\n// another printer's\n`);
   const second = await units();
   expect(second.map(({ unit, fresh, files }) => ({ unit, fresh, files }))).toEqual(

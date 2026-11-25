@@ -456,4 +456,12 @@ export const mutations: Mutation[] = [
     replace: "            false => None,\n",
     tests: ["test/emission.test.ts", "-t", "no absolute path of the build"],
   },
+  {
+    name: "previous-manifest-read-whole",
+    breaks: "a build over another rust-js's reads the whole of the manifest that one wrote, its contract of that compiler's schema, so a crate Cargo builds again in place fails, \"missing field `crate`\" (a kept app of the guide's, 2026-11-25)",
+    file: "crates/rust-js-emit/src/output.rs",
+    find: "                let previous = manifest::Previous::read_from(&path)\n",
+    replace: "                let previous = Manifest::read_from(&path)\n",
+    tests: ["test/cargo-workspace.test.ts", "-t", "another rust-js builds each crate for the target again"],
+  },
 ];

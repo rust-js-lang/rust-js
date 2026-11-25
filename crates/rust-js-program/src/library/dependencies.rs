@@ -24,11 +24,13 @@ impl Dependencies {
         let parent = output.parent().ok_or("output has no parent")?;
         for path in paths {
             result.inputs.push(crate::paths::absolute(path)?);
-            let manifest = Manifest::read_from(path)?;
-            result.inputs.extend(manifest.sources.iter().cloned());
-            if manifest.compiler.as_ref() != Some(&Compiler::current()) {
+            // Another build's refused by its compiler, read first: the rest is
+            // of its schema, which this one may not read (#2473).
+            if crate::manifest::compiler_of(path)?.as_ref() != Some(&Compiler::current()) {
                 return Err(format!("incompatible dependency compiler identity: {}", path.display()));
             }
+            let manifest = Manifest::read_from(path)?;
+            result.inputs.extend(manifest.sources.iter().cloned());
             let library = manifest.library.ok_or("dependency manifest has no library contract")?;
             if library.version != VERSION {
                 return Err(format!(

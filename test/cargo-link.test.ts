@@ -57,6 +57,9 @@ test("a real Cargo dependency links functions and function values into JS", asyn
     // were told apart (ADR 1003).
     [(m: any) => m.compiler.build = "0123456789abcdef", "incompatible dependency compiler identity"],
     [(m: any) => delete m.compiler.build, "incompatible dependency compiler identity"],
+    // Another build's, its contract of a schema this one can't read: refused
+    // by its build, not by a field it lacks (#2473).
+    [(m: any) => ((m.compiler.build = "0123456789abcdef"), (m.library = { another: true })), "incompatible dependency compiler identity"],
     [(m: any) => m.library.items = [], "isn't one of the items `shared`'s manifest exports"],
   ] as const) {
     const contract = JSON.parse(original);

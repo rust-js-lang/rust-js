@@ -109,4 +109,12 @@ export const mutations: Mutation[] = [
     replace: "m.module == named.module);\n",
     tests: ["test/glob-reexports.test.ts", "-t", "library's module is its namespace"],
   },
+  {
+    name: "dependency-of-another-build-read-whole-first",
+    breaks: "a dependency's manifest of another build is read whole before its build is checked, so one whose contract is of another schema fails on a field it lacks, not by its build (#2473)",
+    file: "crates/rust-js-program/src/library/dependencies.rs",
+    find: "            if crate::manifest::compiler_of(path)?.as_ref() != Some(&Compiler::current()) {\n",
+    replace: "            if Manifest::read_from(path)?.compiler.as_ref() != Some(&Compiler::current()) {\n",
+    tests: ["test/cargo-link.test.ts", "-t", "a real Cargo dependency links functions and function values into JS"],
+  },
 ];

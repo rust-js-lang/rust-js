@@ -1017,8 +1017,10 @@ impl OutputPlan {
             // Only remove files owned by this input/output pair, still containing
             // exactly the bytes this compiler wrote. User edits are preserved.
             if path.exists() {
-                let previous =
-                    Manifest::read_from(&path).map_err(|e| format!("invalid manifest `{}`: {e}", path.display()))?;
+                // What it wrote alone: another build's contract is of its
+                // own schema (`manifest::Previous`, #2473).
+                let previous = manifest::Previous::read_from(&path)
+                    .map_err(|e| format!("invalid manifest `{}`: {e}", path.display()))?;
                 // Of a crate Cargo builds, the directory is its unit's, which
                 // Cargo gives a crate of the same name at another path too, a
                 // project moved, or another sharing its target: what that one
