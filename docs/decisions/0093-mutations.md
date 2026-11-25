@@ -1660,3 +1660,27 @@ checkout's HEAD and files as it ran. Mutations `base-run-checks-out-the-checkout
 `base-run-leaves-its-worktree`. And "no script checks out, switches,
 stashes or resets the checkout it runs in", which names the scripts that
 move a checkout of their own (#2578's audit).
+
+## Amendment: a retirement's fail-fast stop ends its suite at once (2026-11-25)
+
+A retirement's suite runs check:fast `--fail-fast` (#2256): at its first
+failure, the pool stops the jobs running. It stopped each job's process
+alone, with SIGTERM, and then read its pipes to their end. What a job had
+started, a test's cargo or compiles, held those pipes, so the pool waited
+on them. Retire-B's `filter-meaning-unmade` (2026-11-24) failed
+test/compiled-std.test.ts 2 min into its suite, very likely a catch, and
+its suite ended at its 2,400 s limit. The verdict said it said nothing,
+and the name had to run again.
+
+Each of the pool's jobs now runs as the leader of a group of its own,
+which goes with check:fast (`guarded`). A stop, fail-fast's or a job's
+timeout, tells the group to end, kills it `stopGrace` (5 s) on, and lets
+go of its pipes then, where a process the job started in a group of its
+own still holds them (`stopJob`). The run ends within seconds of its
+first failure, and the retirement reads its catch.
+
+What holds it: test/timing.test.ts, "check:fast's fail-fast stop ends the
+run within seconds, though what a job started holds its output": a job
+whose own group holds its pipes, and one whose child, in a group of its
+own, does. Mutations `fail-fast-stops-the-job-alone`,
+`fail-fast-waits-on-held-pipes` and `pool-job-in-the-checks-group`.

@@ -96,4 +96,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/ci.test.ts", "-t", "check:fast judges the change's mutations as CI's check does"],
   },
+  {
+    name: "fail-fast-stops-the-job-alone",
+    breaks: "a fail-fast stop tells the job alone to end, not its group, so the pool waits on the pipes what it started holds: a retirement's suite stopped in 2 min and ended at its 2,400 s limit (2026-11-24)",
+    file: "scripts/checkFast.ts",
+    find: '  stopGroup(pid, "SIGTERM");\n',
+    replace: '  process.kill(pid, "SIGTERM");\n',
+    tests: ["test/timing.test.ts", "-t", "fail-fast stop ends the run within seconds"],
+  },
+  {
+    name: "fail-fast-waits-on-held-pipes",
+    breaks: "a stopped job's pipes are read to their end, so one a process in a group of its own still holds keeps the pool, and the check, from ending",
+    file: "scripts/checkFast.ts",
+    find: "    for (const reader of readers) reader.cancel().catch(() => {});\n",
+    replace: "",
+    tests: ["test/timing.test.ts", "-t", "fail-fast stop ends the run within seconds"],
+  },
+  {
+    name: "pool-job-in-the-checks-group",
+    breaks: "a pool's job runs in the check's own group, so a stop of its group stops the check too",
+    file: "scripts/checkFast.ts",
+    find: "            detached: true,\n          });\n          const readers",
+    replace: "          });\n          const readers",
+    tests: ["test/timing.test.ts", "-t", "fail-fast stop ends the run within seconds"],
+  },
 ];

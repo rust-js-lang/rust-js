@@ -24,7 +24,7 @@ import { dirname, join, resolve } from "node:path";
 import { compilerCrates, isCompilerSource } from "./compiler-crates";
 import { floorBytes } from "../test/bounded";
 import { freeBytes } from "../tooling/bounded.js";
-import {childWarnings} from "../test/child";
+import { childWarnings, guarded, stopGroup } from "../test/child";
 import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins, type Family } from "./iteratorSlice";
 import { OWNER_PAGE, ownerTable, sourceLine } from "./owners";
 import { outcome, readOnly, recordSanity, selectChange, selectionFile, shadowMissed, suiteFiles } from "./select";
@@ -648,6 +648,36 @@ function busySince(): () => number {
   };
 }
 
+/** How long a stopped job's group has to end, in ms, before it's killed
+ * and its output let go (`stopJob`). */
+export const stopGrace = 5_000;
+
+/** A job's run, `pid`, the leader of a group of its own, stopped: its
+ * group told to end, then killed `grace` ms on, and its pipes, `readers`,
+ * let go, where a process it started in a group of its own holds them.
+ * A fail-fast run's stop told the job alone, and the pool waited on the
+ * pipes what it had started still held: a retirement's suite stopped at
+ * its first failure in 2 min and ended at its 2,400 s limit, which said it
+ * said nothing (2026-11-24, retire-B's `filter-meaning-unmade`). */
+export function stopJob(pid: number, readers: ReadableStreamDefaultReader<Uint8Array>[], grace = stopGrace) {
+  stopGroup(pid, "SIGTERM");
+  setTimeout(() => {
+    stopGroup(pid, "SIGKILL");
+    for (const reader of readers) reader.cancel().catch(() => {});
+  }, grace);
+}
+
+/** What `reader` reads, whole, to its end or to its being let go. */
+async function textOf(reader: ReadableStreamDefaultReader<Uint8Array>): Promise<string> {
+  const decoder = new TextDecoder();
+  let text = "";
+  for (;;) {
+    const read = await reader.read().catch(() => ({ done: true as const, value: undefined }));
+    if (read.done) return text + decoder.decode();
+    text += decoder.decode(read.value, { stream: true });
+  }
+}
+
 /** `list`'s jobs through a pool of the machine's `cores` (#857): each
  * started once the cores it keeps busy are free, as its last runs measured
  * them, or its `weight` before it has run, and the GB it holds at its peak,
@@ -733,7 +763,7 @@ export function run(
   const pending = [...queue];
   // Of a fail-fast run, those running, stopped at the first that fails
   // (`failFast`), and whether it has.
-  const live = new Set<ReturnType<typeof Bun.spawn>>();
+  const live = new Map<ReturnType<typeof Bun.spawn>, () => void>();
   let cutting = false;
   const next = async (): Promise<Job | undefined> => {
     for (;;) {
@@ -777,13 +807,21 @@ export function run(
         (async () => {
           const start = Date.now();
           const expected = Math.max(2, scale);
-          const p = Bun.spawn(cmd, {
+          // A group of its own, which goes with this process, so a stop
+          // ends what it started too (`stopJob`).
+          const p = Bun.spawn(guarded(cmd), {
             cwd: root,
             env: { ...process.env, RUST_JS_COMPILER: compiler, RUST_JS_LOAD_SCALE: String(expected), RUST_JS_LEASED: process.env.RUST_JS_LEASED || String(process.pid), ...env },
             stdout: "pipe",
             stderr: "pipe",
+            detached: true,
           });
-          live.add(p);
+          const readers = [p.stdout.getReader(), p.stderr.getReader()];
+          let stopping = false;
+          live.set(p, () => {
+            if (!stopping) stopJob(p.pid, readers);
+            stopping = true;
+          });
           // Its seconds, as the load scales them, and twice its own usual at
           // least: under the pool the load stays near the cores, and the
           // rows a change names, 50 min on 8 cores beside the rest, were
@@ -792,9 +830,9 @@ export function run(
           let timeout = given;
           const stop = setInterval(() => {
             timeout = Math.round(Math.max(given * scale, Number.isFinite(own) ? 2 * own : 0));
-            if (Date.now() - start > timeout * 1000) p.kill();
+            if (Date.now() - start > timeout * 1000) live.get(p)?.();
           }, 1000);
-          const [out, err] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);
+          const [out, err] = await Promise.all(readers.map(textOf));
           const code = await p.exited;
           live.delete(p);
           clearInterval(stop);
@@ -813,7 +851,7 @@ export function run(
             cutting = true;
             console.log(`stopped at its first failure: ${pending.length} jobs not started, ${live.size} stopped`);
             pending.length = 0;
-            for (const other of live) other.kill();
+            for (const stop of live.values()) stop();
             for (const wake of waiting.splice(0)) wake();
           }
           else if (group === undefined) console.log(`ok   ${timed(`check:fast ${name}`, seconds, { cores: kept(cpu, start, Date.now()), ran: job.ran })}`);

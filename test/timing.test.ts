@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { keepFailedLogs } from "../scripts/checkLogs";
 import { expected, keptJobs, keptRuns, readJobTimes, recordJobTimes } from "../scripts/jobTimes";
 import { elapsedSeconds, said, strays, worktreeRoots, type Stray } from "../scripts/strays";
-import { groupSaid, groupSeconds, ranKey } from "../scripts/checkFast";
+import { groupSaid, groupSeconds, ranKey, stopGrace } from "../scripts/checkFast";
 import { compared, median, shown, slower, type Timing, underLoad } from "../scripts/timing";
 import { floorBytes, mainCheckoutOf } from "./bounded";
 import { fixture, root } from "./support";
@@ -299,6 +299,56 @@ await run([job("fails", ["sh", "-c", "echo the whole output of a failure; exit 1
   expect(out).toContain(`its whole output: ${join(store, runs[0])}`);
   expect(readFileSync(join(store, runs[0], "fails.log"), "utf8")).toContain("the whole output of a failure");
 }, underLoad(90_000));
+
+// A fail-fast run's stop ends the run at once: each job running is stopped
+// with what it started, its group, and a pipe of its that a process in a
+// group of its own still holds is let go `stopGrace` on. The stop told the
+// job alone, and the pool waited on the pipes what it started held: a
+// retirement's suite stopped at its first failure in 2 min and ended at its
+// 2,400 s limit, saying it said nothing (2026-11-24).
+test("check:fast's fail-fast stop ends the run within seconds, though what a job started holds its output", async () => {
+  const dir = fixture("check-fail-fast-stop");
+  const child = join(dir, "pool.ts");
+  // Of this run alone, by its pid: a mutation run tests its control and its
+  // mutants at once, each finding or killing the others'.
+  const own = (process.pid % 100_000) / 1e6;
+  const holders = { group: `sleep ${117 + own}`, apart: `sleep ${118 + own}` };
+  writeFileSync(
+    child,
+    `import { run } from ${JSON.stringify(join(root, "scripts/checkFast.ts"))};
+import { checkLogRun } from ${JSON.stringify(join(root, "scripts/checkLogs.ts"))};
+const job = (name: string, cmd: string[]) => ({ name, cmd, env: {}, timeout: 600, weight: 1, memory: 0 });
+const holding = process.argv[2] === "group"
+  ? ["sh", "-c", "${holders.group} & ${holders.group}"]
+  : [process.execPath, "-e", "Bun.spawn(['sleep', '${118 + own}'], { detached: true, stdout: 'inherit', stderr: 'inherit' }); await Bun.sleep(120000)"];
+const began = Date.now();
+await run([job("fails", ["sh", "-c", "sleep 0.5; exit 1"]), job("holds its output", holding)], "unused", 4, { began: Date.now(), samples: [] }, checkLogRun({ store: ${JSON.stringify(join(dir, "logs"))} }), ${JSON.stringify(join(dir, "times"))}, ${JSON.stringify(join(dir, "leases"))}, true);
+console.log("ended after", Date.now() - began);
+`,
+  );
+  const ended = async (holder: "group" | "apart") => {
+    const p = Bun.spawn(["bun", child, holder], { cwd: root, stdout: "pipe", stderr: "pipe", env: { ...process.env, RUST_JS_LEASED: "" } });
+    const timer = setTimeout(() => p.kill("SIGKILL"), 60_000);
+    const out = await new Response(p.stdout).text();
+    await p.exited;
+    clearTimeout(timer);
+    const after = Number(/ended after (\d+)/.exec(out)?.[1] ?? Number.NaN);
+    expect([holder, out.includes("stopped at its first failure"), Number.isFinite(after)]).toEqual([holder, true, true]);
+    return after;
+  };
+  try {
+    // The failure at 0.5 s; the run's end within seconds of it: at once of
+    // its group, at `stopGrace` of a pipe held apart.
+    for (const [holder, within] of [["group", 2_500], ["apart", stopGrace + 2_500]] as const) {
+      const after = await ended(holder);
+      expect([holder, after < 500 + within]).toEqual([holder, true]);
+    }
+    // Nothing of the job's own group left running.
+    expect(Bun.spawnSync(["pgrep", "-f", holders.group]).stdout.toString().trim()).toBe("");
+  } finally {
+    for (const holder of Object.values(holders)) Bun.spawnSync(["pkill", "-f", holder]);
+  }
+}, underLoad(150_000));
 
 // A passing job's output is normally hidden. An observed child overrun is
 // still a slow spot and must remain visible, labelled by that actual job.
