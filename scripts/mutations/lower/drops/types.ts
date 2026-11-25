@@ -45,15 +45,15 @@ export const mutations: Mutation[] = [
       "what a type argument of a `Drop::drop` call drops, but its type parameters, is found again for each path to each type it holds, and `nested_generic_types_dropped.rs` takes two minutes to compile (#1214)",
     file: "crates/rust-js-lower/src/drops/types.rs",
     find: "        self.visited.is_none().then_some(key)\n",
-    replace: "        (self.visited.is_none() && !self.params_none && !self.guards_none).then_some(key)\n",
+    replace: "        (self.visited.is_none() && !self.params_none && !self.counts_none).then_some(key)\n",
     tests: ["test/compile-bounds.test.ts"],
   },
   {
     name: "drops-walks-share-answers",
     breaks:
-      "a walk that takes type parameters or guards as dropping nothing is given another walk's answer of a type, and the other's its (#1214)",
+      "a walk that takes type parameters or a counted `Rc`'s count as dropping nothing is given another walk's answer of a type, and the other's its (#1214)",
     file: "crates/rust-js-lower/src/drops/types.rs",
-    find: "        let key = (ty, self.params_none, self.guards_none);\n",
+    find: "        let key = (ty, self.params_none, self.counts_none);\n",
     replace: "        let key = (ty, false, false);\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
     snapshots: true,
@@ -178,20 +178,6 @@ export const mutations: Mutation[] = [
     replace:
       "            ty::Adt(..) if self.recognition.is_guard(ty) => Drops::Nothing,",
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
-  },
-  {
-    name: "guards-counted-as-drops",
-    breaks: "a guard beside another is taken as dropping something that asks",
-    file: "crates/rust-js-lower/src/drops/types.rs",
-    find: "            ty::Adt(..) if self.recognition.is_guard(ty) && (walk.guards_none || self.uncounted_guard(ty)) => {\n",
-    replace:
-      "            ty::Adt(..) if self.recognition.is_guard(ty) && self.uncounted_guard(ty) => {\n",
-    tests: [
-      "test/lowering-cells.test.ts",
-      "-t",
-      "RefCell only borrowed for a moment is its value",
-    ],
-    snapshots: true,
   },
   {
     name: "peek-mut-drops-nothing",
@@ -347,9 +333,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard of a `RefCell` no borrow of which can meet another is released where it's dropped, `$unborrow(types)`, though it was never counted (ADR 0863)",
     file: "crates/rust-js-lower/src/drops/types.rs",
-    find: "            ty::Adt(..) if self.recognition.is_guard(ty) && (walk.guards_none || self.uncounted_guard(ty)) => {\n",
+    find: "            ty::Adt(..) if self.recognition.is_guard(ty) && self.uncounted_guard(ty) => Drops::Nothing,\n",
     replace:
-      "            ty::Adt(..) if self.recognition.is_guard(ty) && walk.guards_none => {\n",
+      "            ty::Adt(..) if self.recognition.is_guard(ty) && walk.counts_none => Drops::Nothing,\n",
     // refcell_quiet_borrows' guards are each a local, which the drop of
     // one skips itself (mir/drops.rs), so its JS is the same with it; a
     // guard of a field read through, `fiber.r#return.borrow()`, is held as a
@@ -479,7 +465,7 @@ export const mutations: Mutation[] = [
     name: "rc-count-asks-a-cell",
     breaks: "a counted `Rc`'s own count is taken as code that may ask whether a cell is borrowed, so an undo stack's guard held while an `Rc<State>` entry is written over or truncated, `State` dropping nothing, is counted with a `try` and `$unborrow` (#1815)",
     file: "crates/rust-js-lower/src/drops/types.rs",
-    find: "                    found if walk.guards_none => found,\n",
+    find: "                    found if walk.counts_none => found,\n",
     replace: "",
     tests: ["test/borrow-forms.test.ts", "-t", "an undo stack's guards"],
   },

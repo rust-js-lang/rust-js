@@ -32,10 +32,9 @@ struct Walk<'tcx> {
     /// Its type parameters, and what only their caller knows, drop nothing
     /// (ADR 0190): what's found is what it drops of its own.
     params_none: bool,
-    /// Guards, and a counted `Rc`'s own count, drop nothing:
-    /// what's found is what else it runs, which may ask whether a cell is
-    /// borrowed (ADR 0328, #1815).
-    guards_none: bool,
+    /// A counted `Rc`'s own count drops nothing: what's found is what
+    /// else it runs, which may ask whether a cell is borrowed (#1815).
+    counts_none: bool,
     /// Where it's asked whether the outermost type is inside itself, each
     /// type walked so far: one walked again reaches no more than it did,
     /// and what's found of each is no answer to cache, a cached one no
@@ -49,7 +48,7 @@ impl<'tcx> Walk<'tcx> {
             seen: Vec::new(),
             reached: usize::MAX,
             params_none: false,
-            guards_none: false,
+            counts_none: false,
             visited: None,
         }
     }
@@ -60,7 +59,7 @@ impl<'tcx> Walk<'tcx> {
     /// a walk that asks whether a type is inside itself, whose answer of a
     /// type walked before is no answer.
     fn key(&self, ty: Ty<'tcx>) -> Option<CacheKey<'tcx>> {
-        let key = (ty, self.params_none, self.guards_none);
+        let key = (ty, self.params_none, self.counts_none);
         self.visited.is_none().then_some(key)
     }
 }
@@ -265,16 +264,17 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
     }
 
     /// Whether dropping a `ty` runs code that may ask whether a cell is
-    /// borrowed: more than a guard's drop, which only counts its cell
-    /// borrowed once fewer (ADR 0328), or a counted `Rc`'s, which only
-    /// counts, the last one running what its value's drop runs.
+    /// borrowed: more than an uncounted guard's drop, or a counted `Rc`'s,
+    /// which only counts, the last one running what its value's drop runs.
+    /// A counted guard's is decided where its range is proved, MIR's
+    /// `CellForms` (#2490), so it's asked of none here.
     /// A type parameter runs what its drop runs where a caller gives one,
     /// and nothing where none does: so the JS runs (#1815).
     pub(super) fn drop_may_ask(&self, ty: Ty<'tcx>) -> bool {
         self.drops_in(
             ty,
             &mut Walk {
-                guards_none: true,
+                counts_none: true,
                 ..Walk::new()
             },
         ) != Drops::Nothing
@@ -572,7 +572,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 match self.drops_in(pointee, walk) {
                     Drops::Unsupported(t, what) => Drops::Unsupported(t, what),
                     // Its count asks no cell: what the last one drops may.
-                    found if walk.guards_none => found,
+                    found if walk.counts_none => found,
                     _ => Drops::Runs,
                 }
             }
@@ -585,9 +585,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             ty::Adt(..) if weak_pointee(tcx, ty).is_some() => Drops::Nothing,
             // A guard: its cell borrowed once fewer (ADR 0328). What it guards
             // is its cell's to drop.
-            ty::Adt(..) if self.recognition.is_guard(ty) && (walk.guards_none || self.uncounted_guard(ty)) => {
-                Drops::Nothing
-            }
+            ty::Adt(..) if self.recognition.is_guard(ty) && self.uncounted_guard(ty) => Drops::Nothing,
             ty::Adt(..) if self.recognition.is_guard(ty) => Drops::Runs,
             // A `Vec`'s `Splice` of an array's items that have no destructor:
             // nothing, as it's put in place where it's made (#1189).

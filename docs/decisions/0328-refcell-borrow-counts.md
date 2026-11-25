@@ -268,3 +268,16 @@ $alreadyBorrowed();`, a shared one's `cell.borrows < 0`, then the cell,
 where it's evaluated first in its statement: no call where the cell is
 free; elsewhere, a loop's test or a branch, `$borrow(cell)` as before
 ([1141](1141-checked-where-called.md), amended).
+
+## Amendment (2026-11-25, #2490): a counted guard's drop is decided where its range is proved
+
+`drop_may_ask` (crates/rust-js-lower/src/drops/types.rs) took a counted
+guard as dropping nothing, beside a counted `Rc`'s count. Since #2490's
+flip, MIR's `CellForms` proves each guard's range, and a guard's drop is an
+event of that proof, so no answer of `drop_may_ask` decides one any more:
+of the corpus's 3,081 cases, none compiles otherwise with the arm gone
+(mutation-reach), nor do probes of its two callers, a guard given as a type
+parameter's value and one dropped in a `RefCell::replace_with` closure.
+The arm is deleted with its mutation, `guards-counted-as-drops`; the walk's
+flag, `counts_none`, now says only that a counted `Rc`'s own count drops
+nothing. An uncounted guard drops nothing in every walk, as before.

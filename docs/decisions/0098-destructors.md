@@ -857,7 +857,7 @@ weren't cached, as only the plain walk's answers were, so they walked
 each path to each type `S3<S3<u8>>` holds again.
 
 **Each walk's answers are kept, keyed by the type and what the walk takes
-as dropping nothing** (`Walk::key`, `(ty, params_none, guards_none)`): a
+as dropping nothing** (`Walk::key`, `(ty, params_none, counts_none)`): a
 walk of type parameters as dropping nothing answers of a type alike
 wherever it's asked, of this function's drops, as the plain walk does,
 and the two never answer for each other. What guards the cache stays as
