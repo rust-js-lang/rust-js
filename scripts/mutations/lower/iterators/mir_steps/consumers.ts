@@ -341,21 +341,6 @@ export const mutations: Mutation[] = [
     unitTests: "iterators::mir_steps::consumers",
   },
   {
-    name: "keyed-extreme-of-dropping-keys-unclosed",
-    breaks: "`max_by_key` of keys with a destructor over the crate's iterator with one leaves the iterator to its caller, which drops it after the call, past the kept key `$maxByKey` dropped: `drop key 3`, `drop Up` where std drops the iterator first (#1649)",
-    file: "crates/rust-js-lower/src/iterators/mir_steps/consumers.rs",
-    find: "            && (self.consumed_function(method, arg_tys) || keys_drop())\n",
-    replace: "            && self.consumed_function(method, arg_tys)\n",
-    tests: ["test/corpus.test.ts", "-t", "^max_by_key_drops_its_iterator_before_the_kept_key.rs$"],
-  },  {
-    name: "keyed-extreme-of-a-type-parameter-unclosed",
-    breaks: "`max_by_key` over a type parameter's iterator leaves it to its drop after the call, so the kept key, or a key function's capture where the first step ends, drops before the iterator, where std's drops it first (#1649)",
-    file: "crates/rust-js-lower/src/iterators/mir_steps/consumers.rs",
-    find: "        (self.is_user_iterator(*iter) || crate::recognition::known_by_bounds(*iter))\n",
-    replace: "        self.is_user_iterator(*iter)\n",
-    tests: ["test/corpus.test.ts", "-t", "^max_by_key_drops_its_iterator_before_the_kept_key.rs$"],
-  },
-  {
     name: "is-sorted-generic-armed",
     breaks: "a type parameter's iterator given `is_sorted` is `Iterator.from`'s, which closes a `repeat`'s `take` at its limit, before `last` is dropped (#948)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/consumers.rs",

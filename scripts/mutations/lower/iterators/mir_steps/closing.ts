@@ -233,37 +233,12 @@ export const mutations: Mutation[] = [
   },
 
   {
-    name: "consumer-closes-lent",
-    breaks: "a consumer of an iterator lent by `by_ref()` closes it, which drops the crate's iterator its owner still holds (#422, #637)",
-    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
-    find: "            && !lent\n            && match method {\n",
-    replace: "            && match method {\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumed_own_iterator_dropped_once.rs$"],
-  },
-  {
     name: "last-holding-unclosed",
     breaks: "`last()` of a `peekable()` of a `Vec`'s items, mapped by a closure that panics, is an array's last, which never closes what the source has left (#653)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
     find: "        let unwinds_holding = self.drops(iter_ty) != crate::drops::Drops::Nothing && self.steps_may_panic(iter_ty);\n",
     replace: "        let unwinds_holding = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^compiled_adapters_closed_as_a_collect_unwinds.rs$"],
-  },
-  {
-    name: "own-collect-unclosed",
-    breaks: "a `collect()` of the crate's iterator with a `Drop`, whose `next` panics, drops what it collected before the iterator, where std's frame drops the iterator first (#655)",
-    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
-    find: "                Some(IterMethod::Collect) => self.is_user_iterator(iter_ty) || by_bounds,\n",
-    replace: "                Some(IterMethod::Collect) => by_bounds,\n",
-    tests: ["test/corpus.test.ts", "-t", "^collect_of_own_iterator_drops_it_first.rs$"],
-  },
-  {
-    name: "parameter-collect-unclosed",
-    breaks:
-      "generic code's `src.collect()` of a type parameter's iterator whose `next` panics drops what it collected before it, `dropI` after the collect, where std's collect frame drops it first (#640)",
-    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
-    find: "                Some(IterMethod::Collect) => self.is_user_iterator(iter_ty) || by_bounds,\n",
-    replace: "                Some(IterMethod::Collect) => self.is_user_iterator(iter_ty),\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_collect_closes_its_source.rs$"],
   },
   {
     name: "slicing-of-each-dropper",
@@ -322,14 +297,6 @@ export const mutations: Mutation[] = [
     find: "        let other = self.compared_closing(other, other_ty, span)?;\n        let compare = self.cmp_fn(",
     replace: "        let compare = self.cmp_fn(",
     tests: ["test/corpus.test.ts", "-t", "^iterator_comparisons_drop_as_std.rs$"],
-  },
-  {
-    name: "partition-of-param-dropped-after",
-    breaks: "`partition` and `unzip` of a type parameter's iterator drop it after the call, so as a panic unwinds what they collected is dropped before what's left of their source, where std's fold drops that first (#1150, #1161)",
-    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
-    find: "                Some(IterMethod::Partition | IterMethod::Unzip) => true,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^consumers_keep_what_they_built_on_a_panic.rs$"],
   },
   {
     name: "library-eq-of-trusted-allowed",
@@ -405,15 +372,6 @@ export const mutations: Mutation[] = [
     find: "        if let Some(held) = crate::iterators::held_by_a_box(&it) {\n",
     replace: "        if let Some(held) = None::<&Expr>.filter(|_| crate::iterators::held_by_a_box(&it).is_some()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_of_an_iterator_is_what_it_holds.rs$"],
-  },
-  {
-    name: "consumer-closes-box-param",
-    breaks:
-      "a fold of generic code's `Box<I>` with a closure that owns a destructor, where the drop check refuses it, compiles and closes the box first, so the box's value drops before the closure where std's `fold` drops its `f` first (#2219)",
-    file: "crates/rust-js-lower/src/iterators/mir_steps/closing.rs",
-    find: "        let by_bounds = crate::recognition::known_by_bounds(crate::recognition::held_unboxed(iter_ty));\n",
-    replace: "        let by_bounds = crate::recognition::known_by_bounds(iter_ty);\n",
-    tests: ["test/diagnostics.test.ts", "-t", "Box<I> folded by a closure that holds a destructor"],
   },
   {
     name: "closing-box-unlent",

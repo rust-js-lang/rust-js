@@ -209,7 +209,13 @@ test("a consumer's closure folded by value is dropped by $consume alone", () => 
   for (const file of writing) expect(read(file), file).toContain("consumed_ends(");
   expect(writing.sort()).toEqual(["crates/rust-js-lower/src/iterators/mir_steps/backs.rs", "crates/rust-js-lower/src/iterators/mir_steps/consumers.rs"]);
   const asking = lowering.filter((file) => read(file).includes("consumed_function("));
-  expect(asking.sort()).toEqual(["crates/rust-js-lower/src/iterators/mir_steps/consumers.rs", "crates/rust-js-mir/src/dispatch.rs"]);
+  // And `consumed_drop`'s keyed extreme, whose key function moved into its
+  // fold makes its consumer close what it takes (#789, #2572).
+  expect(asking.sort()).toEqual([
+    "crates/rust-js-lower/src/iterators/mir_steps/consumed.rs",
+    "crates/rust-js-lower/src/iterators/mir_steps/consumers.rs",
+    "crates/rust-js-mir/src/dispatch.rs",
+  ]);
   expect(read("crates/rust-js-program/src/runtime/fold_of.js")).toContain("function $consume(it, step, init, f, unwind, ends)");
 });
 
@@ -1033,4 +1039,27 @@ test("a fallible collect's helpers have one maker", () => {
   expect(body).toContain('Expr::helper("$collectOptions")');
   expect(body).toContain('Expr::helper("$collectResults")');
   expect(stepping.split('"$collect').length - 1).toBe(2);
+});
+
+// Who drops what std's code takes by value is one answer, `consumed_drop`
+// (iterators/mir_steps/consumed.rs), its rules its own cases: each side
+// asked its own predicates, `consumer_closes` and the rest, and combined
+// them its own way, so one closed what the other dropped after, or neither
+// did (#2561, #2580). No predicate of it is written elsewhere, a function
+// that says whether a consumer closes; MIR's `dropped_after` reads its
+// answer; and its readers are the closing sites' one, `consumer_closing`,
+// an `rfold`'s and `dropped_after` (#2572, ADR 1205).
+test("who drops a consumed iterator is consumed_drop's answer alone", () => {
+  const compiler = compilerRustFiles();
+  const deciders = compiler.filter((file) => /\bfn \w+_closes\s*[<(]/.test(read(file)));
+  expect(deciders).toEqual([]);
+  const iter = read("crates/rust-js-mir/src/iter.rs");
+  const dropped = iter.slice(iter.indexOf("    pub(crate) fn dropped_after("), iter.indexOf("\n    }\n", iter.indexOf("    pub(crate) fn dropped_after(")));
+  expect(dropped).toContain("self.consumed_drop(");
+  const readers = compiler.filter((file) => /\.consumed_drop\(/.test(read(file)));
+  expect(readers).toEqual([
+    "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
+    "crates/rust-js-lower/src/iterators/mir_steps/consumed.rs",
+    "crates/rust-js-mir/src/iter.rs",
+  ]);
 });

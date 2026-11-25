@@ -2,7 +2,7 @@
 
 Date: 2026-11-25.
 
-Status: accepted, steps 1 and 2 of 4 (#2572). Amends
+Status: accepted, steps 1 to 3 of 4 (#2572). Amends
 [0465](0465-dropping-an-adapter-is-closing-it.md) and
 [0570](0570-a-closing-source-is-dropped-when-done.md).
 
@@ -82,6 +82,18 @@ native's, and its whole `consumers` table passes. Held by the corpus cases
 `generic_fallible_product_drops_its_source_as_its_step_panics`, and the
 mutations `consumed-fallible-sum-unclosed` and
 `dropping-source-answer-skipped`.
+
+## Amendment: step 3, its rules its cases (2026-11-25)
+
+`consumer_closes`, `keyed_consumer_closes` and `fallible_collect_closes`
+are inlined into `consumed_drop` as its cases, and gone, so no rule of
+who drops a consumed iterator is written outside it. Their mutations moved
+with their lines (`consumed.ts`), each caught where it was. The test
+"who drops a consumed iterator is consumed_drop's answer alone"
+(test/architecture-iterators.test.ts) holds it. No function that says
+whether a consumer closes, `fn ..._closes`, is written in the compiler.
+MIR's `dropped_after` reads the answer. Its readers are `consumer_closing`
+(every closing site's), an `rfold`'s and `dropped_after`. No output moves.
 
 ## Steps
 

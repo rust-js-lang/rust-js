@@ -84,31 +84,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || recognition.iterator_method(method) == Some(IterMethod::Collect) && self.collects_by_fold(output)
     }
 
-    /// Whether a keyed extreme, `max_by_key`'s or `min_by_key`'s, of the
-    /// crate's iterator with a destructor, or a type parameter's,
-    /// `arg_tys[0]`, closes it, as `consumer_closes` (closing.rs) says of
-    /// what it answers: of a key function moved into its fold with a
-    /// destructor (`consumed_function`), std's `Map` the key's `reduce` folds
-    /// drops the iterator, then the function, where its first step ends,
-    /// after the fold its function drops before what's left (#789); of keys
-    /// with a destructor, the fold drops the iterator before `let (_, x)`
-    /// drops the kept key (#1649). So its drop is the consumer's, there.
-    // helper: asked by `mir::iter` alone, the entry it was beneath before #2299 moved it
-    pub fn keyed_consumer_closes(&self, method: Option<IterMethod>, arg_tys: &[Ty<'tcx>]) -> bool {
-        let (Some(IterMethod::MaxByKey(_)), [iter, f, ..]) = (method, arg_tys) else {
-            return false;
-        };
-        let keys_drop = || {
-            self.iterator_item(*iter).is_some_and(|item| {
-                let key = self.key_of(*f, Ty::new_imm_ref(self.tcx, self.tcx.lifetimes.re_erased, item));
-                self.drops(key) != crate::drops::Drops::Nothing
-            })
-        };
-        (self.is_user_iterator(*iter) || crate::recognition::known_by_bounds(*iter))
-            && self.closes_to_drop(*iter)
-            && (self.consumed_function(method, arg_tys) || keys_drop())
-    }
-
     /// Whether std's consumer `method` of an `iter_ty` moves the function
     /// it's given last, of type `f`, into the fold it runs, which drops it
     /// before what's left of the iterator, as `fold(self, init, f)` drops
@@ -420,7 +395,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // iterator with a destructor or a type parameter's: closed, its drop
         // the consumer's, which std's `Map` the key's `reduce` folds drops
         // before the function where its first step ends, after it where its
-        // fold does, and before the kept key (`keyed_consumer_closes`, #789,
+        // fold does, and before the kept key (`consumed_drop`, #789,
         // #1649).
         let call = super::consumed::Consumed::of(callee, Some(method), (arg_tys[0], arg_tys, output), false);
         let it = self.consumer_closing(it, call, span)?;
@@ -432,7 +407,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `f`, a key function, gives `given`: `<F as FnOnce<(given,)>>::Output`,
     /// of a closure, a function, a `Box<dyn FnMut>` or a `&mut F` alike, as
     /// std's `max_by_key<B, F: FnMut(&Self::Item) -> B>` names it (#1223).
-    fn key_of(&self, f: Ty<'tcx>, given: Ty<'tcx>) -> Ty<'tcx> {
+    pub(super) fn key_of(&self, f: Ty<'tcx>, given: Ty<'tcx>) -> Ty<'tcx> {
         let tcx = self.tcx;
         let output = tcx.require_lang_item(LangItem::FnOnceOutput, rustc_span::DUMMY_SP);
         let key = Ty::new_projection(tcx, ty::IsRigid::No, output, [f, Ty::new_tup(tcx, &[given])]);

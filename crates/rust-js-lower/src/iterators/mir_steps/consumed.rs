@@ -81,8 +81,7 @@ impl<'c, 'tcx> Consumed<'c, 'tcx> {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Who drops what `call` takes, the one answer (#2572). Of an iterator
     /// with something to drop, `items.fold(..)`'s: closed by its consumer
-    /// where it closes it (`consumer_closes`, `keyed_consumer_closes`,
-    /// `fallible_collect_closes`), which drops it there, nothing after
+    /// where it closes it, which drops it there, nothing after
     /// (#637); its `GenericShunt`'s of a fallible `collect()` whose
     /// `from_iter` runs code (#1588); the crate's own `fold`'s (#162); else
     /// dropped after the call, as the method's end drops it and JS doesn't,
@@ -110,9 +109,56 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Not `extend`'s, which never closes what it's given: dropped after
         // it, what's left in it then too, as it unwinds as well (#1120).
         let extends = (self.tcx.trait_of_assoc(def_id)).is_some_and(|tr| crate::recognition::is_extend(self.tcx, tr));
-        if !extends
-            && (self.consumer_closes(method, receiver, lent, dropping) || self.keyed_consumer_closes(method, arg_tys))
-        {
+        // A consumer that takes each item, `for_each`'s, `fold`'s, `count`'s
+        // or `last`'s, of items with a destructor, closes what it's given,
+        // which drops it at its end and as a panic part-way unwinds (#422),
+        // of what closing drops (`closes_to_drop`). Not of one lent, its
+        // lender's; nor of a type parameter's, its own drop after, which
+        // MIR writes, unwinding too; nor a `collect()` of an adapter, which
+        // runs nothing of its own as it steps, its adapters closing their
+        // source already. A `partition` or an `unzip` closes a type
+        // parameter's too, as std's fold drops it before what they collected
+        // (#1150, #1161). A `collect()` of the crate's iterator itself, or
+        // of a type parameter's, which may be one, closes it, so a panic in
+        // its `next` drops it before what it collected, as std's collect
+        // frame holds it inside the one that holds its `Vec` (#655, #640).
+        // A sized box's of a type parameter's is the type parameter's (#2219).
+        let by_bounds = crate::recognition::known_by_bounds(crate::recognition::held_unboxed(receiver));
+        let consumer_closes = dropping
+            && !method.is_some_and(IterMethod::holds_its_source)
+            && !lent
+            && match method {
+                Some(IterMethod::Collect) => self.is_user_iterator(receiver) || by_bounds,
+                // A `partition` or an `unzip`, of a type parameter's too,
+                // whose source std's fold drops as a panic unwinds, before
+                // what it collected (#1150, #1161).
+                Some(IterMethod::Partition | IterMethod::Unzip) => true,
+                _ => !by_bounds,
+            }
+            && self.closes_to_drop(receiver);
+        // A keyed extreme, `max_by_key`'s or `min_by_key`'s, of the crate's
+        // iterator with a destructor, or a type parameter's, closes it: of a
+        // key function moved into its fold with a destructor
+        // (`consumed_function`), std's `Map` the key's `reduce` folds drops
+        // the iterator, then the function, where its first step ends, after
+        // the fold its function drops before what's left (#789); of keys
+        // with a destructor, the fold drops the iterator before `let (_, x)`
+        // drops the kept key (#1649).
+        let keyed_closes = || {
+            let (Some(IterMethod::MaxByKey(_)), [iter, f, ..]) = (method, arg_tys) else {
+                return false;
+            };
+            let keys_drop = || {
+                self.iterator_item(*iter).is_some_and(|item| {
+                    let key = self.key_of(*f, Ty::new_imm_ref(self.tcx, self.tcx.lifetimes.re_erased, item));
+                    self.drops(key) != crate::drops::Drops::Nothing
+                })
+            };
+            (self.is_user_iterator(*iter) || crate::recognition::known_by_bounds(*iter))
+                && self.closes_to_drop(*iter)
+                && (self.consumed_function(method, arg_tys) || keys_drop())
+        };
+        if !extends && (consumer_closes || keyed_closes()) {
             return Ok(ConsumedDrop::Closes);
         }
         // A `collect()` into an `Option` or a `Result` of a collection whose
@@ -123,13 +169,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(ConsumedDrop::Shunted);
         }
         // A fallible `collect()`, `sum` or `product` into an `Option` or a
-        // `Result`, std's `try_process` each, closed where it closes, so the
-        // source drops inside its frame, as the kept `Err` is held (#2561,
-        // #2580).
+        // `Result`, std's `try_process` each, closed, so the source drops
+        // inside its frame, as the kept `Err` is held (#2561, #2580): of what
+        // closing drops (`closes_to_drop`), a type parameter's or one that
+        // owns items with a destructor. Not the crate's own iterator, closed
+        // where its consumer closes it or dropped after the call; nor a
+        // compiled std adapter's struct, which closing leaves as it is,
+        // dropped after.
         if matches!(
             method,
             Some(IterMethod::Collect | IterMethod::Sum | IterMethod::Product)
-        ) && self.fallible_collect_closes(output, receiver)
+        ) && (self.option_of(output).is_some() || self.recognition().is_result(output))
+            && !self.is_user_iterator(receiver)
+            && self.closes_to_drop(receiver)
         {
             return Ok(ConsumedDrop::Closes);
         }

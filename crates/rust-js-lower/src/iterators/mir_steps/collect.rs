@@ -772,7 +772,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             method("reduce", items, vec![Expr::helper("$pathJoin"), Expr::str("")])
         } else if self.option_of(output).is_some() || self.recognition().is_result(output) {
             // What's left of what it steps, dropped where it stops: closed,
-            // where `fallible_collect_closes` says, which what's dropped
+            // where `consumed_drop` says, which what's dropped
             // after the call asks too (#1647, #2561).
             let it = match &iter_ty {
                 Some(iter_ty) => self.consumer_closing(it, Consumed::collecting(self.tcx, iter_ty, output), span)?,

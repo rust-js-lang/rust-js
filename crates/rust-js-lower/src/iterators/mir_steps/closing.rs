@@ -96,57 +96,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.consumer_closing(it, call, span)
     }
 
-    /// Whether a consumer, `method`, of an `iter_ty`, `lent` or not, of
-    /// items with a destructor, `dropping`, closes what it's given,
-    /// `$closing`, which drops it at its end and as a panic part-way
-    /// unwinds (#422): one that takes each item, `for_each`'s, `fold`'s,
-    /// `count`'s or `last`'s, of what closing drops (`closes_to_drop`).
-    /// Not of one lent, its lender's; nor of a type parameter's, its own
-    /// drop after, which MIR writes, unwinding too; nor a `collect()` of
-    /// an adapter, which runs nothing of its own as it steps, its adapters'
-    /// closing their source already. A `partition` or an `unzip` closes a
-    /// type parameter's too, as std's fold drops it before what they
-    /// collected (#1150, #1161). A `collect()` of the crate's iterator
-    /// itself, or of a type parameter's, which may be one, closes it, so a
-    /// panic in its `next` drops it before what it collected, as std's
-    /// collect frame holds it inside the one that holds its `Vec` (#655,
-    /// #640). The one answer of who drops a consumed
-    /// iterator: what its closing drops, nothing drops after it
-    /// (`dropped_after`), or the crate's iterator with a `Drop` was
-    /// dropped twice (#637).
-    pub fn consumer_closes(&self, method: Option<IterMethod>, iter_ty: Ty<'tcx>, lent: bool, dropping: bool) -> bool {
-        // A sized box's of a type parameter's is the type parameter's (#2219).
-        let by_bounds = crate::recognition::known_by_bounds(crate::recognition::held_unboxed(iter_ty));
-        dropping
-            && !method.is_some_and(IterMethod::holds_its_source)
-            && !lent
-            && match method {
-                Some(IterMethod::Collect) => self.is_user_iterator(iter_ty) || by_bounds,
-                // A `partition` or an `unzip`, of a type parameter's too,
-                // whose source std's fold drops as a panic unwinds, before
-                // what it collected (#1150, #1161).
-                Some(IterMethod::Partition | IterMethod::Unzip) => true,
-                _ => !by_bounds,
-            }
-            && self.closes_to_drop(iter_ty)
-    }
-
-    /// Whether a `collect()` of an `iter_ty` into an `output`, an `Option`
-    /// or a `Result`, closes it, so what's left of it is dropped where it
-    /// stops and nothing's dropped after the call (`dropped_after`): the
-    /// one answer of who drops it: of what closing drops
-    /// (`closes_to_drop`), a type parameter's or one that owns items with a
-    /// destructor. Not the crate's own iterator, closed where its consumer
-    /// closes it (`consumer_closes`) or dropped after the call; nor a
-    /// compiled std adapter's struct, which closing leaves as it is, dropped
-    /// after. Closed and dropped after too, a type parameter's was dropped
-    /// twice (#2561).
-    pub fn fallible_collect_closes(&self, output: Ty<'tcx>, iter_ty: Ty<'tcx>) -> bool {
-        (self.option_of(output).is_some() || self.recognition().is_result(output))
-            && !self.is_user_iterator(iter_ty)
-            && self.closes_to_drop(iter_ty)
-    }
-
     /// Whether std's fold of a `ty` may reach an adapter that holds a
     /// function with a destructor its fold moves into the fold it asks of
     /// what it steps (`held_function_folded`), which drops it before what's
