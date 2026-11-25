@@ -145,3 +145,17 @@ since d00ee33dc, whose `clonedAt` took its place.
 Step 2c-2 triages the 20 sites of other rows no runtime text or committed
 JS reads, against native: a wrong line is a wrong answer, filed and fixed
 as a P0; an unreachable one is listed with its reason.
+
+## Amendment: step 3a, the slice searches' reason (2026-11-25)
+
+A slice's `chunk_by`, `chunk_by_mut`, `split` and `split_mut` iterators
+(`$lazyChunkBy`, `$lazyChunkByMut`, `$lazySliceSplitBy`,
+`$lazySliceSplitByMut`) were `Unproven(Iterators)`, as if std's build only
+lacked their rows. Given them, it refuses their bodies: their `next`
+steps the slice by its pointers, `NonNull<[T]>`, which reach memory. So
+their reason is `Memory`, each note saying so, and `Split` and `SplitMut`
+are bound. Proving them through std's build needs it to model a slice's
+pointers (#1458). `char::decode_utf16`'s `DecodeUtf16` compiles there,
+but generic code's `IntoIterator` handed to it doesn't cross (#2598), which
+Campaign 6's dictionaries crossing answers; it's left unproven until then.
+

@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (Campaign 5 step 3, ADR 1202 amended): test/twin-net.test.ts's measure falls to 202, a slice's `Split` and `SplitMut` bound.
+
 Changed on 2026-11-25 (#2599, ADR 0327 amended): one corpus case, the free `std::char::decode_utf16` decoding as `char::decode_utf16` does, against native; one mutation.
 
 Changed on 2026-11-25 (#2572 step 4, ADR 1205 amended): test/architecture-iterators.test.ts gains a test, the runtime closes a source by `$closeHolding` or `$closeBare` alone; one corpus case, a `find` of a source whose drop panics, against native; 27 runtime mutations' finds follow the closes; test/known/iterator-matrix/2580.txt, empty since #2580's fix, is gone.

@@ -42,7 +42,7 @@ test("a whole run that imports no model outside the tables keeps it", () => {
 test("how many models stand for no std item yet", () => {
   const unbound = unboundModels();
   console.log(`${unbound.length} models stand for no std item yet`);
-  expect(unbound.length).toBeLessThanOrEqual(204);
+  expect(unbound.length).toBeLessThanOrEqual(202);
 });
 
 // Of the runtime's exports, those models.rs doesn't say are glue or a
