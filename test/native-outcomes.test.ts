@@ -131,6 +131,24 @@ test("a chain of crates' native run is kept, but where a crate reads the world",
   rmSync(join(nativeOutcomes, nativeCratesKey(of, main, flags).slice(0, 32)), { recursive: true, force: true });
   expect(nativeCratesOutput(of, main, flags, roomy)()).toBe("chained\n");
   expect(keptRun(nativeCratesKey(of, main, flags))?.stdout).toBe("chained\n");
+  // Rechecked, it's judged by what's read of it, its stdout: a kept ending
+  // of another form, `{ value: null }`, as every chain kept before
+  // 8a0b9a197 has, is no key missing an input; another stdout is.
+  const keptOf = (edit: (kept: { stdout: string; bytes: { stdout: string }; outcome: unknown }) => void) => {
+    const program = join(nativeOutcomes, nativeCratesKey(of, main, flags).slice(0, 32));
+    for (const build of readdirSync(program).filter((name) => !name.startsWith("."))) {
+      const at = join(program, build, "run.json");
+      const kept = JSON.parse(readFileSync(at, "utf8"));
+      edit(kept);
+      writeFileSync(at, JSON.stringify(kept));
+    }
+  };
+  process.env.RUST_JS_NATIVE_RECHECK = "1";
+  keptOf((kept) => (kept.outcome = { value: null }));
+  expect(nativeCratesOutput(of, main, flags, roomy)()).toBe("chained\n");
+  keptOf((kept) => ((kept.stdout = "stale\n"), (kept.bytes.stdout = Buffer.from("stale\n").toString("base64"))));
+  expect(() => nativeCratesOutput(of, main, flags, roomy)()).toThrow("its key misses an input");
+  delete process.env.RUST_JS_NATIVE_RECHECK;
   const marked = crate("marked", "pub fn main() {\n    println!(\"{}\", std::env::args().count());\n}\n//@ nondeterministic: its run reads its arguments\n");
   const ofMarked = [{ name: "marked", file: marked, uses: [] }];
   const markedMain = "fn main() {\n    marked::main();\n}\n";

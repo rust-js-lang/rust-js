@@ -48,7 +48,10 @@ export function nativeCratesOutput(crates: { name: string; file: string; uses: s
     if (said !== undefined) return said;
     const kept = keeps ? keptRun(key) : undefined;
     if (kept !== undefined && rechecked()) {
-      const problem = recheck(kept, fresh);
+      // Of what's read, its stdout: the ending kept is a constant of the
+      // keeper's, `{ value: null }` before 8a0b9a197 and `{ exit: 0 }`
+      // since, which failed every chain the nightly of 2026-11-25 rechecked.
+      const problem = recheck(kept, fresh, undefined, (a, b) => a.bytes.stdout.equals(b.bytes.stdout));
       if (problem !== undefined) throw new Error(`${crates.at(-1)!.file}: ${problem}`);
     }
     said = (kept ?? fresh()).stdout;

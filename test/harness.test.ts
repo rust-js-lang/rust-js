@@ -184,10 +184,13 @@ test("a test that prints what changes, listed so, is run until it does", async (
 /** The real compiler, with JS that prints the bytes FF 0A in its place,
  * which read as UTF-8 are "\u{FFFD}\n", as it prints to stderr: as it
  * runs, as a binary's JS does, not in an `entry` none calls, a library's
- * shape, which since a case's JS is a binary's printed nothing (#2537). */
+ * shape, which since a case's JS is a binary's printed nothing (#2537).
+ * And an `entry` that does nothing, which the rustc suite's run calls
+ * once the module's loaded (test/corpus-run.ts): without it the run threw,
+ * exit 101, not the bytes the test is of (the nightly of 2026-11-25). */
 function notUtf8(): { compiler: string; edits: string } {
   const js = join(fixture("harness-not-utf8-js"), "case.js");
-  writeFileSync(js, `process.stdout.write(new Uint8Array([0xff, 10]));\nprocess.stderr.write("\\uFFFD\\n");\n`);
+  writeFileSync(js, `process.stdout.write(new Uint8Array([0xff, 10]));\nprocess.stderr.write("\\uFFFD\\n");\nexport function entry() {}\n`);
   return edited("not-utf8", `cp "${js}" "$1"`);
 }
 

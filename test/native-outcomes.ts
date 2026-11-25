@@ -90,14 +90,17 @@ export function rechecked(share = Number(process.env.RUST_JS_NATIVE_RECHECK ?? 0
  * output std leaves to a hash table's seed may say another of its answers
  * once or twice; one whose every run says another, a `RandomState` map's
  * drops each printed in its order (#2461), says two of them apart, and
- * then the kept one is one of its answers too, no input missed. */
-export function recheck(kept: Run, fresh: () => Run | string, tries = 8): string | undefined {
+ * then the kept one is one of its answers too, no input missed. Compared
+ * by `alike`, what its keeper reads of a run: a case's whole run, a chain
+ * of crates' stdout alone (test/crates.ts), whose stderr and ending its
+ * keeper writes as constants, not as the program said them. */
+export function recheck(kept: Run, fresh: () => Run | string, tries = 8, alike: (a: Run, b: Run) => boolean = sameRun): string | undefined {
   const said: Run[] = [];
   for (let i = 0; i < tries; i++) {
     const ran = fresh();
     if (typeof ran === "string") return `a kept native run's program doesn't build again: ${ran.slice(0, 300)}: its key misses an input`;
-    if (sameRun(ran, kept)) return undefined;
-    if (said.some((other) => !sameRun(ran, other))) return undefined;
+    if (alike(ran, kept)) return undefined;
+    if (said.some((other) => !alike(ran, other))) return undefined;
     said.push(ran);
   }
   return `a kept native run isn't what the program says run again, ${tries} times: kept ${JSON.stringify(kept.stdout.slice(0, 200))}, run ${JSON.stringify(said[0]?.stdout.slice(0, 200))}: its key misses an input`;

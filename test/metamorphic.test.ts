@@ -91,18 +91,25 @@ const compiles = (rewrite: Rewrite) => {
   return counts;
 };
 
-/** How few variants of a rewrite, all refused, are no sample's chance:
- * a push's sample of one case in 128 may give one or two its rewrite
- * can't compile. */
+/** How few cases of a rewrite, its every variant of them refused, are no
+ * sample's chance: a push's sample of one case in 128 may give one or two
+ * its rewrite can't compile. Cases, not variants: one case's six
+ * variants, `opaque`'s of three iterators in both builds, all refused, were
+ * a part's whole sample of it, and failed the nightly's check (2026-11-25). */
 const allRefusedAt = 5;
 
+/** The case a refusal is of, `<build> <case>: ..`. */
+const refusedCase = (refusal: string) => refusal.slice(refusal.indexOf(" ") + 1, refusal.indexOf(": "));
+
 /** The rewrites of `counts` that judged nothing, every variant of at
- * least `allRefusedAt` refused, each said with its first refusal; or
+ * least `allRefusedAt` cases refused, each said with its first refusal; or
  * `undefined`. */
 function judgedNothing(counts: Map<Rewrite, { compiled: number; refused: string[] }>): string | undefined {
-  const none = [...counts].filter(([, { compiled, refused }]) => compiled === 0 && refused.length >= allRefusedAt);
+  const none = [...counts].filter(([, { compiled, refused }]) => compiled === 0 && new Set(refused.map(refusedCase)).size >= allRefusedAt);
   if (none.length === 0) return undefined;
-  return none.map(([rewrite, { refused }]) => `${rewrite}: every one of its ${refused.length} variants refused, so it judged nothing; the first: ${refused[0]}`).join("\n");
+  return none
+    .map(([rewrite, { refused }]) => `${rewrite}: every one of its ${refused.length} variants, of ${new Set(refused.map(refusedCase)).size} cases, refused, so it judged nothing; the first: ${refused[0]}`)
+    .join("\n");
 }
 
 afterAll(() => {
@@ -114,7 +121,10 @@ afterAll(() => {
 
 firstPart("a rewrite whose every variant rust-js refuses judged nothing, and says so", () => {
   const refused = Array.from({ length: allRefusedAt }, (_, i) => `plain c${i}.rs: error: rust-js does not support it yet`);
-  expect(judgedNothing(new Map([["loud", { compiled: 0, refused }]]))).toContain("loud: every one of its 5 variants refused");
+  expect(judgedNothing(new Map([["loud", { compiled: 0, refused }]]))).toContain("loud: every one of its 5 variants, of 5 cases, refused");
+  // One case's many variants, each refused, are a sample's chance.
+  const ofOne = Array.from({ length: 6 }, (_, i) => `${i % 2 === 0 ? "plain" : "std"} block_results.rs: error: rust-js does not support it yet`);
+  expect(judgedNothing(new Map([["opaque", { compiled: 0, refused: ofOne }]]))).toBeUndefined();
   expect(judgedNothing(new Map([["loud", { compiled: 1, refused }]]))).toBeUndefined();
   expect(judgedNothing(new Map([["loud", { compiled: 0, refused: refused.slice(1) }]]))).toBeUndefined();
 });

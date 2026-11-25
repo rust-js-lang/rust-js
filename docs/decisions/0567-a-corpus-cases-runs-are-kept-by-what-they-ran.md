@@ -233,3 +233,18 @@ voided every case, so 92 whole-corpus re-runs; after, 37 (−60%).
 
 A change to `$stdSites`, one object, reaches every case that panics at a
 std site, as does one on every program's print path.
+
+## Amendment (2026-11-25): a chain of crates' recheck compares what's read of it
+
+The nightly of 2026-11-25 (45529974892) failed every chain of crates it
+rechecked, nine tests of test/crates.test.ts, each "a kept native run
+isn't what the program says run again" with the same stdout kept and run.
+A chain's keeper (test/crates.ts' `nativeCratesOutput`) reads its stdout
+alone and writes its stderr and ending as constants: `{ value: null }`
+until 8a0b9a197 and `{ exit: 0 }` since, which no key holds, so every run
+kept before it differed in its ending alone. A recheck compares what its
+keeper reads of a run (`recheck`'s `alike`): a case's run whole, a
+chain's stdout. Its runs kept before 8a0b9a197 stay right, as what's read
+of them is. Test: "a chain of crates' native run is kept, but where a
+crate reads the world" (an ending of another form passes, another stdout
+fails); mutation `crates-recheck-of-the-whole-run`.
