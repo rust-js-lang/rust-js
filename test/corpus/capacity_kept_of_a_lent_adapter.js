@@ -64,12 +64,10 @@ function inspected(src) {
   }
   const v = $grownVec(
     $roomForHint(
-      Iterator.from(
-        $lent(src).map((item) => {
-          inspect(item);
-          return item;
-        }),
-      ),
+      $lent(src).map((item) => {
+        inspect(item);
+        return item;
+      }),
       4,
       false,
       false,
@@ -146,12 +144,10 @@ function lastInspected(src) {
     console.log(`saw ${x[0]}`);
   }
   const last = $lastDropping(
-    Iterator.from(
-      $lent(src).map((item) => {
-        inspect(item);
-        return item;
-      }),
-    ),
+    $lent(src).map((item) => {
+      inspect(item);
+      return item;
+    }),
     loudDrop_drop,
     undefined,
     undefined,

@@ -8,6 +8,7 @@
 // item, `clone(value, at)`, its row of `$stdSites.clonedAt`, so a
 // `RefCell`'s, which tracks its caller, raises at std's line of that step
 // (#2577): the one form of a clone a step makes.
+// gives: an iterator
 function $repeating(value, clone = (value) => value, drop) {
   const it = new $Steps(
     () => ({ done: false, value: clone(value, $stdSites.clonedAt["core::iter::Repeat::next"][0]) }),
@@ -67,6 +68,7 @@ function $backAsFront(it, len) {
 // (ADR 0513). A `$Steps`, as `$repeating` is (#708). Its hint exact, what
 // it has left, as std's (#246). Each clone given its step's line, as
 // `$repeating`'s (#2577).
+// gives: an iterator
 function $repeatingN(value, count, clone = (value) => value, drop) {
   let left = count;
   if (left === 0) drop?.(value);

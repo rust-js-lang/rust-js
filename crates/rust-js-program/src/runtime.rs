@@ -5,7 +5,7 @@
 use crate::collections::IndexSet;
 
 mod signatures;
-pub use signatures::{Param, ParamKind, params};
+pub use signatures::{GIVES_AN_ITERATOR, Param, ParamKind, gives_iterator, params};
 macro_rules! helpers {
     ($($name:ident,)*) => {
         /// Runtime helpers, each imported by the modules that use it.
@@ -410,7 +410,7 @@ pub const MODULE: &str = "runtime.js";
 
 /// The `$` names a helper's JS declares at its top level: what the package exports.
 fn declared(source: &'static str) -> impl Iterator<Item = &'static str> {
-    signatures::declared_in(source).map(|(name, _)| name)
+    signatures::declared_in(source).map(|(name, ..)| name)
 }
 
 /// The helpers that only read what they're given and make a value of it,

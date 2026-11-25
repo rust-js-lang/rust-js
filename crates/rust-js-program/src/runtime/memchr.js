@@ -28,6 +28,7 @@ function $memrchr(haystack, needles) {
 // memchr's `memchr_iter`, `memchr2_iter` and `memchr3_iter`: each index of
 // one of `needles` in `haystack`, from either end, which meet, as memchr's
 // `Memchr` steps them; and a clone of it, where it is (ADR 0525).
+// gives: an iterator
 function $memchrIter(haystack, needles, at = 0, end = haystack.length) {
   const one = needles.length === 1 ? needles[0] : undefined;
   const found = (i) => (one === undefined ? needles.includes(haystack[i]) : haystack[i] === one);

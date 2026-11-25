@@ -157,4 +157,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cycle_folds_through_what_it_steps.rs$"],
   },
+  {
+    name: "cycle-wrapped",
+    breaks:
+      "a `$cycle`'s generator is wrapped in `Iterator.from(..)`, though it's a JS iterator already",
+    file: "crates/rust-js-program/src/runtime/cycle.js",
+    find: "// gives: an iterator\nfunction $cycle(",
+    replace: "function $cycle(",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
+  },
 ];

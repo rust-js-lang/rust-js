@@ -6,6 +6,7 @@
 // whose hint is std's `Take`'s of it, which a `Vec` grows by: JS's own
 // `take` of a generator knows none, and grew one by doubling, 8 where std's
 // is 7 (#1572).
+// gives: an iterator
 function $cycle(items, clone = (item) => item) {
   let at = 0;
   const cycled = new $Steps(() => {
@@ -28,6 +29,7 @@ function $cycle(items, clone = (item) => item) {
 // like `None` boxed (ADR 0051). Where the clone it keeps throws, a panic,
 // what it was given is dropped as it unwinds, a local of `Cycle::new`'s
 // frame (#1585).
+// gives: an iterator
 function $cycleOf(iterator, clone, next, boxed = false, drop) {
   const orig = $unwinds(() => clone(iterator), drop && (() => drop(iterator)));
   return $cycleFrom(orig, iterator, clone, next, boxed, drop);

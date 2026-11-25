@@ -292,6 +292,7 @@ function $setAlgebra(a, b, op) {
 // the smaller's not in it, `larger.iter().chain(smaller.difference(larger))`
 // (hash/set.rs), its hint the chain's, `(n, Some(n + m))` of the larger's
 // `n` left and the smaller's `m`, then the difference's, `(0, Some(m))`.
+// gives: an iterator
 function $hashSetUnion(a, b) {
   const [first, second] = a.size >= b.size ? [a, b] : [b, a];
   const [xs, ys] = [Array.from(first), Array.from(second)];

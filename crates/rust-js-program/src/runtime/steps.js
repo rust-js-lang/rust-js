@@ -316,6 +316,7 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
 // as a JS caller may give generic code (ADR 0061). And what std's compiled
 // body is given of a type parameter's value, never armed to close itself at
 // its end (#2039).
+// gives: an iterator
 function $stepsOf(items) {
   if (items instanceof $Steps) return items;
   return Array.isArray(items) ? $iter(items) : Iterator.from(items);
@@ -341,6 +342,7 @@ function $steppedHeld(items) {
 // `filter` would drop it inside `keep`, so a consumer stepping it couldn't
 // tell that drop's panic, which leaks what it holds, from `keep`'s, which
 // drops it (#651).
+// gives: an iterator
 function $filterDropping(it, keep, drop) {
   const steps = it instanceof $Steps ? it : new $Steps(() => it.next(), () => $closeBare(it));
   return steps.filter(keep, drop);

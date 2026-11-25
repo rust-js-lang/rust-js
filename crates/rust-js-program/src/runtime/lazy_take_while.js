@@ -6,6 +6,7 @@
 // Its `try_fold`, its source's, stopped where `keep` doesn't hold. Of
 // items with a destructor, the one it stops at dropped by `drop`, as std's
 // `TakeWhile` drops it, `$kept`'s (#651).
+// gives: an iterator
 function $lazyTakeWhile(items, keep, drop) {
   const source = $stepsOf(items);
   let ended = false;
@@ -54,6 +55,7 @@ function $lazyTakeWhile(items, keep, drop) {
 // step after steps on, as Rust's `MapWhile`, which isn't fused, does, where
 // `take_while` stays ended. What it steps is closed as it's closed. Its `try_fold`, its
 // source's, stopped at what `present` doesn't keep.
+// gives: an iterator
 function $lazyMapWhile(items, f, present) {
   const source = $stepsOf(items);
   const mapping = new $Steps(

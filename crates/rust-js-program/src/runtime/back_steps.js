@@ -128,6 +128,7 @@ function $closed(it) {
 // which knows them too, as Rust's `Map` is double-ended and exact-sized
 // where its source is: each of its source's items, `f`'s, from either end
 // (ADRs 0455, 0456). Closing it closes its source (ADR 0465).
+// gives: an iterator
 function $mapEnds(it, f) {
   const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
   const map = new $Steps(
@@ -153,6 +154,7 @@ function $mapEnds(it, f) {
 // `last`, `count` and `advance_back_by`, each the crate's own where it
 // writes one, where a map's are its fold's (copied.rs, #2122). Its items
 // are `Copy`: nothing it passes over has a drop.
+// gives: an iterator
 function $copied(it, f) {
   const copied = $mapEnds(it, f);
   const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
@@ -173,6 +175,7 @@ function $copied(it, f) {
 // its fold, `nth`, `last`, `count` and `nth_back`, is its own, so an
 // array's is still read by index (ADR 0975); else its map, `$mapEnds`,
 // which asks its source's folds alone, as std's `Cloned` does (#2122).
+// gives: an iterator
 function $cloned(it) {
   if (!["nth", "last", "count", "nthBack"].some((step) => it[$ownStep(step)])) return it;
   return $mapEnds(it, (item) => item);
@@ -183,6 +186,7 @@ function $cloned(it) {
 // `Copied` doesn't pass on, its default its source's `advance_back_by`;
 // else `$copied` of it, which passes on each step std's `Copied` does
 // (#2130). A clone of it, `$givenClone`'s, is one of a clone of `it`.
+// gives: an iterator
 function $copiedGiven(it) {
   if (!it[$ownStep("nthBack")]) return it;
   const copied = $copied(it, (item) => item);
@@ -196,6 +200,7 @@ function $copiedGiven(it) {
 // have a destructor (ADR 0465). Closing it closes its source. Its `nth`,
 // `fold` and `tryFold` are std's: its first item its source's `next`, then
 // each its source's `nth` (#182).
+// gives: an iterator
 function $stepBy(it, step, drop) {
   const skip = (k, by) => {
     // From the front, its source's `nth`, as std's `StepBy` steps it, the
@@ -350,6 +355,7 @@ function $stepByEnds(it, step, drop) {
 // any: std's `FilterMap` writes none and `Flatten`'s folds its `Option`s,
 // each its source's `fold` (#2199). Of a JS iterator generic code was
 // given that knows no back, JS's own `filter`, which has no `count` to ask.
+// gives: an iterator
 function $somes(it) {
   const present = (item) => item != null;
   if (it.back === undefined && !(it instanceof $Steps)) return it.filter(present);
@@ -372,6 +378,7 @@ function $somes(it) {
 // source's upper bound, none at all once it's ended. Of a JS iterator
 // generic code was given that knows no back, JS's own `filter`, which
 // steps it by `next`.
+// gives: an iterator
 function $someItems(it) {
   const kept = $somes(it);
   if (!(kept instanceof $Steps)) return kept;
@@ -402,6 +409,7 @@ function $someItems(it) {
 // each of its source's items `p` keeps, from either end, `p` asked of each
 // as it's reached (ADR 0526), and each it doesn't dropped by `drop`, of
 // items with a destructor (ADR 0871). Closing it closes its source (ADR 0465, #225).
+// gives: an iterator
 function $filterEnds(it, p, drop) {
   // Each item `p` keeps, the one it was asked of dropped where it throws,
   // a panic, as std's `Filter` holds it as it unwinds (#423), and each it
@@ -462,6 +470,7 @@ function $filterEnds(it, p, drop) {
 // (ADR 0528). Its back and its length are its source's, asked as they're
 // asked: a use site may give a source its own, `$knowing`'s. Closing it
 // closes what it steps.
+// gives: an iterator
 function $enumerate(iter) {
   const pair = (step, at) => (step.done ? step : { done: false, value: [at, step.value] });
   const enumerated = new $Steps(
@@ -576,6 +585,7 @@ function $enumerate(iter) {
 //
 // Its source fused as `$flatMap`'s is: `$unfused`, its last argument,
 // where it isn't a `FusedIterator` (#2242).
+// gives: an iterator
 function $flattenEnds(it, each, ...rest) {
   const knowing = typeof rest[0] === "function" ? rest[0] : undefined;
   const unfused = rest.at(-1) === $unfused;

@@ -138,10 +138,12 @@ function $chunkByMut(v, p) {
   return $chunkBy(v, p, $viewPart);
 }
 
+// gives: an iterator
 function $lazySliceSplitByMut(v, p, n, inclusive, back) {
   return $lazySliceSplitBy(v, p, n, inclusive, back, $viewPart);
 }
 
+// gives: an iterator
 function $lazyChunkByMut(v, p) {
   return $lazyChunkBy(v, p, $viewPart);
 }

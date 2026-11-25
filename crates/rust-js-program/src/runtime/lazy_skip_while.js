@@ -7,6 +7,7 @@
 // and the one `skip` panics on as it unwinds, as std's `SkipWhile` drops
 // both in its `check` closure, whose frame holds no accumulator: `$kept`'s,
 // of what `skip` doesn't skip (#423, #817).
+// gives: an iterator
 function $lazySkipWhile(items, skip, drop) {
   const source = $stepsOf(items);
   let skipping = true;

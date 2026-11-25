@@ -28,6 +28,7 @@ function $extractIf(v, start, end, f, raisedAt, handle = false, inclusive) {
 // `[key, value]`.
 // Of a tree whose keys' order can be seen, std's walk (#926): from where
 // its range starts, `$treeRange`'s unsearched range of it, or all of it.
+// gives: an iterator
 function $mapExtractIf(m, f, entries, handles, set, drop) {
   const tree = set ? m.items : m;
   // Closed once, what it holds dropped, `drop`'s, its predicate then its

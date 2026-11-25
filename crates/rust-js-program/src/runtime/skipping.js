@@ -6,6 +6,7 @@
 // 0465). Its back and length are its source's less what it skips, as
 // Rust's `next_back` and `len` are. The one `Skip`: a `$Steps`' `drop(n)`,
 // JS's name for it, is it too (#735).
+// gives: an iterator
 function $skipping(iter, n, drop) {
   const skipping = new $Steps(
     () => {

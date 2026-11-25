@@ -404,4 +404,14 @@ export const mutations: Mutation[] = [
     replace: "  if (rfold !== undefined) holding.rfold = moving((init, f, unwind, ends) => rfold(init, f, unwind, ends));\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_holding_its_function_drops_it_after_its_source.rs$"],
   },
+  {
+    name: "closing-not-an-iterator",
+    breaks:
+      "`$closing` is taken for what isn't a JS iterator, written inside `Iterator.from`, and its chain not made eager",
+    file: "crates/rust-js-program/src/runtime/closing.js",
+    find: "// gives: an iterator\nfunction $closing(",
+    replace: "function $closing(",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    snapshots: true,
+  },
 ];

@@ -6,6 +6,7 @@
 // does. Each side is held, as std's `Zip` owns it: one that ends doesn't
 // close itself there, before `dropA` drops the other's item, but as the
 // zip is closed, `a` then `b`.
+// gives: an iterator
 function $lazyZip(a, b, dropA) {
   const left = $stepsOf(a);
   const right = $stepsOf(b);
@@ -50,6 +51,7 @@ function $zipHint([aLow, aHigh], [bLow, bHigh]) {
 // step of `a` running code, a `map`'s closure: a pair of each's next while
 // both have one, `a` never stepped once `b`, which knows its length, has
 // none, as std's zip pairs them up to the shorter's length (ADR 0973).
+// gives: an iterator
 function $trustedZip(a, b) {
   const left = $stepsOf(a);
   const zipped = new $Steps(
@@ -117,6 +119,7 @@ function $zipEndsOf(zipped, left, right, dropA, dropB) {
 // `fold` takes as many pairs as the shorter side has, never stepping `a`
 // once more as its `next` does; what's left of each dropped as it's
 // closed, as std drops the zip (#812).
+// gives: an iterator
 function $zipEnds(a, b, dropA, dropB, toShorter) {
   const zipped = $lazyZip(a, b, dropA);
   const left = zipped.from[0];
@@ -139,6 +142,7 @@ function $zipEnds(a, b, dropA, dropB, toShorter) {
 
 // `a.zip(b)` std reads by index, `$trustedZip`'s, of sides made knowing
 // their backs and lengths.
+// gives: an iterator
 function $trustedZipEnds(a, b, dropA, dropB) {
   const zipped = $trustedZip(a, b);
   return $zipEndsOf(zipped, zipped.from[0], zipped.from[1], dropA, dropB);

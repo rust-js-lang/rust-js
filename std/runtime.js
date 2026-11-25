@@ -777,6 +777,7 @@ export function $shift(items) {
 // where its bounds say: its `back()` and `len()`, beside `next()`, are public
 // API, `@rust-js/std`'s `DoubleEndedIterator` and `ExactSizeIterator`
 // (ADR 1169, #1999).
+// gives: an iterator
 export function $iterator(
   iterator,
   next,
@@ -903,6 +904,7 @@ export function $knowing(it, back, len, rfold, nthBack, tryRfold, advanceBackBy)
 // `boxed` and its length as `$iterator`'s; its back by its
 // `DoubleEndedIterator` dictionary, `back`: its `next_back`, and its own
 // `rfold` and `nth_back` where the crate's impl writes them (#224).
+// gives: an iterator
 export function $given(value, iterator, boxed = false, back, len) {
   // A JS iterator stepped as it is, its dictionary its own steps, each one
   // that calls the value's, `$next` and `$foldOf` of std's struct (ADR
@@ -1220,6 +1222,7 @@ export function $memrchr(haystack, needles) {
 // memchr's `memchr_iter`, `memchr2_iter` and `memchr3_iter`: each index of
 // one of `needles` in `haystack`, from either end, which meet, as memchr's
 // `Memchr` steps them; and a clone of it, where it is (ADR 0525).
+// gives: an iterator
 export function $memchrIter(haystack, needles, at = 0, end = haystack.length) {
   const one = needles.length === 1 ? needles[0] : undefined;
   const found = (i) => (one === undefined ? needles.includes(haystack[i]) : haystack[i] === one);
@@ -2221,6 +2224,7 @@ export function $reduceBy(items, extreme, boxed = false, drop = undefined) {
 // a set's, or one already (ADRs 0061, 0475): a `$Steps` as it is, not
 // stepped by JS's own protocol, which closes it at its end, so a held one
 // is its owner's to drop, where Rust drops it (#392).
+// gives: an iterator
 export function $intoIter(items) {
   if (Array.isArray(items)) return $iter(items);
   return items instanceof $Steps ? items : Iterator.from(items);
@@ -3969,6 +3973,7 @@ export function $setMerge(a, b, cmp) {
 // `a.symmetric_difference(&b)` (`op`, as `$setAlgebra` names them) of two
 // sets ordered by `cmp`: std's iterator of it, made as std's is, which
 // asks of `intersection` and `difference` its ends' `cmp` where it's made.
+// gives: an iterator
 export function $treeSetAlgebra(a, b, op, cmp) {
   const [xs, ys] = [Array.from(a), Array.from(b)];
   if (op === "union" || op === "symmetric") {
@@ -4588,6 +4593,7 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
 // as a JS caller may give generic code (ADR 0061). And what std's compiled
 // body is given of a type parameter's value, never armed to close itself at
 // its end (#2039).
+// gives: an iterator
 export function $stepsOf(items) {
   if (items instanceof $Steps) return items;
   return Array.isArray(items) ? $iter(items) : Iterator.from(items);
@@ -4613,6 +4619,7 @@ export function $steppedHeld(items) {
 // `filter` would drop it inside `keep`, so a consumer stepping it couldn't
 // tell that drop's panic, which leaks what it holds, from `keep`'s, which
 // drops it (#651).
+// gives: an iterator
 export function $filterDropping(it, keep, drop) {
   const steps = it instanceof $Steps ? it : new $Steps(() => it.next(), () => $closeBare(it));
   return steps.filter(keep, drop);
@@ -5390,6 +5397,7 @@ export function $collectUnwinding(run, it, items, drop, restFirst) {
 // nothing it steps is dropped as it's done or ends early, but as it's
 // closed (ADR 0570 amended, #206). A unit struct's is a `$iterator` of it
 // wherever it's given, an object, never its own `undefined` (#1979).
+// gives: an iterator
 export function $held(it) {
   it.hold?.();
   return it;
@@ -5498,6 +5506,7 @@ export function $findDropping(it, test, drop, boxed) {
 // fold takes it and drops it itself (#162), as std's compiled fold does,
 // which leaves it taken, so its own `return` drops nothing again (ADR
 // 0912): its lifecycle, `$state`, `$close`'s and `$takenBy`'s (#870).
+// gives: an iterator
 export function $closing(it, drop, slices = true) {
   const close = () => $close(closing, () => drop?.(it));
   // Stepped to its end, it's done with, as a chain consumed to its end
@@ -5663,6 +5672,7 @@ export function $closing(it, drop, slices = true) {
 // `Map` by `&mut`; else kept, a `take_while`'s, a `map_while`'s or a
 // `skip_while`'s, whose fold is its `try_fold`, dropped with it after what it
 // steps.
+// gives: an iterator
 export function $holding(it, drop, moved) {
   const own = $onceOf(drop);
   // What it steps, then its function, though the first's drop throws, a
@@ -5861,6 +5871,7 @@ export function $lifecycleBug(from, to) {
 // 0465). Its back and length are its source's less what it skips, as
 // Rust's `next_back` and `len` are. The one `Skip`: a `$Steps`' `drop(n)`,
 // JS's name for it, is it too (#735).
+// gives: an iterator
 export function $skipping(iter, n, drop) {
   const skipping = new $Steps(
     () => {
@@ -6080,6 +6091,7 @@ export function $skipping(iter, n, drop) {
 // past it dropped by `drop` where items have a destructor, as Rust's
 // `next_back` steps its source's `nth_back`; its length the fewer of its
 // source's and `n`.
+// gives: an iterator
 export function $taking(iter, n, drop) {
   const done = { done: true, value: undefined };
   const taking = new $Steps(
@@ -6597,6 +6609,7 @@ export function $closed(it) {
 // which knows them too, as Rust's `Map` is double-ended and exact-sized
 // where its source is: each of its source's items, `f`'s, from either end
 // (ADRs 0455, 0456). Closing it closes its source (ADR 0465).
+// gives: an iterator
 export function $mapEnds(it, f) {
   const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
   const map = new $Steps(
@@ -6622,6 +6635,7 @@ export function $mapEnds(it, f) {
 // `last`, `count` and `advance_back_by`, each the crate's own where it
 // writes one, where a map's are its fold's (copied.rs, #2122). Its items
 // are `Copy`: nothing it passes over has a drop.
+// gives: an iterator
 export function $copied(it, f) {
   const copied = $mapEnds(it, f);
   const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
@@ -6642,6 +6656,7 @@ export function $copied(it, f) {
 // its fold, `nth`, `last`, `count` and `nth_back`, is its own, so an
 // array's is still read by index (ADR 0975); else its map, `$mapEnds`,
 // which asks its source's folds alone, as std's `Cloned` does (#2122).
+// gives: an iterator
 export function $cloned(it) {
   if (!["nth", "last", "count", "nthBack"].some((step) => it[$ownStep(step)])) return it;
   return $mapEnds(it, (item) => item);
@@ -6652,6 +6667,7 @@ export function $cloned(it) {
 // `Copied` doesn't pass on, its default its source's `advance_back_by`;
 // else `$copied` of it, which passes on each step std's `Copied` does
 // (#2130). A clone of it, `$givenClone`'s, is one of a clone of `it`.
+// gives: an iterator
 export function $copiedGiven(it) {
   if (!it[$ownStep("nthBack")]) return it;
   const copied = $copied(it, (item) => item);
@@ -6665,6 +6681,7 @@ export function $copiedGiven(it) {
 // have a destructor (ADR 0465). Closing it closes its source. Its `nth`,
 // `fold` and `tryFold` are std's: its first item its source's `next`, then
 // each its source's `nth` (#182).
+// gives: an iterator
 export function $stepBy(it, step, drop) {
   const skip = (k, by) => {
     // From the front, its source's `nth`, as std's `StepBy` steps it, the
@@ -6819,6 +6836,7 @@ export function $stepByEnds(it, step, drop) {
 // any: std's `FilterMap` writes none and `Flatten`'s folds its `Option`s,
 // each its source's `fold` (#2199). Of a JS iterator generic code was
 // given that knows no back, JS's own `filter`, which has no `count` to ask.
+// gives: an iterator
 export function $somes(it) {
   const present = (item) => item != null;
   if (it.back === undefined && !(it instanceof $Steps)) return it.filter(present);
@@ -6841,6 +6859,7 @@ export function $somes(it) {
 // source's upper bound, none at all once it's ended. Of a JS iterator
 // generic code was given that knows no back, JS's own `filter`, which
 // steps it by `next`.
+// gives: an iterator
 export function $someItems(it) {
   const kept = $somes(it);
   if (!(kept instanceof $Steps)) return kept;
@@ -6871,6 +6890,7 @@ export function $someItems(it) {
 // each of its source's items `p` keeps, from either end, `p` asked of each
 // as it's reached (ADR 0526), and each it doesn't dropped by `drop`, of
 // items with a destructor (ADR 0871). Closing it closes its source (ADR 0465, #225).
+// gives: an iterator
 export function $filterEnds(it, p, drop) {
   // Each item `p` keeps, the one it was asked of dropped where it throws,
   // a panic, as std's `Filter` holds it as it unwinds (#423), and each it
@@ -6931,6 +6951,7 @@ export function $filterEnds(it, p, drop) {
 // (ADR 0528). Its back and its length are its source's, asked as they're
 // asked: a use site may give a source its own, `$knowing`'s. Closing it
 // closes what it steps.
+// gives: an iterator
 export function $enumerate(iter) {
   const pair = (step, at) => (step.done ? step : { done: false, value: [at, step.value] });
   const enumerated = new $Steps(
@@ -7045,6 +7066,7 @@ export function $enumerate(iter) {
 //
 // Its source fused as `$flatMap`'s is: `$unfused`, its last argument,
 // where it isn't a `FusedIterator` (#2242).
+// gives: an iterator
 export function $flattenEnds(it, each, ...rest) {
   const knowing = typeof rest[0] === "function" ? rest[0] : undefined;
   const unfused = rest.at(-1) === $unfused;
@@ -7520,6 +7542,7 @@ export function $nextBackSome(it) {
 // `drop`, what drops its function, then its state, given its state: run
 // once it's closed, after what it steps, as `Scan { iter, f, state }` drops
 // its fields (#760).
+// gives: an iterator
 export function $lazyScan(items, init, f, handle = true, drop = undefined) {
   const state = handle ? { value: init } : init;
   const source = $stepsOf(items);
@@ -7740,6 +7763,7 @@ export function $parseBig(s, min, max, radix = 10) {
 // and `advance_by` are std's `Range`'s, of its bounds, its `nth` by its
 // `advance_by`, which `skip` and
 // `step_by` step it by, so they don't make each number (#231, #1240).
+// gives: an iterator
 export function $lazyRange(start, end = Infinity, step = 1) {
   let at = start;
   const range = new $Steps(() => {
@@ -7778,6 +7802,7 @@ export function $lazyRange(start, end = Infinity, step = 1) {
 // `step`th after, `1 + (n - 1) / step`, which is std's before its first
 // item, `1 + (len - 1) / step`, and after, what its range has left `step`
 // apart, so a collect asks the room std's does (#1046).
+// gives: an iterator
 export function $lazyRangeBack(start, end, step, inclusive = false) {
   const chars = typeof end === "string";
   const big = typeof end === "bigint";
@@ -10634,6 +10659,7 @@ export function $rchunks(v, n, exact, raisedAt, cut = $part) {
 // each with its item, none of an empty slice; of `n`, `SplitN`'s count, the
 // last of its `n` what's left whole; `RSplit` and `RSplitN`'s, `back`,
 // stepped from the back. Its hint std's (slice/iter.rs, #1501).
+// gives: an iterator
 export function $lazySliceSplitBy(v, p, n = Infinity, inclusive = false, back = false, cut = $part) {
   const done = { done: true, value: undefined };
   const step = (value) => ({ done: false, value });
@@ -10730,6 +10756,7 @@ export function $asChunks(v, n, back = false) {
 // std's is (slice/iter.rs, #1501). Its `count` is std's default of its
 // `next`, which asks each two in a row once, from the front, as std's own
 // `count` does.
+// gives: an iterator
 export function $lazyChunkBy(v, p, cut = $part) {
   const done = { done: true, value: undefined };
   let [start, end] = [0, v.length];
@@ -11278,6 +11305,7 @@ export function $setAlgebra(a, b, op) {
 // the smaller's not in it, `larger.iter().chain(smaller.difference(larger))`
 // (hash/set.rs), its hint the chain's, `(n, Some(n + m))` of the larger's
 // `n` left and the smaller's `m`, then the difference's, `(0, Some(m))`.
+// gives: an iterator
 export function $hashSetUnion(a, b) {
   const [first, second] = a.size >= b.size ? [a, b] : [b, a];
   const [xs, ys] = [Array.from(first), Array.from(second)];
@@ -11673,6 +11701,7 @@ export function $escapeUnicode(s) {
 // of `units` as it's asked, one unit or a pair, a unit it read past an
 // unpaired leading surrogate kept for its next step, as std's `buf` is; its
 // hint std's; closed, `units` closed (#1151).
+// gives: an iterator
 export function $decodeUtf16(units) {
   // An array's `$iter`, which knows its hint, as a `Vec`'s or an array's
   // `IntoIter` does.
@@ -13023,6 +13052,7 @@ export function $extractIf(v, start, end, f, raisedAt, handle = false, inclusive
 // `[key, value]`.
 // Of a tree whose keys' order can be seen, std's walk (#926): from where
 // its range starts, `$treeRange`'s unsearched range of it, or all of it.
+// gives: an iterator
 export function $mapExtractIf(m, f, entries, handles, set, drop) {
   const tree = set ? m.items : m;
   // Closed once, what it holds dropped, `drop`'s, its predicate then its
@@ -13881,10 +13911,12 @@ export function $chunkByMut(v, p) {
   return $chunkBy(v, p, $viewPart);
 }
 
+// gives: an iterator
 export function $lazySliceSplitByMut(v, p, n, inclusive, back) {
   return $lazySliceSplitBy(v, p, n, inclusive, back, $viewPart);
 }
 
+// gives: an iterator
 export function $lazyChunkByMut(v, p) {
   return $lazyChunkBy(v, p, $viewPart);
 }
@@ -20471,6 +20503,7 @@ export function $nextIfSome(peekable, f, drop) {
 // a peekable's or a fuse's, is std's, `steps.fold`, its source's (#162);
 // closing it closes nothing, but of a kind dropped by closing, a `Rev`'s,
 // whose `steps.close` drops what it holds.
+// gives: an iterator
 export function $stdIterator(struct, steps, knows) {
   const it = Object.assign(Object.create($Steps.prototype), struct);
   const step = (item) => (item === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(item) });
@@ -22637,6 +22670,7 @@ export function $rfind(s, pattern) {
 // UTF-8 bytes too, and its back, counted where it's first stepped. One
 // stepped only forward is JS's own string iterator, `s[Symbol.iterator]()`,
 // which reads `char`s as Rust's do.
+// gives: an iterator
 export function $chars(s, indexed = false) {
   const it = Object.create(Iterator.prototype);
   it.s = s;
@@ -22657,6 +22691,7 @@ export function $chars(s, indexed = false) {
 }
 
 // `char_indices()`: each `char`, with where it starts in UTF-8 bytes.
+// gives: an iterator
 export function $charIndices(s) {
   return $chars(s, true);
 }
@@ -22986,6 +23021,7 @@ export function $dedupByCells(v, same, drop) {
 // destructor, whose `Splice` runs nothing as it's dropped: `replacement`, an
 // array or an array's iterator, put in place where it's made, as nothing
 // sees `items` till it's dropped; an iterator over what it took out (#1189).
+// gives: an iterator
 export function $splice(items, start, end, replacement, raisedAt, inclusive) {
   $checkRange(start, end, items.length, raisedAt, inclusive);
   const tail = items.splice(end);
@@ -23012,6 +23048,7 @@ export function $splice(items, start, end, replacement, raisedAt, inclusive) {
 // made, the crate's own `into_iter` where it's the crate's (`$ownIntoIter`),
 // as std's `splice` makes its `Drain` first: where that panics, what was
 // taken out dropped and the tail put back, the `Drain`'s drop (#1940).
+// gives: an iterator
 export function $splicing(items, start, end, replacement, raisedAt, dropItem, inclusive) {
   const given = typeof replacement.next === "function" ? replacement : undefined;
   $unwinds(() => $checkRange(start, end, items.length, raisedAt, inclusive), () => $closeBare(given));
@@ -23153,6 +23190,7 @@ export function $zip(a, b) {
 // `rfold`, `try_rfold`, `nth_back` and `advance_back_by` (#220). Closing it
 // closes `a`, then `b`, the second though the first's drop throws, as drop
 // glue drops each field (`$closeEach`, #743).
+// gives: an iterator
 export function $lazyChain(a, b) {
   const done = { done: true, value: undefined };
   let first = $stepsOf(a);
@@ -23410,6 +23448,7 @@ export function $lazyChain(a, b) {
 // does. Each side is held, as std's `Zip` owns it: one that ends doesn't
 // close itself there, before `dropA` drops the other's item, but as the
 // zip is closed, `a` then `b`.
+// gives: an iterator
 export function $lazyZip(a, b, dropA) {
   const left = $stepsOf(a);
   const right = $stepsOf(b);
@@ -23454,6 +23493,7 @@ export function $zipHint([aLow, aHigh], [bLow, bHigh]) {
 // step of `a` running code, a `map`'s closure: a pair of each's next while
 // both have one, `a` never stepped once `b`, which knows its length, has
 // none, as std's zip pairs them up to the shorter's length (ADR 0973).
+// gives: an iterator
 export function $trustedZip(a, b) {
   const left = $stepsOf(a);
   const zipped = new $Steps(
@@ -23521,6 +23561,7 @@ export function $zipEndsOf(zipped, left, right, dropA, dropB) {
 // `fold` takes as many pairs as the shorter side has, never stepping `a`
 // once more as its `next` does; what's left of each dropped as it's
 // closed, as std drops the zip (#812).
+// gives: an iterator
 export function $zipEnds(a, b, dropA, dropB, toShorter) {
   const zipped = $lazyZip(a, b, dropA);
   const left = zipped.from[0];
@@ -23543,6 +23584,7 @@ export function $zipEnds(a, b, dropA, dropB, toShorter) {
 
 // `a.zip(b)` std reads by index, `$trustedZip`'s, of sides made knowing
 // their backs and lengths.
+// gives: an iterator
 export function $trustedZipEnds(a, b, dropA, dropB) {
   const zipped = $trustedZip(a, b);
   return $zipEndsOf(zipped, zipped.from[0], zipped.from[1], dropA, dropB);
@@ -23579,6 +23621,7 @@ export function $flatLast(flat, drop, ends) {
 // `fusing` `$unfused`, dropped at its end with the function a `$holding`
 // gives it, as `Fuse` drops its `Map` at its first `None`; one that is,
 // kept until it's dropped, as `Fuse`'s specialization keeps it (#2242).
+// gives: an iterator
 export function $flatMap(it, f, fusing) {
   let inner;
   // Its source done, `ended`; dropped, by its own fold or here, `dropped`.
@@ -23779,6 +23822,7 @@ export function $peekCell(peekable) {
 // is (ADR 0989). Its `fold`, `nth` and `try_fold` are
 // std's `Rev`'s, its source's `rfold`, `nth_back` and `try_rfold`, where
 // they reach the crate's own (#220).
+// gives: an iterator
 export function $rev(it) {
   const rev = new $Steps(
     () => it.back(),
@@ -23835,6 +23879,7 @@ export function $rev(it) {
 // Its `try_fold`, its source's, stopped where `keep` doesn't hold. Of
 // items with a destructor, the one it stops at dropped by `drop`, as std's
 // `TakeWhile` drops it, `$kept`'s (#651).
+// gives: an iterator
 export function $lazyTakeWhile(items, keep, drop) {
   const source = $stepsOf(items);
   let ended = false;
@@ -23883,6 +23928,7 @@ export function $lazyTakeWhile(items, keep, drop) {
 // step after steps on, as Rust's `MapWhile`, which isn't fused, does, where
 // `take_while` stays ended. What it steps is closed as it's closed. Its `try_fold`, its
 // source's, stopped at what `present` doesn't keep.
+// gives: an iterator
 export function $lazyMapWhile(items, f, present) {
   const source = $stepsOf(items);
   const mapping = new $Steps(
@@ -23932,6 +23978,7 @@ export function $lazyMapWhile(items, f, present) {
 // and the one `skip` panics on as it unwinds, as std's `SkipWhile` drops
 // both in its `check` closure, whose frame holds no accumulator: `$kept`'s,
 // of what `skip` doesn't skip (#423, #817).
+// gives: an iterator
 export function $lazySkipWhile(items, skip, drop) {
   const source = $stepsOf(items);
   let skipping = true;
@@ -24005,6 +24052,7 @@ export function $lazySkipWhile(items, skip, drop) {
 // item, `clone(value, at)`, its row of `$stdSites.clonedAt`, so a
 // `RefCell`'s, which tracks its caller, raises at std's line of that step
 // (#2577): the one form of a clone a step makes.
+// gives: an iterator
 export function $repeating(value, clone = (value) => value, drop) {
   const it = new $Steps(
     () => ({ done: false, value: clone(value, $stdSites.clonedAt["core::iter::Repeat::next"][0]) }),
@@ -24064,6 +24112,7 @@ export function $backAsFront(it, len) {
 // (ADR 0513). A `$Steps`, as `$repeating` is (#708). Its hint exact, what
 // it has left, as std's (#246). Each clone given its step's line, as
 // `$repeating`'s (#2577).
+// gives: an iterator
 export function $repeatingN(value, count, clone = (value) => value, drop) {
   let left = count;
   if (left === 0) drop?.(value);
@@ -24127,6 +24176,7 @@ export function $repeatingN(value, count, clone = (value) => value, drop) {
 // `iter::repeat_with(f)`: `f()` each step, forever. Its hint std's,
 // `(usize::MAX, None)` (repeat_with.rs:83), which what holds it asks, an
 // explicit `Take`'s.
+// gives: an iterator
 export function $repeatingWith(f) {
   const it = (function* () {
     while (true) {
@@ -24141,6 +24191,7 @@ export function $repeatingWith(f) {
 // one item. Its hint std's, `(1, Some(1))` while it holds `f`, else `(0,
 // Some(0))` (sources/once_with.rs), which what holds it asks, a
 // `peekable()`'s or a `Vec` grown by it (#1375).
+// gives: an iterator
 export function $onceWith(f) {
   let held = true;
   const it = Object.create(Iterator.prototype);
@@ -24165,6 +24216,7 @@ export function $onceWith(f) {
 // whose hint is std's `Take`'s of it, which a `Vec` grows by: JS's own
 // `take` of a generator knows none, and grew one by doubling, 8 where std's
 // is 7 (#1572).
+// gives: an iterator
 export function $cycle(items, clone = (item) => item) {
   let at = 0;
   const cycled = new $Steps(() => {
@@ -24187,6 +24239,7 @@ export function $cycle(items, clone = (item) => item) {
 // like `None` boxed (ADR 0051). Where the clone it keeps throws, a panic,
 // what it was given is dropped as it unwinds, a local of `Cycle::new`'s
 // frame (#1585).
+// gives: an iterator
 export function $cycleOf(iterator, clone, next, boxed = false, drop) {
   const orig = $unwinds(() => clone(iterator), drop && (() => drop(iterator)));
   return $cycleFrom(orig, iterator, clone, next, boxed, drop);
@@ -24304,6 +24357,7 @@ export function $cycleFrom(orig, iter, clone, next, boxed, drop) {
 // item's, as Rust's `Successors` drops what it holds (ADR 0465). Its hint
 // std's, `(1, None)` while it holds one, else `(0, Some(0))`
 // (successors.rs:49), which what holds it asks, an explicit `Take`'s.
+// gives: an iterator
 export function $successors(first, successor, boxed = false, drop) {
   let next = first;
   const it = Object.create(Iterator.prototype);
@@ -25171,6 +25225,7 @@ export function $referent(it) {
   return it;
 }
 
+// gives: an iterator
 export function $lent(it, kind = "lent") {
   // Of an iterable that's no iterator, an array a caller gives, a JS
   // iterator of it. Never `Iterator.from` of one: it calls a `$Steps`'
@@ -25487,6 +25542,7 @@ export function $searchStep(value) {
 // `s.split(p)`, or `s.splitn(n, p)`, of a predicate that may run the
 // program's code: std's `Split`, stepped from either end, or `SplitN`, the
 // last of its `n` what's left whole, each piece asked as it's stepped.
+// gives: an iterator
 export function $lazySplitBy(s, test, n = Infinity) {
   const split = $splitInternal(s, test, true);
   let count = n;
@@ -25502,6 +25558,7 @@ export function $lazySplitBy(s, test, n = Infinity) {
 
 // `s.rsplit(p)`, or `s.rsplitn(n, p)`: std's `RSplit`, `Split` stepped from
 // its back, or `RSplitN`, the last of its `n` what's left whole.
+// gives: an iterator
 export function $lazyRsplitBy(s, test, n = Infinity) {
   const split = $splitInternal(s, test, true);
   let count = n;
@@ -25517,6 +25574,7 @@ export function $lazyRsplitBy(s, test, n = Infinity) {
 
 // `s.split_terminator(p)`: std's `SplitTerminator`, no empty piece at its
 // end; `rsplit_terminator`'s, `rev`, stepped from its back.
+// gives: an iterator
 export function $lazySplitTerminatorBy(s, test, rev = false) {
   const split = $splitInternal(s, test, false);
   const [front, back] = rev ? [split.nextBack, split.next] : [split.next, split.nextBack];
@@ -25527,6 +25585,7 @@ export function $lazySplitTerminatorBy(s, test, rev = false) {
 
 // `s.split_inclusive(p)`: std's `SplitInclusive`, each piece with the `char`
 // that ends it, none empty at its end.
+// gives: an iterator
 export function $lazySplitInclusiveBy(s, test) {
   const split = $splitInternal(s, test, false);
   const it = new $Steps(() => $searchStep(split.next(true)));
@@ -25537,6 +25596,7 @@ export function $lazySplitInclusiveBy(s, test) {
 // `s.matches(p)`: each `char` it holds of, from the front; `rmatches`',
 // `rev`, from the back. Of `match_indices`, `indices`, each with where it
 // starts in UTF-8 bytes. Each asked as it's stepped, from either end.
+// gives: an iterator
 export function $lazyMatchesBy(s, test, rev = false, indices = false) {
   const searcher = $charSearcher(s, test);
   const found = (k) => (k < 0 ? undefined : indices ? [searcher.byte[k], searcher.chars[k]] : searcher.chars[k]);
@@ -25548,6 +25608,7 @@ export function $lazyMatchesBy(s, test, rev = false, indices = false) {
 
 // `s.match_indices(p)`: `$lazyMatchesBy`'s, each with where it starts in
 // UTF-8 bytes; `rmatch_indices`', `rev`, from the back.
+// gives: an iterator
 export function $lazyMatchIndicesBy(s, test, rev = false) {
   return $lazyMatchesBy(s, test, rev, true);
 }

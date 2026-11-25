@@ -1101,3 +1101,15 @@ test("the back path names no in-place form's helper, the owner's catalog alone",
   const knowing = readFileSync(join(root, "crates/rust-js-lower/src/iterators/knowing.rs"), "utf8");
   expect(helpers.filter((helper) => knowing.includes(`"${helper}"`))).toEqual([]);
 });
+
+// Which runtime helpers' calls are JS iterators is the runtime's to say,
+// each helper's own source (`runtime::gives_iterator`, ADR 1207): lowering
+// keeps no list of them, and `is_js_iterator` asks the runtime of a call's
+// helper (#2229).
+test("which helpers give a JS iterator is the runtime's to say", () => {
+  const offenders = compilerRustFiles().filter((file) => /\bITERATOR_HELPERS\b/.test(readFileSync(join(root, file), "utf8")));
+  expect(offenders).toEqual([]);
+  const iterators = readFileSync(join(root, "crates/rust-js-lower/src/iterators.rs"), "utf8");
+  const reader = iterators.slice(iterators.indexOf("pub fn is_js_iterator"));
+  expect(reader.slice(0, reader.indexOf("\n}\n"))).toContain("rust_js_program::runtime::gives_iterator(helper)");
+});

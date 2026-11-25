@@ -5,6 +5,7 @@
 // past it dropped by `drop` where items have a destructor, as Rust's
 // `next_back` steps its source's `nth_back`; its length the fewer of its
 // source's and `n`.
+// gives: an iterator
 function $taking(iter, n, drop) {
   const done = { done: true, value: undefined };
   const taking = new $Steps(

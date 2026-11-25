@@ -3,6 +3,7 @@
 // and `advance_by` are std's `Range`'s, of its bounds, its `nth` by its
 // `advance_by`, which `skip` and
 // `step_by` step it by, so they don't make each number (#231, #1240).
+// gives: an iterator
 function $lazyRange(start, end = Infinity, step = 1) {
   let at = start;
   const range = new $Steps(() => {
@@ -41,6 +42,7 @@ function $lazyRange(start, end = Infinity, step = 1) {
 // `step`th after, `1 + (n - 1) / step`, which is std's before its first
 // item, `1 + (len - 1) / step`, and after, what its range has left `step`
 // apart, so a collect asks the room std's does (#1046).
+// gives: an iterator
 function $lazyRangeBack(start, end, step, inclusive = false) {
   const chars = typeof end === "string";
   const big = typeof end === "bigint";

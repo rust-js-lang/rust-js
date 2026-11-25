@@ -4,6 +4,7 @@
 // a set's, or one already (ADRs 0061, 0475): a `$Steps` as it is, not
 // stepped by JS's own protocol, which closes it at its end, so a held one
 // is its owner's to drop, where Rust drops it (#392).
+// gives: an iterator
 function $intoIter(items) {
   if (Array.isArray(items)) return $iter(items);
   return items instanceof $Steps ? items : Iterator.from(items);

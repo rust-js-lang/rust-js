@@ -6,6 +6,7 @@
 // is (ADR 0989). Its `fold`, `nth` and `try_fold` are
 // std's `Rev`'s, its source's `rfold`, `nth_back` and `try_rfold`, where
 // they reach the crate's own (#220).
+// gives: an iterator
 function $rev(it) {
   const rev = new $Steps(
     () => it.back(),

@@ -29,6 +29,7 @@ function $flatLast(flat, drop, ends) {
 // `fusing` `$unfused`, dropped at its end with the function a `$holding`
 // gives it, as `Fuse` drops its `Map` at its first `None`; one that is,
 // kept until it's dropped, as `Fuse`'s specialization keeps it (#2242).
+// gives: an iterator
 function $flatMap(it, f, fusing) {
   let inner;
   // Its source done, `ended`; dropped, by its own fold or here, `dropped`.

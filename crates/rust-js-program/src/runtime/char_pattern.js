@@ -83,6 +83,7 @@ function $searchStep(value) {
 // `s.split(p)`, or `s.splitn(n, p)`, of a predicate that may run the
 // program's code: std's `Split`, stepped from either end, or `SplitN`, the
 // last of its `n` what's left whole, each piece asked as it's stepped.
+// gives: an iterator
 function $lazySplitBy(s, test, n = Infinity) {
   const split = $splitInternal(s, test, true);
   let count = n;
@@ -98,6 +99,7 @@ function $lazySplitBy(s, test, n = Infinity) {
 
 // `s.rsplit(p)`, or `s.rsplitn(n, p)`: std's `RSplit`, `Split` stepped from
 // its back, or `RSplitN`, the last of its `n` what's left whole.
+// gives: an iterator
 function $lazyRsplitBy(s, test, n = Infinity) {
   const split = $splitInternal(s, test, true);
   let count = n;
@@ -113,6 +115,7 @@ function $lazyRsplitBy(s, test, n = Infinity) {
 
 // `s.split_terminator(p)`: std's `SplitTerminator`, no empty piece at its
 // end; `rsplit_terminator`'s, `rev`, stepped from its back.
+// gives: an iterator
 function $lazySplitTerminatorBy(s, test, rev = false) {
   const split = $splitInternal(s, test, false);
   const [front, back] = rev ? [split.nextBack, split.next] : [split.next, split.nextBack];
@@ -123,6 +126,7 @@ function $lazySplitTerminatorBy(s, test, rev = false) {
 
 // `s.split_inclusive(p)`: std's `SplitInclusive`, each piece with the `char`
 // that ends it, none empty at its end.
+// gives: an iterator
 function $lazySplitInclusiveBy(s, test) {
   const split = $splitInternal(s, test, false);
   const it = new $Steps(() => $searchStep(split.next(true)));
@@ -133,6 +137,7 @@ function $lazySplitInclusiveBy(s, test) {
 // `s.matches(p)`: each `char` it holds of, from the front; `rmatches`',
 // `rev`, from the back. Of `match_indices`, `indices`, each with where it
 // starts in UTF-8 bytes. Each asked as it's stepped, from either end.
+// gives: an iterator
 function $lazyMatchesBy(s, test, rev = false, indices = false) {
   const searcher = $charSearcher(s, test);
   const found = (k) => (k < 0 ? undefined : indices ? [searcher.byte[k], searcher.chars[k]] : searcher.chars[k]);
@@ -144,6 +149,7 @@ function $lazyMatchesBy(s, test, rev = false, indices = false) {
 
 // `s.match_indices(p)`: `$lazyMatchesBy`'s, each with where it starts in
 // UTF-8 bytes; `rmatch_indices`', `rev`, from the back.
+// gives: an iterator
 function $lazyMatchIndicesBy(s, test, rev = false) {
   return $lazyMatchesBy(s, test, rev, true);
 }

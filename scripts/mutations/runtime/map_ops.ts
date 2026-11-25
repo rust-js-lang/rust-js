@@ -598,4 +598,13 @@ export const mutations: Mutation[] = [
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(hashed_map_clone_hashes_no_key)\\.rs$"],
   },
+  {
+    name: "hash-union-not-an-iterator",
+    breaks: "a hash set's `union`, a JS iterator, is wrapped again where one's asked, `Iterator.from($hashSetUnion(a, b))` (#1219)",
+    file: "crates/rust-js-program/src/runtime/map_ops.js",
+    find: "// gives: an iterator\nfunction $hashSetUnion(",
+    replace: "function $hashSetUnion(",
+    tests: ["test/corpus.test.ts", "-t", "^map_set_methods.rs$"],
+    snapshots: true,
+  },
 ];

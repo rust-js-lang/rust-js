@@ -7,6 +7,7 @@
 // UTF-8 bytes too, and its back, counted where it's first stepped. One
 // stepped only forward is JS's own string iterator, `s[Symbol.iterator]()`,
 // which reads `char`s as Rust's do.
+// gives: an iterator
 function $chars(s, indexed = false) {
   const it = Object.create(Iterator.prototype);
   it.s = s;
@@ -27,6 +28,7 @@ function $chars(s, indexed = false) {
 }
 
 // `char_indices()`: each `char`, with where it starts in UTF-8 bytes.
+// gives: an iterator
 function $charIndices(s) {
   return $chars(s, true);
 }

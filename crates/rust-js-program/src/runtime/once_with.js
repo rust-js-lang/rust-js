@@ -2,6 +2,7 @@
 // one item. Its hint std's, `(1, Some(1))` while it holds `f`, else `(0,
 // Some(0))` (sources/once_with.rs), which what holds it asks, a
 // `peekable()`'s or a `Vec` grown by it (#1375).
+// gives: an iterator
 function $onceWith(f) {
   let held = true;
   const it = Object.create(Iterator.prototype);

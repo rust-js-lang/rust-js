@@ -4,6 +4,7 @@
 // item's, as Rust's `Successors` drops what it holds (ADR 0465). Its hint
 // std's, `(1, None)` while it holds one, else `(0, Some(0))`
 // (successors.rs:49), which what holds it asks, an explicit `Take`'s.
+// gives: an iterator
 function $successors(first, successor, boxed = false, drop) {
   let next = first;
   const it = Object.create(Iterator.prototype);

@@ -11,6 +11,7 @@
 // `rfold`, `try_rfold`, `nth_back` and `advance_back_by` (#220). Closing it
 // closes `a`, then `b`, the second though the first's drop throws, as drop
 // glue drops each field (`$closeEach`, #743).
+// gives: an iterator
 function $lazyChain(a, b) {
   const done = { done: true, value: undefined };
   let first = $stepsOf(a);

@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-25 (#2229, ADR 1207): runtime-package.test.ts's iterator-helper list test moves to `runtime::signatures`' unit test of the runtime's own answer; test/architecture-iterators.test.ts gains that no list of them returns.
+
 Changed on 2026-11-25 (#2170, ADR 0975 amended): test/architecture-cleanups.test.ts gains a test that one answerer says whether a type is `TrustedLen`.
 
 Changed on 2026-11-25 (#2216, ADR 1176 amended): test/architecture-iterators.test.ts gains a test that the back path names no in-place form's helper.
@@ -9,7 +11,6 @@ Changed on 2026-11-25 (#2584, #2585, #2586, #2587, #2575's paths; ADRs 1101, 114
 Changed on 2026-11-25 (Campaign 5 step 3, ADR 1202 amended): test/twin-net.test.ts's measure falls to 202, a slice's `Split` and `SplitMut` bound.
 
 Changed on 2026-11-25 (#2599, ADR 0327 amended): one corpus case, the free `std::char::decode_utf16` decoding as `char::decode_utf16` does, against native; one mutation.
-
 Changed on 2026-11-25 (#2572 step 4, ADR 1205 amended): test/architecture-iterators.test.ts gains a test, the runtime closes a source by `$closeHolding` or `$closeBare` alone; one corpus case, a `find` of a source whose drop panics, against native; 27 runtime mutations' finds follow the closes; test/known/iterator-matrix/2580.txt, empty since #2580's fix, is gone.
 
 Changed on 2026-11-25 (#2596, ADR 1022 amended): a dropped `dyn`'s pair is read once; test/oracle-c.test.ts gains its test, and the export net compares the reads of two crate pairs it left unread.

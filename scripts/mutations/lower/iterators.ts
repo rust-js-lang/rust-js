@@ -111,26 +111,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "cycle-wrapped",
-    breaks:
-      "a `$cycle`'s generator is wrapped in `Iterator.from(..)`, though it's a JS iterator already",
-    file: "crates/rust-js-lower/src/iterators.rs",
-    find: '    "$cycle",\n',
-    replace: '    "$cycled",\n',
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
-  },
-  {
-    name: "lazy-chain-not-iterator",
-    breaks:
-      "`$lazyChain(a, b)`, a generator, is taken for what isn't a JS iterator, and wrapped in `Iterator.from`",
-    file: "crates/rust-js-lower/src/iterators.rs",
-    find: '    "$lazyChain",\n',
-    replace: '    "$lazyChained",\n',
-    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
-    snapshots: true,
-  },
-  {
     name: "iterator-read-as-js",
     breaks:
       "the crate's iterator given to `I: Iterator + Clone` is its JS iterator, which its `Clone` and `Debug` read as its value",
@@ -157,16 +137,6 @@ export const mutations: Mutation[] = [
     find: "        .any(|&tr| tr == iterator || super::recognition::implies_iterator(tcx, tr))\n",
     replace: "        .any(|&tr| tr == iterator)\n",
     tests: ["test/corpus.test.ts", "-t", "^extension_bound_iterators.rs$"],
-  },
-  {
-    name: "closing-not-an-iterator",
-    breaks:
-      "`$closing` is taken for what isn't a JS iterator, written inside `Iterator.from`, and its chain not made eager",
-    file: "crates/rust-js-lower/src/iterators.rs",
-    find: '    "$closing",\n',
-    replace: '    "$peekable",\n',
-    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
-    snapshots: true,
   },
   {
     name: "std-provided-self-given-by-trait",
@@ -364,15 +334,6 @@ export const mutations: Mutation[] = [
     find: "    read || named || held\n",
     replace: "    read || held\n",
     tests: ["test/corpus.test.ts", "-t", "^index_gives_an_adapter_of_its_iterator.rs$"],
-  },
-  {
-    name: "hash-union-not-an-iterator",
-    breaks: "a hash set's `union`, a JS iterator, is wrapped again where one's asked, `Iterator.from($hashSetUnion(a, b))` (#1219)",
-    file: "crates/rust-js-lower/src/iterators.rs",
-    find: "    \"$hashSetUnion\",\n",
-    replace: "    \"$hashSetUnion-unlisted\",\n",
-    tests: ["test/corpus.test.ts", "-t", "^map_set_methods.rs$"],
-    snapshots: true,
   },
   {
     name: "iter-of-an-iter-kept",

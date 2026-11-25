@@ -7,6 +7,7 @@
 // `drop`, what drops its function, then its state, given its state: run
 // once it's closed, after what it steps, as `Scan { iter, f, state }` drops
 // its fields (#760).
+// gives: an iterator
 function $lazyScan(items, init, f, handle = true, drop = undefined) {
   const state = handle ? { value: init } : init;
   const source = $stepsOf(items);

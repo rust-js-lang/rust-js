@@ -46,6 +46,7 @@ function $referent(it) {
   return it;
 }
 
+// gives: an iterator
 function $lent(it, kind = "lent") {
   // Of an iterable that's no iterator, an array a caller gives, a JS
   // iterator of it. Never `Iterator.from` of one: it calls a `$Steps`'

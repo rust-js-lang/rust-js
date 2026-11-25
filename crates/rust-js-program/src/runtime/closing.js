@@ -6,6 +6,7 @@
 // fold takes it and drops it itself (#162), as std's compiled fold does,
 // which leaves it taken, so its own `return` drops nothing again (ADR
 // 0912): its lifecycle, `$state`, `$close`'s and `$takenBy`'s (#870).
+// gives: an iterator
 function $closing(it, drop, slices = true) {
   const close = () => $close(closing, () => drop?.(it));
   // Stepped to its end, it's done with, as a chain consumed to its end
@@ -171,6 +172,7 @@ function $closing(it, drop, slices = true) {
 // `Map` by `&mut`; else kept, a `take_while`'s, a `map_while`'s or a
 // `skip_while`'s, whose fold is its `try_fold`, dropped with it after what it
 // steps.
+// gives: an iterator
 function $holding(it, drop, moved) {
   const own = $onceOf(drop);
   // What it steps, then its function, though the first's drop throws, a

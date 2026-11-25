@@ -16,6 +16,7 @@
 // where its bounds say: its `back()` and `len()`, beside `next()`, are public
 // API, `@rust-js/std`'s `DoubleEndedIterator` and `ExactSizeIterator`
 // (ADR 1169, #1999).
+// gives: an iterator
 function $iterator(
   iterator,
   next,
@@ -142,6 +143,7 @@ function $knowing(it, back, len, rfold, nthBack, tryRfold, advanceBackBy) {
 // `boxed` and its length as `$iterator`'s; its back by its
 // `DoubleEndedIterator` dictionary, `back`: its `next_back`, and its own
 // `rfold` and `nth_back` where the crate's impl writes them (#224).
+// gives: an iterator
 function $given(value, iterator, boxed = false, back, len) {
   // A JS iterator stepped as it is, its dictionary its own steps, each one
   // that calls the value's, `$next` and `$foldOf` of std's struct (ADR

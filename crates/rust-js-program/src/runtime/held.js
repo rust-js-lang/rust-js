@@ -3,6 +3,7 @@
 // nothing it steps is dropped as it's done or ends early, but as it's
 // closed (ADR 0570 amended, #206). A unit struct's is a `$iterator` of it
 // wherever it's given, an object, never its own `undefined` (#1979).
+// gives: an iterator
 function $held(it) {
   it.hold?.();
   return it;

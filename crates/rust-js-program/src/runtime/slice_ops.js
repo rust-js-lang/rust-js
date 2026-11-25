@@ -298,6 +298,7 @@ function $rchunks(v, n, exact, raisedAt, cut = $part) {
 // each with its item, none of an empty slice; of `n`, `SplitN`'s count, the
 // last of its `n` what's left whole; `RSplit` and `RSplitN`'s, `back`,
 // stepped from the back. Its hint std's (slice/iter.rs, #1501).
+// gives: an iterator
 function $lazySliceSplitBy(v, p, n = Infinity, inclusive = false, back = false, cut = $part) {
   const done = { done: true, value: undefined };
   const step = (value) => ({ done: false, value });
@@ -394,6 +395,7 @@ function $asChunks(v, n, back = false) {
 // std's is (slice/iter.rs, #1501). Its `count` is std's default of its
 // `next`, which asks each two in a row once, from the front, as std's own
 // `count` does.
+// gives: an iterator
 function $lazyChunkBy(v, p, cut = $part) {
   const done = { done: true, value: undefined };
   let [start, end] = [0, v.length];

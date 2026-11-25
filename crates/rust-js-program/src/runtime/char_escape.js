@@ -37,6 +37,7 @@ function $escapeUnicode(s) {
 // of `units` as it's asked, one unit or a pair, a unit it read past an
 // unpaired leading surrogate kept for its next step, as std's `buf` is; its
 // hint std's; closed, `units` closed (#1151).
+// gives: an iterator
 function $decodeUtf16(units) {
   // An array's `$iter`, which knows its hint, as a `Vec`'s or an array's
   // `IntoIter` does.

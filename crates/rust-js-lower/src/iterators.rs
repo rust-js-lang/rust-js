@@ -744,95 +744,6 @@ pub fn is_stepped_items(e: &Expr) -> bool {
     fresh_iter_source(e).is_some()
 }
 
-/// The runtime's helpers that make a JS iterator: `$iterator`, `$given`, `$intoIter`, `$cycleOf`, `$repeating` and `$repeatingN` (ADR 0513),
-/// `$rev` (ADR 0516), `$closing` (ADR 0518), `$holding` (#710), `$mapEnds` (ADR 0455),
-/// std's `Copied` and `Cloned`, `$copied` and `$cloned` (#2122), and a
-/// `Copied` of what generic code was given, `$copiedGiven` (#2130),
-/// `$filterEnds` (ADR 0526), `$somes` (#2199), `$someItems` (#2205), `$filterDropping` (#651), `$enumerate` (ADR 0528), `$taking` and
-/// `$skipping` (ADR 0542), `$memchrIter` (ADR 0529), `$stdIterator` (ADR
-/// 0561), `$lazyScan` (ADR 0517) and `$lazyMapWhile`, not fused, a B-tree
-/// set's algebra, std's iterators (`$treeSetAlgebra`, #943), a hash set's
-/// `union`, std's lazy chain of it (`$hashSetUnion`, #1219), a map's or a
-/// set's `extract_if`, closed where it's dropped (`$mapExtractIf`, #945),
-/// a `Vec`'s `Splice`, which puts its replacement in place as it's closed
-/// (`$splice`, #1149), `char::decode_utf16`'s, stepped as it's asked
-/// (`$decodeUtf16`, #1151), a string's `chars()` the crate steps from
-/// its back or asks its rest, and every `char_indices()`, `$chars` and
-/// `$charIndices` (#1186), a channel's `iter()` and `try_iter()`,
-/// `$recvItems` and `$tryRecvItems` (#1176), a `str`'s searches by a
-/// predicate that runs the program's code, asked as they're stepped,
-/// `$lazySplitBy`, `$lazyRsplitBy`, `$lazySplitTerminatorBy`,
-/// `$lazySplitInclusiveBy`, `$lazyMatchesBy` and `$lazyMatchIndicesBy`, and
-/// a slice's, `$lazySliceSplitBy`, `$lazyChunkBy` and their `_mut`s (#1501),
-/// what std's compiled body is given of a type parameter's value,
-/// `$stepsOf`, never armed to close itself at its end (#2039),
-/// and each of its generators,
-/// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 62] = [
-    "$stdIterator",
-    "$stepsOf",
-    "$chars",
-    "$charIndices",
-    "$memchrIter",
-    "$mapEnds",
-    "$copied",
-    "$cloned",
-    "$copiedGiven",
-    "$flattenEnds",
-    "$filterEnds",
-    "$somes",
-    "$someItems",
-    "$filterDropping",
-    "$enumerate",
-    "$stepBy",
-    "$taking",
-    "$skipping",
-    "$iterator",
-    "$given",
-    "$intoIter",
-    "$cycle",
-    "$cycleOf",
-    "$repeating",
-    "$repeatingN",
-    "$rev",
-    "$closing",
-    "$holding",
-    super::std_types::range::LAZY_RANGE,
-    super::std_types::range::LAZY_RANGE_BACK,
-    "$lazyTakeWhile",
-    "$lazySkipWhile",
-    "$lazyScan",
-    "$lazyMapWhile",
-    "$lazyChain",
-    "$lazyZip",
-    "$trustedZip",
-    "$zipEnds",
-    "$trustedZipEnds",
-    "$flatMap",
-    "$repeatingWith",
-    "$onceWith",
-    "$successors",
-    "$keysIn",
-    "$treeSetAlgebra",
-    "$hashSetUnion",
-    "$mapExtractIf",
-    "$splice",
-    "$splicing",
-    "$decodeUtf16",
-    "$recvItems",
-    "$tryRecvItems",
-    "$lazySplitBy",
-    "$lazyRsplitBy",
-    "$lazySplitTerminatorBy",
-    "$lazySplitInclusiveBy",
-    "$lazyMatchesBy",
-    "$lazyMatchIndicesBy",
-    "$lazySliceSplitBy",
-    "$lazySliceSplitByMut",
-    "$lazyChunkBy",
-    "$lazyChunkByMut",
-];
-
 /// What a binding's call made, `made`, of type `output`: of a `dyn
 /// Iterator`, boxed or lent, marked JS's own (`Known::BindingIterator`,
 /// #1359).
@@ -869,7 +780,8 @@ pub fn binding_made(e: &Expr) -> bool {
 
 /// Whether `e` is a JS iterator: one its type says is (`Known::Iterator`),
 /// or as it's made, `Iterator.from(..)`, a
-/// `$iter`, an `ITERATOR_HELPERS`' own, a range's `$iterator` or a
+/// `$iter`, a runtime helper's that gives one (`runtime::gives_iterator`,
+/// as its own source says, #2229), a range's `$iterator` or a
 /// `$lazyChain`'s generator, a collection's `values()`, `keys()` or
 /// `entries()`, or an iterator helper's of one, `.map(f)` of a range's.
 /// Whether `e` is a call of JS's own adapter, `it.map(f)`, `filter`,
@@ -1001,8 +913,9 @@ pub fn is_js_iterator(e: &Expr) -> bool {
     let js::ExprKind::Call(callee, _) = &e.kind else {
         return false;
     };
+    // A runtime helper's call, as its own source says it gives (#2229).
     if let Some(helper) = callee.helper_name() {
-        return ITERATOR_HELPERS.contains(&helper) || is_stepped_items(e);
+        return rust_js_program::runtime::gives_iterator(helper) || is_stepped_items(e);
     }
     match &callee.kind {
         // Not `Object.keys(o)`'s, an array.

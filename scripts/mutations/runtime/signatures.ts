@@ -34,4 +34,13 @@ export const mutations: Mutation[] = [
     replace: "    let defaulted = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^repeat_counted_where_called.rs$"],
   },
+  {
+    name: "iterator-mark-unread",
+    breaks: "a helper's `// gives: an iterator` mark isn't read, so a call of `$lent`, which gives a JS iterator, is taken for none, and its adapters are wrapped in a needless `Iterator.from` (#2229)",
+    file: "crates/rust-js-program/src/runtime/signatures.rs",
+    find: "        Some((name, params, keyword == \"function* \" || after_mark))\n",
+    replace: "        Some((name, params, keyword == \"function* \"))\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_kept_of_a_lent_adapter.rs$"],
+    snapshots: true,
+  },
 ];

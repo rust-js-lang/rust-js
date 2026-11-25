@@ -13,6 +13,7 @@
 // a peekable's or a fuse's, is std's, `steps.fold`, its source's (#162);
 // closing it closes nothing, but of a kind dropped by closing, a `Rev`'s,
 // whose `steps.close` drops what it holds.
+// gives: an iterator
 function $stdIterator(struct, steps, knows) {
   const it = Object.assign(Object.create($Steps.prototype), struct);
   const step = (item) => (item === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(item) });

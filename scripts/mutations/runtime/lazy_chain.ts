@@ -254,4 +254,14 @@ export const mutations: Mutation[] = [
     replace: "          : ((() => (it.last !== undefined ? it.last() : $lent(it).last()))();\n",
     tests: ["test/corpus.test.ts", "-t", "^(repeat_chain_last_panics_at_the_fn_once_shim).rs$"],
   },
+  {
+    name: "lazy-chain-not-iterator",
+    breaks:
+      "`$lazyChain(a, b)`, a generator, is taken for what isn't a JS iterator, and wrapped in `Iterator.from`",
+    file: "crates/rust-js-program/src/runtime/lazy_chain.js",
+    find: "// gives: an iterator\nfunction $lazyChain(",
+    replace: "function $lazyChain(",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    snapshots: true,
+  },
 ];

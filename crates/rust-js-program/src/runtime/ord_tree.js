@@ -817,6 +817,7 @@ function $setMerge(a, b, cmp) {
 // `a.symmetric_difference(&b)` (`op`, as `$setAlgebra` names them) of two
 // sets ordered by `cmp`: std's iterator of it, made as std's is, which
 // asks of `intersection` and `difference` its ends' `cmp` where it's made.
+// gives: an iterator
 function $treeSetAlgebra(a, b, op, cmp) {
   const [xs, ys] = [Array.from(a), Array.from(b)];
   if (op === "union" || op === "symmetric") {
