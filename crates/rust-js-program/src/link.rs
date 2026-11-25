@@ -63,6 +63,7 @@ pub fn link(unlinked: Unlinked) -> Linked {
     keep_imported(&mut modules);
     Linked(Lowered {
         library: unlinked.library,
+        offered_paths: unlinked.offered_paths,
         sources: unlinked.sources,
         modules,
         tests: unlinked.tests,

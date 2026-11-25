@@ -228,6 +228,8 @@ impl Sources {
 /// The linked crate as JS: one module per Rust module, and tests in test mode.
 pub struct Lowered {
     pub library: Option<crate::library::Library>,
+    /// The paths the crate offers JS (`manifest::Manifest::offered_paths`, #2481).
+    pub offered_paths: Vec<crate::offered::OfferedPath>,
     pub sources: Sources,
     pub modules: Vec<LoweredModule>,
     pub tests: Tests,
@@ -262,6 +264,8 @@ pub struct UnlinkedModule {
 /// this into the Linked wrapper accepted by output planning.
 pub struct Unlinked {
     pub library: Option<crate::library::Library>,
+    /// The paths the crate offers JS (`manifest::Manifest::offered_paths`, #2481).
+    pub offered_paths: Vec<crate::offered::OfferedPath>,
     pub sources: Sources,
     pub modules: Vec<UnlinkedModule>,
     pub tests: Tests,

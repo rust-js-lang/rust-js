@@ -1266,6 +1266,7 @@ pub fn lower_crate<'tcx>(
     let exported = library::exported_names(&lowered);
     Lowered::Crate(tcx.dcx().has_errors().is_none().then(|| {
         Box::new(Unlinked {
+            offered_paths: rust_js_lower::offered::offered_paths(tcx, &foreign),
             library: export_library.then(|| {
                 library::exports(
                     tcx,

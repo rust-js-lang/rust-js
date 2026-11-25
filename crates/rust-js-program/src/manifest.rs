@@ -2,6 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::offered::OfferedPath;
 use serde::{Deserialize, Serialize};
 
 pub const VERSION: u32 = 1;
@@ -85,6 +86,15 @@ pub struct Manifest {
     /// runs them by.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tests: Option<Tests>,
+    /// The paths the crate offers JS, from its root: each `pub` item of the
+    /// root and each `pub use` of it, and through each module it re-exports,
+    /// the crate's or a library's, what that module offers in turn, by its
+    /// Rust path and the path JS reads it by (#2481). Found of rustc's
+    /// `module_children`, apart from what writes the JS and its `.d.ts`:
+    /// what a host, and the export net, may hold them to. A module's own
+    /// `pub mod` isn't one, as only Rust names it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub offered_paths: Vec<OfferedPath>,
 }
 
 /// A test build's test files, one beside each module's JS that has tests,

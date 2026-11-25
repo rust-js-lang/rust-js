@@ -101,6 +101,7 @@ pub mod mir_hooks;
 pub mod mut_refs;
 pub mod named_constants;
 pub mod noted;
+pub mod offered;
 mod ordering;
 mod parameter_names;
 pub mod passed_on;

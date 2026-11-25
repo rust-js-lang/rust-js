@@ -13,6 +13,7 @@ pub mod lines;
 pub mod link;
 pub mod manifest;
 pub mod names;
+pub mod offered;
 pub mod packages;
 pub mod paths;
 pub mod prepare;

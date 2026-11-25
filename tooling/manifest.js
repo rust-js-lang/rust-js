@@ -161,7 +161,53 @@ export function parseManifest(text) {
       || (result.tests !== undefined && !result.tests.files.every(file => artifacts.has(file)))) {
     throw new Error("Invalid rust-js manifest: inconsistent module artifacts or imports");
   }
+  // #2481: each path the crate offers JS, by its Rust path and JS's, its
+  // kind and its types (rust_js_program::offered); none where it's absent.
+  if (result.offered_paths !== undefined && !(Array.isArray(result.offered_paths) && result.offered_paths.every(offeredPath))) {
+    throw new Error("Invalid rust-js manifest: expected each offered path's Rust and JS paths, its kind and its types");
+  }
   return result;
+}
+
+const OFFERED_KINDS = new Set(["function", "const", "static", "namespace", "type"]);
+
+/** One of `offered_paths` (rust_js_program::offered's `OfferedPath`). */
+function offeredPath(path) {
+  const names = (value) => Array.isArray(value) && value.length > 0 && value.every((name) => typeof name === "string" && name !== "");
+  const flag = (value) => value === undefined || typeof value === "boolean";
+  return path !== null && typeof path === "object" && names(path.rust) && names(path.js) && path.rust.length === path.js.length
+    && OFFERED_KINDS.has(path.kind)
+    && (path.params === undefined || Array.isArray(path.params) && path.params.every(offeredType))
+    && (path.ty === undefined || offeredType(path.ty))
+    && flag(path.generic) && flag(path.located) && flag(path.of_no_value)
+    && (path.type_params === undefined || Number.isInteger(path.type_params) && path.type_params >= 0);
+}
+
+/** An offered path's type (rust_js_program::offered's `OfferedType`), its
+ * own `kind` and what each kind holds. */
+function offeredType(ty) {
+  if (ty === null || typeof ty !== "object") return false;
+  switch (ty.kind) {
+    case "int":
+    case "float":
+    case "other":
+      return typeof ty.rust === "string";
+    case "bool":
+    case "char":
+    case "unit":
+      return true;
+    case "str":
+      return typeof ty.owned === "boolean";
+    case "option":
+    case "ref":
+      return offeredType(ty.of);
+    case "vec":
+      return offeredType(ty.of) && typeof ty.borrowed === "boolean";
+    case "tuple":
+      return Array.isArray(ty.items) && ty.items.every(offeredType);
+    default:
+      return false;
+  }
 }
 
 // Remap only paths. Names, fingerprints and future unrelated fields stay intact.

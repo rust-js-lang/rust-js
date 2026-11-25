@@ -1047,6 +1047,7 @@ impl OutputPlan {
             }
             let manifest = Manifest {
                 library: lowered.library,
+                offered_paths: lowered.offered_paths,
                 version: manifest::VERSION,
                 compiler: Some(manifest::Compiler::current()),
                 input,

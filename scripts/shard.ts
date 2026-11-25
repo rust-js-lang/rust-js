@@ -638,6 +638,7 @@ export const nightly = [
   "object-model",
   "iterator-matrix",
   "declarations-conformance",
+  "export-net",
   "fuzz",
   "match-trees",
   "packages",
