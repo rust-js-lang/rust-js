@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-26 (#2609, ADR 0470 amended): test/crates-refused.test.ts gains "a closure in a library's struct its impl calls by value is refused", a pair under test/crates/refused/; the crate pairs gain `library_peeks_a_held_closure_by_ref`; four mutations.
+
 Changed on 2026-11-25 (#2229, ADR 1207): runtime-package.test.ts's iterator-helper list test moves to `runtime::signatures`' unit test of the runtime's own answer; test/architecture-iterators.test.ts gains that no list of them returns.
 
 Changed on 2026-11-25 (#2170, ADR 0975 amended): test/architecture-cleanups.test.ts gains a test that one answerer says whether a type is `TrustedLen`.

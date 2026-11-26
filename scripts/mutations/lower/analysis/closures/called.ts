@@ -27,4 +27,20 @@ export const mutations: Mutation[] = [
     tests: ["test/metamorphic.test.ts", "-t", "fn_closure_moved_through_a_blanket_impl_drops"],
     env: { METAMORPHIC: "all" },
   },
+  {
+    name: "library-given-made-type-unopened",
+    breaks: "a closure moved into a struct, `Once<{closure}>`, given through a type parameter to a library trait's method that may take it apart and call it by value, isn't counted as called either way, so it's neither refused nor dropped (#2609)",
+    file: "crates/rust-js-lower/src/analysis/closures/called.rs",
+    find: "            closures_in(made, &mut inside);\n",
+    replace: "            _ = made;\n",
+    tests: ["test/crates-refused.test.ts", "-t", "a closure in a library's struct its impl calls by value is refused"],
+  },
+  {
+    name: "library-lent-made-type-opened",
+    breaks: "a closure in a struct lent to a library's generic code, `peek_twice<R: Peek>(r: &R)`, which can't move it out of the reference, is counted as called by value, so it's refused though it's called by `&` alone (#2609)",
+    file: "crates/rust-js-lower/src/analysis/closures/called.rs",
+    find: "        for &made in on.made.iter().filter(|_| whole) {\n",
+    replace: "        for &made in on.made.iter() {\n",
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_peeks_a_held_closure_by_ref"],
+  },
 ];

@@ -90,7 +90,7 @@ pub(super) fn called<'tcx>(
                         tcx,
                         (&callers, &held),
                         (caller, tcx.erase_and_anonymize_regions(arg)),
-                        once,
+                        (once, taken_whole(tcx, callee, param)),
                     );
                     continue;
                 }
@@ -125,13 +125,15 @@ impl<'tcx> Called<'tcx> {
     /// by value or by `&`, or by value alone where `once`, its parameter's
     /// bound: each closure on the way to it, or in it, and each boxed `Fn`,
     /// which no call can give as one that drops it but its own argument
-    /// where `once`, rule 4's (#2031, #2050).
+    /// where `once`, rule 4's (#2031, #2050); and, where it's taken `whole`,
+    /// not behind a reference, each closure in a made type on the way,
+    /// which the library may take apart (#2609).
     fn given_unseen(
         &mut self,
         tcx: TyCtxt<'tcx>,
         (callers, held): (&Callers<'tcx>, &Held<'tcx>),
         (caller, arg): (DefId, Ty<'tcx>),
-        once: bool,
+        (once, whole): (bool, bool),
     ) {
         let mut on = OnTheWay::default();
         if !on_the_way(tcx, (callers, held), (caller, arg), false, &mut on) {
@@ -147,9 +149,18 @@ impl<'tcx> Called<'tcx> {
         }
         self.boxes_held.extend(on.boxes_held);
         self.boxes_held.extend(on.boxes_given.into_iter().map(|(_, _, ty)| ty));
+        // Each closure in the argument, and in each made type on the way
+        // to it, `Once<{closure}>` of a caller's `R`, which the library,
+        // given it whole, may take apart and call either way (#2609). A boxed `Fn` it holds
+        // is refused already, its `dyn Fn`s dropping nothing (ADR 0626).
         let mut inside = IndexSet::default();
-        closures_in(arg, &mut inside);
-        for closure in inside.into_iter().filter(|_| !itself) {
+        if !itself {
+            closures_in(arg, &mut inside);
+        }
+        for &made in on.made.iter().filter(|_| whole) {
+            closures_in(made, &mut inside);
+        }
+        for closure in inside {
             self.by_value.insert(closure);
             self.by_ref.insert(closure);
         }
@@ -182,6 +193,23 @@ impl<'tcx> Called<'tcx> {
         }
         seen
     }
+}
+
+/// Whether `callee` takes a value of its type parameter `param` whole, not
+/// behind a reference, in one of its parameters: `Run::run(self)`'s `Self`,
+/// not `Peek::peek(&self)`'s, which can't move out of what it's lent.
+fn taken_whole<'tcx>(tcx: TyCtxt<'tcx>, callee: DefId, param: Ty<'tcx>) -> bool {
+    fn holds<'tcx>(ty: Ty<'tcx>, param: Ty<'tcx>) -> bool {
+        match *ty.kind() {
+            _ if ty == param => true,
+            ty::Adt(_, args) => args.types().any(|ty| holds(ty, param)),
+            ty::Tuple(tys) => tys.iter().any(|ty| holds(ty, param)),
+            ty::Array(ty, _) | ty::Slice(ty) => holds(ty, param),
+            _ => false,
+        }
+    }
+    let sig = tcx.instantiate_bound_regions_with_erased(tcx.fn_sig(callee).instantiate_identity().skip_normalization());
+    sig.inputs().iter().any(|&input| holds(input, param))
 }
 
 /// Each closure rustc infers `Fn` or `FnMut` that a naming gives generic

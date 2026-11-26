@@ -905,6 +905,11 @@ pub(super) struct OnTheWay<'tcx> {
     /// And each `dyn` of one given otherwise, in what a call's given, or
     /// given back (#2050): no call gives it as one whose call drops it.
     pub(super) boxes_held: IndexSet<Ty<'tcx>>,
+    /// Each made type a value on the way is, not behind a reference,
+    /// `Once<{closure}>` of a caller's `R`: what a library's function given
+    /// it may take apart and call, by value or by `&`, each closure in it
+    /// (#2609).
+    pub(super) made: IndexSet<Ty<'tcx>>,
 }
 
 /// How a value `on_the_way` meets is given: as the call's own argument,
@@ -997,6 +1002,8 @@ pub(super) fn on_the_way<'tcx>(
                     ty = args.type_at(0);
                     continue;
                 }
+                // Behind a reference, what's in it can't be moved out.
+                _ if !by_ref => _ = on.made.insert(ty),
                 _ => {}
             }
             return true;

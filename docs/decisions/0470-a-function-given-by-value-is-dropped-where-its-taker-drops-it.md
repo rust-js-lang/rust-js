@@ -576,3 +576,32 @@ runs and drops), `fn_closure_moved_on_to_a_std_once_drops`,
 bound-reading mutations go with the code they mutated, and
 `moved-once-closures-unread`, `closure-moved-into-a-once-type-unchecked`
 and `boxed-fn-given-once-undropped` are retargeted.
+
+## Amendment: what a library is given whole, taken apart (#2609)
+
+A library's function the crate has no body of, or its trait's method, may
+call what it's given either way. Until this amendment, only closures in
+the argument's own type were counted. A consumer's copy of a library's
+generic code names the library trait's method of its own `R`, `run_it<R:
+Run>`'s `r.run()`. `on_the_way` follows `R` to `Once<{closure}>`, but
+that type wasn't opened, so the closure was counted neither by value nor
+by `&`. It was neither refused nor dropped, and `impl Run for Once<F>`'s
+`(self.0)()`, in the library, lost its drop. The one-crate case was
+refused.
+
+`on_the_way` now keeps each made type it meets, unless it's behind a
+reference, as `OnTheWay::made`. `given_unseen` counts each closure in
+those types as called both ways, so the closure is refused where it's
+made, as one crate refuses it. It does this only where the library takes
+the parameter whole, not behind a reference (`taken_whole`):
+`Run::run(self)`'s `Self`, not `Peek::peek(&self)`'s, which can't move
+what it's lent. A boxed `Fn` held the same way was refused already: the
+library's `dyn Fn`s drop nothing (ADR 0626).
+
+Cases: the refused pair `library_impl_calls_a_held_closure_by_value`
+(test/crates-refused.test.ts) and the pair
+`library_peeks_a_held_closure_by_ref`, which compiles and drops the
+closure with its struct. Mutations: `library-given-made-type-unopened`,
+`library-lent-made-type-opened` (called.ts),
+`on-the-way-made-types-unkept` and
+`on-the-way-made-types-behind-a-reference-kept` (instances.ts).

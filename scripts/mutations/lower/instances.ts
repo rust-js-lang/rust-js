@@ -267,4 +267,20 @@ export const mutations: Mutation[] = [
     replace: "            parts.extend(given.iter().copied());\n",
     tests: ["test/corpus.test.ts", "-t", "^hint_asked_of_more_instances_than_listed.rs$"],
   },
+  {
+    name: "on-the-way-made-types-unkept",
+    breaks: "the made types on the way to what's given, `Once<{closure}>` of a caller's `R`, aren't kept, so a closure in one given to a library trait's method that calls it by value is neither refused nor dropped (#2609)",
+    file: "crates/rust-js-lower/src/instances.rs",
+    find: "                _ if !by_ref => _ = on.made.insert(ty),\n",
+    replace: "                _ if !by_ref => {}\n",
+    tests: ["test/crates-refused.test.ts", "-t", "a closure in a library's struct its impl calls by value is refused"],
+  },
+  {
+    name: "on-the-way-made-types-behind-a-reference-kept",
+    breaks: "a made type met behind a reference, `&Held<{closure}>` given whole to a library impl's `consume(self)` of a `&P`, is kept as one the library may take apart, so the closure in it is refused though it's called by `&` alone (#2609)",
+    file: "crates/rust-js-lower/src/instances.rs",
+    find: "                _ if !by_ref => _ = on.made.insert(ty),\n",
+    replace: "                _ if true || !by_ref => _ = on.made.insert(ty),\n",
+    tests: ["test/crates-pairs-2.test.ts", "-t", "two crates: library_peeks_a_held_closure_by_ref"],
+  },
 ];

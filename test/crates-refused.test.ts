@@ -185,3 +185,18 @@ test("a consumer giving a library's generic code write results as Result items i
   expect(native).toBe("2\n");
 }, 300_000);
 
+
+// #2609: a closure holding a value with a destructor, moved into a
+// library's struct and given to its generic code, whose impl calls it by
+// `FnOnce`: the consumer's copy of `run_it` names the library trait's
+// method of what its `R` is, `Once<{closure}>`, which may call what's in
+// it either way, so it's refused where it's made, as one crate refused
+// it, never compiled with its drop lost. A boxed `Fn` held so is refused
+// already, as the library's `dyn Fn`s drop nothing (ADR 0626).
+test("a closure in a library's struct its impl calls by value is refused", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "library_impl_calls_a_held_closure_by_value", ["dep", "app"], [
+    "a closure that holds a value with a destructor, called by `FnOnce`, which drops none of it",
+    "app.rs:16:",
+  ]);
+  expect(native).toBe("in through a library's trait\ndrop through a library's trait\n4\n");
+}, 300_000);
