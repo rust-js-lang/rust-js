@@ -435,7 +435,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `FnOnce` closure made a `dyn FnOnce` drops what it took in its body and again as its call returns (#409)",
     file: "crates/rust-js-lower/src/traits/dyns.rs",
-    find: "                && crate::recognition::function_kind(self.tcx, self.frame.owner, called)\n                    != Some(ty::ClosureKind::FnOnce);\n",
+    find: "                && call_once_drop(self.tcx, self.frame.owner, called) != Some(OnceDrop::Body);\n",
     replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_boxed_once_drops.rs$"],
   },
@@ -444,7 +444,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn FnOnce` made a `dyn FnOnce` again, returned or given on, is wrapped to drop as its call returns, dropping what it took twice (#409)",
     file: "crates/rust-js-lower/src/traits/dyns.rs",
-    find: "                && !matches!(called.kind(), ty::Dynamic(of, ..) if crate::recognition::is_fn_once_dyn(self.tcx, of))\n",
+    find: "                && !matches!(called.kind(), ty::Dynamic(of, ..) if dyn_call_once_drop(self.tcx, of) == Some(OnceDrop::Body))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_once_drops_itself.rs$"],
   },
@@ -615,7 +615,7 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's `F: FnOnce` made a `dyn FnOnce` is taken for a `Fn` made one, `$droppingOnce`, though its caller's function drops what it holds as its body ends: a `Fn`-kind closure given it drops twice (#1221)",
     file: "crates/rust-js-lower/src/traits/dyns.rs",
-    find: "                && crate::recognition::function_kind(self.tcx, self.frame.owner, called)\n                    != Some(ty::ClosureKind::FnOnce);\n",
+    find: "                && call_once_drop(self.tcx, self.frame.owner, called) != Some(OnceDrop::Body);\n",
     replace:
       "                && !matches!(called.kind(), ty::Closure(_, args) if args.as_closure().kind() == ty::ClosureKind::FnOnce);\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_function_boxed_again.rs$"],

@@ -149,8 +149,8 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         // once into an `F: FnOnce`, where it drops something (#995): one
         // that drops nothing keeps its own body, its early `return`s.
         let once;
-        let called_once = self.krate.closure_facts.called_once(def_id)
-            || (self.krate.closure_facts.moved_once(def_id) && self.drops(ty) != rust_js_lower::drops::Drops::Nothing);
+        let holds_a_drop = self.drops(ty) != rust_js_lower::drops::Drops::Nothing;
+        let called_once = self.krate.closure_facts.body_is_its_call_once(def_id, holds_a_drop);
         let mir = match called_once {
             true => {
                 once = (mir.called_once(self.tcx))

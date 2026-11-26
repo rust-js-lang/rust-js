@@ -17,6 +17,7 @@ use super::super::recognition::{Std, StdItem};
 use super::super::{fn_def, strip};
 
 use super::super::analysis::{CellBorrows, CellForms};
+use super::call_once::OnceDrop;
 use super::types::{DropQuery, Drops, describe};
 
 /// What a body does with its values that have destructors: what's
@@ -216,8 +217,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                     } else if let ExprKind::Closure(ref c) = expr.kind
                         && let closure = c.closure_id.to_def_id()
                         && self.cx.closure_facts.called_by_value(closure)
-                        && !self.cx.closure_facts.called_once(closure)
-                        && !self.cx.closure_facts.moved_once(closure)
+                        && !self.cx.closure_facts.body_is_its_call_once(closure, true)
                     {
                         // Generic code calls it by `FnOnce`, whose call drops
                         // none of it, where Rust's drops it once it's run
@@ -248,7 +248,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                         let ty = self.thir[a].ty;
                         self.borrowing_closure(ty)
                             && !matches!(*ty.kind(), ty::Closure(id, _)
-                                if self.cx.closure_facts.called_once(id) || self.cx.closure_facts.moved_once(id))
+                                if self.cx.closure_facts.body_is_its_call_once(id, true))
                     }) =>
             {
                 self.problem(
@@ -304,8 +304,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
     /// a call it's given by value may consume, though it isn't called once
     /// by its own body: what that drops, the call doesn't (ADR 0098).
     fn borrowing_closure(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Closure(_, args) if args.as_closure().kind() != ty::ClosureKind::FnOnce)
-            && self.has_drops(ty)
+        matches!(ty.kind(), ty::Closure(_, args) if OnceDrop::of_closure(args) == OnceDrop::Whole) && self.has_drops(ty)
     }
 
     /// A `RefCell`'s `replace_with(f)`, `call`, which holds its borrow while

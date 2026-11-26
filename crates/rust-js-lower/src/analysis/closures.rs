@@ -5,6 +5,7 @@
 
 mod called;
 
+use crate::drops::call_once::OnceDrop;
 use crate::generic_facts::GivenADrop;
 use crate::passed_on::Taker;
 use crate::pointers::raw_pointee;
@@ -243,14 +244,6 @@ impl<'tcx> ClosureFacts<'tcx> {
         self.made_fn_dyns.contains(&closure) || self.cloned_apart.contains(&closure) || given_back(tcx, closure)
     }
 
-    /// Whether the closure `closure`, which rustc infers `Fn` or `FnMut`, is
-    /// a `let`'s moved once, its only use, into a parameter its callee calls
-    /// by `FnOnce` alone: its body is its `call_once`'s where it drops
-    /// something, as one a binding calls once is (#995).
-    pub fn moved_once(&self, closure: DefId) -> bool {
-        self.moved_once.contains(&closure)
-    }
-
     /// Whether the closure `closure`, which rustc infers `Fn` or `FnMut`, may
     /// be called by value, by `FnOnce`'s `call_once`, which drops it once
     /// it's run, where JS's call of it drops none of what it holds (#2031):
@@ -291,18 +284,23 @@ impl<'tcx> ClosureFacts<'tcx> {
         else {
             return false;
         };
-        let kind = crate::recognition::function_kind(tcx, callee, param);
-        !matches!(kind, Some(ty::ClosureKind::Fn | ty::ClosureKind::FnMut))
+        let kind = crate::drops::call_once::call_once_drop(tcx, callee, param);
+        kind != Some(OnceDrop::Whole)
             && !self.called.params_by_ref.contains(&(callee, index))
-            && (kind == Some(ty::ClosureKind::FnOnce) || self.called.params_by_value.contains(&(callee, index)))
+            && (kind == Some(OnceDrop::Body) || self.called.params_by_value.contains(&(callee, index)))
     }
 
-    /// Whether the closure `closure`, which rustc infers `Fn` or `FnMut`, is
-    /// made where it's given to a binding that calls it once, which then
-    /// drops what it took: its body is its `call_once`'s, `Mir::called_once`
-    /// (ADR 1020).
-    pub fn called_once(&self, closure: DefId) -> bool {
-        self.called_once.contains(&closure)
+    /// Whether the body of the closure `closure`, which rustc infers `Fn` or
+    /// `FnMut`, whose call by value drops it whole (`OnceDrop::Whole`), is
+    /// written as its `call_once` (`Mir::called_once`), dropping what it
+    /// took as it ends, as every call of it is by value: one made where
+    /// it's given to a binding that calls it once (ADR 1020), or given back
+    /// where JS calls it once (#1881); and, where it holds what drops,
+    /// `holds_a_drop`, a `let`'s moved once, its only use, into a parameter
+    /// its callee calls by `FnOnce` alone (#995). One that drops nothing
+    /// keeps its own body, its early `return`s.
+    pub fn body_is_its_call_once(&self, closure: DefId, holds_a_drop: bool) -> bool {
+        self.called_once.contains(&closure) || holds_a_drop && self.moved_once.contains(&closure)
     }
 
     /// Whether the closure `closure` is given back by a closure a binding
@@ -859,7 +857,7 @@ fn called_once_by_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId> {
             }
             if let ExprKind::Closure(_) = thir[e].kind
                 && let ty::Closure(closure, closure_args) = *thir[e].ty.kind()
-                && closure_args.as_closure().kind() != ty::ClosureKind::FnOnce
+                && OnceDrop::of_closure(closure_args) == OnceDrop::Whole
                 && Taker::parameter(tcx, id, i) == Some(Taker::OnceCallback)
             {
                 once.push(closure);
@@ -905,9 +903,7 @@ fn moved_once(thir: &Thir<'_>) -> Vec<DefId> {
             };
             let closure = through(*init);
             match (&thir[closure].kind, *thir[closure].ty.kind()) {
-                (ExprKind::Closure(_), ty::Closure(id, args))
-                    if args.as_closure().kind() != ty::ClosureKind::FnOnce =>
-                {
+                (ExprKind::Closure(_), ty::Closure(id, args)) if OnceDrop::of_closure(args) == OnceDrop::Whole => {
                     Some((var, id))
                 }
                 _ => None,
@@ -972,7 +968,7 @@ fn giving_back_once(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId> {
 
 /// Whether the binding `binding`'s parameter of type `parameter`, a type
 /// parameter of an `Fn` bound, gives a result its `Output` binds to what's
-/// called by `FnOnce` alone (`recognition::function_kind`).
+/// called by `FnOnce` alone (`drops::call_once`).
 fn result_called_once<'tcx>(tcx: TyCtxt<'tcx>, binding: DefId, parameter: Ty<'tcx>) -> bool {
     use rustc_hir::attrs::lang_items::LangItem;
     (tcx.param_env(binding).caller_bounds())
@@ -982,7 +978,7 @@ fn result_called_once<'tcx>(tcx: TyCtxt<'tcx>, binding: DefId, parameter: Ty<'tc
             projection.projection_term.self_ty() == parameter
                 && tcx.is_lang_item(projection.def_id(), LangItem::FnOnceOutput)
                 && (projection.term.as_type()).is_some_and(|output| {
-                    crate::recognition::function_kind(tcx, binding, output) == Some(ty::ClosureKind::FnOnce)
+                    crate::drops::call_once::call_once_drop(tcx, binding, output) == Some(OnceDrop::Body)
                 })
         })
 }
@@ -1007,7 +1003,7 @@ fn returned_closures(thir: &Thir<'_>, mut root: rustc_middle::thir::ExprId) -> O
 /// Whether rustc infers the closure `closure` `FnOnce`.
 fn is_fn_once(tcx: TyCtxt<'_>, closure: DefId) -> bool {
     matches!(tcx.type_of(closure).instantiate_identity().skip_normalization().kind(),
-        ty::Closure(_, args) if args.as_closure().kind() == ty::ClosureKind::FnOnce)
+        ty::Closure(_, args) if OnceDrop::of_closure(args) == OnceDrop::Body)
 }
 
 /// Whether the binding `id` may give a function back: what it returns, or

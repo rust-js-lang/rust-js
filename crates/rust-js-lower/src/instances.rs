@@ -14,6 +14,7 @@ use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeVisitableExt};
 use rustc_span::def_id::{DefId, LocalModId};
 
 use super::Body;
+use crate::drops::call_once::{OnceDrop, dyn_call_once_drop};
 
 mod failing;
 mod needed;
@@ -975,13 +976,7 @@ pub(super) fn on_the_way<'tcx>(
             match *ty.kind() {
                 ty::Param(param) => todo.push((caller, param.index, by_ref, Vec::new())),
                 ty::Dynamic(predicates, ..)
-                    if !by_ref
-                        && (predicates.principal_def_id()).is_some_and(|tr| {
-                            matches!(
-                                tcx.fn_trait_kind_from_def_id(tr),
-                                Some(ty::ClosureKind::Fn | ty::ClosureKind::FnMut)
-                            )
-                        }) =>
+                    if !by_ref && dyn_call_once_drop(tcx, predicates) == Some(OnceDrop::Whole) =>
                 {
                     match given {
                         As::Called if itself => {}
@@ -989,7 +984,7 @@ pub(super) fn on_the_way<'tcx>(
                         _ => _ = on.boxes_held.insert(ty),
                     }
                 }
-                ty::Closure(id, args) if args.as_closure().kind() != ty::ClosureKind::FnOnce => {
+                ty::Closure(id, args) if OnceDrop::of_closure(args) == OnceDrop::Whole => {
                     on.closures[by_ref as usize].insert(id);
                 }
                 ty::Ref(_, inner, _) => {

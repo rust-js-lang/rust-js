@@ -30,6 +30,7 @@ use super::{FnCx, R};
 use rust_js_program::casing::lower_first;
 use rust_js_program::js::{self, Expr, Stmt, StmtKind};
 
+pub mod call_once;
 mod facts;
 mod functions;
 mod glue;

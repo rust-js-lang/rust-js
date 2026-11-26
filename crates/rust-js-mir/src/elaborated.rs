@@ -697,15 +697,15 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
 
     /// Of a closure's body as `call_once` runs it, `body`, rustc's drops of
     /// the closure itself, `_1` whole, as its `ClosureOnce` shim makes them
-    /// (`Instance::fn_once_adapter_instance`): one where the call returns
-    /// and one where it unwinds, each sited in the shim (`Mir::called_once`).
+    /// (`drops::call_once::closure_once_shim`, `OnceDrop::Whole`'s): one
+    /// where the call returns and one where it unwinds, each sited in the
+    /// shim (`Mir::called_once`).
     fn shim_drops_of_self(&self, body: &mir::Body<'tcx>) -> Vec<Theirs> {
         let tcx = self.tcx;
         let rustc_middle::ty::Closure(closure, args) = *body.local_decls[SELF].ty.kind() else {
             return Vec::new();
         };
-        let shim = rustc_middle::ty::Instance::fn_once_adapter_instance(tcx, closure, args);
-        let shim_body = tcx.instance_mir(shim.def);
+        let shim_body = rust_js_lower::drops::call_once::closure_once_shim(tcx, closure, args);
         // Its `_1` is the trait's `Self`, the shim's own generic body's: what
         // it drops is the closure, which JS drops, as rust-js's body asks.
         (theirs(tcx, shim_body, &|_| true).into_iter())

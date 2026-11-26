@@ -94,9 +94,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding's `impl Fn` parameter, a listener's, is the function the closure passes on to, `listenEvery(count)`, which JS may keep and compare",
     file: "crates/rust-js-lower/src/passed_on.rs",
-    find: "            ty::Param(_) => crate::recognition::function_kind(tcx, def_id, ty) == Some(ty::ClosureKind::FnOnce),\n",
-    replace:
-      "            ty::Param(_) => crate::recognition::function_kind(tcx, def_id, ty).is_some(),\n",
+    find: "            ty::Param(_) => call_once_drop(tcx, def_id, ty) == Some(OnceDrop::Body),\n",
+    replace: "            ty::Param(_) => call_once_drop(tcx, def_id, ty).is_some(),\n",
     tests: once,
   },
   {
@@ -104,7 +103,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding's `Box<dyn Fn>` parameter, a listener's, is a once-callback, so `|x| shown(x)` given to it is `shown`, which JS may keep and compare, and give more",
     file: "crates/rust-js-lower/src/passed_on.rs",
-    find: "                ty::Dynamic(traits, ..) => traits.principal_def_id().is_some_and(only_once),\n",
+    find: "                ty::Dynamic(traits, ..) => dyn_call_once_drop(tcx, traits) == Some(OnceDrop::Body),\n",
     replace: "                ty::Dynamic(..) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^once_callback_passed_on.rs$"],
     snapshots: true,

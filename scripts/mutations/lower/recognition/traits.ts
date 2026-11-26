@@ -3,32 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "union-function-member-unseen",
-    breaks:
-      "a binding's union whose `Function` member is any function called once, `js::set_timeout`'s `H: IntoTimerHandler`, isn't called once, so a closure rustc infers `Fn` given to it, `move || { let s = &second; .. }`, isn't one whose call drops what it took, and is refused (ADR 1020)",
-    file: "crates/rust-js-lower/src/recognition/traits.rs",
-    find: "                (tcx.fn_trait_kind_from_def_id(bound.def_id())).or_else(|| member_function_kind(tcx, bound.def_id()))\n",
-    replace: "                tcx.fn_trait_kind_from_def_id(bound.def_id())\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^called_once_closure_drops_after.rs$",
-    ],
-  },
-  {
-    name: "union-function-member-of-any-trait",
-    breaks:
-      "a trait of the program's implemented for any function is taken for a binding's union, so a binding's parameter of it is a once-callback, `keepAny(shown)` of `|x| shown(x)`, which JS may give more, where the trait says nothing of how JS calls it (ADR 1020)",
-    file: "crates/rust-js-lower/src/recognition/traits.rs",
-    find: "    tcx.get_attrs_by_path(trait_id, &union).next()?;\n",
-    replace: "",
-    tests: [
-      "test/lowering-passed-on.test.ts",
-      "-t",
-      "FnOnce callback that only passes its call on",
-    ],
-  },
-  {
     name: "equated-bounds-unseen",
     breaks:
       "a type parameter the where-clauses make an iterator's associated type isn't bound as an iterator: its `&mut` a cell, `(x0) => $next(x0.value)`, where it's the iterator, and std's `Flatten::try_fold` refused (ADR 0924)",
@@ -475,15 +449,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^hash_hashers.rs$"],
   },
   {
-    name: "function-kind-weakest",
-    breaks:
-      "an `F: FnMut` is taken for one called by `FnOnce`, whose body drops what it holds, and left undropped",
-    file: "crates/rust-js-lower/src/recognition/traits.rs",
-    find: "            .reduce(|a, b| if a.extends(b) { a } else { b }),\n",
-    replace: "            .reduce(|a, b| if a.extends(b) { b } else { a }),\n",
-    tests: ["test/corpus.test.ts", "-t", "^given_function_drops.rs$"],
-  },
-  {
     name: "sum-bound-ungiven",
     breaks:
       "a generic function's `S: Sum<A>` is given no dictionary, and its `sum()` refused",
@@ -573,16 +538,6 @@ export const mutations: Mutation[] = [
       "-t",
       "generic binding given a Result",
     ],
-  },
-  {
-    name: "assert-unwind-safe-uncalled",
-    breaks:
-      "a closure given to `catch_unwind` through `AssertUnwindSafe` isn't called as what it holds, and never drops what it took (#196)",
-    file: "crates/rust-js-lower/src/recognition/traits.rs",
-    find: "        ty::Adt(adt, args) if super::wrappers::is_assert_unwind_safe(tcx, adt.did()) => {\n",
-    replace:
-      "        ty::Adt(adt, args) if false && super::wrappers::is_assert_unwind_safe(tcx, adt.did()) => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_assert_drops.rs$"],
   },
   {
     name: "trait-args-lifetime-a-type",

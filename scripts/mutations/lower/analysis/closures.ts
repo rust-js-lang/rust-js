@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure rustc infers `FnOnce`, which drops what it took in its own body, is taken for one called once that reads itself by reference, and refused (ADR 1020)",
     file: "crates/rust-js-lower/src/analysis/closures.rs",
-    find: "                && closure_args.as_closure().kind() != ty::ClosureKind::FnOnce\n",
+    find: "                && OnceDrop::of_closure(closure_args) == OnceDrop::Whole\n",
     replace: "",
     tests: [
       "test/corpus.test.ts",
@@ -351,8 +351,8 @@ export const mutations: Mutation[] = [
     name: "any-binding-result-called-once",
     breaks: "what any binding's callback gives back is taken for what JS calls once, so a closure `use_memo` keeps, holding a guard, compiles where JS never drops what it took (#1881)",
     file: "crates/rust-js-lower/src/analysis/closures.rs",
-    find: "                    crate::recognition::function_kind(tcx, binding, output) == Some(ty::ClosureKind::FnOnce)\n",
-    replace: "                    true || crate::recognition::function_kind(tcx, binding, output) == Some(ty::ClosureKind::FnOnce)\n",
+    find: "                    crate::drops::call_once::call_once_drop(tcx, binding, output) == Some(OnceDrop::Body)\n",
+    replace: "                    true || crate::drops::call_once::call_once_drop(tcx, binding, output) == Some(OnceDrop::Body)\n",
     tests: ["test/effect-cleanup-drops.test.ts", "-t", "memo gives back"],
   },
   {
@@ -370,5 +370,14 @@ export const mutations: Mutation[] = [
     find: "            .filter(|&&(named, index, _)| !facts.gives_its_own(tcx, named, index))\n",
     replace: "            .filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_fn_in_a_vec_called_once_refused.rs$"],
+  },
+  {
+    name: "moved-once-body-not-its-call-once",
+    breaks:
+      "a closure rustc infers `Fn` moved once into an `F: FnOnce`, holding what drops, keeps its own body, not its `call_once`'s, so what it took is never dropped, or refused (#995, #2600)",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
+    find: "        self.called_once.contains(&closure) || holds_a_drop && self.moved_once.contains(&closure)\n",
+    replace: "        self.called_once.contains(&closure)\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_closure_moved_into_a_once_callee.rs$"],
   },
 ];

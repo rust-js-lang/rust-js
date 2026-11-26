@@ -12,12 +12,13 @@
 //! it calls, of anything. What each closure given there is, through every
 //! caller, is the callers' instances' carrier's (`instances_of`, ADR 1115).
 
+use crate::drops::call_once::{OnceDrop, call_once_drop, dyn_call_once_drop};
 use crate::instances::{Callers, Held, OnTheWay, callers_of, held_of, on_the_way};
-use crate::recognition::{function_kind, is_std_crate};
+use crate::recognition::is_std_crate;
 use crate::{Body, bindings};
 use rust_js_program::collections::IndexSet;
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{self, ClosureKind, Ty, TyCtxt};
+use rustc_middle::ty::{self, Ty, TyCtxt};
 
 /// What generic code calls by value and by `&` of what it's given.
 #[derive(Default)]
@@ -84,7 +85,7 @@ pub(super) fn called<'tcx>(
                     continue;
                 };
                 if library {
-                    let once = function_kind(tcx, callee, param) == Some(ClosureKind::FnOnce);
+                    let once = call_once_drop(tcx, callee, param) == Some(OnceDrop::Body);
                     called.given_unseen(
                         tcx,
                         (&callers, &held),
@@ -93,10 +94,10 @@ pub(super) fn called<'tcx>(
                     );
                     continue;
                 }
-                let given = function_kind(tcx, caller, arg);
-                let by = match function_kind(tcx, callee, param) {
-                    Some(ClosureKind::FnOnce) if given == Some(ClosureKind::FnOnce) || drops_none => By::Value,
-                    _ if matches!(given, Some(ClosureKind::Fn | ClosureKind::FnMut)) => By::Ref,
+                let given = call_once_drop(tcx, caller, arg);
+                let by = match call_once_drop(tcx, callee, param) {
+                    Some(OnceDrop::Body) if given == Some(OnceDrop::Body) || drops_none => By::Value,
+                    _ if given == Some(OnceDrop::Whole) => By::Ref,
                     _ => continue,
                 };
                 let arg = tcx.erase_and_anonymize_regions(arg);
@@ -198,7 +199,7 @@ fn given_by_value(callers: &Callers<'_>) -> IndexSet<DefId> {
 fn closures_in(ty: Ty<'_>, out: &mut IndexSet<DefId>) {
     match *ty.kind() {
         ty::Closure(id, args) => {
-            if args.as_closure().kind() != ClosureKind::FnOnce {
+            if OnceDrop::of_closure(args) == OnceDrop::Whole {
                 out.insert(id);
             }
         }
@@ -216,14 +217,7 @@ fn boxes_in<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
     let mut todo = vec![ty];
     while let Some(ty) = todo.pop() {
         match *ty.kind() {
-            ty::Dynamic(predicates, ..)
-                if (predicates.principal_def_id()).is_some_and(|tr| {
-                    matches!(
-                        tcx.fn_trait_kind_from_def_id(tr),
-                        Some(ClosureKind::Fn | ClosureKind::FnMut)
-                    )
-                }) =>
-            {
+            ty::Dynamic(predicates, ..) if dyn_call_once_drop(tcx, predicates) == Some(OnceDrop::Whole) => {
                 boxes.push(ty)
             }
             ty::Adt(_, args) => todo.extend(args.types()),

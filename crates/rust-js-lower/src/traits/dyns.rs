@@ -2,6 +2,7 @@
 //! error, or a struct whose last field is one.
 
 use super::*;
+use crate::drops::call_once::{OnceDrop, call_once_drop, dyn_call_once_drop};
 use crate::generic_facts::Form;
 use crate::temporary_names::{Base, Role};
 
@@ -660,15 +661,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // drop)`; one called by `FnOnce` alone drops what it holds as
             // its body ends (#409, ADR 0470): an `FnOnce` closure, a `dyn
             // FnOnce`, and a type parameter bound by `FnOnce` alone, whose
-            // caller gives it so (`function_kind`), each as a box of it is
+            // caller gives it so (`drops::call_once`), each as a box of it is
             // (#1221).
             let called = std::iter::successors(Some(function), |ty| ty.boxed_ty())
                 .last()
                 .unwrap_or(function);
-            let once = crate::recognition::is_fn_once_dyn(self.tcx, predicates)
-                && !matches!(called.kind(), ty::Dynamic(of, ..) if crate::recognition::is_fn_once_dyn(self.tcx, of))
-                && crate::recognition::function_kind(self.tcx, self.frame.owner, called)
-                    != Some(ty::ClosureKind::FnOnce);
+            let once = dyn_call_once_drop(self.tcx, predicates) == Some(OnceDrop::Body)
+                && !matches!(called.kind(), ty::Dynamic(of, ..) if dyn_call_once_drop(self.tcx, of) == Some(OnceDrop::Body))
+                && call_once_drop(self.tcx, self.frame.owner, called) != Some(OnceDrop::Body);
             // A `dyn Fn`'s drop, of one only where the program makes one of
             // what has something to drop (ADR 0626, amended).
             let dropping = match function.kind() {

@@ -163,7 +163,7 @@ impl Taker {
 
     /// The taker of binding `def_id`'s `i`th argument: a callback JS calls
     /// once, a parameter of a type parameter called by `FnOnce` alone
-    /// (`recognition::function_kind`), `impl FnOnce(T) -> U`, or a union's
+    /// (`drops::call_once`), `impl FnOnce(T) -> U`, or a union's
     /// whose `Function` member is, `js::set_timeout`'s `H:
     /// IntoTimerHandler`, or a `Box<dyn FnOnce(..)>`. Another, an `Fn` or
     /// `FnMut`'s, a listener's, which JS may keep and compare,
@@ -171,11 +171,11 @@ impl Taker {
     /// that's the function it calls wherever it's given.
     pub fn parameter(tcx: TyCtxt<'_>, def_id: DefId, i: usize) -> Option<Taker> {
         let ty = *tcx.fn_sig(def_id).skip_binder().skip_binder().inputs().get(i)?;
-        let only_once = |id: DefId| tcx.fn_trait_kind_from_def_id(id) == Some(ty::ClosureKind::FnOnce);
+        use crate::drops::call_once::{OnceDrop, call_once_drop, dyn_call_once_drop};
         let once = match *ty.kind() {
-            ty::Param(_) => crate::recognition::function_kind(tcx, def_id, ty) == Some(ty::ClosureKind::FnOnce),
+            ty::Param(_) => call_once_drop(tcx, def_id, ty) == Some(OnceDrop::Body),
             ty::Adt(adt, args) if adt.is_box() => match args.type_at(0).kind() {
-                ty::Dynamic(traits, ..) => traits.principal_def_id().is_some_and(only_once),
+                ty::Dynamic(traits, ..) => dyn_call_once_drop(tcx, traits) == Some(OnceDrop::Body),
                 _ => false,
             },
             _ => false,

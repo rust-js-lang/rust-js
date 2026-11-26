@@ -2,6 +2,7 @@
 //! what's dropped of what it isn't run on.
 
 use super::*;
+use crate::drops::call_once::{OnceDrop, boxed_call_once_drop, call_once_drop};
 use rustc_middle::mir;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -23,8 +24,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let inputs = callee.map(|callee| self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs());
         let called = |at: usize| {
             let (callee, inputs) = (callee?, inputs?);
-            crate::recognition::function_kind(self.tcx, callee, *inputs.get(at)?)?;
-            self.boxed_function_kind(tys[at])
+            call_once_drop(self.tcx, callee, *inputs.get(at)?)?;
+            boxed_call_once_drop(self.tcx, tys[at])
         };
         // What it gives as the type it stands for, as each argument's is:
         // `Rc::new(f)`'s `Rc<impl Fn>` of a function that gives it back is
@@ -88,7 +89,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         known: Option<crate::recognition::Std>,
         at: usize,
         ty: Ty<'tcx>,
-        called: Option<ty::ClosureKind>,
+        called: Option<OnceDrop>,
     ) -> Option<Option<Unused>> {
         let unused = || {
             (unused_arguments(known?).iter())
@@ -104,7 +105,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Or, of one whose type doesn't say, a boxed one's, as its callee
         // calls it (`given_unused`, #1220).
-        let kind = crate::recognition::function_kind(self.tcx, self.frame.owner, ty).or(called);
+        let kind = call_once_drop(self.tcx, self.frame.owner, ty).or(called);
         let Some(kind) = kind else {
             return unused().filter(|_| self.drops_function(ty));
         };
@@ -112,8 +113,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return None;
         }
         match kind {
-            ty::ClosureKind::FnOnce => unused(),
-            ty::ClosureKind::Fn | ty::ClosureKind::FnMut => Some(None),
+            OnceDrop::Body => unused(),
+            OnceDrop::Whole => Some(None),
         }
     }
 
@@ -123,8 +124,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Or a boxed one's, `Box<dyn FnOnce()>`'s, whose kind its type doesn't
     /// say, which such a call takes as an `F: FnOnce` (#1220).
     pub fn drops_unrun(&self, ty: Ty<'tcx>) -> bool {
-        let kind = crate::recognition::function_kind(self.tcx, self.frame.owner, ty);
-        (kind == Some(ty::ClosureKind::FnOnce) || kind.is_none() && self.boxed_function_kind(ty).is_some())
+        let kind = call_once_drop(self.tcx, self.frame.owner, ty);
+        (kind == Some(OnceDrop::Body) || kind.is_none() && boxed_call_once_drop(self.tcx, ty).is_some())
             && self.drops_function(ty)
     }
 
@@ -145,11 +146,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let facts = &self.krate.closure_facts;
         (tys.iter().enumerate())
             .filter(|&(_, &ty)| {
-                crate::recognition::function_kind(self.tcx, self.frame.owner, ty).is_none()
-                    && matches!(
-                        self.boxed_function_kind(ty),
-                        Some(ty::ClosureKind::Fn | ty::ClosureKind::FnMut)
-                    )
+                call_once_drop(self.tcx, self.frame.owner, ty).is_none()
+                    && boxed_call_once_drop(self.tcx, ty) == Some(OnceDrop::Whole)
             })
             .filter(|&(_, &ty)| {
                 let ty = self.tcx.erase_and_anonymize_regions(ty);
@@ -161,24 +159,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|&(_, &ty)| self.drops_function(ty))
             .map(|(at, _)| at)
             .collect()
-    }
-
-    /// How a boxed function of type `ty` is called, which its type doesn't
-    /// say: `Box<dyn FnMut(..)>`'s by its `dyn`'s trait, a box of a closure
-    /// by the closure's kind, through an `AssertUnwindSafe` as what it holds
-    /// (#1220). `None` of what isn't one.
-    fn boxed_function_kind(&self, ty: Ty<'tcx>) -> Option<ty::ClosureKind> {
-        if let ty::Adt(adt, args) = ty.kind()
-            && crate::recognition::is_assert_unwind_safe(self.tcx, adt.did())
-        {
-            return self.boxed_function_kind(args.type_at(0));
-        }
-        let inner = ty.boxed_ty()?;
-        match inner.kind() {
-            ty::Closure(_, args) => Some(args.as_closure().kind()),
-            ty::Dynamic(predicates, ..) => self.tcx.fn_trait_kind_from_def_id(predicates.principal_def_id()?),
-            _ => None,
-        }
     }
 
     /// Whether a function, or a value, of type `ty` std is given is dropped
