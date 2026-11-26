@@ -336,9 +336,9 @@ export const mutations: Mutation[] = [
     name: "mut-range-given-raw",
     breaks: "a &mut range given as an iterator is stepped where it is",
     file: "crates/rust-js-lower/src/iterators/mir_steps/sources.rs",
-    find: "            ty::Ref(_, inner, Mutability::Mut) if self.range_kind(*inner).is_some() => *inner,",
+    find: "            ty::Ref(_, inner, Mutability::Mut) if self.helper_stepped(*inner).is_some() => *inner,",
     replace:
-      "            ty::Ref(_, inner, Mutability::Mut) if false && self.range_kind(*inner).is_some() => *inner,",
+      "            ty::Ref(_, inner, Mutability::Mut) if false && self.helper_stepped(*inner).is_some() => *inner,",
     tests: ["test/corpus.test.ts", "-t", "^references_given_to_generics.rs$"],
   },
   {

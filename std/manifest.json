@@ -14504,6 +14504,276 @@
         ]
       },
       {
+        "key": "core::iter::range::{impl#4}::spec_advance_back_by",
+        "rust_path": "rust_js_std::<core::ops::Range<A> as core::iter::range::RangeIteratorImpl>::spec_advance_back_by",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeRangeIteratorImpl_specAdvanceBackBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#4}::spec_advance_by",
+        "rust_path": "rust_js_std::<core::ops::Range<A> as core::iter::range::RangeIteratorImpl>::spec_advance_by",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeRangeIteratorImpl_specAdvanceBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#4}::spec_next",
+        "rust_path": "rust_js_std::<core::ops::Range<A> as core::iter::range::RangeIteratorImpl>::spec_next",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeRangeIteratorImpl_specNext",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#4}::spec_next_back",
+        "rust_path": "rust_js_std::<core::ops::Range<A> as core::iter::range::RangeIteratorImpl>::spec_next_back",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeRangeIteratorImpl_specNextBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#4}::spec_nth",
+        "rust_path": "rust_js_std::<core::ops::Range<A> as core::iter::range::RangeIteratorImpl>::spec_nth",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeRangeIteratorImpl_specNth",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#4}::spec_nth_back",
+        "rust_path": "rust_js_std::<core::ops::Range<A> as core::iter::range::RangeIteratorImpl>::spec_nth_back",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeRangeIteratorImpl_specNthBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::ops::range::{impl#49}",
+        "rust_path": "rust_js_std::<core::ops::Range<Idx> as core::clone::Clone>",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeIdxClone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::ops::range::{impl#49}::clone",
+        "rust_path": "rust_js_std::<core::ops::Range<Idx> as core::clone::Clone>::clone",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeIdxClone_clone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::ops::range::{impl#52}",
+        "rust_path": "rust_js_std::<core::ops::Range<Idx> as core::cmp::PartialEq>",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeIdxPartialEqRangeIdx",
+        "member": null
+      },
+      {
+        "key": "core::ops::range::{impl#52}::eq",
+        "rust_path": "rust_js_std::<core::ops::Range<Idx> as core::cmp::PartialEq>::eq",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeIdxPartialEqRangeIdx_eq",
+        "member": null
+      },
+      {
+        "key": "core::ops::range::{impl#50}",
+        "rust_path": "rust_js_std::<core::ops::Range<Idx> as core::default::Default>",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeIdxDefault",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::ops::range::{impl#50}::default",
+        "rust_path": "rust_js_std::<core::ops::Range<Idx> as core::default::Default>::default",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeIdxDefault_default",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::ops::range::{impl#48}",
+        "rust_path": "rust_js_std::<core::ops::Range<Idx> as core::hash::Hash>",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeIdxHash",
+        "member": null
+      },
+      {
+        "key": "core::ops::range::{impl#48}::hash",
+        "rust_path": "rust_js_std::<core::ops::Range<Idx> as core::hash::Hash>::hash",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeIdxHash_hash",
+        "member": null,
+        "params": [
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#5}::spec_advance_back_by",
+        "rust_path": "rust_js_std::<core::ops::Range<T> as core::iter::range::RangeIteratorImpl>::spec_advance_back_by",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeRangeIteratorImplTrustedStep_specAdvanceBackBy",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#5}::spec_advance_by",
+        "rust_path": "rust_js_std::<core::ops::Range<T> as core::iter::range::RangeIteratorImpl>::spec_advance_by",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeRangeIteratorImplTrustedStep_specAdvanceBy",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#5}::spec_next",
+        "rust_path": "rust_js_std::<core::ops::Range<T> as core::iter::range::RangeIteratorImpl>::spec_next",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeRangeIteratorImplTrustedStep_specNext",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#5}::spec_next_back",
+        "rust_path": "rust_js_std::<core::ops::Range<T> as core::iter::range::RangeIteratorImpl>::spec_next_back",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeRangeIteratorImplTrustedStep_specNextBack",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#5}::spec_nth",
+        "rust_path": "rust_js_std::<core::ops::Range<T> as core::iter::range::RangeIteratorImpl>::spec_nth",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeRangeIteratorImplTrustedStep_specNth",
+        "member": null
+      },
+      {
+        "key": "core::iter::range::{impl#5}::spec_nth_back",
+        "rust_path": "rust_js_std::<core::ops::Range<T> as core::iter::range::RangeIteratorImpl>::spec_nth_back",
+        "module": [
+          "ops"
+        ],
+        "export": "rangeRangeIteratorImplTrustedStep_specNthBack",
+        "member": null
+      },
+      {
         "key": "core::iter::range::{impl#52}",
         "rust_path": "rust_js_std::<i128 as core::iter::Step>",
         "module": [
@@ -17712,6 +17982,254 @@
         ]
       },
       {
+        "key": "core::iter::range::{impl#7}::advance_back_by",
+        "rust_path": "rust_js_std::core::iter::range::<impl core::iter::DoubleEndedIterator for core::ops::Range<A>>::advance_back_by",
+        "module": [
+          "iter"
+        ],
+        "export": "rangeDoubleEndedIterator_advanceBackBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "TrustedStep"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#7}::next_back",
+        "rust_path": "rust_js_std::core::iter::range::<impl core::iter::DoubleEndedIterator for core::ops::Range<A>>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "rangeDoubleEndedIterator_nextBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "TrustedStep"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#7}::nth_back",
+        "rust_path": "rust_js_std::core::iter::range::<impl core::iter::DoubleEndedIterator for core::ops::Range<A>>::nth_back",
+        "module": [
+          "iter"
+        ],
+        "export": "rangeDoubleEndedIterator_nthBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "TrustedStep"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#6}::__iterator_get_unchecked",
+        "rust_path": "rust_js_std::core::iter::range::<impl core::iter::Iterator for core::ops::Range<A>>::__iterator_get_unchecked",
+        "module": [
+          "iter"
+        ],
+        "export": "rangeIterator___iteratorGetUnchecked",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#6}::advance_by",
+        "rust_path": "rust_js_std::core::iter::range::<impl core::iter::Iterator for core::ops::Range<A>>::advance_by",
+        "module": [
+          "iter"
+        ],
+        "export": "rangeIterator_advanceBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "TrustedStep"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#6}::count",
+        "rust_path": "rust_js_std::core::iter::range::<impl core::iter::Iterator for core::ops::Range<A>>::count",
+        "module": [
+          "iter"
+        ],
+        "export": "rangeIterator_count",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#6}::is_sorted",
+        "rust_path": "rust_js_std::core::iter::range::<impl core::iter::Iterator for core::ops::Range<A>>::is_sorted",
+        "module": [
+          "iter"
+        ],
+        "export": "rangeIterator_isSorted",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#6}::last",
+        "rust_path": "rust_js_std::core::iter::range::<impl core::iter::Iterator for core::ops::Range<A>>::last",
+        "module": [
+          "iter"
+        ],
+        "export": "rangeIterator_last",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "TrustedStep"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#6}::max",
+        "rust_path": "rust_js_std::core::iter::range::<impl core::iter::Iterator for core::ops::Range<A>>::max",
+        "module": [
+          "iter"
+        ],
+        "export": "rangeIterator_max",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "TrustedStep"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#6}::min",
+        "rust_path": "rust_js_std::core::iter::range::<impl core::iter::Iterator for core::ops::Range<A>>::min",
+        "module": [
+          "iter"
+        ],
+        "export": "rangeIterator_min",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "TrustedStep"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#6}::next",
+        "rust_path": "rust_js_std::core::iter::range::<impl core::iter::Iterator for core::ops::Range<A>>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "rangeIterator_next",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "TrustedStep"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#6}::nth",
+        "rust_path": "rust_js_std::core::iter::range::<impl core::iter::Iterator for core::ops::Range<A>>::nth",
+        "module": [
+          "iter"
+        ],
+        "export": "rangeIterator_nth",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "TrustedStep"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::range::{impl#6}::size_hint",
+        "rust_path": "rust_js_std::core::iter::range::<impl core::iter::Iterator for core::ops::Range<A>>::size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "rangeIterator_sizeHint",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::sources::repeat::repeat",
         "rust_path": "rust_js_std::core::iter::repeat",
         "module": [
@@ -18353,9 +18871,13 @@
       "core::iter::range::{impl#47}",
       "core::iter::range::{impl#48}",
       "core::iter::range::{impl#49}",
+      "core::iter::range::{impl#4}",
       "core::iter::range::{impl#50}",
       "core::iter::range::{impl#51}",
       "core::iter::range::{impl#52}",
+      "core::iter::range::{impl#5}",
+      "core::iter::range::{impl#6}",
+      "core::iter::range::{impl#7}",
       "core::iter::sources::repeat::{impl#0}",
       "core::iter::sources::repeat::{impl#1}",
       "core::iter::sources::repeat::{impl#4}",
@@ -18404,7 +18926,11 @@
       "core::net::socket_addr::{impl#38}",
       "core::net::socket_addr::{impl#3}",
       "core::net::socket_addr::{impl#4}",
-      "core::net::socket_addr::{impl#5}"
+      "core::net::socket_addr::{impl#5}",
+      "core::ops::range::{impl#48}",
+      "core::ops::range::{impl#49}",
+      "core::ops::range::{impl#50}",
+      "core::ops::range::{impl#52}"
     ],
     "libraries": [],
     "inputs": [
@@ -18549,6 +19075,12 @@
         "args": [
           {}
         ]
+      },
+      {
+        "of": "core::ops::range::Range",
+        "args": [
+          {}
+        ]
       }
     ]
   },
@@ -18566,7 +19098,9 @@
       "map": "iter.js.map",
       "source": "lib.rs",
       "in_source": "iter.js",
-      "imports": [],
+      "imports": [
+        "ops.js"
+      ],
       "exports": [
         "Inspect",
         "StepBy",
@@ -18877,6 +19411,19 @@
         "successorsIterator_sizeHint",
         "successorsClone_clone",
         "successorsDebug_fmt",
+        "rangeIterator_next",
+        "rangeIterator_sizeHint",
+        "rangeIterator_count",
+        "rangeIterator_nth",
+        "rangeIterator_last",
+        "rangeIterator_min",
+        "rangeIterator_max",
+        "rangeIterator_isSorted",
+        "rangeIterator_advanceBy",
+        "rangeIterator___iteratorGetUnchecked",
+        "rangeDoubleEndedIterator_nextBack",
+        "rangeDoubleEndedIterator_nthBack",
+        "rangeDoubleEndedIterator_advanceBackBy",
         "u8Step_stepsBetween",
         "i8Step_stepsBetween",
         "u16Step_stepsBetween",
@@ -19154,8 +19701,60 @@
       ],
       "links": [
         {
-          "start": 939,
-          "end": 951,
+          "start": 594,
+          "end": 602,
+          "file": "ops.js"
+        },
+        {
+          "start": 1493,
+          "end": 1505,
+          "file": "runtime.js"
+        }
+      ],
+      "type_links": []
+    },
+    {
+      "module": [
+        "ops"
+      ],
+      "file": "ops.js",
+      "map": "ops.js.map",
+      "source": "lib.rs",
+      "in_source": "ops.js",
+      "imports": [
+        "iter.js"
+      ],
+      "exports": [
+        "rangeIdxClone_clone",
+        "rangeIdxPartialEqRangeIdx_eq",
+        "rangeIdxHash_hash",
+        "rangeIdxDefault_default",
+        "rangeRangeIteratorImpl_specNext",
+        "rangeRangeIteratorImplTrustedStep_specNext",
+        "rangeRangeIteratorImpl_specNth",
+        "rangeRangeIteratorImplTrustedStep_specNth",
+        "rangeRangeIteratorImpl_specNextBack",
+        "rangeRangeIteratorImplTrustedStep_specNextBack",
+        "rangeRangeIteratorImpl_specAdvanceBy",
+        "rangeRangeIteratorImplTrustedStep_specAdvanceBy",
+        "rangeRangeIteratorImpl_specNthBack",
+        "rangeRangeIteratorImplTrustedStep_specNthBack",
+        "rangeRangeIteratorImpl_specAdvanceBackBy",
+        "rangeRangeIteratorImplTrustedStep_specAdvanceBackBy",
+        "rangeIdxClone",
+        "rangeIdxPartialEqRangeIdx",
+        "rangeIdxHash",
+        "rangeIdxDefault"
+      ],
+      "links": [
+        {
+          "start": 114,
+          "end": 123,
+          "file": "iter.js"
+        },
+        {
+          "start": 288,
+          "end": 300,
           "file": "runtime.js"
         }
       ],
@@ -19324,11 +19923,19 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "29154dd625051319"
+      "hash": "558bd2d5a93494da"
     },
     {
       "file": "iter.js.map",
       "hash": "26e6128361f0a386"
+    },
+    {
+      "file": "ops.js",
+      "hash": "2d9c9ebc163800d3"
+    },
+    {
+      "file": "ops.js.map",
+      "hash": "7d2937f3ed6a5a72"
     },
     {
       "file": "io.js",

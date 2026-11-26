@@ -50,22 +50,6 @@ impl RangeKind {
         }
     }
 
-    /// The runtime's helper that steps a range of this kind from its
-    /// start, or, `back`, its end: `$rangeNext`, `$rangeInclusiveNextBack`.
-    /// `None` of one JS doesn't step, or a `RangeFrom` from its end, which
-    /// it hasn't. The one table, which `stepped_by` and `next()` ask, and
-    /// `stepped_range` reads back.
-    pub fn step(self, back: bool) -> Option<&'static str> {
-        Some(match (self, back) {
-            (RangeKind::Exclusive, false) => "$rangeNext",
-            (RangeKind::Exclusive, true) => "$rangeNextBack",
-            (RangeKind::Inclusive, false) => "$rangeInclusiveNext",
-            (RangeKind::Inclusive, true) => "$rangeInclusiveNextBack",
-            (RangeKind::From, false) => "$rangeFromNext",
-            _ => return None,
-        })
-    }
-
     /// What `{:?}` shows between its bounds.
     pub(crate) fn dots(self) -> &'static str {
         match self {
@@ -73,6 +57,23 @@ impl RangeKind {
             _ => "..",
         }
     }
+}
+
+/// The runtime's helper that steps a range of `kind` from its start, or,
+/// `back`, its end: `$rangeNext`, `$rangeInclusiveNextBack`. `None` of one
+/// JS doesn't step, or a `RangeFrom` from its end, which it hasn't. The one
+/// table: a range the recognizers step asks it (`RangeSteps::step`, ADR
+/// 1206), and what reads a step it made back, `iterators::stepped_range`'s and
+/// `range_from_stepper`'s.
+pub(crate) fn step_helper(kind: RangeKind, back: bool) -> Option<&'static str> {
+    Some(match (kind, back) {
+        (RangeKind::Exclusive, false) => "$rangeNext",
+        (RangeKind::Exclusive, true) => "$rangeNextBack",
+        (RangeKind::Inclusive, false) => "$rangeInclusiveNext",
+        (RangeKind::Inclusive, true) => "$rangeInclusiveNextBack",
+        (RangeKind::From, false) => "$rangeFromNext",
+        _ => return None,
+    })
 }
 
 /// A range method rust-js knows.
@@ -116,7 +117,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         values: &[Expr],
     ) -> Option<Expr> {
         let reversed = self.recognition().reversed(range);
-        let kind = self.range_kind(reversed.unwrap_or(range))?;
+        let kind = self
+            .helper_stepped(reversed.unwrap_or(range))
+            .map(|steps| steps.kind())?;
         let num = self.range_index(reversed.unwrap_or(range)).and_then(Num::of)?;
         let lent = lent && reversed.is_none();
         let name = match (method?, kind, reversed.is_some()) {
@@ -176,14 +179,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `next()` of `receiver`, a range of type `range`, or `back` its
-    /// `next_back()`: its step, `RangeKind::step`'s, called, an `a..`'s of
+    /// `next_back()`: its step, `RangeSteps::step`'s, called, an `a..`'s of
     /// integers given its type's bounds, `$rangeFromNext(r, 0, 255)`.
     /// `None` of one JS doesn't step.
     pub fn range_next(&self, range: Ty<'tcx>, back: bool, receiver: Expr) -> Option<Expr> {
-        let kind = self.range_kind(range)?;
+        let steps = self.helper_stepped(range)?;
         let mut args = vec![receiver];
-        args.extend(self.range_from_bounds(range, kind));
-        Some(Expr::call_helper(kind.step(back)?, args))
+        args.extend(self.range_from_bounds(range, steps.kind()));
+        Some(Expr::call_helper(steps.step(back)?, args))
     }
 
     /// A range of type `range`'s `next`, or `back` its `next_back`, as a
@@ -191,9 +194,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$rangeFromStep(0, 255)`, its type's bounds given. `None` of one JS
     /// doesn't step.
     pub(crate) fn range_stepper(&self, range: Ty<'tcx>, back: bool) -> Option<Expr> {
-        let kind = self.range_kind(range)?;
-        let step = kind.step(back)?;
-        Some(stepper(step, self.range_from_bounds(range, kind)))
+        let steps = self.helper_stepped(range)?;
+        let step = steps.step(back)?;
+        Some(stepper(step, self.range_from_bounds(range, steps.kind())))
     }
 
     /// Whether an iterator of type `ty` steps an inclusive range it's lent,
@@ -204,7 +207,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty.walk().any(|arg| {
             arg.as_type().is_some_and(|t| {
                 matches!(t.kind(), ty::Ref(_, inner, rustc_middle::ty::Mutability::Mut)
-                    if self.range_kind(*inner) == Some(RangeKind::Inclusive))
+                    if self.helper_stepped(*inner).map(|steps| steps.kind()) == Some(RangeKind::Inclusive))
             })
         })
     }
@@ -532,7 +535,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &format!("stepping through a `{range_ty}`")));
             }
             let range = values.into_iter().next().expect("the range");
-            let Some(name) = kind.step(op == RangeOp::NextBack) else {
+            let Some(name) = self
+                .helper_stepped(range_ty)
+                .and_then(|steps| steps.step(op == RangeOp::NextBack))
+            else {
                 return Err(self.unsupported(span, &format!("stepping through a `{range_ty}`")));
             };
             return Ok(Expr::call(Expr::helper(name), vec![range]));
@@ -673,7 +679,10 @@ fn stepper(step: &'static str, bounds: Vec<Expr>) -> Expr {
 /// `range_stepper`'s, `$rangeFromStep(0, 255)`, which a `for` of the range
 /// steps it by, `$iterator(r, $rangeFromStep(0, 255))` (rd260).
 pub fn range_from_stepper(bounds: &[Expr]) -> Expr {
-    stepper(RangeKind::From.step(false).expect("an `a..` steps"), bounds.to_vec())
+    stepper(
+        step_helper(RangeKind::From, false).expect("an `a..` steps"),
+        bounds.to_vec(),
+    )
 }
 
 /// How many numbers a range of `start` and `end` has left, of `kind`:

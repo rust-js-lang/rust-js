@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a compiled std iterator's `Clone`, which has no `I: Iterator`, makes its struct's `next` of its own dictionaries, which it hasn't, and is refused",
     file: "crates/rust-js-mir/src/rvalues/aggregate.rs",
-    find: '                            vec![value, Expr::member(of.clone(), "$steps"), Expr::member(of, "$knows")]\n',
-    replace: '                            vec![value, self.std_iterator_steps(ty, span)?, Expr::member(of, "$knows")]\n',
+    find: '                    let given = vec![value, Expr::member(of.clone(), "$steps"), Expr::member(of, "$knows")];\n',
+    replace: '                    let given = vec![value, self.std_iterator_steps(ty, span)?, Expr::member(of, "$knows")];\n',
     tests: ["test/std-package.test.ts"],
   },
   {
@@ -183,8 +183,8 @@ export const mutations: Mutation[] = [
     name: "std-clone-unknowing",
     breaks: "std's compiled `Clone` of its struct makes it as the one it clones is, `self.$steps`, but not knowing what that one knows, `self.$knows`: a `rev()` over a clone of a `map` its use gave a back throws `it.back is not a function` (#1976)",
     file: "crates/rust-js-mir/src/rvalues/aggregate.rs",
-    find: "                            vec![value, Expr::member(of.clone(), \"$steps\"), Expr::member(of, \"$knows\")]\n",
-    replace: "                            vec![value, Expr::member(of.clone(), \"$steps\")]\n",
+    find: "                    let given = vec![value, Expr::member(of.clone(), \"$steps\"), Expr::member(of, \"$knows\")];\n",
+    replace: "                    let given = vec![value, Expr::member(of.clone(), \"$steps\")];\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
 ];

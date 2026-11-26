@@ -35,7 +35,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                     && !lent_place
                     && !matches!(output.kind(), ty::Param(_))
                     && !output.is_box()
-                    && self.range_kind(output).is_none()
+                    && self.helper_stepped(output).is_none()
                     && !self.is_user_iterator(output) =>
             {
                 Value::Expr(self.std_iterator(e, output))

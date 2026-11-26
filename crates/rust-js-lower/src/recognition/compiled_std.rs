@@ -319,6 +319,28 @@ pub(super) const COMPILED_STD: &[(Of, Option<&str>, &str)] = &[
     (Of::Struct(StdPath::IterSuccessors), Some("Iterator"), "size_hint"),
     (Of::Struct(StdPath::IterSuccessors), Some("Clone"), "clone"),
     (Of::Struct(StdPath::IterSuccessors), Some("Debug"), "fmt"),
+    // A range's own steps, `a..b`'s, std's struct in the build of its
+    // meaning alone (`MEANING_ONLY`), its bounds stepped by their `Step`
+    // (ADR 1206).
+    (Of::Struct(StdPath::OpsRange), Some("Iterator"), "next"),
+    (Of::Struct(StdPath::OpsRange), Some("Iterator"), "size_hint"),
+    (Of::Struct(StdPath::OpsRange), Some("Iterator"), "count"),
+    (Of::Struct(StdPath::OpsRange), Some("Iterator"), "nth"),
+    (Of::Struct(StdPath::OpsRange), Some("Iterator"), "last"),
+    (Of::Struct(StdPath::OpsRange), Some("Iterator"), "min"),
+    (Of::Struct(StdPath::OpsRange), Some("Iterator"), "max"),
+    (Of::Struct(StdPath::OpsRange), Some("Iterator"), "is_sorted"),
+    (Of::Struct(StdPath::OpsRange), Some("Iterator"), "advance_by"),
+    (Of::Struct(StdPath::OpsRange), Some("Iterator"), "__iterator_get_unchecked"),
+    (Of::Struct(StdPath::OpsRange), Some("DoubleEndedIterator"), "next_back"),
+    (Of::Struct(StdPath::OpsRange), Some("DoubleEndedIterator"), "nth_back"),
+    (Of::Struct(StdPath::OpsRange), Some("DoubleEndedIterator"), "advance_back_by"),
+    (Of::Struct(StdPath::OpsRange), Some("Clone"), "clone"),
+    // Its derives, which compare, hash and make it as std's struct, of its
+    // bounds' own (ADR 1206).
+    (Of::Struct(StdPath::OpsRange), Some("PartialEq"), "eq"),
+    (Of::Struct(StdPath::OpsRange), Some("Hash"), "hash"),
+    (Of::Struct(StdPath::OpsRange), Some("Default"), "default"),
     // Each integer's and `char`'s `Step`, the dictionary a range's
     // `Iterator` steps its bounds by: std's own impls, which a macro writes
     // of each integer (Campaign 5 step 3b, #1589).
@@ -697,6 +719,13 @@ const MEANING_ONLY: &[StdPath] = &[
     // Proof: test/corpus/iterator_sources.rs;
     // test/corpus/debug_of_once_and_successors.rs.
     StdPath::IterSuccessors,
+    // Kept, proved equal: a range's own steps, `$rangeNext`, `$rangeNth`,
+    // `$rangeNthBack` and the others of `a..b`, its bounds stepped by std's
+    // own `Step` of each integer and `char` (ADR 1206).
+    // Proof: test/corpus/range_steps_by_std_in_both_builds.rs and each
+    // corpus range in the metamorphic net's std build, and the twin net's
+    // pits of `$rangeNext`, `$rangeNth` and `$rangeNthBack`.
+    StdPath::OpsRange,
 ];
 
 /// Whether std's struct named `type_name` is compiled for this build:
@@ -760,7 +789,11 @@ pub(crate) fn note_debug_shown<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[crate::Body<'t
                 }
                 for part in clause.self_ty().skip_binder().walk().filter_map(|part| part.as_type()) {
                     let ty::Adt(adt, _) = part.kind() else { continue };
-                    if let Some(item) = std_path_item(tcx, adt.did()).filter(|item| MEANING_ONLY.contains(item)) {
+                    // Not a range, whose `{:?}` is rust-js's own of its
+                    // fields, whichever steps it (ADR 1206).
+                    if let Some(item) = std_path_item(tcx, adt.did()).filter(|item| MEANING_ONLY.contains(item))
+                        && super::types::range_kind_of(tcx, part).is_none()
+                    {
                         types.insert(session_key(tcx, part));
                         items.insert(item);
                     }
@@ -777,6 +810,18 @@ pub(crate) fn note_debug_shown<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[crate::Body<'t
 /// another's than an adapter's, whose answer is its catalog's alone.
 pub(super) fn compiled_for<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
     match ty.peel_refs().kind() {
+        // `a..b` is std's struct only where it's std's iterator, of one of
+        // std's `Step`s, an integer or a `char`, or of std's own generic
+        // bodies' `A: Step`; another, `K(0)..K(1)`, is no iterator, its
+        // fields dropped as any struct's (ADR 1206).
+        ty::Adt(adt, args)
+            if super::types::range_kind_of(tcx, ty.peel_refs())
+                == Some(crate::std_types::range::RangeKind::Exclusive) =>
+        {
+            let bound = args.type_at(0);
+            (bound.is_integral() || bound.is_char() || crate::generic_facts::is_step_parameter(bound))
+                && std_path_item(tcx, adt.did()).is_none_or(|item| compiled_for_build(tcx, item))
+        }
         ty::Adt(adt, _) if !adt.did().is_local() => std_path_item(tcx, adt.did()).is_none_or(|item| {
             compiled_for_build(tcx, item)
                 || (crate::session::caches(tcx).debug_shown.get())
@@ -861,11 +906,14 @@ pub(crate) fn not_compiled_for_build(tcx: TyCtxt<'_>, id: DefId) -> bool {
     if crate::session::caches(tcx).meaning.get() || id.is_local() {
         return false;
     }
-    // Its impl, or it itself, an impl.
+    // Its impl, or it itself, an impl: std's own, not a library's impl of
+    // its own trait for std's struct, `impl IteratorIndex for Range<usize>`,
+    // which is that library's (#1401, ADR 1206).
     let imp = match tcx.def_kind(id) {
         DefKind::Impl { .. } => Some(id),
         _ => tcx.impl_of_assoc(id),
-    };
+    }
+    .filter(|&imp| is_std_crate(tcx, imp));
     let owner = imp.and_then(|imp| match tcx.type_of(imp).skip_binder().kind() {
         ty::Adt(adt, _) => Some(adt.did()),
         _ => None,

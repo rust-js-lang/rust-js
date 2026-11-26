@@ -133,7 +133,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .any(|part| part.as_type().is_some_and(|t| self.steps_an_array(t)))
                 && !source
                     .walk()
-                    .any(|part| part.as_type().is_some_and(|t| self.range_kind(t).is_some()))
+                    .any(|part| part.as_type().is_some_and(|t| self.helper_stepped(t).is_some()))
         };
         let given_count = |ty: Ty<'tcx>| {
             r::is_repeat_n(self.tcx, ty)
@@ -146,7 +146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (iter_ty.walk().any(|part| part.as_type().is_some_and(given_count)) && unmapped || program_counted)
             && (self.recognition().trusted_len(iter_ty) == Some(true) || !runs_code(iter_ty))
             && !crate::iterators::is_stepped_items(&it)
-            && self.range_kind(iter_ty).is_none()
+            && self.helper_stepped(iter_ty).is_none()
             && !self.compiled_struct(iter_ty, &it);
         let mut held = Vec::new();
         // A count whose reading runs code, a bound's call, isn't read again

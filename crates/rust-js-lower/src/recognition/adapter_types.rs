@@ -279,19 +279,86 @@ pub fn std_struct_steps_in<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'t
     crate::traits::select(tcx, typing_env, tr).is_ok()
 }
 
+/// Whether the function a call of `callee` with `args` runs in
+/// `typing_env`, a compiled std function, gives back std's struct it made
+/// where it's no iterator, `StepBy::new`: its caller makes it the JS
+/// iterator it is, where it's one (ADR 0917). Of a trait's method, the
+/// impl's own it resolves to, `Range::<u8>::default()`'s, never the trait's
+/// item, which no catalog names (ADR 1206).
+pub fn makes_no_iterator<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    callee: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> bool {
+    // Only a trait's method resolves to another function.
+    if tcx.trait_of_assoc(callee).is_none() {
+        return is_compiled_std(tcx, callee) && makes_no_iterator_of(tcx, callee);
+    }
+    let callee = match crate::items::resolve_instance_in(tcx, typing_env, callee, args) {
+        Ok(Some(ty::Instance {
+            def: ty::InstanceKind::Item(id),
+            ..
+        })) => id,
+        _ => callee,
+    };
+    // Compiled std's first: a closure a call of `Fn::call` resolves to, the
+    // crate's, has no signature of its own to ask.
+    is_compiled_std(tcx, callee) && makes_no_iterator_of(tcx, callee)
+}
+
 /// Whether `callee`, a compiled std function, gives back std's struct it
-/// made where it's no iterator, `StepBy::new`: its caller makes it the JS
-/// iterator it is, where it's one (ADR 0917).
-pub fn makes_no_iterator(tcx: TyCtxt<'_>, callee: DefId) -> bool {
-    let made = tcx
+/// made where it's no iterator (`makes_no_iterator`).
+fn makes_no_iterator_of(tcx: TyCtxt<'_>, callee: DefId) -> bool {
+    let sig = tcx
         .fn_sig(callee)
         .instantiate_identity()
         .skip_normalization()
-        .skip_binder()
-        .output();
-    is_compiled_std(tcx, callee)
+        .skip_binder();
+    let made = sig.output();
+    // A maker, which makes it of its parts: not one given the struct it
+    // gives back, std's compiled `clone`, whose copy keeps the steps of
+    // the one it's given (`aggregate.rs`).
+    !sig.inputs().iter().any(|input| input.peel_refs() == made)
         && is_compiled_std_iterator(tcx, made)
         && !std_struct_steps_in(tcx, ty::TypingEnv::post_analysis(tcx, callee), made)
+}
+
+/// Whether `ty` holds, inside it, std's compiled iterator's struct where it
+/// steps (`std_struct_steps_in`): `Wrapped<Range<u32>>` in the build of
+/// std's meaning, a field's, an element's or a type argument's, not `ty`
+/// itself. A constant of it is lowered as code, so each such struct is made
+/// the JS iterator it is where its aggregate is, as no value tree can say
+/// (`mir_const`, ADR 1206).
+pub fn holds_stepping_std_struct<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
+    fn holds<'tcx>(
+        tcx: TyCtxt<'tcx>,
+        typing_env: ty::TypingEnv<'tcx>,
+        ty: Ty<'tcx>,
+        seen: &mut Vec<DefId>,
+        outermost: bool,
+    ) -> bool {
+        ty.walk().filter_map(|part| part.as_type()).any(|part| {
+            if !(outermost && part == ty)
+                && is_compiled_std_iterator(tcx, part)
+                && std_struct_steps_in(tcx, typing_env, part)
+            {
+                return true;
+            }
+            // A struct's or an enum's own fields, which no type argument names.
+            match part.kind() {
+                ty::Adt(adt, args) if !is_compiled_std_type(tcx, part) && !seen.contains(&adt.did()) => {
+                    seen.push(adt.did());
+                    adt.all_fields().any(|field| {
+                        let field_ty = tcx.erase_and_anonymize_regions(field.ty(tcx, args).skip_normalization());
+                        holds(tcx, typing_env, field_ty, seen, false)
+                    })
+                }
+                _ => false,
+            }
+        })
+    }
+    holds(tcx, typing_env, ty, &mut Vec::new(), true)
 }
 
 pub fn is_compiled_std_iterator<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {

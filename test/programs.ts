@@ -550,7 +550,9 @@ function consoleLines(js: string): string[] {
   const modules = [...readFileSync(join(stdDir, "index.js"), "utf8").matchAll(/^export \* from "\.\/(.+\.js)";$/gm)].map((m) => m[1]);
   const runtime = (modules.length > 0 ? modules : ["runtime.js"])
     .map((module) => (module === "runtime.js" ? helpersModule : join(stdDir, module)))
-    .map((file) => readFileSync(file, "utf8").replace(/^import \{[^}]*\} from "\.\/runtime\.js";$/gm, "").replace(/^export /gm, ""))
+    // Each module's imports of the others, `./runtime.js`'s and `ops.js`'s of
+    // `./iter.js`, which this one script holds already (ADR 1206).
+    .map((file) => readFileSync(file, "utf8").replace(/^import \{[^}]*\} from "\.\/[\w-]+\.js";$/gm, "").replace(/^export /gm, ""))
     .join("\n");
   const code = readFileSync(js, "utf8")
     .replace(/^import \{[^}]*\} from "@rust-js\/std";$/m, "")

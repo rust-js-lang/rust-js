@@ -96,6 +96,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_unknown(ty) {
             return Err(self.no_evidence(span, tr));
         }
+        // A range this build holds as std's struct, `a..b`'s in the build of
+        // std's meaning: its bounds' defaults, held as its aggregate holds
+        // one, std's compiled bodies stepping it (ADR 1206).
+        if let ty::Adt(_, args) = ty.kind()
+            && let Some(kind) = self.range_kind(ty)
+            && self.helper_stepped(ty).is_none()
+        {
+            let mut bounds = Vec::new();
+            for &name in kind.bounds() {
+                bounds.push(Prop::Field(name.into(), self.default_value(args.type_at(0), span)?));
+            }
+            return self.std_struct_held(Expr::object(bounds), ty, span);
+        }
         // A React element's, React's empty node (ADR 0192): the react
         // crate's `impl` has no JS of its own.
         if let ty::Adt(adt, _) = ty.kind()

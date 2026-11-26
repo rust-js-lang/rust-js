@@ -452,4 +452,22 @@ export const mutations: Mutation[] = [
     replace: "                    if let Some(variant) = made.variant\n",
     tests: ["test/crates-pairs-1.test.ts", "test/crates-pairs-2.test.ts", "test/crates-pairs-3.test.ts", "-t", "zero_sized_struct_constant_of_generic_code"],
   },
+  {
+    name: "range-constant-unheld",
+    breaks: "a promoted constant range, `&(5..2)`, in the build of std's meaning is a plain `{ start, end }`, so its `len()` reads no size hint and std's `ExactSizeIterator::len` panics (ADR 1206)",
+    file: "crates/rust-js-mir/src/operands.rs",
+    find: "            && rust_js_lower::recognition::std_struct_steps_in(self.tcx, self.typing_env, held)\n",
+    replace: "            && rust_js_lower::recognition::std_struct_steps_in(self.tcx, self.typing_env, held) && false\n",
+    tests: ["test/metamorphic.test.ts", "-t", "^range_steps_by_std_in_both_builds.rs, rewritten"],
+    env: { METAMORPHIC: "all", METAMORPHIC_REWRITES: "outline" },
+  },
+  {
+    name: "promoted-holding-std-struct-a-value",
+    breaks: "a promoted constant holding a range, `&Wrapped(10..20)`, in the build of std's meaning is lowered from its value tree, so the range it holds is a plain `{ start, end }` whose `Clone` reads no `$steps` and panics (ADR 1206)",
+    file: "crates/rust-js-mir/src/operands.rs",
+    find: "            && rust_js_lower::recognition::holds_stepping_std_struct(tcx, self.typing_env, ty.peel_refs())\n",
+    replace: "            && rust_js_lower::recognition::holds_stepping_std_struct(tcx, self.typing_env, ty.peel_refs()) && false\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^trait_method_impl_iterator_stepped_by_generic_code with std's iterator structs$"],
+    env: { ITERATOR_FORMS: "corpus" },
+  },
 ];

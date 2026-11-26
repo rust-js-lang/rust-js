@@ -486,7 +486,22 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         })
     }
 
+    /// A constant's value, `mir_const_made`'s; of std's compiled iterator's
+    /// struct where it steps, a range in the build of std's meaning,
+    /// `&(5..2)` promoted, held as its aggregate holds one, a reference to
+    /// it the value it is (ADR 0023, ADR 1206).
     pub(super) fn mir_const(&mut self, state: &State<'_, 'tcx>, c: &ConstOperand<'tcx>) -> R<Expr> {
+        let made = self.mir_const_made(state, c)?;
+        let held = c.ty().peel_refs();
+        if rust_js_lower::recognition::is_compiled_std_iterator(self.tcx, held)
+            && rust_js_lower::recognition::std_struct_steps_in(self.tcx, self.typing_env, held)
+        {
+            return self.std_struct_held(made, held, c.span);
+        }
+        Ok(made)
+    }
+
+    fn mir_const_made(&mut self, state: &State<'_, 'tcx>, c: &ConstOperand<'tcx>) -> R<Expr> {
         let ty = c.ty();
         if ty.is_unit() || matches!(ty.kind(), ty::FnDef(..)) {
             return Ok(Expr::js_undefined());
@@ -521,6 +536,16 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             && named.promoted.is_none()
             && matches!(tcx.def_kind(named.def), DefKind::Const)
             && self.is_rust_fn(named.def)
+        {
+            return self.const_as_code(Mir::new(tcx, state.facts.promoted()[promoted].clone(), IndexVec::new()));
+        }
+        // A promoted one holding std's compiled iterator's struct where it
+        // steps, `&Wrapped(10..20)` in the build of std's meaning: its code,
+        // so each such struct is made the JS iterator it is where its
+        // aggregate is, as `mir_const` holds one itself (ADR 1206).
+        if let Const::Unevaluated(uv, _) = c.const_
+            && let Some(promoted) = uv.promoted
+            && rust_js_lower::recognition::holds_stepping_std_struct(tcx, self.typing_env, ty.peel_refs())
         {
             return self.const_as_code(Mir::new(tcx, state.facts.promoted()[promoted].clone(), IndexVec::new()));
         }

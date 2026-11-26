@@ -40,6 +40,7 @@ mod std_steps;
 pub(crate) use chars::{TextIter, reaches_text_iter};
 pub(crate) use lengths::EqSide;
 pub use own_steps::{OwnStep, Reach};
+pub use types::RangeSteps;
 pub(crate) use types::is_cow_type;
 mod lends;
 mod owners;

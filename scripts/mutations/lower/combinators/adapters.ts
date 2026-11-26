@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`flat_map` of a range or the crate's iterator gives `.flatMap` the value, whose fields it steps, or which isn't iterable, where its items are what's stepped",
     file: "crates/rust-js-lower/src/combinators/adapters.rs",
-    find: "        if self.range_kind(inner).is_some() || self.is_user_iterator(inner) {\n",
+    find: "        if self.helper_stepped(inner).is_some() || self.is_user_iterator(inner) {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_inner_iterables.rs$"],
   },

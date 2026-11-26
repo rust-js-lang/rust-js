@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's map made knowing its length, a zip's `b` read by index, is made knowing only its back: `$trustedZip` throws `b.len is not a function` (#775)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
-    find: "                    None if len && self.range_kind(iter_ty).is_some() => {\n",
+    find: "                    None if len && self.helper_stepped(iter_ty).is_some() => {\n",
     replace: "                    None if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_by_index_of_holding_maps.rs$"],
   },
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`nth_back` and `rfold` of an iterator that knows its back wrap it again, `$nthBack($iter(it), ..)`, which `$iter` gives back as it is (ADR 0456)",
     file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
-    find: "        let it = match self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty, &it) {\n",
+    find: "        let it = match self.helper_stepped(iter_ty).is_none() && self.has_a_back(iter_ty, &it) {\n",
     replace: "        let it = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
     snapshots: true,
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`by_ref()` of a range is a JS iterator of it, which what steps it after steps as a range again: `take` gives nothing, and the range never moves",
     file: "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
-    find: "            Some(IterMethod::ByRef) if self.range_kind(iter_ty).is_some() => BackKept::Lent(receiver.clone()),\n",
+    find: "            Some(IterMethod::ByRef) if self.helper_stepped(iter_ty).is_some() => BackKept::Lent(receiver.clone()),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^by_ref_steps.rs$"],
   },

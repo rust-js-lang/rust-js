@@ -37,6 +37,11 @@ fn group(tcx: TyCtxt<'_>, adapter: Option<StdPath>) -> IndexSet<DefId> {
 /// takes each body on its own, never by what else it found; so each group
 /// keeps what it adds to the base, and a compile its groups' union.
 pub(crate) fn catalogue(tcx: TyCtxt<'_>) -> String {
+    let unnamed = super::rows::derives_unnamed(tcx);
+    assert!(
+        unnamed.is_empty(),
+        "rust-js internal error: std derives these of a struct the catalog compiles, which no row of crates/rust-js-lower/src/recognition/compiled_std.rs names, so its struct would be compared, hashed or made by a body that isn't std's: {unnamed:?}; add a row `(Of::Struct(..), Some(\"Trait\"), \"method\")` of each"
+    );
     let base = group(tcx, None);
     let mut crates = IndexMap::default();
     let mut named = |ids: &mut dyn Iterator<Item = DefId>| -> Vec<String> {

@@ -61,9 +61,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let (name, in_place) = (self.tcx.item_name(rev), self.adapter_in_place(rev, span));
         let unsupported = |cx: &Self| cx.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"));
-        let reversed = match self.range_kind(iter_ty) {
+        let reversed = match self.helper_stepped(iter_ty) {
             _ if self.is_user_iterator(iter_ty) => self.reversed_user(receiver, receiver_ty, span)?,
-            Some(kind) if let Some(step) = kind.step(true) => self.stepped_by(receiver, Expr::helper(step)),
+            Some(steps) if let Some(step) = steps.step(true) => self.stepped_by(receiver, Expr::helper(step)),
             Some(_) => return Err(unsupported(self)),
             // Of a `&mut`, `by_ref()`'s, a type parameter's given as it is
             // too: what it's to, lent, stepped from its back, as std's `&mut
@@ -334,7 +334,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A range's, the range, whose `&mut` it is: what steps it after
             // moves its start, `$rangeNext(it)`, as Rust's does, not a JS
             // iterator of it, which would be stepped as a range again.
-            Some(IterMethod::ByRef) if self.range_kind(iter_ty).is_some() => BackKept::Lent(receiver.clone()),
+            Some(IterMethod::ByRef) if self.helper_stepped(iter_ty).is_some() => BackKept::Lent(receiver.clone()),
             // Of one that knows its back, lent knowing it, as std's `&mut I`
             // passes on `I`'s back and length, never its ownership (#749).
             Some(IterMethod::ByRef) if self.knows_its_back(iter_ty) => {
@@ -379,7 +379,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     // A range's, made knowing its length too where the map is,
                     // `$rangeLen`, a zip's `b` read by index (#775).
-                    None if len && self.range_kind(iter_ty).is_some() => {
+                    None if len && self.helper_stepped(iter_ty).is_some() => {
                         self.as_exact_size(receiver.clone(), iter_ty, back, span)?
                     }
                     None if back && !self.has_a_back(iter_ty, receiver) => {
@@ -601,7 +601,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // so its `try_rfold` and `advance_back_by` are the defaults over its
         // `next_back`, never what it holds' own (`lent_as_its_box`).
         let it = self.lent_as_its_box(it, iter_ty);
-        let it = match self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty, &it) {
+        let it = match self.helper_stepped(iter_ty).is_none() && self.has_a_back(iter_ty, &it) {
             true => it,
             false => self.as_double_ended(it, iter_ty, span)?,
         };
@@ -868,7 +868,7 @@ fn reversed_inward(e: &Expr) -> Option<Expr> {
             true => crate::std_types::range::RangeKind::Inclusive,
             false => crate::std_types::range::RangeKind::Exclusive,
         };
-        let back = Expr::helper(kind.step(true)?);
+        let back = Expr::helper(crate::std_types::range::step_helper(kind, true)?);
         return Some(crate::iterators::stepped_range_by(range.range.clone(), back));
     }
     let js::ExprKind::Member(base, method) = &callee.kind else {

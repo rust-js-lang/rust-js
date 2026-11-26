@@ -786,7 +786,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             };
             return Some(match tcx.item_name(def_id).as_str() {
                 // A `Range`'s moves its `start` (ADR 0129).
-                "next" if matches!(self.range_kind(ty.peel_refs()), Some(RangeKind::Exclusive)) => {
+                "next" if self.helper_stepped(ty.peel_refs()).map(RangeSteps::kind) == Some(RangeKind::Exclusive) => {
                     Std::Range(RangeOp::Next)
                 }
                 // One of the crate's own is its impl's `next` (ADR 0055).
@@ -909,7 +909,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// its `len` and `next_back` are its bounds' (ADR 0129).
     fn range_iterator_method(&self, def_id: DefId, trait_: DefId, ty: Ty<'tcx>) -> Option<Std> {
         let tcx = self.tcx;
-        let kind = self.range_kind(ty)?;
+        let kind = self.helper_stepped(ty).map(|steps| steps.kind())?;
         let stepped = matches!(kind, RangeKind::Exclusive | RangeKind::Inclusive);
         Some(Std::Range(match tcx.item_name(def_id).as_str() {
             "into_iter" if tcx.is_diagnostic_item(sym::IntoIterator, trait_) => return Some(Std::Same),
@@ -962,7 +962,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.is_user_iterator(ty) {
             return Some(Std::SizeHint(false));
         }
-        match self.range_kind(ty.peel_refs()) {
+        match self.helper_stepped(ty.peel_refs()).map(|steps| steps.kind()) {
             Some(RangeKind::Exclusive | RangeKind::Inclusive) => Some(Std::Range(RangeOp::SizeHint)),
             None if self.is_std_iterator(ty.peel_refs()) => Some(Std::SizeHint(true)),
             _ => None,

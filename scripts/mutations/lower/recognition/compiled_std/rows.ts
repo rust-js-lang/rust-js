@@ -43,4 +43,12 @@ export const mutations: Mutation[] = [
     replace: "SimplifiedType::Int(_) | SimplifiedType::Uint(_)",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
+  {
+    name: "derived-ordering-unasked",
+    breaks: "the catalog's derived methods aren't asked of `Ord`, so a struct the catalog compiles could derive an ordering no row names, compared by a body that isn't std's, and the check of what's left out names entries std derives no longer (ADR 1206)",
+    file: "crates/rust-js-lower/src/recognition/compiled_std/rows.rs",
+    find: 'const DERIVED: &[&str] = &["Clone", "PartialEq", "PartialOrd", "Ord", "Hash", "Default"];\n',
+    replace: 'const DERIVED: &[&str] = &["Clone", "PartialEq", "PartialOrd", "Hash", "Default"];\n',
+    tests: ["test/compiled-std.test.ts"],
+  },
 ];

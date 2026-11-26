@@ -320,7 +320,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn held_as_js_iterator(&self, ty: ty::Ty<'tcx>) -> bool {
         let iterator = std_item(self.tcx, StdItem::Iterator);
         !self.is_user_iterator(ty)
-            && self.range_kind(ty).is_none()
+            && self.helper_stepped(ty).is_none()
             && (matches!(ty.kind(), ty::Dynamic(..)) || self.iterator_evidence(ty, iterator).is_none())
             && self.implements_iterator(ty)
     }
@@ -453,7 +453,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Debug`'s, its own value, which that one's dictionaries read
         // (#991).
         if !self.is_user_iterator(ty)
-            && self.range_kind(ty.peel_refs()).is_none()
+            && self.helper_stepped(ty.peel_refs()).is_none()
             && !self.iterator_given_as_it_is(ty.peel_refs())
         {
             return false;
@@ -894,7 +894,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `&mut` range is stepped where it is, as it's taken from.
         if let ty::Ref(_, inner, ty::Mutability::Mut) = ty.kind()
-            && self.range_kind(*inner).is_some()
+            && self.helper_stepped(*inner).is_some()
         {
             return self.as_js_iterator(value, ty, span);
         }
@@ -925,7 +925,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return self.comb_values(comb, (vec![value], &[ty]), (false, false), none, span, out);
         }
-        if self.range_kind(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty) {
+        if self.helper_stepped(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty) {
             return self.as_js_iterator(value, ty, span);
         }
         // A B-tree's, in its keys' order: a JS `Set` a caller gives may be in

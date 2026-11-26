@@ -52,6 +52,7 @@
 //! | whether a caller gives it a value with a destructor, its function given a drop for it, `drop_params`' (ADR 0098), what steps its items from their back made closed where it's made (#1406) | Instances | `crates/rust-js-lower/src/generic_facts/caller_facts.rs given_a_drop_of` |
 //! | whether a trait of a type built of it can hold for any `T`, a fact no impl answers yes to, `vec::IntoIter<Held<T>>`'s `TrustedRandomAccessNoCoerce`, known here, no caller's (#1385) | Instances | `crates/rust-js-lower/src/generic_facts.rs may_hold_for_some` |
 //! | whether a std impl's type, its first argument or a raw pointer's pointee, is the impl's type parameter, `impl<T> NonNull<T>`'s, as a std path names its block apart from `NonNull::<[T]>`'s and `*const [T; N]`'s, so a method is known by whose it is and its name (#1681) | Instances | `crates/rust-js-lower/src/generic_facts.rs is_impl_parameter` |
+//! | whether a range's bound is a type parameter, std's own generic bodies' `A: Step`, so the range is std's struct there, as one of an integer's or a `char`'s is (ADR 1206) | Instances | `crates/rust-js-lower/src/generic_facts.rs is_step_parameter` |
 
 use super::copies::InPlaceWriter;
 use super::{FnCx, R};
@@ -1212,6 +1213,13 @@ pub(crate) fn writes_through_its_box(declared: Ty<'_>) -> bool {
 /// writes `NonNull::<T>`, not `NonNull::<[T]>` or `*const [T; N]` (#1681).
 pub(crate) fn is_impl_parameter(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Param(_))
+}
+
+/// Whether `bound`, a range's, is a type parameter: std's own generic
+/// bodies' `A: Step`, whose range is std's struct there, as one of an
+/// integer's or a `char`'s is (`compiled_for`, ADR 1206).
+pub(crate) fn is_step_parameter(bound: Ty<'_>) -> bool {
+    matches!(bound.kind(), ty::Param(_))
 }
 
 /// Whether `ty` holds the type parameter of index `index`, itself or in

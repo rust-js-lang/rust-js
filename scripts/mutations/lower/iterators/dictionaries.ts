@@ -158,10 +158,10 @@ export const mutations: Mutation[] = [
     breaks:
       "a `DoubleEndedIterator` dictionary is made `{ len }`, and an `ExactSizeIterator`'s `{ next_back }`",
     file: "crates/rust-js-lower/src/iterators/dictionaries.rs",
-    find: "        let double_ended = crate::recognition::is_double_ended(self.tcx, trait_id);\n        let entry = match (double_ended, self.range_kind(ty)) {\n",
-    replace:
-      "        let double_ended = !crate::recognition::is_double_ended(self.tcx, trait_id);\n        let entry = match (double_ended, self.range_kind(ty)) {\n",
+    find: "        let double_ended = crate::recognition::is_double_ended(self.tcx, trait_id);\n        let steps = self.helper_stepped(ty);\n",
+    replace: "        let double_ended = !crate::recognition::is_double_ended(self.tcx, trait_id);\n        let steps = self.helper_stepped(ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
+    snapshots: true,
   },
   {
     name: "dictionary-own-fold-left-out",

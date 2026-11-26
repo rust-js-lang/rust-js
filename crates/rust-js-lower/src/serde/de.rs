@@ -165,6 +165,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(read) = self.serde_evidence(ty, false) {
             return Ok(read);
         }
+        // A range this build holds as std's struct, `a..b`'s in the build
+        // of std's meaning alone, which serde's form would make plain
+        // fields of: refused there, never in the plain build (ADR 1206).
+        if self.range_kind(ty).is_some() && self.helper_stepped(ty).is_none() {
+            return Err(unsupported(self));
+        }
         // A std type whose impl is serde's own, as its catalog row says,
         // a `Duration` too, which rust-js holds as a number (#1623).
         if let Some(form) = self.std_form(ty) {

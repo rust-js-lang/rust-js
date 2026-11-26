@@ -272,7 +272,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         matches!(alias.kind(), ty::Alias(..))
             && (self.declared_bounds(alias, env).into_iter()).any(|id| is_std_def(self.tcx, id, StdItem::Iterator))
-            && (self.range_kind(ty).is_some()
+            && (self.helper_stepped(ty).is_some()
                 || self.is_user_iterator(ty)
                 || self.iterator_given_as_it_is(ty)
                 || crate::recognition::is_compiled_std_iterator(self.tcx, ty))

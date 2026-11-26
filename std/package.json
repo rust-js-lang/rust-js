@@ -26,6 +26,8 @@
     "io.js.map",
     "net.js",
     "net.js.map",
+    "ops.js",
+    "ops.js.map",
     "manifest.json"
   ],
   "sideEffects": false

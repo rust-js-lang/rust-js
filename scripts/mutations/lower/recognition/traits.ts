@@ -724,4 +724,12 @@ export const mutations: Mutation[] = [
     replace: "    false && tcx.trait_of_assoc(id) == Some(std_item(tcx, StdItem::Ord)) && tcx.item_name(id).as_str() == \"clamp\"\n",
     tests: ["test/binaries.test.ts", "-t", "dictionary"],
   },
+  {
+    name: "step-not-operational",
+    breaks: "a `Step` bound is given no dictionary, so a range's compiled body has no `A: Step` and std's build refuses it (ADR 1206)",
+    file: "crates/rust-js-lower/src/recognition/traits.rs",
+    find: "        || std_path_item(tcx, id) == Some(StdPath::IterStep)\n",
+    replace: "        || std_path_item(tcx, id) == None\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

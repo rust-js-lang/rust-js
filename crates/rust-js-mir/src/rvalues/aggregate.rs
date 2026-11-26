@@ -197,13 +197,11 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 if rust_js_lower::recognition::is_compiled_std_iterator(self.tcx, ty)
                     && (cloning || rust_js_lower::recognition::std_struct_steps_in(self.tcx, self.typing_env, ty))
                 {
-                    let given = match cloning {
-                        true => {
-                            let of = Expr::var(&state.locals.names[Local::from_u32(1)]);
-                            vec![value, Expr::member(of.clone(), "$steps"), Expr::member(of, "$knows")]
-                        }
-                        false => vec![value, self.std_iterator_steps(ty, span)?],
-                    };
+                    if !cloning {
+                        return Ok(Value::Expr(self.std_struct_held(value, ty, span)?));
+                    }
+                    let of = Expr::var(&state.locals.names[Local::from_u32(1)]);
+                    let given = vec![value, Expr::member(of.clone(), "$steps"), Expr::member(of, "$knows")];
                     return Ok(Value::Expr(Expr::call_helper("$stdIterator", given)));
                 }
                 Ok(Value::Expr(value))

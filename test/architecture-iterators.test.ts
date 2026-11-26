@@ -402,6 +402,66 @@ const outsideValue = (pattern: RegExp) =>
     .filter((file) => file !== valueOwner)
     .flatMap((file) => linesOf(file).filter((line) => pattern.test(line)).map((line) => `${file}: ${line.trim()}`));
 
+// A range's steps are the recognizers' only where `helper_stepped` says so
+// (ADR 1206): it alone makes a `RangeSteps`, whose field is private to
+// recognition/types.rs, and the step table, `step_helper`, is read through
+// it, or where a step rust-js made is read back from its JS. A range this
+// build holds as std's struct, `a..b` in the build of std's meaning, is
+// stepped by std's compiled bodies, never by `$rangeNext` beside them.
+test("a range's step helpers are reached through `helper_stepped` alone", () => {
+  const owner = "crates/rust-js-lower/src/recognition/types.rs";
+  const readBack = [
+    "crates/rust-js-lower/src/std_types/range.rs",
+    "crates/rust-js-lower/src/iterators/value.rs",
+    "crates/rust-js-lower/src/iterators/mir_steps/backs.rs",
+  ];
+  const at = (pattern: RegExp, allowed: string[]) =>
+    loweringSources()
+      .filter((file) => !allowed.includes(file))
+      .flatMap((file) => linesOf(file).filter((line) => pattern.test(line)).map((line) => `${file}: ${line.trim()}`));
+  expect(at(/\bRangeSteps\(/, [owner])).toEqual([]);
+  expect(at(/\bstep_helper\(/, [owner, ...readBack])).toEqual([]);
+  expect(at(/\bfn helper_stepped\b/, [owner, "crates/rust-js-lower/src/shortcuts.rs"])).toEqual([]);
+  expect(/^pub struct RangeSteps\(RangeKind\);$/m.test(read(owner))).toBe(true);
+});
+
+// A range has two questions, each one answer (ADR 1206): what it is, its
+// shape, `range_kind`, which its bounds, `{:?}`, slicing, hashing and
+// whether a program's count is its asks; and whether the runtime's helpers
+// step it, `helper_stepped`, which only what steps a range, makes its steps
+// or holds its JS form asks. A range std's bodies step, `a..b` in the build
+// of std's meaning, is a range all the same: asked `helper_stepped`, a count
+// of one wasn't the program's, and a generic collect of `usize::MAX / 2`
+// of them took no room check (lengths.rs, S3). A new caller is named here,
+// with what it steps; a question of shape asks `range_kind`.
+test("whether the runtime's helpers step a range is asked where ranges are stepped alone", () => {
+  const steppers: Record<string, string> = {
+    "crates/rust-js-lower/src/recognition/types.rs": "its owner",
+    "crates/rust-js-lower/src/shortcuts.rs": "its shortcut for the lowering",
+    "crates/rust-js-lower/src/recognition/calls.rs": "a range's own steps, `next`, recognized",
+    "crates/rust-js-lower/src/std_types/range.rs": "a range's steps and its JS form",
+    "crates/rust-js-lower/src/std_types/vec.rs": "`len()` of a range the helpers step",
+    "crates/rust-js-lower/src/std_impls/clones.rs": "a clone of a range's JS form",
+    "crates/rust-js-lower/src/std_impls/defaults.rs": "a default made in a range's JS form",
+    "crates/rust-js-lower/src/serde/de.rs": "a range deserialized into its JS form",
+    "crates/rust-js-lower/src/traits/impls.rs": "a range's dictionary of `Iterator`",
+    "crates/rust-js-lower/src/combinators/adapters.rs": "an adapter over a stepped range",
+    "crates/rust-js-lower/src/iterators/dictionaries.rs": "a range's step dictionary",
+    "crates/rust-js-lower/src/iterators/knowing.rs": "what a stepped range knows",
+    "crates/rust-js-lower/src/iterators/stepping.rs": "stepping a range",
+    "crates/rust-js-lower/src/iterators/transparent.rs": "a range stepped as it is",
+    "crates/rust-js-lower/src/iterators/mir_steps/backs.rs": "a range stepped from its back",
+    "crates/rust-js-lower/src/iterators/mir_steps/collect.rs": "a collect of a stepped range",
+    "crates/rust-js-lower/src/iterators/mir_steps/sources.rs": "a stepped range as a source",
+    "crates/rust-js-mir/src/iter.rs": "a range's steps in MIR's lowering",
+    "crates/rust-js-mir/src/std_calls.rs": "a range made in its JS form",
+  };
+  const callers = loweringSources().filter((file) => /\bhelper_stepped\(/.test(read(file)));
+  expect(callers.filter((file) => !(file in steppers))).toEqual([]);
+  // And each named still asks it.
+  expect(Object.keys(steppers).filter((file) => !callers.includes(file))).toEqual([]);
+});
+
 test("an iterator value's readers are defined in value.rs alone", () => {
   const readers =
     /\bfn (closed_parts|stepped_form|stepped_value|unlent|is_lent|stepped_range|stepped_from|bounds_read|its_facts|gives_made_in_place)\b/;

@@ -493,8 +493,8 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's `for _ in w` over the crate's own generic iterator struct, a `Wrapper<I>` whose items are `I::Item`, isn't known to be its own iterator, so it's refused, \"calling `IntoIterator::into_iter`\" (#806)",
     file: "crates/rust-js-mir/src/iter.rs",
-    find: "        if self.range_kind(iter_ty).is_some() || self.recognition().iterates_as_itself(receiver_ty) {\n",
-    replace: "        if self.range_kind(iter_ty).is_some() || self.implements_iterator(receiver_ty) {\n",
+    find: "        if self.helper_stepped(iter_ty).is_some() || self.recognition().iterates_as_itself(receiver_ty) {\n",
+    replace: "        if self.helper_stepped(iter_ty).is_some() || self.implements_iterator(receiver_ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_for_over_own_iterator.rs$"],
   },
   {

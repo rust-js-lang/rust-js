@@ -387,4 +387,13 @@ export const mutations: Mutation[] = [
     replace: "        let ty = self.reveal(ty.peel_refs());\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_of_an_iterator_is_what_it_holds.rs$"],
   },
+  {
+    name: "range-count-helper-stepped-only",
+    breaks: "a range std's bodies step, in the build of std's meaning, isn't counted by the program, so a generic collect of it isn't given its items' size and checks no room, collecting `usize::MAX / 2` of them until the heap runs out (ADR 1206)",
+    file: "crates/rust-js-lower/src/recognition/lengths.rs",
+    find: "        if self.range_kind(ty).is_some() || is_repeat_n(self.tcx, ty) || self.endless_by_type(ty) {\n",
+    replace: "        if self.helper_stepped(ty).is_some() || is_repeat_n(self.tcx, ty) || self.endless_by_type(ty) {\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^collect_room_of_generic_items with std's iterator structs$"],
+    env: { ITERATOR_FORMS: "corpus" },
+  },
 ];

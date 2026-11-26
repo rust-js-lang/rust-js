@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Peekable` std's compiled `fold` took is dropped again by its fields after, `drop e` twice (ADR 0913)",
     file: "crates/rust-js-lower/src/drops/parts.rs",
-    find: "            || (crate::recognition::is_compiled_std_iterator(self.tcx, self.reveal(ty))\n                && !crate::recognition::is_held_compiled(self.tcx, self.reveal(ty)))",
+    find: "            || (crate::recognition::is_compiled_std_iterator(self.tcx, self.reveal(ty))\n                && !crate::recognition::is_held_compiled(self.tcx, self.reveal(ty))\n                && recognition.range_kind(self.reveal(ty).peel_refs()).is_none())",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
@@ -382,5 +382,14 @@ export const mutations: Mutation[] = [
     find: "                    true => self.spill(Role::Value, value, out),\n",
     replace: "                    true => value,\n",
     tests: ["test/oracle-c.test.ts", "-t", "a dyn field's drop reads its pair once"],
+  },
+  {
+    name: "range-dropped-by-closing",
+    breaks: "a range std's struct holds is dropped by closing, `r.return()`, not by its fields, so generic code's `Range<T>` of values with a destructor throws, or drops none of them (ADR 1206)",
+    file: "crates/rust-js-lower/src/drops/parts.rs",
+    find: "                && recognition.range_kind(self.reveal(ty).peel_refs()).is_none())\n",
+    replace: "                )\n",
+    tests: ["test/metamorphic.test.ts", "-t", "^range_steps_by_std_in_both_builds.rs, rewritten"],
+    env: { METAMORPHIC: "all", METAMORPHIC_REWRITES: "outline" },
   },
 ];

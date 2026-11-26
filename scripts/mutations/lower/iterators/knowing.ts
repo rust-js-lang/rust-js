@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's map whose closure has a destructor, a zip's `b` read by index, isn't read as knowing its length where it's made knowing it: refused as an `ExactSizeIterator` (#775)",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: "                || self.range_kind(source.peel_refs()).is_some()\n",
+    find: "                || self.helper_stepped(source.peel_refs()).is_some()\n",
     replace: "                || false\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_by_index_of_holding_maps.rs$"],
   },
@@ -254,8 +254,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Copied` of a slice's iterator, given as a `DoubleEndedIterator`, is refused",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: "            return self.as_double_ended(value, source, span);\n        }\n        if let Some(kind) = self.range_kind(ty)",
-    replace: "            return Ok(value);\n        }\n        if let Some(kind) = self.range_kind(ty)",
+    find: "            return self.as_double_ended(value, source, span);\n        }\n        if let Some(steps) = self.helper_stepped(ty)",
+    replace: "            return Ok(value);\n        }\n        if let Some(steps) = self.helper_stepped(ty)",
     tests: ["test/corpus.test.ts", "-t", "^associated_double_ended.rs$"],
   },
   {
@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`len()` of a `Peekable` of a range is refused, though the range knows how many it has left",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: "            || self.range_kind(ty).is_some()\n",
+    find: "            || self.helper_stepped(ty).is_some()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^peekable_range_len.rs$"],
   },
@@ -529,8 +529,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`size_hint()` of a generic `I::IntoIter` is refused, where a type parameter's is its JS value's",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: "            || self.is_unknown(ty)\n            || self.range_kind(ty).is_some()\n",
-    replace: "            || matches!(ty.kind(), ty::Param(_))\n            || self.range_kind(ty).is_some()\n",
+    find: "            || self.is_unknown(ty)\n            || self.helper_stepped(ty).is_some()\n",
+    replace: "            || matches!(ty.kind(), ty::Param(_))\n            || self.helper_stepped(ty).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_into_iter.rs$"],
   },
   {

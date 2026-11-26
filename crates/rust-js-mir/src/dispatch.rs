@@ -753,11 +753,10 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             // `StepBy::new`'s: the JS iterator it is here, where it's one
             // (ADR 0917).
             Value::Expr(made)
-                if rust_js_lower::recognition::makes_no_iterator(self.tcx, callee.0)
+                if rust_js_lower::recognition::makes_no_iterator(self.tcx, self.typing_env, callee.0, callee.1)
                     && rust_js_lower::recognition::std_struct_steps_in(self.tcx, self.typing_env, output) =>
             {
-                let steps = self.std_iterator_steps(output, span)?;
-                Value::Expr(Expr::call_helper("$stdIterator", vec![made, steps]))
+                Value::Expr(self.std_struct_held(made, output, span)?)
             }
             made => made,
         })

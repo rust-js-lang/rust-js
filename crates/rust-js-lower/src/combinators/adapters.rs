@@ -161,7 +161,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(items) = self.items_by_dictionary(value.clone(), inner, span)? {
             return Ok(Some(items));
         }
-        if self.range_kind(inner).is_some() || self.is_user_iterator(inner) {
+        if self.helper_stepped(inner).is_some() || self.is_user_iterator(inner) {
             return self.as_js_iterator(value, inner, span).map(Some);
         }
         if self.is_std_type(inner, crate::recognition::StdItem::Result) {

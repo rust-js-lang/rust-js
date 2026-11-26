@@ -342,6 +342,28 @@ test("a build of std's iterator structs makes no adapter in place", () => {
   expect(js).not.toContain(".map(");
 });
 
+// And of a range, `a..b` of integers, std's struct, stepped by std's own
+// compiled bodies and `Step`, never by the runtime's helpers beside them
+// (ADR 1206), or the cases above check the helpers again.
+test("a build of std's iterator structs steps a range by std's bodies", () => {
+  const dir = fixture("forms-range");
+  const file = join(dir, "main.rs");
+  writeFileSync(
+    file,
+    `fn main() {
+    let mut r = 2..7u32;
+    println!("{:?} {:?} {:?}", r.next(), r.next_back(), r.len());
+}
+`,
+  );
+  const compiled = compileJs(file, dir, "2024", "binary", {}, ["--std-iterators"]);
+  if (!("js" in compiled)) throw new Error(compiled.error);
+  const js = readFileSync(compiled.js, "utf8");
+  expect(js).toContain("rangeIterator_next(iterator, u32Step, true)");
+  expect(js).toContain("rangeDoubleEndedIterator_nextBack(r, u32Step, true)");
+  expect(js).not.toMatch(/\$rangeNext|\$rangeLen/);
+});
+
 // A `take(n).rev()` of a `Vec` of destructors, which the build that
 // rewrites adapters refuses (a `Take` it can't step from its back), so no
 // corpus case has it: what it passes drops as std's `Take::rfold` drops it,

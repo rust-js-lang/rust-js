@@ -17,8 +17,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // never the recognizers' JS chain: closed once, which drops what
             // it holds, not again after std's compiled `fold` took it (ADR
             // 0913).
+            // But a range, which holds no source: it has no `Drop`, so its
+            // drop is its fields', whichever holds it (ADR 1206).
             || (crate::recognition::is_compiled_std_iterator(self.tcx, self.reveal(ty))
-                && !crate::recognition::is_held_compiled(self.tcx, self.reveal(ty)))
+                && !crate::recognition::is_held_compiled(self.tcx, self.reveal(ty))
+                && recognition.range_kind(self.reveal(ty).peel_refs()).is_none())
     }
 
     /// Whether closing an iterator of type `ty`, `it.return()`, may throw:

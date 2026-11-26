@@ -34,7 +34,7 @@ pub enum Why {
     JsOwn,
     /// a std method whose body reaches memory, which std's build can't compile (docs/std-coverage.txt): its ADR beside it
     Memory,
-    /// a range's `Iterator`, `Step`'s, which std's build doesn't compile: its literal panics, its specialized traits, its bound's comparisons, each integer's `Step` and a range's every form would need it (#1589)
+    /// a range's `Iterator` std's build doesn't compile yet: an `a..`'s, next (ADR 1206's S4), and an `a..=b`'s, whose `exhausted` field rust-js's range doesn't hold (#1589)
     Ranges,
     /// a method of `Vec`, `VecDeque`, a slice, `String`, `BinaryHeap` or a map or a set, whose body std's build doesn't compile: it compiles std's iterator structs alone
     Collections,
@@ -83,7 +83,7 @@ impl Why {
                 "a std method whose body reaches memory, which std's build can't compile (docs/std-coverage.txt): its ADR beside it"
             }
             Why::Ranges => {
-                "a range's `Iterator`, `Step`'s, which std's build doesn't compile: its literal panics, its specialized traits, its bound's comparisons, each integer's `Step` and a range's every form would need it (#1589)"
+                "a range's `Iterator` std's build doesn't compile yet: an `a..`'s, next (ADR 1206's S4), and an `a..=b`'s, whose `exhausted` field rust-js's range doesn't hold (#1589)"
             }
             Why::Collections => {
                 "a method of `Vec`, `VecDeque`, a slice, `String`, `BinaryHeap` or a map or a set, whose body std's build doesn't compile: it compiles std's iterator structs alone"
@@ -271,9 +271,9 @@ pub const MODELS: &[Entry] = &[
     entry("getOrInit", Model(Unproven(Why::Outside), &[Row(StdRow::OnceCellReentrant)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("given", Glue, ""),
     entry("givenDrop", Glue, ""),
-    entry("grew", Model(Unproven(Why::Collections), &[]), ""),
+    entry("grew", Model(Pitted, &[]), ""),
     entry("grownBy", Model(Unproven(Why::Collections), &[Row(StdRow::CapacityOverflow), Row(StdRow::VecDequeExtendTrusted), Row(StdRow::VecDequeReserve), Row(StdRow::VecExtendTrusted)]), ""),
-    entry("grownVec", Model(Unproven(Why::Collections), &[]), ""),
+    entry("grownVec", Model(Pitted, &[]), ""),
     entry("guardFilterMap", Model(Unproven(Why::Cells), &[]), ""),
     entry("guardMap", Model(Unproven(Why::Cells), &[]), ""),
     entry("guardMapSplit", Model(Unproven(Why::Cells), &[]), ""),
@@ -306,7 +306,7 @@ pub const MODELS: &[Entry] = &[
     entry("iterator", Model(Pitted, &[]), ""),
     entry("jsIterator", Model(Unproven(Why::JsOwn), &[]), "ADR 1136, amended: the dictionary of any JS iterator generic code is given, its steps `$next`'s"),
     entry("jsIteratorSome", Model(Unproven(Why::JsOwn), &[]), "ADRs 1136, 0051: the same of items that may look like `None`, boxed"),
-    entry("keepCapacity", Model(Unproven(Why::Collections), &[]), ""),
+    entry("keepCapacity", Model(Pitted, &[]), ""),
     entry("knowing", Model(Pitted, &[]), ""),
     entry("last", Model(Unproven(Why::Consumers), &[]), ""),
     entry("lastDropping", Model(Unproven(Why::Consumers), &[]), ""),
@@ -355,7 +355,7 @@ pub const MODELS: &[Entry] = &[
     entry("nextMultipleOf", Model(Unproven(Why::Outside), &[Row(StdRow::NextMultipleOf)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("nextSome", Model(Unproven(Why::JsOwn), &[]), "ADRs 0140, 0051: the step of any JS iterator, its item boxed where it may look like `None`"),
     entry("nth", Model(Unproven(Why::Consumers), &[]), ""),
-    entry("nthBack", Model(Unproven(Why::Consumers), &[]), ""),
+    entry("nthBack", Model(Pitted, &[]), ""),
     entry("nthDropping", Model(Unproven(Why::Consumers), &[]), ""),
     entry("optionCloned", Form(&[Path("core::option::Option::cloned")]), "the lowering's, std_types/option.rs: `map(T::clone)`"),
     entry("orInsert", Model(Unproven(Why::Collections), &[]), ""),
@@ -389,16 +389,16 @@ pub const MODELS: &[Entry] = &[
     entry("pushFrontMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("pushMut", Model(Unproven(Why::Collections), &[]), ""),
     entry("range", Model(Pitted, &[Path("core::ops::Range"), Row(StdRow::VecFromTrustedLen)]), ""),
-    entry("rangeCountOut", Model(Unproven(Why::Ranges), &[]), ""),
-    entry("rangeFirst", Model(Unproven(Why::Ranges), &[]), ""),
+    entry("rangeCountOut", Model(Pitted, &[]), ""),
+    entry("rangeFirst", Model(Pitted, &[]), ""),
     entry("rangeFromNext", Model(Unproven(Why::Ranges), &[Row(StdRow::StepForward)]), "its rows of `$stdSites`, std's sites of its function's panics"),
-    entry("rangeLast", Model(Unproven(Why::Ranges), &[]), ""),
-    entry("rangeLastOut", Model(Unproven(Why::Ranges), &[]), ""),
+    entry("rangeLast", Model(Pitted, &[]), ""),
+    entry("rangeLastOut", Model(Pitted, &[]), ""),
     entry("rangeLen", Model(Pitted, &[Path("core::ops::Range")]), ""),
-    entry("rangeNext", Model(Unproven(Why::Ranges), &[Path("core::ops::Range")]), ""),
+    entry("rangeNext", Model(Pitted, &[Path("core::ops::Range")]), ""),
     entry("rangeNextBack", Model(Pitted, &[Path("core::ops::Range")]), ""),
-    entry("rangeNth", Model(Unproven(Why::Ranges), &[Path("core::ops::Range")]), ""),
-    entry("rangeNthBack", Model(Unproven(Why::Ranges), &[Path("core::ops::Range")]), ""),
+    entry("rangeNth", Model(Pitted, &[Path("core::ops::Range")]), "pitted against std's `next`, the default `nth` over it, not std's own `nth`, which never runs (#2604)"),
+    entry("rangeNthBack", Model(Pitted, &[Path("core::ops::Range")]), "pitted against std's `next_back`, the default `nth_back` over it, not std's own `nth_back`, which never runs (#2604)"),
     entry("rcClone", Glue, ""),
     entry("rcDrop", Glue, ""),
     entry("rcFromTrustedLen", Form(&[Row(StdRow::RcFromTrustedLen)]), "the lowering's, iterators/mir_steps/collect.rs"),
@@ -420,7 +420,7 @@ pub const MODELS: &[Entry] = &[
     entry("repeatingN", Model(Pitted, &[Path("core::iter::RepeatN"), Row(StdRow::ClonedAt)]), "each step's clone at its row of `clonedAt`"),
     entry("replaceRange", Model(Unproven(Why::Collections), &[]), ""),
     entry("replaceWith", Model(Unproven(Why::Collections), &[]), ""),
-    entry("reserve", Model(Unproven(Why::Collections), &[]), ""),
+    entry("reserve", Model(Pitted, &[]), ""),
     entry("reserveHint", Model(Unproven(Why::Collections), &[]), ""),
     entry("resize", Model(Unproven(Why::Collections), &[Path("alloc::vec::Vec::resize"), Path("alloc::collections::vec_deque::VecDeque::resize")]), ""),
     entry("resizeWith", Model(Unproven(Why::Collections), &[]), ""),

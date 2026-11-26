@@ -32,9 +32,9 @@ pub(super) fn body_aggregates<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec
         // `StepBy::new`'s, which this body makes one (ADR 0917).
         if let Some(terminator) = &data.terminator
             && let rustc_middle::mir::TerminatorKind::Call { func, destination, .. } = &terminator.kind
-            && func
-                .const_fn_def()
-                .is_some_and(|(callee, _)| crate::recognition::makes_no_iterator(tcx, callee))
+            && func.const_fn_def().is_some_and(|(callee, args)| {
+                crate::recognition::makes_no_iterator(tcx, mir.body.typing_env(tcx), callee, args)
+            })
         {
             made.push(destination.ty(&mir.body.local_decls, tcx).ty);
         }

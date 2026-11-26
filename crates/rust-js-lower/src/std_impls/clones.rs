@@ -692,7 +692,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Ok(Expr::object(vec![Prop::Spread(place)]))
             }
-            ty::Adt(_, args) if let Some(kind) = self.range_kind(ty) => {
+            // A range std's struct holds in this build is std's `Clone`'s,
+            // compiled, as any of those is (ADR 1206).
+            ty::Adt(_, args) if let Some(kind) = self.helper_stepped(ty).map(|steps| steps.kind()) => {
                 let props = kind
                     .bounds()
                     .iter()

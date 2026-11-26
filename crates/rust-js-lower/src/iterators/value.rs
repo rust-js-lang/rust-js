@@ -940,7 +940,7 @@ pub fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
             } else {
                 RangeKind::Exclusive
             };
-            kind.step(back) == Some(next)
+            crate::std_types::range::step_helper(kind, back) == Some(next)
         })?;
     ((s.as_str(), f.as_str()) == ("start", "end")).then_some(SteppedRange {
         range,

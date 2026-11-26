@@ -217,4 +217,13 @@ export const mutations: Mutation[] = [
     replace: "                        Ok(part)\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
   },
+  {
+    name: "range-default-unheld",
+    breaks: "`Default` of a range the build of std's meaning holds as std's struct makes a plain `{ start, end }`, which std's compiled steps can't step, so `d.clone().next()` throws (ADR 1206)",
+    file: "crates/rust-js-lower/src/std_impls/defaults.rs",
+    find: "            && self.helper_stepped(ty).is_none()\n",
+    replace: "            && false\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^range_defaults with std's iterator structs$"],
+    env: { ITERATOR_FORMS: "corpus" },
+  },
 ];

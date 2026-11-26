@@ -431,4 +431,12 @@ export const mutations: Mutation[] = [
     replace: "    tcx.get_diagnostic_item(rustc_span::Symbol::intern(\"ExactSizeIterator\"))\n",
     tests: ["test/oracle-b.test.ts", "-t", "the records say an iterator's methods"],
   },
+  {
+    name: "expect-failed-unrecognized",
+    breaks: "`Option::expect`'s private `expect_failed(msg)` isn't recognized as the panic it is, so std's build of a range's compiled `count` has no module for it (ADR 1206)",
+    file: "crates/rust-js-lower/src/recognition/std_items.rs",
+    find: "        && tcx.item_name(def_id).as_str() == \"expect_failed\"\n",
+    replace: "        && tcx.item_name(def_id).as_str() == \"expect_failed_\"\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

@@ -61,6 +61,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition().range_kind(ty)
     }
 
+    // helper: recognition's answer, shortened; one form per answer is #2172's
+    pub fn helper_stepped(&self, ty: Ty<'tcx>) -> Option<crate::recognition::RangeSteps> {
+        self.recognition().helper_stepped(ty)
+    }
+
     pub fn display_trait(&self) -> DefId {
         self.recognition().display_trait()
     }

@@ -10,7 +10,9 @@ use crate::temporary_names::Role;
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`'s reversal, a `rev()` made in place of `source` (ADR 0987).
     pub(crate) fn reversal_of<'e>(&self, value: &'e Expr, source: ty::Ty<'tcx>) -> Option<Reversal<'e>> {
-        let range_back = self.range_kind(source.peel_refs()).and_then(|kind| kind.step(true));
+        let range_back = self
+            .helper_stepped(source.peel_refs())
+            .and_then(|steps| steps.step(true));
         crate::iterators::reversal(value, range_back)
     }
 
@@ -97,7 +99,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.array_source(ty).is_some()
             || self.recognition().iterates_items(ty)
             || self.is_unknown(ty)
-            || self.range_kind(ty).is_some()
+            || self.helper_stepped(ty).is_some()
             || self.is_user_iterator(ty)
             || self.struct_hint_known(ty)
             || crate::recognition::source_hint_kept(self.tcx, ty)
@@ -380,7 +382,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // that a variable holds for an enumeration counted from its
                 // back (#1354): made knowing its length where it's made,
                 // `$rangeLen` (#775).
-                || self.range_kind(source.peel_refs()).is_some()
+                || self.helper_stepped(source.peel_refs()).is_some()
                     && self.stepped_from_its_back(ty)
                     && crate::recognition::mapped_source(self.tcx, ty).is_some()
                     && (matches!(ty.kind(), ty::Adt(_, args) if self.drops(args.type_at(1)) != crate::drops::Drops::Nothing)
@@ -594,13 +596,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A range's, `$rangeLen` of `a..b`, `$rangeInclusiveLen` of `a..=b`,
         // which std counts of small numbers alone.
-        let len = match self.range_kind(ty) {
+        let steps = self.helper_stepped(ty);
+        let len = match steps.map(|steps| steps.kind()) {
             Some(crate::std_types::range::RangeKind::Exclusive) => Some("$rangeLen"),
             Some(crate::std_types::range::RangeKind::Inclusive) => Some("$rangeInclusiveLen"),
             _ => None,
         };
-        if let (Some(kind), Some(len)) = (self.range_kind(ty), len)
-            && let (Some(next), Some(from_back)) = (kind.step(false), kind.step(true))
+        if let (Some(steps), Some(len)) = (steps, len)
+            && let (Some(next), Some(from_back)) = (steps.step(false), steps.step(true))
         {
             // Of one stepped from its start already, an `enumerate()`'s
             // source's, the range it steps (#385).
@@ -958,8 +961,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return self.as_double_ended(value, source, span);
         }
-        if let Some(kind) = self.range_kind(ty)
-            && let (Some(next), Some(back)) = (kind.step(false), kind.step(true))
+        if let Some(steps) = self.helper_stepped(ty)
+            && let (Some(next), Some(back)) = (steps.step(false), steps.step(true))
         {
             return Ok(stepped(value, Expr::helper(next), false, Some(Expr::helper(back))));
         }

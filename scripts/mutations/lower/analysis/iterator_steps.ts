@@ -288,9 +288,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`step_by` isn't given its `Self`'s dictionary for the `StepBy` it makes an iterator of, so it's refused (ADR 0917)",
     file: "crates/rust-js-lower/src/analysis/iterator_steps.rs",
-    find: "                .is_some_and(|(callee, _)| crate::recognition::makes_no_iterator(tcx, callee))\n",
-    replace:
-      "                .is_some_and(|(callee, _)| false && crate::recognition::makes_no_iterator(tcx, callee))\n",
+    find: "                crate::recognition::makes_no_iterator(tcx, mir.body.typing_env(tcx), callee, args)\n",
+    replace: "                false && crate::recognition::makes_no_iterator(tcx, mir.body.typing_env(tcx), callee, args)\n",
     tests: [
       "test/std-package.test.ts",
       "-t",

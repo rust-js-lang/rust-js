@@ -211,3 +211,121 @@ pub(super) fn resolve(tcx: TyCtxt<'_>) -> Rows {
         tuples,
     }
 }
+
+/// The traits whose derives a program calls of std's struct: `{:?}` is
+/// shown by its own path (`shown_private`, `debug_shown`), and `Copy` and
+/// `Eq` write no step.
+const DERIVED: &[&str] = &["Clone", "PartialEq", "PartialOrd", "Ord", "Hash", "Default"];
+
+/// Derived methods of a compiled struct no row names, and why: a program
+/// can't call them, as rust-js refuses it.
+const DERIVES_LEFT_OUT: &[(StdPath, &str, &str, &str)] = &[
+    // Comparing `std::net` addresses is refused (`refusal.rs`'s of a
+    // comparison): `Ipv4Addr`'s and `Ipv6Addr`'s own `Ord`s, which these
+    // derives call, aren't compiled.
+    (
+        StdPath::NetSocketAddrV4,
+        "PartialOrd",
+        "partial_cmp",
+        "comparing net addresses is refused",
+    ),
+    (
+        StdPath::NetSocketAddrV4,
+        "Ord",
+        "cmp",
+        "comparing net addresses is refused",
+    ),
+    (
+        StdPath::NetSocketAddrV6,
+        "PartialOrd",
+        "partial_cmp",
+        "comparing net addresses is refused",
+    ),
+    (
+        StdPath::NetSocketAddrV6,
+        "Ord",
+        "cmp",
+        "comparing net addresses is refused",
+    ),
+    (
+        StdPath::NetIpAddr,
+        "PartialOrd",
+        "partial_cmp",
+        "comparing net addresses is refused",
+    ),
+    (StdPath::NetIpAddr, "Ord", "cmp", "comparing net addresses is refused"),
+    (
+        StdPath::NetSocketAddr,
+        "PartialOrd",
+        "partial_cmp",
+        "comparing net addresses is refused",
+    ),
+    (
+        StdPath::NetSocketAddr,
+        "Ord",
+        "cmp",
+        "comparing net addresses is refused",
+    ),
+];
+
+/// Each derived method std writes of a struct the catalog compiles that no
+/// row names, as `Range::eq` was before its row (ADR 1206): `bun run std`
+/// refuses to keep a catalogue while one is missing (`stored.rs`), so a
+/// struct held as std's struct is never compared, hashed, ordered or made
+/// by a body that isn't std's, but where `DERIVES_LEFT_OUT` says why, each
+/// of which std derives. Each is `Type::Trait::method`.
+pub(super) fn derives_unnamed(tcx: TyCtxt<'_>) -> Vec<String> {
+    let rows = (COMPILED_STD.iter()).chain(COMPILED_STD_IO).chain(COMPILED_STD_NET);
+    let mut structs: Vec<StdPath> = Vec::new();
+    for &(of, ..) in rows.clone() {
+        if let Of::Struct(item) = of
+            && !structs.contains(&item)
+        {
+            structs.push(item);
+        }
+    }
+    let mut unnamed = Vec::new();
+    let mut seen_left_out = Vec::new();
+    for item in structs {
+        let Some(adt) = std_path_id(tcx, item) else { continue };
+        for &trait_name in DERIVED {
+            let Some(trait_def) = std_iter_trait(tcx, trait_name) else {
+                continue;
+            };
+            let derived = impls_for(tcx, trait_def, adt)
+                .into_iter()
+                .filter(|&imp| tcx.is_automatically_derived(imp));
+            for imp in derived {
+                for method in (tcx.associated_items(imp).in_definition_order())
+                    .filter(|assoc| matches!(assoc.kind, ty::AssocKind::Fn { .. }))
+                {
+                    let name = method.name();
+                    let named = (rows.clone()).any(|&(of, of_trait, row)| {
+                        of == Of::Struct(item) && of_trait == Some(trait_name) && row == name.as_str()
+                    });
+                    let left_out = (DERIVES_LEFT_OUT.iter())
+                        .any(|&(of, of_trait, left, _)| of == item && of_trait == trait_name && left == name.as_str());
+                    let path = format!("{item:?}::{trait_name}::{name}");
+                    if named == left_out {
+                        // Named and left out both, the entry's stale.
+                        unnamed.push(if named {
+                            format!("{path} (left out, but named)")
+                        } else {
+                            path
+                        });
+                    } else if left_out {
+                        seen_left_out.push(path);
+                    }
+                }
+            }
+        }
+    }
+    // And each left out is one std derives.
+    for &(of, of_trait, left, _) in DERIVES_LEFT_OUT {
+        let path = format!("{of:?}::{of_trait}::{left}");
+        if !seen_left_out.contains(&path) {
+            unnamed.push(format!("{path} (left out, but std derives no such method)"));
+        }
+    }
+    unnamed
+}

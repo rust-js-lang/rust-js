@@ -1189,8 +1189,9 @@ What's refused is in [the limitations](limitations.md).
   `src_cap * src_size / dst_size`, `$inPlaceCapacity(w, v, 8, 4)` of a
   `v.into_iter()` chain of the body's variable `v`, or of the `Vec` generic
   code's iterator steps, its caller's `IVecCollect`, `{ inPlace: 8 }`, the
-  source's items' size (#1259), or, with `--std-iterators`, of the `Vec`
-  an `impl Iterator` function's chain steps, by std's structs' links,
+  source's items' size (#1259), or, in the differential build rust-js
+  tests itself with, which compiles std's own iterator structs (ADR 0908),
+  of the `Vec` an `impl Iterator` function's chain steps, by their links,
   `$inPlaceCapacityFrom` (#1428); `reserve(n)` as std's does, `reserve_exact(n)` as many as it
   needs; items of no size `usize::MAX`. Of a type parameter's items, by
   its caller's `TSize`; of an associated type's, `I::Item`'s, or a type's

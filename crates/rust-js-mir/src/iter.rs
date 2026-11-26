@@ -838,7 +838,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         };
         let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
         if std_method == Some(IterMethod::NextBack)
-            && self.range_kind(iter_ty).is_none()
+            && self.helper_stepped(iter_ty).is_none()
             && let Some(back) = self.next_back_made_here(it.clone(), iter_ty, boxed, span, made)?
         {
             return Ok(Some(back));
@@ -846,7 +846,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         let back = self.has_a_back(iter_ty, &it) || std_method == Some(IterMethod::NextBack) && knows_back(&it);
         // `len(&self)` of a `Self` that's a `&mut`.
         let lends_self = matches!(receiver_ty.kind(), ty::Ref(_, through, _) if through.is_mutable_ptr());
-        Ok(Some(match (std_method, self.range_kind(iter_ty)) {
+        Ok(Some(match (std_method, self.helper_stepped(iter_ty)) {
             (Some(IterMethod::NextBack), Some(kind)) if let Some(step) = kind.step(true) => {
                 Expr::call_helper(step, vec![it])
             }
@@ -930,7 +930,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         // finds it (ADR 0170); a range's is its bounds' (`RangeOp::SizeHint`).
         if std_method == Some(IterMethod::SizeHint)
             && !self.is_user_iterator(iter_ty)
-            && self.range_kind(iter_ty.peel_refs()).is_none()
+            && self.helper_stepped(iter_ty.peel_refs()).is_none()
         {
             let receiver = values.into_iter().next().expect("the receiver");
             return self.size_hint_of(receiver, iter_ty, span, made).map(Some);
@@ -949,7 +949,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         // `next(&mut it)`: a range's start moved, or the JS iterator stepped.
         if std_method == Some(IterMethod::Next) {
             let item = self.option_of(output).expect("`next` gives an `Option`");
-            return Ok(Some(match self.range_kind(iter_ty) {
+            return Ok(Some(match self.helper_stepped(iter_ty) {
                 Some(_) => match self.range_next(iter_ty, false, receiver) {
                     Some(next) => next,
                     None => return Ok(None),
@@ -1161,7 +1161,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         if self.recognition().is_given_iterable(receiver_ty) {
             return Some(rust_js_lower::iterators::given_into_iter(value));
         }
-        if self.range_kind(iter_ty).is_some() || self.recognition().iterates_as_itself(receiver_ty) {
+        if self.helper_stepped(iter_ty).is_some() || self.recognition().iterates_as_itself(receiver_ty) {
             return Some(value);
         }
         let handles = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut))

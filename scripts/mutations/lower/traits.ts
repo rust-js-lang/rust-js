@@ -446,4 +446,12 @@ export const mutations: Mutation[] = [
     replace: "        && super::iterators::projection_as_it_is(tcx, id, tr.self_ty())\n        && false\n",
     tests: ["test/corpus.test.ts", "-t", "^items_stepped_through_their_bound\\.rs$"],
   },
+  {
+    name: "trusted-step-implies-no-step",
+    breaks: "a `T: TrustedStep` bound isn't given as the `T: Step` it implies, so `RangeIteratorImpl`'s specialized body has no `Step` and std's build refuses it (ADR 1206)",
+    file: "crates/rust-js-lower/src/traits.rs",
+    find: "        } else if super::recognition::fact_trait(tcx, super::recognition::TypeFact::TrustedStep) == Some(tr.def_id) {\n",
+    replace: "        } else if super::recognition::fact_trait(tcx, super::recognition::TypeFact::TrustedStep) == None {\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

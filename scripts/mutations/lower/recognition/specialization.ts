@@ -250,4 +250,12 @@ export const mutations: Mutation[] = [
     replace: "        Some(trusted) => trait_holds_in(tcx, typing_env, ty, trusted).map(|_| false),\n",
     tests: ["test/corpus.test.ts", "-t", "^(trait_default_flat_map_of_arrays_collects_trusted|vec_capacity_grown)\\.rs$"],
   },
+  {
+    name: "range-iterator-impl-unspecialized",
+    breaks: "`RangeIteratorImpl` isn't known to be specialized on `TrustedStep`, so no fact picks its impl and std's build refuses a range's `spec_next` (ADR 1206)",
+    file: "crates/rust-js-lower/src/recognition/specialization.rs",
+    find: "        (\"RangeIteratorImpl\", TypeFact::TrustedStep),\n",
+    replace: "",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

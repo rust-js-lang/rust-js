@@ -187,20 +187,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         .ok()
     }
 
+    /// Of a range of type `ty`, whether the recognizers step it, by the
+    /// runtime's helpers, `$rangeNext`: `range_kind`'s range, but one this
+    /// build holds as std's struct (`is_compiled_std_type`), `a..b` in the
+    /// build of std's meaning, whose steps are std's compiled bodies (ADR
+    /// 1206). The one answer of whether a range is stepped by the helpers;
+    /// `range_kind` says what a range is, its shape.
+    pub(crate) fn helper_stepped(&self, ty: Ty<'tcx>) -> Option<RangeSteps> {
+        let kind = self.range_kind(ty)?;
+        (!super::is_compiled_std_type(self.tcx, ty)).then_some(RangeSteps(kind))
+    }
+
     /// Which of std's ranges `ty` is, if it's one (ADR 0129).
     pub(crate) fn range_kind(&self, ty: Ty<'tcx>) -> Option<RangeKind> {
-        let ty::Adt(adt, _) = ty.kind() else { return None };
-        [
-            (LangItem::Range, RangeKind::Exclusive),
-            (LangItem::RangeInclusiveStruct, RangeKind::Inclusive),
-            (LangItem::RangeFrom, RangeKind::From),
-            (LangItem::RangeTo, RangeKind::To),
-            (LangItem::RangeToInclusive, RangeKind::ToInclusive),
-            (LangItem::RangeFull, RangeKind::Full),
-        ]
-        .into_iter()
-        .find(|&(item, _)| self.tcx.is_lang_item(adt.did(), item))
-        .map(|(_, kind)| kind)
+        range_kind_of(self.tcx, ty)
     }
 
     /// Is `ty` std's `item`?
@@ -1234,4 +1234,45 @@ pub(crate) fn is_map_type(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
         .into_iter()
         .any(std)
         || super::json::json_type_of(tcx, ty) == Some(super::Json::Map)
+}
+
+/// A range the recognizers step, `helper_stepped`'s answer, which alone
+/// makes one: its kind, and its steps, the runtime's helpers (ADR 1206).
+/// A range this build holds as std's struct has none: its steps are std's
+/// compiled bodies.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct RangeSteps(RangeKind);
+
+impl RangeSteps {
+    /// Which of std's ranges it is.
+    // helper: an accessor of `helper_stepped`'s answer, which the range row names
+    pub fn kind(self) -> RangeKind {
+        self.0
+    }
+
+    /// The helper that steps it from its start, or, `back`, its end,
+    /// `$rangeNext`, `$rangeInclusiveNextBack`: `step_helper`'s. `None` of
+    /// one JS doesn't step, or an `a..` from its end.
+    // helper: `step_helper`'s table asked of `helper_stepped`'s answer
+    pub fn step(self, back: bool) -> Option<&'static str> {
+        crate::std_types::range::step_helper(self.0, back)
+    }
+}
+
+/// Which of std's ranges `ty` is, if it's one (ADR 0129): `range_kind`'s
+/// table, asked of a type alone where no `Recognition` is, what `{:?}`
+/// shows (`note_debug_shown`).
+pub(crate) fn range_kind_of(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<RangeKind> {
+    let ty::Adt(adt, _) = ty.kind() else { return None };
+    [
+        (LangItem::Range, RangeKind::Exclusive),
+        (LangItem::RangeInclusiveStruct, RangeKind::Inclusive),
+        (LangItem::RangeFrom, RangeKind::From),
+        (LangItem::RangeTo, RangeKind::To),
+        (LangItem::RangeToInclusive, RangeKind::ToInclusive),
+        (LangItem::RangeFull, RangeKind::Full),
+    ]
+    .into_iter()
+    .find(|&(item, _)| tcx.is_lang_item(adt.did(), item))
+    .map(|(_, kind)| kind)
 }

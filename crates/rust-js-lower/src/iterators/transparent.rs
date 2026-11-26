@@ -295,7 +295,7 @@ fn is_plain_source<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> b
     matches!(ty.kind(), ty::Array(..) | ty::Slice(_))
         || recognition.is_std_type(ty, StdItem::Vec)
         || recognition.is_string_like(ty)
-        || recognition.range_kind(ty).is_some()
+        || recognition.helper_stepped(ty).is_some()
 }
 
 /// Whether `e` is a binding's call that gives a boxed `dyn Iterator`, JS's

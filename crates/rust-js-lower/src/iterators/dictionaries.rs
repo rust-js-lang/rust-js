@@ -144,8 +144,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .boxed_ty()
             .filter(|&inner| crate::recognition::is_compiled_std_iterator(self.tcx, inner));
         let double_ended = crate::recognition::is_double_ended(self.tcx, trait_id);
-        let entry = match (double_ended, self.range_kind(ty)) {
-            (true, Some(kind)) => kind.step(true).map(Expr::helper),
+        let steps = self.helper_stepped(ty);
+        let entry = match (double_ended, steps.map(|steps| steps.kind())) {
+            (true, Some(_)) => steps.and_then(|steps| steps.step(true)).map(Expr::helper),
             (false, Some(RangeKind::Exclusive)) => Some(Expr::helper("$rangeLen")),
             // `a..=b`'s, which rustc gives only 8- and 16-bit numbers, JS's
             // own numbers (ADR 0918).
@@ -250,7 +251,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // of items that may look like `None` (ADR 0051).
             let reaches_own = || (self.recognition()).reaches_its_own(ty, OwnStep::NthBack, Reach::Sure);
             let boxed_items = || self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
-            let nth_back = match (self.is_user_iterator(ty), self.range_kind(ty)) {
+            let nth_back = match (
+                self.is_user_iterator(ty),
+                self.helper_stepped(ty).map(|steps| steps.kind()),
+            ) {
                 (true, _) => self.own_methods(ty, false, span)?.nth_back,
                 (false, Some(RangeKind::Exclusive)) if numbers => Some(Expr::helper("$rangeNthBack")),
                 (false, Some(RangeKind::Inclusive)) if numbers => Some(Expr::helper("$rangeInclusiveNthBack")),
@@ -291,7 +295,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// both it holds as it's closed.
     pub fn cycled(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let made_iterator = self.unspelled("iterator");
-        let (next, boxed) = match self.range_kind(ty) {
+        let (next, boxed) = match self.helper_stepped(ty) {
             Some(_) => match self.range_stepper(ty, false) {
                 Some(step) => (step, false),
                 None => return Err(self.unsupported(span, &format!("`cycle()` of a `{ty}`"))),
@@ -359,7 +363,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// impl's, a JS iterator's `$next`, each giving the `Option` generic code
     /// reads, a `Some` that looks like `None` boxed (ADR 0051).
     pub(crate) fn iterator_dictionary(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
-        let next = match self.range_kind(ty) {
+        let next = match self.helper_stepped(ty) {
             Some(_) => match self.range_stepper(ty, false) {
                 Some(step) => step,
                 None => return Err(self.unsupported(span, &format!("the `Iterator` of a `{ty}`"))),
@@ -510,7 +514,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => None,
             });
         }
-        Ok((self.range_kind(ty).is_some() || self.steps_an_array(ty)).then_some(None))
+        Ok((self.helper_stepped(ty).is_some() || self.steps_an_array(ty)).then_some(None))
     }
 
     /// The `Iterator` dictionary of a `&mut I`, of `I`'s, `of`: what std's

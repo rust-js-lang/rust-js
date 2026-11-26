@@ -150,8 +150,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`(1..4).rev()` and `range.next_back()` step the range from its start",
     file: "crates/rust-js-lower/src/std_types/range.rs",
-    find: '            (RangeKind::Exclusive, true) => "$rangeNextBack",\n',
-    replace: '            (RangeKind::Exclusive, true) => "$rangeNext",\n',
+    find: '        (RangeKind::Exclusive, true) => "$rangeNextBack",\n',
+    replace: '        (RangeKind::Exclusive, true) => "$rangeNext",\n',
     tests: ["test/corpus.test.ts", "-t", "iterator_back_ends"],
   },
   {
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`(250..=255u8).rev()` and an inclusive range's `next_back()` are refused",
     file: "crates/rust-js-lower/src/std_types/range.rs",
-    find: '            (RangeKind::Inclusive, true) => "$rangeInclusiveNextBack",\n',
+    find: '        (RangeKind::Inclusive, true) => "$rangeInclusiveNextBack",\n',
     replace: "",
     tests: [
       "test/corpus.test.ts",
@@ -374,9 +374,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `collect()` of a lent inclusive range, or a `map` of one, steps it by `next`, past its end, `4..=3`, where std's `fold` leaves it exhausted at its last (#414)",
     file: "crates/rust-js-lower/src/std_types/range.rs",
-    find: "                    if self.range_kind(*inner) == Some(RangeKind::Inclusive))\n",
+    find: "                    if self.helper_stepped(*inner).map(|steps| steps.kind()) == Some(RangeKind::Inclusive))\n",
     replace:
-      "                    if false && self.range_kind(*inner) == Some(RangeKind::Inclusive))\n",
+      "                    if false && self.helper_stepped(*inner).map(|steps| steps.kind()) == Some(RangeKind::Inclusive))\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_exhausted.rs$"],
   },
   {

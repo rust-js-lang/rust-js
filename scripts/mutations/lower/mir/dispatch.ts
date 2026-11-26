@@ -573,9 +573,9 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `StepBy` `StepBy::new` made where it's no iterator stays a plain struct in `step_by`, which then can't be stepped (ADR 0917)",
     file: "crates/rust-js-mir/src/dispatch.rs",
-    find: "                if rust_js_lower::recognition::makes_no_iterator(self.tcx, callee.0)\n",
+    find: "                if rust_js_lower::recognition::makes_no_iterator(self.tcx, self.typing_env, callee.0, callee.1)\n",
     replace:
-      "                if false && rust_js_lower::recognition::makes_no_iterator(self.tcx, callee.0)\n",
+      "                if false && rust_js_lower::recognition::makes_no_iterator(self.tcx, self.typing_env, callee.0, callee.1)\n",
     tests: [
       "test/std-package.test.ts",
       "-t",
@@ -832,4 +832,5 @@ export const mutations: Mutation[] = [
     replace: "        let outer = self.calling.replace(None);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_resize_of_a_borrowed_refcell_names_std_line\\.rs$"],
   },
+
 ];

@@ -261,7 +261,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::member(v, "push"), vec![x])
             }
             // A range's, which is an object, is its items' (ADR 0129).
-            Std::Len if self.range_kind(tys[0].peel_refs()).is_some() => {
+            Std::Len if self.helper_stepped(tys[0].peel_refs()).is_some() => {
                 let items = self.iterable_items(arg(), tys[0].peel_refs(), span, out)?;
                 Expr::member(items, "length")
             }

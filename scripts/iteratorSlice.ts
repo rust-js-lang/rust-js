@@ -98,6 +98,8 @@ export const iteratorPaths = [
   "crates/rust-js-lower/src/recognition/specialization.rs",
   "crates/rust-js-lower/src/recognition/std_items.rs",
   "crates/rust-js-lower/src/recognition/compiled_std.rs",
+  // Which range a runtime helper steps, and which std's bodies do (ADR 1206).
+  "crates/rust-js-lower/src/recognition/types.rs",
   "crates/rust-js-lower/src/recognition/zip_folds.rs",
   // Owners of the owner table's rows of iterators (#2162): a type known by its
   // bounds as an iterator, a std iterator method that keeps each item, a

@@ -168,6 +168,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(self.user_next(ty, iterator, "size_hint", span)?.0))
     }
 
+    /// `value`, std's compiled iterator's struct of type `ty` made, as it's
+    /// held, the JS iterator it is: `$stdIterator(value, steps)`, stepped by
+    /// `std_iterator_steps` (ADR 0561). The one maker of one, but a clone's,
+    /// which keeps the steps of the one it clones.
+    pub fn std_struct_held(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+        let steps = self.std_iterator_steps(ty, span)?;
+        Ok(Expr::call_helper("$stdIterator", vec![value, steps]))
+    }
+
     /// What steps a compiled std iterator's struct of type `ty` where it's
     /// made, `$stdIterator`'s `steps` (ADR 0561): its `next`, the compiled
     /// impl's, and its `hint`, its `size_hint`, the compiled impl's, or the

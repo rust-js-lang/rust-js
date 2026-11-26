@@ -30,10 +30,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `&mut` to a range, `take2(&mut it)`'s: the range, stepped where
         // it is, as its lender goes on from where it's left.
         let ranged = match ty.kind() {
-            ty::Ref(_, inner, Mutability::Mut) if self.range_kind(*inner).is_some() => *inner,
+            ty::Ref(_, inner, Mutability::Mut) if self.helper_stepped(*inner).is_some() => *inner,
             _ => ty,
         };
-        match self.range_kind(ranged) {
+        match self.helper_stepped(ranged) {
             Some(_) => match self.range_stepper(ranged, false) {
                 Some(step) => Ok(self.stepped_by(value, step)),
                 None => Err(self.unsupported(span, "iterating this range, from its MIR")),
@@ -186,7 +186,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A range's bounds, which its count reads end first: of what isn't
         // made after, its start held first where both run code, so each
         // runs in its order (#1485).
-        if let Some(kind) = self.range_kind(ty) {
+        if let Some(kind) = self.helper_stepped(ty).map(|steps| steps.kind()) {
             let range = crate::iterators::steps(it).unwrap_or(it);
             if discards
                 && let Some((start, end)) = crate::std_types::range::range_bounds(range)
@@ -528,7 +528,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let range = stepped_range(at)?;
         let numbers = (iter_ty.walk())
             .filter_map(|arg| arg.as_type())
-            .find(|&t| matches!(self.range_kind(t), Some(RangeKind::Exclusive | RangeKind::Inclusive)))
+            .find(|&t| {
+                matches!(
+                    self.helper_stepped(t).map(|steps| steps.kind()),
+                    Some(RangeKind::Exclusive | RangeKind::Inclusive)
+                )
+            })
             .and_then(|t| self.range_index(t))
             .and_then(Num::of)
             .is_some_and(|num| !num.big());
