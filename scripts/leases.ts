@@ -39,7 +39,8 @@
 // A lock (`withLock`) serializes what two runs read, change and write
 // again, the machine's job times, or keeps one at a time where only one
 // can work, a checkout's mutants' build. Its owner is a process: one whose
-// process is gone, killed or crashed, holds nothing, and the next takes it.
+// process is gone, killed or crashed, holds nothing, and the next takes it,
+// one taker removing it; and only its owner lets it go, once (#2613).
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { checkout, machineStore } from "../test/bounded";
@@ -434,8 +435,10 @@ export type Clock = { now: () => number; sleep: (ms: number) => void };
 const machineClock: Clock = { now: () => Date.now(), sleep: (ms) => Bun.sleepSync(ms) };
 
 /** `lock` taken, a directory made at once or not at all, and what lets it
- * go: one whose owner's process is gone is taken, as is one whose maker
- * named no owner 5 s past making it, gone between. Waited for up to `wait`
+ * go, once, and only while the lock names this process (`releaseOwn`): one
+ * whose owner's process is gone is taken, as is one whose maker named no
+ * owner 5 s past making it, gone between, removed by one taker alone
+ * (`removeStale`). Waited for up to `wait`
  * ms, `waiting` said as it starts to and again each `every` ms, with how
  * long and whose process holds it, by `say`: its wait sleeps the process,
  * so no timer of the run's says anything meanwhile, and a mutation run
@@ -465,8 +468,18 @@ export function acquire(
       // waited for as a lock held is.
       if (ahead?.()) throw Object.assign(new Error("ahead"), { code: "AHEAD" });
       mkdirSync(lock, { recursive: false });
-      writeFileSync(owner, String(process.pid));
-      return () => rmSync(lock, { recursive: true, force: true });
+      // Named only where none is: one that found it stale as it was made may
+      // have marked it abandoned first (`removeStale`), and it's not taken.
+      writeFileSync(owner, String(process.pid), { flag: "wx" });
+      // Spent once called: a holder's release ran twice, as its signal's
+      // handler and again as it exited, and the second removed the lock
+      // the next holder had just taken (#2613).
+      let spent = false;
+      return () => {
+        if (spent) return;
+        spent = true;
+        releaseOwn(lock);
+      };
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
       if (code !== "EEXIST" && code !== "AHEAD") {
@@ -479,10 +492,9 @@ export function acquire(
       // writers each keeping what it read (#2283).
       const state = stateOf(lock);
       if (code === "EEXIST" && state === "absent") continue;
-      if (state === "stale") {
-        rmSync(lock, { recursive: true, force: true });
-        continue;
-      }
+      // Waited on as a held one where its removal made no change: one that
+      // can't be marked or removed spun the process at a full core.
+      if (state === "stale" && removeStale(lock)) continue;
       if (clock.now() > until) return undefined;
       if (waiting && said === undefined) {
         say(waiting);
@@ -500,13 +512,12 @@ export function acquire(
   }
 }
 
-/** Whether `lock` is held (`acquire`'s): made, and its owner's process
- * alive, or made under 5 s ago naming no owner yet. What `acquire` waits
- * on, and what a store a run works in is kept from the pruner by while it
- * runs, `target/mutants` by its run's `mutants.lock` (#2272). */
-/** What `lock` is: `absent`, not made; `held`, made and its owner's
- * process alive, or made under 5 s ago naming no owner yet; else `stale`,
- * its owner gone, which `acquire` alone removes (#2283). */
+/** What `lock` is (`acquire`'s): `absent`, not made; `held`, made and its
+ * owner's process alive, or made under 5 s ago naming no owner yet; else
+ * `stale`, its owner gone or marked abandoned, which `acquire` alone removes
+ * (#2283). What `acquire` waits on, and what a store a run works in is kept
+ * from the pruner by while it runs, `target/mutants` by its run's
+ * `mutants.lock` (#2272). */
 export type LockState = "absent" | "held" | "stale";
 export function lockState(lock: string): LockState {
   let made: number;
@@ -515,12 +526,70 @@ export function lockState(lock: string): LockState {
   } catch {
     return "absent";
   }
-  let held: number | undefined;
-  try {
-    held = Number(readFileSync(join(lock, "owner"), "utf8"));
-  } catch {}
-  const live = held !== undefined && Number.isFinite(held) && held > 0 ? alive(held) : Date.now() - made <= 5_000;
+  const named = ownerOf(join(lock, "owner"));
+  const live = named !== undefined ? named > 0 && alive(named) : Date.now() - made <= 5_000;
   return live ? "held" : "stale";
+}
+
+/** The process a lock's owner file, `at`, names: `undefined` where it names
+ * none yet, absent or empty, its maker between making the lock and writing
+ * it; 0 where it names no process, a lock marked abandoned
+ * (`removeStale`). */
+function ownerOf(at: string): number | undefined {
+  let text: string;
+  try {
+    text = readFileSync(at, "utf8").trim();
+  } catch {
+    return undefined;
+  }
+  if (text === "") return undefined;
+  const pid = Number(text);
+  return Number.isInteger(pid) && pid > 0 ? pid : 0;
+}
+
+/** `lock` let go by its holder, this process: removed only where it still
+ * names this process. A release that removed it whoever held it, run again
+ * once the next holder had taken it, let two runs hold the machine's turn
+ * at once (#2613). None but its owner removes a lock its live owner names
+ * (`removeStale`), so it's still this process's as it's removed. */
+function releaseOwn(lock: string) {
+  if (ownerOf(join(lock, "owner")) === process.pid) rmSync(lock, { recursive: true, force: true });
+}
+
+/** `lock`, found stale, removed where it's still that stale one, by one of
+ * those that found it alone: two waiters that found it stale at once each
+ * removed it, the second what the next holder had made of it meanwhile,
+ * and two held the machine's turn in one second (#2613). Its owner file is
+ * taken aside first, a rename that only one wins, and the lock removed only
+ * where what it names is gone, else put back: a live owner's, of a lock
+ * made anew since it was found stale. One that names none is marked
+ * abandoned instead, by an owner file of no process made only where none
+ * is, so a maker that names itself after is refused, and the next to find
+ * it removes it as above. Whether it removed or marked it. */
+function removeStale(lock: string): boolean {
+  const owner = join(lock, "owner");
+  const aside = `${owner}.${process.pid}.stale`;
+  try {
+    renameSync(owner, aside);
+  } catch {
+    try {
+      writeFileSync(owner, "0", { flag: "wx" });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  const named = ownerOf(aside);
+  if (named === 0 || (named !== undefined && !alive(named))) {
+    rmSync(lock, { recursive: true, force: true });
+    return true;
+  }
+  try {
+    renameSync(aside, owner);
+  } catch {
+    // Its lock gone meanwhile, a release of an older leases.ts': nothing to put back.
+  }
+  return false;
 }
 
 /** `run` with `lock` held (`acquire`), let go as it ends; past `wait`,

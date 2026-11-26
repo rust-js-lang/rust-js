@@ -196,3 +196,61 @@ The wait is now the longest running job's rest (the rows a change names,
 the check runs. Held by test/leases.test.ts' "a run of three batches lets
 a push have the turn between two, and finishes its third after it
 (check)"; mutation `check-pool-never-yields`.
+
+## Amendment: a lock is let go by its holder alone, and a stale one removed by one taker (#2613, 2026-11-26)
+
+On the M5 Pro two runs held the machine's turn at once, twice: a Holodeck
+shard through the review repo's `turn-run.ts`, alive and running, and a
+build that had taken the turn after it, one second after another waiter.
+Three ways let a lock go that wasn't the releaser's to let go:
+
+- **A release removed the lock whoever held it.** `acquire` returned
+  `() => rmSync(lock)`, with no look at `lock/owner`.
+- **A holder's release ran twice.** `holdLease` lets its turn go on a
+  signal and again as the process exits, and the signal's handler exits:
+  the second call removed the turn again, the next holder's where it had
+  taken it between. A run that let the turn go to a push (`yieldToPush`)
+  kept its spent release meanwhile, which a signal's handler or the exit
+  could run again once it had the turn anew. Bun runs a signal's handler
+  only once a synchronous wait ends, so a run told to end as it waits for
+  the turn again ends only once it has it, and lets it go then.
+- **Every waiter that found the lock stale removed it.** Two that asked
+  its state together each removed it; the second removed what the next
+  holder had made of it in between, and both held it, in one second.
+
+Now:
+
+- **A release is spent once called, and removes the lock only while it
+  names this process** (`releaseOwn`). It needs no rename to be atomic: no
+  process but its owner removes a lock whose owner lives (below), so a lock
+  that names this process as it's checked is still this process's as it's
+  removed. The spent release covers `yieldToPush` and every other path that
+  could call one twice, so `yieldToPush` needs no reset of its own, which
+  no test could tell from the spent release.
+- **A stale lock is removed by one of those that found it, and only while
+  it's that stale lock** (`removeStale`). Its owner file is taken aside by
+  a rename, which one taker wins; the lock is removed where what the file
+  names is gone, and the file put back where it names a live process, a
+  lock made anew since it was found stale. A lock that names no owner 5 s
+  past its making, its maker gone between `mkdir` and naming itself, is
+  marked abandoned instead, by an owner file of no process (`0`) made only
+  where none is, and the next taker that finds it removes it as above. A
+  maker names itself only where no owner file is (`wx`), so one marked
+  abandoned before it named itself isn't taken; it waits and takes the next.
+- What remains: a lock's owner file aside for a stale check's instant (a
+  lock made anew between two takers' looks at it) reads as naming none, so
+  its owner's release within that instant would leave it, and a process
+  killed in that instant leaves it to the 5 s rule. Each needs three events
+  within microseconds. A checkout whose `leases.ts` predates this one still
+  releases and removes as before; the review repo's `turn-run.ts` reads the
+  main checkout's, so the fix holds there once that checkout has it.
+
+Held by test/leases.test.ts: "a lock's release lets it go once, and only
+while it names this process", "of two waiters that find a lock let go or
+stale in one instant, one takes it and the other never removes it" (the
+second waiter's whole take run as the first asks the lock's state), and
+"a run told to end while it waits for the turn it let go to a push leaves
+the push's turn alone". Mutations `lock-released-whoever-holds-it`,
+`lock-released-twice`, `stale-lock-removed-by-each`,
+`stale-check-keeps-a-live-owner`, `ownerless-lock-never-taken`;
+`lock-held-past-its-owner` and `lock-absent-taken-for-stale` retargeted.

@@ -1,6 +1,6 @@
 // Leases and locks (scripts/leases.ts): whether a lock is held, which
 // `acquire` waits on and the pruner leaves a mutation run's store alone
-// by (#2272).
+// by (#2272), and who lets it go or removes it (#2613).
 import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
@@ -56,17 +56,57 @@ export const mutations: Mutation[] = [
     name: "lock-held-past-its-owner",
     breaks: "a lock whose owner's process is gone is held still, so `acquire` waits on a killed run's lock for hours and the pruner never bounds its store again (#2272)",
     file: "scripts/leases.ts",
-    find: "  const live = held !== undefined && Number.isFinite(held) && held > 0 ? alive(held) : Date.now() - made <= 5_000;\n",
-    replace: "  const live = held !== undefined && Number.isFinite(held) && held > 0 ? true : Date.now() - made <= 5_000;\n",
+    find: "  const live = named !== undefined ? named > 0 && alive(named) : Date.now() - made <= 5_000;\n",
+    replace: "  const live = named !== undefined ? named > 0 : Date.now() - made <= 5_000;\n",
     tests: ["test/leases.test.ts"],
   },
   {
     name: "lock-absent-taken-for-stale",
     breaks: "a lock found absent, its holder done, is removed as a stale one, so what another run made in that instant goes and both hold it, two job-time writers each writing what it read (#2283)",
     file: "scripts/leases.ts",
-    find: "      if (code === \"EEXIST\" && state === \"absent\") continue;\n      if (state === \"stale\") {\n",
-    replace: "      if (state !== \"held\") {\n",
+    find: "      if (code === \"EEXIST\" && state === \"absent\") continue;\n",
+    replace: "      if (state !== \"held\") {\n        rmSync(lock, { recursive: true, force: true });\n        continue;\n      }\n",
     tests: ["test/leases.test.ts", "-t", "found absent"],
+  },
+  {
+    name: "lock-released-whoever-holds-it",
+    breaks: "a lock's release removes it whoever holds it now, so a holder's release run again once the next holder took it let two runs hold the machine's turn at once (#2613)",
+    file: "scripts/leases.ts",
+    find: "  if (ownerOf(join(lock, \"owner\")) === process.pid) rmSync(lock, { recursive: true, force: true });\n",
+    replace: "  rmSync(lock, { recursive: true, force: true });\n",
+    tests: ["test/leases.test.ts", "-t", "a lock's release lets it go once"],
+  },
+  {
+    name: "lock-released-twice",
+    breaks: "a lock's release runs again once it's spent, as a holder's signal's handler and then its exit each call it, and removes what this process took anew since, a yield's turn taken again (#2613)",
+    file: "scripts/leases.ts",
+    find: "        if (spent) return;\n",
+    replace: "",
+    tests: ["test/leases.test.ts", "-t", "a lock's release lets it go once"],
+  },
+  {
+    name: "stale-lock-removed-by-each",
+    breaks: "each waiter that finds a lock stale removes it, the second what the first made of it meanwhile, so two runs held the machine's turn in one second (#2613)",
+    file: "scripts/leases.ts",
+    find: "      if (state === \"stale\" && removeStale(lock)) continue;\n",
+    replace: "      if (state === \"stale\") {\n        rmSync(lock, { recursive: true, force: true });\n        continue;\n      }\n",
+    tests: ["test/leases.test.ts", "-t", "one takes it and the other never removes it"],
+  },
+  {
+    name: "stale-check-keeps-a-live-owner",
+    breaks: "a lock made anew since a waiter found it stale loses its owner to that waiter's check, which takes it aside and keeps it, so the lock names none and is taken for abandoned (#2613)",
+    file: "scripts/leases.ts",
+    find: "  try {\n    renameSync(aside, owner);\n  } catch {\n",
+    replace: "  try {\n  } catch {\n",
+    tests: ["test/leases.test.ts", "-t", "one takes it and the other never removes it"],
+  },
+  {
+    name: "ownerless-lock-never-taken",
+    breaks: "a lock whose maker died before naming itself is found stale and never removed, so every run waits on it for ever (#2613)",
+    file: "scripts/leases.ts",
+    find: "      writeFileSync(owner, \"0\", { flag: \"wx\" });\n      return true;\n",
+    replace: "      return false;\n",
+    tests: ["test/leases.test.ts", "-t", "a lock is one holder's at a time"],
   },
   {
     name: "lock-wait-said-once",

@@ -207,6 +207,62 @@ test("a lock found absent is made again, never removing what another run made th
   rmSync(lock, { recursive: true, force: true });
 });
 
+// A lock's release lets go what this process holds, once: a holder's
+// release ran twice, as its signal's handler and again as it exited, and
+// the second removed the lock the next holder had just taken, so two runs
+// held the machine's turn at once (#2613).
+test("a lock's release lets it go once, and only while it names this process", () => {
+  const lock = join(fixture("leases-release"), "lock");
+  rmSync(lock, { recursive: true, force: true });
+  // Another's since: left as it is.
+  const first = acquire(lock)!;
+  writeFileSync(join(lock, "owner"), String(process.ppid));
+  first();
+  expect(readFileSync(join(lock, "owner"), "utf8")).toBe(String(process.ppid));
+  rmSync(lock, { recursive: true, force: true });
+  // Called again once this process has taken it anew, as a run that let
+  // the turn go to a push takes it again: spent, it removes nothing.
+  const used = acquire(lock)!;
+  used();
+  expect(lockState(lock)).toBe("absent");
+  const again = acquire(lock)!;
+  used();
+  expect(lockState(lock)).toBe("held");
+  again();
+  expect(lockState(lock)).toBe("absent");
+});
+
+// Two waiters find the lock let go, or its holder gone, in one instant:
+// one takes it, and the other waits on what the first made, never removing
+// it. Two that found a stale turn at once each removed it, the second what
+// the first had made of it meanwhile, and two runs held the machine's turn
+// in one second (#2613). Here the other's whole take runs as the first asks
+// what the lock is.
+test("of two waiters that find a lock let go or stale in one instant, one takes it and the other never removes it", async () => {
+  const lock = join(fixture("leases-lock-race"), "lock");
+  for (const found of ["let go", "stale"]) {
+    rmSync(lock, { recursive: true, force: true });
+    const holder = living();
+    try {
+      mkdirSync(lock, { recursive: true });
+      writeFileSync(join(lock, "owner"), String(found === "stale" ? await ended() : holder.pid));
+      let other: (() => void) | undefined;
+      const taken = acquire(lock, { wait: 100 }, (at) => {
+        if (found === "let go" && other === undefined) rmSync(at, { recursive: true, force: true });
+        const state = lockState(at);
+        other ??= acquire(at, { wait: 100 });
+        return state;
+      });
+      expect([found, other !== undefined, taken]).toEqual([found, true, undefined]);
+      expect(readFileSync(join(lock, "owner"), "utf8")).toBe(String(process.pid));
+      other!();
+      expect(lockState(lock)).toBe("absent");
+    } finally {
+      holder.kill();
+    }
+  }
+});
+
 // One heavy run at a time where agents share a machine (Tu's rule,
 // 2026-11-24): a lease is taken with the machine's turn, so a second run
 // waits for the first to end; a lane's run starts only where none holds a
@@ -570,6 +626,34 @@ test("a run's wait for the turn again, after it let it go to a push, isn't count
   mark("run.end");
   expect(await run.exited).toBe(0);
   expect(await saidBy(run)).not.toContain("past its limit");
+}, underLoad(60_000));
+
+// A run that let the turn go to a push and is told to end as it waits for
+// it again lets go only what it holds: the push's turn is left to it, and
+// none waiting after takes it meanwhile (#2613). Its handler runs once it
+// has the turn again, its wait being the process's own, and lets that go.
+test("a run told to end while it waits for the turn it let go to a push leaves the push's turn alone", async () => {
+  const { store, start, until, mark, has } = limitFixture("leases-yield-ended");
+  const run = start("run", "mutations", { mode: "yield" });
+  expect(await until("run.held")).toBe(true);
+  const push = start("push", "push");
+  expect(await until("push.waited")).toBe(true);
+  mark("run.go");
+  expect(await until("push.held")).toBe(true);
+  const later = start("later", "check");
+  expect(await until("later.waited")).toBe(true);
+  run.kill("SIGTERM");
+  await Bun.sleep(500);
+  expect(readFileSync(join(turnLock(store), "owner"), "utf8")).toBe(String(push.pid));
+  expect(has("later.held")).toBe(false);
+  mark("push.end");
+  expect([await push.exited, await run.exited]).toEqual([0, 143]);
+  expect(await until("later.held")).toBe(true);
+  expect(readFileSync(join(turnLock(store), "owner"), "utf8")).toBe(String(later.pid));
+  mark("later.end");
+  expect(await later.exited).toBe(0);
+  expect(liveLeases(store)).toEqual([]);
+  expect(lockState(turnLock(store))).toBe("absent");
 }, underLoad(60_000));
 
 // A run's line says its wait apart, `turn <s>`, first (#2517), where it
