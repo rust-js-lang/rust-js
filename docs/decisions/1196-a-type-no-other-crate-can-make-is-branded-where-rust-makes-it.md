@@ -115,3 +115,22 @@ A constant of a type no other crate can make is rustc's value of it with its bra
 `Perms::READ` called `Perms` inside its own literal. A module's constant keeps the mark through
 `aggregates::const_object`'s layout. The crate corpus's snapshots keep a brand's key without its crate's
 hash, `itertools#<hash>::..`, which Cargo's build metadata moves with each compiler.
+
+## Amendment: a value of no size is branded as its constant is (#2403, 2026-11-26)
+
+A value of a sealed type of no size that a consumer's copy of a library's generic code makes, where its
+optimized MIR wrote none (`_0 = Checked(())` gone, #1889), is its constant's: `zero_sized_js` gives it
+through `const_js`, which brands it as above, `$brand("..::Checked", [undefined])`. `zero_sized_value`
+had a branch of its own that made it of its fields' values and branded it again: no test, probe or
+corpus case, nor itertools' crate, told the two apart, the branch's mutant giving the same JS, so it's
+gone, one owner of a sealed constant's brand. `--retire`'s run couldn't judge it: its port control
+refused, React's port at its pin regenerating otherwise with #2403 itself. The guard test gains the
+case, a proof token `check<N: AsRef<str>>(name) -> Checked` given a name that drops, so the consumer
+compiles its own `check`.
+
+A brand on a body's literal is its mark or the call around it, `$brand(key, { .. })`, printed alike:
+no test or probe told them apart either (`unmarked-brand`'s mutant): a guard's literal, which tidy
+elides, is of a value that never leaves Rust and so is never branded (`unreached-value-branded`). The
+mark stays, one form with a constant's, which `aggregates::const_object` reads; the mutation of an
+object literal's mark is now its brand left off, `object-literal-unbranded`, which the guard test's
+literal catches.

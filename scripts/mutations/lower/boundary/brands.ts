@@ -13,11 +13,11 @@ export const mutations: Mutation[] = [
     tests: ["test/boundary-brands.test.ts", "-t", "never leaves Rust"],
   },
   {
-    name: "unmarked-brand",
-    breaks: "a brand is a call around its literal, not a mark on it, so a drop guard of a sealed type is made, `const _exit = [strict]` (#2403, ADR 1196)",
+    name: "object-literal-unbranded",
+    breaks: "a sealed struct's object literal is made unbranded, so Rust refuses its own `Temperature { celsius }` given back, `expected a Temperature Rust made` (#2403, ADR 1196)",
     file,
     find: "            rust_js_program::js::ExprKind::Object(_, layout) => layout.brand = Some(key),",
-    replace: "            rust_js_program::js::ExprKind::Object(_, layout) if false => layout.brand = Some(key),",
-    tests: ["test/boundary-brands.test.ts"],
+    replace: "            rust_js_program::js::ExprKind::Object(..) => {}",
+    tests: ["test/boundary-brands.test.ts", "-t", "a literal's and a constructor's"],
   },
 ];

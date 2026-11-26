@@ -3,6 +3,7 @@
 // ADR 1196): JS's own object of its shape, `{ celsius: -500 }`, is refused.
 // The guard: every way Rust makes one, a literal, a constructor, a derived
 // `Default` or `Clone`, a struct update, a copy, a `const`, a generic's,
+// a value of no size a consumer's copy of a library's code makes,
 // each given to JS every way it leaves, then given back, which a brand
 // missed would refuse.
 import { beforeAll, expect, test } from "bun:test";
@@ -265,6 +266,60 @@ test("a library's sealed type its consumer clones, on another copy of the runtim
   const twinned = await import(app.js);
   expect(made.domain(twinned.twin(made.make("a@b.c")))).toBe("b.c");
   expect(thrown(() => made.domain(["a@b.c"]))).toBe("TypeError: rust-js: domain(email): expected an Email Rust made, got an array");
+});
+
+// A library's generic code its consumer compiles from its optimized MIR
+// (ADR 0914), which writes no value of no size: `check`'s `_0 =
+// Checked(())` is gone, and the consumer's copy makes the type's one value
+// of its fields' (#1889), branded as Rust makes it.
+const zeroSized = `/// Proof that a name was checked.
+pub struct Checked(());
+
+pub fn check<N: AsRef<str>>(name: N) -> Checked {
+    assert!(!name.as_ref().is_empty(), "a name is never empty");
+    Checked(())
+}
+
+pub fn greet(_proof: &Checked, name: &str) -> String {
+    format!("hello, {name}")
+}
+`;
+
+test("a library's sealed value of no size its generic code makes in a consumer's copy is the library's to take", async () => {
+  const dir = fixture("boundary-brands-zero-sized");
+  writeFileSync(join(dir, "sealed_lib.rs"), zeroSized);
+  const lib = compileJsLibrary(join(dir, "sealed_lib.rs"), dir, "2024", "sealed_lib");
+  if (!("rmeta" in lib)) throw new Error(lib.error);
+  // A name the check drops, so the consumer compiles its own `check`.
+  writeFileSync(
+    join(dir, "app.rs"),
+    `struct Name(String);
+
+impl AsRef<str> for Name {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Drop for Name {
+    fn drop(&mut self) {
+        println!("checked {}", self.0);
+    }
+}
+
+pub fn checked(name: &str) -> sealed_lib::Checked {
+    sealed_lib::check(Name(name.to_string()))
+}
+
+fn main() {}
+`,
+  );
+  const app = compileJs(join(dir, "app.rs"), dir, "2024", "binary", {}, ["--dependency", lib.manifest], ["--extern", `sealed_lib=${lib.rmeta}`, "-L", dir]);
+  if (!("js" in app)) throw new Error(app.error);
+  const made = await import(join(dir, "sealed_lib", "lib.js"));
+  const consumer = await import(app.js);
+  expect(made.greet(consumer.checked("Ada"), "Ada")).toBe("hello, Ada");
+  expect(thrown(() => made.greet([undefined], "Ada"))).toBe("TypeError: rust-js: greet(proof): expected a Checked Rust made, got an array");
 });
 
 test("two versions of one crate are two types, each its own brand", () => {

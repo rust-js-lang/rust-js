@@ -687,9 +687,12 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// buf[..]`, which no value tree says as JS, as making one is, `{}` of
     /// `Empty {}`, `undefined` of a unit struct; of one whose fields are of
     /// no size themselves, `std::env::Args`', each field its own (#1707),
-    /// `[]` of `[T; 0]` (`representation::zero_sized_js`). And what a local of
-    /// it holds that nothing writes, optimized MIR having dropped a write of
-    /// no size, `_0 = Refused` (#1889). `None` of a type with a size.
+    /// `[]` of `[T; 0]` (`representation::zero_sized_js`), and of a type no
+    /// other crate can make branded as its constant is, `$brand(..,
+    /// [undefined])` of itertools' `DedupPred2CoalescePred(DedupEq)` (#2403,
+    /// ADR 1196). And what a local of it holds that nothing writes,
+    /// optimized MIR having dropped a write of no size, `_0 = Refused`
+    /// (#1889). `None` of a type with a size.
     pub(super) fn zero_sized_value(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         // std's own, its constructor's call's value, held as a body holds
         // that call's, `$iter([])` of an `iter::Empty` (#1420).
@@ -703,23 +706,6 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             return self
                 .adt_value(ty, VariantIdx::ZERO, Vec::new(), &[], None, span)
                 .map(Some);
-        }
-        // A type no other crate can make, of fields of no size,
-        // `DedupPred2CoalescePred(DedupEq)`: made of each one's value, so it's
-        // branded as Rust makes it, as rustc's value of it would make one
-        // unbranded (#2403, ADR 1196).
-        if let ty::Adt(adt, args) = ty.kind()
-            && adt.is_struct()
-            && self.brand_key(ty).is_some()
-        {
-            let mut fields = Vec::new();
-            for field in adt.non_enum_variant().fields.iter() {
-                let Some(value) = self.zero_sized_value(field.ty(self.tcx, args).skip_normalization(), span)? else {
-                    return Ok(None);
-                };
-                fields.push(value);
-            }
-            return self.adt_value(ty, VariantIdx::ZERO, fields, &[], None, span).map(Some);
         }
         Ok(rust_js_lower::representation::zero_sized_js(
             self.tcx,

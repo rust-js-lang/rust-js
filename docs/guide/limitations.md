@@ -171,6 +171,7 @@ depends on what the program does:
   ([ADR 0592](../decisions/0592-a-dictionary-is-its-modules-const.md), amended).
 
 - A function JS may call only through a deep import of a crate's module, `import { f } from "lib/src/inner.js"`, that no hand-written JS of the program or its workspace imports, and that the crate's root doesn't give JS: its parameters aren't checked, as JS a library is never compiled against reaches into any package's internals. What JS may call through the root, its own items and its `pub use`s, and each module a hand-written JS file imports is checked ([ADR 1192](../decisions/1192-a-value-js-gives-is-checked-shallow-first.md), amended, #2403).
+- A parameter of a struct no other crate can make, one of whose fields or type arguments has no check of its own, a unit struct's (`Pred<Eq>` of `pub struct Eq;`) or a `PhantomData<T>`'s: it isn't checked, nor its brand, so JS's own value of its shape reaches the body (#2605). One of `()`, a number or a struct with a check of its own is checked by its brand and its fields ([ADR 1196](../decisions/1196-a-type-no-other-crate-can-make-is-branded-where-rust-makes-it.md)).
 
 ## Iterators and collections
 
