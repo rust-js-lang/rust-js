@@ -1,8 +1,8 @@
-//@ compile-fail: a closure that holds a value with a destructor, called by `FnOnce`, which drops none of it
-// A closure called by `&` that holds a value with a destructor, given
-// through `impl Is<F>` to generic code that calls `F: FnOnce()` once, is
-// refused as it is given to `F` itself: that call drops none of it, where
-// Rust's drops it once it's run (ADR 0470, #966).
+// A closure rustc infers `Fn`, holding a value with a destructor, made
+// where it's given through `impl Is<F>` to generic code that calls `F:
+// FnOnce()` once (ADR 0470, #966): every call of it is by value, so its
+// body is its `call_once`'s, dropping what it took as that call ends, as
+// Rust's `call_once` drops it (#2600).
 struct Loud(&'static str);
 
 impl Drop for Loud {

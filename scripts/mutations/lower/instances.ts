@@ -223,7 +223,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/instances.rs",
     find: "                            return None;\n                        }\n                        givings.push(Giving::Matched { caller, given, pattern });\n",
     replace: "                            return None;\n                        }\n",
-    tests: ["test/corpus.test.ts", "-t", "^fn_closure_moved_into_a_struct_called_once_refused.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^fn_closure_moved_into_a_struct_called_once.rs$"],
   },
   {
     name: "called-held-impl-unmatched",
@@ -231,7 +231,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/instances.rs",
     find: "                    for &(caller, given) in held?.get(&adt.did()).into_iter().flatten() {\n",
     replace: "                    for &(caller, given) in held?.get(&adt.did()).into_iter().flatten().filter(|_| false) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^fn_closure_run_by_a_guards_drop_refused.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^fn_closure_run_by_a_guards_drop.rs$"],
   },
   {
     name: "called-matched-param-undeferred",
@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/instances.rs",
     find: "                        todo.push((caller, param, by_ref, [rest, &[(part, index)]].concat()))\n",
     replace: "                        _ = (caller, param, by_ref, rest, part);\n",
-    tests: ["test/corpus.test.ts", "-t", "^fn_closure_moved_into_a_struct_called_once_refused.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^fn_closure_moved_into_a_struct_called_once.rs$"],
   },
   {
     name: "called-box-held-taken-as-given",

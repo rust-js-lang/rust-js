@@ -1,8 +1,8 @@
-//@ compile-fail: a closure that holds a value with a destructor, called by `FnOnce`, which drops none of it
 // A closure rustc infers `Fn`, holding a value with a destructor, bound by
 // `let` and moved into a struct a free generic function takes, `Once<F>`
 // of an `F: FnOnce`, and calls that field of by `FnOnce` alone (#2031):
-// refused, as its call drops none of it.
+// every call of it is by value, so its body is its `call_once`'s, dropping
+// what it took as that call ends (#2600).
 struct Loud(&'static str);
 
 impl Drop for Loud {

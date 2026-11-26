@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-26 (#2600 step 4, ADRs 1208 and 0470 amended): six compile-fail corpus cases now compile, native-equal, renamed off `_refused`; two new corpus cases, `fn_closures_moved_into_what_is_made_called_once` and `fn_closure_in_a_struct_called_by_ref_then_by_value_refused`; test/diagnostics.test.ts's "an Fn given on where it's called once" becomes "an Fn called and given on where it's called once"; three new mutations, four retargeted.
+
 Changed on 2026-11-25 (Campaign 5 step 3b S3, ADR 1206): corpus gains `range_steps_by_std_in_both_builds`, a range stepped every way, cloned, defaulted, constant, of `char`s, of `u64`s and of what isn't a `Step`, the same against native in both builds; test/architecture-iterators.test.ts gains a test, a range's step helpers are reached through `helper_stepped` alone, and its catalogue test reads the `Of` key; test/iterator-forms.test.ts gains one, the build of std's structs steps a range by std's bodies; test/std-package.test.ts allows `core::ops`; nine mutations.
 
 Changed on 2026-11-26 (#2609, ADR 0470 amended): test/crates-refused.test.ts gains "a closure in a library's struct its impl calls by value is refused", a pair under test/crates/refused/; the crate pairs gain `library_peeks_a_held_closure_by_ref`; four mutations.

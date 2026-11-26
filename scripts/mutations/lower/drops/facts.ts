@@ -138,11 +138,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "closure-moved-into-a-once-type-unchecked",
-    breaks: "a closure that holds a value with a destructor, moved into a struct whose impl calls it by `FnOnce`, compiles, its captures never dropped (#2031)",
+    breaks: "a closure that holds a value with a destructor, called by `&` through a struct and then moved with it to a function that calls it by `FnOnce`, compiles, its captures never dropped (#2031, #2600)",
     file: "crates/rust-js-lower/src/drops/facts.rs",
     find: "                        && self.cx.closure_facts.called_by_value(closure)\n",
     replace: "                        && false && self.cx.closure_facts.called_by_value(closure)\n",
-    tests: ["test/corpus.test.ts", "-t", "^fn_closure_moved_into_a_struct_called_once_refused.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^fn_closure_in_a_struct_called_by_ref_then_by_value_refused.rs$"],
   },
   {
     name: "held-fn-dyn-unrefused",

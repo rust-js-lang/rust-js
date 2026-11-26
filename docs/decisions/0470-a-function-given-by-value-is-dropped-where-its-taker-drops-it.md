@@ -605,3 +605,19 @@ closure with its struct. Mutations: `library-given-made-type-unopened`,
 `library-lent-made-type-opened` (called.ts),
 `on-the-way-made-types-unkept` and
 `on-the-way-made-types-behind-a-reference-kept` (instances.ts).
+
+## Amendment: the closures held in what's made, lifted (#2600)
+
+A closure moved into a struct, a tuple, an array or an `Option` whose
+every call is by value now has a body that is its `call_once` (ADR 1208's
+step 4). These refused cases are lifted and renamed off `_refused`:
+`fn_closure_moved_into_a_struct_called_once`,
+`fn_closure_in_a_struct_a_function_calls_once`,
+`fn_closure_in_a_nested_struct_called_once`,
+`fn_closure_run_by_a_guards_drop`, `fn_closure_through_a_blanket_impl`
+and `fn_once_through_another_bound`. Each is native-equal. A closure
+called by `&` as well, through itself or what holds it, stays refused:
+`fn_closure_given_two_bounds_deep_refused`,
+`fn_closure_called_then_moved_into_a_once_callee_refused` and
+`fn_closure_in_a_struct_called_by_ref_then_by_value_refused`. So do the
+boxed `Fn`s held in what's given (#2050), until #2610.

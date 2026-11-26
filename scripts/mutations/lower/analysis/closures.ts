@@ -222,33 +222,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "called-once-closures-unseen",
-    breaks:
-      "a closure rustc infers `Fn`, given where it's made to a binding that calls it once, `js::set_timeout(move || { let m = &n; .. }, ms)`'s, isn't found, so it's refused, as one JS keeps and calls again would be (ADR 1020)",
-    file: "crates/rust-js-lower/src/analysis/closures.rs",
-    find: "                && Taker::parameter(tcx, id, i) == Some(Taker::OnceCallback)\n",
-    replace:
-      "                && Taker::parameter(tcx, id, i) == Some(Taker::Handler)\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^called_once_closure_drops_after.rs$",
-    ],
-  },
-  {
-    name: "called-once-of-fn-once-closures",
-    breaks:
-      "a closure rustc infers `FnOnce`, which drops what it took in its own body, is taken for one called once that reads itself by reference, and refused (ADR 1020)",
-    file: "crates/rust-js-lower/src/analysis/closures.rs",
-    find: "                && OnceDrop::of_closure(closure_args) == OnceDrop::Whole\n",
-    replace: "",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^called_once_closure_drops_after.rs$",
-    ],
-  },
-  {
     name: "fixed-borrow-of-mut-binding",
     breaks: "a `mut` binding a closure borrowed is fixed in it, so a clone of it made there reads the value the parameter is given after: `20 + 2` where Rust says `21` (rd515, ADR 0846, amended)",
     file: "crates/rust-js-lower/src/analysis/closures.rs",
@@ -343,8 +316,8 @@ export const mutations: Mutation[] = [
     name: "returned-fn-closure-not-call-once",
     breaks: "an effect's cleanup rustc infers `Fn`, which holds its guard whole, isn't its `call_once`'s, so what it took isn't dropped as React's call of it ends (#1881)",
     file: "crates/rust-js-lower/src/analysis/closures.rs",
-    find: "        called_once.extend((returned_once.iter().copied()).filter(|&closure| !is_fn_once(tcx, closure)));\n",
-    replace: "        let _ = &mut called_once;\n",
+    find: "            .filter(|&closure| !is_fn_once(tcx, closure))\n",
+    replace: "            .filter(|_| false)\n",
     tests: ["test/effect-cleanup-drops.test.ts", "-t", "drops what it holds as React calls it"],
   },
   {
@@ -379,5 +352,32 @@ export const mutations: Mutation[] = [
     find: "        self.called_once.contains(&closure) || holds_a_drop && self.moved_once.contains(&closure)\n",
     replace: "        self.called_once.contains(&closure)\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_closure_moved_into_a_once_callee.rs$"],
+  },
+  {
+    name: "moved-once-into-a-struct-unseen",
+    breaks:
+      "a closure rustc infers `Fn`, holding what drops, moved into a struct, `Once(h)`, that a generic impl takes apart and calls by `FnOnce` alone, keeps its own body, so it's refused where its body could drop what it took (#2600)",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
+    find: "            ExprKind::Adt(ref adt) => adt.fields.iter().map(|field| field.expr).collect(),\n",
+    replace: "            ExprKind::Adt(_) => Vec::new(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_closure_moved_into_a_struct_called_once.rs$"],
+  },
+  {
+    name: "moved-once-into-a-tuple-unseen",
+    breaks:
+      "a closure rustc infers `Fn`, holding what drops, moved into a tuple or an array that generic code takes apart and calls by `FnOnce` alone, keeps its own body, so it's refused where its body could drop what it took (#2600)",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
+    find: "            ExprKind::Tuple { ref fields } | ExprKind::Array { ref fields } => fields.to_vec(),\n",
+    replace: "            ExprKind::Tuple { .. } | ExprKind::Array { .. } => Vec::new(),\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_closures_moved_into_what_is_made_called_once.rs$"],
+  },
+  {
+    name: "moved-once-made-in-place-unseen",
+    breaks:
+      "a closure rustc infers `Fn`, holding what drops, made where it's given to a function whose blanket impl calls it by `FnOnce` alone, keeps its own body, so it's refused where its body could drop what it took (#2600)",
+    file: "crates/rust-js-lower/src/analysis/closures.rs",
+    find: "                        given.push(id);\n",
+    replace: "                        _ = id;\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_closure_through_a_blanket_impl.rs$"],
   },
 ];

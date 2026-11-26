@@ -293,8 +293,8 @@ for (const [name, source, message, crate] of [
   // A generic iterator folded or looped over is one its callers give no destructor of (ADR 0190).
       // A `Cell` drops the value it's set over, which JS wouldn't (ADR 0320).
   ["a LazyCell of a value with a destructor", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f() { let c = std::cell::LazyCell::new(|| D(1)); std::mem::forget(c) }', "a std type holding a value with a destructor, `std::cell::LazyCell<D"],
-  // A function called by `&` given where it's called once: that call drops none of it (ADR 0470).
-  ["an Fn given on where it's called once", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\nfn once<G: FnOnce() -> u32>(g: G) -> u32 { g() }\nfn relay<F: Fn() -> u32>(f: F) -> u32 { once(f) }\npub fn f(d: D) -> u32 { relay(move || { let r = &d; r.0 }) }', "a closure that holds a value with a destructor, called by `FnOnce`, which drops none of it"],
+  // A function called by `&` and then given where it's called once: its body can't drop what it took at its end, as its first call would (ADR 0470, #2600).
+  ["an Fn called and given on where it's called once", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\nfn once<G: FnOnce() -> u32>(g: G) -> u32 { g() }\nfn relay<F: Fn() -> u32>(f: F) -> u32 { f() + once(f) }\npub fn f(d: D) -> u32 { relay(move || { let r = &d; r.0 }) }', "a closure that holds a value with a destructor, called by `FnOnce`, which drops none of it"],
   // A caller gives a type parameter's sort, not one of a type that holds one (ADR 0471).
   ["an unstable sort of items that hold a type parameter", 'pub fn f<T: Ord>(mut v: Vec<(T, u8)>) -> Vec<(T, u8)> { v.sort_unstable(); v }', "an unstable sort of items that hold a type parameter"],
   // `xor` of two `Some`s drops both, which it doesn't give back (ADR 0098).

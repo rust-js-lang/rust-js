@@ -1,10 +1,9 @@
-//@ compile-fail: a closure that holds a value with a destructor, called by `FnOnce`, which drops none of it
 // A closure rustc infers `Fn`, holding a value with a destructor, made
 // where it's given to a function whose `T: Thunk` is the crate's own
 // trait's blanket impl for every `F: FnOnce`, which calls it by `FnOnce`
 // (#2031): the impl's own parameter is what the trait's method's namings
-// give, so its call by value is seen, and refused where the closure's
-// made, as Rust's `call_once` drops it after the call and JS's doesn't.
+// give, so every call of it is seen to be by value, and its body is its
+// `call_once`'s, dropping what it took as that call ends (#2600).
 struct Loud(&'static str);
 impl Drop for Loud {
     fn drop(&mut self) {

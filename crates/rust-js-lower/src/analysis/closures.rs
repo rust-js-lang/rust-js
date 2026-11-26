@@ -7,7 +7,6 @@ mod called;
 
 use crate::drops::call_once::OnceDrop;
 use crate::generic_facts::GivenADrop;
-use crate::passed_on::Taker;
 use crate::pointers::raw_pointee;
 use crate::recognition::{PureStd, any_trait, given_back, is_fn_dyn, pure_std, rc_pointee};
 use crate::{Body, bindings};
@@ -103,14 +102,15 @@ pub struct ClosureFacts<'tcx> {
     /// Of them, those a clone of which isn't the closure itself, each made
     /// by a function of what it holds, which its clone is made by again.
     pub(super) cloned_apart: IndexSet<DefId>,
-    /// The closures rustc infers `Fn` or `FnMut` made where they're given
-    /// to a binding that calls what it's given once, `js::set_timeout(move
-    /// || { let m = &n; .. }, ms)`'s, of a union bound (ADR 1020): each
-    /// called as its `call_once` runs it, dropping what it took. And of
-    /// `returned_once`, those rustc infers `Fn` or `FnMut` (#1881).
+    /// Of `returned_once`, those rustc infers `Fn` or `FnMut`, each called
+    /// as its `call_once` runs it, dropping what it took (#1881).
     called_once: IndexSet<DefId>,
-    /// Those rustc infers `Fn` or `FnMut` moved once into an `F: FnOnce`
-    /// (`moved_once`, #995).
+    /// Those rustc infers `Fn` or `FnMut` moved once into what a call by
+    /// value alone calls, made where they're given to it or a `let`'s
+    /// moved into a call or into what's made: an `F: FnOnce`, a binding
+    /// that calls what it's given once, `js::set_timeout(move || { let m =
+    /// &n; .. }, ms)`'s, of a union bound (ADR 1020), or a field of a
+    /// struct generic code takes apart (`moved_once`, #995, #2600).
     moved_once: IndexSet<DefId>,
     /// What generic code calls by value and by `&` of what it's given:
     /// the closures and the type parameters (#2031).
@@ -148,9 +148,6 @@ impl<'tcx> ClosureFacts<'tcx> {
             .flat_map(|body| fn_dyn_sources(tcx, body))
             .partition(|&(_, _, handed, _)| handed);
         let made_fn_dyns: IndexSet<DefId> = made.iter().filter_map(|&(_, ty, _, _)| closure_of(ty)).collect();
-        let mut called_once: IndexSet<DefId> = (all_bodies.iter())
-            .flat_map(|body| called_once_by_js(tcx, &body.thir))
-            .collect();
         let called = called::called(tcx, all_bodies, names, compiled);
         // Each moved, its only use, into a call that calls it by value and
         // nothing calls by `&` (#995, #2031).
@@ -168,7 +165,9 @@ impl<'tcx> ClosureFacts<'tcx> {
             .collect();
         // Of them, those rustc infers `Fn` or `FnMut`, whose body is their
         // `call_once`'s; one `FnOnce` takes what it holds already.
-        called_once.extend((returned_once.iter().copied()).filter(|&closure| !is_fn_once(tcx, closure)));
+        let called_once = (returned_once.iter().copied())
+            .filter(|&closure| !is_fn_once(tcx, closure))
+            .collect();
         let handed_fn_dyns = (handed.into_iter())
             .filter_map(|(_, ty, _, _)| closure_of(ty))
             .filter(|id| !made_fn_dyns.contains(id))
@@ -293,12 +292,12 @@ impl<'tcx> ClosureFacts<'tcx> {
     /// Whether the body of the closure `closure`, which rustc infers `Fn` or
     /// `FnMut`, whose call by value drops it whole (`OnceDrop::Whole`), is
     /// written as its `call_once` (`Mir::called_once`), dropping what it
-    /// took as it ends, as every call of it is by value: one made where
-    /// it's given to a binding that calls it once (ADR 1020), or given back
+    /// took as it ends, as every call of it is by value: one given back
     /// where JS calls it once (#1881); and, where it holds what drops,
-    /// `holds_a_drop`, a `let`'s moved once, its only use, into a parameter
-    /// its callee calls by `FnOnce` alone (#995). One that drops nothing
-    /// keeps its own body, its early `return`s.
+    /// `holds_a_drop`, one moved once into what a call by value alone
+    /// calls, a binding that calls it once among them (ADR 1020, #995,
+    /// #2600). One that drops nothing keeps its own body, its early
+    /// `return`s.
     pub fn body_is_its_call_once(&self, closure: DefId, holds_a_drop: bool) -> bool {
         self.called_once.contains(&closure) || holds_a_drop && self.moved_once.contains(&closure)
     }
@@ -832,49 +831,19 @@ fn handed_to_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> IndexSet<ExprId> {
     handed
 }
 
-/// The closures in `thir` rustc infers `Fn` or `FnMut`, made where they're
-/// given to a binding's parameter whose callback JS calls once
-/// (`Taker::parameter`), a type parameter of a union whose `Function`
-/// member is called by `FnOnce`, `js::set_timeout`'s `H: IntoTimerHandler`
-/// (ADR 1020): JS calls it once, or never, and keeps it, as Rust's
-/// `call_once` takes it, so what it took is dropped as its call ends.
-fn called_once_by_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId> {
-    let mut once = Vec::new();
-    for expr in thir.exprs.iter() {
-        let ExprKind::Call { fun, ref args, .. } = expr.kind else {
-            continue;
-        };
-        let ty::FnDef(id, _) = *thir[fun].ty.kind() else {
-            continue;
-        };
-        if !bindings::is_binding(tcx, id) {
-            continue;
-        }
-        for (i, &arg) in args.iter().enumerate() {
-            let mut e = arg;
-            while let ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } = thir[e].kind {
-                e = inner;
-            }
-            if let ExprKind::Closure(_) = thir[e].kind
-                && let ty::Closure(closure, closure_args) = *thir[e].ty.kind()
-                && OnceDrop::of_closure(closure_args) == OnceDrop::Whole
-                && Taker::parameter(tcx, id, i) == Some(Taker::OnceCallback)
-            {
-                once.push(closure);
-            }
-        }
-    }
-    once
-}
-
-/// The closures in `thir` rustc infers `Fn` or `FnMut`, each a `let`'s
-/// whose variable, by its own id, so not a shadow's of its name, is moved
-/// into a callee's call, which `ClosureFacts::new` keeps where a call by
-/// value calls it and none by `&` (`Called`): an `F: FnOnce`, or through
-/// `impl Is<F>`. Rust's `FnOnce` of it calls it by `&` and then drops it, as
-/// its call ends or unwinds, so its body is its `call_once`'s; called by `&`
-/// besides, through itself, a reference or a clone, it isn't, as a drop at
-/// its body's end would drop it at its first call (#995, #2031).
+/// The closures in `thir` rustc infers `Fn` or `FnMut` moved whole into
+/// what's given or made: each a `let`'s whose variable, by its own id, so
+/// not a shadow's of its name, is moved into a callee's call or into a
+/// struct, an enum's variant, a tuple or an array, `Once(h)`, `Some(h)`;
+/// and each made where it's given to a call, `forced(move || ..)`.
+/// `ClosureFacts::new` keeps those a call by value calls and none by `&`
+/// (`Called`, through every generic caller and impl, `instances_of`): an
+/// `F: FnOnce`, through `impl Is<F>`, a field of what's given, a blanket
+/// impl's `self()` or a guard's `Drop`. Rust's `FnOnce` of it calls it by
+/// `&` and then drops it, as its call ends or unwinds, so its body is its
+/// `call_once`'s; called by `&` besides, through itself, a reference or a
+/// clone, it isn't, as a drop at its body's end would drop it at its first
+/// call (#995, #2031, #2600).
 fn moved_once(thir: &Thir<'_>) -> Vec<DefId> {
     use rust_js_program::collections::IndexMap;
     use rustc_middle::thir::{LocalVarId, PatKind, StmtKind};
@@ -910,27 +879,39 @@ fn moved_once(thir: &Thir<'_>) -> Vec<DefId> {
             }
         })
         .collect();
-    if made.is_empty() {
-        return Vec::new();
-    }
-    // Each move of one into a callee's call.
+    // Each made where it's given to a callee's call.
+    let mut given: Vec<DefId> = Vec::new();
+    // Each move of one into a callee's call or into what's made.
     let mut moved: Vec<LocalVarId> = Vec::new();
     for expr in thir.exprs.iter() {
-        let ExprKind::Call { fun, ref args, .. } = expr.kind else {
-            continue;
+        let operands: Vec<ExprId> = match expr.kind {
+            ExprKind::Call { fun, ref args, .. } if matches!(thir[fun].ty.kind(), ty::FnDef(..)) => {
+                for &arg in args.iter() {
+                    if let ExprKind::Closure(_) = thir[through(arg)].kind
+                        && let ty::Closure(id, args) = *thir[through(arg)].ty.kind()
+                        && OnceDrop::of_closure(args) == OnceDrop::Whole
+                    {
+                        given.push(id);
+                    }
+                }
+                args.to_vec()
+            }
+            ExprKind::Adt(ref adt) => adt.fields.iter().map(|field| field.expr).collect(),
+            ExprKind::Tuple { ref fields } | ExprKind::Array { ref fields } => fields.to_vec(),
+            _ => continue,
         };
-        if !matches!(thir[fun].ty.kind(), ty::FnDef(..)) {
-            continue;
-        }
-        for &arg in args.iter() {
-            if let ExprKind::VarRef { id } = thir[through(arg)].kind
+        for operand in operands {
+            if let ExprKind::VarRef { id } = thir[through(operand)].kind
                 && made.contains_key(&id)
             {
                 moved.push(id);
             }
         }
     }
-    (moved.into_iter()).filter_map(|var| made.get(&var).copied()).collect()
+    (moved.into_iter())
+        .filter_map(|var| made.get(&var).copied())
+        .chain(given)
+        .collect()
 }
 
 /// The closures in `thir` made where they're given to a binding's parameter

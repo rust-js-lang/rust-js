@@ -110,6 +110,7 @@ depends on what the program does:
 - An allocation of `alloc`'s used as its bytes and as another type's
   items both, or cast to another type's pointer past its first byte
   ([ADR 0417](../decisions/0417-an-allocation-is-an-array-of-slots.md)).
+- A closure that holds a value with a destructor and only borrows it, called by `&` and also by value, `FnOnce`'s `call_once`, which drops it after the call: its body can't drop what it took at its end, as its first call would, so it's "called by `FnOnce`, which drops none of it"; called by value alone, given to an `F: FnOnce` or moved into a struct, a tuple, an array or an `Option` that generic code takes apart and calls, it compiles ([ADR 0470](../decisions/0470-a-function-given-by-value-is-dropped-where-its-taker-drops-it.md), #2600): `struct D; impl Drop for D { fn drop(&mut self) {} } fn once<F: FnOnce()>(f: F) { f() } let d = D; let f = move || { let _ = &d; }; f(); once(f);`
 
 ## Types
 
