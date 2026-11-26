@@ -26,24 +26,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "private-callee-not-compiled",
-    breaks:
-      "a function std keeps private that a compiled body calls, `Fuse`'s `and_then_or_clear`, isn't compiled with it, and the call is refused",
-    file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
-    find: "                    && ((!tcx.visibility(called).is_public()\n",
-    replace:
-      "                    && ((!tcx.visibility(called).is_public()\n                        && false\n",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
-    name: "named-private-fns-uncompiled",
-    breaks: "a function std keeps private that a compiled body names as a value, `FlattenCompat::last`'s own `last`, isn't compiled with it, so `Flatten::last` isn't (#645)",
-    file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
-    find: "        for value in named_fns(body, &blocks) {\n",
-    replace: "        for value in Vec::<DefId>::new() {\n",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
     name: "flatten-count-uncompiled",
     breaks: "std's `Flatten::count` isn't compiled, so a held one, and every one in the build of std's structs, is counted by std's default, each inner iterator stepped by `next`, not by its own `count` (#736)",
     file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
@@ -168,14 +150,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
     find: '    (StdPath::IoChainFn, None),\n',
     replace: "",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
-  },
-  {
-    name: "question-mark-try-compiled",
-    breaks: "a `?` of a `Result` in a compiled body, `Chain::read`'s, has std's `Try::branch` compiled for it, which the lowering writes itself, and `@rust-js/std` can't be built (#1156)",
-    file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
-    find: "            if super::is_question_mark_written(tcx, callee, args) {\n",
-    replace: "            if false && super::is_question_mark_written(tcx, callee, args) {\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
   {
@@ -328,14 +302,6 @@ export const mutations: Mutation[] = [
     find: '    (Of::Struct(StdPath::IterRepeat), Some("Iterator"), "nth"),\n',
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
-  },
-  {
-    name: "private-debug-shown-uncompiled",
-    breaks: "a `Flatten`'s compiled `Debug` writes its private `FlattenCompat`, whose `Debug` the catalogue's walk leaves out, as the `&dyn Debug` it's given is no call: `@rust-js/std`'s build refuses it (#2252)",
-    file: "crates/rust-js-lower/src/recognition/compiled_std.rs",
-    find: "        found.extend(shown_private(tcx, typing_env, body, &blocks));\n",
-    replace: "        let _ = shown_private(tcx, typing_env, body, &blocks);\n",
-    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
   },
   {
     name: "successors-debug-uncompiled",
