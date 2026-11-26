@@ -60,6 +60,8 @@ pub use js_given::{
     JsGiven, Params, exported_function, flattened_alike, flattened_by_name, js_facing, read_by_flatten,
 };
 mod lazy_locals;
+mod local_items;
+use local_items::{local_consts, local_functions, named_expressions};
 mod may_run;
 mod mutation;
 mod namespaces;
@@ -121,10 +123,7 @@ pub(crate) use mutation::Mutated;
 pub(super) use mutation::{clone_bounded, copy_bounded, generic_clone_is_itself, generic_copy_is_itself};
 use mutation::{cloned_params, compared_params, copied_params, mutated_types, params_only_read, unboxed_params};
 pub(super) use mutation::{clones_by_itself, compares_by_operator_param};
-use naming::{
-    exported_across_modules, js_uses, local_consts, local_functions, name_imports, name_items, named_expressions,
-    refuse_two_names, required_uses,
-};
+use naming::{exported_across_modules, js_uses, name_imports, name_items, refuse_two_names, required_uses};
 pub use plain_locals::{holds_a_value, module_statics, refuse_boxed_export};
 use rc_counts::counted_rcs;
 pub(crate) use rc_counts::params_counted;

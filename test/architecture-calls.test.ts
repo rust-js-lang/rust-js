@@ -51,7 +51,7 @@ test("an analysis builds no map of who names whom of its own", () => {
   expect(builds).toEqual(ownNameMaps);
   // The functions a function's body writes, by who names them, of the
   // graph's names (ADR 0308).
-  expect(read("crates/rust-js-lower/src/analysis/naming.rs")).toContain("for &(named, _, _, _) in names.names_of(body.def_id) {");
+  expect(read("crates/rust-js-lower/src/analysis/local_items.rs")).toContain("for &(named, _, _, _) in names.names_of(body.def_id) {");
 });
 
 // What the crate names as a value, which anything may call with anything,
