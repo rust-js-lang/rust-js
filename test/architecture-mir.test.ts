@@ -150,3 +150,19 @@ test("the root names neither mir nor the pipeline, and its facade is the driver'
   );
   expect(reached).toEqual([]);
 });
+
+// What a call calls is read of its callee, `func.const_fn_def()`, at about
+// 160 sites; a function item held in a place and called through it, `let t
+// = touch; t(&cell)`, is a call of the function, which `Mir::new` names as
+// rustc's optimized MIR does, `named_callees` (#2629, ADR 1209). So every
+// body is taken through it: the crate's built MIR is read in
+// analysis/collected.rs alone, and `Mir::new` names its body's callees and
+// each promoted constant's.
+test("every body's MIR is taken by `Mir::new`, which names a call of a function item held in a place", () => {
+  const lower = [...files("crates/rust-js-lower/src"), ...files("crates/rust-js-mir/src"), "src/pipeline.rs", ...files("src/pipeline")].filter((file) => file.endsWith(".rs"));
+  expect(lower.filter((file) => /\.mir_(promoted|built)\(/.test(read(file)))).toEqual(["crates/rust-js-lower/src/analysis/collected.rs"]);
+  const prepared = read("crates/rust-js-lower/src/analysis/prepared.rs");
+  const made = prepared.slice(prepared.indexOf("    pub fn new("), prepared.indexOf("// A call that can't throw"));
+  expect(made).toContain("named_callees(tcx, &mut body);");
+  expect(made).toContain("promoted.iter_mut().for_each(|promoted| named_callees(tcx, promoted));");
+});

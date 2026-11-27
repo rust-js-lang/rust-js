@@ -17,6 +17,9 @@ tell (issue #219, below); an `|` of two values' tests is a chain of its
 arms; no arm holds a copy of what follows the `match` (kj-switch); a
 chain's arm needs no more than that the arms before it failed (#221); a
 tree of a `switch`'s guard is the `switch`'s (rd619); a test of a value an or-pattern's alternatives after it each say is theirs (#617); paths alike but for one value's test are one, and a path no alternative of whose or-pattern holds is none (#631); an alternative's tests of a tuple's parts are in the order written (#632); a match of three values is the chain as written, a test whose failing says another path of its arm, or that the arms before it say, is none (#673); an or-pattern over `Option`s and enums tests as written, by the tuple's part each test reads, a part's own tests in MIR's order, and a path's `x != null` beside `x === k` goes of any tree no `switch` takes (#674); the walk of a tree reads past a variable declared between its tests, a guard's run of bindings and an arm that leaves the block (#771); a block no chain is made of nests what follows each `if` that leaves it, and a presence test past the arm of its negation is said (#771, #791). Amended by [0879](0879-an-if-and-a-closures-captures-read-as-written.md): the value of an `if` the program wrote with a branch of `false` or `true` is a conditional, `c ? x : false`, not `c && x`; its branches are in the order written.
+ Amended by
+[1209](1209-a-function-item-held-in-a-place-is-called-by-name.md): a
+call of a function item held in a place is the function's, by name.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

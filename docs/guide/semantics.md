@@ -1967,7 +1967,10 @@ Differences:
   what it drops, `thread 'main' (pid) panicked at src/main.rs:4:5:` and
   its message, the backtrace note once; a `resume_unwind` none. Where is
   Rust's own: the program's line, or a `#[track_caller]` std function's
-  caller's, made as it compiles, `$index(v, i, "src/main.rs:4:5")`, and
+  caller's, made as it compiles, `$index(v, i, "src/main.rs:4:5")`, a
+  function item's called through a local that holds it, `let f = here;
+  f()`, as of one called by name, `here("src/main.rs:5:3")`, which its
+  MIR is ([1209](../decisions/1209-a-function-item-held-in-a-place-is-called-by-name.md)), and
   of one made a value, `.map(Option::unwrap)`, the line of the shim it's
   called through, `FnMut::call_mut`'s, or a `fn` pointer's own, as the body
   says how it's called, and a callee's own MIR where it's given on,

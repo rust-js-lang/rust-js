@@ -61,7 +61,7 @@ const Named = {
 function namedAsAValue(n) {
   const named = { n };
   const get = Named.get;
-  return get(named);
+  return Named.get(named);
 }
 
 const Shown = {

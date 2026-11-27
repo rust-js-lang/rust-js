@@ -61,8 +61,7 @@ function main() {
   function named() {
     made(true);
   }
-  const held = named;
-  console.log(`${$writeTry(() => held()) === undefined ? "Ok(())" : "Err(Error)"}`);
+  console.log(`${$writeTry(() => named()) === undefined ? "Ok(())" : "Err(Error)"}`);
   const boxed = () => $fmtError();
   console.log(`${$writeTry(() => boxed()) === undefined ? "Ok(())" : "Err(Error)"}`);
 }

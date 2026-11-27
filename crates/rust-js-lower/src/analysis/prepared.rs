@@ -65,14 +65,16 @@ impl<'tcx> Mir<'tcx> {
         }
     }
 
-    /// `body`, its `.await`s each one call, and what can't throw never
-    /// unwinding.
+    /// `body`, its `.await`s each one call, a function item called through a
+    /// place called by name, and what can't throw never unwinding.
     pub fn new(
         tcx: ty::TyCtxt<'tcx>,
         mut body: mir::Body<'tcx>,
         mut promoted: IndexVec<Promoted, mir::Body<'tcx>>,
     ) -> Mir<'tcx> {
         (body, promoted) = revealed::revealed(tcx, (body, promoted));
+        named_callees(tcx, &mut body);
+        promoted.iter_mut().for_each(|promoted| named_callees(tcx, promoted));
         // A call that can't throw, a binding marked so or `unwrap_unchecked`,
         // has nothing to clean up (ADR 0301): rustc's dataflow of what's there,
         // which says what's dropped, follows no unwinding of it. Of std's
@@ -252,6 +254,104 @@ impl<'tcx> Mir<'tcx> {
             called_once: true,
         })
     }
+}
+
+/// Each call of a function item held in a local, `let t = touch; t(&cell)`,
+/// whose MIR is `_4 = copy _3; _5 = move _4(..)`, made a call of the
+/// function by name, `touch(..)`, as rustc's optimized MIR makes it: a
+/// function item's type is the function, its value nothing more (zero
+/// sized), so the call is the function's direct call, a `#[track_caller]`
+/// one given the call's location (ADR 1209, #2629). Every question of what
+/// a call calls, `func.const_fn_def()`, is then asked of the callee itself;
+/// each was asked of the place's copy, which names no function, so a
+/// call so was any function's to the cells' borrows, a caller's location
+/// and the call graph. Only where the local's JS is the function's name,
+/// `held_by_name`: a binding's value is JS's, read where it's held (ADR
+/// 0964), and a function given by what the program runs, `js::import!`'s
+/// dynamic import, is that one, so each is called through its local. A `fn`
+/// pointer's call, which may be any function's, and a closure's, a call of
+/// its `Fn` impl, are left as they are.
+fn named_callees<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mut mir::Body<'tcx>) {
+    let by_name = held_by_name(tcx, body);
+    let named: Vec<(BasicBlock, Operand<'tcx>)> = (body.basic_blocks.iter_enumerated())
+        .filter_map(|(block, data)| match &data.terminator().kind {
+            TerminatorKind::Call {
+                func: Operand::Copy(place) | Operand::Move(place),
+                fn_span,
+                ..
+            } => {
+                let local = place.as_local().filter(|local| by_name.contains(local))?;
+                let (def_id, args) = crate::fn_def(body.local_decls[local].ty)?;
+                Some((block, Operand::function_handle(tcx, def_id, args, *fn_span)))
+            }
+            _ => None,
+        })
+        .collect();
+    for (block, named) in named {
+        if let TerminatorKind::Call { func, .. } = &mut body.basic_blocks.as_mut()[block].terminator_mut().kind {
+            *func = named;
+        }
+    }
+}
+
+/// The locals of a function item's type, the crate's or std's function, not
+/// a binding's nor a constructor's, which runs no code of its own and whose
+/// JS may be its own, `js::SymbolFor`'s `Symbol.for` (ADR 0964), whose
+/// every write is the function itself, its constant or a copy of another
+/// such local, and which nothing lends `&mut`: their JS is the function's
+/// name.
+/// Not a parameter's, which its caller gives, nor one a call writes or one
+/// written of what an `.await` gives, `js::import!`'s, a field of its
+/// `Poll`, whose JS is what was given.
+fn held_by_name<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> IndexSet<Local> {
+    let of_function = |local: Local| {
+        crate::fn_def(body.local_decls[local].ty).is_some_and(|(def_id, _)| {
+            matches!(tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn) && !bindings::is_binding(tcx, def_id)
+        })
+    };
+    // A local a call writes, `module.default()`'s of `js::import_module!`,
+    // holds what the call gave, the imported function's JS, not the name; and
+    // one lent `&mut` may be written through it. A shared borrow writes
+    // nothing.
+    struct Written(IndexSet<Local>);
+    impl<'tcx> Visitor<'tcx> for Written {
+        fn visit_local(&mut self, local: Local, context: PlaceContext, _: mir::Location) {
+            if matches!(context, PlaceContext::MutatingUse(use_) if use_ != MutatingUseContext::Store) {
+                self.0.insert(local);
+            }
+        }
+    }
+    let mut written = Written(body.args_iter().collect());
+    written.visit_body(body);
+    let mut lost = written.0;
+    let mut copied: Vec<(Local, Local)> = Vec::new();
+    for statement in body.basic_blocks.iter().flat_map(|data| &data.statements) {
+        let StatementKind::Assign(assign) = &statement.kind else {
+            continue;
+        };
+        let Some(local) = assign.0.as_local().filter(|&local| of_function(local)) else {
+            continue;
+        };
+        match &assign.1 {
+            Rvalue::Use(Operand::Constant(_), _) => {}
+            Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _) if let Some(from) = from.as_local() => {
+                copied.push((local, from))
+            }
+            _ => {
+                lost.insert(local);
+            }
+        }
+    }
+    let mut held: IndexSet<Local> = (body.local_decls.indices())
+        .filter(|&local| of_function(local) && !lost.contains(&local))
+        .collect();
+    while let Some(&(to, _)) = copied
+        .iter()
+        .find(|&&(to, from)| held.contains(&to) && !held.contains(&from))
+    {
+        held.swap_remove(&to);
+    }
+    held
 }
 
 /// Of an optimized body, another crate's, each `Box` read through the

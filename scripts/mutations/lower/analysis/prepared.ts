@@ -3,6 +3,33 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "callee-in-a-place-unnamed",
+    breaks:
+      "a function item held in a local and called through it, `let t = touch; t(&cell)`, is any function's call to what asks what a call calls: a cell it borrows while a borrow of it is held goes unchecked where native panics, and a `#[track_caller]` one names its own line, not the call's (#2629, ADR 1209)",
+    file: "crates/rust-js-lower/src/analysis/prepared.rs",
+    find: "        named_callees(tcx, &mut body);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^fn_item_called_through_a_local.rs$"],
+  },
+  {
+    name: "callee-given-by-a-call-named",
+    breaks:
+      "a function item a call gives, `js::import_module!(root::Root).await`'s `module.default()`, is called by name, so the module the dynamic import splits off is imported statically (#2629, ADRs 1209 and 0304)",
+    file: "crates/rust-js-lower/src/analysis/prepared.rs",
+    find: "            if matches!(context, PlaceContext::MutatingUse(use_) if use_ != MutatingUseContext::Store) {\n",
+    replace: "            if false {\n",
+    tests: ["test/bindings.test.ts", "-t", "js::import! loads a module"],
+  },
+  {
+    name: "callee-awaited-named",
+    breaks:
+      "a function item an `.await` gives, `js::import!(lint::long_lines).await`, written to its local from the `Poll`'s field, is called by name, so the module the dynamic import splits off is imported statically (#2629, ADRs 1209 and 0304)",
+    file: "crates/rust-js-lower/src/analysis/prepared.rs",
+    find: "            _ => {\n                lost.insert(local);\n            }\n",
+    replace: "            _ => {}\n",
+    tests: ["test/docs.test.ts", "-t", "modules.md"],
+  },
+  {
     name: "impl-trait-unrevealed",
     breaks:
       "a body's `impl Trait` stays the opaque type, so what it hides is asked as no iterator: the crate's own iterator given back as `impl DoubleEndedIterator` is closed by a drop given its JS iterator, `TypeError` where Rust counts it, and a peeked `peekable()`'s `enumerate().count()` drops what it peeked at first (#1142)",
