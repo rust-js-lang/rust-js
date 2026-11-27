@@ -600,7 +600,7 @@ The ledger of every speed-up tried, with its numbers, its status (active, droppe
   the map's commit, the branch's own or another agent's, runs everything.
   So does a file of a folder tests build an app from (`tooling/`,
   `browser/`, `wasm/`, `examples/`, …), while its dependants run in
-  shadow (ADR 1209, #2482). The map records each test's loads too: the JS
+  shadow (ADR 1210, #2482). The map records each test's loads too: the JS
   and TS its own process and every Bun and Node child loaded, a Vite
   config by its bundle's sources (scripts/testMapLoads.ts). The dependants
   are what loads, imports or reads the file (scripts/dependants.ts), said

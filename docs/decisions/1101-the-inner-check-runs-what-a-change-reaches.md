@@ -1292,9 +1292,9 @@ alias's as known_calls.rs:15's; a macro invocation's lines, no item's
 above". Mutations `test-map-item-last-line-unowned` and
 `test-map-macro-invocation-item-above`.
 
-## Amended (2026-11-27, #2482): a change's dependants, ADR 1209
+## Amended (2026-11-27, #2482): a change's dependants, ADR 1210
 
-[1209](1209-a-changes-dependants-are-what-the-map-recorded-reaching-it.md)
+[1210](1210-a-changes-dependants-are-what-the-map-recorded-reaching-it.md)
 records with this map what else reaches each test, and asks one lookup of
 it (scripts/dependants.ts). There are two sources:
 

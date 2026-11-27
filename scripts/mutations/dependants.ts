@@ -1,4 +1,4 @@
-// A change's dependants (scripts/dependants.ts, ADR 1209, #2482), each of its
+// A change's dependants (scripts/dependants.ts, ADR 1210, #2482), each of its
 // rules dropped: a lookup short of one skips a test a change to a folder tests
 // build an app from can break, or runs everything where it needn't.
 import type { Mutation } from "../mutations";

@@ -38,7 +38,7 @@
 //   a package's or crate's folder (webapi/, react/, vendor/, ...)
 //                          everything: tests build them as apps' dependencies,
 //                          which no import or read says; in shadow (`loadsArm`),
-//                          its dependants (scripts/dependants.ts, ADR 1209): the
+//                          its dependants (scripts/dependants.ts, ADR 1210): the
 //                          tests the map saw load it, and what imports or reads it
 
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
@@ -100,7 +100,7 @@ export type Selection = {
  * dependants (scripts/dependants.ts, #2482), or everything, as it did: in
  * `shadow`, the selection runs everything and its dependants are logged
  * beside it (`Selection.shadows.loads`), until the pushes' and the
- * nights' misses say it holds (ADR 1209). */
+ * nights' misses say it holds (ADR 1210). */
 export const loadsArm: "shadow" | "on" = "shadow";
 
 /** What a change selects of: the push suite's test files (`suiteFiles`),
@@ -280,7 +280,7 @@ export function select(changes: Change[], context: Context): Selection {
     const top = file.includes("/") ? file.split("/")[0] : "";
     if (top !== "" && !readOnly.includes(top)) {
       if (!(context.loads ?? loadsArm === "on")) return whole(`${file} is of ${top}/, which tests build as an app's dependency`, file);
-      // Its dependants: what loads, imports or reads it (ADR 1209).
+      // Its dependants: what loads, imports or reads it (ADR 1210).
       const found = dependantsOf([change], { files, map, reach });
       if (found.all) return whole(found.why, file);
       ran(found.tests);

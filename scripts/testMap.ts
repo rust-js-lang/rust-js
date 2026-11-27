@@ -132,12 +132,12 @@ export type TestMap = {
   paths?: string[];
   /** Of each test file, the files of `paths` it loaded and every process it
    * started did, Bun's and Node's (scripts/testMapLoads.ts, #2482, ADR
-   * 1209); or `null`, unknown: it failed, or a child of it was given an
+   * 1210); or `null`, unknown: it failed, or a child of it was given an
    * environment no recorder follows, so it runs on every change a load
    * selects by. A map without it selects as before. */
   loads?: { of: Record<string, number[] | null> };
   /** Reserved for rustc's resolved references (#2608, worker-02's, ADR
-   * 1209's edges), not recorded yet: each of the compiler's definitions, its
+   * 1210's edges), not recorded yet: each of the compiler's definitions, its
    * file an index of `paths`, its lines, and its function's index in
    * `functions` where it's one. */
   defs?: { file: number; lines: [start: number, end: number]; fn?: number }[];

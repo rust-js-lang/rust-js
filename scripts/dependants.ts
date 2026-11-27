@@ -1,5 +1,5 @@
 // A changed file's dependants: the test files that can see it change, by what
-// the test map recorded reaching it (ADR 1209). The one lookup the selector
+// the test map recorded reaching it (ADR 1210). The one lookup the selector
 // (scripts/select.ts) asks of a file a test builds an app from, where it ran
 // everything (ADR 1101, amended). Its sources:
 //

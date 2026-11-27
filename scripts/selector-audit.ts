@@ -12,7 +12,7 @@
 //                                   the misses a rule in shadow would have had, each
 //                                   check's `shadows.<rule>` in place of what it ran, where
 //                                   it had one (#2482): said, not filed, the rule's switch
-//                                   read from them (ADR 1209)
+//                                   read from them (ADR 1210)
 //
 // Its input: bun's JUnit reports of the night's suite (scripts/test.ts
 // `--nightly`), and each check of `main` since the last green night, its

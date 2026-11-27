@@ -1,5 +1,5 @@
 // What each test file of the test map loads of the checkout's JS and TS, as
-// it runs, recorded with the map (scripts/testMap.ts, #2482, ADR 1209): its
+// it runs, recorded with the map (scripts/testMap.ts, #2482, ADR 1210): its
 // own `bun test` process's modules and every child's it starts, Bun's and
 // Node's, a recorder in each (`scripts/testMapLoads/`). A test that builds an
 // app through `@rust-js/build` loads `tooling/build.js` in a child, which no
