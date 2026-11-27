@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-27 (#2403's push): test/support.test.ts gains "an apps seed is its compiler's own"; mutation `apps-seed-shared-by-compilers`.
+
 Changed on 2026-11-27 (#2403, ADR 1063 amended): test/boundary-split.test.ts gains "a checker placed nowhere moves no declaration of the module's past its re-export"; mutation `unplaced-statement-stops-reexport`, and `imports-after-what-holds-them` retargeted.
 
 Changed on 2026-11-27 (#2403, ADR 1196 amended): test/cargo-workspace.test.ts' brand-key test is now "a brand's key is the same of every build of rust-js and every directory, and two versions' are two", its versions path dependencies outside the workspace, built in two directories; test/boundary-brands.test.ts gains "a program of two crates of one identity is refused, naming both"; `cargo test` gains `library::tests::identities_tell_apart_what_rust_does` and `cargo::tests::a_packages_source_is_of_no_path`; eight mutations; 20 corpus snapshots and five of test/snapshots/ move a brand key's hash.

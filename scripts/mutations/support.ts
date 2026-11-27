@@ -123,4 +123,12 @@ export const mutations: Mutation[] = [
     replace: "export function caseShard<T extends string>(cases: T[], _known: readonly string[] = cases, known: readonly string[] = cases): T[] {",
     tests: ["test/case-lists.test.ts", "-t", "the corpus's case list"],
   },
+  {
+    name: "apps-seed-shared-by-compilers",
+    breaks: "a run's apps seed is one for every compiler, so a mutation run's control, which compiles nothing, leaves it failed for every seeded test of the check after it (#2403's push)",
+    file: "test/support.ts",
+    find: "  return join(base, `seed-${createHash(\"sha256\").update(compiler).digest(\"hex\").slice(0, 12)}`);\n",
+    replace: "  return join(base, \"seed\");\n",
+    tests: ["test/support.test.ts", "-t", "an apps seed is its compiler's own"],
+  },
 ];

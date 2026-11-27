@@ -19,7 +19,7 @@ import { keptMaps, mapsCap, pruneMaps } from "../scripts/testMap";
 import { keptSerdeFlags } from "./serde-kept";
 import { runSync } from "./child";
 import { cargoApp } from "./cargo-app";
-import { cargoArtifacts, contentDirectory, expectSnapshot, fixture, knownText, nativeBinary, nativeCrates, once, portable, root, run, seeded, writeKnown } from "./support";
+import { cargoArtifacts, contentDirectory, expectSnapshot, fixture, knownText, nativeBinary, nativeCrates, once, portable, root, run, seeded, seedOf, writeKnown } from "./support";
 
 // Found in review: a file the case includes was changed, and the kept
 // binary, of the file before, answered for it.
@@ -1093,4 +1093,13 @@ test("sccache's cap is the disk's, written to its config but never over a person
   expect(sizeSccache(18 * 2 ** 30, cache, config)).toBe("own");
   expect(readFileSync(config, "utf8")).toBe("[cache.disk]\nsize = 1\n");
   expect(sccacheConfigText(undefined, 1.5)).toEqual({ text: `${sccacheWritten}\n[cache.disk]\nsize = 1\n` });
+});
+
+// A run's apps seed is each compiler's own: a mutation run's control, a
+// compiler that compiles nothing, seeds a failed one of its own, never the
+// one the run's other tests take.
+test("an apps seed is its compiler's own", () => {
+  expect(seedOf("/run/apps-seed", "/work/bin/broken")).not.toBe(seedOf("/run/apps-seed", "/repo/bin/rust-js"));
+  expect(seedOf("/run/apps-seed", "/repo/bin/rust-js")).toBe(seedOf("/run/apps-seed", "/repo/bin/rust-js"));
+  expect(dirname(seedOf("/run/apps-seed", "/work/bin/broken"))).toBe("/run/apps-seed");
 });

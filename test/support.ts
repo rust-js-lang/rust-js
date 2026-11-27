@@ -841,12 +841,20 @@ export function fixtureOf(main: string, name: string): string {
  * `check:fast` removes as it ends, it's the run's, built by the first file
  * to ask, the others waiting for it; else this file's, a fixture, removed
  * with its others. */
+/** Where the seed of `compiler`, a run's `base` holds: the compiler's own,
+ * by its path. A mutation run in check:fast runs each set of tests with one
+ * that compiles nothing too, its control; one of them that seeds an app
+ * left the run's one seed failed, "rust-js compiles nothing here", and
+ * every seeded test of the check failed after it. */
+export function seedOf(base: string, compiler: string): string {
+  return join(base, `seed-${createHash("sha256").update(compiler).digest("hex").slice(0, 12)}`);
+}
+
 let appsSeed: string | undefined;
 function builtSeed(): string {
   // Asked again once its file's fixtures are gone, as a worker's next file asks.
   if (appsSeed === undefined || !existsSync(appsSeed)) {
-    const base = process.env.RUST_JS_APPS_SEED ?? fixture("apps-seed");
-    const seed = join(base, "seed");
+    const seed = seedOf(process.env.RUST_JS_APPS_SEED ?? fixture("apps-seed"), compiler);
     once(seed, () => {
       // A crate of its own name, `seed`, not an app's in the targets made of it.
       const app = join(seed, "app");
