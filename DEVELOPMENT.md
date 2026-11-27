@@ -598,6 +598,14 @@ The ledger of every speed-up tried, with its numbers, its status (active, droppe
   doc, what imports or reads it; of a test file or a case, itself (ADR
   1101, amended). Only a line outside any function's code in `src/` since
   the map's commit, the branch's own or another agent's, runs everything.
+  So does a file of a folder tests build an app from (`tooling/`,
+  `browser/`, `wasm/`, `examples/`, …), while its dependants run in
+  shadow (ADR 1209, #2482). The map records each test's loads too: the JS
+  and TS its own process and every Bun and Node child loaded, a Vite
+  config by its bundle's sources (scripts/testMapLoads.ts). The dependants
+  are what loads, imports or reads the file (scripts/dependants.ts), said
+  on the push's line beside what ran (`[loads: …, missed N]`) until
+  `loadsArm`'s switch.
   `--keep` keeps a recording's counts, to see why a test runs on every
   change. `--all` runs everything.
 

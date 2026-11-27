@@ -205,13 +205,16 @@ test("the layer's selection in shadow: what it would leave out of what failed, a
   ).toEqual(["test/b.test.ts", "test/corpus.test.ts: three.rs", "test/iterator-forms.test.ts: four.rs with std's structs"]);
   expect(shadowMissed({ ...shadow, all: true }, [{ file: "test/b.test.ts", tests: [] }])).toEqual([]);
   expect(shadowSaid({ outcome: "all (x)" })).toBe("all (x)");
-  expect(shadowSaid({ outcome: "all (x)", shadow: { outcome: "some (3 files, 2 cases)", missed: [] } })).toBe("all (x) [items: some (3 files, 2 cases), missed 0]");
+  expect(shadowSaid({ outcome: "all (x)", shadows: { items: { outcome: "some (3 files, 2 cases)", missed: [] } } })).toBe("all (x) [items: some (3 files, 2 cases), missed 0]");
+  // Each rule in shadow, the loads' beside the layer's (#2482).
+  expect(shadowSaid({ outcome: "all (x)", shadows: { items: { outcome: "none" }, loads: { outcome: "some (2 files, 0 cases)", missed: ["test/b.test.ts"] } } })).toBe("all (x) [items: none] [loads: some (2 files, 0 cases), missed 1 (test/b.test.ts)]");
 });
 
 // The selection that runs is the map's without its item layer, the layer's
-// beside it in shadow, until the switch (#2288).
+// beside it in shadow, until the switch (#2288); and the loads' (#2482).
 test("the selection that runs is the map's without its item layer", () => {
   const source = require("node:fs").readFileSync(require("node:path").join(import.meta.dir, "..", "scripts", "select.ts"), "utf8") as string;
-  expect(source).toContain("const ran = selectOf({ ...map, items: undefined }, base, sanity, rule);");
-  expect(source).toContain("return { ...ran, shadow: selectOf(map, base, sanity, rule) };");
+  expect(source).toContain("const ran = selectOf(map === undefined ? undefined : { ...map, items: undefined }, base, sanity, rule, on, given);");
+  expect(source).toContain("if (map?.items !== undefined) shadows.items = selectOf(map, base, sanity, rule, on, given);");
+  expect(source).toContain("if (!on && map?.loads !== undefined) shadows.loads = selectOf({ ...map, items: undefined }, base, sanity, rule, true, given);");
 });

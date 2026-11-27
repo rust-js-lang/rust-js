@@ -37,12 +37,15 @@
 //                          none does (a doc nothing reads)
 //   a package's or crate's folder (webapi/, react/, vendor/, ...)
 //                          everything: tests build them as apps' dependencies,
-//                          which no import or read says
+//                          which no import or read says; in shadow (`loadsArm`),
+//                          its dependants (scripts/dependants.ts, ADR 1209): the
+//                          tests the map saw load it, and what imports or reads it
 
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { machineStore } from "../test/bounded";
+import { baselines, dependantsOf, type Reach, readersOf } from "./dependants";
 import { importsOf } from "./iteratorSlice";
 import { expected, type JobTimes, readJobTimes } from "./jobTimes";
 import { machine, pushSuiteFiles } from "./shard";
@@ -85,11 +88,20 @@ export type Selection = {
   functions?: number[];
   /** Of a sanity pass's budget, what it left out (`budgeted`). */
   skipped?: { files: string[]; cases: string[] };
-  /** What the map's item layer would have selected, where it has one, run
-   * in shadow beside this one, which runs (#2288): logged on the push's
-   * line, with whether it held every test that failed, until the switch. */
-  shadow?: Selection;
+  /** What each rule in shadow would have selected, beside this one, which
+   * runs: the map's item layer's where it has one (#2288), the loads'
+   * (`loadsArm`, #2482), and rustc's references' (#2608, reserved).
+   * Each is logged on the push's line, with whether it held every test that
+   * failed, until its switch. */
+  shadows?: { items?: Selection; loads?: Selection; edges?: Selection };
 };
+
+/** Whether a change of a folder tests build an app from selects its
+ * dependants (scripts/dependants.ts, #2482), or everything, as it did: in
+ * `shadow`, the selection runs everything and its dependants are logged
+ * beside it (`Selection.shadows.loads`), until the pushes' and the
+ * nights' misses say it holds (ADR 1209). */
+export const loadsArm: "shadow" | "on" = "shadow";
 
 /** What a change selects of: the push suite's test files (`suiteFiles`),
  * the corpus's cases, the map or why there's none, and, of each test file,
@@ -101,12 +113,12 @@ export type Context = {
   map: TestMap | string;
   reach: Reach;
   own?: (file: string) => boolean;
+  /** Whether a folder tests build an app from selects its dependants, not
+   * everything: `loadsArm`'s, unless said. */
+  loads?: boolean;
 };
 
-/** Of each test file, the modules it imports, transitively, the preload's
- * too, and what each of those reads as text (`readsOf`, a path, a folder or
- * a glob). */
-export type Reach = Map<string, { modules: Set<string>; reads: Set<string> }>;
+export { baselines, type Reach };
 
 /** The files whose change runs everything: what every test runs under (the
  * packages' manifests and lockfiles, the toolchain, Bun's config and its
@@ -125,6 +137,8 @@ export const everything = [
   "rustc-rpath.rs",
   "rust-toolchain.toml",
   "rustfmt.toml",
+  // Every Cargo build reads it, each test's that builds a crate.
+  ".cargo/config.toml",
 ];
 
 /** What changes which tests run, not what a test does: of the change
@@ -180,17 +194,6 @@ export const osBranches: Record<string, string> = {
   "tooling/native-launcher.js": "the name of the library path's variable",
 };
 
-/** The baselines a test reads by a path its source doesn't spell, each with
- * the tests that read it: what `readsOf` can't see. */
-export const baselines: { path: string; owners: string[] }[] = [
-  // Each case's own JS, `${name}.js`, beside its source.
-  { path: "test/corpus/*.js", owners: ["test/readability.test.ts"] },
-  // Each snapshot's files, by the snapshot's name.
-  { path: "test/snapshots/**", owners: ["test/snapshots.test.ts", "test/snapshots-serde.test.ts", "test/readability.test.ts"] },
-  // The playground's committed JS, its snapshot (test/snapshots.test.ts).
-  { path: "wasm/web/rust/**/*.{js,jsx}", owners: ["test/snapshots.test.ts", "test/playground.test.ts", "test/readability.test.ts"] },
-];
-
 const globs = (paths: string[]) => paths.map((path) => new Bun.Glob(path));
 const everythingGlobs = globs(everything);
 const ownRunsAllGlobs = Object.entries(ownRunsAll).map(([path, what]) => ({ glob: new Bun.Glob(path), what }));
@@ -210,15 +213,7 @@ export function select(changes: Change[], context: Context): Selection {
     if (why.length < 20) why.push(`${file}: ${ran}`);
   };
   // The tests each changed file reaches as a module or a read.
-  const readers = (file: string) => {
-    const found: string[] = [];
-    for (const [test, { modules, reads }] of reach) {
-      if (test === file) continue;
-      if (modules.has(file) || [...reads].some((read) => file === read || file.startsWith(`${read}/`) || (read.includes("*") && new Bun.Glob(read).match(file)))) found.push(test);
-    }
-    for (const { glob, owners } of baselineGlobs) if (glob.match(file)) found.push(...owners.filter((owner) => files.includes(owner)));
-    return [...new Set(found)];
-  };
+  const readers = (file: string) => readersOf(file, { files, map, reach });
   // The tests a change runs as what they import or read: the corpus's
   // file, every case; std's iterator structs' (the nightly's, whose cases
   // its net runs), every case of it.
@@ -283,7 +278,15 @@ export function select(changes: Change[], context: Context): Selection {
       continue;
     }
     const top = file.includes("/") ? file.split("/")[0] : "";
-    if (top !== "" && !readOnly.includes(top)) return whole(`${file} is of ${top}/, which tests build as an app's dependency`, file);
+    if (top !== "" && !readOnly.includes(top)) {
+      if (!(context.loads ?? loadsArm === "on")) return whole(`${file} is of ${top}/, which tests build as an app's dependency`, file);
+      // Its dependants: what loads, imports or reads it (ADR 1209).
+      const found = dependantsOf([change], { files, map, reach });
+      if (found.all) return whole(found.why, file);
+      ran(found.tests);
+      if (why.length < 20) why.push(found.why);
+      continue;
+    }
     const found = readers(file);
     ran(found);
     say(file, found.length === 0 ? "nothing reads it" : `${found.length} test${found.length === 1 ? "" : "s"} import or read it`);
@@ -398,25 +401,29 @@ export type Rule = "full" | "push";
  * rebase brought can affect. */
 export function selectChange(base = "origin/main", sanity?: string, rule: Rule = "full"): Selection & { map?: string } {
   const map = nearestMap(mapStore, root, toolchainOf());
-  // The selection that runs is the map's without its item layer; the
-  // layer's, beside it, in shadow until the switch (#2288).
-  if (map?.items === undefined) return selectOf(map, base, sanity, rule);
-  const ran = selectOf({ ...map, items: undefined }, base, sanity, rule);
-  return { ...ran, shadow: selectOf(map, base, sanity, rule) };
+  const files = suiteFiles();
+  const given = { files, cases: corpusCases(), reach: reachOf([...files, caseFiles[1]]) };
+  const on = loadsArm === "on";
+  // The selection that runs is the map's without its item layer, and of
+  // a folder tests build an app from, everything; beside it, in shadow
+  // until each one's switch, the layer's (#2288) and the loads' (#2482).
+  const ran = selectOf(map === undefined ? undefined : { ...map, items: undefined }, base, sanity, rule, on, given);
+  const shadows: NonNullable<Selection["shadows"]> = {};
+  if (map?.items !== undefined) shadows.items = selectOf(map, base, sanity, rule, on, given);
+  if (!on && map?.loads !== undefined) shadows.loads = selectOf({ ...map, items: undefined }, base, sanity, rule, true, given);
+  return Object.keys(shadows).length === 0 ? ran : { ...ran, shadows };
 }
 
-function selectOf(map: TestMap | undefined, base: string, sanity: string | undefined, rule: Rule): Selection & { map?: string } {
-  const files = suiteFiles();
-  const cases = corpusCases();
+function selectOf(map: TestMap | undefined, base: string, sanity: string | undefined, rule: Rule, loads: boolean, given: { files: string[]; cases: string[]; reach: Reach }): Selection & { map?: string } {
+  const { files, cases, reach } = given;
   const own = ownFiles(base);
-  const reach = reachOf([...files, caseFiles[1]]);
   if (map === undefined) {
     // No map of a sanity pass: the cap, unranked.
     if (sanity !== undefined) return capOf([...own], files, cases);
     // No map: the branch's own change, by the rules that need none, and
     // everything where one does.
     const changes = [...own].map((file): Change => ({ file, hunks: existsSync(join(root, file)) ? [[1, 1]] : "new" }));
-    return select(changes, { files, cases, map: `${noMap}: \`bun run test-map\` records one`, reach });
+    return select(changes, { files, cases, map: `${noMap}: \`bun run test-map\` records one`, reach, loads });
   }
   const behind = commitsBehind(map.commit);
   if (sanity !== undefined) {
@@ -424,7 +431,7 @@ function selectOf(map: TestMap | undefined, base: string, sanity: string | undef
     const before = now === undefined ? undefined : Bun.spawnSync(["git", "merge-base", sanity, now], { cwd: root, stdout: "pipe" }).stdout.toString().trim() || undefined;
     if (now === undefined || before === undefined) return { all: true, files: [], cases: [], forms: [], why: "the sanity pass can't find the commits the rebase brought", map: map.commit, behind };
     // The incoming commits are others', each checked by its own push.
-    const side = (from: string, to: string | undefined, mine: boolean) => sideSelection(changesBetween(from, to), from, { files, cases, map, reach, own: () => mine });
+    const side = (from: string, to: string | undefined, mine: boolean) => sideSelection(changesBetween(from, to), from, { files, cases, map, reach, own: () => mine, loads });
     const both = interaction(side(now, undefined, true), side(before, now, false));
     // Where it can't say, the cap; and of either, what fits the budget,
     // by the change's own functions: those it changes, or of its files.
@@ -435,11 +442,11 @@ function selectOf(map: TestMap | undefined, base: string, sanity: string | undef
   }
   const since = rule === "push" ? mergeBase(base) : undefined;
   if (since !== undefined) {
-    const mine = sideSelection(changesBetween(since), since, { files, cases, map, reach, own: () => true });
-    const theirs = sideSelection(changesBetween(map.commit, since), map.commit, { files, cases, map, reach, own: () => false });
+    const mine = sideSelection(changesBetween(since), since, { files, cases, map, reach, own: () => true, loads });
+    const theirs = sideSelection(changesBetween(map.commit, since), map.commit, { files, cases, map, reach, own: () => false, loads });
     return { ...pushSelection(mine, theirs, [...own].some((file) => isCompilerSource(file))), map: map.commit, behind };
   }
-  const selection = fullSelection(map, (file) => own.has(file), { files, cases, reach });
+  const selection = fullSelection(map, (file) => own.has(file), { files, cases, reach, loads });
   return { ...selection, map: map.commit, behind };
 }
 
@@ -447,11 +454,11 @@ function selectOf(map: TestMap | undefined, base: string, sanity: string | undef
  * working tree's too: CI's check of `main`'s (`selectChange`'s `full`), and
  * what an incremental test map records (scripts/testMap.ts's `planCarry`),
  * so the two can't diverge (ADR 1101, amended). */
-export function fullSelection(map: TestMap, own: (file: string) => boolean = () => true, given?: { files: string[]; cases: string[]; reach: Reach }): Selection {
+export function fullSelection(map: TestMap, own: (file: string) => boolean = () => true, given?: { files: string[]; cases: string[]; reach: Reach; loads?: boolean }): Selection {
   const files = given?.files ?? suiteFiles();
   const cases = given?.cases ?? corpusCases();
   const reach = given?.reach ?? reachOf([...files, caseFiles[1]]);
-  return select(changesSince(map.commit), { files, cases, map, reach, own });
+  return select(changesSince(map.commit), { files, cases, map, reach, own, loads: given?.loads });
 }
 
 /** What a push's check runs (ADR 1101, amended): what the branch's own
@@ -547,7 +554,7 @@ function diffHunks(a: string, b: string, file: string): [number, number, number,
  * pushes and checks of 2026-11-17, 7 took that fallback, and 2905d5cdc's
  * own change, crates/rust-js-emit/src/output.rs, selected 291 files where the map at
  * 7fe40bde3 placed it in one function, 7. */
-export function sideSelection(changes: Change[], from: string, context: { files: string[]; cases: string[]; map: TestMap; reach: Reach; own: (file: string) => boolean }): Selection {
+export function sideSelection(changes: Change[], from: string, context: { files: string[]; cases: string[]; map: TestMap; reach: Reach; own: (file: string) => boolean; loads?: boolean }): Selection {
   const differing = changes.filter((change) => isCompilerSource(change.file) && change.hunks !== "new" && differs(context.map.commit, from, change.file));
   const placed = new Map(differing.flatMap((change) => {
     const at = hunksAtMap(change, diffHunks(context.map.commit, from, change.file));

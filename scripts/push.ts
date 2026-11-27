@@ -365,13 +365,16 @@ export function loadedModules(): string[] {
     .map((path) => path.slice(root.length + 1));
 }
 
-/** A check:fast's selection as the push's line says it: what ran, and the
- * item layer's in shadow, where there was one, with how many tests that
- * failed it left out, which the switch is read from (#2288). */
-export function shadowSaid(written: { outcome: string; shadow?: { outcome: string; missed?: string[] } | null }): string {
-  if (!written.shadow) return written.outcome;
-  const missed = written.shadow.missed === undefined ? "" : `, missed ${written.shadow.missed.length}${written.shadow.missed.length > 0 ? ` (${written.shadow.missed.slice(0, 3).join(", ")})` : ""}`;
-  return `${written.outcome} [items: ${written.shadow.outcome}${missed}]`;
+/** A check:fast's selection as the push's line says it: what ran, and each
+ * rule's in shadow, the item layer's and the loads', where there was one,
+ * with how many tests that failed it left out, which each switch is read
+ * from (#2288, #2482). */
+export function shadowSaid(written: { outcome: string; shadows?: Record<string, { outcome: string; missed?: string[] }> | null }): string {
+  const said = Object.entries(written.shadows ?? {}).map(([rule, shadow]) => {
+    const missed = shadow.missed === undefined ? "" : `, missed ${shadow.missed.length}${shadow.missed.length > 0 ? ` (${shadow.missed.slice(0, 3).join(", ")})` : ""}`;
+    return ` [${rule}: ${shadow.outcome}${missed}]`;
+  });
+  return `${written.outcome}${said.join("")}`;
 }
 
 export function onlyPushedFiles(changed: string[], pushed: string[]): string[] {

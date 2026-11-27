@@ -8,6 +8,11 @@
 // flaky test's), said on the issue and closed.
 //
 //   bun scripts/selector-audit.ts <junit dir>   # in CI: nightly.yml's `selector-audit`
+//   bun scripts/selector-audit.ts <junit dir> --shadow=loads
+//                                   the misses a rule in shadow would have had, each
+//                                   check's `shadows.<rule>` in place of what it ran, where
+//                                   it had one (#2482): said, not filed, the rule's switch
+//                                   read from them (ADR 1209)
 //
 // Its input: bun's JUnit reports of the night's suite (scripts/test.ts
 // `--nightly`), and each check of `main` since the last green night, its
@@ -38,15 +43,17 @@ export function failedIn(xml: string): { file: string; cases: string[] }[] {
   return failed;
 }
 
-/** A check's selection, as its `plan` wrote it. */
-export type Selected = { sha: string; all: boolean; files: string[]; cases: string[] };
+/** A check's selection, as its `plan` wrote it, and each rule's in shadow. */
+export type Selected = { sha: string; all: boolean; files: string[]; cases: string[]; shadows?: Record<string, { all: boolean; files: string[]; cases: string[] }> };
 
 /** Of the night's failed files, those no check of `checks` selected: a
  * selection of everything, of the file, or, of the corpus's file, of one
- * of its failed cases, ran it. */
-export function misses(failed: { file: string; cases: string[] }[], checks: Selected[]): { file: string; cases: string[] }[] {
+ * of its failed cases, ran it. Of `shadow`, a rule in shadow, each check's
+ * selection by it, where it had one. */
+export function misses(failed: { file: string; cases: string[] }[], checks: Selected[], shadow?: string): { file: string; cases: string[] }[] {
+  const by = checks.map((check) => (shadow === undefined ? check : (check.shadows?.[shadow] ?? check)));
   return failed.filter(({ file, cases }) => {
-    const ran = checks.some((check) => {
+    const ran = by.some((check) => {
       if (check.all) return true;
       if (file === "test/corpus.test.ts" && cases.length > 0) return cases.some((name) => check.cases.includes(name));
       return check.files.includes(file);
@@ -78,7 +85,7 @@ function checksSince(): { since: string | undefined; checks: Selected[] } {
       continue;
     }
     const selection = JSON.parse(readFileSync(file, "utf8"));
-    checks.push({ sha: run.headSha, all: selection.all, files: selection.files, cases: selection.cases });
+    checks.push({ sha: run.headSha, all: selection.all, files: selection.files, cases: selection.cases, ...(selection.shadows === undefined ? {} : { shadows: selection.shadows }) });
   }
   return { since: nights[0]?.headSha, checks };
 }
@@ -107,8 +114,9 @@ function file(missed: { file: string; cases: string[] }[], since: string | undef
 
 if (import.meta.main) {
   const dir = process.argv[2];
-  if (!dir) {
-    console.error("usage: bun scripts/selector-audit.ts <junit dir>");
+  const shadow = process.argv.find((arg) => arg.startsWith("--shadow="))?.slice("--shadow=".length);
+  if (!dir || dir.startsWith("--")) {
+    console.error("usage: bun scripts/selector-audit.ts <junit dir> [--shadow=<rule>]");
     process.exit(2);
   }
   const reports = existsSync(dir) ? readdirSync(dir, { recursive: true }).map(String).filter((name) => name.endsWith(".xml")) : [];
@@ -122,6 +130,13 @@ if (import.meta.main) {
     process.exit(0);
   }
   const { since, checks } = checksSince();
+  if (shadow !== undefined) {
+    const missed = misses(all, checks, shadow);
+    const held = checks.filter((check) => check.shadows?.[shadow] !== undefined).length;
+    console.log(`${all.length} test files failed at night; ${missed.length} no check's ${shadow} selection in shadow since ${since?.slice(0, 9) ?? "the first night"} ran, of ${checks.length} checks, ${held} with one`);
+    for (const { file: test, cases } of missed) console.log(`  ${test}${cases.length ? ` (${cases.join(", ")})` : ""}`);
+    process.exit(0);
+  }
   const missed = misses(all, checks);
   console.log(`${all.length} test files failed at night; ${missed.length} no push's selection since ${since?.slice(0, 9) ?? "the first night"} ran, of ${checks.length} checks`);
   file(missed, since, checks.length);

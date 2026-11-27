@@ -1291,3 +1291,19 @@ Test: "a multi-line item's last line at column 0 is its item's, a type
 alias's as known_calls.rs:15's; a macro invocation's lines, no item's
 above". Mutations `test-map-item-last-line-unowned` and
 `test-map-macro-invocation-item-above`.
+
+## Amended (2026-11-27, #2482): a change's dependants, ADR 1209
+
+[1209](1209-a-changes-dependants-are-what-the-map-recorded-reaching-it.md)
+records with this map what else reaches each test, and asks one lookup of
+it (scripts/dependants.ts). There are two sources:
+
+- each test file's loads, its children's too (#2482). At its switch these
+  replace the folder row of the 2026-11-16 table; until then they run in
+  shadow;
+- rustc's resolved references (#2608). At its switch these replace the
+  name search for a line outside any function's counted code.
+
+The map is v5, with `paths` and `loads`; `defs` and `edges` are reserved.
+`Selection.shadow` is `Selection.shadows`, the item layer's and the
+loads' each said on the push's line.

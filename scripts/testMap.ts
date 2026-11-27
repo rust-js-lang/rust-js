@@ -61,6 +61,7 @@ import { machineVerifiedRuns } from "../test/kept";
 import { downloaded } from "./artifacts";
 import { compilerCrates, compilerSourceDirs, crateOf, cratesBuilding, isCompilerSource } from "./compiler-crates";
 import { readJobTimes } from "./jobTimes";
+import { recording, unitLoads } from "./testMapLoads";
 import { type ItemLayer, implBodyAt, inUnitTests, itemLayer, scipIndex, touchedByItem, touchedByNewFile } from "./testMapItems";
 import { balanced, caseShardParts, machine, pushSuiteFiles, shard, shardArg } from "./shard";
 
@@ -71,7 +72,7 @@ export const mapDir = join(root, "target", "test-map");
 /** Where maps are kept, the machine's, every worktree's (#932). */
 export const mapStore = join(machineStore, "test-maps");
 /** The layout's version, which a change to it or to what's recorded bumps. */
-export const mapVersion = 4;
+export const mapVersion = 5;
 /** The most maps kept: one a commit of `main` CI records (ADR 1101,
  * amended), each superseded by the next, so held by their count. */
 export const keptMaps = 8;
@@ -125,6 +126,25 @@ export type TestMap = {
    * them where it would select everything. A map without it, every map
    * before it or one whose index failed, selects as before. */
   items?: ItemLayer;
+  /** The checkout's files the map names by their index, sorted, one table
+   * for every list of files it keeps: what each test loaded (`loads`), and
+   * the file of each definition (`defs`, reserved). */
+  paths?: string[];
+  /** Of each test file, the files of `paths` it loaded and every process it
+   * started did, Bun's and Node's (scripts/testMapLoads.ts, #2482, ADR
+   * 1209); or `null`, unknown: it failed, or a child of it was given an
+   * environment no recorder follows, so it runs on every change a load
+   * selects by. A map without it selects as before. */
+  loads?: { of: Record<string, number[] | null> };
+  /** Reserved for rustc's resolved references (#2608, worker-02's, ADR
+   * 1209's edges), not recorded yet: each of the compiler's definitions, its
+   * file an index of `paths`, its lines, and its function's index in
+   * `functions` where it's one. */
+  defs?: { file: number; lines: [start: number, end: number]; fn?: number }[];
+  /** Reserved with `defs`: each reference, an `Int32Array` of pairs of
+   * `defs` indices, the namer then the named, base64 as `units`' bits are;
+   * `null` where the pass didn't run, so no change is placed by it. */
+  edges?: string | null;
 };
 
 /** How far an incremental recording carries from: a map at most this many
@@ -1842,10 +1862,16 @@ async function runUnits(units: { name: string; cmd: string[]; env: Record<string
       // #1047); all else the unit's own.
       mkdirSync(machineVerifiedRuns, { recursive: true });
       symlinkSync(machineVerifiedRuns, join(own, "corpus-cache"));
+      // What its processes load, each writing its own list there
+      // (scripts/testMapLoads.ts), read into one as it ends.
+      const loading = join(record, "loads", "raw", String(at));
+      mkdirSync(loading, { recursive: true });
+      const env = { ...process.env, ...base, RUST_JS_TARGET: own, RUST_JS_STD_SYSROOT: join(own, "std-sysroot"), ...unit.env };
+      const recorded = recording(unit.cmd, env, loading);
       const start = Date.now();
-      const p = Bun.spawn(unit.cmd, {
+      const p = Bun.spawn(recorded.cmd, {
         cwd: root,
-        env: { ...process.env, ...base, RUST_JS_TARGET: own, RUST_JS_STD_SYSROOT: join(own, "std-sysroot"), ...unit.env },
+        env: { ...env, ...recorded.env },
         stdout: "pipe",
         stderr: "pipe",
       });
@@ -1853,6 +1879,8 @@ async function runUnits(units: { name: string; cmd: string[]; env: Record<string
       const code = await p.exited;
       ended.set(unit.name, code);
       rmSync(own, { recursive: true, force: true });
+      writeFileSync(join(record, "loads", `${at}.json`), JSON.stringify({ unit: unit.name, ...unitLoads(loading, root) }));
+      rmSync(loading, { recursive: true, force: true });
       const seconds = ((Date.now() - start) / 1000).toFixed(0);
       if (code !== 0) console.log(`FAIL ${unit.name} (${seconds} s): it runs on every change\n${(out + err).slice(-1500)}`);
       else console.log(`ok   ${unit.name} ${seconds} s`);
@@ -2325,10 +2353,49 @@ export function mergeRecordings(plan: Plan, parts: string[], made: number, from?
     if (why !== undefined) always.push(`${unit} (${why})`);
     if (isFile && why === "it ran no compiler") noCompiler.push(unit);
   }
+  const { paths, loads } = mergeLoads(plan, parts, (file) => (plan.files.includes(file) ? !fileEnded(file) : failedUnits.has(file)), recorded, from);
   const { version, commit, toolchain, functions, includes, corpusReaders, names, items } = plan;
   const base = plan.carry?.base ?? { commit, made };
   const carried = plan.carry === undefined ? {} : { carried: { from: plan.carry.from, recorded: Object.keys(units).length - carriedCount, carried: carriedCount } };
-  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders, noCompiler, names, base, ...carried, ...(items === undefined ? {} : { items }) }, always };
+  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders, noCompiler, names, base, ...carried, ...(items === undefined ? {} : { items }), paths, loads }, always };
+}
+
+/** What each test file of `plan` loaded, its parts' lists together
+ * (`runUnits` writes each unit's, `loads/<n>.json`): one that `failed`,
+ * or started a child no recorder follows, `null`; of an incremental
+ * recording, a test it didn't record carried from `from`, and a case
+ * file's with what `from` saw, as its functions are. */
+function mergeLoads(plan: Plan, parts: string[], failed: (file: string) => boolean, recorded: Set<string> | undefined, from: TestMap | undefined): { paths: string[]; loads: NonNullable<TestMap["loads"]> } {
+  const loaded = new Map<string, Set<string>>();
+  const lost = new Set<string>();
+  for (const part of parts) {
+    const dir = join(part, "loads");
+    if (!existsSync(dir)) continue;
+    for (const name of readdirSync(dir).filter((name) => name.endsWith(".json"))) {
+      const said: { unit: string; files: string[]; lost?: string } = JSON.parse(readFileSync(join(dir, name), "utf8"));
+      const file = said.unit.split(" ")[0]!;
+      const own = loaded.get(file) ?? loaded.set(file, new Set()).get(file)!;
+      for (const path of said.files) own.add(path);
+      if (said.lost !== undefined) lost.add(file);
+    }
+  }
+  const was = (file: string) => {
+    const of = from?.loads?.of[file];
+    return of === undefined || of === null ? of : of.map((at) => from!.paths![at]!);
+  };
+  const of: Record<string, string[] | null> = {};
+  for (const file of [...plan.files, ...caseFiles]) {
+    const isCaseFile = (caseFiles as readonly string[]).includes(file);
+    if (recorded !== undefined && !recorded.has(file) && !isCaseFile) {
+      of[file] = was(file) ?? null;
+      continue;
+    }
+    const before = recorded !== undefined && isCaseFile ? was(file) : [];
+    of[file] = failed(file) || lost.has(file) || before === null ? null : [...new Set([...(before ?? []), ...(loaded.get(file) ?? [])])];
+  }
+  const paths = [...new Set(Object.values(of).flatMap((files) => files ?? []))].sort();
+  const index = new Map(paths.map((path, at) => [path, at]));
+  return { paths, loads: { of: Object.fromEntries(Object.entries(of).map(([file, files]) => [file, files === null ? null : files.map((path) => index.get(path)!).sort((a, b) => a - b)])) } };
 }
 
 /** The map of the plan's recording, every part's, kept in the machine's

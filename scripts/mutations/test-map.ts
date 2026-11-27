@@ -604,4 +604,28 @@ export const mutations: Mutation[] = [
     replace: "      return said ?? false;",
     tests: ["test/test-map.test.ts", "-t", "read at once"],
   },
+  {
+    name: "loads-failed-test-known",
+    breaks: "a test that failed as the map recorded it keeps the loads it got to, not unknown, so a change to what it would have loaded skips it (#2482)",
+    file: "scripts/testMap.ts",
+    find: "    of[file] = failed(file) || lost.has(file) || before === null ? null :",
+    replace: "    of[file] = lost.has(file) || before === null ? null :",
+    tests: ["test/test-map-loads.test.ts", "-t", "the map keeps each test file's loads"],
+  },
+  {
+    name: "loads-parts-not-joined",
+    breaks: "a test file recorded in parts keeps one part's loads, the last's, not all of theirs (#2482)",
+    file: "scripts/testMap.ts",
+    find: "      const own = loaded.get(file) ?? loaded.set(file, new Set()).get(file)!;\n",
+    replace: "      const own = loaded.set(file, new Set()).get(file)!;\n",
+    tests: ["test/test-map-loads.test.ts", "-t", "the map keeps each test file's loads"],
+  },
+  {
+    name: "loads-not-carried",
+    breaks: "an incremental recording drops the loads of each test it carries, so their loaders select nothing of them (#2482)",
+    file: "scripts/testMap.ts",
+    find: "      of[file] = was(file) ?? null;\n",
+    replace: "      of[file] = [];\n",
+    tests: ["test/test-map-loads.test.ts", "-t", "the map keeps each test file's loads"],
+  },
 ];

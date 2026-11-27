@@ -12,7 +12,7 @@ import { jobSeconds, jobs, ranKey, totalKey } from "../scripts/checkFast";
 import { onlyPushedFiles, phases as pushPhases } from "../scripts/push";
 import { ownsTimes, slowest, timesLine, whoRuns } from "../scripts/devTimes";
 import { failedIn, misses } from "../scripts/selector-audit";
-import { baselines, budgeted, capOf, type Costs, hunksAtMap, interaction, mapLine, movedUnits, osBranches, outcome, pushSelection, reachOf, type Reach, sanityRecord, select, type Selection, suiteFiles } from "../scripts/select";
+import { baselines, budgeted, capOf, type Costs, hunksAtMap, interaction, loadsArm, mapLine, movedUnits, osBranches, outcome, pushSelection, reachOf, type Reach, sanityRecord, select, type Selection, suiteFiles } from "../scripts/select";
 import { pathFunctions, readsOf, readsSources, type TestMap } from "../scripts/testMap";
 import { fixture, root } from "./support";
 import { compilerRustFiles } from "../scripts/compiler-crates";
@@ -196,6 +196,72 @@ test("the packages' manifests, the toolchain, the selector and the map run every
   for (const file of ["package.json", "webapi/package.json", "bun.lock", "Cargo.lock", "rust-toolchain.toml", "bunfig.toml", "scripts/select.ts", "scripts/testMap.ts", "webapi/src/lib.rs", "tooling/build.js", "vendor/x/lib.rs"]) {
     expect([file, of(file).all]).toEqual([file, true]);
   }
+});
+
+// A folder tests build an app from, by its dependants (scripts/dependants.ts,
+// #2482): what the map saw each test load, its children's too, and what
+// imports or reads it. In shadow until the switch (`loadsArm`), so asked
+// for here (`loads: true`).
+const apps = ["test/browser.test.ts", "test/vite.test.ts", "test/pilot.test.ts", "test/lowering.test.ts", "test/flaky.test.ts"];
+const appsMap: TestMap = {
+  ...map,
+  units: Object.fromEntries(apps.map((file) => [file, bits(0)])),
+  paths: ["browser/playwright.config.ts", "browser/vitest.config.ts", "scripts/shard.ts", "tooling/build.js", "tooling/cli.js", "tooling/compat/report.js", "serde/cargo.ts"],
+  loads: {
+    of: {
+      // A Vite config by its bundle's sources, Playwright's by a child's.
+      "test/browser.test.ts": [0, 1],
+      // `tooling/build.js` in the build's child, which no import says.
+      "test/vite.test.ts": [3, 4],
+      "test/pilot.test.ts": [2, 5],
+      "test/lowering.test.ts": [2, 6],
+      // It failed as the map recorded it: its loads are unknown.
+      "test/flaky.test.ts": null,
+      "test/corpus.test.ts": [],
+    },
+  },
+};
+// The pilot imports the build, and reads its example's sources, which it
+// copies before a bundler reads the copy.
+const appsReach: Reach = new Map([
+  ...apps.map((file): [string, { modules: Set<string>; reads: Set<string> }] => [file, { modules: new Set(["test/setup.ts"]), reads: new Set() }]),
+  ["test/pilot.test.ts", { modules: new Set(["test/setup.ts", "tooling/build.js"]), reads: new Set(["examples/pilot"]) }],
+]);
+const ofApps = (...changed: string[]) => select(changed.map((file) => ({ file, hunks: [[1, 1]] as [number, number][] })), { files: apps, cases, map: appsMap, reach: appsReach, loads: true });
+
+test("a folder tests build an app from selects its dependants: what loads, imports or reads it, not everything", () => {
+  // The Vitest config, which no process loads by its own name: the browser
+  // files, and those whose loads are unknown.
+  expect(picked(ofApps("browser/vitest.config.ts"))).toEqual({ files: ["test/browser.test.ts", "test/flaky.test.ts"], cases: [], forms: [] });
+  // The build: its importers and its loaders.
+  const build = ofApps("tooling/build.js");
+  expect([build.all, build.files]).toEqual([false, ["test/vite.test.ts", "test/pilot.test.ts", "test/flaky.test.ts"]]);
+  expect(build.why).toBe("tooling/build.js: 1 test load it, 1 test import or read it, 1 whose loads are unknown");
+  // An example's source, which only its reader copies.
+  expect(ofApps("examples/pilot/frontend/src/api.js").files).toEqual(["test/pilot.test.ts", "test/flaky.test.ts"]);
+  // A file of a folder that's no module, a list: what loads its folder's.
+  expect(ofApps("tooling/compat/covered.txt").files).toEqual(["test/pilot.test.ts", "test/flaky.test.ts"]);
+  expect(ofApps("tooling/README.md").files).toEqual(["test/vite.test.ts", "test/pilot.test.ts", "test/flaky.test.ts"]);
+  // Everything still: what every Cargo build reads, a Rust source or a
+  // crate's manifest Cargo builds as a test's dependency, a module no test
+  // loads, imports or reads, and a map that recorded no loads.
+  for (const file of [".cargo/config.toml", "webapi/src/lib.rs", "serde/Cargo.lock", "tooling/unloaded.js", "wasm/web/new.ts"]) {
+    expect([file, ofApps(file).all]).toEqual([file, true]);
+  }
+  expect(ofApps("serde/Cargo.lock").why).toBe("serde/Cargo.lock is of serde/, which tests build as an app's dependency, which Cargo builds, and no process loads (rustc's references will say, #2608) (the change's own)");
+  expect(ofApps(".cargo/config.toml").why).toBe(".cargo/config.toml is what every test runs under (the change's own)");
+  expect(ofApps("tooling/unloaded.js").why).toBe("tooling/unloaded.js is of tooling/, which no test the map at 0 saw load, import or read (the change's own)");
+  const unrecorded = select([{ file: "tooling/build.js", hunks: [[1, 1]] }], { files: apps, cases, map: { ...appsMap, loads: undefined }, reach: appsReach, loads: true });
+  expect([unrecorded.all, unrecorded.why]).toEqual([true, "tooling/build.js is of tooling/, which tests build as an app's dependency, and the map at 0 recorded no loads (the change's own)"]);
+  // A loader of the corpus's file runs every case.
+  const corpusLoads = { ...appsMap, loads: { of: { ...appsMap.loads!.of, "test/corpus.test.ts": [4] } } };
+  expect(picked(select([{ file: "tooling/cli.js", hunks: [[1, 1]] }], { files: apps, cases, map: corpusLoads, reach: appsReach, loads: true }))).toEqual({
+    files: ["test/vite.test.ts", "test/flaky.test.ts"],
+    cases,
+    forms: [],
+  });
+  // In shadow, the rule that runs is still everything's.
+  expect(select([{ file: "tooling/build.js", hunks: [[1, 1]] }], { files: apps, cases, map: appsMap, reach: appsReach }).all).toBe(loadsArm === "shadow");
 });
 
 test("a baseline a test reads by a path its source doesn't spell picks its owners", () => {

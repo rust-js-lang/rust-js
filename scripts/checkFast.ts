@@ -1115,8 +1115,9 @@ if (import.meta.main) {
     console.log(`the selection: ${outcome(selection)}${selection.all ? "" : `, of ${pushSuite} test files and ${cases.length} corpus cases: ${selection.why}`}`);
   }
   // What it selected, which `bun run push` says on its line.
-  const shadow = selection.shadow === undefined ? null : { outcome: outcome(selection.shadow), all: selection.shadow.all, files: selection.shadow.files, cases: selection.shadow.cases, forms: selection.shadow.forms };
-  if (given === undefined) writeFileSync(selectionFile, JSON.stringify({ outcome: outcome(selection), all: selection.all, allOwn: selection.allOwn ?? null, shadow }));
+  // And each rule's in shadow, the item layer's and the loads' (#2288, #2482).
+  const shadows = Object.fromEntries(Object.entries(selection.shadows ?? {}).map(([rule, shadow]) => [rule, { outcome: outcome(shadow), all: shadow.all, files: shadow.files, cases: shadow.cases, forms: shadow.forms }]));
+  if (given === undefined) writeFileSync(selectionFile, JSON.stringify({ outcome: outcome(selection), all: selection.all, allOwn: selection.allOwn ?? null, shadows }));
   // Of a change to the iterators' code, the rows of their tables it names,
   // which size its job (#1364): some 0.1 s.
   const rows = touchesIterators([...changed, ...branch])
@@ -1141,11 +1142,12 @@ if (import.meta.main) {
   // Of another compiler's run, each test that failed with it, by its file,
   // which the retirement names (scripts/mutations.ts's `--retire`).
   const { failedTests } = await import("./mutations");
-  // Of the item layer's selection in shadow, each test that failed here it
-  // would have left out, a miss, which the push's line says (#2288).
-  if (given === undefined && shadow !== null) {
-    const missed = shadowMissed(shadow, failed.map(({ job: { cmd }, log }) => ({ file: cmd[2] ?? "", tests: failedTests(log) })));
-    writeFileSync(selectionFile, JSON.stringify({ outcome: outcome(selection), all: selection.all, allOwn: selection.allOwn ?? null, shadow: { ...shadow, missed } }));
+  // Of each selection in shadow, each test that failed here it would have
+  // left out, a miss, which the push's line says (#2288, #2482).
+  if (given === undefined && Object.keys(shadows).length > 0) {
+    const ranFailed = failed.map(({ job: { cmd }, log }) => ({ file: cmd[2] ?? "", tests: failedTests(log) }));
+    const missed = Object.fromEntries(Object.entries(shadows).map(([rule, shadow]) => [rule, { ...shadow, missed: shadowMissed(shadow, ranFailed) }]));
+    writeFileSync(selectionFile, JSON.stringify({ outcome: outcome(selection), all: selection.all, allOwn: selection.allOwn ?? null, shadows: missed }));
   }
   if (given !== undefined) for (const { job: { cmd }, log } of failed) for (const test of failedTests(log)) console.log(`failed with it: ${cmd[2]}\t${test}`);
   // Each failing job's whole output, kept past the next run as it failed
