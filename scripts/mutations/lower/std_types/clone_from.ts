@@ -226,4 +226,20 @@ export const mutations: Mutation[] = [  {
     replace: "                match None::<Vec<Stmt>> {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_forwarded_to_its_value.rs$"],
   },
+  {
+    name: "cell-clone-from-unsited",
+    breaks: "a cell a std `clone_from` writes by its `clone_from` is cloned as a whole, so an `Option`'s of two `Some`s, one a `RefCell` mutably borrowed, names `option.rs:2280:31`, its clone's, not `2288:42` (#2627)",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
+    find: "        let Some((key, at)) = self.called_row(StdRow::ClonedFromAt, item) else {\n",
+    replace: "        let Some((key, at)) = self.called_row(StdRow::ClonedFromAt, item).filter(|_| false) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_clone_from_of_a_borrowed_refcell_names_std_line\\.rs$"],
+  },
+  {
+    name: "cell-clone-from-reads-the-calls-clone",
+    breaks: "a cell's `clone_from`'s clone reads the call's `clonedAt` row too, which places it inside, so an `Option`'s of two `Some`s names its clone's `option.rs:2280:31`, not `2288:42` (#2627)",
+    file: "crates/rust-js-lower/src/std_types/clone_from.rs",
+    find: "        let calling = self.calling.take();\n        let mut out = Vec::new();\n",
+    replace: "        let calling = self.calling.get();\n        let mut out = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_clone_from_of_a_borrowed_refcell_names_std_line\\.rs$"],
+  },
 ];

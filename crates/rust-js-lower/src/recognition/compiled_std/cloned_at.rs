@@ -170,7 +170,15 @@ fn cloned_at_site(tcx: TyCtxt<'_>, imp: DefId, position: usize) -> Result<Option
         return Ok(None);
     };
     let mut found = IndexSet::default();
-    raised_through(tcx, instance, cell, 0, &mut IndexSet::default(), &mut found, None);
+    raised_through(
+        tcx,
+        (instance, Wanted::Either),
+        cell,
+        0,
+        &mut IndexSet::default(),
+        &mut found,
+        None,
+    );
     let mut found = found
         .into_iter()
         .map(|(file, line, column)| format!("{file}:{line}:{column}"));
@@ -207,19 +215,18 @@ fn oracle_sites(key: &str, position: usize) -> Vec<String> {
 }
 
 /// Whether `item`'s clone of a `RefCell` is placed by another than its
-/// call's row: a `Clone` impl's own methods, a std type's clone being
-/// `cloned_at`'s, asked by its type; or a clone into a place, a
-/// `ToOwned`'s `clone_into`, whose site its run chooses, of the part it
-/// clones into or the part it pushes; or one no program calls, a method of
+/// call's row: a `Clone` impl's `clone`, a std type's clone being
+/// `cloned_at`'s, asked by its type; or one no program calls, a method of
 /// a trait std keeps private, its specialization's, or a function it
-/// keeps private, `Cycle::new`.
+/// keeps private, `Cycle::new`. A clone into a place, a `clone_from` or a
+/// `clone_into`, is walked: what it keeps it writes by the cell's
+/// `clone_from`, at its `clonedFromAt` row, and what it adds by its
+/// `clone`, at its `clonedAt` row (#2627).
 fn cloned_elsewhere(tcx: TyCtxt<'_>, item: DefId) -> bool {
     let Some(trait_) = tcx.impl_of_assoc(item).and_then(|imp| tcx.impl_opt_trait_id(imp)) else {
         return !tcx.visibility(item).is_public();
     };
-    Some(trait_) == tcx.lang_items().clone_trait()
-        || (tcx.is_diagnostic_item(rustc_span::Symbol::intern("ToOwned"), trait_)
-            && tcx.item_name(item).as_str() == "clone_into")
+    (Some(trait_) == tcx.lang_items().clone_trait() && tcx.item_name(item).as_str() == "clone")
         || !tcx.visibility(trait_).is_public()
 }
 
@@ -231,7 +238,7 @@ fn cloned_elsewhere(tcx: TyCtxt<'_>, item: DefId) -> bool {
 /// method is declared (#2509).
 fn raised_through<'tcx>(
     tcx: TyCtxt<'tcx>,
-    instance: ty::Instance<'tcx>,
+    (instance, wanted): (ty::Instance<'tcx>, Wanted),
     needle: Ty<'tcx>,
     depth: usize,
     seen: &mut IndexSet<ty::Instance<'tcx>>,
@@ -304,23 +311,50 @@ fn raised_through<'tcx>(
         // its panic names where it's placed. Another frame that tracks it
         // places what it calls there too; a `RefCell`'s `borrow` of a sort's
         // comparison is no clone's.
-        if cell_clone(tcx, next.def_id()) {
-            all.extend(at);
+        if let Some(method) = cell_clone(tcx, next.def_id()) {
+            if wanted.takes(method) {
+                all.extend(at);
+            }
             continue;
         }
-        raised_through(tcx, next, needle, depth + 1, seen, all, at);
+        raised_through(tcx, (next, wanted), needle, depth + 1, seen, all, at);
     }
 }
 
-/// Whether `id` is a `RefCell`'s `clone` or `clone_from`, the clone whose
-/// panic the walk places (#2509).
-fn cell_clone(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    let Some(imp) = tcx.impl_of_assoc(id) else {
-        return false;
-    };
-    tcx.impl_opt_trait_id(imp) == tcx.lang_items().clone_trait()
+/// A `RefCell`'s method whose panic the walk places: its `clone`, or its
+/// `clone_from`, which a clone into a place calls of what it keeps (#2627).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) enum CellMethod {
+    Clone,
+    CloneFrom,
+}
+
+/// Which of a `RefCell`'s methods a walk places: one, a call's `clonedAt`
+/// row its `clone`'s and its `clonedFromAt` row its `clone_from`'s, or
+/// either, a std type's clone's and an iterator's steps'.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) enum Wanted {
+    Of(CellMethod),
+    Either,
+}
+
+impl Wanted {
+    fn takes(self, method: CellMethod) -> bool {
+        self == Wanted::Either || self == Wanted::Of(method)
+    }
+}
+
+/// Which of a `RefCell`'s `clone` and `clone_from` `id` is, the clone whose
+/// panic the walk places (#2509); `None` of another.
+fn cell_clone(tcx: TyCtxt<'_>, id: DefId) -> Option<CellMethod> {
+    let imp = tcx.impl_of_assoc(id)?;
+    let of_cell = tcx.impl_opt_trait_id(imp) == tcx.lang_items().clone_trait()
         && matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
-            ty::Adt(adt, _) if crate::recognition::std_item(tcx, StdItem::RefCell) == adt.did())
+            ty::Adt(adt, _) if crate::recognition::std_item(tcx, StdItem::RefCell) == adt.did());
+    of_cell.then(|| match tcx.item_name(id).as_str() {
+        "clone_from" => CellMethod::CloneFrom,
+        _ => CellMethod::Clone,
+    })
 }
 
 /// What rustc resolves `ty`'s `clone` to, in `typing_env` (#2509): std's
@@ -418,7 +452,12 @@ pub(super) fn cloned_methods(tcx: TyCtxt<'_>) -> Result<IndexMap<String, Vec<Opt
                         continue;
                     };
                     let key = format!("{path}::{step}");
-                    let sites = method_sites(tcx, method, (vec![self_ty.into()], CellAt::Cloned), cell)?;
+                    let sites = method_sites(
+                        tcx,
+                        (method, Wanted::Either),
+                        (vec![self_ty.into()], CellAt::Cloned),
+                        cell,
+                    )?;
                     let site = settled(&key, sites, &mut unsettled);
                     steps.push((key, site));
                 }
@@ -531,7 +570,7 @@ enum CellAt {
 /// None where its clauses don't hold of them, an `I: Iterator` made a cell.
 fn method_sites<'tcx>(
     tcx: TyCtxt<'tcx>,
-    method: DefId,
+    (method, wanted): (DefId, Wanted),
     (parent, cell_at): (Vec<ty::GenericArg<'tcx>>, CellAt),
     cell: Ty<'tcx>,
 ) -> Result<Vec<String>, String> {
@@ -653,7 +692,15 @@ fn method_sites<'tcx>(
         return Ok(Vec::new());
     };
     let mut found = IndexSet::default();
-    raised_through(tcx, instance, cell, 0, &mut IndexSet::default(), &mut found, None);
+    raised_through(
+        tcx,
+        (instance, wanted),
+        cell,
+        0,
+        &mut IndexSet::default(),
+        &mut found,
+        None,
+    );
     Ok(found
         .into_iter()
         .map(|(file, line, column)| format!("{file}:{line}:{column}"))
@@ -750,10 +797,10 @@ fn callables(tcx: TyCtxt<'_>) -> IndexSet<DefId> {
 /// `Result<&T, E>`'s `cloned`, a slice's `to_owned` (#2509). Not a
 /// `Clone` impl's own: a std type's clone is `cloned_at`'s, asked by its
 /// type, and its `clone_from` raises at a site its run chooses.
-pub(super) fn cloned_calls(tcx: TyCtxt<'_>) -> Result<IndexMap<String, Vec<Option<String>>>, String> {
+pub(super) fn cloned_calls(tcx: TyCtxt<'_>) -> Result<[Rows; 2], String> {
     let refcell = registry::by_path(tcx, StdCrate::Core, &["cell", "RefCell"]).ok_or("std has no `RefCell`")?;
     let cell = Ty::new_adt(tcx, tcx.adt_def(refcell), tcx.mk_args(&[tcx.types.u8.into()]));
-    let mut kept: IndexMap<String, Vec<Option<String>>> = IndexMap::default();
+    let mut kept: [Rows; 2] = Default::default();
     let mut unsettled: Vec<String> = Vec::new();
     for item in callables(tcx) {
         let generics = tcx.generics_of(item);
@@ -766,37 +813,39 @@ pub(super) fn cloned_calls(tcx: TyCtxt<'_>) -> Result<IndexMap<String, Vec<Optio
             continue;
         }
         let key = call_key(tcx, item);
-        let mut sites: Vec<Option<String>> = vec![None; generics.count()];
-        for (position, site) in sites.iter_mut().enumerate() {
-            if !matches!(
-                generics.param_at(position, tcx).kind,
-                ty::GenericParamDefKind::Type { .. }
-            ) {
-                continue;
+        for (table, method) in kept.iter_mut().zip([CellMethod::Clone, CellMethod::CloneFrom]) {
+            let mut sites: Vec<Option<String>> = vec![None; generics.count()];
+            for (position, site) in sites.iter_mut().enumerate() {
+                if !matches!(
+                    generics.param_at(position, tcx).kind,
+                    ty::GenericParamDefKind::Type { .. }
+                ) {
+                    continue;
+                }
+                let found = method_sites(
+                    tcx,
+                    (item, Wanted::Of(method)),
+                    (call_parent(tcx, item, position, cell), CellAt::At(position)),
+                    cell,
+                )?;
+                // Of several, the oracle's; of one it found two of, by its
+                // runs, none: a `Bound<&T>`'s `cloned`, by its variant.
+                *site = match found.len() {
+                    0 => None,
+                    1 => found.into_iter().next(),
+                    _ => match oracle_sites(&key, position)[..] {
+                        [] => {
+                            unsettled.push(format!("{key} {position} ({method:?}): {}", found.join(", ")));
+                            None
+                        }
+                        [ref one] => Some(one.clone()),
+                        _ => None,
+                    },
+                };
             }
-            let found = method_sites(
-                tcx,
-                item,
-                (call_parent(tcx, item, position, cell), CellAt::At(position)),
-                cell,
-            )?;
-            // Of several, the oracle's; of one it found two of, by its
-            // runs, none: a `Bound<&T>`'s `cloned`, by its variant.
-            *site = match found.len() {
-                0 => None,
-                1 => found.into_iter().next(),
-                _ => match oracle_sites(&key, position)[..] {
-                    [] => {
-                        unsettled.push(format!("{key} {position}: {}", found.join(", ")));
-                        None
-                    }
-                    [ref one] => Some(one.clone()),
-                    _ => None,
-                },
-            };
-        }
-        if sites.iter().any(Option::is_some) && kept.insert(key.clone(), sites).is_some() {
-            return Err(format!("two of std's functions are `{key}`"));
+            if sites.iter().any(Option::is_some) && table.insert(key.clone(), sites).is_some() {
+                return Err(format!("two of std's functions are `{key}`"));
+            }
         }
     }
     if !unsettled.is_empty() {
@@ -807,6 +856,10 @@ pub(super) fn cloned_calls(tcx: TyCtxt<'_>) -> Result<IndexMap<String, Vec<Optio
     }
     Ok(kept)
 }
+
+/// Rows of `clonedAt` or `clonedFromAt`: each key's site at each position,
+/// `null` where none is raised.
+type Rows = IndexMap<String, Vec<Option<String>>>;
 
 /// The arguments of `item`'s impl a walk of a call of it is given: the one
 /// at `position` a `cell`; one the impl's self type gives a parameter of its

@@ -262,6 +262,30 @@ const $stdSites = {
     "<[core::mem::maybe_uninit::MaybeUninit<T>]>::write_clone_of_slice": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1242:41"
     ],
+    "<alloc::borrow::Cow<'_, B> as core::clone::Clone>::clone_from": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/borrow.rs:78:14"
+    ],
+    "<alloc::boxed::Box<[T], A> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
+      null
+    ],
+    "<alloc::collections::binary_heap::BinaryHeap<T, A> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
+      null
+    ],
+    "<alloc::collections::btree::set::BTreeSet<T, A> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/btree/map.rs:258:45",
+      null
+    ],
+    "<alloc::collections::linked_list::LinkedList<T, A> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
+      null
+    ],
+    "<alloc::collections::vec_deque::VecDeque<T, A> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
+      null
+    ],
     "<alloc::rc::Rc<[T]> as core::convert::From<&[T]>>::from": [
       null,
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
@@ -277,6 +301,10 @@ const $stdSites = {
     "<alloc::sync::Arc<[T]> as core::convert::From<&mut [T]>>::from": [
       null,
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+    ],
+    "<alloc::vec::Vec<T, A> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
+      null
     ],
     "<alloc::vec::Vec<T> as core::convert::From<&[T; N]>>::from": [
       null,
@@ -348,6 +376,24 @@ const $stdSites = {
     ],
     "<core::iter::sources::repeat_n::RepeatN<A> as core::iter::traits::iterator::Iterator>::next": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "<core::option::Option<T> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
+    ],
+    "<core::result::Result<T, E> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1898:27",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1899:29"
+    ],
+    "<std::collections::hash::map::HashMap<K, V, S, A> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone.rs:236:5",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone.rs:236:5",
+      null,
+      null
+    ],
+    "<std::collections::hash::set::HashSet<T, S, A> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone.rs:236:5",
+      null,
+      null
     ],
     "[T; N]": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/array/mod.rs:494:21"
@@ -440,6 +486,9 @@ const $stdSites = {
     ],
     "alloc::slice::<impl [T]>::to_vec": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38"
+    ],
+    "alloc::slice::<impl alloc::borrow::ToOwned for [T]>::clone_into": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
     ],
     "alloc::slice::<impl alloc::borrow::ToOwned for [T]>::to_owned": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38"
@@ -928,9 +977,6 @@ const $stdSites = {
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1795:24",
       null
     ],
-    "core::slice::<impl [T]>::fill": [
-      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/specialize.rs:12:20"
-    ],
     "core::slice::iter::ChunkBy": [
       null,
       null,
@@ -964,6 +1010,69 @@ const $stdSites = {
     ],
     "std::sync::once_lock::OnceLock": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+    ]
+  },
+  "clonedFromAt": {
+    "<T as alloc::borrow::ToOwned>::clone_into": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/borrow.rs:82:16"
+    ],
+    "<alloc::borrow::Cow<'_, B> as core::clone::Clone>::clone_from": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/borrow.rs:82:16"
+    ],
+    "<alloc::boxed::Box<T, A> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/boxed.rs:2189:18",
+      null
+    ],
+    "<alloc::boxed::Box<[T], A> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/boxed.rs:2221:18",
+      null
+    ],
+    "<alloc::collections::binary_heap::BinaryHeap<T, A> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:838:16",
+      null
+    ],
+    "<alloc::collections::linked_list::LinkedList<T, A> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/collections/linked_list.rs:2227:18",
+      null
+    ],
+    "<alloc::vec::Vec<T, A> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:838:16",
+      null
+    ],
+    "<core::cmp::Reverse<T> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/cmp.rs:745:16"
+    ],
+    "<core::io::cursor::Cursor<T> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/io/cursor.rs:293:20"
+    ],
+    "<core::option::Option<T> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2288:42"
+    ],
+    "<core::result::Result<T, E> as core::clone::Clone>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1906:38",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1907:40"
+    ],
+    "<std::collections::hash::map::HashMap<K, V, S, A> as core::clone::Clone>::clone_from": [
+      null,
+      null,
+      "/cargo/registry/25cdd57fae9f0462/hashbrown-0.17.1/src/map.rs:199:27",
+      null
+    ],
+    "<std::collections::hash::set::HashSet<T, S, A> as core::clone::Clone>::clone_from": [
+      null,
+      "/cargo/registry/25cdd57fae9f0462/hashbrown-0.17.1/src/map.rs:199:27",
+      null
+    ],
+    "alloc::slice::<impl alloc::borrow::ToOwned for [T]>::clone_into": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:838:16"
+    ],
+    "core::array::<impl core::clone::Clone for [T; N]>::clone_from": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/array/mod.rs:472:14",
+      null
+    ],
+    "core::slice::<impl [T]>::fill": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/specialize.rs:12:20"
     ]
   },
   "flattenCount": [

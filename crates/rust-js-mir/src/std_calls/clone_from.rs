@@ -22,7 +22,9 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         Ok(Value::Expr({
-            let ty = arg_tys[1].peel_refs();
+            // The destination's type, the source's of a `clone_from`, a
+            // `Vec` of a slice's `clone_into` (#2627).
+            let ty = arg_tys[0].peel_refs();
             let dest = values.next().expect("the destination");
             let source = values.next().expect("the source");
             let source = self.value_expr(source, span)?;
@@ -46,10 +48,14 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             self.flush(state, out)?;
             // Read again by what's asked, each side and the clone; not where
             // it's written over whatever it holds, read once, `clone_into`'s.
+            // Asked as the write is made again below, so the call's row its
+            // clone takes is left for that one (`call_clone_site`, #2627).
+            let calling = self.calling.get();
             let once = matches!(
                 self.written_over(ty, (to.clone(), pointer.clone()), source.clone(), span)?,
                 Some((None, _))
             );
+            self.calling.set(calling);
             let source = match source.reads_same() || once {
                 true => source,
                 false => self.spill(Role::Source, source, out),

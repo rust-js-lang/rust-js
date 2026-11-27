@@ -125,8 +125,14 @@ test("a std type's clone site is read of the impl rustc resolves, not a list of 
 // `to_owned`, which no model bound, named the caller's line (#2509).
 test("a std call's clone site is read of the function rustc resolves, not of the catalog", () => {
   const lowering = read("crates/rust-js-lower/src/std_impls/clones.rs");
-  const at = lowering.indexOf("    pub(crate) fn call_clone_site(");
-  const reader = lowering.slice(at, lowering.indexOf("\n    }\n", at));
+  const body = (name: string) => {
+    const at = lowering.indexOf(`    pub(crate) fn ${name}(`);
+    return lowering.slice(at, lowering.indexOf("\n    }\n", at));
+  };
+  // Both rows, a cell's `clone`'s and its `clone_from`'s, read by one
+  // lookup (#2627).
+  expect(body("call_clone_site")).toContain("self.called_row(StdRow::ClonedAt,");
+  const reader = body("called_row");
   expect(reader).toContain("traits::resolve(");
   expect(reader).toContain("call_key(");
   expect(reader).not.toContain("path_of(self.tcx, callee)");

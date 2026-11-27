@@ -42,4 +42,20 @@ export const mutations: Mutation[] = [
     replace: "                Value::Ref(_) => None,\n",
     tests: ["test/lowering-std-unwinds.test.ts", "-t", "generic clone_from"],
   },
+  {
+    name: "clone-from-probe-takes-the-row",
+    breaks: "`clone_from`'s first ask of how its target is written takes the call's row, so the write it makes names the caller's line where a `Vec`'s pushes a clone of a borrowed `RefCell`, not `function.rs:166:5` (#2627)",
+    file: "crates/rust-js-mir/src/std_calls/clone_from.rs",
+    find: "            self.calling.set(calling);\n",
+    replace: "            let _ = calling;\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_clone_from_of_a_borrowed_refcell_names_each_parts_line\\.rs$"],
+  },
+  {
+    name: "clone-into-of-the-sources-type",
+    breaks: "a slice's `clone_into` is written of the slice's type, not its target's `Vec`, so it replaces the target whole, each clone at what it adds' line, where std writes what the target keeps by each cell's `clone_from`, `slice.rs:838:16` (#2627)",
+    file: "crates/rust-js-mir/src/std_calls/clone_from.rs",
+    find: "            let ty = arg_tys[0].peel_refs();\n",
+    replace: "            let ty = arg_tys[1].peel_refs();\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_into_of_a_borrowed_refcell_names_each_parts_line\\.rs$"],
+  },
 ];

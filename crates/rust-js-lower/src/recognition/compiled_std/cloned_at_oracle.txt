@@ -13,3 +13,5 @@ core::iter::adapters::cloned::Cloned::min_by 0 library/core/src/ops/function.rs:
 alloc::collections::btree::set::BTreeSet 0 library/alloc/src/collections/btree/map.rs:258:45
 core::ops::range::Bound::<&T>::cloned 1 library/core/src/ops/range.rs:827:53
 core::ops::range::Bound::<&T>::cloned 1 library/core/src/ops/range.rs:828:53
+<alloc::collections::vec_deque::VecDeque<T, A> as core::clone::Clone>::clone_from 0 library/core/src/ops/function.rs:166:5
+<alloc::collections::btree::set::BTreeSet<T, A> as core::clone::Clone>::clone_from 0 library/alloc/src/collections/btree/map.rs:258:45

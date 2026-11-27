@@ -192,6 +192,14 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "clone-into-as-to-owned",
+    breaks: "`ToOwned::clone_into` is taken for a `to_owned()`, so `v[..].clone_into(&mut w)` leaves `w` as it was (#2627)",
+    file: "crates/rust-js-lower/src/recognition/conversions.rs",
+    find: "        _ if method == \"clone_into\" => Std::CloneInto,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^clone_into_writes_its_target\\.rs$"],
+  },
+  {
     name: "blanket-to-owned-shared",
     breaks:
       "`to_owned()` of a `T: Clone`, std's blanket impl, is the value it's given, not its `clone()`: a change to the copy changes the original (#316)",

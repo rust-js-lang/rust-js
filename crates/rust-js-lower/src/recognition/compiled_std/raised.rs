@@ -541,12 +541,18 @@ pub(crate) fn raised_catalogue(tcx: TyCtxt<'_>) -> Result<String, String> {
         }
     }
     held_steps_checked(HELD_STEPS, HELD_STEPS_ELSEWHERE)?;
+    // A call's rows of a cell's `clone` and of its `clone_from` (#2627).
+    let [calls, calls_from] = super::cloned_at::cloned_calls(tcx)?;
     let cloned: ::serde_json::Map<String, ::serde_json::Value> = (super::cloned_at::cloned_at(tcx)?.into_iter())
         .chain(super::cloned_at::cloned_methods(tcx)?)
-        .chain(super::cloned_at::cloned_calls(tcx)?)
+        .chain(calls)
         .map(|(key, sites)| (key, ::serde_json::Value::from(sites)))
         .collect();
     kept.insert(StdRow::ClonedAt.name(), ::serde_json::Value::Object(cloned));
+    let cloned_from: ::serde_json::Map<String, ::serde_json::Value> = (calls_from.into_iter())
+        .map(|(key, sites)| (key, ::serde_json::Value::from(sites)))
+        .collect();
+    kept.insert(StdRow::ClonedFromAt.name(), ::serde_json::Value::Object(cloned_from));
     for &(name, _, owner, step) in HELD_STEPS {
         let id = function(tcx, owner, step).ok_or_else(|| format!("std has no `{step}` of {owner:?}"))?;
         let sites = held_step_sites(tcx, id, step);

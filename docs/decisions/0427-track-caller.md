@@ -931,3 +931,77 @@ that `call_clone_site` reads the resolved function's row and
 `once-cell-clone-at-options-row` and `once-cell-unneeded-clone-made`.
 `models-path-of-one-impl` goes with the code it mutated: `path_of` now
 names an iterator struct alone.
+
+## Amendment: a clone into a place is placed by its parts, and writes its target (2026-11-27, #2627)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)) for the panic's line;
+and for two writes that were lost, results that changed.
+
+#2509's review found a clone into a place named another line than std's
+of a `RefCell` mutably borrowed: an `Option`'s `clone_from` of two `Some`s
+`option.rs:2280:31` for `2288:42`, a `Vec`'s `slice.rs:432:38` for
+`838:16` or `166:5` by its lengths, a `LinkedList`'s `166:5` for
+`linked_list.rs:2227:18`, an array's, a `Box`'s, a `Result`'s and a
+`Reverse`'s their clone's lines, not their `clone_from`'s. Probing them
+found two wrong values:
+
+- **A `Vec`'s or an array's `clone_from` of cells left its target as it
+  was** where native writes what it can before a cell's clone panics,
+  `[5, 6]` for `[1, 6]`: `clone_may_panic` (in_turn.rs) took a `RefCell`'s
+  clone never to panic, as its value's doesn't, so std's in-place
+  `$cloneIntoVec` wasn't asked for and `*w = v.clone()` was written. A
+  `RefCell`'s clone always may: it borrows the cell. No corpus snapshot
+  moves.
+- **`ToOwned::clone_into` didn't write its target at all**, of any type:
+  each of `ToOwned`'s methods was taken for `to_owned()`
+  (recognition/calls.rs), so `v[..].clone_into(&mut w)` and `5u8.clone_into(
+  &mut n)` left `w` and `n` as they were. `clone_into` is now
+  `Std::CloneInto`, `target.clone_from(x)`'s write of the target's type, a
+  `Vec`'s of a slice, a `String`'s of a `str`, of a place no assignment
+  writes, `*opt.as_mut().unwrap()`, written in place. `to_owned_of`, which
+  says it, moves to recognition/conversions.rs with `ToOwned`'s other
+  conversions, its own commit, as recognition/calls.rs is at its cap.
+
+The site is std's MIR's, by the part that runs. std writes what a clone
+into a place keeps by the cell's `clone_from`, and clones what it adds:
+the walk tells the two apart (`CellMethod`), and `bun run std` writes each
+call's rows of both, its `clone`'s in `clonedAt` and its `clone_from`'s in
+a new row, `clonedFromAt`, each by the function rustc resolves the call to
+(`call_key`) and the cell's position. `Clone::clone_from` and `clone_into`
+are walked now; only a `Clone` impl's `clone` is `cloned_at`'s. Of the two
+that walk to two sites of one method, a `VecDeque`'s and a `BTreeSet`'s
+`clone_from`, the native oracle settles them (test/std-cloned-at.rs). The
+lowering writes a cell a std `clone_from` keeps, `cell_written_over`, as
+its clone written over it, raised at the call's `clonedFromAt` row: of an
+`Option`'s two `Some`s, an array's, a `Box`'s, a `Result`'s and a
+`Reverse`'s value, and each item a `Vec`, a slice's `clone_into`, a
+`LinkedList` or a slice's `fill` keeps, the runtime's `cloneFrom`; what
+they add is the call's `clonedAt` row, `call_clone_site`'s, which
+`called_row` reads for both. `clone_from`'s first ask of how its target is
+written leaves the row for the write it makes. A cell whose value has a
+destructor, which the write would drop, keeps the clone's line for now.
+
+A slice's `fill` moves: std's `SpecFill` writes each item by its
+`clone_from`, so its row is `clonedFromAt`'s and `$fill` is given a
+`cloneFrom`, `$fill(items, cell, undefined, (items, i, from) => { .. })`,
+the same site, `slice/specialize.rs:12:20`.
+
+Still #2627's: a `Cow<[T]>`'s `into_owned` and `to_mut`, whose `B` is the
+slice, not the cell, and a slice's `concat` and `join`, which the walk
+can't make of a cell (`V: Borrow<[T]>`); and the adapters, a `cloned()`
+zipped and those whose steps aren't known, which wait on a decision.
+
+Held by the corpus cases
+`option_clone_from_of_a_borrowed_refcell_names_std_line`,
+`vec_clone_from_of_a_borrowed_refcell_names_each_parts_line`,
+`linked_list_clone_from_of_a_borrowed_refcell_names_each_parts_line`,
+`clone_into_of_a_borrowed_refcell_names_each_parts_line`,
+`clone_from_of_a_borrowed_refcell_names_its_types_line`,
+`vec_deque_clone_from_of_a_borrowed_refcell_keeps_what_it_cloned` and
+`clone_into_writes_its_target`, each against native; test/std-cloned-at.rs'
+two runs; and the mutations `refcell-clone-never-panics`,
+`clone-into-as-to-owned`, `clone-into-of-the-sources-type`,
+`clone-from-probe-takes-the-row`, `cell-clone-from-unsited`,
+`cell-clone-from-reads-the-calls-clone`,
+`clone-into-place-unwalked` and `cell-clone-from-as-clone`.
+`clone-into-walked` goes with the code it mutated, `clone_into` walked now.

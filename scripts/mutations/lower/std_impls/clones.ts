@@ -672,8 +672,8 @@ export const mutations: Mutation[] = [
     name: "call-clone-site-any-position",
     breaks: "a call's row is read of a clone of any cell made under it, not of the cell it's given, so `resize` of `Vec`s of a borrowed `RefCell` names `resize`'s line where the item's own clone, a `Vec`'s, names its (#2509)",
     file: "crates/rust-js-lower/src/std_impls/clones.rs",
-    find: "        if let Some(at) = given_at(given)\n",
-    replace: "        if let Some(at) = given_at(given).or(Some(0))\n",
+    find: "        })?;\n        let key = crate::recognition::call_key(self.tcx, resolved);\n",
+    replace: "        }).or(Some(0))?;\n        let key = crate::recognition::call_key(self.tcx, resolved);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_resize_of_vecs_of_a_borrowed_refcell_names_the_inner_clones_line\\.rs$"],
   },
   {

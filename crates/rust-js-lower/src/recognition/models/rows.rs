@@ -46,6 +46,7 @@ std_rows! {
     ChainCount = "chainCount",
     Clamp = "clamp",
     ClonedAt = "clonedAt",
+    ClonedFromAt = "clonedFromAt",
     CopiedCount = "copiedCount",
     CopiedLast = "copiedLast",
     DurationAdd = "durationAdd",

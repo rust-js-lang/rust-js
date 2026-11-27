@@ -72,4 +72,16 @@ fn main() {
     let _held = cell.borrow_mut();
     at("core::ops::range::Bound::<&T>::cloned", 1, || drop(Bound::Included(&cell).cloned()));
     at("core::ops::range::Bound::<&T>::cloned", 1, || drop(Bound::Excluded(&cell).cloned()));
+    drop(_held);
+    // A clone into a place whose walk reaches the cell's clone by more than
+    // one path, of what it adds (#2627).
+    let deque = VecDeque::from([RefCell::new(0u8)]);
+    let _held = deque[0].borrow_mut();
+    let mut into = VecDeque::from([RefCell::new(1u8)]);
+    at("<alloc::collections::vec_deque::VecDeque<T, A> as core::clone::Clone>::clone_from", 0, || into.clone_from(&deque));
+    drop(_held);
+    let set = BTreeSet::from([RefCell::new(0u8)]);
+    let _held = set.first().expect("an item").borrow_mut();
+    let mut into = BTreeSet::from([RefCell::new(1u8)]);
+    at("<alloc::collections::btree::set::BTreeSet<T, A> as core::clone::Clone>::clone_from", 0, || into.clone_from(&set));
 }

@@ -899,6 +899,14 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             Std::CloneFrom => {
                 lower(move |this, state, values, out| this.mir_clone_from(state, values, (def_id, arg_tys), span, out))
             }
+            // `x.clone_into(&mut target)`: `target.clone_from(x)`, of the
+            // target's type, a `Vec`'s of a slice (#2627).
+            Std::CloneInto => lower(move |this, state, values, out| {
+                let mut given: Vec<Value<'tcx>> = values.collect();
+                given.reverse();
+                let tys = [arg_tys[1], arg_tys[0]];
+                this.mir_clone_from(state, &mut given.into_iter(), (def_id, &tys), span, out)
+            }),
             // `Rc::make_mut(&mut rc)` of a local `Rc` of this body, or one a
             // `&mut` reaches, its place's box (ADR 0523): the place given the
             // one `$makeMut` gives. Through a shared reference the place isn't

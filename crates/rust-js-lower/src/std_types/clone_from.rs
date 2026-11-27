@@ -90,6 +90,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )),
             ));
         }
+        // A cell's, std's `RefCell::clone_from`, where the call writes what
+        // it keeps by it, at its row (#2627).
+        if let Some(over) = self.cell_written_over(item, slot(), Expr::var(&from), span)? {
+            return Ok((None, Some(written(over))));
+        }
         if self.recognition().reaches_clone_from(item) {
             return Err(self.unsupported(
                 span,
@@ -342,6 +347,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.impl_call(clone_from, args, vec![target, from], span)?,
             )));
         }
+        // A cell's, std's `RefCell::clone_from`, where the call writes it so,
+        // at its row (#2627).
+        if let Some(over) = self.cell_written_over(held, place, from.clone(), span)? {
+            return Ok(Some((None, over)));
+        }
         if !self.clone_given(held) {
             return Ok(None);
         }
@@ -350,6 +360,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(clone_from.clone()),
             Expr::call(clone_from, vec![pointer, from]),
         )))
+    }
+
+    /// `place`, a `RefCell` `item`, written over by a clone of `from` as std's
+    /// `RefCell::clone_from` writes it, where the std function the call
+    /// being lowered is resolved to writes what it keeps by it: its panic,
+    /// `from` mutably borrowed, at that function's row of `clonedFromAt`, an
+    /// `Option`'s `clone_from`'s of two `Some`s, `option.rs:2288:42`, a
+    /// `Vec`'s of the items it keeps, `slice.rs:838:16`, where what it adds is
+    /// cloned at its `clonedAt` row, `166:5` (`called_row`, #2627). The
+    /// call's `clonedAt` row isn't read of it. `None` where the call has no
+    /// such row, or of a cell whose value has a destructor, which the write
+    /// would drop (#2627's rest).
+    fn cell_written_over(&mut self, item: ty::Ty<'tcx>, place: Expr, from: Expr, span: Span) -> R<Option<Expr>> {
+        use crate::recognition::models::rows::StdRow;
+        if !self.is_std_type(item, crate::recognition::StdItem::RefCell)
+            || self.drops(item) != crate::drops::Drops::Nothing
+        {
+            return Ok(None);
+        }
+        let Some((key, at)) = self.called_row(StdRow::ClonedFromAt, item) else {
+            return Ok(None);
+        };
+        let calling = self.calling.take();
+        let mut out = Vec::new();
+        let clone = Expr::raised_at(StdRow::ClonedFromAt.site_of(&key, at), || {
+            self.clone_value(from, item, span, &mut out)
+        });
+        self.calling.set(calling);
+        let clone = clone?;
+        if !out.is_empty() {
+            return Ok(None);
+        }
+        // Of a place no assignment writes, the cell a `&mut` is, `*opt.as_mut().unwrap()`,
+        // the cell changed in place.
+        Ok(Some(match place.is_assignable() {
+            true => Expr::assigned(place, clone),
+            false => self.in_place(InPlaceWriter::Assign, item, vec![place, clone], span)?,
+        }))
     }
 
     /// Whether `ty` is a type only a caller knows whose `Clone` dictionary

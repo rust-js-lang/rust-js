@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "        if self.is_copy(ty) || seen.contains(&ty) {\n            return false;\n        }\n        let seen = &mut { let mut path = seen.clone(); path.insert(ty); path };\n",
     tests: ["test/type-depth.test.ts", "-t", "plain$"],
   },
+  {
+    name: "refcell-clone-never-panics",
+    breaks: "a `RefCell`'s clone is taken never to panic, so a `VecDeque`'s `clone_from` of cells, one mutably borrowed, is `*w = v.clone()`, leaving it as it was, where std's has cleared it and pushed what it cloned before the cell's clone panicked (#2627)",
+    file: "crates/rust-js-lower/src/std_impls/in_turn.rs",
+    find: "            ty::Adt(..) if self.is_std_type(ty, crate::recognition::StdItem::RefCell) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^vec_deque_clone_from_of_a_borrowed_refcell_keeps_what_it_cloned\\.rs$"],
+  },
 ];

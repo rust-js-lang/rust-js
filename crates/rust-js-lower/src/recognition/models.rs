@@ -191,6 +191,7 @@ pub const MODELS: &[Entry] = &[
     entry("cloneOfClass", Model(Unproven(Why::Collections), &[]), ""),
     entry("cloned", Form(&[Path("core::iter::adapters::cloned::Cloned")]), "the lowering's, iterators/mir_steps/copies.rs: a `cloned()`, a map of each item's clone"),
     entry("clonedAt", Form(&[Row(StdRow::ClonedAt)]), "the lowering's, std_impls/clones.rs: each std type's key is held to std's MIR by test/std-cloned-at.test.ts, not a case each; a few corpus cases cover its reader (Campaign 5 step 2c)"),
+    entry("clonedFromAt", Form(&[Row(StdRow::ClonedFromAt)]), "the lowering's, std_types/clone_from.rs: where a std call's clone into a place raises a cell's `clone_from`, read of the function rustc resolves the call to (#2627)"),
     entry("closeBare", Glue, ""),
     entry("closeHolding", Glue, ""),
     entry("closing", Glue, ""),

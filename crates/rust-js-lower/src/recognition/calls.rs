@@ -901,7 +901,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Std::SliceToArray { into, owned });
         }
         tcx.is_diagnostic_item(Symbol::intern("ToOwned"), trait_)
-            .then(|| to_owned_of(ty))
+            .then(|| to_owned_of(tcx.item_name(def_id).as_str(), ty))
             .or_else(|| self.std_report(trait_, ty))
     }
 

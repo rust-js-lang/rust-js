@@ -431,6 +431,10 @@ pub enum Std {
     /// `dest.clone_from(&source)`: `mem::replace(dest, source.clone())`'s
     /// write, of a clone of the source.
     CloneFrom,
+    /// `x.clone_into(&mut target)`, `ToOwned`'s: `target.clone_from(x)`'s
+    /// write, as std's own writes its owned type, a `Vec`'s of a slice's
+    /// items as its `clone_from` does, of `target`'s type (#2627).
+    CloneInto,
     /// `x.to_owned()` of a `T: Clone`, std's blanket impl, whose body is
     /// `self.clone()`: its clone.
     ToOwnedClone,

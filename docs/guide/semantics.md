@@ -1686,7 +1686,9 @@ panics: a map's `clear()` is empty, its entries dropped once, `try {
 value, `try { <drop old> } finally { o = value; }`; `dedup_by` drops each
 duplicate as it's found, of a `Box`'s or an `Rc`'s too; and a `Vec`'s
 `clone_from` is std's, `$cloneIntoVec`, which cuts what it has past the
-source's length, writes over each it keeps, then clones the rest on; a
+source's length, writes over each it keeps, then clones the rest on, a
+slice's `clone_into` of a `Vec` too, and any `clone_into` its target's
+`clone_from` (#2627); a
 `VecDeque`'s clears, then clones, `$cloneIntoDeque`; a `HashMap`'s drops
 its entries, then clones, `$cloneIntoMap`; an array's writes each item
 over; and an `Option`'s, a `Box`'s or a `Reverse`'s is its value's, of an
@@ -1999,7 +2001,13 @@ Differences:
   `extend_from_within`'s, `write_clone_of_slice`'s, `Rc::unwrap_or_clone`'s
   and `make_mut`'s, an `Arc`'s, a `Cow<T>`'s `to_mut` and `into_owned`'s,
   a `T`'s `to_owned`, and each step's of a `repeat` or a `repeat_n`, a
-  clone of either its derive's (#2577, #2509); and a
+  clone of either its derive's (#2577, #2509); of a `RefCell` a std
+  `clone_from` or `clone_into` writes over, std's line of each part:
+  what it keeps at the cell's `clone_from`'s line, `option.rs:2288:42` of
+  an `Option`'s two `Some`s, `slice.rs:838:16` of a `Vec`'s or a slice's
+  items it keeps, `linked_list.rs:2227:18`, an array's, a `Box`'s, a
+  `Result`'s and a `Reverse`'s, and what it adds at its clone's,
+  `function.rs:166:5` (#2627); and a
   `cloned()`'s where every step its value is asked clones at one line,
   `function.rs:166:5` of a `count()` or a `fold`, `250:5` of a `next()`;
   of a `cloned()` collected, returned, stored, handed to generic code or

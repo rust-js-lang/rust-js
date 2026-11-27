@@ -78,6 +78,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Swap
                     | Std::Replace
                     | Std::CloneFrom
+                    | Std::CloneInto
                     | Std::Push
                     | Std::Same
                     | Std::Leak
@@ -621,7 +622,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let mut arg = || values.next().expect("rustc checked the arguments");
         Ok(match known {
-            Std::Swap | Std::Replace | Std::CloneFrom | Std::OptionTake | Std::OptionReplace | Std::MemTake => {
+            Std::Swap
+            | Std::Replace
+            | Std::CloneFrom
+            | Std::CloneInto
+            | Std::OptionTake
+            | Std::OptionReplace
+            | Std::MemTake => {
                 unreachable!("lowered from their places, above")
             }
             // An `Rc` is the JS reference itself: the garbage collector does

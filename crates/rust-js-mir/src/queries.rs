@@ -176,6 +176,7 @@ pub(super) fn lowered_from_values(known: Std) -> bool {
         Std::Swap
             | Std::Replace
             | Std::CloneFrom
+            | Std::CloneInto
             | Std::OptionTake
             | Std::OptionReplace
             | Std::MemTake

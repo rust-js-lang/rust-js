@@ -336,7 +336,7 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `clone_from` is asked of a `Clone` dictionary, which has only `clone`, and refused",
     file: "crates/rust-js-mir/src/dispatch.rs",
-    find: "        known != Some(Std::CloneFrom) && !rust_js_lower::recognition::is_fmt_method(self.tcx, def_id)\n",
+    find: "        !matches!(known, Some(Std::CloneFrom | Std::CloneInto))\n            && !rust_js_lower::recognition::is_fmt_method(self.tcx, def_id)\n",
     replace: "        !rust_js_lower::recognition::is_fmt_method(self.tcx, def_id)\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from.rs$"],
   },
@@ -738,8 +738,8 @@ export const mutations: Mutation[] = [
     name: "fmt-through-the-trait-call",
     breaks: "a formatting trait's `fmt` of std's impl goes by the trait call, whose dictionary entry gives text and takes no `Formatter`, where no recogniser takes it (#1477)",
     file: "crates/rust-js-mir/src/dispatch.rs",
-    find: "        known != Some(Std::CloneFrom) && !rust_js_lower::recognition::is_fmt_method(self.tcx, def_id)\n",
-    replace: "        known != Some(Std::CloneFrom)\n",
+    find: "        !matches!(known, Some(Std::CloneFrom | Std::CloneInto))\n            && !rust_js_lower::recognition::is_fmt_method(self.tcx, def_id)\n",
+    replace: "        !matches!(known, Some(Std::CloneFrom | Std::CloneInto))\n",
     tests: ["test/tidy-stages.test.ts", "-t", "a formatting trait's fmt is refused without its recogniser"],
   },
   {

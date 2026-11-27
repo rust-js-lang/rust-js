@@ -1213,6 +1213,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// whose dictionary's entry gives the value's text, no `Formatter`, so
     /// what no recogniser takes is refused, never that call (#1477).
     fn std_trait_call(&self, known: Option<Std>, def_id: rustc_span::def_id::DefId) -> bool {
-        known != Some(Std::CloneFrom) && !rust_js_lower::recognition::is_fmt_method(self.tcx, def_id)
+        !matches!(known, Some(Std::CloneFrom | Std::CloneInto))
+            && !rust_js_lower::recognition::is_fmt_method(self.tcx, def_id)
     }
 }

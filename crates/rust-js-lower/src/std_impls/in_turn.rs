@@ -15,7 +15,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a clone of `ty` may panic: a `Copy` value's never does, nor
     /// an `Rc`'s or a `Weak`'s, which counts one more; a hand-written
     /// `Clone`'s may, as its impl's methods may unwind, all but the crate's
-    /// that never do (ADR 0902); a derived one's, as its fields' do; std's
+    /// that never do (ADR 0902); a derived one's, as its fields' do; a
+    /// `RefCell`'s always, as its clone borrows it, which panics where it's
+    /// borrowed mutably (#2627); std's
     /// other types', a tuple's and an array's, as what they hold's do, and
     /// a closure's as its captures'; a type parameter's, a `dyn`'s or an
     /// opaque type's, anyone's (#708, #897). The one answer, which what
@@ -40,6 +42,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match ty.kind() {
             _ if let Some(imp) = self.recognition().user_impl(tr) => self.impl_may_unwind(imp),
             ty::Adt(..) if self.is_rc(ty) || self.counted_rc(ty).is_some() || self.counted_weak(ty).is_some() => false,
+            ty::Adt(..) if self.is_std_type(ty, crate::recognition::StdItem::RefCell) => true,
             ty::Adt(adt, args) if self.krate.foreign.compiled_by_rust_js(adt.did()) => {
                 (adt.all_fields()).any(|f| self.clone_may_panic_in(self.field_ty(f, args), seen))
             }

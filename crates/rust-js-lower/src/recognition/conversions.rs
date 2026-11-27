@@ -151,11 +151,13 @@ pub(super) fn try_conversion<'tcx>(from: Ty<'tcx>, to: Ty<'tcx>, into: bool) -> 
     }
 }
 
-/// `to_owned()` of a `ty`: a `str`'s is itself, and any other's, a
-/// slice's too, std's blanket impl for a `T: Clone`'s, its `clone()`, whose
-/// clone of a `[T]` copies it as its `to_vec()` does (#1109).
-pub(super) fn to_owned_of(ty: Ty<'_>) -> Std {
+/// `ToOwned`'s `method` of a `ty`: `clone_into`, a write of its target
+/// (#2627); `to_owned()`, of a `str` itself, and of any other, a slice's
+/// too, std's blanket impl for a `T: Clone`'s, its `clone()`, whose clone of
+/// a `[T]` copies it as its `to_vec()` does (#1109).
+pub(super) fn to_owned_of(method: &str, ty: Ty<'_>) -> Std {
     match () {
+        _ if method == "clone_into" => Std::CloneInto,
         _ if ty.is_str() => Std::Same,
         _ => Std::ToOwnedClone,
     }

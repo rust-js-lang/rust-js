@@ -502,8 +502,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return None;
         }
         let (callee, args) = self.calling.get()?;
-        // The position `item` is given at, of the call's arguments `given`:
-        // a clone of what holds it, an `Option`'s whose own clone places it,
+        if let Some((key, at)) = self.called_row(StdRow::ClonedAt, item) {
+            self.calling.take();
+            return Some(StdRow::ClonedAt.site_of(&key, at));
+        }
+        // The position `item` is given at, of the call's own arguments: a
+        // clone of what holds it, an `Option`'s whose own clone places it,
         // has none.
         let erased = self.tcx.erase_and_anonymize_regions(item);
         let given_at = |given: ty::GenericArgsRef<'tcx>| {
@@ -512,18 +516,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .is_some_and(|arg| self.tcx.erase_and_anonymize_regions(arg) == erased)
             })
         };
-        // The function rustc resolves the call to, a trait's method's impl.
-        let (resolved, given) = crate::traits::resolve(self.tcx, self.typing_env, callee, args)
-            .ok()
-            .flatten()
-            .map_or((callee, args), |instance| (instance.def_id(), instance.args));
-        let key = crate::recognition::call_key(self.tcx, resolved);
-        if let Some(at) = given_at(given)
-            && StdRow::ClonedAt.written(&key, at)
-        {
-            self.calling.take();
-            return Some(StdRow::ClonedAt.site_of(&key, at));
-        }
         given_at(args)?;
         let sig = self.tcx.fn_sig(callee).instantiate_identity().skip_normalization();
         let made = (self.tcx.instantiate_bound_regions_with_erased(sig).output()).ty_adt_def()?;
@@ -543,6 +535,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (row, _) = row?;
         self.calling.take();
         Some(StdRow::ClonedAt.site_of(&row, 0))
+    }
+
+    /// Of the std function rustc resolves the call being lowered to, its
+    /// row's key in `row`, `clonedAt` or `clonedFromAt`, and the position
+    /// of its generics `item`, a cell or what may be one, its callers ask, is
+    /// given at, where `bun run std` wrote a site there (`call_key`, #2509,
+    /// #2627). A clone of what holds the cell, an `Option`'s, has no
+    /// position.
+    pub(crate) fn called_row(&self, row: StdRow, item: Ty<'tcx>) -> Option<(String, usize)> {
+        let (callee, args) = self.calling.get()?;
+        let (resolved, given) = crate::traits::resolve(self.tcx, self.typing_env, callee, args)
+            .ok()
+            .flatten()
+            .map_or((callee, args), |instance| (instance.def_id(), instance.args));
+        let erased = self.tcx.erase_and_anonymize_regions(item);
+        let at = (given.iter()).position(|arg| {
+            arg.as_type()
+                .is_some_and(|arg| self.tcx.erase_and_anonymize_regions(arg) == erased)
+        })?;
+        let key = crate::recognition::call_key(self.tcx, resolved);
+        row.written(&key, at).then_some((key, at))
     }
 
     /// `clone_value` of `ty`, whose `item` the std item the call being made
