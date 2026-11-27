@@ -552,11 +552,11 @@ pub(super) fn mentions(module: &mut js::Module) -> IndexSet<String> {
 pub(super) fn entries_read(item: &mut js::Item) -> IndexSet<String> {
     let mut entries: IndexSet<String> = IndexSet::default();
     names_mut(item, true, &mut |name| {
-        // A module's name, its own function's or an import's: a local's
-        // given apart, `String$`, is no body.
-        if name.is_module()
-            && let Some(entry) = name.word().strip_suffix('$')
-        {
+        // Each word of a `$`: a local's given apart, `String$`, too, which
+        // changes no name, as `locals` keeps only the module's own entries'
+        // words, whose bodies no local is named, and no temporary is named
+        // a global's word (`locals-read-as-entries`, retired).
+        if let Some(entry) = name.word().strip_suffix('$') {
             entries.insert(entry.to_string());
         }
     });

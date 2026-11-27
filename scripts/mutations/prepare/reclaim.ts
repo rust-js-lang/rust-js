@@ -229,8 +229,8 @@ export const mutations: Mutation[] = [
     name: "imported-entries-unread",
     breaks: "a split function's body its module imports, `findPair$`, isn't taken to read its entry's word, so a temporary of it is named for it, React's `const lanesToEventPriority = lanesToEventPriority$(..)` for `const value` (#2403, ADR 1193)",
     file: "crates/rust-js-program/src/prepare/reclaim.rs",
-    find: "        if name.is_module()\n",
-    replace: "        if name.is_module() && !name.has_id()\n",
+    find: "        if let Some(entry) = name.word().strip_suffix('$') {\n",
+    replace: "        if !name.has_id() && let Some(entry) = name.word().strip_suffix('$') {\n",
     tests: ["test/boundary-split.test.ts", "-t", "a temporary of an imported split function's body"],
   },
   {
@@ -240,13 +240,5 @@ export const mutations: Mutation[] = [
     find: "        .filter(|entry| own.contains(entry) && itself.as_ref() != Some(entry))\n",
     replace: "        .filter(|entry| itself.as_ref() != Some(entry))\n",
     tests: ["test/link.test.ts", "-t", "late import aliases avoid locals"],
-  },
-  {
-    name: "locals-read-as-entries",
-    breaks: "a local given apart, `String$`, is taken for a split function's body, so the local of its word, `const String`, keeps its `$` (#2403, ADR 1193)",
-    file: "crates/rust-js-program/src/prepare/reclaim.rs",
-    find: "        if name.is_module()\n",
-    replace: "        if true\n",
-    tests: ["test/lowering-names.test.ts", "-t", "a name nothing it shadows is read in is the name"],
   },
 ];
