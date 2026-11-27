@@ -457,7 +457,8 @@ pub(super) fn cloned_methods(tcx: TyCtxt<'_>) -> Result<IndexMap<String, Vec<Opt
                         (method, Wanted::Either),
                         (vec![self_ty.into()], CellAt::Cloned),
                         cell,
-                    )?;
+                    )?
+                    .unwrap_or_default();
                     let site = settled(&key, sites, &mut unsettled);
                     steps.push((key, site));
                 }
@@ -573,7 +574,7 @@ fn method_sites<'tcx>(
     (method, wanted): (DefId, Wanted),
     (parent, cell_at): (Vec<ty::GenericArg<'tcx>>, CellAt),
     cell: Ty<'tcx>,
-) -> Result<Vec<String>, String> {
+) -> Result<Option<Vec<String>>, String> {
     let generics = tcx.generics_of(method);
     let mut args = parent;
     let own = generics.parent_count..generics.count();
@@ -686,10 +687,10 @@ fn method_sites<'tcx>(
             })
     };
     if !holds {
-        return Ok(Vec::new());
+        return Ok(None);
     }
     let Ok(Some(instance)) = crate::traits::resolve(tcx, env, method, tcx.mk_args(&args)) else {
-        return Ok(Vec::new());
+        return Ok(Some(Vec::new()));
     };
     let mut found = IndexSet::default();
     raised_through(
@@ -701,10 +702,12 @@ fn method_sites<'tcx>(
         &mut found,
         None,
     );
-    Ok(found
-        .into_iter()
-        .map(|(file, line, column)| format!("{file}:{line}:{column}"))
-        .collect())
+    Ok(Some(
+        found
+            .into_iter()
+            .map(|(file, line, column)| format!("{file}:{line}:{column}"))
+            .collect(),
+    ))
 }
 
 /// `2`, a `usize` constant: what the walk makes a const parameter, an
@@ -797,7 +800,7 @@ fn callables(tcx: TyCtxt<'_>) -> IndexSet<DefId> {
 /// `Result<&T, E>`'s `cloned`, a slice's `to_owned` (#2509). Not a
 /// `Clone` impl's own: a std type's clone is `cloned_at`'s, asked by its
 /// type, and its `clone_from` raises at a site its run chooses.
-pub(super) fn cloned_calls(tcx: TyCtxt<'_>) -> Result<[Rows; 2], String> {
+pub(super) fn cloned_calls<'tcx>(tcx: TyCtxt<'tcx>) -> Result<[Rows; 2], String> {
     let refcell = registry::by_path(tcx, StdCrate::Core, &["cell", "RefCell"]).ok_or("std has no `RefCell`")?;
     let cell = Ty::new_adt(tcx, tcx.adt_def(refcell), tcx.mk_args(&[tcx.types.u8.into()]));
     let mut kept: [Rows; 2] = Default::default();
@@ -822,12 +825,21 @@ pub(super) fn cloned_calls(tcx: TyCtxt<'_>) -> Result<[Rows; 2], String> {
                 ) {
                     continue;
                 }
-                let found = method_sites(
-                    tcx,
-                    (item, Wanted::Of(method)),
-                    (call_parent(tcx, item, position, cell), CellAt::At(position)),
-                    cell,
-                )?;
+                // Its other parameters `u8`s, or where their clauses don't
+                // hold of one, `Vec`s of the cell, `concat`'s `[V]` of a
+                // `V: Borrow<[T]>` (#2627).
+                let walked = |other: Ty<'tcx>| {
+                    method_sites(
+                        tcx,
+                        (item, Wanted::Of(method)),
+                        (call_parent(tcx, (item, position), (cell, other)), CellAt::At(position)),
+                        cell,
+                    )
+                };
+                let found = match walked(tcx.types.u8)? {
+                    Some(found) => found,
+                    None => walked(vec_of(tcx, cell)?)?.unwrap_or_default(),
+                };
                 // Of several, the oracle's; of one it found two of, by its
                 // runs, none: a `Bound<&T>`'s `cloned`, by its variant.
                 *site = match found.len() {
@@ -864,8 +876,13 @@ type Rows = IndexMap<String, Vec<Option<String>>>;
 /// The arguments of `item`'s impl a walk of a call of it is given: the one
 /// at `position` a `cell`; one the impl's self type gives a parameter of its
 /// own with a default, that default, `Vec<T, A>`'s `A`'s `Global`; another
-/// a `u8`, a const `2`, a lifetime erased. None of a free function's.
-fn call_parent<'tcx>(tcx: TyCtxt<'tcx>, item: DefId, position: usize, cell: Ty<'tcx>) -> Vec<ty::GenericArg<'tcx>> {
+/// `other`, a `u8` or a `Vec` of the cell, a const `2`, a lifetime erased.
+/// None of a free function's.
+fn call_parent<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (item, position): (DefId, usize),
+    (cell, other): (Ty<'tcx>, Ty<'tcx>),
+) -> Vec<ty::GenericArg<'tcx>> {
     let Some(imp) = tcx.impl_of_assoc(item) else {
         return Vec::new();
     };
@@ -875,7 +892,7 @@ fn call_parent<'tcx>(tcx: TyCtxt<'tcx>, item: DefId, position: usize, cell: Ty<'
             _ if at == position => cell.into(),
             ty::GenericParamDefKind::Lifetime => tcx.lifetimes.re_erased.into(),
             ty::GenericParamDefKind::Const { .. } => two(tcx).into(),
-            ty::GenericParamDefKind::Type { .. } => tcx.types.u8.into(),
+            ty::GenericParamDefKind::Type { .. } => other.into(),
         })
         .collect();
     if let ty::Adt(adt, of) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind() {
@@ -893,4 +910,18 @@ fn call_parent<'tcx>(tcx: TyCtxt<'tcx>, item: DefId, position: usize, cell: Ty<'
         }
     }
     args
+}
+
+/// A `Vec` of `cell`, `Global`'s: what the walk makes a parameter whose
+/// clauses don't hold of a `u8`, a `[V]: Concat<T>`'s `V` (#2627).
+fn vec_of<'tcx>(tcx: TyCtxt<'tcx>, cell: Ty<'tcx>) -> Result<Ty<'tcx>, String> {
+    let vec = registry::by_path(tcx, StdCrate::Alloc, &["vec", "Vec"]).ok_or("std has no `Vec`")?;
+    // Its allocator its parameter's default, `Global`.
+    let allocator = tcx.generics_of(vec).param_at(1, tcx).def_id;
+    let global = tcx.type_of(allocator).instantiate_identity().skip_normalization();
+    Ok(Ty::new_adt(
+        tcx,
+        tcx.adt_def(vec),
+        tcx.mk_args(&[cell.into(), global.into()]),
+    ))
 }

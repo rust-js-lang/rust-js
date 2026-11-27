@@ -83,6 +83,7 @@ pub(super) fn fn_cx<'a, 'tcx>(
         module_fns_made: Default::default(),
         nulled_seen: Default::default(),
         calling: Default::default(),
+        cell_holders: Default::default(),
         frame: BodyFrame {
             thir: body.map_or(shared.no_body, |body| &body.thir),
             facts: body.map_or(shared.no_facts, |body| &body.facts),

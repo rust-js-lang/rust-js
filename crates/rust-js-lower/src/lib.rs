@@ -437,6 +437,11 @@ pub struct FnCx<'a, 'tcx> {
     /// taken by the first clone made under it (`call_clone_site`, #2509,
     /// #2577): set by MIR's call (`rust-js-mir`'s `mir_call`).
     pub calling: std::cell::Cell<Option<(DefId, ty::GenericArgsRef<'tcx>)>>,
+    /// How many clones of what holds a `RefCell` are being made, each at
+    /// its own row (`clone_site`): a clone of a cell inside one is placed by
+    /// it, never a call's clone of a cell it's given (`unplaced_call_clone`,
+    /// #2627).
+    pub cell_holders: std::cell::Cell<u32>,
     pub tcx: TyCtxt<'tcx>,
     pub typing_env: ty::TypingEnv<'tcx>,
     /// What the generic item being lowered is given, besides its arguments.

@@ -565,8 +565,8 @@ export const mutations: Mutation[] = [
     name: "container-clone-unsited",
     breaks: "a container's clone raises its `RefCell`'s panic where it's called, not where its clone clones the item, std's line or the derive's (#2471)",
     file: "crates/rust-js-lower/src/std_impls/clones.rs",
-    find: "            Some(at) => Expr::raised_at(at, || self.clone_parts_of(place, ty, span, out)),\n",
-    replace: "            Some(_) => self.clone_parts_of(place, ty, span, out),\n",
+    find: "                let made = Expr::raised_at(at, || self.clone_parts_of(place, ty, span, out));\n",
+    replace: "                let made = { let _ = at; self.clone_parts_of(place, ty, span, out) };\n",
     tests: ["test/binaries.test.ts", "-t", "a container's clone of a borrowed"],
   },
   {
@@ -672,8 +672,8 @@ export const mutations: Mutation[] = [
     name: "call-clone-site-unresolved",
     breaks: "a call's row is read of the function it names, not the one rustc resolves it to, so a slice's `to_owned`, `ToOwned::to_owned`, and `Vec::from(&[_])`, `From::from`, read none and name the caller's line, not `to_vec`'s `slice.rs:432:38` (#2509)",
     file: "crates/rust-js-lower/src/std_impls/clones.rs",
-    find: "            .map_or((callee, args), |instance| (instance.def_id(), instance.args));\n",
-    replace: "            .map_or((callee, args), |_| (callee, args));\n",
+    find: "            .map_or((callee, args), |instance| (instance.def_id(), instance.args))\n",
+    replace: "            .map_or((callee, args), |_| (callee, args))\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_to_owned_and_vec_from_of_a_borrowed_refcell_name_to_vecs_line\\.rs$"],
   },
   {
@@ -732,5 +732,21 @@ export const mutations: Mutation[] = [
     replace: "                    false => self.clone_parts_of(Expr::held(place), option, span, out)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^once_cells\\.rs$"],
     snapshots: true,
+  },
+  {
+    name: "unplaced-call-clone-allowed",
+    breaks: "a std call's clone of a cell inside what it's given, with no row, isn't refused, so a slice's `join` of cells names the caller's line where std names its own (#2627)",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "        self.unplaced_call_clone(ty, span)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^slice_join_of_refcells_refused\\.rs$"],
+  },
+  {
+    name: "cell-holders-unread",
+    breaks: "a clone of what holds a cell, placed at its own row, isn't asked of, so its cells' clones under a std call are refused, `resize` of `Vec`s of cells (#2627)",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "        if self.cell_holders.get() > 0\n",
+    replace: "        if false\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_resize_of_vecs_of_a_borrowed_refcell_names_the_inner_clones_line\\.rs$"],
   },
 ];

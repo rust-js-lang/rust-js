@@ -2073,7 +2073,7 @@ Differences:
   read of std's MIR of every std function a program may call, the one
   rustc resolves the call to: an `Option<&T>`'s or a `Result<&T, E>`'s
   `cloned`, `extend_from_slice`'s, `resize`'s, `vec![x; n]`'s, a slice's
-  `fill`'s, `to_vec`'s and `to_owned`'s, `Vec::from(&[T])`'s,
+  `fill`'s, `to_vec`'s, `to_owned`'s and `concat`'s, `Vec::from(&[T])`'s,
   `extend_from_within`'s, `write_clone_of_slice`'s, `Rc::unwrap_or_clone`'s
   and `make_mut`'s, an `Arc`'s, a `Cow<T>`'s `to_mut` and `into_owned`'s,
   a `T`'s `to_owned`, and each step's of a `repeat` or a `repeat_n`, a
@@ -2086,9 +2086,14 @@ Differences:
   `function.rs:166:5` (#2627); and a
   `cloned()`'s where every step its value is asked clones at one line,
   `function.rs:166:5` of a `count()` or a `fold`, `250:5` of a `next()`;
-  of a `cloned()` collected, returned, stored, handed to generic code or
-  asked steps of two lines, the call's line for now, until std's `Cloned`
-  is compiled (#1458); of a `repeat()`'s own `count` or `last`,
+  of a `cloned()` collected, returned, stored, handed to generic code,
+  asked steps of two lines or a step std's catalog doesn't run, a
+  `for_each`, a `partition`, a `min_by_key` or `max_by_key`, a `reduce`, a
+  `try_for_each`, a `map()`'s `sum()`, a `peekable()`'s `peek`, or given
+  to a `Vec`'s `extend`, the call's line, and of one zipped, which std
+  steps by its `TrustedRandomAccess` step, `cloned.rs:70:55`, `next`'s
+  `250:5` of a `count()` and the call's line of a `collect()`, for now,
+  until std's `Cloned` is compiled (#1458, #2627); of a `repeat()`'s own `count` or `last`,
   the nearest of std's frames above it that doesn't track its caller, an
   adapter's, a `copied()`'s or a `Box`'s, which each adapter of the
   runtime, `$copied` and a box's lend give as they pass the step on; of

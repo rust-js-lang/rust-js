@@ -484,6 +484,10 @@ const $stdSites = {
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/rc.rs:2250:56",
       null
     ],
+    "alloc::slice::<impl [T]>::concat": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
+    ],
     "alloc::slice::<impl [T]>::to_vec": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38"
     ],

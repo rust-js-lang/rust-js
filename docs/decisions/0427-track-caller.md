@@ -576,8 +576,9 @@ known, or are of two lines, the clone keeps the call's line: a `cloned()`
 collected, whose native line follows its source's `TrustedLen` (`166:5`
 of a slice's, `250:5` of a `filter()`'s), a `for` loop's, one returned,
 stored or handed to generic code, a `zip`'s (std's
-`__iterator_get_unchecked`, `cloned.rs:70:55`), or a `next()` then a
-`count()`. JS can't tell a `collect` from a `for` loop: both step
+`__iterator_get_unchecked`, `cloned.rs:70:55`; but see #2627's amendment:
+a zip's `count()` names `next`'s `250:5`, its `collect()` the call's
+line), or a `next()` then a `count()`. JS can't tell a `collect` from a `for` loop: both step
 `next()`. A runtime form that chooses by the step that runs would guess
 wrong, and a refusal would reject common code for a line, so these keep
 the call's line, `located-otherwise` against #2509 (Tu's decision), until
@@ -1005,3 +1006,50 @@ two runs; and the mutations `refcell-clone-never-panics`,
 `cell-clone-from-reads-the-calls-clone`,
 `clone-into-place-unwalked` and `cell-clone-from-as-clone`.
 `clone-into-walked` goes with the code it mutated, `clone_into` walked now.
+
+## Amendment: what's left of a clone of a borrowed cell, steps that wait on #1458, a `concat` walked, a `join` and a `Cow<[T]>` refused (2026-11-27, #2627)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)) for a `concat`; the
+case a line can't be kept for a `join` and a `Cow<[T]>`, a refusal; and
+Tu's exception above for the steps, the lead's decision of #2627's scope.
+
+- **Steps the catalog doesn't run wait on #1458.** A `cloned()` consumed by
+  `for_each`, `partition`, `min_by_key`, `max_by_key`, `reduce`,
+  `try_for_each` or a `map()`'s `sum()`, held by a `peekable()`, given to
+  a `Vec`'s `extend`, or reversed and collected, names the call's line:
+  none is one of the steps std's catalog runs (std_steps.txt), so what's
+  asked of the `Cloned` isn't known. A `cloned()` zipped is stepped by
+  std's `Zip` through `TrustedRandomAccess`'s `__iterator_get_unchecked`,
+  `cloned.rs:70:55`, which the catalog doesn't run either: a `count()` of
+  it names `next`'s `250:5`, the step the catalog's `Zip` asks, and a
+  `collect()` the call's line; the amendment of 2026-11-24 said it kept the
+  call's line, of which only the `collect()` does. Each is `located-otherwise`
+  against #1458, Tu's exception, as the guide lists it: the corpus cases
+  `cloned_zip_of_a_borrowed_refcell_names_another_line`,
+  `cloned_folded_by_a_consumer_of_a_borrowed_refcell_names_its_call`,
+  `cloned_peekable_of_a_borrowed_refcell_names_its_call` and
+  `cloned_extended_of_a_borrowed_refcell_names_its_call`.
+- **A `concat` is walked.** `<[T]>::concat`'s `Item` a cell holds no
+  clause of a `u8` `T`, `[u8]: Concat<cell>`, so it had no row: a walk
+  whose guessed parameters hold no clause is walked again with them a
+  `Vec` of the cell (`vec_of`), `concat`'s `V: Borrow<[T]>`, and its
+  `Item`'s row is std's `extend_from_slice`'s `function.rs:166:5`, as
+  native, of `Vec`s and arrays alike.
+- **A `join` and a `Cow<[T]>`'s `into_owned` and `to_mut` are refused.**
+  A `join` clones its parts' cells and its separator's at two lines,
+  `166:5` and `slice.rs:770:29`, of one cell type the walk can't tell
+  apart, and a `Cow<[T]>`'s `B` is the slice, which no row's position is.
+  Each clones a cell it's given inside an argument, never given itself,
+  where `bun run std` wrote no row: `unplaced_call_clone` refuses such a
+  clone, never the call's line silently, unless a clone of what holds the
+  cell places it, a `Vec`'s or a derive's (`cell_holders`, counted by
+  `clone_parts` as it places one), or the call is a `Clone` impl's, whose
+  rows are `cloned_at`'s by type. The refusal names what to write:
+  `to_vec()` or `extend_from_slice`, the same clones, whose lines rust-js
+  knows. The guide's limitations list it.
+
+Held by `slice_concat_of_a_borrowed_refcell_names_std_line` against native,
+the compile-fail cases `cow_slice_into_owned_of_refcells_refused` and
+`slice_join_of_refcells_refused`, the limitations page's example, and the
+mutations `walk-retried-never`, `unplaced-call-clone-allowed` and
+`cell-holders-unread`.

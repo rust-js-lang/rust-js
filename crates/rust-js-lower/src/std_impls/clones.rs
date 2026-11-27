@@ -145,6 +145,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(at) = self.call_clone_site(ty) {
             return Expr::raised_at(at, || self.clone_value(place, ty, span, out));
         }
+        self.unplaced_call_clone(ty, span)?;
         // What an `impl Trait` is arrives revealed, as MIR's types are
         // after analysis, a returned struct's or closure's, held or not
         // (`impl_trait_clone_held.rs`). A closure is its JS function, which shares what it captured: a
@@ -420,7 +421,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// #2471).
     fn clone_parts(&mut self, place: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         match self.clone_site(ty, None) {
-            Some(at) => Expr::raised_at(at, || self.clone_parts_of(place, ty, span, out)),
+            Some(at) => {
+                self.cell_holders.set(self.cell_holders.get() + 1);
+                let made = Expr::raised_at(at, || self.clone_parts_of(place, ty, span, out));
+                self.cell_holders.set(self.cell_holders.get() - 1);
+                made
+            }
             None => self.clone_parts_of(place, ty, span, out),
         }
     }
@@ -544,6 +550,67 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Some(StdRow::ClonedAt.site_of(&row, 0))
     }
 
+    /// Refused: a clone of a cell, `item`, a `RefCell` or what may be one,
+    /// that the std function the call being lowered is resolved to makes of
+    /// a cell inside what it's given, never given itself, where `bun run std`
+    /// wrote no row and no clone of what holds the cell places it: a
+    /// `Cow<[T]>`'s `into_owned` or `to_mut`, a slice's `join`, whose sites
+    /// its walk can't say, std's of what it's given and of its separator two
+    /// lines (#2627). Never silently the call's line. A cell given itself,
+    /// which std's code clones at no line of its own, a `RefCell`'s own
+    /// `clone`'s, and a `Clone` impl's, `clone_site`'s, are left.
+    fn unplaced_call_clone(&self, item: Ty<'tcx>, span: Span) -> R<()> {
+        let Some((callee, args)) = self.calling.get() else {
+            return Ok(());
+        };
+        if self.cell_holders.get() > 0
+            || !self.part_may_be_cell(item)
+            || crate::recognition::std_crate(self.tcx, callee.krate).is_none()
+        {
+            return Ok(());
+        }
+        let (resolved, given) = self.resolved_call((callee, args));
+        let clone = self.tcx.lang_items().clone_trait();
+        if self.tcx.trait_of_assoc(callee) == clone
+            || self
+                .tcx
+                .impl_of_assoc(resolved)
+                .is_some_and(|imp| self.tcx.impl_opt_trait_id(imp) == clone)
+        {
+            return Ok(());
+        }
+        let erased = self.tcx.erase_and_anonymize_regions(item);
+        let types = || {
+            given
+                .types()
+                .chain(args.types())
+                .map(|arg| self.tcx.erase_and_anonymize_regions(arg))
+        };
+        if types().any(|arg| arg == erased) {
+            return Ok(());
+        }
+        let Some(holder) = types().find(|arg| arg.walk().any(|part| part.as_type() == Some(erased))) else {
+            return Ok(());
+        };
+        Err(self.unsupported(
+            span,
+            &format!(
+                "`{}` cloning the `RefCell`s a `{holder}` holds, as where std's code of it raises a borrowed cell's clone isn't known (#2627): clone them with `to_vec()` or `extend_from_slice`, whose lines it knows",
+                self.tcx.def_path_str(resolved)
+            ),
+        ))
+    }
+
+    /// The function rustc resolves the call of `callee` given `args` to,
+    /// and what it's given: a trait's method's impl's, else the callee's
+    /// own (#2509, #2627).
+    fn resolved_call(&self, (callee, args): (DefId, ty::GenericArgsRef<'tcx>)) -> (DefId, ty::GenericArgsRef<'tcx>) {
+        crate::traits::resolve(self.tcx, self.typing_env, callee, args)
+            .ok()
+            .flatten()
+            .map_or((callee, args), |instance| (instance.def_id(), instance.args))
+    }
+
     /// Of the std function rustc resolves the call being lowered to, its
     /// row's key in `row`, `clonedAt` or `clonedFromAt`, and the position
     /// of its generics `item`, a cell or what may be one, its callers ask, is
@@ -551,11 +618,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// #2627). A clone of what holds the cell, an `Option`'s, has no
     /// position.
     pub(crate) fn called_row(&self, row: StdRow, item: Ty<'tcx>) -> Option<(String, usize)> {
-        let (callee, args) = self.calling.get()?;
-        let (resolved, given) = crate::traits::resolve(self.tcx, self.typing_env, callee, args)
-            .ok()
-            .flatten()
-            .map_or((callee, args), |instance| (instance.def_id(), instance.args));
+        let (resolved, given) = self.resolved_call(self.calling.get()?);
         let erased = self.tcx.erase_and_anonymize_regions(item);
         let at = (given.iter()).position(|arg| {
             arg.as_type()

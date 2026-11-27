@@ -114,4 +114,12 @@ export const mutations: Mutation[] = [
     replace: "        \"clone_from\" => CellMethod::Clone,\n",
     tests: ["test/std-sites.test.ts"],
   },
+  {
+    name: "walk-retried-never",
+    breaks: "a call whose guessed parameters hold no clause of a `u8` isn't walked again with them a `Vec` of the cell, so a slice's `concat` of cells has no row (#2627)",
+    file: "crates/rust-js-lower/src/recognition/compiled_std/cloned_at.rs",
+    find: "                    None => walked(vec_of(tcx, cell)?)?.unwrap_or_default(),\n",
+    replace: "                    None => Vec::new(),\n",
+    tests: ["test/std-sites.test.ts"],
+  },
 ];

@@ -133,11 +133,12 @@ test("a std call's clone site is read of the function rustc resolves, not of the
   // lookup (#2627).
   expect(body("call_clone_site")).toContain("self.called_row(StdRow::ClonedAt,");
   const reader = body("called_row");
-  expect(reader).toContain("traits::resolve(");
+  expect(reader).toContain("self.resolved_call(");
+  expect(lowering.slice(lowering.indexOf("    fn resolved_call("))).toContain("traits::resolve(");
   expect(reader).toContain("call_key(");
   expect(reader).not.toContain("path_of(self.tcx, callee)");
   const walk = read("crates/rust-js-lower/src/recognition/compiled_std/cloned_at.rs");
-  const from = walk.indexOf("pub(super) fn cloned_calls(");
+  const from = walk.indexOf("pub(super) fn cloned_calls");
   const calls = walk.slice(from, walk.indexOf("\n}\n", from));
   expect(calls).toContain("callables(tcx)");
   expect(calls).not.toContain("bound_paths");
