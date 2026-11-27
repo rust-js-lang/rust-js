@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-mir/src/tidy.rs",
     find: "                && let Some((test, then, _)) = value.some_where_parts()\n",
     replace: "                && let Some((test, then, _)) = value.some_where_parts().filter(|(_, _, there)| !there)\n",
-    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-types.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-props-read.test.ts", "test/bindings.test.ts", "test/react.test.ts", "test/lowering-option-truth.test.ts", "test/snapshots.test.ts", "test/pilot.test.ts"],
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-types.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-props-read.test.ts", "test/bindings.test.ts", "test/react.test.ts", "test/lowering-option-truth.test.ts", "test/snapshots.test.ts", "test/pilot-committed.test.ts", "test/pilot.test.ts"],
   },
   {
     name: "comments-before-unprinted-return-dropped",

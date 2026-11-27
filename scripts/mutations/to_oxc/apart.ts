@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/apart.rs",
     find: "        if start != 0 && body[i - 1].span().start > top && matches!(body[i], Statement::ImportDeclaration(_)) {\n",
     replace: "        if start != 0 && code_end > top && matches!(body[i], Statement::ImportDeclaration(_)) {\n",
-    tests: ["test/pilot.test.ts", "-t", "committed JS"],
+    tests: ["test/pilot-committed.test.ts", "-t", "committed JS"],
   },
   {
     name: "top-level-blank-untold",
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-emit/src/to_oxc/apart.rs",
     find: "        if lines.len() < 2 {\n",
     replace: "        if lines.len() < 1 {\n",
-    tests: ["test/pilot.test.ts", "-t", "the pilot's committed JS is what rust-js writes"],
+    tests: ["test/pilot-committed.test.ts", "-t", "the pilot's committed JS is what rust-js writes"],
   },
   {
     name: "binding-import-code-after-spaced",

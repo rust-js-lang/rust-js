@@ -21,7 +21,8 @@ in `node_modules` (ADR 0118).
 The JS rust-js writes is committed beside the Rust it's from, as ReScript's
 projects do (ADR 0041): [`frontend/src/api.js`](frontend/src/api.js) is
 [`api.rs`](frontend/src/api.rs)'s, and `models/src/lib.js` the models'. A
-change to the Rust is committed with its JS, which the test checks.
+change to the Rust is committed with its JS, which
+[`test/pilot-committed.test.ts`](../../test/pilot-committed.test.ts) checks.
 
 The client and the server share `models`: the JSON each sends is its
 serde derives, and `validate` is the rule both hold a contact to. The form

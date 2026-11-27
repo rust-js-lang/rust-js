@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-27 (#2524): test/pilot.test.ts' two tests of the pilot as it's committed, "the pilot names rust-js's crates and packages by version, not by a path into this checkout" and "the pilot's committed JS is what rust-js writes from its Rust", move unchanged to test/pilot-committed.test.ts, new, the push suite's, with no server, no Vite and no browser; test/pilot.test.ts keeps its 10 browser and server tests; the shared setup is test/pilot.ts; five mutations name the new file.
+
 Changed on 2026-11-26 (#2613, ADR 1146 amended): test/leases.test.ts gains "a lock's release lets it go once, and only while it names this process", "of two waiters that find a lock let go or stale in one instant, one takes it and the other never removes it" and "a run told to end while it waits for the turn it let go to a push leaves the push's turn alone"; five mutations, two retargeted.
 
 Changed on 2026-11-26 (#2600 step 4, ADRs 1208 and 0470 amended): six compile-fail corpus cases now compile, native-equal, renamed off `_refused`; two new corpus cases, `fn_closures_moved_into_what_is_made_called_once` and `fn_closure_in_a_struct_called_by_ref_then_by_value_refused`; test/diagnostics.test.ts's "an Fn given on where it's called once" becomes "an Fn called and given on where it's called once"; three new mutations, four retargeted.

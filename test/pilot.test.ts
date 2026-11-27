@@ -1,73 +1,26 @@
 // The pilot (ROADMAP M3.3, `examples/pilot`): a contacts app whose models and
 // their rules are one crate, used by a native server and by a React client
 // rust-js compiles, as Cargo checks the workspace (ADR 0101). Real Vite, a
-// real browser, the server running: every flow the roadmap names.
+// real browser, the server running: every flow the roadmap names. What's
+// committed, its manifests and its JS, test/pilot-committed.test.ts checks.
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { connect } from "node:net";
-import { dirname, join, relative } from "node:path";
+import { join } from "node:path";
 import { chromium, type Browser, type Locator, type Page } from "@playwright/test";
 import type { Subprocess } from "bun";
 import { build, createServer, type ViteDevServer } from "vite";
-import { checkCargo } from "../tooling/cargo.js";
-import { writePatch } from "../tooling/patch.js";
-import { runSync } from "./child";
+import { runSync, stopped } from "./child";
+import { install, keptPilot, setupLimit } from "./pilot";
 import { buildSerde } from "./serde-crate";
-import { buildCompiler, compiler, fixture, KeptApp, root, run, stdDir } from "./support";
+import { buildCompiler, compiler, root } from "./support";
 import { channel } from "../scripts/toolchain.ts";
 import { underLoad } from "../scripts/timing";
 import { browserDeadline, polled, seen, watcherSettled } from "./browser-waits";
 
-const checkout = join(root, "examples", "pilot");
-
-// The pilot, copied under `target/`, where its build writes its JS beside
-// its Rust (ADR 0041): never into the checkout, whatever compiler a test is
-// given. Kept between runs, its Cargo target in it, so a run that changes
-// none of what it's built from finds it built (`KeptApp`, #882).
-const kept = new KeptApp("pilot");
-kept.copy(checkout, "", (path) => !/(^|[/\\])(target|node_modules|dist|\.cargo)([/\\]|$)/.test(path));
+const kept = keptPilot();
 const pilot = kept.dir;
-
-/** The pilot is an app of its own, which names its packages by version
- * (ROADMAP M3.3): installed as a package manager installs them, this
- * checkout's, and Cargo told where its crates are by the patch `rust-js
- * build` writes. */
-function install() {
-  const packs = fixture("pilot-crates");
-  run([process.execPath, "scripts/package-npm-crates.ts", packs]);
-  // Each unpacked beside, then written where it differs: a crate's files
-  // unpacked anew are new to Cargo, which builds it again.
-  for (const name of ["builtins", "webapi", "react"]) {
-    const unpacked = join(packs, name);
-    mkdirSync(unpacked, { recursive: true });
-    run(["tar", "-xzf", join(packs, `${name}.tgz`), "-C", unpacked, "--strip-components", "1"]);
-    kept.copy(unpacked, join("node_modules", "@rust-js", name));
-  }
-  // rust-js's JS packages, and the libraries, as this checkout has them.
-  const linked: [string, string][] = [
-    ["@rust-js/std", stdDir],
-    ["@rust-js/build", join(root, "tooling")],
-    ...["react", "react-dom", "sonner", "vite", "@vitejs/plugin-react"].map((name): [string, string] => [name, join(root, "node_modules", name)]),
-  ];
-  for (const [name, target] of linked) {
-    // A link to nothing would be a page that never loads, each test's.
-    if (!existsSync(target)) throw new Error(`${name} isn't installed in this checkout: run \`bun install\``);
-    kept.link(join("node_modules", name), target);
-  }
-  kept.done();
-  writePatch(pilot);
-}
-
-/** The JS beside a pilot's Rust, by path. */
-function writtenJs(dir: string): Map<string, string> {
-  const found = new Map<string, string>();
-  for (const crate of ["frontend", "models"]) {
-    const src = join(dir, crate, "src");
-    for (const name of readdirSync(src).filter((n) => /\.jsx?$/.test(n))) found.set(join(crate, "src", name), readFileSync(join(src, name), "utf8"));
-  }
-  return found;
-}
 
 let api: Subprocess | undefined;
 let address = "";
@@ -91,13 +44,15 @@ async function startServer(env: Record<string, string> = {}): Promise<[Subproces
 
 beforeAll(async () => {
   buildCompiler();
-  install();
+  install(kept);
   // serde and serde_json, fetched as serde/build.sh locks them, which the
   // pilot's lockfile has too: its build is offline.
   buildSerde();
   // In the pilot, whose `.cargo/config.toml` is the patch.
-  const built = runSync(["cargo", `+${channel}`, "build", "--offline", "--quiet", "-p", "server"], pilot, 600_000);
-  if (built.code !== 0) throw new Error(`the server's build failed:\n${built.stderr}`);
+  const limit = setupLimit();
+  const built = runSync(["cargo", `+${channel}`, "build", "--offline", "--quiet", "-p", "server"], pilot, limit);
+  const why = stopped(built, limit);
+  if (built.code !== 0 || why) throw new Error(`the server's build failed${why ? `: it ${why}` : ""}:\n${built.stderr}`);
   [api, address] = await startServer();
   process.env.PILOT_API = address;
   // The client's Rust compiled, its maps too, as the developer builds it first.
@@ -106,7 +61,8 @@ beforeAll(async () => {
   vite = await createServer({ root: join(pilot, "web"), configFile: join(pilot, "web", "vite.config.js"), logLevel: "silent", server: { port: 0, watch: polled } });
   await vite.listen();
   await watcherSettled(vite, vite.config.root);
-}, 600_000);
+  // Its steps' limits together: the packs', the two builds' and the watcher's.
+}, underLoad(240_000));
 
 afterAll(async () => {
   await browser?.close();
@@ -126,9 +82,7 @@ async function settled(names: Locator, expected: string[]): Promise<string[]> {
   return last;
 }
 
-// The browser, launched by the first test that opens a page, so one that
-// checks only the committed JS, as a mutation's does, runs where none is
-// installed.
+// The browser, launched by the first test that opens a page.
 async function launched(): Promise<Browser> {
   browser ??= await chromium.launch({ headless: true });
   return browser;
@@ -140,53 +94,6 @@ async function open(hash = "#/"): Promise<Page> {
   await page.goto(vite!.resolvedUrls!.local[0] + hash);
   return page;
 }
-
-// An app of its own (ROADMAP M3.3), as one outside this repository is: its
-// crates and rust-js's packages by version, not a member of its workspace.
-// It names a release, which this checkout's crates, the ones the test
-// installs, are an upgrade of within its requirements: the pilot is the app
-// a release's upgrade is checked with (M4.3).
-test("the pilot names rust-js's crates and packages by version, not by a path into this checkout", () => {
-  const version = (dir: string) => readFileSync(join(root, dir, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
-  const manifest = JSON.parse(readFileSync(join(checkout, "package.json"), "utf8"));
-  const frontend = readFileSync(join(checkout, "frontend", "Cargo.toml"), "utf8");
-  // `~0.0.2` takes 0.0.2 up to 0.1.0, as Cargo and npm both read it.
-  const minor = (v: string) => v.split(".").slice(0, 2).join(".");
-  for (const [dir, crate] of [["builtins", "js"], ["webapi", "webapi"], ["react", "react"]]) {
-    const named = manifest.dependencies[`@rust-js/${dir}`];
-    expect(frontend).toContain(`${crate} = { package = "rust-js-${dir}", version = "~${named}" }`);
-    expect(Bun.semver.order(version(dir), named)).toBeGreaterThanOrEqual(0);
-    expect(minor(version(dir))).toBe(minor(named));
-  }
-  // One release of the compiler's packages, the react crate's too: 0.0.3's,
-  // whose helpers were `@rust-js/runtime`, which 0.0.4's upgrade replaces
-  // with `@rust-js/std` (#1095).
-  const release = manifest.devDependencies["@rust-js/native"];
-  expect([manifest.dependencies["@rust-js/runtime"], manifest.dependencies["@rust-js/react"], manifest.devDependencies["@rust-js/build"]]).toEqual([release, release, release]);
-  expect(manifest.scripts.build).toBe("rust-js build --package frontend --check && vite build web");
-  expect(manifest.scripts.postinstall).toBeUndefined();
-  for (const crate of ["frontend", "models", "server"]) {
-    expect(readFileSync(join(checkout, crate, "Cargo.toml"), "utf8")).not.toContain('path = "../../');
-  }
-  const workspaces: string[] = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).workspaces;
-  expect(workspaces.filter((dir) => dir.startsWith("examples/pilot"))).toEqual([]);
-});
-
-// What's committed is what rust-js writes now: a change to the Rust is
-// committed with its JS, as ReScript's projects do.
-test("the pilot's committed JS is what rust-js writes from its Rust", async () => {
-  const committed = writtenJs(checkout);
-  expect(committed.size).toBeGreaterThan(0);
-  // Built here, as `rust-js build` builds it, so a build that fails fails this.
-  const react = JSON.parse(readFileSync(join(pilot, "node_modules", "react", "package.json"), "utf8")).version;
-  await checkCargo({ manifestPath: join(pilot, "Cargo.toml"), toolchain: channel, compiler, packageNames: ["frontend"], offline: true, react, inSource: true });
-  // Blessed as the corpus is, `BLESS=1`: what's written, committed.
-  if (process.env.BLESS) {
-    for (const [path, js] of writtenJs(pilot)) writeFileSync(join(checkout, path), js);
-    return;
-  }
-  expect(writtenJs(pilot)).toEqual(committed);
-}, 600_000);
 
 test("the list loads from the server, and a search shows only what matches", async () => {
   const page = await open();
@@ -290,7 +197,12 @@ test("the server refuses invalid JSON and a contact breaking the rules", async (
 /** `rust-js build --package frontend`, in the pilot, as the developer runs
  * it beside Vite's dev server (ADR 0412): how it ended, and what it said. */
 function rustJs() {
-  return runSync([process.execPath, join(root, "tooling", "cli.js"), "build", "--package", "frontend"], pilot, 300_000, { RUST_JS_COMPILER: compiler });
+  const limit = setupLimit();
+  const built = runSync([process.execPath, join(root, "tooling", "cli.js"), "build", "--package", "frontend"], pilot, limit, { RUST_JS_COMPILER: compiler });
+  // A build stopped is never what a test expects, a compile error's either.
+  const why = stopped(built, limit);
+  if (why) throw new Error(`rust-js build ${why}:\n${built.stderr}`);
+  return built;
 }
 
 const list = join(pilot, "frontend", "src", "list.rs");
@@ -410,7 +322,7 @@ test("the production build, served by the native server with its API, works", as
   } finally {
     server.kill();
   }
-}, 600_000);
+});
 
 // Last: it stops the server. The list says why it has nothing, and loads
 // once the server is back.
