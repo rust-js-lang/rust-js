@@ -221,3 +221,19 @@ index, and its path inside it, as before: `scaled(p.y): expected a u32, got -2`.
 lone leaf's, one that says its `None`, a fieldless enum's or a callback's, it stays its own statement. Each
 place string is kept, so a message survives minification. The port is +2.92% gzip, +4.32% raw over its pin;
 gzip is the size measure (Tu's decision).
+
+## Consequence: an accepted port difference, a checking forwarder (Tu, 2026-11-27)
+
+react-server-dom-esm's ReactFlightDOMServerNode re-exports upstream's
+`decodeFormState`, `export {decodeFormState} from
+'react-server/src/ReactFlightActionServer'`; its port's `pub fn
+decode_form_state(..)` only passes its parameters on, which rust-js wrote
+as that re-export (ADR 1064). JS may call it, so it checks what JS gives
+it, `serverManifest` a string, and a function that checks is no
+re-export: it's `export function decodeFormState(actionResult, body,
+serverManifest) { $checkStr(..); return
+ReactFlightActionServer.decodeFormState(..); }`, where the Rust has it,
+after `decodeAction`. Tu accepted the difference (2026-11-27), of the
+boundary's checks as the (Y) forwarder is (ADR 1008, amended). ADR 0262
+case: results change (a value outside its type is refused), the check
+Rust's.
