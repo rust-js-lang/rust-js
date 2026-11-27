@@ -718,19 +718,42 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
   const useOrMod = (lines: string[]) => lines.some((line) => modLine.test(line)) && lines.every((line) => commentOnly(line) || modLine.test(line));
   const itemHeader = /^(\s*)(?:#\[.*\]\s*)*(?:pub(?:\([^)]*\))?\s+)?(?:(?:unsafe|default|auto|async|const|extern\s+"[^"]*")\s+)*(?:enum|struct|union|trait|type|const|static|fn)\s+([A-Za-z_]\w*)/;
   const implHeader = /^(\s*)(?:unsafe\s+)?impl\b(?:\s*<[^>]*>)?\s+(?:[^{]*?\bfor\s+)?(?:[\w]+::)*([A-Za-z_]\w*)/;
-  // The item `line` of `file` writes or is in: its own header, else the
-  // nearest header above it indented less.
+  // A line that goes on with what a line above at its indent opened, as
+  // rustfmt lays out what spans lines: a `where`, a lone `{`, or one that
+  // starts by closing a bracket, `) -> Option<StdLowering<..>>;`, `>;`, `];`,
+  // `}` or `} else {`.
+  const goesOn = /^\s*(?:[)\]}>]|where\s*$|\{\s*$)/;
+  // The item `line` of `file` writes or is in: its own header; of a line
+  // that goes on with one above at its indent, that line's item, so each
+  // line of an item written over several is its item's, its last at column
+  // 0 too (#2608: known_calls.rs:15, a `type` alias's); else the item of
+  // the nearest line above it indented less. A line at column 0 that is no
+  // item's header, an item macro's invocation, holds none: its lines are
+  // no item's above it.
   const itemOf = (file: string, line: number): string | undefined => {
     const lines = linesOf(file);
     const indent = (text: string) => text.match(/^\s*/)![0].length;
+    const skipped = (text: string) => text.trim() === "" || commentOnly(text);
     const own = lines[line - 1] ?? "";
     const header = (text: string) => itemHeader.exec(text)?.[2] ?? implHeader.exec(text)?.[2];
     if (header(own) !== undefined) return header(own);
-    for (let at = line - 1; at >= 1; at--) {
+    let opener = line;
+    if (goesOn.test(own)) {
+      for (let at = line - 1; at >= 1; at--) {
+        const text = lines[at - 1] ?? "";
+        if (skipped(text) || indent(text) > indent(own)) continue;
+        if (indent(text) < indent(own)) break;
+        if (header(text) !== undefined) return header(text);
+        if (goesOn.test(text)) continue;
+        // A block no item opens, an `if`'s: the item it's in.
+        opener = at;
+        break;
+      }
+    }
+    const under = indent(lines[opener - 1] ?? "");
+    for (let at = opener - 1; at >= 1 && under > 0; at--) {
       const text = lines[at - 1] ?? "";
-      if (text.trim() === "" || indent(text) >= indent(own)) continue;
-      const name = header(text);
-      if (name !== undefined) return name;
+      if (!skipped(text) && indent(text) < under) return itemOf(file, at);
     }
     return undefined;
   };

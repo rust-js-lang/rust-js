@@ -394,6 +394,24 @@ export const mutations: Mutation[] = [
     tests: ["test/test-map.test.ts", "-t", "a function's signature changed is its body"],
   },
   {
+    name: "test-map-item-last-line-unowned",
+    breaks:
+      "the last line of an item written over several, at column 0, `) -> Option<StdLowering<..>>;` of known_calls.rs' `type StdHandler` alias, is no item's, so what it names is a dead end of the search for namers: everything (#2608)",
+    file: "scripts/testMap.ts",
+    find: "    if (goesOn.test(own)) {\n",
+    replace: "    if (goesOn.test(own) && line < 0) {\n",
+    tests: ["test/test-map.test.ts", "-t", "a multi-line item's last line at column 0"],
+  },
+  {
+    name: "test-map-macro-invocation-item-above",
+    breaks:
+      "a line inside an item macro's invocation at column 0, `fields! {`'s, is the item's above the invocation, whose namers it selects, though what it changes is what the invocation writes (#2608)",
+    file: "scripts/testMap.ts",
+    find: "      if (!skipped(text) && indent(text) < under) return itemOf(file, at);\n",
+    replace: "      if (!skipped(text) && indent(text) < under && (itemOf(file, at) !== undefined || indent(text) > 0)) return itemOf(file, at);\n",
+    tests: ["test/test-map.test.ts", "-t", "a multi-line item's last line at column 0"],
+  },
+  {
     name: "test-map-namers-any-crate",
     breaks:
       "an item's namers are every site of its bare name, so another crate's word of it, which can't name it, a JS text's `configs` at rust-js-emit's prettier.rs:47 for rust-js-lower's, selects everything (#2608)",

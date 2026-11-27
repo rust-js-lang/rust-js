@@ -1246,3 +1246,48 @@ not another crate's word of its name". Mutations
 `test-map-namers-any-crate`, `test-map-namers-own-crate-only`,
 `test-map-trait-item-by-own-visibility`; `signature-change-pub-module-only`
 retargeted to the shared rule.
+
+## Amendment (2026-11-27, #2608): every line of a multi-line item is its item's
+
+The previous amendment's chase from dedb8fc2fe's closures.rs line 246 ended
+at rust-js-mir's `StdLowering`, named at dispatch/known_calls.rs:15 by
+`) -> Option<std_calls::StdLowering<'c, 'a, 'tcx>>;`. That is the last line
+of the `type StdHandler<..> = for<'s, 'c> fn(` alias, at column 0. `itemOf`
+took a line's item to be the nearest header indented less than the line,
+and nothing is indented less than column 0. So the line was no item's, and
+the search ended in everything. The same walk read past a line at column 0
+that is no item's header: a line inside an item macro's invocation,
+`fields! {`, was taken for the item above the invocation, whose namers it
+selected.
+
+Now `itemOf` gives a line that goes on with one above it at its indent its
+opener's item, as rustfmt lays out what spans lines. Such a line (`goesOn`)
+is a `where`, a lone `{`, or one that starts by closing a bracket: `) ->`,
+`>;`, `];`, `}`. That covers a type alias's, a const's and a static's last
+line, a struct's or an enum's closing brace past a `where`, and a function's.
+A block no item opens, an `if`'s, is the item it's in. A line inside a block
+opened at column 0 by no item's header, an item macro's invocation, is no
+item's: its item isn't found, and so everything, as nothing says which
+items the invocation writes.
+
+Replayed over the 16 compiler commits since the map at ac9716c758, without
+the item layer, the running selection is the same: 14 everything, 2 picks,
+none dropping a file. The dead end moved again. For line 246, for #2623's
+own_steps.rs line 176 (590bf56b8) and for three more commits it is now `Cx`,
+too short a name to search, reached after a longer chase: 6.9–8.2 s, and
+9.4 s for #2623. Earlier chases took 3.5–4.5 s, and before the previous
+amendment 0.4–0.7 s.
+
+That is the third dead end in a row of one mechanism, the search for an
+item's namers by its name as text: a crate that can't see it, a line no item
+held, and now a name too short. ADR 1085's cluster rule applies, so the
+short-name valve is not patched. #2608's design comment proposes that the
+map record the references rustc resolves in the compiler's crates, from the
+counting build, and that `pick` walk them in place of the search.
+#2626 is the stopgap: without the item layer, a comment line in a mixed
+hunk is searched at all.
+
+Test: "a multi-line item's last line at column 0 is its item's, a type
+alias's as known_calls.rs:15's; a macro invocation's lines, no item's
+above". Mutations `test-map-item-last-line-unowned` and
+`test-map-macro-invocation-item-above`.

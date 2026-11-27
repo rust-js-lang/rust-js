@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-27 (#2608, ADR 1101 amended): test/test-map.test.ts gains "a multi-line item's last line at column 0 is its item's, a type alias's as known_calls.rs:15's; a macro invocation's lines, no item's above"; two mutations.
+
 Changed on 2026-11-27 (#2507, ADR 0427 amended): corpus gains seven cases, a `Repeat`'s `count` or `last` through a `copied()` or a `Box` named where native names it (a box below a `copied()` below a `skip`, a box of a box, a `copied()` a chain's side, a box generic code makes and one it's given, generic code's `copied()`) and one `located-otherwise` against #2507 (generic code's `copied()` below a `skip`); three renamed off `_skips_line` and `_enumerates_line`, their `located-otherwise` gone; `repeat_copied_count_panics_at_copieds_line` prints its items first; test/lowering-iterators.test.ts gains "a frame of a Repeat's step the runtime has gives its line once"; test/known/metamorphic/2507.txt's two rows run as Rust does, four `impl-owned` rows in their place; nine new mutations, two retargeted; the corpus row recounted, 3,093 (`ls test/corpus/*.rs | wc -l`).
 
 Changed on 2026-11-27 (#2608, ADR 1101 amended): test/test-map.test.ts gains "an item's namers are those its crate and module path let name it, not another crate's word of its name"; three mutations, one retargeted.

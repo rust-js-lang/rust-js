@@ -989,6 +989,77 @@ test("an item's namers are those its crate and module path let name it, not anot
   text[4] = "impl Facts {";
 });
 
+// Every line of an item written over several lines is that item's, its
+// last at column 0 too, where nothing is indented less: #2608's chase from
+// dedb8fc2fe's closures.rs line 246 reached rust-js-mir's `StdLowering`,
+// named at dispatch/known_calls.rs:15 by `) -> Option<std_calls::StdLowering<
+// 'c, 'a, 'tcx>>;`, the last line of the `type StdHandler<..> = for<'s, 'c>
+// fn(` alias, which no item held: everything. A line inside an item macro's
+// invocation at column 0 is no item's above it, but the invocation's,
+// whose items no name says.
+test("a multi-line item's last line at column 0 is its item's, a type alias's as known_calls.rs:15's; a macro invocation's lines, no item's above", () => {
+  // src/a.rs: function 0 at 10-20 names each item; a type alias at 22-25, a
+  // const at 26-28 and a static at 41-43 each name `Lowering` on their last
+  // line, at column 0; a struct with a `where` at 44-49, an enum at 51-54,
+  // `Lowering` at 56-59; a struct at 60 above a macro's invocation at 61-63.
+  const text = Array.from({ length: 64 }, (_, i) => `// line ${i + 1}`);
+  text[14] = "    let h: Handler = pick; let w = Wrap::default(); let k = Kind::A; let m = MAKE; let b = BUILD; let a = Above;";
+  text[21] = "type Handler<'a> = for<'s> fn(";
+  text[22] = "    &Cx<'a>,";
+  text[23] = "    &State<'s>,";
+  text[24] = ") -> Option<Lowering<'s, 'a>>;";
+  text[25] = "const MAKE: fn(";
+  text[26] = "    u32,";
+  text[27] = ") -> Lowering<'static, 'static> = make;";
+  text[40] = "static BUILD: fn(";
+  text[41] = "    u32,";
+  text[42] = ") -> Lowering<'static, 'static> = make;";
+  text[43] = "pub struct Wrap<T>";
+  text[44] = "where";
+  text[45] = "    T: Copy,";
+  text[46] = "{";
+  text[47] = "    inner: T,";
+  text[48] = "}";
+  text[50] = "pub enum Kind {";
+  text[51] = "    A,";
+  text[52] = "    B,";
+  text[53] = "}";
+  text[55] = "pub struct Lowering<'s, 'a> {";
+  text[56] = "    of: &'s str,";
+  text[57] = "    at: &'a str,";
+  text[58] = "}";
+  text[59] = "pub struct Above;";
+  text[60] = "declare! {";
+  text[61] = "    pub SEEN,";
+  text[62] = "}";
+  const declared: Record<string, number> = { Handler: 22, MAKE: 26, BUILD: 41, Wrap: 44, Kind: 51, Lowering: 56, Above: 60 };
+  const sources = (lowering: number[]): Sources => ({
+    text: (file) => (file === "src/a.rs" ? text.join("\n") : undefined),
+    naming: (word) => (word === "Lowering" ? [...lowering, 56] : declared[word] === undefined ? [] : [15, declared[word]]).map((line) => ({ file: "src/a.rs", line })),
+  });
+  const asFunction = { ...pick(map, [{ file: "src/a.rs", hunks: [[15, 1]] }], files, cases), why: expect.any(String) };
+  const of = (hunks: Change["hunks"], lowering: number[] = []) => pick(map, [{ file: "src/a.rs", hunks }], files, cases, sources(lowering));
+  // A field added to `Lowering`, named on the last line of a type alias,
+  // known_calls.rs:15's shape, of a const's type and of a static's: what
+  // names the alias, the const or the static, function 0.
+  const field: Change["hunks"] = [[58, 0, ["    kind: u8,"], []]];
+  expect(of(field, [25])).toEqual(asFunction as never);
+  expect(of(field, [28])).toEqual(asFunction as never);
+  expect(of(field, [43])).toEqual(asFunction as never);
+  // A change of each one's last line, or ending on it, at column 0: its namers.
+  expect(of([[25, 1, [") -> Lowering<'s, 'a>;"], [") -> Option<Lowering<'s, 'a>>;"]]])).toEqual(asFunction as never);
+  expect(of([[43, 1, [") -> Lowering<'static, 'static> = remake;"], [") -> Lowering<'static, 'static> = make;"]]])).toEqual(asFunction as never);
+  expect(of([[48, 2, ["    inner: Option<T>,", "}"], ["    inner: T,", "}"]]])).toEqual(asFunction as never);
+  expect(of([[53, 2, ["    C,", "}"], ["    B,", "}"]]])).toEqual(asFunction as never);
+  // A line of an item macro's invocation at column 0, or its last: the
+  // items it writes, which no name says, everything; not `Above`'s, the
+  // item above it.
+  for (const line of [62, 63]) {
+    const invoked = of([[line, 1, [text[line - 1]!.replace("pub", "pub(crate)").replace(/^}$/, "} ")], [text[line - 1]!]]]);
+    expect([invoked.kind, invoked.kind === "all" && invoked.why.includes("its item isn't found")]).toEqual(["all", true]);
+  }
+});
+
 // worker-02 agent's probe of #2288's rule (comment 7127339825): changes outside any
 // function that change what code does. A new free item shadows a glob's of
 // its name; a macro's body changes each expansion; an attribute decides of
