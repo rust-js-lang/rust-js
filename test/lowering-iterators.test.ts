@@ -1295,3 +1295,36 @@ pub fn inside() -> (Option<u32>, usize, u32) {
   expect([made.back().value, made.len(), [...made]]).toEqual([4, 3, [1, 2, 3]]);
   expect(lib.inside()).toEqual([2, 5, 6]);
 });
+
+// #2507: a `copied()` of what holds a `Repeat` is a frame of its own,
+// `$copied`, whose steps give its line, so its call is given its caller's,
+// never the frame's row again; a box's `last`, which JS passes on to what
+// the box holds, has no frame of the box, so it's given the box's row. One
+// whose `count` and `last` reach no `Repeat`'s, a filter's, is its source,
+// no map of each item to itself.
+test("a frame of a Repeat's step the runtime has gives its line once", () => {
+  const dir = fixture("repeat-frames");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::iter::repeat;
+
+pub fn counted() -> usize {
+    repeat(&1u8).copied().count()
+}
+
+pub fn last() -> Option<u8> {
+    Box::new(repeat(1u8)).last()
+}
+
+pub fn kept() -> Vec<u8> {
+    repeat(&1u8).filter(|x| **x > 0).copied().take(2).collect()
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("$count($copied($repeating(1)), undefined, ");
+  expect(js).not.toContain("copiedCount");
+  expect(js).toContain("$last($repeating(1), $stdSites.boxLast[0])");
+  expect(js).not.toContain("(item) => item");
+});

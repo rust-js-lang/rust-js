@@ -364,7 +364,8 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             TerminatorKind::Call { func, .. } => func.const_fn_def().and_then(|(callee, args)| {
                 let step = (self.tcx.trait_of_assoc(callee) == Some(std_item(self.tcx, StdItem::Iterator)))
                     .then(|| self.tcx.item_name(callee))?;
-                self.recognition().repeat_frame_row(args.type_at(0), step.as_str())
+                self.recognition()
+                    .repeat_frame_row(args.type_at(0), step.as_str(), &|ty| self.copied_frames_a_repeat(ty))
             }),
             _ => None,
         };

@@ -195,6 +195,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// crate's or drop what it holds in another order than the defaults do,
     /// a `Map`'s `fold` its closure before its source's items, or of a type
     /// only its bounds know, which its caller may give one (#1601, #2179).
+    /// And of one that holds a `Repeat` (`holds_a_repeat`), whose own
+    /// `count` the box hides, so it steps forever as std's default does,
+    /// and whose own `last`, reached through the box's, names the box's
+    /// line, the nearest frame that doesn't track its caller, which the
+    /// box's lend gives whatever adapter of the runtime stands above it
+    /// (#2507).
     /// Of another std iterator, a slice's, a `Vec`'s, or std's compiled
     /// struct of std's types and closures over them alone, the box steps as
     /// what it holds does, to every program, so it's no lend's (#2185).
@@ -202,6 +208,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.is_user_iterator(inner)
             || (crate::recognition::is_compiled_std_iterator(self.tcx, inner) && !self.holds_only_std(inner))
             || crate::generic_facts::boxed_steps_given(self.tcx, inner, self.typing_env)
+            || self.holds_a_repeat(inner)
     }
 
     /// Whether a call of `def_id` with `generic_args` resolves to a method a

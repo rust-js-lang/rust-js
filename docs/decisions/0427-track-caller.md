@@ -783,3 +783,55 @@ Held by `tracked_fn_returned_names_fn_calls_line`,
 `returned-place-unread`, `fn-trait-call-unread` and
 `returned-unseen-callers-ignored`.
 
+
+## Amendment: a `copied()` or a `Box` of a `Repeat` is a frame of its own (2026-11-27, #2507)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a panic named
+another line than Rust's.
+
+Below a runtime adapter, `repeat(&x).copied().skip(1).count()` and
+`Box::new(repeat(x)).skip(1).last()` named the adapter's line,
+`skip.rs:78:19`, where Rust names the `copied()`'s, `copied.rs:93:17`, or
+the box's, `boxed/iter.rs:57:17`: JS held each as what it holds, so no
+frame of it stood between the adapter and the `Repeat` to give its line.
+
+Where the code that makes it holds a `Repeat` in its type
+(`holds_a_repeat`), each is now a frame in JS, which gives its own row as
+it passes the step on, as each runtime adapter does: a `copied()` whose
+`count` or `last` is its source's own is `$copied(it)`, never its source
+(`copied_frames_a_repeat`, iterators/mir_steps/copies.rs, the one answer
+of what's made and of where its step is called, which `repeat_frame_row`
+is given), its items as they are, `$copied`'s copy now optional; a
+box of it is its lend, `$lent(it, "boxed")`, as `box_hides_its_steps`
+now says of it, whose `last` gives `boxLast`. The box hides the `Repeat`'s
+own `count` too, which it never passes on, so a `Box<Repeat>`'s `count`
+steps by `next` as std's default does, never `Repeat::count`'s panic, and
+a `Box<dyn Iterator>` of one is its unsized lend. `repeat_frame_row` keeps
+what JS still has no frame of: a box's `last` passed on to what it holds
+(`passed_through_box`), and generic code's `copied()`, which is its
+source. A box generic code makes of what it's given, or is given, is its
+lend already, now at the box's line too.
+
+Each is decided by type, so a chain that never asks `count` or `last`
+of it holds the frame too, `$copied($repeating(1)).take(4)`: narrowing it
+to where a consumer reaches it, with the frame kept where the value
+escapes the body, is #2621.
+
+What's left, `located-otherwise` and listed against #2507: generic code's
+`copied()` of what its caller gives, below an adapter, which is its source
+in JS, and a box stepped by its dictionary's steps (`impl-owned`'s), till
+std's `Copied` is compiled (#1458). Held by the corpus cases
+`repeat_copied_below_skip_names_copieds_line`,
+`repeat_copied_below_enumerate_names_copieds_line`,
+`repeat_boxed_below_skip_names_boxs_line` (renamed from `.._skips_line`
+and `.._enumerates_line`, their `located-otherwise` gone),
+`repeat_copied_of_a_box_below_skip_names_boxs_line`,
+`repeat_boxed_twice_below_skip_names_boxs_line`,
+`repeat_copied_in_a_chain_names_copieds_line`,
+`repeat_boxed_in_generic_code_names_boxs_line`,
+`repeat_boxed_given_to_generic_code_names_boxs_line`,
+`repeat_copied_in_generic_code_names_copieds_line` and
+`repeat_copied_in_generic_code_below_skip_names_skips_line`
+(`located-otherwise`), each against native in both builds, the lowering
+test "a frame of a Repeat's step the runtime has gives its line once", and
+the mutations of each use.

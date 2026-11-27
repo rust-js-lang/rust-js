@@ -163,40 +163,61 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         ty.walk()
             .filter_map(|part| part.as_type())
             .any(|part| match part.kind() {
-                ty::Adt(adt, _) => {
-                    std_item_in(self.tcx, adt.did(), StdPath::IterMod).is_some_and(|name| name.as_str() == "Repeat")
-                }
+                ty::Adt(..) => self.is_repeat(part),
                 ty::Param(_) | ty::Alias(..) | ty::Dynamic(..) => true,
                 _ => false,
             })
     }
 
+    /// Whether a `ty` holds a `Repeat` anywhere in its type, as the code
+    /// that makes it knows: `may_be_repeat`'s of what isn't left to a
+    /// caller. A std frame JS would compile away above one, a `copied()`'s
+    /// or a sized `Box`'s, is made a frame of its own, `$copied` or the
+    /// box's lend, whose steps give their own line, as a `Repeat`'s own
+    /// `count` and `last` name the nearest frame that doesn't track its
+    /// caller, whatever adapter of the runtime stands above it (#2507).
+    pub fn holds_a_repeat(&self, ty: Ty<'tcx>) -> bool {
+        (ty.walk().filter_map(|part| part.as_type())).any(|part| self.is_repeat(part))
+    }
+
+    /// Whether a `ty` is std's `Repeat`.
+    fn is_repeat(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _)
+            if std_item_in(self.tcx, adt.did(), StdPath::IterMod).is_some_and(|name| name.as_str() == "Repeat"))
+    }
+
     /// Of `step`, `count` or `last`, of `ty`, std's frame that the runtime
     /// has none of, as JS holds it as what it holds: a sized `Box`'s `last`,
-    /// whose specialization calls its iterator's, and a `copied()`'s, whose
-    /// item is its source's; the `$stdSites` row of the innermost such
-    /// frame above what it holds, whose line a `Repeat`'s own step names, as
-    /// std's tracks its caller and that frame doesn't. An adapter the
-    /// runtime has below it gives its own as it runs, the nearest frame's,
-    /// as Rust's (#2488). `None` of another, whose caller's line it is.
-    pub fn repeat_frame_row(&self, ty: Ty<'tcx>, step: &str) -> Option<StdRow> {
+    /// whose specialization calls its iterator's, a call JS makes of what
+    /// the box holds, as the box passes it on (`passed_through_box`), and a
+    /// `copied()`'s that's its source in JS, whose item is its source's;
+    /// the `$stdSites` row of the innermost such frame above what it holds,
+    /// whose line a `Repeat`'s own step names, as std's tracks its caller
+    /// and that frame doesn't. A frame the runtime has gives its own as it
+    /// runs, the nearest frame's, as Rust's (#2488): each runtime adapter, a
+    /// box's lend, and a `copied()` of what holds a `Repeat`, `$copied`, as
+    /// `framed` says, the copies' owner's answer (`copied_frames_a_repeat`,
+    /// #2507). `None` of another, whose caller's line it is.
+    pub fn repeat_frame_row(&self, ty: Ty<'tcx>, step: &str, framed: &dyn Fn(Ty<'tcx>) -> bool) -> Option<StdRow> {
         // A sized box's, each box's the same line.
         let unboxed = super::held::held_unboxed(ty);
         if unboxed != ty {
             return match step {
-                "last" => self.repeat_frame_row(unboxed, step).or(Some(StdRow::BoxLast)),
+                "last" => self.repeat_frame_row(unboxed, step, framed).or(Some(StdRow::BoxLast)),
                 _ => None,
             };
         }
         let ty::Adt(adt, args) = ty.kind() else {
             return None;
         };
-        if std_item_in(self.tcx, adt.did(), StdPath::IterMod).is_some_and(|name| name.as_str() == "Copied") {
+        if std_item_in(self.tcx, adt.did(), StdPath::IterMod).is_some_and(|name| name.as_str() == "Copied")
+            && !framed(ty)
+        {
             let row = match step {
                 "count" => StdRow::CopiedCount,
                 _ => StdRow::CopiedLast,
             };
-            return self.repeat_frame_row(args.type_at(0), step).or(Some(row));
+            return self.repeat_frame_row(args.type_at(0), step, framed).or(Some(row));
         }
         None
     }

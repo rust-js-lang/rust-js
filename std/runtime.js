@@ -6630,13 +6630,15 @@ export function $mapEnds(it, f) {
   return map;
 }
 
-// Std's `Copied` of `it`, each item copied by `f`: its map, `$mapEnds`,
-// that passes on what std's does too, its source's `nth`, `advance_by`,
-// `last`, `count` and `advance_back_by`, each the crate's own where it
-// writes one, where a map's are its fold's (copied.rs, #2122). Its items
-// are `Copy`: nothing it passes over has a drop.
+// Std's `Copied` of `it`, each item copied by `f`, or given as it is,
+// where its copy is the item: its map, `$mapEnds`, that passes on what
+// std's does too, its source's `nth`, `advance_by`, `last`, `count` and
+// `advance_back_by`, each the crate's own where it writes one, where a
+// map's are its fold's (copied.rs, #2122), its `last` and `count` at its
+// own lines, a frame of its own, as a `Repeat`'s panic names (#2507). Its
+// items are `Copy`: nothing it passes over has a drop.
 // gives: an iterator
-export function $copied(it, f) {
+export function $copied(it, f = (item) => item) {
   const copied = $mapEnds(it, f);
   const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
   $forward(copied, it, {
@@ -6670,7 +6672,7 @@ export function $cloned(it) {
 // gives: an iterator
 export function $copiedGiven(it) {
   if (!it[$ownStep("nthBack")]) return it;
-  const copied = $copied(it, (item) => item);
+  const copied = $copied(it);
   copied.cloneBy = (clone) => $copiedGiven($givenClone(it, clone));
   return copied;
 }
@@ -25257,12 +25259,15 @@ export function $lent(it, kind = "lent") {
     advanceBy: passed("advanceBy") && $ownMethod(it, "advanceBy") ? "advanceBy" : undefined,
     tryFold: passed("tryFold"),
     fold: passed("fold") && it.tryFold !== undefined ? fold : undefined,
-    last: passed("last"),
+    // A sized `Box`'s `last`, `I`'s, at the box's line, which a `Repeat`'s
+    // own names, as it tracks its caller and the box's doesn't (#2507).
+    last: passed("last") && it.last !== undefined ? () => $infinitelyAt($stdSites.boxLast[0], () => it.last()) : undefined,
     nthBack: passed("nthBack"),
     advanceBackBy: passed("advanceBackBy") && $ownMethod(it, "advanceBackBy") ? "advanceBackBy" : undefined,
     tryRfold: passed("tryRfold"),
     rfold: passed("rfold") && it.tryRfold !== undefined ? rfold : undefined,
   });
+  if (passed("last")) $ownsAs(lent, it, "last");
   if (passed("back") && it.back !== undefined) lent.back = () => it.back();
   if (passed("len") && it.len !== undefined) lent.len = () => it.len();
   // Its `size_hint`, `it`'s, as std's `&mut I` passes it on (#745).

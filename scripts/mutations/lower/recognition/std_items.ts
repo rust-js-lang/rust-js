@@ -432,6 +432,14 @@ export const mutations: Mutation[] = [
     tests: ["test/oracle-b.test.ts", "-t", "the records say an iterator's methods"],
   },
   {
+    name: "box-of-a-repeat-unlent",
+    breaks: "a `Box` of a `repeat()` is what it holds in JS, so below a `skip` its `last` names the `skip`'s line, where native names the box's, `boxed/iter.rs:57:17`, and its `count` reaches `Repeat::count`'s panic, which the box hides (#2507)",
+    file: "crates/rust-js-lower/src/recognition/std_items.rs",
+    find: "            || self.holds_a_repeat(inner)\n",
+    replace: "\n",
+    tests: ["test/corpus.test.ts", "-t", "^(repeat_boxed_below_skip_names_boxs_line|repeat_boxed_twice_below_skip_names_boxs_line|repeat_copied_of_a_box_below_skip_names_boxs_line|collect_of_a_dyn_iterator_asks_its_hint).rs$"],
+  },
+  {
     name: "expect-failed-unrecognized",
     breaks: "`Option::expect`'s private `expect_failed(msg)` isn't recognized as the panic it is, so std's build of a range's compiled `count` has no module for it (ADR 1206)",
     file: "crates/rust-js-lower/src/recognition/std_items.rs",

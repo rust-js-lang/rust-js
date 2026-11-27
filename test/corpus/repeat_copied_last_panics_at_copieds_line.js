@@ -5,13 +5,16 @@
 // tracks it, reached by `copied`'s `last`, `copied.rs`'s line:
 // the nearest frame that doesn't track its caller (#2488).
 
-import { $last, $main, $repeating, $stdSites } from "@rust-js/std";
+import { $copied, $last, $main, $repeating } from "@rust-js/std";
 
 $main(main);
 
 function main() {
   console.log("start");
-  const last = $last($repeating(1), $stdSites.copiedLast[0]);
+  const last = $last(
+    $copied($repeating(1)),
+    "test/corpus/repeat_copied_last_panics_at_copieds_line.rs:9:44",
+  );
   console.log(`${last == null ? "None" : `Some(${last})`}`);
 }
 //# sourceMappingURL=case.js.map

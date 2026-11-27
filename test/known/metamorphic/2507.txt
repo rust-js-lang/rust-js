@@ -1,3 +1,5 @@
 #2507 P0: a `Repeat`'s panic reached through a compiled-away `copied()` or `Box` below a runtime adapter, or in generic code, names another frame's line than Rust's `copied()`'s
-plain generic-instances repeat_copied_count_panics_at_copieds_line.rs
-plain generic-instances repeat_copied_last_panics_at_copieds_line.rs
+plain impl-owned repeat_boxed_given_to_generic_code_names_boxs_line.rs
+plain impl-owned repeat_boxed_in_generic_code_names_boxs_line.rs
+std impl-owned repeat_boxed_given_to_generic_code_names_boxs_line.rs
+std impl-owned repeat_boxed_in_generic_code_names_boxs_line.rs

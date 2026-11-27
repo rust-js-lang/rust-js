@@ -3,14 +3,17 @@
 //@ run-fail: iterator is infinite
 // A `repeat()`'s own step, which panics naming its caller as std's
 // tracks it, reached by `copied`'s `count`, `copied.rs`'s line:
-// the nearest frame that doesn't track its caller (#2488).
+// the nearest frame that doesn't track its caller (#2488). Its items
+// first, each as it is, `$copied`'s of what it's given no copy (#2507).
 
-import { $count, $main, $repeating, $stdSites } from "@rust-js/std";
+import { $copied, $count, $main, $repeating } from "@rust-js/std";
 
 $main(main);
 
 function main() {
-  console.log("start");
-  console.log(`${$count($repeating(1), undefined, $stdSites.copiedCount[0])}`);
+  console.log(`[${Array.from($copied($repeating(1)).take(2)).join(", ")}]`);
+  console.log(
+    `${$count($copied($repeating(1)), undefined, "test/corpus/repeat_copied_count_panics_at_copieds_line.rs:10:42")}`,
+  );
 }
 //# sourceMappingURL=case.js.map

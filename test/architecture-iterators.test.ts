@@ -975,7 +975,7 @@ test("each MEANING_ONLY entry is on its way, of an issue, or kept, of an ADR and
 // reader fails, and so does a gone one until its row goes too.
 test("whether a copy is its source is asked of is_its_source alone", () => {
   const allowed: Record<string, [number, string]> = {
-    "crates/rust-js-lower/src/iterators/mir_steps/copies.rs": [5, "the owner: `is_its_source`, `copied_given` and the copy's maker"],
+    "crates/rust-js-lower/src/iterators/mir_steps/copies.rs": [6, "the owner: `is_its_source`, `copied_given`, `copied_frames_a_repeat` and the copy's maker"],
     "crates/rust-js-lower/src/iterators/knowing.rs": [2, "made knowing its back or its length: of its source where `is_its_source`, else `copy_made_knowing`"],
     "crates/rust-js-lower/src/iterators/hint_knowing.rs": [1, "made knowing its hint alone: of its source where `is_its_source`"],
     "crates/rust-js-lower/src/iterators/hint_asks.rs": [2, "its hint's parts, of its source where `is_its_source`; whether its hint is its parts', which a map's is too"],

@@ -149,13 +149,15 @@ function $mapEnds(it, f) {
   return map;
 }
 
-// Std's `Copied` of `it`, each item copied by `f`: its map, `$mapEnds`,
-// that passes on what std's does too, its source's `nth`, `advance_by`,
-// `last`, `count` and `advance_back_by`, each the crate's own where it
-// writes one, where a map's are its fold's (copied.rs, #2122). Its items
-// are `Copy`: nothing it passes over has a drop.
+// Std's `Copied` of `it`, each item copied by `f`, or given as it is,
+// where its copy is the item: its map, `$mapEnds`, that passes on what
+// std's does too, its source's `nth`, `advance_by`, `last`, `count` and
+// `advance_back_by`, each the crate's own where it writes one, where a
+// map's are its fold's (copied.rs, #2122), its `last` and `count` at its
+// own lines, a frame of its own, as a `Repeat`'s panic names (#2507). Its
+// items are `Copy`: nothing it passes over has a drop.
 // gives: an iterator
-function $copied(it, f) {
+function $copied(it, f = (item) => item) {
   const copied = $mapEnds(it, f);
   const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
   $forward(copied, it, {
@@ -189,7 +191,7 @@ function $cloned(it) {
 // gives: an iterator
 function $copiedGiven(it) {
   if (!it[$ownStep("nthBack")]) return it;
-  const copied = $copied(it, (item) => item);
+  const copied = $copied(it);
   copied.cloneBy = (clone) => $copiedGiven($givenClone(it, clone));
   return copied;
 }

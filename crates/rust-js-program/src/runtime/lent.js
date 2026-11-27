@@ -78,12 +78,15 @@ function $lent(it, kind = "lent") {
     advanceBy: passed("advanceBy") && $ownMethod(it, "advanceBy") ? "advanceBy" : undefined,
     tryFold: passed("tryFold"),
     fold: passed("fold") && it.tryFold !== undefined ? fold : undefined,
-    last: passed("last"),
+    // A sized `Box`'s `last`, `I`'s, at the box's line, which a `Repeat`'s
+    // own names, as it tracks its caller and the box's doesn't (#2507).
+    last: passed("last") && it.last !== undefined ? () => $infinitelyAt($stdSites.boxLast[0], () => it.last()) : undefined,
     nthBack: passed("nthBack"),
     advanceBackBy: passed("advanceBackBy") && $ownMethod(it, "advanceBackBy") ? "advanceBackBy" : undefined,
     tryRfold: passed("tryRfold"),
     rfold: passed("rfold") && it.tryRfold !== undefined ? rfold : undefined,
   });
+  if (passed("last")) $ownsAs(lent, it, "last");
   if (passed("back") && it.back !== undefined) lent.back = () => it.back();
   if (passed("len") && it.len !== undefined) lent.len = () => it.len();
   // Its `size_hint`, `it`'s, as std's `&mut I` passes it on (#745).

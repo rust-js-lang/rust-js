@@ -76,7 +76,11 @@ function main() {
     () => collected($iterator({ start: 0 }, $rangeFromStep(0, 255)), 1).length,
     usizeDebug,
   );
-  check("boxed repeat", () => collected($repeating(7), 4).length, usizeDebug);
+  check(
+    "boxed repeat",
+    () => collected($lent($repeating(7), "boxedUnsized"), 4).length,
+    usizeDebug,
+  );
   check(
     "boxed endless noisy",
     () => {

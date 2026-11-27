@@ -828,6 +828,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_ask_their_sources_own_steps.rs$"],
   },
   {
+    name: "copied-copies-by-what-it-is-given-alone",
+    breaks: "`$copied` of items as they are, given no copy, maps each by `undefined`, so a `copied()` of a `repeat()` throws where native counts it (#2507)",
+    file: "crates/rust-js-program/src/runtime/back_steps.js",
+    find: "function $copied(it, f = (item) => item) {\n",
+    replace: "function $copied(it, f) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_copied_count_panics_at_copieds_line.rs$"],
+  },
+  {
     name: "copied-given-passes-nth-back",
     breaks: "`$copiedGiven` is the value it's given though its `nth_back` is its own, which std's `Copied` doesn't ask (#2130)",
     file: "crates/rust-js-program/src/runtime/back_steps.js",

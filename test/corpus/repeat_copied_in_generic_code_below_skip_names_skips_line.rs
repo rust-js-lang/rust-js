@@ -1,0 +1,18 @@
+//@ run-fail: iterator is infinite
+//@ located-otherwise: #2507 generic code's `copied()` of what its caller gives is its source in JS, below a runtime adapter
+// A `repeat()`'s own `count`, which panics naming its caller as std's
+// tracks it, through a `copied()` generic code makes of what it's given,
+// below a `skip`: Rust names `copied.rs`, `Copied::count` the nearest
+// frame that doesn't track its caller; rust-js names the `skip`'s, as
+// generic code's `copied()` is what it's given in JS, till std's compiled
+// `Copied` is made (#2507, #1458).
+use std::iter::repeat;
+
+fn counted<'a, I: Iterator<Item = &'a u8>>(it: I) -> usize {
+    it.copied().skip(1).count()
+}
+
+fn main() {
+    println!("start");
+    println!("{}", counted(repeat(&1u8)));
+}

@@ -322,7 +322,7 @@ pub const MODELS: &[Entry] = &[
     entry("lazySliceSplitByMut", Model(Unproven(Why::Memory), &[Path("core::slice::SplitMut")]), "its `Iterator::next` searches the slice by its pointers, which reach memory: proved through std's build once it models a slice's pointers (#1458)"),
     entry("lazyTakeWhile", Model(Pitted, &[Path("core::iter::TakeWhile")]), ""),
     entry("lazyZip", Model(Pitted, &[Path("core::iter::Zip")]), ""),
-    entry("lent", Model(Pitted, &[]), ""),
+    entry("lent", Model(Pitted, &[Row(StdRow::BoxLast)]), ""),
     entry("live", Glue, ""),
     entry("localKeyReplace", Form(&[Row(StdRow::LocalKeyReplace)]), "the lowering's, std_types/cell.rs"),
     entry("localKeySet", Form(&[Row(StdRow::LocalKeySet)]), "the lowering's, std_types/cell.rs"),

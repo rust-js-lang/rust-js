@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "lent-box-last-unplaced",
+    breaks: "a `Box`'s lend passes its `last` on at no line of its own, so a `repeat()`'s `last` through a box below a `skip` names the `skip`'s line, where native names the box's, `boxed/iter.rs:57:17` (#2507)",
+    file: "crates/rust-js-program/src/runtime/lent.js",
+    find: "    last: passed(\"last\") && it.last !== undefined ? () => $infinitelyAt($stdSites.boxLast[0], () => it.last()) : undefined,\n",
+    replace: "    last: passed(\"last\"),\n",
+    tests: ["test/corpus.test.ts", "-t", "^(repeat_boxed_below_skip_names_boxs_line|repeat_boxed_in_generic_code_names_boxs_line|repeat_boxed_given_to_generic_code_names_boxs_line).rs$"],
+  },
+  {
     name: "lent-back-unpassed",
     breaks: "a JS iterator lent as a `&mut` keeps none of its back, so `r.copied().next_back()` of an `&mut R` throws `it.back is not a function` (ADR 0982)",
     file: "crates/rust-js-program/src/runtime/lent.js",

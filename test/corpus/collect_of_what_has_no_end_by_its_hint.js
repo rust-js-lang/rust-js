@@ -7,6 +7,7 @@
 
 import {
   $catchable,
+  $copied,
   $count,
   $foldOf,
   $foldToArray,
@@ -175,7 +176,7 @@ function main() {
       ),
     ).length;
   });
-  check("copied", () => Array.from($roomForHint($repeating(3), 1, true)).length);
+  check("copied", () => Array.from($roomForHint($copied($repeating(3)), 1, true)).length);
   check(
     "cloned",
     () =>

@@ -1999,7 +1999,13 @@ Differences:
   `function.rs:166:5` of a `count()` or a `fold`, `250:5` of a `next()`;
   of a `cloned()` collected, returned, stored, handed to generic code or
   asked steps of two lines, the call's line for now, until std's `Cloned`
-  is compiled (#2509, #1458); or a
+  is compiled (#2509, #1458); of a `repeat()`'s own `count` or `last`,
+  the nearest of std's frames above it that doesn't track its caller, an
+  adapter's, a `copied()`'s or a `Box`'s, which each adapter of the
+  runtime, `$copied` and a box's lend give as they pass the step on; of
+  generic code's `copied()` of what it's given below an adapter, or of a
+  box stepped by a dictionary's steps, the adapter's line for now, until
+  std's `Copied` is compiled (#2488, #2507, #1458); or a
   line of std's own, `VecDeque::swap`'s assertion's, a constant of the
   toolchain the runtime keeps, `$stdSites`. A library's panic writes
   nothing, its host's to catch: a JS stack trace and exit code 1 where it

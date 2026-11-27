@@ -9,12 +9,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether an adapter of type `ty` is its source itself in JS: a
     /// `copied()`, or a `cloned()` of what needs no clone, each item as it
     /// is (ADR 0547), where it asks the crate's own steps as its source
-    /// does (`asks_as_its_source`). The one answer, of what's made and
-    /// what's dropped.
+    /// does (`asks_as_its_source`), never a `copied()` that's a frame of its
+    /// own (`copied_frames_a_repeat`, #2507). The one answer, of what's made
+    /// and what's dropped.
     pub fn is_its_source(&self, ty: Ty<'tcx>) -> bool {
         (crate::recognition::copied_source(self.tcx, ty))
             .or_else(|| crate::recognition::cloned_source(self.tcx, ty))
             .is_some_and(|source| self.copies_its_items_as_they_are(ty) && self.asks_as_its_source(ty, source))
+            && !self.copied_frames_a_repeat(ty)
+    }
+
+    /// Whether a `copied()` of type `ty` is a frame of its own in JS,
+    /// `$copied`, never its source: one of a source that holds a `Repeat`
+    /// (`holds_a_repeat`), whose `count` or `last` is its source's own
+    /// (`owns_its_step`), a `Repeat`'s, which panics naming its caller, as
+    /// std's tracks it, so at `Copied`'s line, the nearest frame that
+    /// doesn't, which `$copied`'s steps give, whatever adapter of the
+    /// runtime asks it (#2507). The one answer, of what's made
+    /// (`is_its_source`) and of where its step is called
+    /// (`repeat_frame_row`). Generic code's, of what its caller gives, is
+    /// its source still, its line given where its step is called alone
+    /// (#2507's rest, till std's compiled `Copied` is made, #1458).
+    pub fn copied_frames_a_repeat(&self, ty: Ty<'tcx>) -> bool {
+        let recognition = self.recognition();
+        crate::recognition::copied_source(self.tcx, ty).is_some_and(|source| recognition.holds_a_repeat(source))
+            && [OwnStep::Count, OwnStep::Last]
+                .into_iter()
+                .any(|step| recognition.owns_its_step(ty, step))
     }
 
     /// Whether a `copied()` or a `cloned()` of type `ty` gives each item
@@ -221,9 +242,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // a `copied()`'s, which passes each on, not a `cloned()`'s of one
         // that writes `count` or `last`, which std's `Cloned` leaves to its
         // `fold` (#2122).
-        let as_its_source = source.is_none_or(|source| self.asks_as_its_source(output, source));
+        // Never a `copied()` of what holds a `Repeat`, a frame of its own
+        // (`copied_frames_a_repeat`, #2507).
+        let as_its_source =
+            source.is_none_or(|source| self.asks_as_its_source(output, source)) && !self.copied_frames_a_repeat(output);
         let recognition = self.recognition();
-        if body.is_empty() && matches!(&copy.kind, js::ExprKind::Var(v) if *v == x) && as_its_source {
+        let as_it_is = body.is_empty() && matches!(&copy.kind, js::ExprKind::Var(v) if *v == x);
+        if as_it_is && as_its_source {
             return Ok((it, knows));
         }
         // A `copied()` that reaches the crate's own `nth`, `last` or `count`,
@@ -236,7 +261,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let copied = crate::recognition::copied_source(self.tcx, output).is_some() && passes_on;
         body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
         let copy = Expr::arrow(vec![x.into()], body);
+        // Of items as they are, `$copied(it)`, which gives each so: a frame
+        // of its own (`copied_frames_a_repeat`, #2507).
         let made = match (copied, ends) {
+            (true, _) if as_it_is => Expr::call_helper("$copied", vec![it]),
             (true, _) => Expr::call_helper("$copied", vec![it, copy]),
             (false, true) => Expr::call_helper("$mapEnds", vec![it, copy]),
             (false, false) => Expr::builtin(it, "map", vec![copy]),
