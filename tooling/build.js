@@ -416,13 +416,31 @@ export async function testApp({ app, packageNames = [], features = [], noDefault
   // which read as a pass of tests that never ran (#1093).
   if (byRunner.size === 0) process.stderr.write(`rust-js test: running 0 tests: ${named.join(", ")} ${named.length === 1 ? "has" : "have"} no #[test] that's built\n`);
   let exit = 0;
+  // Each test a refusal at run time came before in its process, which no
+  // test may run after (ADR 0692, amended): refused there, its name written
+  // to `RUST_JS_TEST_ALONE`'s file (`$testRuns`), then run again in a
+  // process of its own with the others so refused, its outcome Rust's.
+  // Each round's first runs, so each round is shorter (#2625).
+  const alone = join(targetDir, "refused-before.jsonl");
   for (const [runner, files] of byRunner) {
-    const run = runnerCommand(runner, { app, targetDir, files, args });
-    const code = await new Promise((resolve, reject) => {
-      const child = spawn(run.command, run.args, { cwd: app, stdio: "inherit", env: { ...process.env, ...run.env } });
-      child.on("error", reject);
-      child.on("close", (code) => resolve(code ?? 1));
-    });
+    let names;
+    let code;
+    for (;;) {
+      rmSync(alone, { force: true });
+      const run = runnerCommand(runner, { app, targetDir, files, args, names });
+      code = await new Promise((resolve, reject) => {
+        const child = spawn(run.command, run.args, { cwd: app, stdio: "inherit", env: { ...process.env, ...run.env, RUST_JS_TEST_ALONE: alone } });
+        child.on("error", reject);
+        child.on("close", (code) => resolve(code ?? 1));
+      });
+      const refused = existsSync(alone) ? [...new Set(readFileSync(alone, "utf8").split("\n").filter(Boolean).map((line) => JSON.parse(line).name))] : [];
+      rmSync(alone, { force: true });
+      if (refused.length === 0 || (names !== undefined && refused.length >= names.length)) break;
+      // The first run's failures stand: a test it refused fails it.
+      exit ||= code;
+      names = refused;
+      process.stdout.write(`\nrust-js test: running again in a process of their own the ${names.length} ${names.length === 1 ? "test" : "tests"} a refusal at run time came before: ${names.join(", ")}\n\n`);
+    }
     exit ||= code;
   }
   return exit;

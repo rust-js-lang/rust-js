@@ -202,3 +202,46 @@ be preserved, so it's refused, and nothing of the program runs after).
 Held by binaries.test.ts' "a run-time refusal ends a binary", whose `main`
 holds a guard that prints as it's dropped, on Node and Bun, and the
 mutations `refusal-runs-drops` and `refusal-live-unread`.
+
+## Amendment: a test after a refusal runs again in a process of its own (2026-11-27, #2625)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): results changed,
+so Rust's are kept.
+
+The amendment above ends a program at a run-time refusal: `$refused` is set
+for good, and `$live()` is false from then on. A test binary has many
+tests in one process, and its runner goes on to the next test after one
+fails. So each test after a refused one ran with `$live()` false. Every
+write a scope's drops guard, `finally { if ($live()) current = key }`,
+went undone. itertools' `extrema_set`, `chunk_by` and `chunk_by_lazy_2`
+gave wrong answers after `test_peek_nth_peeking_next` was refused (#1180)
+in the Crater. Each of them passes alone.
+
+Clearing the flag as each test starts was the other choice. But the
+refused test stopped with none of its drops run, so what it leaves behind
+(a static's count, a lock, a `RefCell`'s borrow) is a state native Rust
+never reaches. A later test could read it and answer wrongly, unseen.
+Nothing of a process runs after a refusal, which keeps this amendment's
+rule whole. A test file's `test` is its runner's given to `$tests`,
+`const test = $tests(register);`. `$tests` runs each test unless a refusal
+came before it in its process; then it refuses that test too, and writes
+its name to the file `RUST_JS_TEST_ALONE` names. `rust-js test`
+(`testApp`, tooling/build.js) sets that file, and after its runner ends
+it runs the tests named there again in a new process, by their whole
+names (`runnerCommand`'s `names`). It goes round by round until a round
+leaves none, since each round's first test runs. It says which tests it
+runs again. A test run again has Rust's outcome. The refused test stays
+refused and fails the run, and the Crater reads the outcome a test's
+last run gives. The runner a crate names is unchanged: every runner's
+`test` is given to `$tests`.
+
+The cost is two lines in every test file, `import { test as register }`
+and the `const`. That is the one form a test file has, as the runner is
+the crate's to name. Held by test/rust-js-test-runners.test.ts' "a test
+after one refused at run time is run again in a process of its own" for
+each of the four runners, a refused test before one whose drop's write is
+its answer; and by the mutations `test-after-a-refusal-runs`,
+`test-refused-unrecorded`, `refused-tests-not-run-again`,
+`run-again-names-unfiltered` and `tests-registered-by-the-runner`. Moves:
+each test file's `test` import (test/test-files.test.ts,
+test/rust-js-test.test.ts, the guide's testing page).

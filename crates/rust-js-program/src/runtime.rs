@@ -42,6 +42,7 @@ helpers! {
     AssertFailed,
     ShouldPanic,
     TestResult,
+    Tests,
     Unwrap,
     Some,
     SomeValue,
@@ -1239,6 +1240,7 @@ impl Helper {
             // The `#[test]` runner's (ADR 0026).
             Helper::ShouldPanic => include_str!("runtime/should_panic.js"),
             Helper::TestResult => include_str!("runtime/test_result.js"),
+            Helper::Tests => include_str!("runtime/tests.js"),
             Helper::Rem => include_str!("runtime/rem.js"),
         }
     }

@@ -137,13 +137,13 @@ fn sixteen_sides() {
     true,
   ]);
   const shapes = readFileSync(join(app, "shapes.test.js"), "utf8");
-  expect(shapes).toContain('import { test } from "node:test";');
+  expect(shapes).toContain('import { test as register } from "node:test";');
   expect(shapes).toContain('import { area } from "./shapes.js";');
   expect(shapes).toContain('import * as Nested from "./shapes/tests/nested.js";');
   expect(shapes).toContain("\nfunction aUnitCircleHasAreaPi() {");
   expect(shapes).toContain('test("shapes::tests::a_unit_circle_has_area_pi", aUnitCircleHasAreaPi);\ntest("shapes::tests::nested::halves", Nested.halves);');
   // A `#[test]` in a module of no module of tests: its module's, registered.
-  expect(readFileSync(join(app, "lib.test.js"), "utf8")).toContain('import * as App from "./lib.js";\n\ntest("has_four_sides", App.hasFourSides);');
+  expect(readFileSync(join(app, "lib.test.js"), "utf8")).toContain('import * as App from "./lib.js";\nimport { $tests } from "@rust-js/std";\n\nconst test = $tests(register);\ntest("has_four_sides", App.hasFourSides);');
   // `tests/quadruples.rs`, a crate of its own: quadruples.js, and its tests.
   expect(readFileSync(join(unit("quadruples"), "quadruples.test.js"), "utf8")).toContain('test("sixteen_sides", Quadruples.sixteenSides);');
 });

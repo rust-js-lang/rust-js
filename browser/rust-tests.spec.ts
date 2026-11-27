@@ -69,11 +69,11 @@ for (const manifestPath of manifests) {
   // Every file the build wrote is below its output's directory.
   const dir = dirname(manifest.output);
   for (const path of files) {
-    // The tests' names, as rust-js wrote them, by the name the file imports
-    // its runner's `test` by: test("tests::adds", ..).
+    // The tests' names, as rust-js wrote them, by the name of the file's
+    // `test`, its runner's given to `$tests` (ADR 0692, amended): `const
+    // test = $tests(register);`, then test("tests::adds", ..).
     const source = readFileSync(path, "utf8");
-    const imported = new RegExp(`^import \\{ test(?: as ([\\w$]+))? \\} from ${JSON.stringify(module)};$`, "m").exec(source);
-    const local = (imported?.[1] ?? "test").replace(/\$/g, "\\$");
+    const local = (/^const ([\w$]+) = \$tests\(/m.exec(source)?.[1] ?? "test").replace(/\$/g, "\\$");
     const found = [...source.matchAll(new RegExp(`^${local}(\\.skip)?\\(("(?:[^"\\\\]|\\\\.)*"), `, "gm"))];
 
     test.describe(relative(process.cwd(), path), () => {

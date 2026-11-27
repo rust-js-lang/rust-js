@@ -7,6 +7,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import { stripVTControlCharacters } from "node:util";
 import { buildCompiler, rustJsUnits } from "./support";
 import { counts, rustJsTest, testCrate } from "./rust-js-tests";
 import { underLoad } from "../scripts/timing";
@@ -85,7 +86,71 @@ for (const runner of ["node", "bun", "vitest", "jest"]) {
     expect(said).toContain('Error: "no stock"');
     const units = rustJsUnits(join(dir, "node_modules/.cache/rust-js/test/wasm32-unknown-unknown/debug"));
     const written = units.filter((unit) => basename(unit).startsWith("app-") && existsSync(join(unit, "lib.test.js"))).map((unit) => readFileSync(join(unit, "lib.test.js"), "utf8"));
-    expect(written.map((js) => js.includes(`import { test } from "${modules[runner]}";`))).toEqual([true]);
+    expect(written.map((js) => js.includes(`import { test as register } from "${modules[runner]}";\n`) && js.includes("const test = $tests(register);\n"))).toEqual([true]);
+  }, underLoad(180_000));
+}
+
+// #2625: a refusal at run time ends what of the program its process runs
+// (ADR 0692, amended), so each test after it there is refused too, where
+// it ran on with no drop's write, `least = Least(key)`'s in a `finally`,
+// and gave 4 for 3 (itertools' `extrema_set` after a refused test); then
+// \`rust-js test\` runs those again in a process of their own, each as Rust's.
+const refusedFirst = `pub struct Least(pub u32);
+
+impl Drop for Least {
+    fn drop(&mut self) {
+        println!("dropped {}", self.0);
+    }
+}
+
+pub fn least(keys: &[u32]) -> u32 {
+    let mut least = Least(u32::MAX);
+    for &key in keys {
+        if key < least.0 {
+            least = Least(key);
+        }
+    }
+    least.0
+}
+
+fn address<T>(value: &T) -> usize {
+    unsafe { std::mem::transmute(value) }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn asks_an_address() {
+        let x = Some(5u64);
+        if let Some(y) = &x {
+            assert!(address(y) % 8 < 8);
+        }
+    }
+
+    #[test]
+    fn keeps_the_least() {
+        assert_eq!(least(&[5, 7, 3, 4]), 3);
+    }
+}
+`;
+
+for (const runner of ["node", "bun", "vitest", "jest"]) {
+  test(`by ${runner}, a test after one refused at run time is run again in a process of its own`, () => {
+    const dir = testCrate(`rust-js-test-refused-first-by-${runner}`, { "src/lib.rs": refusedFirst }, { runner });
+    const { code, said } = rustJsTest(dir);
+    const again = "rust-js test: running again in a process of their own the 1 test a refusal at run time came before: tests::keeps_the_least";
+    expect(said).toContain("rust-js does not support the address of a value JS holds as itself");
+    expect(said).toContain("rust-js does not support running a test after one refused at run time in its process");
+    expect(said).toContain(again);
+    // The run again's summary, its runner's last: the test passes, and the
+    // whole is a failure, the refused test's.
+    const plain = stripVTControlCharacters(said);
+    const summary = { node: /^ℹ tests \d+$/gm, bun: /^ *\d+ pass$/gm, vitest: /^ *Tests +/gm, jest: /^Tests: +/gm }[runner]!;
+    const last = [...plain.matchAll(summary)].at(-1)?.index ?? 0;
+    const { pass, fail } = counts(runner, plain.slice(last));
+    expect([pass, fail, code], said).toEqual([1, 0, 1]);
   }, underLoad(180_000));
 }
 
@@ -98,7 +163,7 @@ test("a runner named in Cargo.toml alone is the next run's", () => {
   const imports = () =>
     rustJsUnits(join(dir, "node_modules/.cache/rust-js/test/wasm32-unknown-unknown/debug"))
       .filter((unit) => basename(unit).startsWith("app-") && existsSync(join(unit, "lib.test.js")))
-      .map((unit) => /import \{ test \} from "([^"]+)";/.exec(readFileSync(join(unit, "lib.test.js"), "utf8"))?.[1]);
+      .map((unit) => /import \{ test as register \} from "([^"]+)";/.exec(readFileSync(join(unit, "lib.test.js"), "utf8"))?.[1]);
   const first = rustJsTest(dir);
   expect([counts("node", first.said), first.code], first.said).toEqual([{ pass: 1, fail: 0, skip: 0 }, 0]);
   expect(imports()).toEqual(["node:test"]);

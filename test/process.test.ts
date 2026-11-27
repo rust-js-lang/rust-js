@@ -46,12 +46,14 @@ test("each of std's functions that work in Node only is a helper of process.js o
   const gates = ["$process", "$abortExit", "$nodeFs"];
   const processHelpers = catalog.filter(({ of }) => of === "Process").map(({ op }) => helpers.get(`Process ${op}`));
   expect(functions.filter((name) => !gates.includes(name)).sort()).toEqual(processHelpers.sort() as string[]);
-  // Only it, printing, which writes to `console` where there's none, and a
+  // Only it, printing, which writes to `console` where there's none, a
   // binary's start, which in a browser throws its failure to the page
-  // (ADR 1184), read Node's process.
+  // (ADR 1184), and a test's, which writes where `rust-js test` asks it to
+  // a test it's to run again, where it asks (ADR 0692, amended), read Node's
+  // process.
   const runtimeFiles = readdirSync(join(root, "crates/rust-js-program/src/runtime"))
     .filter((file) => file.endsWith(".js") && read(`crates/rust-js-program/src/runtime/${file}`).includes("globalThis.process"));
-  expect(runtimeFiles.sort()).toEqual(["main.js", "print.js", "process.js"]);
+  expect(runtimeFiles.sort()).toEqual(["main.js", "print.js", "process.js", "tests.js"]);
 });
 
 // In a browser, which has no process, each panics, naming what needed it.

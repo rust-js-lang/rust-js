@@ -569,6 +569,9 @@ impl OutputPlan {
                 .chain(package.namespace.clone())
         }));
         let test = rust_js_program::names::fresh_in(&mut taken, "test");
+        // The runner's own `test`, which the file's `test` registers each
+        // test with, as `$tests` runs it (#2625).
+        let register = rust_js_program::names::fresh_in(&mut taken, "register");
         // One namespace import per other module, named as lowering names its
         // namespace (rd114b, ADR 1018): a `Name` of its own, which
         // preparation spells apart from the module's names after the
@@ -594,12 +597,24 @@ impl OutputPlan {
         js_module.packages.push(js::Package {
             from: self.settings.test.runner.module().to_string(),
             default: None,
-            named: vec![("test".to_string(), test.clone())],
+            named: vec![("test".to_string(), register.clone())],
             namespace: None,
             span: js::Span::NONE,
             named_at: js::Span::NONE,
         });
-        let mut helpers = Vec::new();
+        // `const test = $tests(register);`: each test refused where a
+        // refusal at run time came before it in its process, as nothing of
+        // the program runs after one (ADR 0692, amended), and `rust-js test`
+        // runs it again in a process of its own (#2625).
+        js_module.items.push(js::Item::Const(js::Const {
+            name: js::Name::module(&test),
+            value: js::Expr::call_helper("$tests", vec![js::Expr::module(&register)]),
+            export: false,
+            mutable: false,
+            fields: Default::default(),
+            span: js::Span::NONE,
+        }));
+        let mut helpers = vec![rust_js_program::runtime::Helper::Tests];
         let mut registrations = Vec::new();
         for registered in tests {
             let f = match aliases

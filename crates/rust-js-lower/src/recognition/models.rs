@@ -488,6 +488,8 @@ pub const MODELS: &[Entry] = &[
     entry("tableRoomFor", Model(Unproven(Why::Outside), &[Row(StdRow::HashTableCapacityOverflow)]), "its rows of `$stdSites`, std's sites of its function's panics"),
     entry("take", Model(Unproven(Why::Collections), &[]), ""),
     entry("taking", Model(Pitted, &[Path("core::iter::Take")]), ""),
+    entry("testRuns", Glue, ""),
+    entry("tests", Glue, ""),
     entry("toVec", Form(&[Path("alloc::slice::<[T]>::to_vec")]), "the lowering's, items.rs and std_types/vec.rs: a map of each item's clone"),
     entry("took", Glue, ""),
     entry("traitImpl", Glue, ""),

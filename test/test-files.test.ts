@@ -96,10 +96,11 @@ mod nested {
     false,
   ]);
   const js = crate.read("shapes.test.js");
-  expect(js).toContain('import { test as test$1 } from "node:test";');
+  expect(js).toContain('import { test as register } from "node:test";');
   expect(js).toContain('import * as Nested from "./shapes/tests/nested.js";');
   expect(js).toContain("\nfunction test(side) {");
-  expect(js).toContain(`test$1("shapes::tests::squares", squares);
+  expect(js).toContain(`const test$1 = $tests(register);
+test$1("shapes::tests::squares", squares);
 test$1("shapes::tests::refuses", () => $shouldPanic(refuses, "negative"));
 test$1.skip("shapes::tests::slow", slow);
 test$1("shapes::tests::returns", () => $testResult(returns()));
@@ -159,18 +160,20 @@ pub mod checks {
 `,
   });
   expect(["lib.test.js", "tests.js", "proptests.js", "test_utils.js", "checks.js", "checks.test.js"].map(crate.has)).toEqual([true, true, true, true, true, true]);
-  expect(crate.read("lib.test.js")).toContain(`import { test } from "node:test";
+  expect(crate.read("lib.test.js")).toContain(`import { test as register } from "node:test";
 import * as Lib from "./lib.js";
 import * as Proptests from "./proptests.js";
 import * as Tests from "./tests.js";
+import { $tests } from "@rust-js/std";
 
+const test = $tests(register);
 test("at_the_root", Lib.atTheRoot);
 test("tests::one", Tests.one);
 test("proptests::two", Proptests.two);
 `);
   // What another file registers, each module exports.
   expect([crate.read("lib.js"), crate.read("tests.js")].map((js) => /^export function (atTheRoot|one)\(/m.test(js))).toEqual([true, true]);
-  expect(crate.read("checks.test.js")).toContain('import * as Checks from "./checks.js";\n\ntest("checks::three", Checks.three);\n');
+  expect(crate.read("checks.test.js")).toContain('import * as Checks from "./checks.js";\nimport { $tests } from "@rust-js/std";\n\nconst test = $tests(register);\ntest("checks::three", Checks.three);\n');
   const { code, pass, said } = crate.tested();
   expect([code, pass], said).toEqual([0, 4]);
 });
@@ -181,7 +184,7 @@ test("the runner the crate names is the one its test files import test from", ()
       "Cargo.toml": `[package]\nname = "t"\nversion = "0.1.0"\n\n[package.metadata.rust-js.test]\nrunner = "${runner}"\n`,
       "lib.rs": "#[cfg(test)]\nmod tests {\n    #[test]\n    fn t() {}\n}\n",
     });
-    expect(crate.read("lib.test.js")).toContain(`import { test } from "${module}";`);
+    expect(crate.read("lib.test.js")).toContain(`import { test as register } from "${module}";`);
     expect(crate.manifest.tests).toEqual({ runner, module, files: [join(crate.out, "lib.test.js")] });
   }
 });

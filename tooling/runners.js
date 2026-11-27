@@ -14,10 +14,14 @@ import { dirname, join } from "node:path";
  * out what's in `node_modules`, where the target is by default, as it finds
  * tests: each is given the files themselves, and where to look.
  * @param {string} runner
- * @param {{ app: string, targetDir: string, files: string[], args: string[] }} options
+ * `names`, where given, are the only tests run, each by its whole name
+ * (`rust-js test`'s run again of those refused in their process, #2625).
+ * @param {{ app: string, targetDir: string, files: string[], args: string[], names?: string[] }} options
  * @returns {{ command: string, args: string[], env: Record<string, string> }}
  */
-export function runnerCommand(runner, { app, targetDir, files, args }) {
+export function runnerCommand(runner, { app, targetDir, files, args: given, names }) {
+  const pattern = names && `^(?:${names.map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})$`;
+  const args = pattern === undefined ? given : [...given, ...(runner === "node" ? [`--test-name-pattern=${pattern}`] : ["-t", pattern])];
   switch (runner) {
     case "node":
       return { command: "node", args: ["--test", ...args, ...files], env: {} };

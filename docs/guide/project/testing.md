@@ -115,13 +115,38 @@ runner = "vitest"
 
 | `runner` | Its test files import | `rust-js test` runs |
 |---|---|---|
-| `"node"`, the default | `import { test } from "node:test";` | `node --test` |
-| `"bun"` | `import { test } from "bun:test";` | `bun test` |
-| `"vitest"` | `import { test } from "vitest";` | `vitest run` |
-| `"jest"` | `import { test } from "@jest/globals";` | `jest`, with `NODE_OPTIONS=--experimental-vm-modules` for its ES modules |
+| `"node"`, the default | `import { test as register } from "node:test";` | `node --test` |
+| `"bun"` | `import { test as register } from "bun:test";` | `bun test` |
+| `"vitest"` | `import { test as register } from "vitest";` | `vitest run` |
+| `"jest"` | `import { test as register } from "@jest/globals";` | `jest`, with `NODE_OPTIONS=--experimental-vm-modules` for its ES modules |
 
 Each but Node's and bun's is the app's own, in its `devDependencies`.
-Another runner is refused, with the four named.
+Another runner is refused, with the four named. A test file's `test` is
+the runner's, given to `$tests`, `const test = $tests(register);`, which
+runs each test as the next section says of a refusal.
+
+### A test after a refusal at run time runs again in a process of its own
+
+What rust-js refuses as a program runs, `rust-js does not support ..`,
+ends what of the program its process runs: no drop runs past it, so what
+the program holds is no longer what Rust's would
+([ADR 0692](../../decisions/0692-a-thrown-error-is-a-panic-and-what-js-threw.md),
+amended). Each test after one in its process is refused too, `rust-js does
+not support running a test after one refused at run time in its process`,
+never run on what's left. `rust-js test` then runs those tests again, in a
+process of their own, each one's outcome as native Rust's; the refused one
+stays refused, and fails the run.
+
+```text
+✖ tests::asks_an_address
+  Error: rust-js does not support the address of a value JS holds as itself, ..
+✖ tests::keeps_the_least
+  Error: rust-js does not support running a test after one refused at run time in its process: ..
+
+rust-js test: running again in a process of their own the 1 test a refusal at run time came before: tests::keeps_the_least
+
+✔ tests::keeps_the_least
+```
 
 ### Each module's tests are its `.test.js`
 
@@ -169,9 +194,9 @@ mod tests {
 
 ```js
 // src/shapes.test.js
-import { test } from "node:test";
+import { test as register } from "node:test";
 import { area } from "./shapes.js";
-import { $assertFailed, $debugF64, $shouldPanic } from "@rust-js/std";
+import { $assertFailed, $debugF64, $shouldPanic, $tests } from "@rust-js/std";
 
 function unit() {
   return area(1);
@@ -191,6 +216,7 @@ function aNegativeRadiusPanics() {
 
 function slow() {}
 
+const test = $tests(register);
 test("shapes::tests::a_unit_circle_has_area_pi", aUnitCircleHasAreaPi);
 
 test("shapes::tests::a_negative_radius_panics", () =>

@@ -464,4 +464,12 @@ export const mutations: Mutation[] = [
     replace: "                let previous = Manifest::read_from(&path)\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "another rust-js builds each crate for the target again"],
   },
+  {
+    name: "tests-registered-by-the-runner",
+    breaks: "a test file registers each test with its runner's own `test`, not `$tests`', so a test after a refusal at run time in its process runs on, its drops' writes undone, and gives 4 for 3 (#2625)",
+    file: "crates/rust-js-emit/src/output.rs",
+    find: '            value: js::Expr::call_helper("$tests", vec![js::Expr::module(&register)]),\n',
+    replace: "            value: js::Expr::module(&register),\n",
+    tests: ["test/rust-js-test-runners.test.ts", "-t", "by node, a test after one refused at run time is run again"],
+  },
 ];
