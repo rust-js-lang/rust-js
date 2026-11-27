@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-27 (#2608, ADR 1101 amended): test/test-map.test.ts gains "an item's namers are those its crate and module path let name it, not another crate's word of its name"; three mutations, one retargeted.
+
 Changed on 2026-11-27 (#2524): test/pilot.test.ts' two tests of the pilot as it's committed, "the pilot names rust-js's crates and packages by version, not by a path into this checkout" and "the pilot's committed JS is what rust-js writes from its Rust", move unchanged to test/pilot-committed.test.ts, new, the push suite's, with no server, no Vite and no browser; test/pilot.test.ts keeps its 10 browser and server tests; the shared setup is test/pilot.ts; five mutations name the new file.
 
 Changed on 2026-11-26 (#2613, ADR 1146 amended): test/leases.test.ts gains "a lock's release lets it go once, and only while it names this process", "of two waiters that find a lock let go or stale in one instant, one takes it and the other never removes it" and "a run told to end while it waits for the turn it let go to a push leaves the push's turn alone"; five mutations, two retargeted.

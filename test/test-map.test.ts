@@ -923,6 +923,72 @@ test("a moved struct named by a const fn's signature selects the function it ope
   expect(pick(map, [moved], files, cases, sources)).toEqual({ ...opened, why: expect.any(String) } as never);
 });
 
+// An item is named where its crate and module path let it be, not wherever
+// its bare name is a word: dedb8fc2fe's closures.rs change, outside any
+// function, searched in turn to rust-js-lower's `named`, and on to a
+// `configs` of a JS text in rust-js-emit, which doesn't depend on
+// rust-js-lower, at prettier.rs:47, outside any function: everything, the
+// whole suite for a change of a handful of files' (#2608).
+test("an item's namers are those its crate and module path let name it, not another crate's word of its name", () => {
+  // rust-js-lower's facts.rs: `configs`, a method of `Facts` no test counts,
+  // at 6-8; function 0, at 10-20, calls it at 15. Function 1 is rust-js-emit's.
+  const lower = "crates/rust-js-lower/src/facts.rs";
+  const two: TestMap = {
+    ...map,
+    functions: [
+      { file: lower, spans: [[10, 20]] },
+      { file: "crates/rust-js-emit/src/prettier.rs", spans: [[10, 12]] },
+      // Two more of rust-js-lower's, which don't name it, so that function 0
+      // is not most of its crate's.
+      { file: "crates/rust-js-lower/src/more.rs", spans: [[1, 3]] },
+      { file: "crates/rust-js-lower/src/more.rs", spans: [[5, 7]] },
+    ],
+    units: { "test/one.test.ts": bits(0), "test/two.test.ts": bits(1) },
+  };
+  const text = Array.from({ length: 20 }, (_, i) => `// line ${i + 1}`);
+  text[0] = "pub struct Facts;";
+  text[4] = "impl Facts {";
+  text[6] = "        1";
+  text[7] = "    }";
+  text[8] = "}";
+  text[9] = "fn read(f: &Facts) -> u32 {";
+  text[14] = "    f.configs()";
+  // The other site of the word: a JS text's, at column 0 outside any
+  // function, rust-js-emit's, as prettier.rs's `LAY_OUT` is.
+  const other = (file: string, declared: string): Sources => {
+    text[5] = declared;
+    return {
+      text: (at) => (at === lower ? text.join("\n") : at === file ? "process.stdout.write(JSON.stringify({ texts, configs: [...configs] }));" : undefined),
+      naming: (word) => (word === "configs" ? [6, 15].map((line) => ({ file: lower, line })).concat({ file, line: 1 }) : word === "Configured" ? [3, 5].map((line) => ({ file: lower, line })) : []),
+    };
+  };
+  const body: Change = { file: lower, hunks: [[7, 1, ["        2"], ["        1"]]] };
+  const its = { kind: "picked", functions: [0] };
+  const all = { kind: "all" };
+  const of = (file: string, declared: string) => pick(two, [body], files, cases, other(file, declared));
+  // A `pub` one: rust-js-emit can't name it; rust-js-mir, which depends on
+  // rust-js-lower, may; the binary's, which depends on both, may.
+  expect(of("crates/rust-js-emit/src/prettier.rs", "    pub fn configs(&self) -> u32 {")).toMatchObject(its);
+  expect(of("crates/rust-js-mir/src/body.rs", "    pub fn configs(&self) -> u32 {")).toMatchObject(all);
+  expect(of("src/main.rs", "    pub fn configs(&self) -> u32 {")).toMatchObject(all);
+  // A `pub(crate)` one: its crate's other modules may; no other crate.
+  expect(of("crates/rust-js-lower/src/other.rs", "    pub(crate) fn configs(&self) -> u32 {")).toMatchObject(all);
+  expect(of("crates/rust-js-mir/src/body.rs", "    pub(crate) fn configs(&self) -> u32 {")).toMatchObject(its);
+  // A private one of an inherent `impl`: its module's alone, facts.rs and facts/.
+  expect(of("crates/rust-js-lower/src/other.rs", "    fn configs(&self) -> u32 {")).toMatchObject(its);
+  expect(of("crates/rust-js-lower/src/facts/inner.rs", "    fn configs(&self) -> u32 {")).toMatchObject(all);
+  // A trait's method, which has no `pub` of its own: wherever the trait
+  // is seen, as code bound by it calls it, the trait's crate's too; of a
+  // trait no source declares, std's or a dependency's, anywhere.
+  text[4] = "impl Configured for Facts {";
+  expect(of("crates/rust-js-emit/src/prettier.rs", "    fn configs(&self) -> u32 {")).toMatchObject(all);
+  text[2] = "pub trait Configured {}";
+  expect(of("crates/rust-js-lower/src/other.rs", "    fn configs(&self) -> u32 {")).toMatchObject(all);
+  expect(of("crates/rust-js-emit/src/prettier.rs", "    fn configs(&self) -> u32 {")).toMatchObject(its);
+  text[2] = "// line 3";
+  text[4] = "impl Facts {";
+});
+
 // worker-02 agent's probe of #2288's rule (comment 7127339825): changes outside any
 // function that change what code does. A new free item shadows a glob's of
 // its name; a macro's body changes each expansion; an attribute decides of

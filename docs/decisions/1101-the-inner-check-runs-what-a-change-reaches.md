@@ -1199,3 +1199,50 @@ Three gaps of the selection and of the merges around it:
   Test: "a cherry-pick's conflict in TESTS.md's `Changed on` lines is
   merged by git's driver; one in its table stops it"; mutation
   `changes-log-driver-merges-nothing`.
+
+## Amendment (2026-11-27, #2608): an item's namers are where its crate and module path let it be named
+
+The search for an item's namers (#2288, #2523) took every line of every
+crate of the compiler that had its bare name as a word. A same-named item
+of a crate that can't see it, or a word of a JS text there, counted:
+dedb8fc2fe's closures.rs change, outside any function, was searched
+through `ClosureFacts`'s namers to rust-js-lower's `named`, then to
+rust-js-emit's prettier.rs, which doesn't depend on rust-js-lower, and to
+a `configs` of its Prettier script, outside any function at
+prettier.rs:47: everything.
+
+Now `pick`'s `seenFrom` answers where the item `name` that a file
+declares can be named, by its declaration there, and the three searches
+that read an item's namers ask it: the item rule's (`byOneName`), a
+constant's value's (`constValue`) and a signature's (`signatureChanged`,
+whose own `pub`-or-module test it replaces):
+
+- a private item, free or of an inherent `impl`: its module's files,
+  `moduleOf`'s;
+- `pub(crate)`, `pub(super)` or `pub(in ..)`: its crate's;
+- `pub`, a macro, or an item a macro's body writes wherever it's invoked:
+  each crate whose build holds its crate (scripts/compiler-crates.ts'
+  `cratesBuilding`, Cargo.toml's dependencies, the one authority on
+  which crate depends on which), a re-export's importers among them;
+- an item of a trait, or of a trait's `impl`, which has no `pub` of its
+  own and which code bound by the trait calls: wherever the trait is;
+- a name the file doesn't declare, an `impl`'s type or trait declared
+  elsewhere, or an item a change is writing: anywhere, as before.
+
+The rule narrows only what's searched; its valves, a name too short or
+one most of a crate's functions name, hold as before. Replayed over the
+16 compiler commits since the map at ac9716c758, the running selection
+(the item layer in shadow) is the same: 14 everything, 2 picks of 147 and
+125 files unchanged. The chase from `ClosureFacts` walks most of the
+compiler's types, and now ends at another dead end, rust-js-mir's
+`StdLowering` at dispatch/known_calls.rs:15, a multi-line `type` alias's
+last line at column 0, which no item holds; the item layer's shadow
+selects 454 of the 457 test files and every corpus case for
+dedb8fc2fe's change, so its readers are nearly every test. Such a chase takes about 3.6 s where it took 0.6 s,
+reaching further before its dead end.
+
+Test: "an item's namers are those its crate and module path let name it,
+not another crate's word of its name". Mutations
+`test-map-namers-any-crate`, `test-map-namers-own-crate-only`,
+`test-map-trait-item-by-own-visibility`; `signature-change-pub-module-only`
+retargeted to the shared rule.

@@ -59,7 +59,7 @@ import { bytesOf, evict, freeBytes } from "../tooling/bounded.js";
 import { floorBytes, machineStore } from "../test/bounded";
 import { machineVerifiedRuns } from "../test/kept";
 import { downloaded } from "./artifacts";
-import { compilerCrates, compilerSourceDirs, crateOf, isCompilerSource } from "./compiler-crates";
+import { compilerCrates, compilerSourceDirs, crateOf, cratesBuilding, isCompilerSource } from "./compiler-crates";
 import { readJobTimes } from "./jobTimes";
 import { type ItemLayer, implBodyAt, inUnitTests, itemLayer, scipIndex, touchedByItem, touchedByNewFile } from "./testMapItems";
 import { balanced, caseShardParts, machine, pushSuiteFiles, shard, shardArg } from "./shard";
@@ -577,8 +577,9 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
       if (!texts.has(at)) texts.set(at, (sources.text(at) ?? "").split("\n"));
       return texts.get(at)![line - 1] ?? "";
     };
+    const seen = seenFrom(file, item.name);
     for (const site of sources.naming(item.name)) {
-      if (site.file === file && site.line >= item.start && site.line <= item.end) continue;
+      if (!seen(site.file) || (site.file === file && site.line >= item.start && site.line <= item.end)) continue;
       // A comment that names it, or a `use` of it, reads nothing.
       if (/^\s*(?:\/\/|(?:pub(?:\([^)]*\))?\s+)?use\b)/.test(lineOf(site.file, site.line))) continue;
       const found = holding(site.file, site.line);
@@ -628,6 +629,82 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
   const linesOf = (at: string) => {
     if (!texts.has(at)) texts.set(at, (sources.text(at) ?? "").split("\n"));
     return texts.get(at)!;
+  };
+  // Where the item `name` that `file` declares can be named (#2608): by
+  // its crate and module path, as rustc resolves it, not wherever its bare
+  // name is a word, which an item of a crate that can't see it shares, or
+  // a JS text's word there, as rust-js-emit's prettier.rs:47 shared
+  // rust-js-lower's `named`'s search. Of a private item, free or of an
+  // inherent `impl`, its module's files (`moduleOf`); of a `pub(crate)`,
+  // `pub(super)` or `pub(in ..)` one, its crate's; of a `pub` one, a macro,
+  // or one a macro's body writes wherever it's invoked, each crate whose
+  // build holds its crate (`cratesBuilding`): only those depend on it, a
+  // re-export's importers too. Of a trait's item, or its `impl`'s, which
+  // code bound by the trait names, wherever the trait is. Of a name `file`
+  // doesn't declare, an `impl`'s type or trait, or an item being written,
+  // anywhere, as it can't say.
+  const anywhere = () => true;
+  const builders = new Map<string, string[]>();
+  const dependentsOf = (file: string) => {
+    const crate = crateOf(file)!;
+    if (!builders.has(crate.src)) builders.set(crate.src, cratesBuilding([file]).map((of) => `${of.src}/`));
+    const building = builders.get(crate.src)!;
+    return (at: string) => building.some((src) => at.startsWith(src));
+  };
+  // Of a declaration `text` written in `file`'s module, by its visibility.
+  const byVisibility = (text: string, file: string): ((at: string) => boolean) => {
+    const crate = crateOf(file);
+    if (crate === undefined) return anywhere;
+    const visibility = /^\s*(?:#\[.*\]\s*)*pub\b(\()?/.exec(text);
+    if (visibility === null) return moduleOf(file);
+    return visibility[1] === undefined ? dependentsOf(file) : (at) => at.startsWith(`${crate.src}/`);
+  };
+  // The blocks line `line` of `lines` is in, the nearest first: each line
+  // above indented less than the last, past a `where` clause's and a lone `{`.
+  const blocksOf = (lines: string[], line: number) => {
+    const indent = (text: string) => text.match(/^\s*/)![0].length;
+    const blocks: number[] = [];
+    for (let at = line - 1, under = indent(lines[line - 1] ?? ""); at >= 1 && under > 0; at--) {
+      const above = lines[at - 1] ?? "";
+      if (above.trim() === "" || commentOnly(above) || indent(above) >= under || /^\s*(?:where|\{)\s*$/.test(above)) continue;
+      blocks.push(at);
+      under = indent(above);
+    }
+    return blocks;
+  };
+  const seenFrom = (file: string, name: string, searched = new Set<string>()): ((at: string) => boolean) => {
+    if (crateOf(file) === undefined || searched.has(name)) return anywhere;
+    searched.add(name);
+    const lines = linesOf(file);
+    const declares = declaring(name);
+    const scopes = lines.flatMap((text, i): ((at: string) => boolean)[] => {
+      if (commentOnly(text) || !declares.test(text)) return [];
+      if (/\bmacro_rules!/.test(text)) return [dependentsOf(file)];
+      const blocks = blocksOf(lines, i + 1);
+      // A macro's body's, which its every invocation writes.
+      if (blocks.some((at) => /^\s*macro_rules!/.test(lines[at - 1]!))) return [dependentsOf(file)];
+      // Its block: a trait, an `impl` or an inline `mod`; any other, a
+      // function's body say, its crate's builders'.
+      const block = blocks[0] === undefined ? undefined : lines[blocks[0] - 1]!;
+      if (block !== undefined) {
+        const trait = /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:unsafe\s+)?trait\s+([A-Za-z_]\w*)/.exec(block)?.[1];
+        if (trait !== undefined) return [seenFrom(file, trait, searched)];
+        if (/^\s*(?:unsafe\s+)?impl\b/.test(block)) {
+          // Its header, to its `{`: of a trait's `impl`, the trait's; of
+          // an inherent one, its own visibility's.
+          let header = "";
+          for (let at = blocks[0]!; at <= lines.length; at++) {
+            header += ` ${lines[at - 1]!.replace(/\/\/.*$/, "")}`;
+            if (/\{\s*$/.test(lines[at - 1]!)) break;
+          }
+          const ofTrait = traitImpl.exec(header.trim())?.[1];
+          if (ofTrait !== undefined) return [seenFrom(file, ofTrait, searched)];
+          if (/\bfor\b/.test(header)) return [anywhere];
+        } else if (!/^\s*(?:pub(?:\([^)]*\))?\s+)?mod\s+\w+\s*\{/.test(block)) return [dependentsOf(file)];
+      }
+      return [byVisibility(text, file)];
+    });
+    return scopes.length === 0 ? anywhere : (at) => scopes.some((seen) => seen(at));
   };
   // A line's kind, then its item's name (#2288, worker-02 agent's design, Tu's
   // heuristic; the nightly and scripts/selector-audit.ts the backstop).
@@ -743,7 +820,9 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     if (name.length < 3) return `its item, \`${name}\`, is too short a name to search`;
     searched.add(name);
     const found = new Set<number>();
+    const seen = seenFrom(file, name);
     for (const site of sources.naming(name)) {
+      if (!seen(site.file)) continue;
       const held = holding(site.file, site.line);
       const lines = linesOf(site.file);
       const text = lines[site.line - 1] ?? "";
@@ -800,8 +879,8 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     if (items.length > 0 && !unreferencedOnly(items)) return undefined;
     const own = following(file, from + count - 1);
     if (own === undefined) return undefined;
-    // A private one's names are its module's; a `pub` one's, anywhere.
-    const seen = /^\s*pub\b/.test(before.find((line) => /\bfn\s/.test(line))!) ? () => true : moduleOf(file);
+    // Where it can be named: a private one's, its module's (`seenFrom`).
+    const seen = seenFrom(file, fn);
     const readers = [own];
     for (const site of sources.naming(fn)) {
       if (!seen(site.file)) continue;
