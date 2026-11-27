@@ -116,3 +116,23 @@ test("a std type's clone site is read of the impl rustc resolves, not a list of 
   expect(body).toContain("cloned_by(");
   expect([...body.matchAll(/StdItem::(\w+)|LangItem::(\w+)/g)].map((m) => m[1] ?? m[2]).filter((name) => name !== "RefCell" && name !== "CloneFn")).toEqual([]);
 });
+
+// Where a std function's call clones a borrowed `RefCell` it's given is
+// std's MIR's, of every std function a program may call (`cloned_calls`
+// walks `callables`), read of the function rustc resolves the call to by
+// its path (`call_key`), never of the catalog's bound items alone: a
+// `Rc::unwrap_or_clone`'s, a `Result<&T, E>`'s `cloned` and a slice's
+// `to_owned`, which no model bound, named the caller's line (#2509).
+test("a std call's clone site is read of the function rustc resolves, not of the catalog", () => {
+  const lowering = read("crates/rust-js-lower/src/std_impls/clones.rs");
+  const at = lowering.indexOf("    pub(crate) fn call_clone_site(");
+  const reader = lowering.slice(at, lowering.indexOf("\n    }\n", at));
+  expect(reader).toContain("traits::resolve(");
+  expect(reader).toContain("call_key(");
+  expect(reader).not.toContain("path_of(self.tcx, callee)");
+  const walk = read("crates/rust-js-lower/src/recognition/compiled_std/cloned_at.rs");
+  const from = walk.indexOf("pub(super) fn cloned_calls(");
+  const calls = walk.slice(from, walk.indexOf("\n}\n", from));
+  expect(calls).toContain("callables(tcx)");
+  expect(calls).not.toContain("bound_paths");
+});

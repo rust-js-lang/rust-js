@@ -22,7 +22,7 @@ function main() {
     const written = $writeCloneOfSlice(slots, items, (value) => ({
       value: $borrow(
         value,
-        $stdSites.clonedAt["core::mem::<[MaybeUninit<T>]>::write_clone_of_slice"][0],
+        $stdSites.clonedAt["<[core::mem::maybe_uninit::MaybeUninit<T>]>::write_clone_of_slice"][0],
       ).value,
     }));
     console.log(`${written.length}`);

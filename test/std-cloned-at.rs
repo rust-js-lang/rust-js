@@ -13,6 +13,7 @@
 
 use std::cell::{Cell, RefCell};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::ops::Bound;
 use std::panic::{self, AssertUnwindSafe};
 
 thread_local! {
@@ -65,4 +66,10 @@ fn main() {
     let set = BTreeSet::from([RefCell::new(0u8)]);
     let _held = set.first().expect("an item").borrow_mut();
     at("alloc::collections::btree::set::BTreeSet", 0, || drop(set.clone()));
+    drop(_held);
+    // A `Bound<&T>`'s `cloned`, whose site its variant chooses: both kept.
+    let cell = RefCell::new(0u8);
+    let _held = cell.borrow_mut();
+    at("core::ops::range::Bound::<&T>::cloned", 1, || drop(Bound::Included(&cell).cloned()));
+    at("core::ops::range::Bound::<&T>::cloned", 1, || drop(Bound::Excluded(&cell).cloned()));
 }

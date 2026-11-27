@@ -483,11 +483,12 @@ pub struct FnCx<'a, 'tcx> {
     /// with own nullable parameters, which the pipeline settles after it
     /// (ADR 1148).
     pub nulled_seen: RefCell<analysis::nulled_params::NulledSeen>,
-    /// The std item the call being lowered is of, while it's lowered,
-    /// which a clone made of what it's given reads its row of `clonedAt` by,
-    /// taken by the first clone made under it (`call_clone_site`, #2577):
-    /// set by MIR's call (`rust-js-mir`'s `mir_call`).
-    pub calling: std::cell::Cell<Option<DefId>>,
+    /// The function the call being lowered is of, and what it's given,
+    /// while it's lowered, which a clone made of what it's given reads its
+    /// row of `clonedAt` by, of the std function rustc resolves it to,
+    /// taken by the first clone made under it (`call_clone_site`, #2509,
+    /// #2577): set by MIR's call (`rust-js-mir`'s `mir_call`).
+    pub calling: std::cell::Cell<Option<(DefId, ty::GenericArgsRef<'tcx>)>>,
     pub tcx: TyCtxt<'tcx>,
     pub typing_env: ty::TypingEnv<'tcx>,
     /// What the generic item being lowered is given, besides its arguments.

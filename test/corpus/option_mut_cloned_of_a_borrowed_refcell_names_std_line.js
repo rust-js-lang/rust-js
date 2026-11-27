@@ -23,7 +23,10 @@ function main() {
   const value =
     item == null
       ? item
-      : { value: $borrow(item, $stdSites.clonedAt["core::option::Option::cloned"][0]).value };
+      : {
+          value: $borrow(item, $stdSites.clonedAt["core::option::Option::<&mut T>::cloned"][1])
+            .value,
+        };
   console.log(
     `${value == null ? "None" : `Some(RefCell { value: ${$showBorrowed(value, (value) => String(value))} })`}`,
   );

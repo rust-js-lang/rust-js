@@ -20,8 +20,10 @@ function main() {
   const items = [{ value: 0 }];
   console.log(`${items.length}`);
   $resize(items, 3, cell, undefined, (item) => ({
-    value: $borrow(item, $stdSites.clonedAt["alloc::collections::vec_deque::VecDeque::resize"][0])
-      .value,
+    value: $borrow(
+      item,
+      $stdSites.clonedAt["alloc::collections::vec_deque::VecDeque::<T, A>::resize"][0],
+    ).value,
   }));
   console.log(`${items.length}`);
 }

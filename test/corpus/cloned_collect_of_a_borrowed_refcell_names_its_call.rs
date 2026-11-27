@@ -1,9 +1,9 @@
 //@ run-fail: RefCell already mutably borrowed
-//@ located-otherwise: #2509 a `cloned()` whose steps aren't one line names its call's line
+//@ located-otherwise: #1458 a `cloned()` whose steps aren't one line names its call's line
 // A `cloned()` collected, of a `RefCell` mutably borrowed: native Rust
 // names `function.rs:166:5` of a slice's, whose `collect` folds, and
 // `250:5` of a `filter()`'s, which steps `next`; rust-js names the
-// call's line until std's `Cloned` and `collect` are compiled (#1458, #2509).
+// call's line until std's `Cloned` and `collect` are compiled (#1458).
 use std::cell::RefCell;
 
 fn main() {

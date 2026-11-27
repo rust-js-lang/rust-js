@@ -477,51 +477,72 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ))
     }
 
-    /// Where the std item the call the lowering makes is of clones
-    /// `item`, the site of its row of `clonedAt`, `$stdSites.clonedAt[row][0]`,
-    /// where `item` is a `RefCell` or may be one, whose clone tracks its
-    /// caller: of a function or a method the catalog binds, its path's
-    /// row (`models::path_of`), `Vec::resize`'s; of a call that makes an
-    /// iterator, `repeat_n`'s `RepeatN` or a `cloned()`'s `Cloned`, its
-    /// struct's path's row of each step asked of what it makes
-    /// (`made_asked_steps`) where they're one line. Where they're several,
-    /// or what's asked isn't known, a `cloned()` collected, returned, stored
-    /// or handed to generic code, every step, whose rows are three lines:
-    /// none, the call's line, as before, until std's `Cloned` and `collect`
-    /// are compiled (#1458), `located-otherwise` against #2509 (Tu's
-    /// decision). Asked once of a call, by the first clone made under it,
-    /// std's of what it's given; a clone that clone makes places its own
+    /// Where the std function the call the lowering makes is of clones
+    /// `item`, the site of its row of `clonedAt`, where `item` is a
+    /// `RefCell` or may be one, whose clone tracks its caller: of the
+    /// function rustc resolves the call to, its row by its path
+    /// (`call_key`), at the position of its generics `item` is given at,
+    /// `Vec::<T, A>::resize`'s `T`, `<T as ToOwned>::to_owned`'s, which
+    /// `bun run std` walks of every std function a program may call
+    /// (`cloned_calls`); of a call that makes an iterator, `repeat_n`'s
+    /// `RepeatN` or a `cloned()`'s `Cloned`, its struct's path's row of
+    /// each step asked of what it makes (`made_asked_steps`) where they're
+    /// one line. Where they're several, or what's asked isn't known, a
+    /// `cloned()` collected, returned, stored or handed to generic code,
+    /// every step, whose rows are three lines: none, the call's line, as
+    /// before, until std's `Cloned` and `collect` are compiled (#1458),
+    /// `located-otherwise` against #1458 (Tu's decision). Asked of each
+    /// clone made under the call till one is placed, which takes it: std's
+    /// of a cell it's given, the cell one of its arguments; a clone of what
+    /// holds a cell, an `Option`'s or a `Vec`'s, places its own
     /// (`clone_site`). None of one `bun run std` wrote no row of (#2509,
     /// #2577).
     pub(crate) fn call_clone_site(&self, item: Ty<'tcx>) -> Option<Expr> {
-        let callee = self.calling.take()?;
         if !self.part_may_be_cell(item) {
             return None;
         }
-        let row = match crate::recognition::models::path_of(self.tcx, callee) {
-            Some(path) if StdRow::ClonedAt.written(path, 0) => path.to_string(),
-            _ => {
-                let sig = self.tcx.fn_sig(callee).instantiate_identity().skip_normalization();
-                let made = (self.tcx.instantiate_bound_regions_with_erased(sig).output()).ty_adt_def()?;
-                let path = crate::recognition::models::path_of(self.tcx, made.did())?;
-                let mut row: Option<(String, &'static str)> = None;
-                for step in self.made_asked_steps().names() {
-                    let key = format!("{path}::{step}");
-                    let Some(site) = StdRow::ClonedAt.text(&key, 0) else {
-                        continue;
-                    };
-                    match &row {
-                        None => row = Some((key, site)),
-                        Some((_, kept)) if *kept == site => {}
-                        Some(_) => return None,
-                    }
-                }
-                row?.0
-            }
+        let (callee, args) = self.calling.get()?;
+        // The position `item` is given at, of the call's arguments `given`:
+        // a clone of what holds it, an `Option`'s whose own clone places it,
+        // has none.
+        let erased = self.tcx.erase_and_anonymize_regions(item);
+        let given_at = |given: ty::GenericArgsRef<'tcx>| {
+            (given.iter()).position(|arg| {
+                arg.as_type()
+                    .is_some_and(|arg| self.tcx.erase_and_anonymize_regions(arg) == erased)
+            })
         };
-        StdRow::ClonedAt
-            .written(&row, 0)
-            .then(|| StdRow::ClonedAt.site_of(&row, 0))
+        // The function rustc resolves the call to, a trait's method's impl.
+        let (resolved, given) = crate::traits::resolve(self.tcx, self.typing_env, callee, args)
+            .ok()
+            .flatten()
+            .map_or((callee, args), |instance| (instance.def_id(), instance.args));
+        let key = crate::recognition::call_key(self.tcx, resolved);
+        if let Some(at) = given_at(given)
+            && StdRow::ClonedAt.written(&key, at)
+        {
+            self.calling.take();
+            return Some(StdRow::ClonedAt.site_of(&key, at));
+        }
+        given_at(args)?;
+        let sig = self.tcx.fn_sig(callee).instantiate_identity().skip_normalization();
+        let made = (self.tcx.instantiate_bound_regions_with_erased(sig).output()).ty_adt_def()?;
+        let path = crate::recognition::models::path_of(self.tcx, made.did())?;
+        let mut row: Option<(String, &'static str)> = None;
+        for step in self.made_asked_steps().names() {
+            let key = format!("{path}::{step}");
+            let Some(site) = StdRow::ClonedAt.text(&key, 0) else {
+                continue;
+            };
+            match &row {
+                None => row = Some((key, site)),
+                Some((_, kept)) if *kept == site => {}
+                Some(_) => return None,
+            }
+        }
+        let (row, _) = row?;
+        self.calling.take();
+        Some(StdRow::ClonedAt.site_of(&row, 0))
     }
 
     /// `clone_value` of `ty`, whose `item` the std item the call being made
@@ -620,10 +641,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = self.clone_value(Expr::held(cell), args.type_at(0), span, out)?;
                 return Ok(Expr::object(vec![Prop::Field(js::HELD.into(), value)]));
             }
-            // A `OnceCell` holds an `Option` (ADR 0317).
+            // A `OnceCell` holds an `Option` (ADR 0317), its parts cloned at
+            // the `OnceCell`'s clone's row, never the `Option`'s own clone's,
+            // which std's never calls (#2509).
             ty::Adt(_, args) if std(StdItem::OnceCell) => {
                 let option = Ty::new_option(self.tcx, args.type_at(0));
-                let value = self.clone_value(Expr::held(place), option, span, out)?;
+                let value = match self.needs_clone(option) {
+                    true => self.clone_parts_of(Expr::held(place), option, span, out)?,
+                    false => Expr::held(place),
+                };
                 return Ok(Expr::object(vec![Prop::Field(js::HELD.into(), value)]));
             }
             _ => {}

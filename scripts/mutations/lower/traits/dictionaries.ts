@@ -969,4 +969,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^valued_made_by_an_entry_through_a_dyn\\.rs$"],
   },
+  {
+    name: "located-entry-reads-the-call",
+    breaks: "a dictionary's entry that raises where its caller says, a `RefCell`'s `clone` given std's `Take<Repeat<T>>::next_back`, reads the row of the call it's given to, so it ignores the location it's given (#2509)",
+    file: "crates/rust-js-lower/src/traits/dictionaries.rs",
+    find: "        let calling = self.calling.take();\n        let made = Expr::raised_at(at.clone(), || self.with_given_location(at, entry));\n",
+    replace: "        let calling = self.calling.get();\n        let made = Expr::raised_at(at.clone(), || self.with_given_location(at, entry));\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_take_next_back_of_a_borrowed_refcell_names_std_line\\.rs$"],
+    snapshots: true,
+  },
 ];

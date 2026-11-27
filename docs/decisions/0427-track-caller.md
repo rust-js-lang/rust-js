@@ -835,3 +835,99 @@ and `.._enumerates_line`, their `located-otherwise` gone),
 (`located-otherwise`), each against native in both builds, the lowering
 test "a frame of a Repeat's step the runtime has gives its line once", and
 the mutations of each use.
+
+## Amendment: what a std function's call clones is placed by a walk of every std function, not of the catalog (2026-11-27, #2509)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): a panic named the
+caller's line, or another std line, where Rust names std's.
+
+#2577 walked the std items the catalog binds (`models::bound_paths`) and
+keyed each function's row by its catalog path. A std call no model bound
+fell through to the caller's line: of a `RefCell` mutably borrowed,
+`Rc::unwrap_or_clone` (native `rc.rs:2250:56`), `Rc::make_mut` and an
+`Arc`'s (`clone/uninit.rs:20:33`, `sync.rs:2759:59`), a `Result<&T, E>`'s
+and a `Result<&mut T, E>`'s `cloned` (`result.rs:1744:24`, `1795:24`), a
+slice's `to_owned` and `Vec::from(&[T])` (`slice.rs:432:38`), and a
+`RefCell`'s `to_owned` and a `Cow<RefCell<_>>`'s `to_mut` and
+`into_owned` (`borrow.rs:78:14`). A catalog path is also one key for two
+impls' methods of a name: `Result<&T, E>`'s and `Result<&mut T, E>`'s
+`cloned` clone at different lines. And a `OnceCell`'s clone named the
+`Option` it's held as, `option.rs:2280:31`, not `once.rs:406:49`.
+
+- **The rows are std's, not the catalog's.** `bun run std` walks every
+  std function a stable program may call (`callables`): each public
+  module's functions, its types' inherent methods, each method of an impl
+  of a slice, a `str` or an array, and each method of an impl of a public
+  trait; not one behind a feature or private. Each type parameter, its
+  impl's first, is walked apart, a `RefCell<u8>` (`cloned_calls`), the
+  others its self type's defaults (`Vec`'s `Global`), a closure's a
+  function pointer, a `Try`'s an `Option`, else a `u8`; the clauses of no
+  guessed own parameter must hold, and a callee its guesses don't
+  normalize is no call. Each row is `clonedAt[call_key][position]`, keyed
+  by the function's path as Rust writes it through no re-export,
+  `alloc::vec::Vec::<T, A>::resize`, `<alloc::vec::Vec<T> as
+  core::convert::From<&[T]>>::from`; 210 keys, 171 before. A catalog
+  path's row is gone: ten snapshots' keys move, the same sites.
+- **The walk places a cell's clone alone.** It recorded any call of what
+  tracks its caller with a cell, which, walked of every function, is a
+  sort's comparison's `borrow` too. It now records a `RefCell`'s `clone`
+  or `clone_from` (`cell_clone`), and walks on through another frame that
+  tracks its caller, at that frame's caller's line.
+- **Not walked:** a `Clone` impl's own methods, a std type's clone being
+  `cloned_at`'s rows by its type; a `ToOwned`'s `clone_into`, whose site
+  its run chooses, the part it clones into (`slice.rs:838:16`) or the part
+  it pushes (`166:5`). A position the native oracle runs to two sites, a
+  `Bound<&T>`'s `cloned` by its variant (test/std-cloned-at.rs), has none;
+  the lowering refuses that call.
+- **One reader, by the resolved function and the position.** MIR's call
+  tells the lowering the function and what it's given (`FnCx::calling`).
+  `call_clone_site` resolves the instance, a trait's method to its impl's,
+  and reads its row at the position of its generics the cloned cell is
+  given at. A clone of what holds a cell has no position, so a slice's,
+  a `Vec`'s or an `Option`'s clone places its own (`clone_site`) and the
+  cell's clone inside it reads the call's row only where the cell is an
+  argument. A `cloned()`'s step rows are read so too: of `Option`s of a
+  cell, the `Option`'s clone line, not `Cloned::fold`'s. The row is taken
+  by the clone it places. A dictionary's entry that raises where its
+  caller says (`located_entry`) reads no call's row.
+- **A `OnceCell`'s parts are cloned at its row** (`clone_parts_of` of the
+  `Option` it holds), never the `Option`'s own clone's.
+
+Still wrong, named by #2509's review and left for their own fixes: a
+clone into a place, `clone_from` of an `Option` (`option.rs:2288:42`), a
+`Vec` (`slice.rs:838:16` or `166:5` by its lengths), a `LinkedList`
+(`linked_list.rs:2227:18`), and a slice's `clone_into`, whose site the
+runtime's helper must choose by the part it runs; a `Cow<[T]>`'s
+`into_owned`, whose `B` is the slice, not the cell; a slice's `concat`
+and `join`, which the walk can't instantiate (`V: Borrow<[T]>`); and a
+`cloned()` zipped, which names `250:5` where std's `TrustedRandomAccess`
+step names `cloned.rs:70:55`. A `cloned()` whose steps aren't known, a
+`for_each`'s, a `partition`'s, a `min_by_key`'s, a `peekable()`'s, keeps
+the call's line under Tu's decision above.
+
+#2509 closes with this: what's left of it waits on #1458, Tu's "until
+#1458". The `located-otherwise` cases `cloned_collect_`, `cloned_for_loop_`
+and `cloned_next_then_count_` name #1458, and the metamorphic rewrites the
+amendment above listed in test/known/metamorphic/2509.txt are
+test/known/metamorphic/1458.txt's. The rest named above is #2627.
+
+Held by the corpus cases `rc_unwrap_or_clone_`, `rc_make_mut_`,
+`result_cloned_of_a_borrowed_refcell_names_std_line`,
+`arc_unwrap_or_clone_and_make_mut_of_a_borrowed_refcell_name_std_lines`,
+`slice_to_owned_and_vec_from_of_a_borrowed_refcell_name_to_vecs_line`,
+`refcell_to_owned_and_cow_of_a_borrowed_refcell_name_std_line`,
+`generic_to_owned_of_a_borrowed_refcell_names_std_line`,
+`cloned_count_of_options_of_a_borrowed_refcell_names_options_line` and
+`once_cell_clone_of_a_borrowed_refcell_names_std_line`, each against
+native; test/std-cloned-at.test.ts' `Bound` rows; the architecture test
+that `call_clone_site` reads the resolved function's row and
+`cloned_calls` walks `callables`; and the mutations
+`call-clone-site-untaken`, `call-clone-site-unresolved`,
+`call-clone-site-any-position`, `call-clone-site-held-cell-stepped`,
+`located-entry-reads-the-call`, `cloned-calls-unwalked`,
+`callables-trait-impls-unseen`, `cell-clone-any-tracked`,
+`clone-into-walked`, `unstable-callables-walked`, `guessed-clauses-held`,
+`oracle-by-run-guessed`, `cloned-calls-allocator-u8`,
+`once-cell-clone-at-options-row` and `once-cell-unneeded-clone-made`.
+`models-path-of-one-impl` goes with the code it mutated: `path_of` now
+names an iterator struct alone.

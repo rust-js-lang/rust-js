@@ -11,7 +11,7 @@ mod rows;
 mod stored;
 mod walk;
 
-pub(crate) use cloned_at::{ClonedBy, cloned_by};
+pub(crate) use cloned_at::{ClonedBy, call_key, cloned_by};
 pub(crate) use raised::raised_catalogue;
 pub(crate) use rows::Rows;
 pub(crate) use stored::catalogue;

@@ -1989,17 +1989,22 @@ Differences:
   $borrow(value, location).slice() }`
   ([0427](../decisions/0427-track-caller.md), amended, #2324, #2457); of a
   container's clone of a `RefCell`, where its clone clones it: std's line of
-  std's, `option.rs:2280:31` of `Option`'s, a crate's derive's of its own
-  (#2471); of an item std's method clones by `T::clone`, std's line of
-  it, an `Option<&T>`'s `cloned`, `extend_from_slice`'s, `resize`'s,
-  `vec![x; n]`'s, a slice's `fill`'s and `to_vec`'s,
-  `extend_from_within`'s, `write_clone_of_slice`'s, and each step's of a
-  `repeat` or a `repeat_n`, a clone of either its derive's (#2577); and a
+  std's, `option.rs:2280:31` of `Option`'s, `once.rs:406:49` of a
+  `OnceCell`'s, a crate's derive's of its own (#2471, #2509); of a
+  `RefCell` a std function clones of what it's given, std's line of it,
+  read of std's MIR of every std function a program may call, the one
+  rustc resolves the call to: an `Option<&T>`'s or a `Result<&T, E>`'s
+  `cloned`, `extend_from_slice`'s, `resize`'s, `vec![x; n]`'s, a slice's
+  `fill`'s, `to_vec`'s and `to_owned`'s, `Vec::from(&[T])`'s,
+  `extend_from_within`'s, `write_clone_of_slice`'s, `Rc::unwrap_or_clone`'s
+  and `make_mut`'s, an `Arc`'s, a `Cow<T>`'s `to_mut` and `into_owned`'s,
+  a `T`'s `to_owned`, and each step's of a `repeat` or a `repeat_n`, a
+  clone of either its derive's (#2577, #2509); and a
   `cloned()`'s where every step its value is asked clones at one line,
   `function.rs:166:5` of a `count()` or a `fold`, `250:5` of a `next()`;
   of a `cloned()` collected, returned, stored, handed to generic code or
   asked steps of two lines, the call's line for now, until std's `Cloned`
-  is compiled (#2509, #1458); of a `repeat()`'s own `count` or `last`,
+  is compiled (#1458); of a `repeat()`'s own `count` or `last`,
   the nearest of std's frames above it that doesn't track its caller, an
   adapter's, a `copied()`'s or a `Box`'s, which each adapter of the
   runtime, `$copied` and a box's lend give as they pass the step on; of

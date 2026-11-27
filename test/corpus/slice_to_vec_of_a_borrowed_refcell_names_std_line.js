@@ -19,7 +19,7 @@ function main() {
   console.log(`${items.length}`);
   try {
     const copied = items.map((item) => ({
-      value: $borrow(item, $stdSites.clonedAt["alloc::slice::<[T]>::to_vec"][0]).value,
+      value: $borrow(item, $stdSites.clonedAt["alloc::slice::<impl [T]>::to_vec"][0]).value,
     }));
     console.log(`${copied.length}`);
   } finally {

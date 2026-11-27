@@ -22,7 +22,8 @@ function main() {
   $extend(
     items,
     $copyRange(items, 0, $stdSites.vecExtendFromWithin[0]).map((value) => ({
-      value: $borrow(value, $stdSites.clonedAt["alloc::vec::Vec::extend_from_within"][0]).value,
+      value: $borrow(value, $stdSites.clonedAt["alloc::vec::Vec::<T, A>::extend_from_within"][0])
+        .value,
     })),
   );
   console.log(`${items.length}`);

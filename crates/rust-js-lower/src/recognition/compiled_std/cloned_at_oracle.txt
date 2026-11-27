@@ -11,3 +11,5 @@ core::iter::adapters::cloned::Cloned::nth 0 library/core/src/ops/function.rs:250
 core::iter::adapters::cloned::Cloned::max_by 0 library/core/src/ops/function.rs:166:5
 core::iter::adapters::cloned::Cloned::min_by 0 library/core/src/ops/function.rs:166:5
 alloc::collections::btree::set::BTreeSet 0 library/alloc/src/collections/btree/map.rs:258:45
+core::ops::range::Bound::<&T>::cloned 1 library/core/src/ops/range.rs:827:53
+core::ops::range::Bound::<&T>::cloned 1 library/core/src/ops/range.rs:828:53

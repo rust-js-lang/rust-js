@@ -29,7 +29,10 @@ function main() {
     const value =
       items[0] == null
         ? items[0]
-        : { value: $borrow(items[0], $stdSites.clonedAt["core::option::Option::cloned"][0]).value };
+        : {
+            value: $borrow(items[0], $stdSites.clonedAt["core::option::Option::<&T>::cloned"][1])
+              .value,
+          };
     console.log(
       `${value == null ? "None" : `Some(RefCell { value: ${$showBorrowed(value, (value) => String(value))} })`}`,
     );
@@ -37,7 +40,10 @@ function main() {
     const value$2 =
       value$1 == null
         ? value$1
-        : { value: $borrow(value$1, $stdSites.clonedAt["core::option::Option::cloned"][0]).value };
+        : {
+            value: $borrow(value$1, $stdSites.clonedAt["core::option::Option::<&T>::cloned"][1])
+              .value,
+          };
     console.log(
       `${value$2 == null ? "None" : `Some(RefCell { value: ${$showBorrowed(value$2, (value) => String(value))} })`}`,
     );

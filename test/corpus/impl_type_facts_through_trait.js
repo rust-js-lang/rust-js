@@ -73,7 +73,7 @@ function stackFromTSlice_from(items, TClone, TSize) {
   const sized = TSize === 0 ? 0 : items.length;
   return {
     items: items.map((item) =>
-      TClone.clone(item, $stdSites.clonedAt["alloc::slice::<[T]>::to_vec"][0]),
+      TClone.clone(item, $stdSites.clonedAt["alloc::slice::<impl [T]>::to_vec"][0]),
     ),
     sized,
   };

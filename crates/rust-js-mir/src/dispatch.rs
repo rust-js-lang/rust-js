@@ -123,7 +123,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
-        let callee = fn_def(func.ty(&state.body.local_decls, self.tcx)).map(|(callee, _)| callee);
+        let callee = fn_def(func.ty(&state.body.local_decls, self.tcx));
         let outer = self.calling.replace(callee);
         let made = self.mir_call_of(state, func, args, destination, span, out);
         self.calling.set(outer);

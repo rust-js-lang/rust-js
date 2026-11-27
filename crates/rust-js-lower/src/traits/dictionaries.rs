@@ -40,7 +40,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let location = self.fresh(Role::Location);
         let at = Expr::var(&location);
-        let made: Option<Expr> = Expr::raised_at(at.clone(), || self.with_given_location(at, entry))?.into();
+        // Its body raises where its caller says, never at the row of the
+        // std call it's given to, which reads no clone of it (#2509).
+        let calling = self.calling.take();
+        let made = Expr::raised_at(at.clone(), || self.with_given_location(at, entry));
+        self.calling.set(calling);
+        let made: Option<Expr> = made?.into();
         Ok(made.map(|made| match made.kind {
             js::ExprKind::Arrow(mut params, body) => {
                 params.push(location.into());

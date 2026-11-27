@@ -20,7 +20,10 @@ function main() {
   try {
     for (let i = 0; i < items.length; i++) {
       copies.push({
-        value: $borrow(items[i], $stdSites.clonedAt["alloc::vec::Vec::extend_from_slice"][0]).value,
+        value: $borrow(
+          items[i],
+          $stdSites.clonedAt["alloc::vec::Vec::<T, A>::extend_from_slice"][0],
+        ).value,
       });
     }
     console.log(`${copies.length}`);

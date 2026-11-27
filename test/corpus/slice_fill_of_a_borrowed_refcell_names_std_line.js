@@ -16,7 +16,7 @@ function main() {
   const items = [{ value: 0 }, { value: 0 }];
   console.log(`${items.length}`);
   $fill(items, cell, (value) => ({
-    value: $borrow(value, $stdSites.clonedAt["core::slice::<[T]>::fill"][0]).value,
+    value: $borrow(value, $stdSites.clonedAt["core::slice::<impl [T]>::fill"][0]).value,
   }));
   console.log(
     `[${items.map((item) => `RefCell { value: ${$showBorrowed(item, (value) => String(value))} }`).join(", ")}]`,

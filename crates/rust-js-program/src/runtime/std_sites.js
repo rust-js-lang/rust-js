@@ -256,10 +256,111 @@ const $stdSites = {
     "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/num/saturating.rs:551:1"
   ],
   "clonedAt": {
+    "<T as alloc::borrow::ToOwned>::to_owned": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/borrow.rs:78:14"
+    ],
+    "<[core::mem::maybe_uninit::MaybeUninit<T>]>::write_clone_of_slice": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1242:41"
+    ],
+    "<alloc::rc::Rc<[T]> as core::convert::From<&[T]>>::from": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+    ],
+    "<alloc::rc::Rc<[T]> as core::convert::From<&mut [T]>>::from": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+    ],
+    "<alloc::sync::Arc<[T]> as core::convert::From<&[T]>>::from": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+    ],
+    "<alloc::sync::Arc<[T]> as core::convert::From<&mut [T]>>::from": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+    ],
+    "<alloc::vec::Vec<T> as core::convert::From<&[T; N]>>::from": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
+      null
+    ],
+    "<alloc::vec::Vec<T> as core::convert::From<&[T]>>::from": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38"
+    ],
+    "<alloc::vec::Vec<T> as core::convert::From<&mut [T; N]>>::from": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
+      null
+    ],
+    "<alloc::vec::Vec<T> as core::convert::From<&mut [T]>>::from": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38"
+    ],
+    "<alloc::vec::Vec<T> as core::convert::From<alloc::borrow::Cow<'a, [T]>>>::from": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38"
+    ],
+    "<core::iter::adapters::take::Take<core::iter::sources::repeat::Repeat<T>> as core::iter::traits::double_ended::DoubleEndedIterator>::next_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "<core::iter::adapters::take::Take<core::iter::sources::repeat::Repeat<T>> as core::iter::traits::double_ended::DoubleEndedIterator>::nth_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:101:27"
+    ],
+    "<core::iter::adapters::take::Take<core::iter::sources::repeat::Repeat<T>> as core::iter::traits::double_ended::DoubleEndedIterator>::rfold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27",
+      null,
+      null
+    ],
+    "<core::iter::adapters::take::Take<core::iter::sources::repeat::Repeat<T>> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27",
+      null,
+      null,
+      null
+    ],
+    "<core::iter::sources::repeat::Repeat<A> as core::iter::traits::double_ended::DoubleEndedIterator>::next_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:129:27"
+    ],
+    "<core::iter::sources::repeat::Repeat<A> as core::iter::traits::double_ended::DoubleEndedIterator>::nth_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:142:27"
+    ],
+    "<core::iter::sources::repeat::Repeat<A> as core::iter::traits::iterator::Iterator>::next": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:83:27"
+    ],
+    "<core::iter::sources::repeat::Repeat<A> as core::iter::traits::iterator::Iterator>::nth": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:101:27"
+    ],
+    "<core::iter::sources::repeat_n::RepeatN<A> as core::iter::traits::double_ended::DoubleEndedIterator>::next_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "<core::iter::sources::repeat_n::RepeatN<A> as core::iter::traits::double_ended::DoubleEndedIterator>::nth_back": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
+    "<core::iter::sources::repeat_n::RepeatN<A> as core::iter::traits::double_ended::DoubleEndedIterator>::rfold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37",
+      null,
+      null
+    ],
+    "<core::iter::sources::repeat_n::RepeatN<A> as core::iter::traits::double_ended::DoubleEndedIterator>::try_rfold": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37",
+      null,
+      null,
+      null
+    ],
+    "<core::iter::sources::repeat_n::RepeatN<A> as core::iter::traits::iterator::Iterator>::next": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    ],
     "[T; N]": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/array/mod.rs:494:21"
     ],
     "alloc::borrow::Cow": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/borrow.rs:78:14"
+    ],
+    "alloc::borrow::Cow::<'_, B>::into_owned": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/borrow.rs:78:14"
+    ],
+    "alloc::borrow::Cow::<'_, B>::to_mut": [
       null,
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/borrow.rs:78:14"
     ],
@@ -270,6 +371,18 @@ const $stdSites = {
     "alloc::boxed::Box<[_], _>": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
       null
+    ],
+    "alloc::boxed::convert::<impl core::convert::From<&[T]> for alloc::boxed::Box<[T]>>::from": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone/uninit.rs:45:43"
+    ],
+    "alloc::boxed::convert::<impl core::convert::From<&mut [T]> for alloc::boxed::Box<[T]>>::from": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone/uninit.rs:45:43"
+    ],
+    "alloc::boxed::convert::<impl core::convert::From<alloc::borrow::Cow<'_, [T]>> for alloc::boxed::Box<[T]>>::from": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone/uninit.rs:45:43"
     ],
     "alloc::boxed::iter::BoxedArrayIntoIter": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
@@ -309,28 +422,52 @@ const $stdSites = {
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
       null
     ],
-    "alloc::collections::vec_deque::VecDeque::resize": [
-      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37"
+    "alloc::collections::vec_deque::VecDeque::<T, A>::resize": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37",
+      null
     ],
     "alloc::collections::vec_deque::into_iter::IntoIter": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
       null
     ],
-    "alloc::slice::<[T]>::to_vec": [
+    "alloc::rc::Rc::<T, A>::make_mut": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone/uninit.rs:20:33",
+      null
+    ],
+    "alloc::rc::Rc::<T, A>::unwrap_or_clone": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/rc.rs:2250:56",
+      null
+    ],
+    "alloc::slice::<impl [T]>::to_vec": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38"
+    ],
+    "alloc::slice::<impl alloc::borrow::ToOwned for [T]>::to_owned": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38"
+    ],
+    "alloc::sync::Arc::<T, A>::make_mut": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/clone/uninit.rs:20:33",
+      null
+    ],
+    "alloc::sync::Arc::<T, A>::unwrap_or_clone": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/sync.rs:2759:59",
+      null
     ],
     "alloc::vec::Vec": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/slice.rs:432:38",
       null
     ],
-    "alloc::vec::Vec::extend_from_slice": [
-      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5"
+    "alloc::vec::Vec::<T, A>::extend_from_slice": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:166:5",
+      null
     ],
-    "alloc::vec::Vec::extend_from_within": [
-      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:3766:45"
+    "alloc::vec::Vec::<T, A>::extend_from_within": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:3766:45",
+      null,
+      null
     ],
-    "alloc::vec::Vec::resize": [
-      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:3687:39"
+    "alloc::vec::Vec::<T, A>::resize": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:3687:39",
+      null
     ],
     "alloc::vec::from_elem": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/vec/mod.rs:3687:39"
@@ -345,6 +482,10 @@ const $stdSites = {
     ],
     "core::array::iter::iter_inner::PolymorphicIter<?>": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/array/iter/iter_inner.rs:132:31"
+    ],
+    "core::array::repeat": [
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat_n.rs:125:37",
+      null
     ],
     "core::async_iter::from_iter::FromIter": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/async_iter/from_iter.rs:12:10"
@@ -426,7 +567,7 @@ const $stdSites = {
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:129:27"
     ],
     "core::iter::Repeat::rposition": [
-      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/repeat.rs:129:27"
+      null
     ],
     "core::iter::Repeat::size_hint": [
       null
@@ -685,9 +826,6 @@ const $stdSites = {
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31",
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/iter/sources/successors.rs:40:10"
     ],
-    "core::mem::<[MaybeUninit<T>]>::write_clone_of_slice": [
-      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/maybe_uninit.rs:1242:41"
-    ],
     "core::mem::manually_drop::ManuallyDrop": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/mem/manually_drop.rs:153:16"
     ],
@@ -738,7 +876,12 @@ const $stdSites = {
     "core::option::Option": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/option.rs:2280:31"
     ],
-    "core::option::Option::cloned": [
+    "core::option::Option::<&T>::cloned": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
+    ],
+    "core::option::Option::<&mut T>::cloned": [
+      null,
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/ops/function.rs:250:5"
     ],
     "core::option::OptionFlatten": [
@@ -775,7 +918,17 @@ const $stdSites = {
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1898:27",
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1899:29"
     ],
-    "core::slice::<[T]>::fill": [
+    "core::result::Result::<&T, E>::cloned": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1744:24",
+      null
+    ],
+    "core::result::Result::<&mut T, E>::cloned": [
+      null,
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/result.rs:1795:24",
+      null
+    ],
+    "core::slice::<impl [T]>::fill": [
       "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/core/src/slice/specialize.rs:12:20"
     ],
     "core::slice::iter::ChunkBy": [

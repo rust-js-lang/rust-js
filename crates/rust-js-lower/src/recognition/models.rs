@@ -683,25 +683,13 @@ pub(crate) fn bound_paths() -> impl Iterator<Item = &'static str> {
         })
 }
 
-/// The path a model or a form of the catalog stands for `item` at, the
-/// std item a call the lowering makes is of, its row's key of `clonedAt`
-/// where std's code of it clones what it's given (#2577); of the methods a
-/// path names, each of its name, `Option<&T>`'s `cloned` and
-/// `Option<&mut T>`'s.
+/// The path a model or a form of the catalog stands for `item` at, an
+/// iterator struct a call makes, `Cloned`'s, its steps' rows' keys of
+/// `clonedAt`, `<path>::<step>` (#2577); a std function's own row is keyed
+/// by the function a call is resolved to (`call_key`, #2509).
 pub(crate) fn path_of(tcx: TyCtxt<'_>, item: DefId) -> Option<&'static str> {
     let name = tcx.opt_item_name(item)?;
-    bound_paths().find(|path| {
-        path.rsplit("::").next() == Some(name.as_str())
-            && resolved(tcx, path).is_some_and(|found| {
-                found == item
-                    || (tcx.opt_parent(found).zip(tcx.opt_parent(item))).is_some_and(|(a, b)| {
-                        tcx.def_kind(a) == DefKind::Impl { of_trait: false }
-                            && tcx.def_kind(b) == DefKind::Impl { of_trait: false }
-                            && tcx.type_of(a).skip_binder().ty_adt_def().map(|adt| adt.did())
-                                == tcx.type_of(b).skip_binder().ty_adt_def().map(|adt| adt.did())
-                    })
-            })
-    })
+    bound_paths().find(|path| path.rsplit("::").next() == Some(name.as_str()) && resolved(tcx, path) == Some(item))
 }
 
 #[cfg(test)]
