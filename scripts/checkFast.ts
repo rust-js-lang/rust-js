@@ -17,14 +17,14 @@
 // `--all` is the check before a push: `test/ci.test.ts` holds it to
 // check.yml, each command its jobs run one of `jobs`' or one `leftToCi`
 // names, and each test file its suite runs one a job here runs (#732).
-import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { cpus, loadavg } from "node:os";
+import { createHash, randomUUID } from "node:crypto";
+import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { cpus, loadavg, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { compilerCrates, isCompilerSource } from "./compiler-crates";
 import { floorBytes } from "../test/bounded";
 import { freeBytes } from "../tooling/bounded.js";
-import { childWarnings, guarded, stopGroup } from "../test/child";
+import { childWarnings, crashedAtStart, guarded, startedEnv, stopGroup } from "../test/child";
 import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesCells, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins, type Family } from "./iteratorSlice";
 import { OWNER_PAGE, ownerTable, sourceLine } from "./owners";
 import { outcome, readOnly, recordSanity, selectChange, selectionFile, shadowMissed, suiteFiles } from "./select";
@@ -824,35 +824,53 @@ export function run(
         (async () => {
           const start = Date.now();
           const expected = Math.max(2, scale);
-          // A group of its own, which goes with this process, so a stop
-          // ends what it started too (`stopJob`).
-          const p = Bun.spawn(guarded(cmd), {
-            cwd: root,
-            env: { ...process.env, RUST_JS_COMPILER: compiler, RUST_JS_LOAD_SCALE: String(expected), RUST_JS_LEASED: process.env.RUST_JS_LEASED || String(process.pid), ...env },
-            stdout: "pipe",
-            stderr: "pipe",
-            detached: true,
-          });
-          const readers = [p.stdout.getReader(), p.stderr.getReader()];
-          let stopping = false;
-          live.set(p, () => {
-            if (!stopping) stopJob(p.pid, readers);
-            stopping = true;
-          });
           // Its seconds, as the load scales them, and twice its own usual at
           // least: under the pool the load stays near the cores, and the
           // rows a change names, 50 min on 8 cores beside the rest, were
           // stopped at 1,200 s × 2.3 where all at once ×3 had let them be.
           const own = usual(job);
           let timeout = given;
-          const stop = setInterval(() => {
-            timeout = Math.round(Math.max(given * scale, Number.isFinite(own) ? 2 * own : 0));
-            if (Date.now() - start > timeout * 1000) live.get(p)?.();
-          }, 1000);
-          const [out, err] = await Promise.all(readers.map(textOf));
-          const code = await p.exited;
-          live.delete(p);
-          clearInterval(stop);
+          // A test file's run is told where its preload says it has started
+          // (`startedEnv`), so a crash of Bun's own start is told apart.
+          const marker = cmd[0] === "bun" && cmd[1] === "test" ? join(tmpdir(), `rust-js-started-${randomUUID()}`) : undefined;
+          const attempt = async () => {
+            // A group of its own, which goes with this process, so a stop
+            // ends what it started too (`stopJob`).
+            const p = Bun.spawn(guarded(cmd), {
+              cwd: root,
+              env: { ...process.env, RUST_JS_COMPILER: compiler, RUST_JS_LOAD_SCALE: String(expected), RUST_JS_LEASED: process.env.RUST_JS_LEASED || String(process.pid), ...env, ...(marker === undefined ? {} : { [startedEnv]: marker }) },
+              stdout: "pipe",
+              stderr: "pipe",
+              detached: true,
+            });
+            const readers = [p.stdout.getReader(), p.stderr.getReader()];
+            let stopping = false;
+            live.set(p, () => {
+              if (!stopping) stopJob(p.pid, readers);
+              stopping = true;
+            });
+            const stop = setInterval(() => {
+              timeout = Math.round(Math.max(given * scale, Number.isFinite(own) ? 2 * own : 0));
+              if (Date.now() - start > timeout * 1000) live.get(p)?.();
+            }, 1000);
+            const [out, err] = await Promise.all(readers.map(textOf));
+            const code = await p.exited;
+            live.delete(p);
+            clearInterval(stop);
+            const started = marker === undefined || existsSync(marker);
+            if (marker !== undefined) rmSync(marker, { force: true });
+            return { p, code, out, err, crash: crashedAtStart({ signal: typeof p.signalCode === "string" ? p.signalCode : null, stopped: stopping, started }) };
+          };
+          let ended = await attempt();
+          // Bun's start crashed before any test ran: once more, said so,
+          // and the crash's output kept, so recurrences are counted (#2472).
+          // A second crash fails the job as any other exit does.
+          if (ended.crash !== undefined && !cutting) {
+            const kept = logs.keep(`${name} crashed at start`, ended.out + ended.err);
+            console.log(`RERUN ${name}: Bun died of ${ended.crash} before its first test (#2472), run once more; its output: ${kept}`);
+            ended = await attempt();
+          }
+          const { p, code, out, err } = ended;
           freed(holds, job.memory);
           // One a fail-fast run stopped: nothing of the compiler.
           if (cutting && code !== 0) return { job, code, log: out + err, start: (start - began) / 1000, end: (Date.now() - began) / 1000, cpu: 0, cut: true } as Ran;

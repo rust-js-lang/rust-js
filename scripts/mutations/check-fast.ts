@@ -25,6 +25,22 @@ export const mutations: Mutation[] = [
     tests: ["test/timing.test.ts","-t","child observation warning"],
   },
   {
+    name: "check-crashed-start-not-rerun",
+    breaks: "a test file whose Bun crashed in its own start, before any test, fails the check, as #2472's trap 1 ms in failed a push whose reruns passed",
+    file: "scripts/checkFast.ts",
+    find: "if (ended.crash !== undefined && !cutting) {",
+    replace: "if (false) {",
+    tests: ["test/timing.test.ts", "-t", "Bun crashed before its first test"],
+  },
+  {
+    name: "check-crashed-start-unmarked",
+    breaks: "a test file's run isn't told where to say it started, so a crash once its tests ran is run again as Bun's start's, hiding a real crash (#2472)",
+    file: "scripts/checkFast.ts",
+    find: "...(marker === undefined ? {} : { [startedEnv]: marker })",
+    replace: "...{}",
+    tests: ["test/timing.test.ts", "-t", "Bun crashed before its first test"],
+  },
+  {
     name: "check-fast-corpus-libraries-only-marked",
     breaks: "check:fast's corpus builds as libraries only the cases marked `library-differs` (#1920)",
     file: "scripts/checkFast.ts",
@@ -116,8 +132,8 @@ export const mutations: Mutation[] = [
     name: "pool-job-in-the-checks-group",
     breaks: "a pool's job runs in the check's own group, so a stop of its group stops the check too",
     file: "scripts/checkFast.ts",
-    find: "            detached: true,\n          });\n          const readers",
-    replace: "          });\n          const readers",
+    find: "              detached: true,\n            });\n            const readers",
+    replace: "            });\n            const readers",
     tests: ["test/timing.test.ts", "-t", "fail-fast stop ends the run within seconds"],
   },
   {

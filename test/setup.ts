@@ -7,9 +7,15 @@ import { dirname } from "node:path";
 
 import { underLoad } from "../scripts/timing";
 import { tempRoot } from "./bounded";
+import { sayStarted } from "./child";
 import { asNode } from "./node-surface";
 import { unreadMessage, unreadSettings } from "./part-settings";
 import { buildCompiler, releaseFixtures } from "./support";
+
+// Started, as check:fast's pool asks: a run that dies of a signal without
+// saying so crashed in Bun's own start, before any test, and is run once
+// more (`crashedAtStart`, #2472).
+sayStarted();
 
 // What a test and the tools it runs make in the system's temp directory
 // and leave, Vitest's module cache of each run, goes to the loop's temp

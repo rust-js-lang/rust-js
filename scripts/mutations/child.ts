@@ -42,4 +42,20 @@ export const mutations: Mutation[] = [
       "  const own = Bun.spawnSync(cmd, { cwd, stdout: \"ignore\", stderr: \"pipe\", timeout });\n  return { code: own.exitCode, stderr: own.stderr.toString(), maxRSS: own.resourceUsage.maxRSS, spawner: p.pid && process.pid };\n",
     tests: ["test/child.test.ts", "-t", "a command's peak memory is its own"],
   },
+  {
+    name: "check-crashed-start-after-preload",
+    breaks: "a crash once the file's preload ran, its tests running, is run again as Bun's start's, hiding a real crash (#2472)",
+    file: "test/child.ts",
+    find: "signal !== null && crashSignals.has(signal) && !stopped && !started",
+    replace: "signal !== null && crashSignals.has(signal) && !stopped",
+    tests: ["test/timing.test.ts", "-t", "Bun crashed before its first test"],
+  },
+  {
+    name: "check-crashed-start-any-exit",
+    breaks: "a test file's run that exited unstarted with no signal, a failure of its own, is run again as a crash (#2472)",
+    file: "test/child.ts",
+    find: "signal !== null && crashSignals.has(signal) && !stopped && !started",
+    replace: "(signal === null || crashSignals.has(signal)) && !stopped && !started",
+    tests: ["test/timing.test.ts", "-t", "Bun crashed before its first test"],
+  },
 ];

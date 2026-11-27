@@ -374,6 +374,65 @@ test("check:fast preserves a passing job's child observation warning", () => {
   expect(result.stderr.toString()).toContain("a blocked parent or a slow child");
 });
 
+// A test file whose Bun crashed in its own start, of a signal before its
+// preload said it had started, is run once more, said so, and its crash's
+// output kept: Bun 1.4.5 trapped once 1 ms in, in JavaScriptCore's first
+// JIT write, failing a push whose three reruns passed (#2472). A crash
+// once its preload ran, a second crash, or an exit with no signal fails as
+// it is. A `bun` of the test's own, first on the path, crashes as each
+// file's name says, counting its runs: no Bun's test runner runs, so
+// the job's command, the pool's form of a test file's, is no `bunTest`'s.
+test("check:fast runs a test file once more where Bun crashed before its first test, and only then", async () => {
+  const dir = fixture("check-crashed-start");
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(join(dir, "bin"), { recursive: true });
+  writeFileSync(
+    join(dir, "bin", "bun"),
+    `#!/bin/sh
+n=$(($(cat "$COUNT" 2>/dev/null || echo 0) + 1)); echo $n > "$COUNT"
+case "$MODE:$n" in
+  crash-once:1|crash-twice:*) kill -TRAP $$ ;;
+  crash-started:*) touch "$RUST_JS_STARTED"; kill -TRAP $$ ;;
+  exit-unstarted:*) exit 1 ;;
+esac
+touch "$RUST_JS_STARTED"
+`,
+    { mode: 0o755 },
+  );
+  const modes = ["crash-once", "crash-twice", "crash-started", "exit-unstarted"];
+  const store = join(dir, "logs");
+  const child = join(dir, "pool.ts");
+  writeFileSync(
+    child,
+    `import { run } from ${JSON.stringify(join(root, "scripts/checkFast.ts"))};
+import { checkLogRun } from ${JSON.stringify(join(root, "scripts/checkLogs.ts"))};
+const job = (mode: string) => ({ name: \`test/\${mode}.test.ts\`, cmd: \`bun test test/\${mode}.test.ts\`.split(" "), env: { MODE: mode, COUNT: ${JSON.stringify(dir)} + "/" + mode }, timeout: 60, weight: 1, memory: 0 });
+const ran = await run(${JSON.stringify(modes)}.map(job), "unused", 4, { began: Date.now(), samples: [] }, checkLogRun({ store: ${JSON.stringify(store)} }), ${JSON.stringify(join(dir, "times"))}, ${JSON.stringify(join(dir, "leases"))});
+console.log(JSON.stringify(ran.map((r) => [r.job.name, r.code])));
+`,
+  );
+  const p = Bun.spawn([process.execPath, child], { cwd: root, stdout: "pipe", stderr: "pipe", env: { ...process.env, PATH: `${join(dir, "bin")}:${process.env.PATH}`, RUST_JS_LEASED: "" } });
+  const timer = setTimeout(() => p.kill("SIGKILL"), underLoad(30_000));
+  const out = await new Response(p.stdout).text();
+  await p.exited;
+  clearTimeout(timer);
+  const codes = Object.fromEntries(JSON.parse(out.trim().split("\n").at(-1)!) as [string, number][]);
+  const runs = Object.fromEntries(modes.map((mode) => [mode, Number(readFileSync(join(dir, mode), "utf8"))]));
+  expect({ codes, runs }).toEqual({
+    codes: { "test/crash-once.test.ts": 0, "test/crash-twice.test.ts": 133, "test/crash-started.test.ts": 133, "test/exit-unstarted.test.ts": 1 },
+    runs: { "crash-once": 2, "crash-twice": 2, "crash-started": 1, "exit-unstarted": 1 },
+  });
+  expect(out).toContain("RERUN test/crash-once.test.ts: Bun died of SIGTRAP before its first test (#2472), run once more; its output: ");
+  expect(out).not.toContain("RERUN test/crash-started.test.ts");
+  expect(readdirSync(join(store, readdirSync(store)[0]!)).sort()).toEqual([
+    "test-crash-once.test.ts-crashed-at-start.log",
+    "test-crash-started.test.ts.log",
+    "test-crash-twice.test.ts-crashed-at-start.log",
+    "test-crash-twice.test.ts.log",
+    "test-exit-unstarted.test.ts.log",
+  ]);
+}, underLoad(60_000));
+
 // A group of files, the browsers' or every other one, is said by its files'
 // own seconds, summed, beside its longest and its span: the span, first
 // start to last end, held most of a check where the pool starts small

@@ -4,6 +4,7 @@
 // on all of it, never on what it printed alone. A compile of rust-js's is
 // kept by its inputs, and given again (`test/compiles.ts`, ADR 1099).
 
+import { writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { keptBuildsAsync, keptCompile, keptCompileAsync } from "./compiles";
 import { compiler } from "./packages-of";
@@ -96,6 +97,32 @@ export function stopGroup(pid: number, signal: NodeJS.Signals = "SIGKILL") {
 export function guarded(cmd: string[]): string[] {
   const watch = '( while kill -0 "$0" 2>/dev/null; do sleep 1; done; kill -9 -$$ ) </dev/null >/dev/null 2>&1 & exec "$@"';
   return ["/bin/sh", "-c", watch, String(process.pid), ...cmd];
+}
+
+/** The setting a test file's run is given by check:fast's pool, a path its
+ * preload (test/setup.ts) makes as it starts, `sayStarted`: a run that
+ * ends without it never ran a line of the suite's JS. */
+export const startedEnv = "RUST_JS_STARTED";
+
+/** Of a test file's run, the file that says it started, made; the setting
+ * taken out, so what the file runs doesn't make it for it. */
+export function sayStarted() {
+  const marker = process.env[startedEnv];
+  delete process.env[startedEnv];
+  if (marker) writeFileSync(marker, "");
+}
+
+/** The signals a crash ends a process with, not a stop: Bun's crash
+ * handler prints its report and dies of the fault's own. */
+const crashSignals = new Set(["SIGTRAP", "SIGILL", "SIGSEGV", "SIGBUS", "SIGABRT", "SIGFPE"]);
+
+/** Of a test file's run, the signal Bun's own start crashed with: a crash's
+ * signal, the run not stopped by the pool, and its preload never started,
+ * so no test of the file ran. Bun 1.4.5 trapped once in JavaScriptCore's
+ * first JIT write, macOS's `pthread_jit_write_protect_np`, 1 ms in, where
+ * three runs again passed (#2472). None of any other end. */
+export function crashedAtStart({ signal, stopped, started }: { signal: string | null; stopped: boolean; started: boolean }): string | undefined {
+  return signal !== null && crashSignals.has(signal) && !stopped && !started ? signal : undefined;
 }
 
 /** `cmd`, a compile of a crate's file by the compiler, given its file's
