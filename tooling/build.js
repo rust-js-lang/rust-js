@@ -1,6 +1,7 @@
 // Native build preparation. Hosts provide scheduling and consume manifests.
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { createRequire } from "node:module";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -200,22 +201,30 @@ function checkStd(root, version) {
 }
 
 /** `command`'s stdout; what it says on stderr as it succeeds, its warnings,
- * go to `warn`, if given. */
+ * go to `warn`, if given. Each is written to a file of its own and read
+ * once the command has exited: a pipe's `close` waits for every holder of
+ * its end to let go, a child the command leaves running included, and the
+ * builder's `--version-json` hung a check to its timeout, exited (0) with
+ * no `close` (#2441). */
 function run(command, args, cwd, env = {}, warn) {
   let child;
+  const dir = mkdtempSync(join(tmpdir(), "rust-js-run-"));
+  const said = ["stdout", "stderr"].map((name) => join(dir, name));
   const done = new Promise((resolve, reject) => {
-    child = spawn(command, args, { cwd, env: { ...process.env, RUST_JS_JS_RUNTIME: process.execPath, ...env }, stdio: ["ignore", "pipe", "pipe"] });
-    let output = "";
-    let errors = "";
-    child.stdout.setEncoding("utf8").on("data", chunk => { output += chunk; });
-    child.stderr.setEncoding("utf8").on("data", chunk => { errors += chunk; });
+    const fds = said.map((path) => openSync(path, "w"));
+    try {
+      child = spawn(command, args, { cwd, env: { ...process.env, RUST_JS_JS_RUNTIME: process.execPath, ...env }, stdio: ["ignore", ...fds] });
+    } finally {
+      for (const fd of fds) closeSync(fd);
+    }
     child.on("error", reject);
-    child.on("close", code => {
-      if (code !== 0) return reject(new Error(errors || `${command} exited with ${code}`));
+    child.on("exit", (code, signal) => {
+      const [output, errors] = said.map((path) => readFileSync(path, "utf8"));
+      if (code !== 0) return reject(new Error(errors || `${command} exited with ${code ?? signal}`));
       if (warn && errors) warn(errors);
       resolve(output);
     });
-  });
+  }).finally(() => rmSync(dir, { recursive: true, force: true }));
   return watched(done, child, command, args);
 }
 

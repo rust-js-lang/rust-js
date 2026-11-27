@@ -119,6 +119,33 @@ test("the builder asks the compiler what it is, and which @rust-js/std it needs"
   expect(await check(createNativeBuilder({ root, rustJs }))).toContain("rust-js 2.0.0 needs @rust-js/std 2.0.0, not the installed 1.0.0");
 });
 
+// #2441: what the compiler says is read once it has exited, not once every
+// holder of its output has let go of it. The builder's run of `rust-js
+// --version-json` hung a push's check to its timeout, the compiler exited
+// (0) and its \`close\` never came, as a pipe's end held elsewhere keeps it
+// open: here a child the compiler leaves running, which holds its stdout and
+// stderr for two minutes.
+test("the builder reads what the compiler said once it has exited, though another holds its output", async () => {
+  const root = fixture("compiler-identity-held");
+  const std = join(root, "node_modules", "@rust-js", "std");
+  mkdirSync(std, { recursive: true });
+  writeFileSync(join(std, "package.json"), JSON.stringify({ name: "@rust-js/std", version: "1.0.0" }));
+  const rustJs = join(root, "rust-js");
+  const held = join(root, "held.pid");
+  // Of a release whose std isn't installed, which the builder says only
+  // once it has read what the compiler said it is.
+  writeFileSync(rustJs, `#!/bin/sh\necho '{"version":"2.0.0","toolchain":"1.100.0","abi":1}'\nsleep 120 &\necho $! > '${held}'\n`);
+  chmodSync(rustJs, 0o755);
+  const began = performance.now();
+  try {
+    const said = await createNativeBuilder({ root, rustJs }).checkCargo({ manifestPath: join(root, "Cargo.toml") }).then(() => "built", (error: Error) => error.message);
+    expect(said).toContain("rust-js 2.0.0 needs @rust-js/std 2.0.0, not the installed 1.0.0");
+    expect(performance.now() - began).toBeLessThan(30_000);
+  } finally {
+    if (existsSync(held)) process.kill(Number(readFileSync(held, "utf8").trim()));
+  }
+});
+
 // A manifest of an older compiler's says nothing of where its JS names
 // another's, nor where it goes in source: copying it would keep the build's
 // names, or guess its place, so it's an error that says to build it again
