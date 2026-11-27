@@ -240,3 +240,25 @@ is `to_oxc/header.rs`'s `entries`. Held by
 the imports, not after a re-export below the code"; mutations
 `unplaced-import-after-last-reexport` and
 `unplaced-import-last-without-imports` (`to_oxc/header.ts`).
+
+## Amendment: a statement placed nowhere stops no import's place (#2403, Tu's decision, 2026-11-27)
+
+React's ReactFizzConfigDOMLegacy declares `createRenderState` and its
+`doctypeChunk` above its `pub use crate::react_fizz_config_dom::{..}`.
+With #2403's checks, the module gained a checker, `const
+checkResumableState = /* @__PURE__ */ $checkShape(..)`, which no Rust
+writes and so has no place, beside the statement before it. An import's
+or re-export's place counted the statements written before it only up
+to the first with no place, so the `export {..} from` printed above the
+checker, and `createRenderState` and `doctypeChunk` after it: the
+module's own declarations moved. Tu's decision: keep the original order.
+**An import or re-export is after the last statement written before
+where its `use` is; a statement placed nowhere is skipped, staying
+beside the one before it**, every module's, so what rust-js adds moves
+none of the module's declarations past a `use`. Where it prints changes
+nothing the module does, as ES hoists its imports (ADR 0262's case
+"None"). The rule is `to_oxc/header.rs`' `among`. Held by
+`test/boundary-split.test.ts`' "a checker placed nowhere moves no
+declaration of the module's past its re-export"; mutation
+`unplaced-statement-stops-reexport` (`to_oxc/header.ts`), and
+`imports-after-what-holds-them` follows its line.

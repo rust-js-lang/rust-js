@@ -160,8 +160,8 @@ export const mutations: Mutation[] = [
     name: "imports-after-what-holds-them",
     breaks: "a `use` inside a function places its import after the function, not right above it, where it's written",
     file: "crates/rust-js-emit/src/to_oxc/header.rs",
-    find: "                at.start != 0 && at.end <= placed.lo && file_of(at.start) == file_of(placed.lo)\n",
-    replace: "                at.start != 0 && at.start <= placed.lo && file_of(at.start) == file_of(placed.lo)\n",
+    find: "            if at.end > placed.lo || file_of(at.start) != file_of(placed.lo) {\n",
+    replace: "            if at.start > placed.lo || file_of(at.start) != file_of(placed.lo) {\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "an item between two uses"],
   },
   {
@@ -252,5 +252,13 @@ export const mutations: Mutation[] = [
     find: "            (!at.is_none() && !reexport.at.is_none() && at.lo <= reexport.at.lo).then_some(local)\n",
     replace: "            (!at.is_none()).then_some(local)\n",
     tests: ["test/modules-imports.test.ts", "-t", "JS can't call re-exports it from its module"],
+  },
+  {
+    name: "unplaced-statement-stops-reexport",
+    breaks: "a statement of the code placed nowhere, a checker's `const`, stops a re-export's place, so `export { twice } from` is printed above the module's own declarations its Rust has before the `use`, React's ReactFizzConfigDOMLegacy's `createRenderState` and `doctypeChunk` (#2403)",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
+    find: "            if at.start == 0 {\n                continue;\n            }\n",
+    replace: "            if at.start == 0 {\n                break;\n            }\n",
+    tests: ["test/boundary-split.test.ts", "-t", "a checker placed nowhere moves no declaration"],
   },
 ];

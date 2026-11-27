@@ -481,7 +481,9 @@ impl<'a> Cx<'a> {
 /// their Rust, before where it's placed in its file, a `const` between two
 /// `use`s between their imports (rd652), one of a `use` inside a function
 /// right above the function; one placed nowhere right after the one before
-/// it, so their order is what JS loads (ADR 1063). Whether one is first,
+/// it, so their order is what JS loads (ADR 1063). A statement of the code
+/// placed nowhere, a checker's `const`, is beside the one before it, so it
+/// moves none past an import (ADR 1063, amended). Whether one is first,
 /// before the code.
 pub(super) fn among<'a>(
     body: &mut ArenaVec<'a, Statement<'a>>,
@@ -500,13 +502,23 @@ pub(super) fn among<'a>(
         start += file.text.len() as u32 + 1;
     }
     let file_of = |at: u32| files.iter().position(|&(lo, hi)| lo <= at && at <= hi);
+    // Past the last statement written before it, those placed nowhere, a
+    // checker's `const` say, beside the one before them: one of them stopped
+    // it, so a re-export was printed above declarations its Rust has before
+    // it (#2403).
     let before = |placed: js::Span| {
-        (body.iter())
-            .take_while(|statement| {
-                let at = statement.span();
-                at.start != 0 && at.end <= placed.lo && file_of(at.start) == file_of(placed.lo)
-            })
-            .count()
+        let mut after = 0;
+        for (i, statement) in body.iter().enumerate() {
+            let at = statement.span();
+            if at.start == 0 {
+                continue;
+            }
+            if at.end > placed.lo || file_of(at.start) != file_of(placed.lo) {
+                break;
+            }
+            after = i + 1;
+        }
+        after
     };
     // In their order, so each is after the one before it.
     let mut after = 0;

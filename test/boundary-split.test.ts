@@ -244,3 +244,54 @@ pub use scheduler::second;
   expect([made.second("ab:cde"), made.second("none")]).toEqual([30, 0]);
 });
 
+
+// A checker rust-js adds, a `const` placed nowhere in the Rust, never moves
+// the module's own declarations past a `use`: React's
+// ReactFizzConfigDOMLegacy declares `createRenderState` and its
+// `doctypeChunk` before its `pub use ..::{..}`, whose `export {..} from` was
+// printed before the first statement placed nowhere, the checker of what
+// `createRenderState` takes, so both were after it. Each re-export is after
+// the last statement written before it; one placed nowhere is beside the
+// one before it (ADR 1063, amended), every module's.
+test("a checker placed nowhere moves no declaration of the module's past its re-export", () => {
+  const dir = fixture("boundary-checker-placed");
+  writeFileSync(join(dir, "lib.rs"), `mod other {
+    pub struct Resumable {
+        pub id: u32,
+    }
+
+    pub fn chunk(text: &str) -> String {
+        text.to_string()
+    }
+
+    pub fn twice(n: u32) -> u32 {
+        n * 2
+    }
+}
+
+use other::Resumable;
+
+pub const PRIMARY: bool = false;
+
+pub fn create(resumable: &Resumable, markup: bool) -> u32 {
+    if markup { resumable.id } else { 0 }
+}
+
+thread_local! {
+    // The chunk, empty on purpose.
+    pub static CHUNK: String = other::chunk("");
+}
+
+pub use other::twice;
+
+pub fn later(n: u32) -> u32 {
+    n + create(&Resumable { id: 1 }, true) + CHUNK.with(|c| c.len() as u32)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--crate-name=placed", "--edition=2024"]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const order = ["export const PRIMARY", "const checkResumable", "export function create(", "function create$(", "// The chunk, empty on purpose.\nexport const CHUNK", 'export { twice } from "./other.js";', "export function later("]
+    .map((written) => js.indexOf(written));
+  expect(order.every((at) => at >= 0)).toBe(true);
+  expect(order).toEqual([...order].sort((a, b) => a - b));
+});
