@@ -48,7 +48,8 @@ let read: { models: Entry[]; why: Record<string, string> } | undefined;
 export function catalog(): { models: Entry[]; why: Record<string, string> } {
   if (read !== undefined) return read;
   const printed = spawnSync(compiler, ["--std-models"], { encoding: "utf8" });
-  if (printed.status !== 0) throw new Error(`\`${compiler} --std-models\` failed: ${printed.stderr}`);
+  // A spawn that failed itself, a compiler not built, has no stderr: its error says why (#2624).
+  if (printed.status !== 0) throw new Error(`\`${compiler} --std-models\` failed: ${printed.error?.message ?? printed.stderr}`);
   read = JSON.parse(printed.stdout) as { models: Entry[]; why: Record<string, string> };
   return read;
 }

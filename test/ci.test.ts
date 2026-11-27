@@ -46,6 +46,31 @@ test("a compiler CI keeps is keyed by build.rs's inputs, and the suite's shards 
   expect(readFileSync(join(root, "scripts/test.ts"), "utf8")).toContain("if (!process.env.RUST_JS_COMPILER) {");
 });
 
+// Each `bun` step of a job that builds rust-js runs a compiler the job
+// built: its step's `RUST_JS_COMPILER`, its job's or its workflow's, or
+// else test/packages-of.ts' default, the debug one. The twin net's bless
+// step had none and spawned the debug build in a job that builds only the
+// release one, red every night as "`--std-models` failed: undefined" (#2624).
+test("each bun step of a job that builds rust-js runs a compiler that job built", () => {
+  const dir = join(root, ".github/workflows");
+  type Step = { uses?: string; run?: string; name?: string; with?: Record<string, string>; env?: Record<string, string> };
+  type Job = { env?: Record<string, string>; steps?: Step[] };
+  const unbuilt: string[] = [];
+  for (const file of readdirSync(dir).filter((name) => name.endsWith(".yml"))) {
+    const workflow = Bun.YAML.parse(readFileSync(join(dir, file), "utf8")) as { env?: Record<string, string>; jobs?: Record<string, Job> };
+    for (const [name, job] of Object.entries(workflow.jobs ?? {})) {
+      const steps = job.steps ?? [];
+      const built = steps.filter((step) => step.uses === "./.github/actions/build-rust-js").map((step) => `\${{ github.workspace }}/target/${step.with?.profile ?? "release"}/rust-js`);
+      if (built.length === 0) continue;
+      for (const step of steps.filter((step) => step.run !== undefined && /\bbun\b/.test(step.run) && !step.run.trim().startsWith("bun install"))) {
+        const compiler = step.env?.RUST_JS_COMPILER ?? job.env?.RUST_JS_COMPILER ?? workflow.env?.RUST_JS_COMPILER ?? ["${{ github.workspace }}", "target", "debug", "rust-js"].join("/");
+        if (!built.includes(compiler)) unbuilt.push(`${file} ${name}: ${step.name ?? step.run!.split("\n")[0]} runs ${compiler}`);
+      }
+    }
+  }
+  expect(unbuilt).toEqual([]);
+});
+
 
 // What only the nightly's suite runs (ADR 1030): each a test file there is,
 // and run, by the check the nightly calls, which says `--nightly` to the

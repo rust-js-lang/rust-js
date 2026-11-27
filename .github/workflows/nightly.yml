@@ -1180,6 +1180,10 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    # Its every step's compiler, the release one it builds: the bless step
+    # reads the catalog from it too, `rust-js --std-models` (#2624).
+    env:
+      RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
@@ -1192,8 +1196,6 @@ jobs:
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
       - name: Run it in 4 parts
-        env:
-          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/iteratorSlice.ts run twinsAll 4
       - name: Bless its lists' drift
         id: drift
