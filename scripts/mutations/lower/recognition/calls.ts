@@ -29,15 +29,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^bool_ops_by_ref.rs$"],
   },
   {
-    name: "blanket-to-owned-shared",
-    breaks:
-      "`to_owned()` of a `T: Clone`, std's blanket impl, is the value it's given, not its `clone()`: a change to the copy changes the original (#316)",
-    file: "crates/rust-js-lower/src/recognition/calls.rs",
-    find: "        _ => Std::ToOwnedClone,\n",
-    replace: "        _ => Std::Same,\n",
-    tests: ["test/corpus.test.ts", "-t", "^to_owned_is_clone.rs$"],
-  },
-  {
     name: "ptr-eq-unrecognized",
     breaks:
       "`std::ptr::eq` of JS objects is rejected as a call rust-js doesn't support",

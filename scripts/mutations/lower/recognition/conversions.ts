@@ -191,4 +191,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^pin_from_a_box_is_the_box\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "blanket-to-owned-shared",
+    breaks:
+      "`to_owned()` of a `T: Clone`, std's blanket impl, is the value it's given, not its `clone()`: a change to the copy changes the original (#316)",
+    file: "crates/rust-js-lower/src/recognition/conversions.rs",
+    find: "        _ => Std::ToOwnedClone,\n",
+    replace: "        _ => Std::Same,\n",
+    tests: ["test/corpus.test.ts", "-t", "^to_owned_is_clone.rs$"],
+  },
 ];

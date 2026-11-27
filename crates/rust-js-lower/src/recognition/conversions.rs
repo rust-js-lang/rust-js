@@ -1,5 +1,5 @@
-//! Which of std's conversions a `From`, an `Into`, a `TryFrom` or a
-//! `TryInto` is, which `calls.rs`'s trait methods ask.
+//! Which of std's conversions a `From`, an `Into`, a `TryFrom`, a
+//! `TryInto` or a `ToOwned` is, which `calls.rs`'s trait methods ask.
 
 use super::*;
 
@@ -148,5 +148,15 @@ pub(super) fn try_conversion<'tcx>(from: Ty<'tcx>, to: Ty<'tcx>, into: bool) -> 
         (ty::Uint(ty::UintTy::U32 | ty::UintTy::U8), ty::Char) => Some(Std::TryFromChar { to_char: true }),
         (ty::Char, ty::Uint(ty::UintTy::U8)) => Some(Std::TryFromChar { to_char: false }),
         _ => None,
+    }
+}
+
+/// `to_owned()` of a `ty`: a `str`'s is itself, and any other's, a
+/// slice's too, std's blanket impl for a `T: Clone`'s, its `clone()`, whose
+/// clone of a `[T]` copies it as its `to_vec()` does (#1109).
+pub(super) fn to_owned_of(ty: Ty<'_>) -> Std {
+    match () {
+        _ if ty.is_str() => Std::Same,
+        _ => Std::ToOwnedClone,
     }
 }

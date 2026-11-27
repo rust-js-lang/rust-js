@@ -1,7 +1,7 @@
 //! Which `Std` a function, a trait method, an index or a conversion is,
 //! and the method tables they share.
 
-use super::conversions::try_conversion;
+use super::conversions::{to_owned_of, try_conversion};
 use super::*;
 
 /// A `Vec`'s capacity's (ADR 0419).
@@ -1236,16 +1236,6 @@ fn iterator_step(name: &str) -> Option<StepOp> {
     match name {
         "cycle" => Some(StepOp::Cycle),
         _ => None,
-    }
-}
-
-/// `to_owned()` of a `ty`: a `str`'s is itself, and any other's, a
-/// slice's too, std's blanket impl for a `T: Clone`'s, its `clone()`, whose
-/// clone of a `[T]` copies it as its `to_vec()` does (#1109).
-fn to_owned_of(ty: Ty<'_>) -> Std {
-    match () {
-        _ if ty.is_str() => Std::Same,
-        _ => Std::ToOwnedClone,
     }
 }
 
