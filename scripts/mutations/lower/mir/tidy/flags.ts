@@ -110,4 +110,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^unwrap_dropping.rs$"],
     snapshots: true,
   },
+  {
+    name: "flags-unreachable-kept",
+    breaks:
+      "a `matches!`'s `bool`, known as a flag is, has its branch that returns taken in place of its test, and what follows it, never reached, stays: the `flags` stage's contract panics and the compiler crashes (#2622)",
+    file: "crates/rust-js-mir/src/tidy/flags.rs",
+    find: "    js::statement_lists(body, &mut super::jumps::unreachable_after);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^matches_known_by_its_variants_returns_early\\.rs$"],
+  },
 ];

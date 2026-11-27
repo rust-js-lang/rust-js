@@ -19,6 +19,9 @@ pub(crate) fn settled_flags(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {
         return;
     }
     settle(body, &mut Known::default(), flags);
+    // What a branch taken in place of its test leaves after its jump, a
+    // `matches!`'s `bool` known as a flag is, never reached (#2622).
+    js::statement_lists(body, &mut super::jumps::unreachable_after);
     unread_gone(body, flags);
 }
 

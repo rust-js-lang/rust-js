@@ -636,3 +636,23 @@ Held by `session/label_census.rs`' unit test of a kept block and a kept loop and
 how far their jumps reach, a label the program wrote no row; mutations
 `label-census-loops-uncrossed` and `label-census-written-labels-counted`
 (`lower/mir/census.ts`).
+
+## Amendment: `flags` takes away what a flag it knows leaves unreachable (2026-11-27, #2622)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N: a statement no path
+reaches, gone; no program's behaviour changes, and one that crashed the
+compiler compiles.
+
+The flags a body settles are rust-js's own drop flags and the `bool`s MIR
+sets only to constants and tests (`drops::constant_flags`, #381), which a
+`matches!` of a value each branch makes of one variant is: `matches!(if
+doubled { Circle(size * 2) } else { Circle(size) }, Circle(_))`. Its
+variant is known where it's tested, so its `bool` is `true` there, and
+`settled flags` takes the `if`'s branch in its place, a `return None;`,
+leaving what followed the `if` behind it. That code is never reached, but
+the stage's own contract, nothing after a jump, panicked (fuzz seed
+12469959). `settled_flags` now ends with `unreachable_after` over each
+list, as `decided tests` does (#270 above): the one rule of what follows
+a jump, `jumps/tails.rs`', asked where a branch is taken in place of its
+test. Held by `test/corpus/matches_known_by_its_variants_returns_early.rs`,
+against native, and the mutation `flags-unreachable-kept`.
