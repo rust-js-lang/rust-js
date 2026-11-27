@@ -64,6 +64,28 @@ test("@rust-js/std is tree-shakable, a helper bundled alone", async () => {
   expect(code.length).toBeLessThan(1000);
 });
 
+// Each of the runtime's top-level statements is left out of a bundle that
+// doesn't use it: a call at the top level is `/* @__PURE__ */`, or a
+// bundler keeps it with every helper, as #2403's `$checkAccessor =
+// Object.freeze({})` was kept beside `$unwrap`, 18 characters past the
+// limit above. A bundle of one helper that calls nothing is that helper
+// alone: what else it holds at the top level is a statement the runtime
+// didn't mark, unless it's here, each with why a bundle must keep it.
+const keptWithEveryHelper: string[] = [];
+test("@rust-js/std keeps no top-level statement in a bundle that doesn't use it", async () => {
+  const dir = outsideFixture("std-tree-shaking-top-level");
+  writeFileSync(join(dir, "entry.js"), `import { $cellReplace } from "@rust-js/std";\nglobalThis.replace = $cellReplace;\n`);
+  const { code, declared } = await bundled(dir, "entry.js");
+  expect(declared).toEqual(["$cellReplace"]);
+  // Of the bundle's lines at the top level, each but the helper's own, the
+  // entry's and the bundler's region marks.
+  const top = code
+    .split("\n")
+    .filter((line) => line !== "" && !/^\s/.test(line))
+    .filter((line) => !line.startsWith("//#") && !/^(?:function \$cellReplace\(|\}$|globalThis\.replace = )/.test(line));
+  expect(top).toEqual(keptWithEveryHelper);
+});
+
 // A std body is bundled with the helpers it calls, and none of std's
 // others: a `Peekable`'s `next` takes `$next`, its iterator's default
 // `next`, and nothing of `Fuse`'s, `Zip`'s or the rest.

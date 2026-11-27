@@ -165,8 +165,9 @@ export function $checkObject(value, where, none) {
 // where an accessor gives it, which a check leaves to the body, read once
 // there, unchecked (#2403, the limit the guide says).
 // One copy's own, never a mark another copy reads: its `$checkRead` gives
-// it to its own checker alone, so no registry symbol (ADR 1184).
-export const $checkAccessor = Object.freeze({});
+// it to its own checker alone, so no registry symbol (ADR 1184). Pure, so a
+// bundle of what doesn't check leaves it out.
+export const $checkAccessor = /* @__PURE__ */ Object.freeze({});
 export function $checkRead(object, key) {
   for (let o = object; o !== null; o = Object.getPrototypeOf(o)) {
     const property = Object.getOwnPropertyDescriptor(o, key);

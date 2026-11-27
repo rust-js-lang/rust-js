@@ -92,4 +92,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/boundary-brands.test.ts", "-t", "JS's own object of a sealed type's shape is refused"],
   },
+  {
+    name: "check-accessor-impure",
+    breaks: "the mark an accessor's read gives, `Object.freeze({})`, isn't `/* @__PURE__ */`, so a bundler keeps it beside every helper bundled alone, `$unwrap`'s 18 characters past its limit (#2403's 9d8fb5979)",
+    file: "crates/rust-js-program/src/runtime/boundary_checks.js",
+    find: "const $checkAccessor = /* @__PURE__ */ Object.freeze({});\n",
+    replace: "const $checkAccessor = Object.freeze({});\n",
+    tests: ["test/runtime-package.test.ts", "-t", "keeps no top-level statement"],
+  },
 ];
