@@ -100,4 +100,12 @@ export const mutations: Mutation[] = [
     replace: "    const built = nativeProgram(file, flags, compileTimeout);",
     tests: ["test/native-outcomes.test.ts", "-t", "below the disk's floor it's given"],
   },
+  {
+    name: "variants-share-a-folder",
+    breaks: "a case's variants compiled at once share its folder, so a module beside one's root imports the root another wrote, and its `main` runs too: the tidy-stages net's 9 nightly reds of output printed twice (#2628)",
+    file: "test/programs.ts",
+    find: '  const home = (at: string) => (flags.length === 0 ? join(at, `${name}.js`) : join(at, name, "case.js"));\n',
+    replace: "  const home = (at: string) => join(at, `${name}.js`);\n",
+    tests: ["test/programs.test.ts", "-t", "a case's variants compiled at once each run their own modules"],
+  },
 ];

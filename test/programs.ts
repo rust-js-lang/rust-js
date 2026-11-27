@@ -374,9 +374,13 @@ export function compileCommand(file: string, dir: string, edition: string, build
   const named = flags.join("-").replaceAll(/[^A-Za-z0-9-]+/g, "_");
   const short = named.length <= 120 ? named : `${named.slice(0, 80)}-${Bun.hash(named).toString(36)}`;
   const name = flags.length === 0 ? "case" : `case-${short}`;
+  // Of flags, a folder of its own: a case's modules go beside its root, and
+  // a variant's `log.js` imports its own root, never the root another
+  // variant compiled at once wrote, whose `main` ran too (#2628).
+  const home = (at: string) => (flags.length === 0 ? join(at, `${name}.js`) : join(at, name, "case.js"));
   const after = [`--edition=${edition}`, "-Awarnings", remapRoot, ...rustc];
   if (build === "binary") {
-    const js = join(dir, `${name}.js`);
+    const js = home(dir);
     return { cmd: [compiler, file, "-o", js, ...flags, "--", "--crate-type", "bin", ...after], js };
   }
   const wrapper = join(dir, "lib.rs");
@@ -385,7 +389,7 @@ export function compileCommand(file: string, dir: string, edition: string, build
   // As a library, as a crate another uses is (ADR 0100), and as a
   // program: each in a folder of its own, the crate named as its binary
   // is, for its file, which `type_name` and `module_path!()` say.
-  const js = join(dir, build, `${name}.js`);
+  const js = home(join(dir, build));
   const mode = build === "library" ? ["--library", "--manifest", join(dir, "library", `${name}.manifest.json`)] : [];
   const crate = rustc.includes("--crate-name") ? [] : ["--crate-name", basename(file, ".rs").replaceAll("-", "_")];
   return { cmd: [compiler, wrapper, "-o", js, ...mode, ...flags, "--", ...crate, ...after], js };

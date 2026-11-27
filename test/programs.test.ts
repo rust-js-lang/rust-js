@@ -5,8 +5,8 @@ import { expect, test } from "bun:test";
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { agree, compared, hookSays, jsLimit, ranOnce, runProcess, unplaced, type Run } from "./programs";
-import { fixture } from "./support";
+import { agree, compared, compileJsAsync, hookSays, jsLimit, ranOnce, runJs, runProcess, runtimes, unplaced, type Run } from "./programs";
+import { buildCompiler, fixture } from "./support";
 
 const clean: Run = { stdout: "", stderr: "", bytes: { stdout: Buffer.alloc(0), stderr: Buffer.alloc(0) }, outcome: { exit: 0 } };
 const script = (code: string) => [process.execPath, "-e", code];
@@ -122,3 +122,18 @@ test("a native build that isn't kept goes once it's run, and a kept one stays", 
   expect(ranOnce({ binary: join(kept, "native"), kept: true }, clean)).toBe(clean);
   expect([existsSync(unkept), existsSync(join(kept, "native"))]).toEqual([false, true]);
 });
+
+// A case's variants, compiled at once into its folder, each run their own
+// modules (#2628): a case's modules go beside its root, and a variant's
+// `log.js` imported the root another variant wrote last, whose `main` ran
+// too, so 5 of 6 stages of `thread_local_set_before_use` printed its 13
+// lines twice and the tidy-stages net failed 10 cases a night.
+test("a case's variants compiled at once each run their own modules", async () => {
+  buildCompiler();
+  const file = join(import.meta.dir, "corpus", "thread_local_set_before_use.rs");
+  const dir = fixture("programs-variants-at-once");
+  const stages = ["flags/settled flags", "values/shared tails", "jumps/chain values", "loops/unlabeled"];
+  const made = await Promise.all(stages.map((stage) => compileJsAsync(file, dir, "2024", "binary", {}, ["--tidy-until", stage])));
+  const lines = made.map((compiled, at) => ("js" in compiled ? runJs(runtimes[0][1], compiled.js, dir, `variant-${at}`).stdout.split("\n").length : compiled.error));
+  expect(lines).toEqual(stages.map(() => 13));
+}, 300_000);
