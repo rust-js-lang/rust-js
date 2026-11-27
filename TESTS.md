@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-27 (#2608): test/test-map.test.ts gains "the sources at a commit, read at once, are what `git show` and `git grep -w` say of each file and word (#2608)"; three mutations.
+
 Changed on 2026-11-27 (#2622, ADR 0659 amended): corpus gains `matches_known_by_its_variants_returns_early`, a `matches!` of a value each branch makes of one variant, its `bool` known as a drop flag is, whose branch that returns is taken in place of its test, against native; one mutation; the corpus row recounted, 3,094 (`ls test/corpus/*.rs | wc -l`).
 
 Changed on 2026-11-27 (#2608, ADR 1101 amended): test/test-map.test.ts gains "a multi-line item's last line at column 0 is its item's, a type alias's as known_calls.rs:15's; a macro invocation's lines, no item's above"; two mutations.

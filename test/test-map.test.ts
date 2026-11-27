@@ -4,10 +4,10 @@
 // such a change picks, where it can't say, and how many maps it keeps.
 
 import { expect, test } from "bun:test";
-import { mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { casesReaching, changesDiff, ciMapOf, ciMapPrefix, fetchSeconds, packedMaps, packedSuffix, packMaps, unpackMaps, hunksOf, mapLines, placedSimilarity, joinedSpans, mapFile, mapVersion, mergeRecordings, mapOf, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, carriedUnits, carryOf, remapBits, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
+import { casesReaching, changesDiff, ciMapOf, ciMapPrefix, fetchSeconds, packedMaps, packedSuffix, packMaps, unpackMaps, hunksOf, mapLines, placedSimilarity, joinedSpans, mapFile, mapVersion, mergeRecordings, mapOf, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, carriedUnits, carryOf, remapBits, treeSources, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
 
 import { shard } from "../scripts/shard";
 import { caseShard, fixture, root } from "./support";
@@ -1098,4 +1098,65 @@ test("a new item, a macro's body, an attribute and a trait's new impl select the
   // A new module beside the `use` of what it moved there: the `use`'s answer,
   // not everything.
   expect(of([[26, 0, ["mod moved;", "use moved::unused_helper;"], []]]).kind).toBe("picked");
+});
+
+test("the sources at a commit, read at once, are what `git show` and `git grep -w` say of each file and word (#2608)", () => {
+  const repo = fixture("tree-sources");
+  rmSync(repo, { recursive: true, force: true });
+  mkdirSync(join(repo, "src", "a"), { recursive: true });
+  mkdirSync(join(repo, "src-extra"));
+  mkdirSync(join(repo, "other"));
+  const git = (...args: string[]) => Bun.spawnSync(["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", ...args], { cwd: repo, stdout: "pipe", stderr: "pipe" });
+  expect(git("init", "-q", "-b", "main").exitCode).toBe(0);
+  // Words at a line's start and end, inside longer words and beside them,
+  // after a non-ASCII letter, before a `\r`, twice on a line, on the last
+  // line with no newline after it.
+  writeFileSync(join(repo, "src", "a.rs"), "foo\nxfoo foo\n_foo 1foo\nfoo_bar foo.bar\néfoo\r\nbar foo foo\n\n  // foo\nfoox");
+  writeFileSync(join(repo, "src", "a-b.rs"), "fn foo() {}\n");
+  writeFileSync(join(repo, "src", "a0.rs"), "foo\n");
+  writeFileSync(join(repo, "src", "a", "b.rs"), "let bar = foo;\n");
+  // Binary by a NUL in its first 8000 bytes; text with one after them.
+  writeFileSync(join(repo, "src", "binary.rs"), Buffer.concat([Buffer.from("foo\n\0\n"), Buffer.from("foo\n")]));
+  writeFileSync(join(repo, "src", "late.rs"), `${"x\n".repeat(4500)}foo\n\0\nfoo bar\n`);
+  // Binary by its attribute.
+  writeFileSync(join(repo, ".gitattributes"), "src/attr.rs -diff\n");
+  writeFileSync(join(repo, "src", "attr.rs"), "foo\n");
+  // A large file, past a pipe's buffer many times over.
+  writeFileSync(join(repo, "src", "large.rs"), Array.from({ length: 200_000 }, (_, i) => (i % 997 === 0 ? `foo ${i}` : `line ${i} bar`)).join("\n"));
+  symlinkSync("a.rs", join(repo, "src", "link.rs"));
+  // Outside the directories searched: a word of the same prefix, another's.
+  writeFileSync(join(repo, "src-extra", "c.rs"), "foo\n");
+  writeFileSync(join(repo, "other", "d.rs"), "foo\n");
+  expect(git("add", "-A").exitCode).toBe(0);
+  expect(git("commit", "-q", "-m", "sources").exitCode).toBe(0);
+  const commit = git("rev-parse", "HEAD").stdout.toString().trim();
+  const once = (at: string, dirs: string[]) => {
+    const show = (file: string) => {
+      const p = Bun.spawnSync(["git", "show", `${commit}:${file}`], { cwd: at, stdout: "pipe", stderr: "pipe" });
+      return p.exitCode === 0 ? p.stdout.toString() : undefined;
+    };
+    const grep = (word: string) =>
+      Bun.spawnSync(["git", "grep", "-n", "-w", "-e", word, commit, "--", ...dirs], { cwd: at, stdout: "pipe", stderr: "pipe" })
+        .stdout.toString()
+        .split("\n")
+        .flatMap((line) => {
+          const m = /^[^:]+:([^:]+):(\d+):/.exec(line);
+          return m ? [{ file: m[1]!, line: Number(m[2]) }] : [];
+        });
+    return { show, grep, read: treeSources(at, commit, dirs) };
+  };
+  const { show, grep, read } = once(repo, ["src"]);
+  for (const word of ["foo", "bar", "x", "line", "nothing"]) expect(read.naming(word)).toEqual(grep(word));
+  expect(read.naming("foo").map(({ file }) => file)).not.toContain("src/binary.rs");
+  expect(read.naming("foo").filter(({ file }) => file === "src/large.rs")).toHaveLength(201);
+  for (const file of ["src/a.rs", "src/a-b.rs", "src/a0.rs", "src/a/b.rs", "src/binary.rs", "src/late.rs", "src/attr.rs", "src/large.rs", "src/link.rs", "src-extra/c.rs", "other/d.rs", "src/missing.rs", "missing.rs", "src", "src/a"]) {
+    expect(read.text(file)).toBe(show(file));
+  }
+  expect(read.text("src/missing.rs")).toBeUndefined();
+  // A name searched is a word.
+  expect(() => read.naming("foo.bar")).toThrow("a word");
+  // Of a commit git can't read: nothing named, nothing read.
+  const unread = treeSources(repo, "0".repeat(40), ["src"]);
+  expect(unread.naming("foo")).toEqual([]);
+  expect(unread.text("src/a.rs")).toBeUndefined();
 });

@@ -580,4 +580,28 @@ export const mutations: Mutation[] = [
     replace: "  return keptMaps * 64 * 2 ** 20;",
     tests: ["test/support.test.ts", "-t", "a store of things keeps its working set and what it keeps past it"],
   },
+  {
+    name: "tree-sources-one-line-a-file",
+    breaks: "the search of a name in the sources read at once finds only its first line of each file, where `git grep -w` finds each, so an item's namers further down are missed (#2608)",
+    file: "scripts/testMap.ts",
+    find: '        const next = of.indexOf("\\n", after);\n        if (next < 0) break;\n        at = of.indexOf(word, next + 1);\n',
+    replace: "        break;\n",
+    tests: ["test/test-map.test.ts", "-t", "read at once"],
+  },
+  {
+    name: "tree-sources-word-inside-a-word",
+    breaks: "the search of a name in the sources read at once takes `xfoo` for `foo`, a word that only ends at the name, which `git grep -w` doesn't (#2608)",
+    file: "scripts/testMap.ts",
+    find: "        if ((at > 0 && wordChar(of.charCodeAt(at - 1))) || (after < of.length",
+    replace: "        if ((after < of.length",
+    tests: ["test/test-map.test.ts", "-t", "read at once"],
+  },
+  {
+    name: "tree-sources-binary-searched",
+    breaks: "the search of a name in the sources read at once searches a file with a NUL in its first 8000 bytes, which `git grep` takes as binary and names no line of (#2608)",
+    file: "scripts/testMap.ts",
+    find: "      return said ?? bytes.subarray(0, 8000).includes(0);",
+    replace: "      return said ?? false;",
+    tests: ["test/test-map.test.ts", "-t", "read at once"],
+  },
 ];

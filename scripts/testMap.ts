@@ -226,22 +226,128 @@ export function namedBeyondTheCrate(names: string[]): Set<string> {
 
 /** The sources at `commit`, by git. */
 export function sourcesAt(commit: string): Sources {
-  const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root, stdout: "pipe", stderr: "pipe" });
-  return {
-    text: (file) => {
+  return { ...treeSources(root, commit, compilerSourceDirs()), beyond: namedBeyondTheCrate };
+}
+
+/** The files under `dirs` at `commit` of the repository `repo`, read once
+ * for every question (#2608): `text`, what `git show <commit>:<file>` says
+ * of a file, and `naming`, the lines `git grep -n -w -e <word> <commit> --
+ * <dirs>` finds, in its order. A pick's search for an item's namers reads
+ * hundreds of files and searches dozens of names, each known only once the
+ * search before it ends, which a process each took 7 s for; here it's one
+ * `git ls-tree` and one `git cat-file --batch` of every blob, at the first
+ * question, and each word searched in what they read, as `git grep` does:
+ * of a regular file, not one its `diff` attribute or a NUL in its first
+ * 8000 bytes says is binary, each line where the word is neither preceded
+ * nor followed by a letter, a digit or `_`. A path the tree has as no blob,
+ * one outside `dirs` say, `git show`'s. */
+export function treeSources(repo: string, commit: string, dirs: string[]): Pick<Sources, "text" | "naming"> {
+  const git = (args: string[], stdin?: Buffer) => Bun.spawnSync(["git", ...args], { cwd: repo, stdin, stdout: "pipe", stderr: "pipe" });
+  type Tree = { blobs: Map<string, Buffer>; searched: string[] };
+  let tree: Tree | undefined;
+  const read = (): Tree => {
+    if (tree !== undefined) return tree;
+    tree = { blobs: new Map(), searched: [] };
+    const listed = git(["ls-tree", "-r", "-z", commit, "--", ...dirs]);
+    if (listed.exitCode !== 0) return tree;
+    const entries = listed.stdout
+      .toString()
+      .split("\0")
+      .flatMap((entry) => {
+        const m = /^(\d+) blob ([0-9a-f]+)\t([^]*)$/.exec(entry);
+        return m ? [{ mode: m[1]!, oid: m[2]!, path: m[3]! }] : [];
+      });
+    if (entries.length === 0) return tree;
+    // Each blob's content, by its id, from one `cat-file --batch`: of each
+    // id asked, `<id> <type> <size>\n<content>\n`, or `<id> missing\n`.
+    const ids = [...new Set(entries.map(({ oid }) => oid))];
+    const out = git(["cat-file", "--batch"], Buffer.from(`${ids.join("\n")}\n`)).stdout;
+    const contents = new Map<string, Buffer>();
+    for (let at = 0; at < out.length; ) {
+      const end = out.indexOf(10, at);
+      if (end < 0) break;
+      const [id, , size] = out.subarray(at, end).toString().split(" ");
+      if (size === undefined) {
+        at = end + 1;
+        continue;
+      }
+      contents.set(id!, out.subarray(end + 1, end + 1 + Number(size)));
+      at = end + 1 + Number(size) + 1;
+    }
+    // Binary to `git grep`: a `diff` attribute unset, `-diff` or `binary`;
+    // a driver's, by its `diff.<driver>.binary`; else a NUL in its first
+    // 8000 bytes.
+    const regular = entries.filter(({ mode, oid }) => mode.startsWith("100") && contents.has(oid));
+    const attrs = git(["check-attr", "-z", "--stdin", "diff"], Buffer.from(regular.map(({ path }) => `${path}\0`).join(""))).stdout.toString().split("\0");
+    const diff = new Map<string, string>();
+    for (let i = 0; i + 2 < attrs.length; i += 3) diff.set(attrs[i]!, attrs[i + 2]!);
+    const drivers = new Map<string, boolean | undefined>();
+    const driverBinary = (driver: string) => {
+      if (!drivers.has(driver)) {
+        const said = git(["config", "--type=bool", "--get", `diff.${driver}.binary`]).stdout.toString().trim();
+        drivers.set(driver, said === "" ? undefined : said === "true");
+      }
+      return drivers.get(driver);
+    };
+    const binary = (path: string, bytes: Buffer) => {
+      const of = diff.get(path) ?? "unspecified";
+      const said = of === "unset" ? true : of === "set" || of === "unspecified" ? undefined : driverBinary(of);
+      return said ?? bytes.subarray(0, 8000).includes(0);
+    };
+    for (const { mode, oid, path } of entries) {
+      const bytes = contents.get(oid);
+      if (bytes === undefined) continue;
+      tree.blobs.set(path, bytes);
+      if (mode.startsWith("100") && !binary(path, bytes)) tree.searched.push(path);
+    }
+    return tree;
+  };
+  const texts = new Map<string, string>();
+  const text = (file: string): string | undefined => {
+    const known = texts.get(file);
+    if (known !== undefined) return known;
+    const bytes = read().blobs.get(file);
+    if (bytes === undefined) {
       const p = git(["show", `${commit}:${file}`]);
       return p.exitCode === 0 ? p.stdout.toString() : undefined;
-    },
-    naming: (word) =>
-      git(["grep", "-n", "-w", "-e", word, commit, "--", ...compilerSourceDirs()])
-        .stdout.toString()
-        .split("\n")
-        .flatMap((line) => {
-          const m = /^[^:]+:([^:]+):(\d+):/.exec(line);
-          return m ? [{ file: m[1]!, line: Number(m[2]) }] : [];
-        }),
-    beyond: namedBeyondTheCrate,
+    }
+    const decoded = bytes.toString();
+    texts.set(file, decoded);
+    return decoded;
   };
+  // A word's letter, as `git grep -w` takes one: ASCII's alphanumerics and `_`.
+  const wordChar = (code: number) => (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || code === 95;
+  const named = new Map<string, { file: string; line: number }[]>();
+  const naming = (word: string): { file: string; line: number }[] => {
+    if (!/^\w+$/.test(word)) throw new Error(`a name searched is a word of letters, digits and \`_\`, not \`${word}\``);
+    const known = named.get(word);
+    if (known !== undefined) return [...known];
+    const sites: { file: string; line: number }[] = [];
+    for (const file of read().searched) {
+      const of = text(file)!;
+      // Each line once, its number counted on from the last match's.
+      let line = 1;
+      let counted = 0;
+      for (let at = of.indexOf(word); at >= 0; ) {
+        const after = at + word.length;
+        if ((at > 0 && wordChar(of.charCodeAt(at - 1))) || (after < of.length && wordChar(of.charCodeAt(after)))) {
+          at = of.indexOf(word, at + 1);
+          continue;
+        }
+        for (let nl = of.indexOf("\n", counted); nl >= 0 && nl < at; nl = of.indexOf("\n", nl + 1)) {
+          line++;
+          counted = nl + 1;
+        }
+        sites.push({ file, line });
+        const next = of.indexOf("\n", after);
+        if (next < 0) break;
+        at = of.indexOf(word, next + 1);
+      }
+    }
+    named.set(word, sites);
+    return [...sites];
+  };
+  return { text, naming };
 }
 
 /** A `const` or `static` item's declaration line, its name the second
