@@ -101,11 +101,20 @@ test("the builtins crate's timers run a closure, and clearing one stops it", asy
     fired = true;
   });
   let ticks = 0;
-  const id = builtins.every(5, () => {
-    ticks += 1;
-    if (ticks === 3) builtins.stop(id);
+  // Its third tick awaited, not a time a loaded machine may give two in
+  // (a push's check, 2026-11-27: 2 of 3 in 80 ms), then as long again
+  // for a fourth that stopping it means never comes.
+  const began = performance.now();
+  await new Promise<void>((resolve) => {
+    const id = builtins.every(5, () => {
+      ticks += 1;
+      if (ticks === 3) {
+        builtins.stop(id);
+        resolve();
+      }
+    });
   });
-  await new Promise((resolve) => setTimeout(resolve, 80));
+  await new Promise((resolve) => setTimeout(resolve, Math.max(20, performance.now() - began)));
   expect(fired).toBe(false);
   expect(ticks).toBe(3);
   await new Promise<void>((resolve) => builtins.at(Date.now() + 5.5, resolve));
