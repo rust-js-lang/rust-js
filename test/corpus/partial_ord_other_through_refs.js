@@ -46,19 +46,19 @@ function atPartialOrdAt_partialCmp(at, other) {
   return $cmp(at.t, other.t);
 }
 
-const MIN = $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", { t: 0n });
-const MAX = $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", { t: 100n });
+const MIN = $brand("partial_ord_other_through_refs#ab188ac9c5e0ffb6::At", { t: 0n });
+const MAX = $brand("partial_ord_other_through_refs#ab188ac9c5e0ffb6::At", { t: 100n });
 
 export function inRange(at) {
   return (
     (at != null &&
     atPartialOrdAt_partialCmp(
       at,
-      $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", { t: 0n }),
+      $brand("partial_ord_other_through_refs#ab188ac9c5e0ffb6::At", { t: 0n }),
     ) >= 0 &&
     atPartialOrdAt_partialCmp(
       at,
-      $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", { t: 100n }),
+      $brand("partial_ord_other_through_refs#ab188ac9c5e0ffb6::At", { t: 100n }),
     ) <= 0
       ? at
       : undefined) ?? undefined
@@ -76,7 +76,7 @@ function checkAt(value, Z) {
     value,
     undefined,
     undefined,
-    "partial_ord_other_through_refs#c5cd274bfe7f7cb5::At",
+    "partial_ord_other_through_refs#ab188ac9c5e0ffb6::At",
     "an At",
   );
   $checkObject(value);
@@ -86,40 +86,40 @@ function checkAt(value, Z) {
 
 function main() {
   const kept = inRange(
-    $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", {
+    $brand("partial_ord_other_through_refs#ab188ac9c5e0ffb6::At", {
       t: 5n,
-      zone: $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::Fixed", [1]),
+      zone: $brand("partial_ord_other_through_refs#ab188ac9c5e0ffb6::Fixed", [1]),
     }),
   );
   console.log(
     `${kept == null ? "None" : `Some(${atDebug_fmt(kept, fixedDebug)})`} ${kept?.zone[0] == null ? "None" : `Some(${kept?.zone[0]})`}`,
   );
   const value = inRange(
-    $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", {
+    $brand("partial_ord_other_through_refs#ab188ac9c5e0ffb6::At", {
       t: -5n,
-      zone: $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::Fixed", [2]),
+      zone: $brand("partial_ord_other_through_refs#ab188ac9c5e0ffb6::Fixed", [2]),
     }),
   );
   console.log(`${value == null ? "None" : `Some(${atDebug_fmt(value, fixedDebug)})`}`);
   const value$1 = inRange(
-    $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", {
+    $brand("partial_ord_other_through_refs#ab188ac9c5e0ffb6::At", {
       t: 500n,
-      zone: $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::Fixed", [3]),
+      zone: $brand("partial_ord_other_through_refs#ab188ac9c5e0ffb6::Fixed", [3]),
     }),
   );
   console.log(`${value$1 == null ? "None" : `Some(${atDebug_fmt(value$1, fixedDebug)})`}`);
   const value$2 = before(
-    $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", {
+    $brand("partial_ord_other_through_refs#ab188ac9c5e0ffb6::At", {
       t: 1n,
-      zone: $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::Fixed", [4]),
+      zone: $brand("partial_ord_other_through_refs#ab188ac9c5e0ffb6::Fixed", [4]),
     }),
     MAX,
   );
   console.log(`(${value$2[0]}, ${value$2[1]})`);
   const value$3 = before(
-    $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::At", {
+    $brand("partial_ord_other_through_refs#ab188ac9c5e0ffb6::At", {
       t: 101n,
-      zone: $brand("partial_ord_other_through_refs#c5cd274bfe7f7cb5::Fixed", [5]),
+      zone: $brand("partial_ord_other_through_refs#ab188ac9c5e0ffb6::Fixed", [5]),
     }),
     MAX,
   );

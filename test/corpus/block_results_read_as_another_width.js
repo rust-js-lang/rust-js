@@ -30,7 +30,7 @@ import {
 export const BlockRng64 = {
   new(core, RBlockRngCore) {
     const resultsEmpty = RBlockRngCore.ResultsDefault().default();
-    return $brand("block_results_read_as_another_width#7d7964476ded7fc6::BlockRng64", {
+    return $brand("block_results_read_as_another_width#10665d61150ea617::BlockRng64", {
       core,
       index: RBlockRngCore.ResultsAsRefSelfItemSlice().asRef(resultsEmpty).length,
       halfUsed: false,
@@ -128,7 +128,7 @@ function checkBlockRng64(value, R) {
     value,
     undefined,
     undefined,
-    "block_results_read_as_another_width#7d7964476ded7fc6::BlockRng64",
+    "block_results_read_as_another_width#10665d61150ea617::BlockRng64",
     "a BlockRng64",
   );
   $checkObject(value);

@@ -38,6 +38,7 @@ new one is worker-01 agent's to see first (#1462).
 | `Library.version` | local | the contract's own version; another is refused | |
 | `Library.name` | local | the crate's name | |
 | `Library.crate_id` | local | rustc's identity of the crate, with its name the key it's known by | |
+| `Library.crate_identity` | local | what identifies the crate wherever its files are, the key its types' brands name it by | |
 | `Library.crate_hash` | local | rustc's hash of the crate its JS was made from, checked against the metadata loaded | |
 | `Library.items` | local | each exported item: its key, path, module, export and member, and what its calls give it (`Calling`) | |
 | `Library.impls` | local | the trait impls whose methods are items | |

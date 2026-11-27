@@ -2757,7 +2757,7 @@ const checkCodes = /* @__PURE__ */ $checkShape(
     at: $checkU32,
     codes: (value, where, none) => $checkArray(value, where, none, $checkU32),
   }),
-  "example#7ebd57e3c80d9be4::Codes",
+  "example#1b68d076f618d1c2::Codes",
   "a Codes",
 );
 

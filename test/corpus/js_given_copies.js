@@ -25,7 +25,7 @@ export function pass(x) {
 }
 
 function checkStack(value, T) {
-  $checkBrand(value, undefined, undefined, "js_given_copies#5e8f304261e618ca::Stack", "a Stack");
+  $checkBrand(value, undefined, undefined, "js_given_copies#151ffe3eab23c2b1::Stack", "a Stack");
   $checkObject(value);
   $checkField(value, "items", (value, where, none) => $checkArray(value, where, none, T));
 }
@@ -63,7 +63,7 @@ function countSomeBoxed(xs) {
 
 export const Stack = {
   new() {
-    return $brand("js_given_copies#5e8f304261e618ca::Stack", { items: [] });
+    return $brand("js_given_copies#151ffe3eab23c2b1::Stack", { items: [] });
   },
 
   push(stack, x) {

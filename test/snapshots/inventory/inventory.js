@@ -105,7 +105,7 @@ const checkStore = /* @__PURE__ */ $checkShape(
     revenue: $checkF64,
     log: (value, where, none) => $checkArray(value, where, none, $checkStr),
   }),
-  "inventory#2a650c7f5ca2643e::Store",
+  "inventory#ee4ab4c0d4c19d5e::Store",
   "a Store",
 );
 
@@ -132,7 +132,7 @@ function classify(n) {
 }
 
 export function report() {
-  const store = $brand("inventory#2a650c7f5ca2643e::Store", {
+  const store = $brand("inventory#ee4ab4c0d4c19d5e::Store", {
     stock: new Map(),
     revenue: 0,
     log: [],

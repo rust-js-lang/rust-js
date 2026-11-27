@@ -45,7 +45,7 @@ export const Lexer = {
     return Lexer.new$(src);
   },
   new$(src) {
-    return $brand("lexer#24c57fb0877d26e1::Lexer", {
+    return $brand("lexer#956e4b707b9d774c::Lexer", {
       chars: iterator_peekable($chars(src)),
       line: 1,
     });
@@ -114,7 +114,7 @@ export const Lexer = {
 
 const checkLexer = /* @__PURE__ */ $checkShape(
   () => ({ line: $checkU32 }),
-  "lexer#24c57fb0877d26e1::Lexer",
+  "lexer#956e4b707b9d774c::Lexer",
   "a Lexer",
 );
 

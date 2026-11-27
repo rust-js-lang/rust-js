@@ -301,7 +301,7 @@ import { $brand, $checkCallback, $checkShape, $checkStr, $checks } from "@rust-j
 
 const checkRequest = /* @__PURE__ */ $checkShape(
   () => ({ name: $checkStr }),
-  "example#7ebd57e3c80d9be4::Request",
+  "example#1b68d076f618d1c2::Request",
   "a Request",
 );
 
@@ -312,7 +312,7 @@ export function createRequest(name, onAllReady) {
 }
 
 function createRequest$(name, onAllReady) {
-  return $brand("example#7ebd57e3c80d9be4::Request", {
+  return $brand("example#1b68d076f618d1c2::Request", {
     name,
     onAllReady,
   });
@@ -402,7 +402,7 @@ export const Counter = {
     return Counter.new$(step);
   },
   new$(step) {
-    return $brand("example#7ebd57e3c80d9be4::Counter", { count: 0, step });
+    return $brand("example#1b68d076f618d1c2::Counter", { count: 0, step });
   },
 
   increment(counter) {
@@ -429,7 +429,7 @@ export const Counter = {
 
 const checkCounter = /* @__PURE__ */ $checkShape(
   () => ({ count: $checkU32, step: $checkU32 }),
-  "example#7ebd57e3c80d9be4::Counter",
+  "example#1b68d076f618d1c2::Counter",
   "a Counter",
 );
 
@@ -664,7 +664,7 @@ import { $brand, $checkArray, $checkBrand, $checkField, $checkObject } from "@ru
 
 export const Stack = {
   new() {
-    return $brand("example#7ebd57e3c80d9be4::Stack", { items: [] });
+    return $brand("example#1b68d076f618d1c2::Stack", { items: [] });
   },
 
   push(stack, item) {
@@ -686,7 +686,7 @@ export function list(items, TDisplay) {
 }
 
 function checkStack(value, T) {
-  $checkBrand(value, undefined, undefined, "example#7ebd57e3c80d9be4::Stack", "a Stack");
+  $checkBrand(value, undefined, undefined, "example#1b68d076f618d1c2::Stack", "a Stack");
   $checkObject(value);
   $checkField(value, "items", (value, where, none) => $checkArray(value, where, none, T));
 }
@@ -1200,14 +1200,14 @@ export const Logger = {
 
 const checkLogger = /* @__PURE__ */ $checkShape(
   () => ({ lines: (value, where, none) => $checkArray(value, where, none, $checkStr) }),
-  "example#7ebd57e3c80d9be4::Logger",
+  "example#1b68d076f618d1c2::Logger",
   "a Logger",
 );
 
 export function twoLoggers() {
   const lines = [];
-  const a = $brand("example#7ebd57e3c80d9be4::Logger", { lines });
-  const b = $brand("example#7ebd57e3c80d9be4::Logger", { lines });
+  const a = $brand("example#1b68d076f618d1c2::Logger", { lines });
+  const b = $brand("example#1b68d076f618d1c2::Logger", { lines });
   Logger.log$(a, "from a");
   Logger.log$(b, "from b");
   return lines.length;
@@ -1387,7 +1387,7 @@ function fibonacciIterator_next(fibonacci) {
 }
 
 export function fibonacci() {
-  return $brand("example#7ebd57e3c80d9be4::Fibonacci", {
+  return $brand("example#1b68d076f618d1c2::Fibonacci", {
     current: 0n,
     next: 1n,
   });

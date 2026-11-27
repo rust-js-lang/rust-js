@@ -24,7 +24,7 @@ export function entry() {
 
 export const Small = {
   new(CAP) {
-    return $brand("writer_sink_const_generic#008778c60a6ba729::Small", { text: "" });
+    return $brand("writer_sink_const_generic#365af0d88ecd7943::Small", { text: "" });
   },
 };
 

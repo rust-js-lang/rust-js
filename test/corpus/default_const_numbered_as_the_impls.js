@@ -28,13 +28,13 @@ $main(main);
 function main() {
   const SScaled = sScaled(4);
   console.log(
-    `${SScaled.scaled($brand("default_const_numbered_as_the_impls#0e96ddd8da13543e::S", [1, undefined]))}`,
+    `${SScaled.scaled($brand("default_const_numbered_as_the_impls#3f152c94bc620735::S", [1, undefined]))}`,
   );
   console.log(
-    `${sScaled(5).scaled($brand("default_const_numbered_as_the_impls#0e96ddd8da13543e::S", ["x", 2]))}`,
+    `${sScaled(5).scaled($brand("default_const_numbered_as_the_impls#3f152c94bc620735::S", ["x", 2]))}`,
   );
   console.log(
-    `${SScaled.times($brand("default_const_numbered_as_the_impls#0e96ddd8da13543e::S", [1, undefined]), 7)}`,
+    `${SScaled.times($brand("default_const_numbered_as_the_impls#3f152c94bc620735::S", [1, undefined]), 7)}`,
   );
 }
 //# sourceMappingURL=case.js.map

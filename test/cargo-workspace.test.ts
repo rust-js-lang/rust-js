@@ -220,54 +220,67 @@ test("another rust-js builds each crate for the target again, under the same nam
   );
 }, 600_000);
 
-// A brand's key is its crate's identity, its name and the disambiguator
-// Cargo gives it (ADR 1196), which tells two versions of one crate apart,
-// a git fork's and a registry's too: never the compiler's build, which a
-// rebuild of rust-js changes, or another printer, as here. Else every
-// change to rust-js re-keys every brand, and the React port's pinned JS
-// differs each night (#2403). #2473 keeps `rustc -vV` one line for every
-// build, rust-js's identity in its crates' dep-info alone.
-test("a brand's key is the same of every build of rust-js, and two versions' are two", async () => {
-  const dir = fixture("cargo-brand-keys");
-  // The app the workspace's, the two versions path dependencies of it, as
-  // Cargo takes no two members of one name.
-  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app"]\nexclude = ["one", "two"]\nresolver = "2"\n');
+// A brand's key is its crate's identity (ADR 1196, amended): its name and
+// a hash of its package's name, version and source, which tells two
+// versions of one crate apart, a git fork's and a registry's too, and two
+// crates of one package, renamed or not; never where its files are, nor
+// the compiler's build, which a rebuild of rust-js changes, or another
+// printer, as here. rustc's `StableCrateId` is of Cargo's `-C metadata`,
+// which hashes a path dependency outside the workspace by its directory,
+// so React's port, whose bindings are `../rust-js`, branded each type by
+// another key in each checkout it was built in, and its pinned JS
+// differed in every other (#2403). #2473 keeps `rustc -vV` one line for
+// every build, rust-js's identity in its crates' dep-info alone.
+test("a brand's key is the same of every build of rust-js and every directory, and two versions' are two", async () => {
+  // The app the workspace's, the two versions path dependencies of it
+  // outside the workspace, as Cargo takes no two members of one name: the
+  // same files in two directories.
   const sealed = "pub struct Email(String);\n\npub fn make(text: &str) -> Email {\n    Email(text.to_string())\n}\n\npub fn domain(email: &Email) -> usize {\n    email.0.len()\n}\n";
-  for (const [member, version] of [["one", "0.1.0"], ["two", "0.2.0"]]) {
-    mkdirSync(join(dir, member, "src"), { recursive: true });
-    writeFileSync(join(dir, member, "Cargo.toml"), `[package]\nname = "sealed"\nversion = "${version}"\nedition = "2024"\n`);
-    writeFileSync(join(dir, member, "src", "lib.rs"), sealed);
-  }
-  mkdirSync(join(dir, "app", "src"), { recursive: true });
-  writeFileSync(join(dir, "app", "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\none = { package = "sealed", path = "../one" }\ntwo = { package = "sealed", path = "../two" }\n');
-  writeFileSync(join(dir, "app", "src", "lib.rs"), "pub fn both(a: &str, b: &str) -> usize {\n    one::domain(&one::make(a)) + two::domain(&two::make(b))\n}\n");
-  const printer = join(dir, "printer");
-  mkdirSync(printer);
-  for (const file of ["index.js", "package.json"]) cpSync(join(root, "typescript", file), join(printer, file));
-  symlinkSync(join(root, "typescript", "node_modules"), join(printer, "node_modules"));
-  const module = join(printer, "index.js");
-  const manifest = join(dir, "Cargo.toml");
-  // Each version's brand key, of the build Cargo has now.
-  const keys = async () => {
+  const laid = (dir: string) => {
+    mkdirSync(join(dir, "ws", "app", "src"), { recursive: true });
+    writeFileSync(join(dir, "ws", "Cargo.toml"), '[workspace]\nmembers = ["app"]\nresolver = "2"\n');
+    for (const [member, version] of [["one", "0.1.0"], ["two", "0.2.0"]]) {
+      mkdirSync(join(dir, member, "src"), { recursive: true });
+      writeFileSync(join(dir, member, "Cargo.toml"), `[package]\nname = "sealed"\nversion = "${version}"\nedition = "2024"\n`);
+      writeFileSync(join(dir, member, "src", "lib.rs"), sealed);
+    }
+    writeFileSync(join(dir, "ws", "app", "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\none = { package = "sealed", path = "../../one" }\ntwo = { package = "sealed", path = "../../two" }\n');
+    writeFileSync(join(dir, "ws", "app", "src", "lib.rs"), "pub fn both(a: &str, b: &str) -> usize {\n    one::domain(&one::make(a)) + two::domain(&two::make(b))\n}\n");
+    const printer = join(dir, "printer");
+    mkdirSync(printer);
+    for (const file of ["index.js", "package.json"]) cpSync(join(root, "typescript", file), join(printer, file));
+    symlinkSync(join(root, "typescript", "node_modules"), join(printer, "node_modules"));
+    return { manifest: join(dir, "ws", "Cargo.toml"), module: join(printer, "index.js") };
+  };
+  // Each crate's JS, by its package's name and version, of the build Cargo
+  // has now.
+  const built = async ({ manifest, module }: { manifest: string; module: string }) => {
     const env: NodeJS.ProcessEnv = { ...(await throughRustJs(manifest)), RUST_JS_TYPESCRIPT: module };
     env.RUST_JS_BUILD = buildIdentity(compiler, env);
     const messages = run(cargo(manifest, "check", "--target", "wasm32-unknown-unknown", "--message-format=json"), 600_000, env);
-    const built = messages.split("\n").filter(Boolean).map((line) => JSON.parse(line))
-      .filter((message) => message.reason === "compiler-artifact" && message.target.name === "sealed");
-    return Object.fromEntries(built.map((message) => {
+    const artifacts = messages.split("\n").filter(Boolean).map((line) => JSON.parse(line))
+      .filter((message) => message.reason === "compiler-artifact" && ["sealed", "app"].includes(message.target.name));
+    return Object.fromEntries(artifacts.map((message) => {
       const metadata: string = message.filenames.find((file: string) => file.endsWith(".rmeta"));
       const library = readFileSync(metadata.replace(/\.rmeta$/, ".rust-js"), "utf8").split("\n")[0];
-      const js = readFileSync(join(dirname(library), "lib.js"), "utf8");
-      return [String(message.package_id).split("@").pop(), /\$brand\("([^"]+)"/.exec(js)?.[1]];
+      return [`${message.target.name}@${String(message.package_id).split(/[#@]/).pop()}`, readFileSync(join(dirname(library), "lib.js"), "utf8")];
     }));
   };
-  const before = await keys();
-  expect(Object.keys(before).sort()).toEqual(["0.1.0", "0.2.0"]);
-  expect(before["0.1.0"]).toStartWith("sealed#");
-  expect(before["0.1.0"]).not.toBe(before["0.2.0"]);
+  const key = (js: string) => /\$brand\("([^"]+)"/.exec(js)?.[1];
+  const here = laid(fixture("cargo-brand-keys"));
+  const before = await built(here);
+  expect(Object.keys(before).sort()).toEqual(["app@0.1.0", "sealed@0.1.0", "sealed@0.2.0"]);
+  expect(key(before["sealed@0.1.0"])).toStartWith("sealed#");
+  expect(key(before["sealed@0.1.0"])).not.toBe(key(before["sealed@0.2.0"]));
   // Another build of rust-js, as Cargo sees it: another printer.
-  writeFileSync(module, `${readFileSync(module, "utf8")}// another build's\n`);
-  expect(await keys()).toEqual(before);
+  writeFileSync(here.module, `${readFileSync(here.module, "utf8")}// another build's\n`);
+  expect(await built(here)).toEqual(before);
+  // The same files in another directory: each library's JS the same, byte
+  // for byte, its brands' keys too. Not yet the app's, whose imports name
+  // Cargo's directory of each library, `sealed-<its -C metadata>`, and are
+  // named in that order (#2616).
+  const elsewhere = await built(laid(fixture("cargo-brand-keys-elsewhere")));
+  for (const version of ["sealed@0.1.0", "sealed@0.2.0"]) expect(elsewhere[version]).toBe(before[version]);
 }, 600_000);
 
 // What Cargo has as done is what rust-js made (ADR 0101): Cargo rebuilds a

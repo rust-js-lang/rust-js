@@ -399,6 +399,56 @@ fn manifest_dir() -> Result<PathBuf, String> {
     std::fs::canonicalize(&dir).map_err(|e| format!("{dir}: {e}"))
 }
 
+/// What tells the package of the crate compiled from every other a program
+/// may hold, wherever its files are, which its identity hashes
+/// (`rust_js_program::library::crate_identity`, ADR 1196, amended). Of
+/// Cargo's build, `cargo`, its package's name and version and its source:
+/// a registry's index or a git checkout's repository and commit, as Cargo
+/// keeps them under its home, vendored, or a path, as Cargo refuses two
+/// path packages of one name and version in a build; never the directory,
+/// which Cargo's `-C metadata` hashes of a path dependency outside the
+/// workspace (#2403). Else rustc's `-C metadata`, `metadata`, which tells
+/// two crates of one name apart where rustc runs alone, as Cargo's
+/// wouldn't.
+pub fn package(cargo: bool, metadata: &[String]) -> Vec<String> {
+    if !cargo {
+        let mut given = metadata.to_vec();
+        given.sort();
+        given.dedup();
+        return std::iter::once("rustc".to_string()).chain(given).collect();
+    }
+    let var = |name: &str| std::env::var(name).unwrap_or_else(|_| panic!("rust-js: Cargo gave no {name}"));
+    let dir = PathBuf::from(var("CARGO_MANIFEST_DIR"));
+    vec![
+        "cargo".to_string(),
+        var("CARGO_PKG_NAME"),
+        var("CARGO_PKG_VERSION"),
+        package_source(&dir),
+    ]
+}
+
+/// Where Cargo has the package whose directory is `dir`, of no path: the
+/// last `registry/src/<index>` or `git/checkouts/<repository>/<commit>` it's
+/// under, Cargo's home's layout, with the package's directory in the
+/// checkout; else `vendored`, of a directory source's `.cargo-checksum.json`,
+/// or `path`.
+fn package_source(dir: &Path) -> String {
+    let parts: Vec<&str> = dir.components().filter_map(|part| part.as_os_str().to_str()).collect();
+    for at in (0..parts.len()).rev() {
+        match &parts[at..] {
+            ["registry", "src", index, ..] => return format!("registry {index}"),
+            ["git", "checkouts", repository, commit, inside @ ..] => {
+                return format!("git {repository} {commit} {}", inside.join("/"));
+            }
+            _ => {}
+        }
+    }
+    match dir.join(".cargo-checksum.json").exists() {
+        true => "vendored".to_string(),
+        false => "path".to_string(),
+    }
+}
+
 /// Whether the crate Cargo builds is one `RUST_JS_APPS` lists, a program
 /// (ADR 0360).
 fn is_app() -> Result<bool, String> {
@@ -848,7 +898,33 @@ fn rustc_itself(rustc: &str, given: &[String]) -> Invocation {
 
 #[cfg(test)]
 mod tests {
-    use super::{READ_AS_RUSTC_BUILDS_THEM, refused_for, semver_compatible};
+    use super::{READ_AS_RUSTC_BUILDS_THEM, package_source, refused_for, semver_compatible};
+
+    /// Where Cargo has a package, of no path: a registry's index, a git
+    /// checkout's repository, commit and directory in it, or a path; the
+    /// same wherever Cargo's home or the workspace is (ADR 1196, amended).
+    #[test]
+    fn a_packages_source_is_of_no_path() {
+        let source = |dir: &str| package_source(std::path::Path::new(dir));
+        assert_eq!(
+            source("/home/a/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.200"),
+            "registry index.crates.io-1949cf8c6b5b557f"
+        );
+        assert_eq!(
+            source("/Users/b/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.200"),
+            "registry index.crates.io-1949cf8c6b5b557f"
+        );
+        assert_eq!(
+            source("/c/cargo-home/git/checkouts/tokio-9f2e/1a2b3c4/tokio-macros"),
+            "git tokio-9f2e 1a2b3c4 tokio-macros"
+        );
+        assert_ne!(
+            source("/c/git/checkouts/tokio-9f2e/1a2b3c4/x"),
+            source("/c/git/checkouts/tokio-9f2e/5d6e7f8/x")
+        );
+        assert_eq!(source("/work/one/app"), "path");
+        assert_eq!(source("/elsewhere/app"), "path");
+    }
 
     /// getrandom's custom backend is given where its check chooses none,
     /// and not where a backend is chosen already: a `getrandom_backend`

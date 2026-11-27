@@ -40,7 +40,7 @@ import {
 
 export const Stack = {
   new(TDebug) {
-    return $brand("queues#b62104a05163bce2::Stack", { items: [] });
+    return $brand("queues#86afaf7eeafde5a1::Stack", { items: [] });
   },
   push(stack, x, TDebug) {
     stack.items.push(x);
@@ -89,7 +89,7 @@ const reversePartialOrd = $partialOrd({
 
 const checkPipeline = /* @__PURE__ */ $checkShape(
   () => ({}),
-  "queues#b62104a05163bce2::Pipeline",
+  "queues#86afaf7eeafde5a1::Pipeline",
   "a Pipeline",
 );
 
@@ -273,7 +273,7 @@ function reverses$(a, b) {
 }
 
 function checkStack(value, T) {
-  $checkBrand(value, undefined, undefined, "queues#b62104a05163bce2::Stack", "a Stack");
+  $checkBrand(value, undefined, undefined, "queues#86afaf7eeafde5a1::Stack", "a Stack");
   $checkObject(value);
   $checkField(value, "items", (value, where, none) => $checkArray(value, where, none, T));
 }
@@ -304,7 +304,7 @@ export function report() {
     },
     { fmt: String },
   )}\n`;
-  const p = $brand("queues#b62104a05163bce2::Pipeline", {
+  const p = $brand("queues#86afaf7eeafde5a1::Pipeline", {
     steps: [(x) => (x + 1) | 0, (x) => (x * 10) | 0, (x) => (x - 3) | 0],
   });
   const run = Pipeline.run$(p, 4);

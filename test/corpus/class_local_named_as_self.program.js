@@ -38,7 +38,7 @@ export const Plain = {
 
 const checkPlain = /* @__PURE__ */ $checkShape(
   () => ({ x: $checkF64 }),
-  "class_local_named_as_self#7b7bcdd36050bdca::Plain",
+  "class_local_named_as_self#44a4ef7f47fd9a00::Plain",
   "a Plain",
 );
 
@@ -48,7 +48,7 @@ function main() {
   const point = new Point(1.5);
   console.log(`${$displayF64(point.moved(2))} ${$displayF64(point.x)}`);
   console.log(`${$displayF64(point.either())} ${$displayF64(point.either(new Point(10)))}`);
-  const plain = $brand("class_local_named_as_self#7b7bcdd36050bdca::Plain", { x: 3 });
+  const plain = $brand("class_local_named_as_self#44a4ef7f47fd9a00::Plain", { x: 3 });
   console.log(`${$displayF64(Plain.moved$(plain, 1))} ${$displayF64(plain.x)}`);
 }
 //# sourceMappingURL=case.js.map

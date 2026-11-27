@@ -92,6 +92,10 @@ pub fn lower_crate<'tcx>(
     // A binary that links a library that keeps a tracked value's caller's
     // line, which it would write (#2335).
     std_types::location::refuse_untold_locations(tcx, dependencies);
+    // A program of two crates whose types' brands would be one (ADR 1196).
+    if rust_js_lower::recognition::refuse_shared_identities(tcx) {
+        return Lowered::Crate(None);
+    }
     let ground = analysis::ground(tcx, all_bodies, dependencies, (library, std_bodies), instances);
     for bodies in [&mut *all_bodies, &mut *initializers] {
         let facts = (&ground.cloned, ground.keeps_capacity());

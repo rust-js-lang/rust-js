@@ -43,4 +43,28 @@ export const mutations: Mutation[] = [
       '        Some(("alloc", rest)) => format!("std::{rest}"),',
     tests: ["test/crates.test.ts", "-t", "std items are std"],
   },
+  {
+    name: "library-identity-of-its-own",
+    breaks: "a library's type is branded by an identity the consumer makes of the library's name, not its manifest's, so a consumer's copy of its generic code brands a value the library refuses (ADR 1196, amended)",
+    file: "crates/rust-js-lower/src/recognition/std_crates.rs",
+    find: "        Some(identity) => identity.clone(),\n",
+    replace: "        Some(_) => rust_js_program::library::crate_identity(tcx.crate_name(krate).as_str(), false, &[]),\n",
+    tests: ["test/boundary-brands.test.ts", "-t", "a library's sealed type its consumer clones"],
+  },
+  {
+    name: "shared-identities-unrefused",
+    breaks: "a program of two crates of one identity compiles, their types' brands one, so one's value passes for the other's (ADR 1196, amended)",
+    file: "crates/rust-js-lower/src/recognition/std_crates.rs",
+    find: "        match seen.get(&identity) {\n",
+    replace: "        match seen.get(&identity).filter(|_| false) {\n",
+    tests: ["test/boundary-brands.test.ts", "-t", "a program of two crates of one identity is refused"],
+  },
+  {
+    name: "rustc-alone-crate-unidentified",
+    breaks: "a crate rustc alone built, indexmap's whose generic code a consumer compiles, has no identity, so a brand of its `IndexMap` the consumer makes panics the compile (#2403)",
+    file: "crates/rust-js-lower/src/recognition/std_crates.rs",
+    find: "        None => format!(\"{}#{:016x}\", tcx.crate_name(krate), tcx.stable_crate_id(krate).as_u64()),\n",
+    replace: "        None => panic!(\"{} has no identity\", tcx.crate_name(krate)),\n",
+    tests: ["test/bound-maps.test.ts", "-t", "indexmap's maps run as std's"],
+  },
 ];

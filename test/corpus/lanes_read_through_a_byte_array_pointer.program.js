@@ -44,7 +44,7 @@ function readLe(input) {
     );
   }
   const value = $ptrRetyped($ptr(input, 0), 16, "bytes").value.slice();
-  const x = $brand("lanes_read_through_a_byte_array_pointer#b976f3cd4cc4690d::U32x4", [
+  const x = $brand("lanes_read_through_a_byte_array_pointer#865e1fdefebbf66d::U32x4", [
     [
       $fromBytes(value.slice(0, 4), 4, true, false),
       $fromBytes(value.slice(4, 8), 4, true, false),
@@ -52,7 +52,7 @@ function readLe(input) {
       $fromBytes(value.slice(12, 16), 4, true, false),
     ],
   ]);
-  return $brand("lanes_read_through_a_byte_array_pointer#b976f3cd4cc4690d::U32x4", [x[0].slice()]);
+  return $brand("lanes_read_through_a_byte_array_pointer#865e1fdefebbf66d::U32x4", [x[0].slice()]);
 }
 
 function readBe(input) {
@@ -65,7 +65,7 @@ function readBe(input) {
     );
   }
   const value = $ptrRetyped($ptr(input, 0), 16, "bytes").value.slice();
-  const x = $brand("lanes_read_through_a_byte_array_pointer#b976f3cd4cc4690d::U32x4", [
+  const x = $brand("lanes_read_through_a_byte_array_pointer#865e1fdefebbf66d::U32x4", [
     [
       $fromBytes(value.slice(0, 4), 4, true, false),
       $fromBytes(value.slice(4, 8), 4, true, false),
@@ -73,7 +73,7 @@ function readBe(input) {
       $fromBytes(value.slice(12, 16), 4, true, false),
     ],
   ]);
-  return $brand("lanes_read_through_a_byte_array_pointer#b976f3cd4cc4690d::U32x4", [
+  return $brand("lanes_read_through_a_byte_array_pointer#865e1fdefebbf66d::U32x4", [
     x[0].slice().map((x) => $swapBytes(x, 32, false)),
   ]);
 }
@@ -123,10 +123,10 @@ function readWideLe(input) {
     );
   }
   const value = $ptrRetyped($ptr(input, 0), 16, "bytes").value.slice();
-  const x = $brand("lanes_read_through_a_byte_array_pointer#b976f3cd4cc4690d::U64x2", [
+  const x = $brand("lanes_read_through_a_byte_array_pointer#865e1fdefebbf66d::U64x2", [
     [$fromBytes(value.slice(0, 8), 8, true, false), $fromBytes(value.slice(8, 16), 8, true, false)],
   ]);
-  return $brand("lanes_read_through_a_byte_array_pointer#b976f3cd4cc4690d::U64x2", [x[0]]);
+  return $brand("lanes_read_through_a_byte_array_pointer#865e1fdefebbf66d::U64x2", [x[0]]);
 }
 
 function writeWideBe(x, out) {

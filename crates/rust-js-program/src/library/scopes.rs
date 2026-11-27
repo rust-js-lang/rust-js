@@ -49,6 +49,7 @@ pub enum ContractField {
     LibraryVersion,
     LibraryName,
     LibraryCrateId,
+    LibraryCrateIdentity,
     LibraryCrateHash,
     LibraryLibraries,
     LibraryInputs,
@@ -158,6 +159,11 @@ impl ContractField {
                 "Library.crate_id",
                 Local,
                 "rustc's identity of the crate, with its name the key it's known by",
+            ),
+            LibraryCrateIdentity => (
+                "Library.crate_identity",
+                Local,
+                "what identifies the crate wherever its files are, the key its types' brands name it by",
             ),
             LibraryCrateHash => (
                 "Library.crate_hash",
@@ -622,6 +628,7 @@ fields! {
     version => LibraryVersion,
     name => LibraryName,
     crate_id => LibraryCrateId,
+    crate_identity => LibraryCrateIdentity,
     crate_hash => LibraryCrateHash,
     items => LibraryItems,
     impls => LibraryImpls,

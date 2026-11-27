@@ -10,15 +10,15 @@ export function entry() {
 
 function main() {
   const last = $brand(
-    "sealed_constant_of_private_items_used_in_another_module#8b1eab1828ea0c04::date::NaiveDate",
+    "sealed_constant_of_private_items_used_in_another_module#cd7ad1a89e9f657f::date::NaiveDate",
     { yof: 49152 },
   );
   console.log(
-    `${Datetime.nextYear($brand("sealed_constant_of_private_items_used_in_another_module#8b1eab1828ea0c04::date::NaiveDate", { yof: 1 }))}`,
+    `${Datetime.nextYear($brand("sealed_constant_of_private_items_used_in_another_module#cd7ad1a89e9f657f::date::NaiveDate", { yof: 1 }))}`,
   );
   console.log(`${Datetime.nextYear(last)}`);
   console.log(
-    `${NaiveDate.yof($brand("sealed_constant_of_private_items_used_in_another_module#8b1eab1828ea0c04::date::NaiveDate", { yof: 1 }))}`,
+    `${NaiveDate.yof($brand("sealed_constant_of_private_items_used_in_another_module#cd7ad1a89e9f657f::date::NaiveDate", { yof: 1 }))}`,
   );
 }
 //# sourceMappingURL=case.js.map

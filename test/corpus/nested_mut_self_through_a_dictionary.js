@@ -355,10 +355,10 @@ $main(main);
 
 function main() {
   const u32Debug = { fmt: (value) => String(value) };
-  const a = $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", { n: 1 });
-  const b = $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", { n: 2 });
+  const a = $brand("nested_mut_self_through_a_dictionary#2494412766a2ac21::Clicks", { n: 1 });
+  const b = $brand("nested_mut_self_through_a_dictionary#2494412766a2ac21::Clicks", { n: 2 });
   console.log(
-    `${go($cellOf(a), $cellOf(b), clicksPick, { clone: (value) => $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", { ...value }) }, clicksDebug)}`,
+    `${go($cellOf(a), $cellOf(b), clicksPick, { clone: (value) => $brand("nested_mut_self_through_a_dictionary#2494412766a2ac21::Clicks", { ...value }) }, clicksDebug)}`,
   );
   console.log(`${clicksDebug_fmt(a)} ${clicksDebug_fmt(b)}`);
   let x = 5;
@@ -370,8 +370,8 @@ function main() {
   y = q.value;
   console.log(`${value}`);
   console.log(`${x} ${y}`);
-  let h = { t: $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", { n: 3 }) };
-  let k = { t: $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", { n: 4 }) };
+  let h = { t: $brand("nested_mut_self_through_a_dictionary#2494412766a2ac21::Clicks", { n: 3 }) };
+  let k = { t: $brand("nested_mut_self_through_a_dictionary#2494412766a2ac21::Clicks", { n: 4 }) };
   console.log(
     `${go(
       $cellOf(h),
@@ -380,7 +380,7 @@ function main() {
       {
         clone: (value) => ({
           ...value,
-          t: $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", {
+          t: $brand("nested_mut_self_through_a_dictionary#2494412766a2ac21::Clicks", {
             ...value.t,
           }),
         }),
@@ -395,8 +395,8 @@ function main() {
     `${go($cellOf(h), $cellOf(k), holderPick(u32Pick), { clone: (value) => ({ ...value }) }, holderDebug(u32Debug))}`,
   );
   console.log(`${holderDebug_fmt(h, u32Debug)} ${holderDebug_fmt(k, u32Debug)}`);
-  const c = $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", { n: 1 });
-  const d = $brand("nested_mut_self_through_a_dictionary#93c067006177c704::Clicks", { n: 0 });
+  const c = $brand("nested_mut_self_through_a_dictionary#2494412766a2ac21::Clicks", { n: 1 });
+  const d = $brand("nested_mut_self_through_a_dictionary#2494412766a2ac21::Clicks", { n: 0 });
   console.log(
     `${picked($cellOf(c), $cellOf(d), clicksPick)} ${bothOf(c, $cellOf(d), clicksPick)} ${firstOf$($cellOf(c), $cellOf(d), false, clicksPick)} ${clicksDebug_fmt(c)} ${clicksDebug_fmt(d)}`,
   );

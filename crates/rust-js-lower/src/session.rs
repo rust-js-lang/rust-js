@@ -16,7 +16,7 @@ use std::rc::Rc;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 
-use rust_js_program::collections::{IndexSet, OnceMap};
+use rust_js_program::collections::{IndexMap, IndexSet, OnceMap};
 
 use crate::mir_hooks::MirHooks;
 
@@ -112,6 +112,10 @@ pub struct Caches {
     /// The shadows the session records, `--shadow`'s, where it records
     /// any (`shadows.rs`).
     pub shadows: Option<shadows::Shadows>,
+    /// What tells the crate's package from every other, `Flags::package`.
+    pub package: Vec<String>,
+    /// Each library's identity by its key, `Flags::library_identities`.
+    pub library_identities: IndexMap<String, String>,
     /// Of the `cell-form` shadow, each `RefCell` field of the crate's
     /// structs some body uses whole, and how, found once (`cell_form.rs`).
     pub(crate) cell_form_wholes: OnceCell<rust_js_program::collections::IndexMap<DefId, super::analysis::Whole>>,
@@ -241,6 +245,13 @@ pub struct Flags {
     pub records_recognized: bool,
     /// The shadows recorded, `--shadow`'s kinds.
     pub shadows: Vec<ShadowKind>,
+    /// What tells the crate's package from every other wherever its files
+    /// are, as the driver reads it, which its identity hashes
+    /// (`recognition::crate_identity`, ADR 1196 amended).
+    pub package: Vec<String>,
+    /// Each library's identity, `Library::crate_identity`, by its key
+    /// (`Library::key`), as its manifest says.
+    pub library_identities: IndexMap<String, String>,
 }
 
 /// Holds a session's caches in place; dropped, it takes them away, as the
@@ -298,6 +309,8 @@ fn start_keyed(gcx: usize, flags: Flags, hooks: &'static dyn MirHooks) -> Sessio
             js_reads: flags.js_reads,
             intervals_by_effects: flags.intervals_by_effects,
             shadows: shadows::Shadows::of(&flags.shadows),
+            package: flags.package,
+            library_identities: flags.library_identities,
             cell_form_wholes: OnceCell::new(),
             cell_form_types: OnceCell::new(),
             cell_forms: OnceCell::new(),

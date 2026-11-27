@@ -31,7 +31,7 @@ export function f(b) {
 }
 
 function f$(b) {
-  const d = $brand("let_chain_temporary_drop#4a776e8a1f27d820::D", [1]);
+  const d = $brand("let_chain_temporary_drop#6a2e8ba56561da18::D", [1]);
   let tmp;
   try {
     tmp = D.n$(d) === 1;
@@ -56,7 +56,7 @@ function f$(b) {
 $main(main);
 
 function checkD(value) {
-  $checkBrand(value, undefined, undefined, "let_chain_temporary_drop#4a776e8a1f27d820::D", "a D");
+  $checkBrand(value, undefined, undefined, "let_chain_temporary_drop#6a2e8ba56561da18::D", "a D");
   $checkTuple(value, undefined, undefined, [$checkU32]);
 }
 

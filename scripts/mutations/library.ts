@@ -110,4 +110,20 @@ export const mutations: Mutation[] = [
     replace: "    #[serde(default)]\n    pub drops_any: bool,\n",
     unitTests: "library::tests::a_contract_without_drops_any_may_drop",
   },
+  {
+    name: "identity-blind-to-programs",
+    breaks: "a program and a library of one package and name are one identity, so a type of the program's and one of the library's of one path share a brand (ADR 1196, amended)",
+    file: "crates/rust-js-program/src/library.rs",
+    find: '    let kind = if executable { "bin" } else { "lib" };\n',
+    replace: '    let kind = if executable { "lib" } else { "lib" };\n',
+    unitTests: "library::tests::identities_tell_apart_what_rust_does",
+  },
+  {
+    name: "identity-parts-joined",
+    breaks: "a crate's identity hashes its parts' bytes alone, so two packages whose parts join to one text, `ab`+`c` and `a`+`bc`, are one identity (ADR 1196, amended)",
+    file: "crates/rust-js-program/src/library.rs",
+    find: "        write(&(part.len() as u64).to_le_bytes());\n",
+    replace: "",
+    unitTests: "library::tests::identities_tell_apart_what_rust_does",
+  },
 ];

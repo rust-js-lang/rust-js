@@ -27,14 +27,14 @@ export const wrapMake = {
     }),
 };
 function wrapMake_make(wrap, AIntoIterator) {
-  return $brand("into_iter_held_by_a_sibling#3dc3829eee5c6c61::Pair", {
+  return $brand("into_iter_held_by_a_sibling#8eb00df4295fdb78::Pair", {
     t: AIntoIterator.intoIter(wrap[0]),
   });
 }
 
 export const Wrap = {
   pair(wrap, AIntoIterator) {
-    return $brand("into_iter_held_by_a_sibling#3dc3829eee5c6c61::Pair", {
+    return $brand("into_iter_held_by_a_sibling#8eb00df4295fdb78::Pair", {
       t: AIntoIterator.intoIter(wrap[0]),
     });
   },
@@ -58,7 +58,7 @@ function checkWrap(value, A) {
     value,
     undefined,
     undefined,
-    "into_iter_held_by_a_sibling#3dc3829eee5c6c61::Wrap",
+    "into_iter_held_by_a_sibling#8eb00df4295fdb78::Wrap",
     "a Wrap",
   );
   $checkTuple(value, undefined, undefined, [A]);
@@ -71,17 +71,17 @@ function main() {
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next }),
   };
-  const p = go($brand("into_iter_held_by_a_sibling#3dc3829eee5c6c61::Wrap", [[1, 2, 3]]), wrapMake);
+  const p = go($brand("into_iter_held_by_a_sibling#8eb00df4295fdb78::Wrap", [[1, 2, 3]]), wrapMake);
   console.log(`[${Array.from(p.t).join(", ")}]`);
   const q = Wrap.pair(
-    $brand("into_iter_held_by_a_sibling#3dc3829eee5c6c61::Wrap", [[4, 5]]),
+    $brand("into_iter_held_by_a_sibling#8eb00df4295fdb78::Wrap", [[4, 5]]),
     vecIntoIterator,
   );
   console.log(`[${Array.from(q.t).join(", ")}]`);
-  const value = Wrap.first($brand("into_iter_held_by_a_sibling#3dc3829eee5c6c61::Wrap", [[6]]));
+  const value = Wrap.first($brand("into_iter_held_by_a_sibling#8eb00df4295fdb78::Wrap", [[6]]));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const r = wrapMake_make(
-    $brand("into_iter_held_by_a_sibling#3dc3829eee5c6c61::Wrap", [[7, 8]]),
+    $brand("into_iter_held_by_a_sibling#8eb00df4295fdb78::Wrap", [[7, 8]]),
     vecIntoIterator,
   );
   console.log(`[${Array.from(r.t).join(", ")}]`);

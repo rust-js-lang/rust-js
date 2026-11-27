@@ -25,7 +25,7 @@ import {
 } from "@rust-js/std";
 
 export function putBack(iterable, IIntoIterator) {
-  return $brand("into_iter_of_a_bound#688a057279c53ef0::PutBack", {
+  return $brand("into_iter_of_a_bound#4c3fae70c8c7c201::PutBack", {
     iter: IIntoIterator.intoIter(iterable),
   });
 }
@@ -65,7 +65,7 @@ export function rest(j) {
 }
 
 function pairFrom_from([a, b], AIntoIterator, BIntoIterator) {
-  return $brand("into_iter_of_a_bound#688a057279c53ef0::Pair", {
+  return $brand("into_iter_of_a_bound#4c3fae70c8c7c201::Pair", {
     t: [AIntoIterator.intoIter(a), BIntoIterator.intoIter(b)],
   });
 }
@@ -90,7 +90,7 @@ function checkPutBack(value, I) {
     value,
     undefined,
     undefined,
-    "into_iter_of_a_bound#688a057279c53ef0::PutBack",
+    "into_iter_of_a_bound#4c3fae70c8c7c201::PutBack",
     "a PutBack",
   );
   $checkObject(value);

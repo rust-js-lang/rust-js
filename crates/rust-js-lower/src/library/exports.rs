@@ -230,6 +230,7 @@ pub fn exports<'tcx>(
         version: VERSION,
         name: crate_name.to_string(),
         crate_id: crate_id(tcx, LOCAL_CRATE),
+        crate_identity: crate::recognition::crate_identity(tcx, LOCAL_CRATE),
         crate_hash: tcx.crate_hash(LOCAL_CRATE).to_string(),
         items,
         impls,

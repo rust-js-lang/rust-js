@@ -8,7 +8,7 @@ import { $brand, $checkShape, $checks, $debugStr, $main, $next, $print } from "@
 
 const checkL = /* @__PURE__ */ $checkShape(
   () => ({}),
-  "field_iterator_next#2316da77db61cbae::L",
+  "field_iterator_next#b8b14c3add559773::L",
   "a L",
 );
 
@@ -24,7 +24,7 @@ $main(main);
 
 function main() {
   const s = "héllo";
-  const l = $brand("field_iterator_next#2316da77db61cbae::L", { c: s[Symbol.iterator]() });
+  const l = $brand("field_iterator_next#b8b14c3add559773::L", { c: s[Symbol.iterator]() });
   for (let i = 0; i < 7; i++) {
     const value = f$(l);
     $print(`${value == null ? "None" : `Some(${$debugStr(value, "'")})`} `);

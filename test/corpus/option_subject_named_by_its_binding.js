@@ -50,7 +50,7 @@ function main() {
   const value = finished(shared, 4);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = finished(
-    $brand("option_subject_named_by_its_binding#4622560463aa0f80::Shared", {}),
+    $brand("option_subject_named_by_its_binding#a23ca67616522c7d::Shared", {}),
     4,
   );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);

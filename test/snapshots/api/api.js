@@ -420,7 +420,7 @@ function evenDebug_fmt(even) {
 function evenTryFromU32_tryFrom(n) {
   return n % 2 === 0
     ? { TAG: "Ok", _0: [n] }
-    : { TAG: "Err", _0: $brand("api#44dc1ba191c635af::OddError", [n]) };
+    : { TAG: "Err", _0: $brand("api#b968627adec18014::OddError", [n]) };
 }
 
 function contactDeserialize_deserialize(json) {

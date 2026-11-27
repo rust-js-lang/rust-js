@@ -98,7 +98,7 @@ function clicksTouch_touchSome(clicks, other) {
   }
 }
 function clicksTouch_fresh() {
-  return $brand("copied_default_through_its_entry#2bf066313c1df9d7::Clicks", { n: 99 });
+  return $brand("copied_default_through_its_entry#d5376e265ffe8099::Clicks", { n: 99 });
 }
 function clicksTouch_lastOf(items) {
   return $unwrap(items.at(-1), "test/corpus/copied_default_through_its_entry.rs:87:26");
@@ -296,7 +296,7 @@ function holderTouch_touchSome(holder, other, TTouch) {
   }
 }
 function holderTouch_fresh(TTouch) {
-  return $brand("copied_default_through_its_entry#2bf066313c1df9d7::Holder", { t: TTouch.fresh() });
+  return $brand("copied_default_through_its_entry#d5376e265ffe8099::Holder", { t: TTouch.fresh() });
 }
 function holderTouch_lastOf(items, TTouch) {
   return $unwrap(items.at(-1), "test/corpus/copied_default_through_its_entry.rs:143:26");

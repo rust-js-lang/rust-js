@@ -4,7 +4,7 @@ import { $brand, $checkShape, $checks, $debugStr, $next, $print } from "@rust-js
 
 const checkL = /* @__PURE__ */ $checkShape(
   () => ({}),
-  "field_iterator_next#36b810d693fe84db::L",
+  "field_iterator_next#39bb54ddac85bcd9::L",
   "a L",
 );
 
@@ -22,7 +22,7 @@ function f$(l) {
 }
 function main() {
   const s = "héllo";
-  const l = $brand("field_iterator_next#36b810d693fe84db::L", { c: s[Symbol.iterator]() });
+  const l = $brand("field_iterator_next#39bb54ddac85bcd9::L", { c: s[Symbol.iterator]() });
   for (let i = 0; i < 7; i++) {
     const value = f$(l);
     $print(`${value == null ? "None" : `Some(${$debugStr(value, "'")})`} `);

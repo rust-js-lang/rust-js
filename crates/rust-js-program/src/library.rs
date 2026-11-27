@@ -139,7 +139,11 @@ pub use dependencies::Dependencies;
 /// past the checks its entry makes of what JS gives it, which a consumer's
 /// direct call calls (#2403 step 2b(a), ADR 1193): an older library,
 /// listing none, would have its consumers pay its checks.
-pub const VERSION: u32 = 49;
+/// 50: `crate_identity`, what a brand's key names its crate by, of no path
+/// (#2403, ADR 1196 amended): an older library's keys were of
+/// `crate_id`, which Cargo's `-C metadata` makes of where a path
+/// dependency is.
+pub const VERSION: u32 = 50;
 
 /// What begins the name a library's JS exports its private state by, for
 /// its consumers' compiles of its functions, `$$LIMIT` of `LIMIT` (#2017,
@@ -480,6 +484,10 @@ pub struct Library {
     /// manifest has none, and is refused by its `version`.
     #[serde(default)]
     pub crate_id: String,
+    /// What identifies its crate wherever its files are, `crate_identity`'s:
+    /// the key a brand of its types names it by, the same of every
+    /// directory it's built in (ADR 1196, amended).
+    pub crate_identity: String,
     /// rustc's hash of the crate its JS was made from, which a consumer
     /// checks against the metadata its rustc loads (ADR 0100).
     pub crate_hash: String,
@@ -787,6 +795,30 @@ pub fn key(name: &str, crate_id: &str) -> String {
     format!("{name}-{crate_id}")
 }
 
+/// What identifies a crate wherever its files are, `sealed#3f0e..`: its
+/// name and a hash of its `package`, what tells it from every other crate a
+/// program may hold, and whether it's a program, whose crate a library of
+/// its package and name is another of (ADR 1196, amended). Never of a
+/// path: rustc's `StableCrateId` is of Cargo's `-C metadata`, which hashes
+/// where a path dependency is, so a crate built in two directories had two,
+/// and its brands' keys two (#2403). The hash is FNV-1a's, of each part's
+/// length and bytes, so no two lists of parts hash as one by their joins.
+pub fn crate_identity(name: &str, executable: bool, package: &[String]) -> String {
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    let mut write = |bytes: &[u8]| {
+        for byte in bytes {
+            hash ^= u64::from(*byte);
+            hash = hash.wrapping_mul(0x0100_0000_01b3);
+        }
+    };
+    let kind = if executable { "bin" } else { "lib" };
+    for part in [name, kind].into_iter().chain(package.iter().map(String::as_str)) {
+        write(&(part.len() as u64).to_le_bytes());
+        write(part.as_bytes());
+    }
+    format!("{name}#{hash:016x}")
+}
+
 /// A type a library's module declares and exports, by rustc's key for it,
 /// and its name there (ADR 0210, amended).
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -969,6 +1001,9 @@ pub struct HeldImport {
 pub struct Exports {
     /// Its crate's name, which what's said of it names.
     pub name: String,
+    /// What identifies its crate wherever its files are
+    /// (`Library::crate_identity`).
+    pub crate_identity: String,
     pub crate_hash: String,
     /// Built into the compiler, `@rust-js/std`'s (ADR 0561):
     /// its bodies are the toolchain's std's, which the compiler links, so
@@ -1121,6 +1156,7 @@ impl Exports {
             libraries: _,
             inputs: _,
             name,
+            crate_identity,
             crate_hash,
             items,
             impls,
@@ -1175,6 +1211,7 @@ impl Exports {
         let exports = Exports {
             bound,
             name: builtin.map_or(name, str::to_string),
+            crate_identity,
             crate_hash,
             builtin: builtin.is_some(),
             keeps_capacity,
@@ -1283,5 +1320,27 @@ mod tests {
         library.remove("drops_any");
         let library: Library = serde_json::from_value(manifest["library"].take()).expect("a contract");
         assert!(library.drops_any);
+    }
+
+    /// A crate's identity tells apart what Rust does: a program and a
+    /// library of one package and name, and two packages whose parts join
+    /// to one text (ADR 1196, amended).
+    #[test]
+    fn identities_tell_apart_what_rust_does() {
+        let parts = |given: &[&str]| -> Vec<String> { given.iter().map(|part| part.to_string()).collect() };
+        let package = parts(&["cargo", "app", "0.1.0", "path"]);
+        assert_eq!(
+            crate_identity("app", false, &package),
+            crate_identity("app", false, &package)
+        );
+        assert!(crate_identity("app", false, &package).starts_with("app#"));
+        assert_ne!(
+            crate_identity("app", false, &package),
+            crate_identity("app", true, &package)
+        );
+        assert_ne!(
+            crate_identity("app", false, &parts(&["cargo", "ab", "c"])),
+            crate_identity("app", false, &parts(&["cargo", "a", "bc"]))
+        );
     }
 }

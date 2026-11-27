@@ -82,9 +82,71 @@ pub(super) fn std_path(tcx: TyCtxt<'_>, id: DefId) -> &'static str {
     caches.std_paths.keep(id, Box::leak(path.into_boxed_str()))
 }
 
-/// Which crate `krate` is, one name for each build of it: its name and its
-/// disambiguator, `app#7e6d147c3a102184`, which tells two versions of one
-/// crate apart, as Rust does (a brand's key, ADR 1196).
+/// Which crate `krate` is, one name for each build of it wherever its files
+/// are: its name and a hash of what tells its package apart,
+/// `app#7e6d147c3a102184`, so two versions of one crate are two, as Rust
+/// has them, and a build in another directory gives the same (a brand's
+/// key, ADR 1196, amended). The crate's own, of the package the driver
+/// read (`Flags::package`); a library's, as its manifest says
+/// (`Library::crate_identity`), which its own compile wrote of its
+/// package, never rustc's `StableCrateId`, of Cargo's `-C metadata`, which
+/// hashes where a path dependency is (#2403). A crate rust-js didn't
+/// compile, one rustc alone built whose generic code its consumers compile
+/// (indexmap's, serde's), writes none: its `StableCrateId`, which Cargo
+/// makes of no path of a registry's crate, the only crates rust-js leaves
+/// to rustc.
 pub(crate) fn crate_identity(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> String {
-    format!("{}#{:016x}", tcx.crate_name(krate), tcx.stable_crate_id(krate).as_u64())
+    let caches = crate::session::caches(tcx);
+    if krate == rustc_span::def_id::LOCAL_CRATE {
+        return rust_js_program::library::crate_identity(
+            tcx.crate_name(krate).as_str(),
+            tcx.crate_types().contains(&rustc_structures::CrateType::Executable),
+            &caches.package,
+        );
+    }
+    match caches.library_identities.get(&crate::library::library_key(tcx, krate)) {
+        Some(identity) => identity.clone(),
+        None => format!("{}#{:016x}", tcx.crate_name(krate), tcx.stable_crate_id(krate).as_u64()),
+    }
+}
+
+/// A crate whose program would hold two crates of one identity refused,
+/// naming both: their types' brands would be one, so one's value would
+/// pass for the other's (ADR 1196, amended). Cargo gives no two crates a
+/// build may hold one, nor rustc two of one `-C metadata`; two copies of
+/// one package of two vendored sources would. Whether it refused.
+pub fn refuse_shared_identities(tcx: TyCtxt<'_>) -> bool {
+    let named = |krate: CrateNum| match krate == rustc_span::def_id::LOCAL_CRATE {
+        true => format!("`{}`, this crate", tcx.crate_name(krate)),
+        false => {
+            let source = tcx.used_crate_source(krate);
+            let path = (source.rlib.as_ref().or(source.rmeta.as_ref())).map(|path| path.display().to_string());
+            format!("`{}` ({})", tcx.crate_name(krate), path.unwrap_or_default())
+        }
+    };
+    let mut seen: crate::IndexMap<String, CrateNum> = crate::IndexMap::default();
+    let mut refused = false;
+    let crates = std::iter::once(rustc_span::def_id::LOCAL_CRATE).chain(tcx.crates(()).iter().copied());
+    for krate in crates.filter(|&krate| std_crate(tcx, krate).is_none()) {
+        let identity = crate_identity(tcx, krate);
+        match seen.get(&identity) {
+            Some(&first) => {
+                let what = format!(
+                    "a program of two crates of one identity, `{identity}`, {} and {}, whose types' brands would be one \
+                     (ADR 1196)",
+                    named(first),
+                    named(krate)
+                );
+                let help = "depend on one of them, or give one another version, or another `-C metadata` where rustc \
+                            builds it alone";
+                let span = tcx.def_span(rustc_span::def_id::CRATE_DEF_ID);
+                crate::refusal::refuse(tcx, span, crate::refusal::Refused::Instead(&what, help));
+                refused = true;
+            }
+            None => {
+                seen.insert(identity, krate);
+            }
+        }
+    }
+    refused
 }

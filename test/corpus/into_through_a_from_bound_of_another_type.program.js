@@ -11,13 +11,13 @@ function storageDebug_fmt(storage) {
 }
 
 function storageFromLanes_from(x) {
-  return $brand("into_through_a_from_bound_of_another_type#d7998a620884a785::Storage", [
+  return $brand("into_through_a_from_bound_of_another_type#38bfc480989f3aa9::Storage", [
     [x[0][3], x[0][2], x[0][1], x[0][0]],
   ]);
 }
 
 function storageFromU32_from(x) {
-  return $brand("into_through_a_from_bound_of_another_type#d7998a620884a785::Storage", [
+  return $brand("into_through_a_from_bound_of_another_type#38bfc480989f3aa9::Storage", [
     new Array(4).fill(x),
   ]);
 }
@@ -27,7 +27,7 @@ function wideDebug_fmt(wide) {
 }
 
 function wideFromX2_from(x, WCopy, StorageFromW) {
-  return $brand("into_through_a_from_bound_of_another_type#d7998a620884a785::Wide", [
+  return $brand("into_through_a_from_bound_of_another_type#38bfc480989f3aa9::Wide", [
     [
       StorageFromW.from(WCopy ? WCopy.copy(x[0][0]) : x[0][0]),
       StorageFromW.from(WCopy ? WCopy.copy(x[0][1]) : x[0][1]),

@@ -25,7 +25,7 @@ function wrapIterator_next(wrap, IIterator) {
 }
 
 function refWrapIntoIterator_intoIter(wrap, IClone) {
-  return $brand("associated_iterator_steps#2c0eeb4c5b876983::Wrap", {
+  return $brand("associated_iterator_steps#e81d3228bd7b88d1::Wrap", {
     ...wrap,
     inner: IClone.clone(wrap.inner),
   });
@@ -41,7 +41,7 @@ export function markerFusedI(IIterator, IClone, IFused) {
 }
 
 function wrapFromI_from(inner, IIterator, IClone, IFused) {
-  return $brand("associated_iterator_steps#2c0eeb4c5b876983::Wrap", {
+  return $brand("associated_iterator_steps#e81d3228bd7b88d1::Wrap", {
     inner: iterator_fuse(inner, IIterator, IFused),
   });
 }
@@ -51,7 +51,7 @@ export function make(inner, MFusedI) {
 }
 
 export function wrap(inner) {
-  return $brand("associated_iterator_steps#2c0eeb4c5b876983::Wrap", { inner });
+  return $brand("associated_iterator_steps#e81d3228bd7b88d1::Wrap", { inner });
 }
 
 $main(main);

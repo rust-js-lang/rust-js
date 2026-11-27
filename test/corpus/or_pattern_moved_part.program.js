@@ -12,7 +12,7 @@ import {
 } from "@rust-js/std";
 
 function checkD(value) {
-  $checkBrand(value, undefined, undefined, "or_pattern_moved_part#5ebbed681d6eb574::D", "a D");
+  $checkBrand(value, undefined, undefined, "or_pattern_moved_part#8404e0e0c04021c6::D", "a D");
   $checkTuple(value, undefined, undefined, [$checkU32]);
 }
 
@@ -56,8 +56,8 @@ function f$(p) {
 }
 function main() {
   let r = f$([
-    $brand("or_pattern_moved_part#5ebbed681d6eb574::D", [1]),
-    $brand("or_pattern_moved_part#5ebbed681d6eb574::D", [2]),
+    $brand("or_pattern_moved_part#8404e0e0c04021c6::D", [1]),
+    $brand("or_pattern_moved_part#8404e0e0c04021c6::D", [2]),
   ]);
   try {
     const value = r?.[0];
@@ -71,7 +71,7 @@ function main() {
       }
     }
   }
-  r = f$([undefined, $brand("or_pattern_moved_part#5ebbed681d6eb574::D", [3])]);
+  r = f$([undefined, $brand("or_pattern_moved_part#8404e0e0c04021c6::D", [3])]);
   try {
     const value = r?.[0];
     console.log(`got ${value == null ? "None" : `Some(${value})`}`);

@@ -334,6 +334,35 @@ test("two versions of one crate are two types, each its own brand", () => {
   expect(keys[0]).not.toBe(keys[1]);
 });
 
+// Two crates a program would hold of one identity, as two vendored copies
+// of one package would be (Cargo gives no two others one, nor rustc two of
+// one `-C metadata`), here one library's manifest saying the other's:
+// refused, naming both, as their types' brands would be one, and one's
+// value pass for the other's (ADR 1196, amended).
+test("a program of two crates of one identity is refused, naming both", () => {
+  const dir = fixture("boundary-brands-one-identity");
+  writeFileSync(join(dir, "lib.rs"), library);
+  const built = ["one", "two"].map((copy) => {
+    const manifest = join(dir, copy, "lib.manifest.json");
+    const rmeta = join(dir, copy, "libsealed_lib.rmeta");
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, copy, "lib.js"), "--library", "--manifest", manifest,
+      "--", "--crate-type=lib", "--crate-name=sealed_lib", `-Cmetadata=${copy}`, `--emit=metadata=${rmeta}`, "--edition=2024"]);
+    return { manifest, rmeta };
+  });
+  const identity = (manifest: string) => JSON.parse(readFileSync(manifest, "utf8")).library.crate_identity as string;
+  const first = identity(built[0].manifest);
+  expect(first).not.toBe(identity(built[1].manifest));
+  const said = JSON.parse(readFileSync(built[1].manifest, "utf8"));
+  said.library.crate_identity = first;
+  writeFileSync(built[1].manifest, JSON.stringify(said, null, 2));
+  writeFileSync(join(dir, "app.rs"), "pub fn both(a: &one::Email, b: &two::Email) -> String {\n    one::domain(a) + &two::domain(b)\n}\n\nfn main() {}\n");
+  const app = compileJs(join(dir, "app.rs"), dir, "2024", "binary", {}, ["--dependency", built[0].manifest, "--dependency", built[1].manifest],
+    ["--extern", `one=${built[0].rmeta}`, "--extern", `two=${built[1].rmeta}`, "-L", dir]);
+  if (!("error" in app)) throw new Error("compiled");
+  expect(app.error).toContain(`a program of two crates of one identity, \`${first}\`, \`sealed_lib\` (${built[0].rmeta}) and \`sealed_lib\` (${built[1].rmeta})`);
+  expect(app.error).toContain("help: depend on one of them, or give one another version");
+});
+
 test("one serde reads is branded as Rust made it", async () => {
   buildSerde("rlib");
   const dir = fixture("boundary-brands-serde");

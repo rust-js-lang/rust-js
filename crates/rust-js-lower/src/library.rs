@@ -99,7 +99,7 @@ pub(super) fn shown_marks(
 /// (ADR 1054); any other's its crate's name and identity
 /// (`Library::key`), never its name alone, which std's own `cfg_if` and
 /// crates.io's share (#1130).
-fn library_key(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> String {
+pub(crate) fn library_key(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> String {
     match super::recognition::std_crate(tcx, krate) {
         Some(_) => rust_js_program::runtime::PACKAGE.to_string(),
         None => rust_js_program::library::key(tcx.crate_name(krate).as_str(), &crate_id(tcx, krate)),

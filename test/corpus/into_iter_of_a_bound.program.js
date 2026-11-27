@@ -21,7 +21,7 @@ export function entry() {
 }
 
 export function putBack(iterable, IIntoIterator) {
-  return $brand("into_iter_of_a_bound#dbfca2a1ed6b9a33::PutBack", {
+  return $brand("into_iter_of_a_bound#d63cd11706ea6813::PutBack", {
     iter: IIntoIterator.intoIter(iterable),
   });
 }
@@ -61,7 +61,7 @@ export function rest(j) {
 }
 
 function pairFrom_from([a, b], AIntoIterator, BIntoIterator) {
-  return $brand("into_iter_of_a_bound#dbfca2a1ed6b9a33::Pair", {
+  return $brand("into_iter_of_a_bound#d63cd11706ea6813::Pair", {
     t: [AIntoIterator.intoIter(a), BIntoIterator.intoIter(b)],
   });
 }
@@ -86,7 +86,7 @@ function checkPutBack(value, I) {
     value,
     undefined,
     undefined,
-    "into_iter_of_a_bound#dbfca2a1ed6b9a33::PutBack",
+    "into_iter_of_a_bound#d63cd11706ea6813::PutBack",
     "a PutBack",
   );
   $checkObject(value);

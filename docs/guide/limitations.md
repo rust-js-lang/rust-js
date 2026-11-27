@@ -172,6 +172,7 @@ depends on what the program does:
 
 - A function JS may call only through a deep import of a crate's module, `import { f } from "lib/src/inner.js"`, that no hand-written JS of the program or its workspace imports, and that the crate's root doesn't give JS: its parameters aren't checked, as JS a library is never compiled against reaches into any package's internals. What JS may call through the root, its own items and its `pub use`s, and each module a hand-written JS file imports is checked ([ADR 1192](../decisions/1192-a-value-js-gives-is-checked-shallow-first.md), amended, #2403).
 - A parameter of a struct no other crate can make, one of whose fields or type arguments has no check of its own, a unit struct's (`Pred<Eq>` of `pub struct Eq;`) or a `PhantomData<T>`'s: it isn't checked, nor its brand, so JS's own value of its shape reaches the body (#2605). One of `()`, a number or a struct with a check of its own is checked by its brand and its fields ([ADR 1196](../decisions/1196-a-type-no-other-crate-can-make-is-branded-where-rust-makes-it.md)).
+- A program of two crates of one identity, their names, versions and sources the same, as two vendored copies of one package would be: refused, naming both, as their types' brands would be one and one's value would pass for the other's. Depend on one of them, or give one another version ([ADR 1196](../decisions/1196-a-type-no-other-crate-can-make-is-branded-where-rust-makes-it.md), amended).
 
 ## Iterators and collections
 

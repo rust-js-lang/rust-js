@@ -45,7 +45,7 @@ function main() {
   const value = finished(shared, 4);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = finished(
-    $brand("option_subject_named_by_its_binding#c7bd73d3aa6006de::Shared", {}),
+    $brand("option_subject_named_by_its_binding#e576cf72b0c7f19f::Shared", {}),
     4,
   );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);

@@ -11,7 +11,7 @@ function codeDebug_fmt(code) {
 }
 
 const UNSUPPORTED = $brand(
-  "associated_const_of_a_later_const#85445b642112cca2::Code",
+  "associated_const_of_a_later_const#56696fa9e73e3619::Code",
   [2147483652],
 );
 
@@ -33,7 +33,7 @@ function checkCode(value) {
     value,
     undefined,
     undefined,
-    "associated_const_of_a_later_const#85445b642112cca2::Code",
+    "associated_const_of_a_later_const#56696fa9e73e3619::Code",
     "a Code",
   );
   $checkTuple(value, undefined, undefined, [$checkU32]);
@@ -41,13 +41,13 @@ function checkCode(value) {
 
 function main() {
   const raw = Code.raw$(
-    $brand("associated_const_of_a_later_const#85445b642112cca2::Code", [2147483652]),
+    $brand("associated_const_of_a_later_const#56696fa9e73e3619::Code", [2147483652]),
   );
   console.log(
-    `${codeDebug_fmt($brand("associated_const_of_a_later_const#85445b642112cca2::Code", [2147483652]))} ${raw}`,
+    `${codeDebug_fmt($brand("associated_const_of_a_later_const#56696fa9e73e3619::Code", [2147483652]))} ${raw}`,
   );
   console.log(
-    `${$eq(UNSUPPORTED, $brand("associated_const_of_a_later_const#85445b642112cca2::Code", [2147483652]))}`,
+    `${$eq(UNSUPPORTED, $brand("associated_const_of_a_later_const#56696fa9e73e3619::Code", [2147483652]))}`,
   );
 }
 //# sourceMappingURL=case.js.map

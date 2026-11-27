@@ -134,3 +134,73 @@ elides, is of a value that never leaves Rust and so is never branded (`unreached
 mark stays, one form with a constant's, which `aggregates::const_object` reads; the mutation of an
 object literal's mark is now its brand left off, `object-literal-unbranded`, which the guard test's
 literal catches.
+
+## Amendment: a brand's key names its crate wherever its files are (#2403, Tu's decision, 2026-11-27)
+
+A brand's key was its crate's name and rustc's `StableCrateId`, which
+rustc makes of Cargo's `-C metadata`, and Cargo hashes a path dependency
+outside the workspace by its directory. React's port's bindings are
+`../rust-js`, beside wherever the port is checked out, so the same
+compiler and the same port commit, built in two directories, branded each
+type by two keys (`scheduler#15eac83c8fb08eb1::Task` and
+`scheduler#a55a7b5f862097d6::Task`): a pinned port would have differed in
+every other checkout, CI's nightly too. **Pins and snapshots made before
+this amendment may carry machine-specific crate hashes**; the port's pin
+of #2403 is made after it.
+
+**A crate's identity is its name and a hash of what tells its package
+from every other a program may hold, of no path**
+(`rust_js_program::library::crate_identity`, FNV-1a of each part's length
+and bytes, so no two lists of parts hash as one): whether it's a program
+or a library, as rustc's own tells a binary from a library of one name;
+and, of Cargo's build, its package's name, version and source
+(`cargo::package`): a registry's index directory, a git checkout's
+repository, commit and directory in it, as Cargo's home lays them out,
+`vendored` of a directory source, or `path`, as Cargo refuses two path
+packages of one name and version in a build. Of a compile outside
+Cargo's, rustc's `-C metadata` values, sorted, which tell two crates of
+one name apart there as Cargo's don't. A crate writes its identity in its
+library's contract, `Library::crate_identity` (library ABI 50), and a
+consumer reads a library's there (`recognition::crate_identity`), never
+making its own. A crate rust-js didn't compile, one rustc alone built whose
+generic code its consumers compile (indexmap's, serde's, the crates
+`cargo.rs`' `READ_AS_RUSTC_BUILDS_THEM` names), writes no contract: it's
+identified by rustc's `StableCrateId`, which Cargo makes of no path of a
+registry's crate, as those are; one patched to a path outside the
+workspace would carry its directory (#2616). The crate corpus's indexmap
+row holds it, and its probe: its `IndexMap`, branded where the probe
+makes one, crashed the compile when only a contract named an identity
+(test/bound-maps.test.ts' "indexmap's maps run as std's", mutation
+`rustc-alone-crate-unidentified`).
+
+**As unique as rustc's: two crates a program would hold of one identity
+are refused**, naming both, with what to write (depend on one, or give
+one another version, or another `-C metadata`)
+(`recognition::refuse_shared_identities`): their types' brands would be
+one, and one's value would pass for the other's. Cargo gives no two
+crates of a build one, nor rustc two of one `-C metadata`; two vendored
+copies of one package could.
+
+Not changed, and listed: rustc's `StableCrateId` still keys a library's
+contract within a build (`Library::key`), which no output carries; a
+`TypeId`'s text (`std_types/any.rs`) is still of it and of rustc's type
+hash, and a Cargo build's import of a library's JS names Cargo's
+directory of it, `sealed-<-C metadata>/lib.js`: both machine-specific
+where a path dependency is outside the workspace (#2616); React's port's
+`rust-js build` names its packages, so its JS is the same in every
+directory.
+
+Held by `test/cargo-workspace.test.ts`' "a brand's key is the same of
+every build of rust-js and every directory, and two versions' are two"
+(two path dependencies outside the workspace, renamed, of two versions;
+the same files in two directories give each library the same JS), and
+`test/boundary-brands.test.ts`' "a program of two crates of one identity
+is refused, naming both"; unit tests `identities_tell_apart_what_rust_does`
+and `a_packages_source_is_of_no_path`. React's port regenerated in two
+temporary directories is byte for byte the same. Mutations
+`package-identity-of-its-directory`, `package-identity-versionless`,
+`package-source-registry-unnamed`, `package-source-git-commit-dropped`
+(`cargo.ts`), `identity-blind-to-programs`, `identity-parts-joined`
+(`library.ts`), `library-identity-of-its-own`,
+`shared-identities-unrefused` (`lower/recognition/std_crates.ts`). Every
+snapshot's key moves once, a hash for a hash.

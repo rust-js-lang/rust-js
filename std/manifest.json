@@ -6,9 +6,10 @@
     "abi": 1
   },
   "library": {
-    "version": 49,
+    "version": 50,
     "name": "rust_js_std",
     "crate_id": "ca591bd2b3d92476",
+    "crate_identity": "rust_js_std#2d3346d9a004b1be",
     "crate_hash": "5ca403e745b9e31c",
     "items": [
       {

@@ -54,14 +54,14 @@ function f$(p) {
 $main(main);
 
 function checkD(value) {
-  $checkBrand(value, undefined, undefined, "or_pattern_moved_part#d2cb60d1a9e3a2b2::D", "a D");
+  $checkBrand(value, undefined, undefined, "or_pattern_moved_part#60f57d85a81863ac::D", "a D");
   $checkTuple(value, undefined, undefined, [$checkU32]);
 }
 
 function main() {
   let r = f$([
-    $brand("or_pattern_moved_part#d2cb60d1a9e3a2b2::D", [1]),
-    $brand("or_pattern_moved_part#d2cb60d1a9e3a2b2::D", [2]),
+    $brand("or_pattern_moved_part#60f57d85a81863ac::D", [1]),
+    $brand("or_pattern_moved_part#60f57d85a81863ac::D", [2]),
   ]);
   try {
     const value = r?.[0];
@@ -75,7 +75,7 @@ function main() {
       }
     }
   }
-  r = f$([undefined, $brand("or_pattern_moved_part#d2cb60d1a9e3a2b2::D", [3])]);
+  r = f$([undefined, $brand("or_pattern_moved_part#60f57d85a81863ac::D", [3])]);
   try {
     const value = r?.[0];
     console.log(`got ${value == null ? "None" : `Some(${value})`}`);

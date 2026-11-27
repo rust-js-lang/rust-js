@@ -340,7 +340,7 @@ impl Callbacks for RustJs {
         };
         // The lowering session, its caches its own, dropped as it ends (ADR
         // 1111).
-        let _session = pipeline::start_session(tcx, self.session_flags());
+        let _session = pipeline::start_session(tcx, self.session_flags(tcx));
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
         let mut bodies = rust_js_lower::collect_bodies(tcx, self.library_filter());
         // `@rust-js/std`'s: std's own, from the MIR of a `core` built to
@@ -410,7 +410,7 @@ impl RustJs {
     /// all of them, in std's own bodies' build and the differential one
     /// (ADR 0932); every struct the crate doesn't build, one JS may make, in
     /// the object model net's build (ADR 1105).
-    fn session_flags(&mut self) -> rust_js_lower::session::Flags {
+    fn session_flags(&mut self, tcx: TyCtxt<'_>) -> rust_js_lower::session::Flags {
         rust_js_lower::session::Flags {
             meaning: self.std_bodies || self.std_iterators,
             every_outside_struct: self.js_made_all,
@@ -423,6 +423,10 @@ impl RustJs {
             intervals_by_effects: self.intervals_by_effects,
             records_recognized: self.recognizers_found.is_some(),
             shadows: self.shadow.as_ref().map(|(kinds, _)| kinds.clone()).unwrap_or_default(),
+            package: cargo::package(self.cargo, &tcx.sess.opts.cg.metadata),
+            library_identities: (self.dependencies.libraries.iter())
+                .map(|(key, library)| (key.clone(), library.crate_identity.clone()))
+                .collect(),
         }
     }
 

@@ -69,7 +69,7 @@ export const Chunk = {
 
 const checkChunk = /* @__PURE__ */ $checkShape(
   () => ({}),
-  "rc_fn_made_of_a_counted_rc#de34ec3dcac3bfb6::Chunk",
+  "rc_fn_made_of_a_counted_rc#5eee96017c539fb4::Chunk",
   "a Chunk",
 );
 
@@ -84,7 +84,7 @@ function main() {
     while ((callback = iter.next().value) != null) {
       console.log(`${callback.value("x")}`);
     }
-    const chunk = $brand("rc_fn_made_of_a_counted_rc#de34ec3dcac3bfb6::Chunk", {
+    const chunk = $brand("rc_fn_made_of_a_counted_rc#5eee96017c539fb4::Chunk", {
       info: "i",
       seen: 0,
     });
