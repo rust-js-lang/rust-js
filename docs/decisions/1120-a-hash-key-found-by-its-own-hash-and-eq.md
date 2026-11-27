@@ -207,3 +207,28 @@ a `mem::replace` of a boxed one, and a set's clone), `identity_inside_keys`' obs
 `keys_found_by_their_own_hash`'s and
 `impl_asks_the_layout_of_a_type_of_its_parameters`' clones become
 `ofHashed`.
+
+## Amendment: generic code asks the class it's given how to clone (2026-11-27, #2625)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): the JS panicked where
+Rust clones.
+
+The amendment above decided `ofHashed` from the key's type alone. Generic
+code doesn't know the class there. A key of a type parameter, or a tuple or
+struct made of one, is found by the class its caller gives
+([0466](0466-a-generic-maps-class-is-its-callers.md)) or one `$keyClassOf`
+composes of what its callers give. That class is a hashed one for a key
+whose `Hash` is its own, and a plain `Set` or `Map`, or `$KeySet`, for
+numbers, strings and value keys, and those have no `ofHashed`. So
+quickcheck's `Arbitrary` of a `HashSet<i32>` stopped at
+"TSet.ofHashed is not a function", and itertools' `correct_permutations`
+with it. Such a clone is now `$cloneOfClass(Class, made, source)`, which
+asks the class's own `way`: a hashed class gets `ofHashed`, and any other a
+`new Class(made)`, as a clone of a key known here is written. A key of no
+type parameter keeps its static form. Held by
+`hash_set_clone_in_generic_code_of_a_callers_class` (sets of numbers, of
+keys whose `Hash` prints, of a tuple of each, and maps of strings and of
+those keys, each cloned in generic code) and the mutations
+`callers-class-clone-of-hashed` and `class-clone-rehashed`. Moves:
+`impl_asks_the_layout_of_a_type_of_its_parameters`' clones become
+`$cloneOfClass`.

@@ -258,3 +258,13 @@ function $hashedSet(KHash, eq) {
     }
   };
 }
+
+// A clone of `source`, a map or a set of the class generic code is given,
+// `Class`, its caller's or composed of its callers' (ADR 0466): of `made`,
+// its entries each cloned in its order. Of keys `Class` finds by their own
+// `Hash`, each under the bytes `source` holds it by, asking no key's `Hash`,
+// as std's table clone (#2543); of keys it finds by value, a `Set` of
+// numbers, one of them (#2625).
+function $cloneOfClass(Class, made, source) {
+  return Class.way?.find === "hashed" ? Class.ofHashed(made, source) : new Class(made);
+}

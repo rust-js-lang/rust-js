@@ -659,12 +659,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // no key's `Hash`, as std's table clone copies its buckets:
                 // `ofHashed` (#2543).
                 let hashed = !sorted && self.found_by_hash(key_ty);
+                // Of a key of a type parameter, the class its caller gives,
+                // or composes of what its callers give, which finds the keys
+                // by their `Hash` or by value as the caller's key is found:
+                // asked of the class, `$cloneOfClass`; a `Set` of numbers has
+                // no `ofHashed` (#2625).
+                let callers = crate::recognition::mentions_param(crate::recognition::class_key(key_ty));
                 let source = place.clone();
                 let made_in_order = |made: Expr| match (in_order, hashed) {
                     (true, _) => Expr::call(
                         Expr::member(class.clone(), "ofSorted"),
                         [made].into_iter().chain(shape.clone()).collect(),
                     ),
+                    (false, true) if callers => {
+                        Expr::call_helper("$cloneOfClass", vec![class.clone(), made, source.clone()])
+                    }
                     (false, true) => Expr::call(Expr::member(class.clone(), "ofHashed"), vec![made, source.clone()]),
                     (false, false) => Expr::new_(class.clone(), vec![made]),
                 };

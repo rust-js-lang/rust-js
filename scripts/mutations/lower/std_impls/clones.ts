@@ -645,6 +645,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(hashed_map_clone_hashes_no_key)\\.rs$"],
   },
   {
+    name: "callers-class-clone-of-hashed",
+    breaks: "generic code's clone of a map or a set of a class its caller gives calls the class's `ofHashed`, which a `Set` of numbers hasn't: \"TSet.ofHashed is not a function\" (#2625)",
+    file: "crates/rust-js-lower/src/std_impls/clones.rs",
+    find: "                let callers = crate::recognition::mentions_param(crate::recognition::class_key(key_ty));\n",
+    replace: "                let callers = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(hash_set_clone_in_generic_code_of_a_callers_class)\\.rs$"],
+  },
+  {
     name: "call-clone-site-kept",
     breaks: "the call's row is read again by each clone a clone makes, so `resize` of `Vec`s of a borrowed `RefCell` names `resize`'s line where the item's own clone, a `Vec`'s, names its (#2577)",
     file: "crates/rust-js-lower/src/std_impls/clones.rs",

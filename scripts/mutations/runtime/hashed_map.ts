@@ -45,4 +45,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_entry_hashes_its_key_once.rs$"],
   },
+  {
+    name: "class-clone-rehashed",
+    breaks: "generic code's clone of a map or a set of a class its caller gives puts each key again, asking its `hash`, where std's table clone copies its buckets and asks none (#2543, #2625)",
+    file: "crates/rust-js-program/src/runtime/hashed_map.js",
+    find: '  return Class.way?.find === "hashed" ? Class.ofHashed(made, source) : new Class(made);\n',
+    replace: "  return new Class(made);\n",
+    tests: ["test/corpus.test.ts", "-t", "^hash_set_clone_in_generic_code_of_a_callers_class.rs$"],
+  },
 ];

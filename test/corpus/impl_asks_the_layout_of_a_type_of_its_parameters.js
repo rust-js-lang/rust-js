@@ -11,6 +11,7 @@ import {
   $btreeMap,
   $cloneIntoMap,
   $cloneIntoVec,
+  $cloneOfClass,
   $cmp,
   $eq,
   $intsOrdered,
@@ -198,7 +199,8 @@ export function hashMapArbitrary(
     () => ({
       Clone: () => ({
         clone(value) {
-          return KMap.ofHashed(
+          return $cloneOfClass(
+            KMap,
             Array.from(value).map(([key, value]) => [
               KArbitrary.Clone().clone(key),
               VArbitrary.Clone().clone(value),
@@ -267,7 +269,8 @@ function hashMapArbitrary_shrink(
   KVSize,
 ) {
   const vec = Array.from(
-    KMap.ofHashed(
+    $cloneOfClass(
+      KMap,
       Array.from(hashMap).map(([key, value]) => [
         KArbitrary.Clone().clone(key),
         VArbitrary.Clone().clone(value),
