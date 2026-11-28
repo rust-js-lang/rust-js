@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-28 (#2618): test/parts.test.ts gains "parts.ts runs a list's cases in parts, each once, and nothing else" and "parts.ts refuses a part of the environment's own, and runs a list at most a part a case"; test/metamorphic.test.ts gains "a list of more than one case in one process is refused, naming parts.ts; a part of one, or of several, runs"; five mutations.
+
 Changed on 2026-11-28 (#2618's split): test/ci.test.ts' four tests of scripts/parts.ts, near the file cap, are test/parts.test.ts, unchanged; their two mutations retargeted.
 
 Changed on 2026-11-28 (#2608, ADR 1210 amended): test/test-map-edges.test.ts' record test holds the names of what another crate's a definition names, and its `pick` test a new item's and a `use`'s names, a glob's file, a macro's call and the crate's unit tests; 7 mutations.

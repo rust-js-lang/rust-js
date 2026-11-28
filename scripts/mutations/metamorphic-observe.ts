@@ -1,6 +1,7 @@
 // Mutations of the metamorphic net's harness for its observe rewrites
 // (#2481, ADR 1104 amended): the rewrites the nightly's alone, and a rewrite
-// whose every variant is refused failing. The rewriter's own Rust,
+// whose every variant is refused failing; and a list of several cases in
+// one process refused, naming parts.ts (#2618). The rewriter's own Rust,
 // `scripts/metamorph`, is no source the runner mutates; its tests hold it.
 import type { Mutation } from "../mutations";
 
@@ -28,5 +29,21 @@ export const mutations: Mutation[] = [
     find: "const refusedCase = (refusal: string) => refusal.slice(refusal.indexOf(\" \") + 1, refusal.indexOf(\": \"));\n",
     replace: "const refusedCase = (refusal: string) => refusal;\n",
     tests: ["test/metamorphic.test.ts", "-t", "a rewrite whose every variant rust-js refuses judged nothing"],
+  },
+  {
+    name: "metamorphic-one-process-list-runs",
+    breaks: "the metamorphic net runs a list of many cases in one process, one after another, 11 cases 6 min on 12 cores, where parts.ts runs them at once (#2618)",
+    file: "test/metamorphic.test.ts",
+    find: "if (refusedList !== undefined) throw new Error(refusedList);\n",
+    replace: "",
+    tests: ["test/metamorphic.test.ts", "-t", "a list of more than one case in one process is refused"],
+  },
+  {
+    name: "metamorphic-one-process-list-of-many-unsaid",
+    breaks: "a list of many cases in one process is said fine, as one of one is",
+    file: "test/metamorphic.test.ts",
+    find: "split < 0 || count < 2 ||",
+    replace: "split < 0 || count < 1e9 ||",
+    tests: ["test/metamorphic.test.ts", "-t", "a list of more than one case in one process is refused"],
   },
 ];

@@ -8,6 +8,7 @@
 //
 //   bun test test/metamorphic.test.ts                                      # a push's sample
 //   METAMORPHIC=all RUST_JS_CASES=1/6 bun test test/metamorphic.test.ts    # every case, a sixth
+//   RUST_JS_CASES=1/1:<file> bun scripts/parts.ts auto test/metamorphic.test.ts  # the cases <file> names, in parts
 //   target/metamorph/debug/metamorph <rewrite> test/corpus/<case>.rs       # a rewrite, by hand
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
@@ -21,10 +22,11 @@ import { mayBeUndefined, miriInstalled, undefinedBehaviour } from "./miri";
 import { agreesUpToHashOrder, buildRewriter, libraryCrate, middleEvent, nightlyOnly, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
 import { deadlineOf, reducedRepros, toReduce, type Reduction } from "./reduced";
 import { agree, compileJs, compileJsLibrary, nativeFlags, returned, runJs, runNative, runtimes, show, type Run } from "./programs";
-import { buildCompiler, caseShard, firstPart, fixture, knownFileOf, root } from "./support";
+import { buildCompiler, bunTest, caseShard, firstPart, fixture, knownFileOf, root } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
 import { shard } from "../scripts/shard";
 import { partSetting } from "./part-settings";
+import { underLoad } from "../scripts/timing";
 import { buildFlags, type Build } from "./builds";
 
 beforeAll(() => {
@@ -46,12 +48,28 @@ const all = rewritable();
 // nightly's, every case, each listed one's too. Of a list,
 // `RUST_JS_CASES=i/n:<file>`, the cases it names, as the corpus's does:
 // those a change adds or edits, each of their rewrites (`bun
-// scripts/iteratorSlice.ts run metamorphic`, #1165).
+// scripts/iteratorSlice.ts run metamorphic`, #1165), or any list in parts
+// (`bun scripts/parts.ts`, #2618).
 const listed = (process.env.RUST_JS_CASES ?? "").includes(":");
 const picked = which === "all" || listed ? all : all.filter(({ name }) => sampled(name));
 // A list's every name a corpus case's: one the net can't rewrite is said
 // unrewritten, not run, as any case of the corpus it isn't given.
 const chosen = new Set(caseShard(picked.map(({ name }) => name), cases));
+
+/** Why a list, `given`, of `count` cases is refused: of more than one, in
+ * one process, `1/1:<file>`, each case after the last and each failure's
+ * reduction after its case's, 11 cases 6 min at a load of 1.5 on 12
+ * cores, where parts.ts runs them a part a case at once (#2618). A part
+ * of several, `i/n:<file>`, is parts.ts's or `scripts/iteratorSlice.ts
+ * run metamorphic`'s, and runs. */
+function oneProcessList(given: string | undefined, count: number): string | undefined {
+  const split = given?.indexOf(":") ?? -1;
+  if (given === undefined || split < 0 || count < 2 || Number(given.slice(0, split).split("/")[1]) !== 1) return undefined;
+  return `RUST_JS_CASES=${given} runs its ${count} cases one after another in one process: \`RUST_JS_CASES=${given} bun scripts/parts.ts auto test/metamorphic.test.ts\` runs them in parts on the machine's cores, each part's failures reduced beside the others' (#2618)`;
+}
+
+const refusedList = oneProcessList(process.env.RUST_JS_CASES, chosen.size);
+if (refusedList !== undefined) throw new Error(refusedList);
 
 /** The net's own harness, its text, which a kept run's key holds as
  * `shared()` holds the corpus's. */
@@ -416,6 +434,23 @@ for (const { name, edition, native } of all.filter(({ name }) => chosen.has(name
 }
 
 // The harness's own parts.
+firstPart("a list of more than one case in one process is refused, naming parts.ts; a part of one, or of several, runs", () => {
+  expect(oneProcessList("1/1:/work/cases.txt", 11)).toBe(
+    "RUST_JS_CASES=1/1:/work/cases.txt runs its 11 cases one after another in one process: `RUST_JS_CASES=1/1:/work/cases.txt bun scripts/parts.ts auto test/metamorphic.test.ts` runs them in parts on the machine's cores, each part's failures reduced beside the others' (#2618)",
+  );
+  expect(oneProcessList("1/1:/work/cases.txt", 1)).toBeUndefined();
+  expect(oneProcessList("2/4:/work/cases.txt", 3)).toBeUndefined();
+  expect(oneProcessList("1/4:/work/cases.txt", 3)).toBeUndefined();
+  expect(oneProcessList("1/1", 26)).toBeUndefined();
+  expect(oneProcessList(undefined, 26)).toBeUndefined();
+  // And the file run so is refused as it loads, before any case runs.
+  const list = join(fixture("metamorphic-one-process-list"), "cases.txt");
+  mkdirSync(join(list, ".."), { recursive: true });
+  writeFileSync(list, "fused_iterators.rs\nmatch_guard_of_ands.rs\n");
+  const ran = bunTest(["test/metamorphic.test.ts", "-t", "^no test is named so$"], { env: { RUST_JS_CASES: `1/1:${list}` }, timeout: 60_000 });
+  expect(ran.stdout + ran.stderr).toContain(`RUST_JS_CASES=1/1:${list} runs its 2 cases one after another in one process`);
+}, underLoad(90_000));
+
 firstPart("a push's sample is stable: a case added changes only whether it's sampled", () => {
   const names = Array.from({ length: 2000 }, (_, i) => `c${i}.rs`);
   const sample = names.filter((name) => sampled(name));

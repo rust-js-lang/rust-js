@@ -1,14 +1,14 @@
 // How scripts/parts.ts runs a test file of cases in parts on one machine,
 // as the nightly runs its nets (#1306): what a spec names, a part's line,
-// a file of no cases or a second file refused, and a part the machine
-// kills said so.
+// a file of no cases or a second file refused, a list of cases each
+// part's (#2618), and a part the machine kills said so.
 
 import { expect, test } from "bun:test";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { caseOf, partsOf, runParts, unparted, verdict } from "../scripts/parts";
+import { caseOf, givenList, partCases, partsOf, partsOfList, runParts, unparted, verdict } from "../scripts/parts";
 import { underLoad } from "../scripts/timing";
 import { root } from "./support";
 
@@ -54,6 +54,63 @@ test("parts.ts runs one file of cases in parts, and refuses another, naming chec
   const runs = workflows.flatMap((name) => [...readFileSync(join(root, ".github/workflows", name), "utf8").matchAll(/bun scripts\/parts\.ts .*?(test\/\S+\.test\.tsx?)([^\n]*)/g)]);
   expect(runs.length).toBeGreaterThan(0);
   for (const [, file, flags] of runs) expect(unparted(file!, readFileSync(join(root, file!), "utf8"), flags!.trim().split(/\s+/).filter(Boolean)), file).toBeUndefined();
+});
+
+// A list of cases given parts.ts, `RUST_JS_CASES=1/1:<file>`, is each
+// part's, `i/n:<file>`: the list dropped, each part given `i/n` alone,
+// ran the file's default set, the metamorphic net's push sample, and
+// passed as if it had run the list (#2618). Its parts together run each
+// case it names once and nothing else, at most a part a case.
+test("parts.ts runs a list's cases in parts, each once, and nothing else", () => {
+  const dir = mkdtempSync(join(tmpdir(), "parts-list-"));
+  try {
+    // (Its source built, as this file is one of no cases.)
+    const shardOf = ["case", "Shard"].join("");
+    const file = join(dir, "listed.test.ts");
+    writeFileSync(
+      file,
+      `import { test } from "bun:test";\nimport { ${shardOf} } from ${JSON.stringify(join(root, "test", "support"))};\n` +
+        `for (const name of ${shardOf}(["a.rs", "b.rs", "c.rs", "d.rs", "e.rs"])) test(name, () => console.log(\`ran \${name}\`));\n`,
+    );
+    const list = join(dir, "cases.txt");
+    writeFileSync(list, "b.rs\nd.rs\ne.rs\n");
+    const p = Bun.spawnSync(["bun", "scripts/parts.ts", "4", file], { cwd: root, env: { ...process.env, RUST_JS_CASES: `1/1:${list}` } });
+    const out = p.stdout.toString() + p.stderr.toString();
+    expect(p.exitCode, out).toBe(0);
+    const ran = [...out.matchAll(/^\[part \d+\/\d+\] ran (\S+)$/gm)].map((m) => m[1]);
+    expect(ran.sort(), out).toEqual(["b.rs", "d.rs", "e.rs"]);
+    expect(out).toContain("── 3 parts of 3, 3 at once");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}, underLoad(60_000));
+
+// As the spec names the parts, the environment's part is `1/1` or
+// nothing: another, `2/3:<file>` or `3/4`, overwritten in each part, ran
+// what the spec says, not what it asked (#2618). A list is made absolute,
+// as each part runs in the checkout, and runs at most a part a case, but
+// of a machine's share of a split, `a-b/n`, the parts it names.
+test("parts.ts refuses a part of the environment's own, and runs a list at most a part a case", () => {
+  expect(givenList(undefined)).toBeUndefined();
+  expect(givenList("1/1")).toBeUndefined();
+  expect(givenList("1/1:cases.txt", "/work")).toBe("/work/cases.txt");
+  for (const given of ["2/3:cases.txt", "3/4", "1/2"]) {
+    expect(() => givenList(given), given).toThrow(`RUST_JS_CASES=${given}: parts.ts's spec names its parts, and \`RUST_JS_CASES=1/1:<file>\` the cases they run, a line each; give no other part`);
+  }
+  const dir = mkdtempSync(join(tmpdir(), "parts-cap-"));
+  try {
+    const list = join(dir, "cases.txt");
+    writeFileSync(list, "b.rs\nd.rs\nb.rs\n\n");
+    expect(partsOfList("12", list)).toEqual({ parts: [1, 2], count: 2, list });
+    expect(partsOfList("2", list)).toEqual({ parts: [1, 2], count: 2, list });
+    expect(partsOfList("1", list)).toEqual({ parts: [1], count: 1, list });
+    expect(partsOfList("5-8/12", list)).toEqual({ parts: [5, 6, 7, 8], count: 12, list });
+    expect(partsOfList("12", undefined)).toEqual(partsOf("12"));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  expect(partCases(2, 6)).toBe("2/6");
+  expect(partCases(2, 6, "/work/cases.txt")).toBe("2/6:/work/cases.txt");
 });
 
 test("a part the machine kills is said killed, with what it ran and its peak", async () => {

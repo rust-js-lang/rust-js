@@ -17,13 +17,20 @@
 //   bun scripts/parts.ts 4 test/neighbours.test.ts
 //   bun scripts/parts.ts 8 --at-once=4 test/neighbours.test.ts
 //   bun scripts/parts.ts 5-8/24 test/iterator-matrix.test.ts
+//   RUST_JS_CASES=1/1:<file> bun scripts/parts.ts auto test/metamorphic.test.ts
 //
 // runs the file in as many parts as the machine's cores and memory hold
 // at once (scripts/shard.ts' `atOnce`); in 4; in 8, 4 at once; or the
 // 5th to the 8th of 24, a machine's share of a job split across
-// machines; with `bun test`'s flags given after the file. Parts run as
-// many at once as the machine holds, of those named, unless `--at-once`
-// says fewer.
+// machines; with `bun test`'s flags given after the file; or the corpus
+// cases `<file>` names, a line each, in parts, each part `i/n:<file>`, at
+// most a part a case. Parts run as many at once as the machine holds, of
+// those named, unless `--at-once` says fewer.
+//
+// A list given so is each part's: a list it dropped, each part given
+// `i/n` alone, ran a file's default set, the metamorphic net's push
+// sample, and passed as if the list had (#2618). And as the spec names
+// the parts, a `RUST_JS_CASES` of another part than `1/1` is refused.
 //
 // One file, of cases each part takes its share of (`RUST_JS_CASES`), or
 // it's refused (`unparted`): a file of no cases, or a second file among
@@ -65,6 +72,36 @@ export function partsOf(spec: string): { parts: number[]; count: number } {
   const [first, last] = from === undefined ? [1, count] : [Number(from), Number(to)];
   if (of === undefined || count < 1 || first < 1 || first > last || last > count) throw new Error(`parts are \`n\` or \`a-b/n\`, not ${spec}`);
   return { parts: Array.from({ length: last - first + 1 }, (_, i) => first + i), count };
+}
+
+/** The case list `RUST_JS_CASES` gives parts.ts, `1/1:<file>`, `<file>`
+ * made absolute from `cwd`, as each part runs in the checkout: each part
+ * keeps it (`partCases`). Nothing where it's unset or `1/1`; another part,
+ * `i/n` or `i/n:<file>`, is refused, as the spec names the parts (#2618). */
+export function givenList(given: string | undefined, cwd = process.cwd()): string | undefined {
+  if (given === undefined || given === "" || given === "1/1") return undefined;
+  const split = given.indexOf(":");
+  if (split < 0 || given.slice(0, split) !== "1/1") {
+    throw new Error(`RUST_JS_CASES=${given}: parts.ts's spec names its parts, and \`RUST_JS_CASES=1/1:<file>\` the cases they run, a line each; give no other part`);
+  }
+  return resolve(cwd, given.slice(split + 1));
+}
+
+/** The parts `spec` names of a run of `list`, if one's given: at most a
+ * part a case it names, of a spec of `auto`'s count or `n`; `a-b/n`, a
+ * machine's share, as it says. */
+export function partsOfList(spec: string, list: string | undefined): { parts: number[]; count: number; list?: string } {
+  const named = partsOf(spec);
+  if (list === undefined) return named;
+  const cases = new Set(readFileSync(list, "utf8").split("\n").filter(Boolean)).size;
+  const capped = /^\d+$/.test(spec) && cases < named.count ? partsOf(String(Math.max(1, cases))) : named;
+  return { ...capped, list };
+}
+
+/** Part `index` of `count`'s `RUST_JS_CASES`: `i/n`, or of a list,
+ * `i/n:<list>`. */
+export function partCases(index: number, count: number, list?: string): string {
+  return `${index}/${count}${list === undefined ? "" : `:${list}`}`;
 }
 
 /** Why `file`, of source `source`, given `flags` after it, can't run in
@@ -118,9 +155,10 @@ export function said(part: Part, count: number, now: number): string {
   return `── part ${part.index}/${count} ${how} in ${minutes(part.started, part.ended ?? now)}, ${peak}${where}`;
 }
 
-/** Runs `file`'s `parts` of `count`, `atOnce` together, with `flags`, in
- * `cwd`: whether every part passed. */
-export async function runParts(file: string, { parts: indices, count }: { parts: number[]; count: number }, atOnce: number, flags: string[], cwd = root): Promise<boolean> {
+/** Runs `file`'s `parts` of `count`, of the cases `list` names if it's
+ * given, `atOnce` together, with `flags`, in `cwd`: whether every part
+ * passed. */
+export async function runParts(file: string, { parts: indices, count, list }: { parts: number[]; count: number; list?: string }, atOnce: number, flags: string[], cwd = root): Promise<boolean> {
   const parts: Part[] = [];
   const runners = new Map<number, number>();
   const start = Date.now();
@@ -165,7 +203,7 @@ export async function runParts(file: string, { parts: indices, count }: { parts:
       parts.push(part);
       const p = Bun.spawn(["bun", "test", ...flags, file], {
         cwd,
-        env: { ...process.env, RUST_JS_CASES: `${part.index}/${count}` },
+        env: { ...process.env, RUST_JS_CASES: partCases(part.index, count, list) },
         stdout: "pipe",
         stderr: "pipe",
         detached: true,
@@ -214,7 +252,7 @@ if (import.meta.main) {
   const refused = unparted(file, readFileSync(resolve(root, file), "utf8"), flags);
   if (refused !== undefined) throw new Error(refused);
   const held = atOnce("test");
-  const parts = partsOf(spec === "auto" ? String(held) : spec);
+  const parts = partsOfList(spec === "auto" ? String(held) : spec, givenList(process.env.RUST_JS_CASES));
   const together = said === undefined ? Math.min(parts.parts.length, held) : Number(said.slice("--at-once=".length));
   if (!Number.isInteger(together) || together < 1) throw new Error(`${said}: how many parts run at once, from 1`);
   process.exit((await runParts(file, parts, together, flags)) ? 0 : 1);

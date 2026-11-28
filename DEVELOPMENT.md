@@ -615,7 +615,10 @@ The ledger of every speed-up tried, with its numbers, its status (active, droppe
   Every way of running work here has a parallel form; use it:
   - the corpus and any file of cases: in parts, `RUST_JS_CASES=i/n` each,
     as `check:fast` runs them (`caseParts`), with `BLESS=1` per part when
-    blessing, never one process of the whole file;
+    blessing, never one process of the whole file; a list of cases,
+    `RUST_JS_CASES=1/1:<file> bun scripts/parts.ts auto <test file>`,
+    each part `i/n:<file>`, at most a part a case, as the metamorphic net
+    refuses a list of several in one process (#2618);
   - test files: `bun test --parallel`, or `check:fast`, which runs them at
     once;
   - mutations: `--jobs=N` workers and `--tests=N` (`scripts/mutations.ts`);
