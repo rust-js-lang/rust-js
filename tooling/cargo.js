@@ -47,6 +47,33 @@ export function watched(done, child, command, args, say = (line) => process.stde
   return done.finally(() => clearTimeout(timer));
 }
 
+/** How `child` ended, `{ code, signal }`, once it has: at its `exit`, or,
+ * where that never comes, once its exit code or signal is known. Bun's
+ * `node:child_process` sets a child's `exitCode` and, now and then under
+ * load, never emits its `exit`: 7 of 192 builder runs of a script that
+ * echoes a line, 48 at once, and a push's check waited its 120 s on it
+ * (#2639). Node's always emits it, at once.
+ * @param {import("node:child_process").ChildProcess} child
+ * @param {number} [every] how often, in ms, its code is asked
+ * @returns {Promise<{ code: number | null, signal: NodeJS.Signals | null }>} */
+export function exitOf(child, every = 100) {
+  return new Promise((resolve) => {
+    const ended = () => {
+      if (child.exitCode === null && child.signalCode === null) return false;
+      clearInterval(asked);
+      resolve({ code: child.exitCode, signal: child.signalCode });
+      return true;
+    };
+    const asked = setInterval(ended, every);
+    child.once("exit", (code, signal) => {
+      clearInterval(asked);
+      resolve({ code, signal });
+    });
+    // One that never ran has no end to wait for: its `error` says so.
+    child.once("error", () => clearInterval(asked));
+  });
+}
+
 /** What a Cargo command that failed said: its stderr; where it said
  * nothing, how it ended, a signal or an error spawning it, `spawn cargo
  * EAGAIN` under load, which its stderr never has (test/manifest.test.ts's

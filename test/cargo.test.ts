@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { cargoEnv, cargoSaid, rustcShim, watched } from "../tooling/cargo.js";
+import { cargoEnv, cargoSaid, exitOf, rustcShim, watched } from "../tooling/cargo.js";
 import { createNativeBuilder } from "../tooling/build.js";
 import { compatCrates, writePatch } from "../tooling/patch.js";
 import { cargoApp } from "./cargo-app";
@@ -139,3 +139,21 @@ test("rust-js's own crates' panics name their files the same on every machine", 
   expect(js).toMatch(new RegExp(`"${named}/js-sys/src/lib\\.rs:\\d+:\\d+"`));
   expect(js).not.toContain(`${root}/`);
 }, 600_000);
+
+// A child's end is its exit code once it's known, whether or not its
+// `exit` comes: Bun's `node:child_process` set a child's `exitCode` and,
+// now and then under load, never emitted its `exit`, so the builder's run
+// of `rust-js --version-json` waited a push's check out, 120 s (#2639).
+test("a child's end is known by its exit code, though its exit never comes", async () => {
+  const { EventEmitter } = await import("node:events");
+  const child = (exitCode: number | null = null, signalCode: string | null = null) => Object.assign(new EventEmitter(), { exitCode, signalCode });
+  const within = <T>(said: Promise<T>) => Promise.race([said, Bun.sleep(2_000).then(() => "never")]);
+  // Its code known, its `exit` never emitted.
+  const lost = child();
+  setTimeout(() => (lost.exitCode = 0), 30);
+  expect(await within(exitOf(lost as never, 10))).toEqual({ code: 0, signal: null });
+  // Its `exit`, as Node's always comes.
+  const emitted = child();
+  setTimeout(() => emitted.emit("exit", null, "SIGTERM"), 30);
+  expect(await within(exitOf(emitted as never, 10_000))).toEqual({ code: null, signal: "SIGTERM" });
+});

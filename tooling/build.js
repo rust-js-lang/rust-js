@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { bytesOf, evict, freeBytes } from "./bounded.js";
-import { cargoWorkspace, checkCargo, ledgerName, lintCheck, packageOf, watched } from "./cargo.js";
+import { cargoWorkspace, checkCargo, exitOf, ledgerName, lintCheck, packageOf, watched } from "./cargo.js";
 import { parseCompilerIdentity } from "./manifest.js";
 
 /** The rust-js checkout this `@rust-js/build` is of, where one runs it from
@@ -218,12 +218,13 @@ function run(command, args, cwd, env = {}, warn) {
       for (const fd of fds) closeSync(fd);
     }
     child.on("error", reject);
-    child.on("exit", (code, signal) => {
+    // At its end, which a lost `exit` doesn't hide (`exitOf`, #2639).
+    exitOf(child).then(({ code, signal }) => {
       const [output, errors] = said.map((path) => readFileSync(path, "utf8"));
       if (code !== 0) return reject(new Error(errors || `${command} exited with ${code ?? signal}`));
       if (warn && errors) warn(errors);
       resolve(output);
-    });
+    }, reject);
   }).finally(() => rmSync(dir, { recursive: true, force: true }));
   return watched(done, child, command, args);
 }
