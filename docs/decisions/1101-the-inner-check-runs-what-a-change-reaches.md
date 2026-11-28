@@ -1307,3 +1307,28 @@ it (scripts/dependants.ts). There are two sources:
 The map is v5, with `paths` and `loads`; `defs` and `edges` are reserved.
 `Selection.shadow` is `Selection.shadows`, the item layer's and the
 loads' each said on the push's line.
+
+## Amendment (2026-11-28, #2626): a comment or blank line reads nothing, with the item layer or without it
+
+`pick` skipped a comment, blank line or inner attribute outside any
+function's counted code only where the map had its item layer. A push's
+running selection has no layer (the layer runs in shadow until #2288's
+switch), so in a hunk that mixed a doc comment with counted code, the
+comment went down the namers' search by name (`byName`, `byOneName`) to a
+dead end, and the push ran everything. That was #2608's closures.rs line
+246, the doc comment of a deleted `moved_once`, and #2623's own_steps.rs
+line 176, a new method's doc comment. Measured against the map at
+ac9716c758, #2623's change now picks 456 files and 24 functions. The skip
+no longer depends on the layer; only a signature line's rule, which reads
+`map.items.names`, still needs it. A line of a file the selector can't
+read (`linesRead`) is no comment: it's searched as before, and a file new
+since the map runs everything.
+
+This is a stopgap. The fix is #2608's design, approved by the lead
+(2026-11-28): a change's dependants taken from rustc's resolved
+references, recorded with the map, in place of the name search as text.
+
+Tests: test/test-map.test.ts' "a doc comment or blank line beside a
+function's code selects that function's tests, without the item layer".
+Mutations `comment-skipped-only-with-the-layer` and
+`unread-line-taken-for-blank`.

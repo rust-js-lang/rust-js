@@ -628,4 +628,20 @@ export const mutations: Mutation[] = [
     replace: "      of[file] = [];\n",
     tests: ["test/test-map-loads.test.ts", "-t", "the map keeps each test file's loads"],
   },
+  {
+    name: "comment-skipped-only-with-the-layer",
+    breaks: "a doc comment or blank line beside counted code is skipped only with the item layer, so a push's running selection, without it, chases its namers to a dead end and runs everything (#2626)",
+    file: "scripts/testMap.ts",
+    find: "        if (text !== undefined && (commentOnly(text) || /^\\s*#!\\[/.test(text))) continue;\n",
+    replace: "        if (text !== undefined && map.items !== undefined && (commentOnly(text) || /^\\s*#!\\[/.test(text))) continue;\n",
+    tests: ["test/test-map.test.ts", "-t", "a doc comment or blank line beside a function's code"],
+  },
+  {
+    name: "unread-line-taken-for-blank",
+    breaks: "a line of a file the selector can't read is taken for a blank one, which reads nothing, so a change to a file new since the map selects none of its tests (#2626)",
+    file: "scripts/testMap.ts",
+    find: "        const text = found.length === 0 ? linesRead(file)?.[line - 1] : undefined;\n",
+    replace: "        const text = found.length === 0 ? linesOf(file)[line - 1] : undefined;\n",
+    tests: ["test/test-map.test.ts", "-t", "a change the map can't say runs what the check runs without it"],
+  },
 ];

@@ -870,6 +870,23 @@ test("an item outside any function selects the functions that name it; a short o
   expect(pick(map, [shadowing], files, cases, { ...lenNamed, naming: () => [] })).toMatchObject({ kind: "picked", files: ["test/reads.test.ts"] });
 });
 
+// A comment or blank line reads nothing, with the item layer or without
+// it, as a push's running selection is: in a hunk beside counted code, a
+// doc comment went down the namers' chase to a dead end, everything, for
+// #2608's closures.rs and #2623's own_steps.rs (#2626, a stopgap of #2608).
+test("a doc comment or blank line beside a function's code selects that function's tests, without the item layer", () => {
+  const text = Array.from({ length: 50 }, (_, i) => `    let x${i + 1} = ${i + 1};`);
+  text[6] = "    /// What it holds.";
+  text[7] = "";
+  text[8] = "    // and why";
+  const sources: Sources = { text: (file) => (file === "src/a.rs" ? text.join("\n") : undefined), naming: () => [] };
+  expect(map.items).toBeUndefined();
+  const asFunction = pick(map, [{ file: "src/a.rs", hunks: [[10, 2]] }], files, cases, sources);
+  expect(pick(map, [{ file: "src/a.rs", hunks: [[7, 5]] }], files, cases, sources)).toEqual(asFunction);
+  // Code there is still searched by its item, here none: everything.
+  expect(pick(map, [{ file: "src/a.rs", hunks: [[6, 5]] }], files, cases, sources).kind).toBe("all");
+});
+
 // A variant added to an enum another item names, a struct's field's type,
 // or a function's signature names: the function the signature opens, and
 // what names that item, searched in turn, not every test. #890's naming

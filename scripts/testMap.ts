@@ -751,11 +751,13 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     const under = crate?.rootFile === file ? `${crate.src}/` : file.replace(/(?:\/mod)?\.rs$/, "/");
     return (at: string) => at === file || at.startsWith(under);
   };
-  const texts = new Map<string, string[]>();
-  const linesOf = (at: string) => {
-    if (!texts.has(at)) texts.set(at, (sources.text(at) ?? "").split("\n"));
-    return texts.get(at)!;
+  const texts = new Map<string, string[] | undefined>();
+  // A file's lines at the map's commit, none of one it can't read.
+  const linesRead = (at: string) => {
+    if (!texts.has(at)) texts.set(at, sources.text(at)?.split("\n"));
+    return texts.get(at);
   };
+  const linesOf = (at: string) => linesRead(at) ?? [""];
   // Where the item `name` that `file` declares can be named (#2608): by
   // its crate and module path, as rustc resolves it, not wherever its bare
   // name is a word, which an item of a crate that can't see it shares, or
@@ -1302,13 +1304,16 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
       }
       for (let line = from; line < from + count; line++) {
         const found = holding(file, line);
+        // A comment, a blank line or an inner attribute reads nothing, with
+        // the item layer or without it, as a push's running selection is:
+        // a doc comment beside counted code went down the namers' chase to a
+        // dead end, everything (#2626, a stopgap of #2608). An outer
+        // attribute is its item's, below it (`byName`, #2288). A line whose
+        // text isn't read is none of them.
+        const text = found.length === 0 ? linesRead(file)?.[line - 1] : undefined;
+        if (text !== undefined && (commentOnly(text) || /^\s*#!\[/.test(text))) continue;
         if (found.length === 0 && map.items !== undefined) {
-          // A doc comment or an attribute reads nothing; a signature line
-          // is of the function it opens (#2288).
-          const at = linesOf(file)[line - 1] ?? "";
-          // A comment, or an inner attribute, reads nothing; an outer one
-          // is its item's, below it (`byName`, #2288).
-          if (commentOnly(at) || /^\s*#!\[/.test(at)) continue;
+          // A signature line is of the function it opens (#2288).
           const opened = inSignature(linesOf(file), line) ? following(file, line) : undefined;
           if (opened !== undefined) {
             touched.add(opened);
