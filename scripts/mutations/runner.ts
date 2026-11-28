@@ -522,4 +522,12 @@ export const mutations: Mutation[] = [
     replace: "      return true ? { units",
     tests: ["test/mutations.test.ts", "-t", "checks React's port at its pin before"],
   },
+  {
+    name: "typecheck-refuses-its-limit",
+    breaks: "`--typecheck=<base> --limit=<s>` is refused, \"runs alone\", so the flag every heavy run takes can't bound it, and an agent's outer `timeout` counted its wait for the turn (#2619)",
+    file: "scripts/mutations.ts",
+    find: "  if (args.every((arg) => arg.startsWith(flag) || arg.startsWith(\"--limit=\"))) return undefined;\n",
+    replace: "  if (args.every((arg) => arg.startsWith(flag))) return undefined;\n",
+    tests: ["test/mutation-changes.test.ts", "-t", "a push type-checks the mutations of each file"],
+  },
 ];

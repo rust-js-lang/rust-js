@@ -5,7 +5,7 @@
 import { expect, test } from "bun:test";
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { batches, buildsUnmutated, type Change, changedLines, changedMutations, enclosingFunction, mutations, ofTouched, ownMutations, refusedFlags, schema, setPasses, site, siteLines, type Sited, testBlocks, testResults, testSet, together, typechecked, unitTestsModule, aloneProblem } from "../scripts/mutations";
+import { batches, buildsUnmutated, type Change, changedLines, changedMutations, enclosingFunction, mutations, ofTouched, ownMutations, refusedFlags, schema, setPasses, site, siteLines, type Sited, testBlocks, testResults, testSet, together, typechecked, unitTestsModule, aloneProblem, aloneRefusal } from "../scripts/mutations";
 import { phases } from "../scripts/push";
 import { fixture, root } from "./support";
 
@@ -349,6 +349,16 @@ test("a push type-checks the mutations of each file its change touches, and of e
   expect(names(["scripts/push.ts", "scripts/mutations/push.ts"])).toEqual([]);
   expect(refusedFlags(["--typecheck=origin/main"])).toEqual([]);
   expect(refusedFlags(["--typecheck"])).toEqual(["--typecheck takes a value: --typecheck=<base>"]);
+  // Run alone but for `--limit=<seconds>`, which every heavy run takes: it
+  // was refused, and an agent bounded it with an outer `timeout` (#2619).
+  const typecheckAlone = "--typecheck=<base> runs alone: no mutation named, no other flag but --limit=<seconds>";
+  expect(aloneRefusal(["--typecheck=origin/main", "--limit=900"], "--typecheck=<base>")).toBeUndefined();
+  expect(aloneRefusal(["--typecheck=origin/main", "--list"], "--typecheck=<base>")).toBe(typecheckAlone);
+  expect(aloneRefusal(["--typecheck=origin/main", "in-a"], "--typecheck=<base>")).toBe(typecheckAlone);
+  expect(aloneRefusal(["--retire=a,b", "--limit=60", "--retire=c"], "--retire=<name>[,<name>..]")).toBeUndefined();
+  expect(aloneRefusal(["--retire=a", "in-a"], "--retire=<name>[,<name>..]")).toStartWith("--retire=<name>[,<name>..] runs alone");
+  const limited = Bun.spawnSync([process.execPath, "scripts/mutations.ts", "--typecheck=HEAD", "--limit=120"], { cwd: root, env: { ...process.env, RUST_JS_LEASED: String(process.pid) }, stdout: "pipe", stderr: "pipe", timeout: 60_000 });
+  expect([limited.exitCode, limited.stdout.toString()]).toEqual([0, expect.stringContaining("type-checked in")]);
   expect(phases.indexOf("mutants")).toBeGreaterThan(phases.indexOf("build"));
   expect(phases.indexOf("mutants")).toBeLessThan(phases.indexOf("check"));
   expect(readFileSync(join(root, "scripts/push.ts"), "utf8")).toContain('if (mutantsAgain(since)) run("mutants", ["bun", "scripts/mutations.ts", `--typecheck=${base}`]);');

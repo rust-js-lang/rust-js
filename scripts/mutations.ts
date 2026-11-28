@@ -1720,6 +1720,18 @@ async function typecheck(base: string): Promise<void> {
   }
 }
 
+/** Why `args` can't run as `mode`, a heavy run of its own, its flag's
+ * usage, `--typecheck=<base>` or `--retire=<name>[,<name>..]`: a mutation
+ * named or another flag beside it; none where nothing but its flag and
+ * `--limit=<seconds>` is given, which every heavy run takes (AGENTS.md):
+ * `--typecheck` refused it, and an agent bounded it with an outer
+ * `timeout`, counting its wait for the turn (#2619). */
+export function aloneRefusal(args: string[], mode: string): string | undefined {
+  const flag = mode.slice(0, mode.indexOf("=") + 1);
+  if (args.every((arg) => arg.startsWith(flag) || arg.startsWith("--limit="))) return undefined;
+  return `${mode} runs alone: no mutation named, no other flag but --limit=<seconds>`;
+}
+
 /** The mutations `--retire=a,b` names, each flag's, comma-separated, in
  * order, once each; none where no flag asks a retirement. */
 export function retiringNames(args: string[]): string[] | undefined {
@@ -2316,7 +2328,11 @@ async function main() {
   // A change's mutants type-checked, `typecheck`, no other run.
   const checked = args.find((arg) => arg.startsWith("--typecheck="))?.slice("--typecheck=".length);
   if (checked !== undefined) {
-    if (args.length > 1) throw new Error("--typecheck=<base> runs alone: no mutation named, no other flag");
+    const refusal = aloneRefusal(args, "--typecheck=<base>");
+    if (refusal) throw new Error(refusal);
+    // Its cargo checks the machine's turn's, as each heavy run's, which
+    // arms its `--limit` (#2619); a push's run of it is in the push's.
+    holdLease("mutations typecheck");
     return typecheck(checked);
   }
   const named = args.filter((arg) => !arg.startsWith("--"));
@@ -2325,7 +2341,8 @@ async function main() {
   // Mutations to retire, their evidence asked (`retire`), no other run.
   const retiring = retiringNames(args);
   if (retiring !== undefined) {
-    if (named.length > 0 || args.some((arg) => arg.startsWith("--") && !arg.startsWith("--retire=") && !arg.startsWith("--limit="))) throw new Error("--retire=<name>[,<name>..] runs alone: no other mutation or flag but --limit=<seconds>");
+    const refusal = aloneRefusal(args, "--retire=<name>[,<name>..]");
+    if (refusal) throw new Error(refusal);
     chosen = retiring.map((name) => {
       const mutation = mutations.find((m) => m.name === name);
       if (mutation === undefined) throw new Error(`no mutation ${name}`);

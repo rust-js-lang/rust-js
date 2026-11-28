@@ -956,7 +956,8 @@ checked:
   makes `std/` again and refuses where it differs from what's committed,
   type-checks each mutation of a file the change touches, or of a
   mutation list it touches (`bun scripts/mutations.ts --typecheck=<base>`,
-  as the runner builds them, many to a `cargo check`), refusing one whose
+  run alone by an agent with `--limit=<s>` in the machine's turn, as every
+  heavy run is, #2619; as the runner builds them, many to a `cargo check`), refusing one whose
   `replace` no longer type-checks, which CI's shards would call "doesn't
   build", runs `check:fast`, which runs what the test selector says the change can
   affect (`scripts/select.ts`, ADR 1101, amended; everything where it
