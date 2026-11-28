@@ -1004,7 +1004,10 @@ checked:
   `select some (N files, M cases)`, `select capped …` or `select none`, the
   map's commit and how far behind it is. Each machine's sessions set
   `RUST_JS_MACHINE` and `RUST_JS_AGENT`, which name its lines; a run
-  without them writes none, saying which isn't set (#2322).
+  without them writes none, saying which isn't set (#2322). A shell that
+  doesn't start with them, the desktop app's, gives them on each heavy
+  command, `RUST_JS_MACHINE=<machine> RUST_JS_AGENT=<agent> bun run push
+  --limit=<s>`, the names an agent's brief gives it (#2620).
   A tracked change not committed is refused. A rebase whose conflicts are
   each a blessed baseline's, a file .gitattributes merges as
   `merge=binary` (`regenerated` in scripts/push.ts), takes main's and
@@ -1143,7 +1146,11 @@ the workflow's 2 machines; `--shards=4` splits it across four.
   <case.rs>` compiles it as the corpus's cases are and runs it natively
   and as JS, saying whether they agree (`--std-iterators`, `--tidy-until
   <pass>`, `--prepare-without <rewrite>` as the tests give them);
-  `bun scripts/run-case.ts <case.js | dir>` runs JS already compiled. Each
+  `bun scripts/run-case.ts <case.rs> --compile-only` compiles it the same
+  way and prints its JS, running nothing, the one way to read the JS of a
+  program that never ends natively (#2620); never a bare
+  `target/debug/rust-js` without `-o`, which writes over a corpus
+  snapshot; `bun scripts/run-case.ts <case.js | dir>` runs JS already compiled. Each
   run is stopped, with what it started, past its time. Never a bare `node`
   or `bun` of generated JS: one that never ends outlives the shell, and one
   held a core for 28 hours, parented by launchd (2026-11-09).

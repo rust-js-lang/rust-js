@@ -8,6 +8,9 @@
 //       compiled as the corpus's cases are, and run natively (on wasm32 where
 //       it says `//@ native: wasm32`) and as JS, each printed, and whether
 //       they agree
+//   bun scripts/run-case.ts <case.rs> --compile-only [--std-iterators] [..]
+//       compiled the same way, its JS printed, and nothing run: the one way
+//       to read a program's JS that never ends natively (#2620)
 //   bun scripts/run-case.ts <case.js | dir>   [--timeout <s>]
 //       a case's compiled JS, `case.js` in a directory, run as the tests run
 //       it: what `entry` prints, and how it ended
@@ -27,7 +30,7 @@ const flag = (name: string) => {
 const valued = ["--tidy-until", "--prepare-without", "--edition", "--timeout"];
 const given = args.find((arg, i) => !arg.startsWith("--") && !valued.includes(args[i - 1]));
 if (given === undefined) {
-  console.error("bun scripts/run-case.ts <case.rs | case.js | dir> [--std-iterators] [--tidy-until <pass>] [--prepare-without <rewrite>] [--edition <year>] [--timeout <s>]");
+  console.error("bun scripts/run-case.ts <case.rs | case.js | dir> [--compile-only] [--std-iterators] [--tidy-until <pass>] [--prepare-without <rewrite>] [--edition <year>] [--timeout <s>]");
   process.exit(64);
 }
 
@@ -49,6 +52,19 @@ if (path.endsWith(".rs")) {
   const dir = join(target, "run-case", basename(path, ".rs"));
   mkdirSync(join(dir, "native"), { recursive: true });
   mkdirSync(join(dir, "js"), { recursive: true });
+  // Its JS alone, nothing run: a program that never ends natively, a
+  // `Box<Repeat>`'s `count`, was read by hand-written helpers around
+  // `compileJs`, a second way (#2620).
+  if (args.includes("--compile-only")) {
+    const compiled = compileJs(path, join(dir, "js"), edition, "binary", {}, flags);
+    if (!("js" in compiled)) {
+      console.error(`rust-js ${compiled.kind}:\n${compiled.error}`);
+      process.exit(1);
+    }
+    console.log(`── its JS (${compiled.js})`);
+    process.stdout.write(readFileSync(compiled.js, "utf8"));
+    process.exit(0);
+  }
   // Run natively as the corpus runs it: `//@ native: wasm32`'s on wasm32.
   const cased = directives(readFileSync(path, "utf8"));
   const native = runNative(path, join(dir, "native"), edition, typeof cased === "string" ? "host" : cased.native);
@@ -68,6 +84,10 @@ if (path.endsWith(".rs")) {
   console.log(same ? "── the same" : "── they differ");
   process.exit(same ? 0 : 1);
 } else {
+  if (args.includes("--compile-only")) {
+    console.error(`--compile-only compiles a case.rs; ${given} is compiled already: read it`);
+    process.exit(64);
+  }
   const js = existsSync(path) && statSync(path).isDirectory() ? join(path, "case.js") : path;
   if (!existsSync(js)) {
     const others = js.endsWith("/case.js") ? readdirSync(dirname(js)).filter((name) => name.endsWith(".js")) : [];

@@ -137,3 +137,20 @@ test("a case's variants compiled at once each run their own modules", async () =
   const lines = made.map((compiled, at) => ("js" in compiled ? runJs(runtimes[0][1], compiled.js, dir, `variant-${at}`).stdout.split("\n").length : compiled.error));
   expect(lines).toEqual(stages.map(() => 13));
 }, 300_000);
+
+// A program that never ends natively is read compiled, nothing run, by
+// the one command that runs a case by hand: agents wrote helpers around
+// `compileJs` to read a `Box<Repeat>`'s `count`, a second way (#2620).
+test("run-case's --compile-only prints a case's JS and runs nothing, natively or as JS", () => {
+  buildCompiler();
+  const file = join(fixture("programs-compile-only"), "endless.rs");
+  writeFileSync(file, 'fn main() {\n    println!("{}", std::iter::repeat(1u8).count());\n}\n');
+  const p = Bun.spawnSync([process.execPath, "scripts/run-case.ts", file, "--compile-only"], { cwd: join(import.meta.dir, ".."), stdout: "pipe", stderr: "pipe", timeout: 120_000 });
+  const said = p.stdout.toString();
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(said).toStartWith("── its JS (");
+  expect(said).toContain("function main(");
+  expect(said).not.toContain("── native Rust");
+  const given = Bun.spawnSync([process.execPath, "scripts/run-case.ts", "case.js", "--compile-only"], { cwd: join(import.meta.dir, ".."), stdout: "pipe", stderr: "pipe" });
+  expect([given.exitCode, given.stderr.toString()]).toEqual([64, "--compile-only compiles a case.rs; case.js is compiled already: read it\n"]);
+}, 300_000);
