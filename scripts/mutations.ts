@@ -23,7 +23,7 @@ import { chmodSync, cpSync, existsSync, linkSync, mkdirSync, mkdtempSync, readdi
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 
-import { run, runSync, stopped, type Exit } from "../test/child";
+import { longestArgument, run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
 import { caseParts, casePartCores, compilerBuilds, compilerBuildsAsked, compilerBuildsMeasured, drivesBrowser, machine, memoryBudget, peakGB, shardArg, shareOfShard, slots, timedShard, wholeCorpusParts } from "./shard";
@@ -1023,10 +1023,13 @@ export function catchingTest(output: string): string | undefined {
 /** `tests`, a mutation's `bun test` arguments, narrowed to the tests named
  * `failed` by `-t`, each by its `describe`s and name as bun prints it; or
  * `tests` whole where one is a setup's or a `describe`'s, which no name
- * chooses. */
+ * chooses, or where their pattern is too long to be one argument
+ * (`longestArgument`): one of 600 names was E2BIG, and its shard's run
+ * ended there (#2617). */
 export function narrowedTo(tests: string[], failed: string[]): string[] {
   if (failed.includes("(unnamed)") || failed.includes(betweenTests)) return tests;
   const pattern = failed.map((test) => test.split(" > ").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*")).join("|");
+  if (Buffer.byteLength(pattern) >= longestArgument) return tests;
   return [...testSet(tests).files, "-t", pattern];
 }
 
@@ -1062,6 +1065,14 @@ export async function judgedApart<T extends { result: string }>(judging: () => P
   } catch (error) {
     return { result: `INCONCLUSIVE: its judging threw: ${error instanceof Error ? error.message : String(error)}`, tests: 0 };
   }
+}
+
+/** A source mutation's verdict by `sourceMutation`, or, where its judging
+ * throws, its own inconclusive one (`judgedApart`), nothing it ran said:
+ * a run again of its tests the OS wouldn't spawn ended three nightly
+ * shards, each past 560 mutations, the rest unjudged (#2617). */
+export async function judgedSource(...args: Parameters<typeof sourceMutation>) {
+  return { output: "", build: 0, bytes: 0, ...(await judgedApart(() => sourceMutation(...args))) };
 }
 
 /** The line a run's summary says of its inconclusive mutations, each of
@@ -2794,7 +2805,7 @@ async function main() {
       const mutation = batch[0].mutation;
       const execute = async (ownsTestSlot = false) => {
         const held = { seconds: 0 };
-        const answer = await sourceMutation(mutation, template, work, tracked,
+        const answer = await judgedSource(mutation, template, work, tracked,
           (directory, env, tests = mutation.tests!) => {
             const run = () => test(tests, unmutated, mutation.snapshots, {directory, env: {...env, ...mutation.env}});
             return ownsTestSlot ? run() : holding(held)(run);

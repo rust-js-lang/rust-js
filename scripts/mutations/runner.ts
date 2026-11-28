@@ -27,6 +27,22 @@ export const mutations: Mutation[] = [
     tests: ["test/mutations.test.ts", "-t", "a mutant is caught by a test that fails with it twice"],
   },
   {
+    name: "narrowed-pattern-past-one-argument",
+    breaks: "a mutant's tests run again by a `-t` of all their failed names, however long, past the 128 KiB Linux spawns of one argument: E2BIG, and the nightly shard's run ended there, half its mutations unjudged (#2617)",
+    file: "scripts/mutations.ts",
+    find: "  if (Buffer.byteLength(pattern) >= longestArgument) return tests;\n",
+    replace: "",
+    tests: ["test/mutations.test.ts", "-t", "a mutant is caught by a test that fails with it twice"],
+  },
+  {
+    name: "source-judging-not-apart",
+    breaks: "a source mutant's judging that throws ends the run, not its own verdict, inconclusive, as three nightly shards ended past 560 mutations each (#2617)",
+    file: "scripts/mutations.ts",
+    find: "  return { output: \"\", build: 0, bytes: 0, ...(await judgedApart(() => sourceMutation(...args))) };\n",
+    replace: "  return { output: \"\", build: 0, bytes: 0, ...(await sourceMutation(...args)) };\n",
+    tests: ["test/source-mutations.test.ts", "-t", "a source mutant whose judging throws"],
+  },
+  {
     name: "mutation-run-reads-the-live-checkout",
     breaks: "a run's builds and sites read the checkout as it's edited, not its snapshot",
     file: "scripts/mutations.ts",

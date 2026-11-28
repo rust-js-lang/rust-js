@@ -13,7 +13,7 @@ import {
 import { existsSync } from "node:fs";
 import { linkWasmBuild, sourceMutation } from "../scripts/source-mutations";
 import { wasmBuild } from "../wasm/web/site.ts";
-import { judgeTwice, mutate, type Mutation } from "../scripts/mutations";
+import { judgedSource, judgeTwice, mutate, type Mutation } from "../scripts/mutations";
 import { stopped } from "./child";
 import { passed, summary } from "../scripts/test-summary";
 
@@ -145,13 +145,16 @@ const mutation: Mutation = {
 async function executeSource(
   example: ReturnType<typeof exampleSource>,
   own = mutation,
+  judging: typeof sourceMutation | typeof judgedSource = sourceMutation,
+  spawnable = (_tests: string[]) => true,
 ) {
-  return sourceMutation(
+  return judging(
     own,
     example.root,
     example.work,
     example.files,
     async (workspace, env, tests = own.tests!) => {
+      if (!spawnable(tests)) throw Object.assign(new Error("E2BIG: argument list too long, posix_spawn '/bin/sh'"), { code: "E2BIG" });
       const exit = bunTest(tests, { cwd: workspace, env, timeout: 10000 });
       const output = exit.stdout + exit.stderr;
       const counts = summary(output);
@@ -190,6 +193,19 @@ test("a source mutant's test that fails once and passes run again is a flake, in
   );
   const result = await executeSource(example);
   expect(result.result).toBe("INCONCLUSIVE: value failed with it once and passed run again with it, a flake, which says nothing of it: fix the flake");
+});
+
+// A source mutant's judging that throws, a run again of its tests the OS
+// wouldn't spawn, is its own verdict, inconclusive: it ended nightly
+// shards 2, 6 and 16 of 16, each past 560 mutations, the rest unjudged,
+// as a compiler mutant's judging never does (#2341, #2617).
+test("a source mutant whose judging throws is its own inconclusive verdict, its workspace removed", async () => {
+  const example = exampleSource("source-mutation-unspawned", ownerTest);
+  const unspawned = (tests: string[]) => tests !== mutation.tests;
+  await expect(executeSource(example, mutation, sourceMutation, unspawned)).rejects.toThrow("E2BIG");
+  const result = await executeSource(example, mutation, judgedSource, unspawned);
+  expect(result).toMatchObject({ result: "INCONCLUSIVE: its judging threw: E2BIG: argument list too long, posix_spawn '/bin/sh'", output: "", bytes: 0 });
+  expect(existsSync(join(example.work, "sources", "owner-value-mutant"))).toBe(false);
 });
 
 test("passing tests that never load their owner are inconclusive", async () => {

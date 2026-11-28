@@ -12,7 +12,7 @@ import type { ControlPart } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
-import { run as runChild, runSync, type Exit } from "./child";
+import { longestArgument, run as runChild, runSync, type Exit } from "./child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "./corpus-mutants";
 import { installPackages } from "./packages-of";
 import { node } from "./programs";
@@ -791,6 +791,16 @@ test("a mutant is caught by a test that fails with it twice, a flake inconclusiv
   expect(narrowedTo(tests, ["d > wrapping.rs"])).toEqual(["test/corpus.test.ts", "-t", "d.*wrapping\\.rs"]);
   expect(narrowedTo(tests, ["(unnamed)"])).toBe(tests);
   expect(narrowedTo(tests, [betweenTests])).toBe(tests);
+  // A pattern too long to be one argument is the set whole: one of 600
+  // failed tests' names, past Linux's 128 KiB, was E2BIG, and the shard's
+  // run ended there, half its mutations unjudged (#2617).
+  // Each name is 204 bytes of the pattern, its `|` with it.
+  const named = (length: number) => Array.from({ length }, (_, i) => `d > ${String(i).padStart(4, "0")} ${"a".repeat(195)}`);
+  const most = Math.floor(longestArgument / 204);
+  const fits = narrowedTo(tests, named(most));
+  expect(fits[2].length).toBe(most * 204 - 1);
+  expect(fits[1]).toBe("-t");
+  expect(narrowedTo(tests, named(most + 1))).toBe(tests);
   // Each run again: the failed tests alone, then the set whole.
   const runs = (...said: { exit: Exit; output: string }[]) => {
     const asked: string[][] = [];

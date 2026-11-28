@@ -1698,3 +1698,30 @@ where the find has it counting twice; of a one-line find, the line sharing
 most of its words), and the test names them all. Test: "every stale find
 is said at once, beside its file's nearest text"; mutations
 `stale-finds-first-alone`, `stale-finds-near-by-membership-alone`.
+
+## Amendment: a run again fits one argument, and a source mutant's error is its own (2026-11-28, #2617)
+
+The nightlies of 11-26 and 11-28 lost shards 2, 6, 7, 11 and 16 of 16
+part-way, hundreds of mutations in, to `E2BIG` spawning a mutant's tests
+run again (`judgeTwice`). The run again was a `-t` of every failed test's
+name (`narrowedTo`), and a source mutant that failed some 600 of a file's
+long-named tests made a pattern past 128 KiB, the longest one argument
+Linux spawns (`MAX_ARG_STRLEN`); macOS bounds only all of them together,
+so a Mac never saw it. Two rules end it:
+
+- **A run again's pattern fits one argument.** `longestArgument`
+  (test/child.ts) is Linux's bound, and a pattern as long or longer runs
+  the mutation's tests whole, as a setup's failure already does. Which
+  tests fail twice is judged as before.
+- **A source mutant's error is its own verdict.** The 11-24 amendment's
+  `judgedApart` held for a compiler mutant alone: a source mutant's
+  judging ran outside it, so its throw ended the shard. Its judging is
+  `judgedSource`, `sourceMutation` under `judgedApart`.
+
+Tests: test/mutations.test.ts' "a mutant is caught by a test that fails
+with it twice …" (a pattern a name short of the bound, and one a name
+past it); test/source-mutations.test.ts' "a source mutant whose judging
+throws is its own inconclusive verdict …"; test/child.test.ts' "the
+longest one argument a spawn takes is longestArgument's …", which holds
+the bound to Linux's on CI. Mutations `narrowed-pattern-past-one-argument`
+and `source-judging-not-apart`.

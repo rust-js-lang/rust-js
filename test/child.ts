@@ -84,6 +84,14 @@ export function stopGroup(pid: number, signal: NodeJS.Signals = "SIGKILL") {
   }
 }
 
+/** The longest one argument a spawn may give, in bytes, its ending NUL
+ * with it: Linux's `MAX_ARG_STRLEN`, 32 pages of 4 KiB, past which
+ * `posix_spawn` fails E2BIG however short the rest. macOS bounds only all
+ * of them, the environment's with them, `ARG_MAX`'s 1 MiB. A command
+ * whose argument would be longer asks otherwise: a mutant's tests run
+ * again are its set whole, not a `-t` of 600 names (#2617). */
+export const longestArgument = 32 * 4096;
+
 /** `cmd` run so it goes with this process (#1444). A command runs as the
  * leader of a group of its own, so a deadline stops what it started too
  * (`stopGroup`), but then a SIGKILL of this process, or of its group, a

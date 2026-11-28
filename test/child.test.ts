@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
-import { askedOf, childWarnings, compileFailure, footprintLimit, footprints, ownPeak, processTree, run, runSync, treeBytes, type Exit } from "./child";
+import { askedOf, childWarnings, compileFailure, footprintLimit, footprints, longestArgument, ownPeak, processTree, run, runSync, treeBytes, type Exit } from "./child";
 import { nativeCommand, nativeShare, runProcess } from "./programs";
 import { underLoad } from "../scripts/timing";
 import { contentDirectory, fixture, nativeBinary, run as setUp } from "./support";
@@ -345,4 +345,19 @@ test("a command's peak memory is its own, not its spawner's", () => {
   expect(held[held.length - 1]).toBe(1);
   expect([peak.code, peak.spawner === process.pid]).toEqual([3, false]);
   expect(peak.maxRSS).toBeLessThan(256 * 2 ** 20);
+});
+
+// Linux refuses one argument of `longestArgument` bytes, its NUL with it,
+// and takes one a byte shorter, as a mutant's tests run again by a `-t` of
+// 600 names found (#2617); macOS bounds only all of them, so takes both.
+test("the longest one argument a spawn takes is longestArgument's, a byte short of it", async () => {
+  const spawned = async (bytes: number) => {
+    try {
+      return await Bun.spawn(["/bin/sh", "-c", ":", "a".repeat(bytes)]).exited;
+    } catch (error) {
+      return (error as { code?: string }).code;
+    }
+  };
+  expect(await spawned(longestArgument - 1)).toBe(0);
+  expect(await spawned(longestArgument)).toBe(process.platform === "linux" ? "E2BIG" : 0);
 });
