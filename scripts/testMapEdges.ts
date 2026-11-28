@@ -13,7 +13,7 @@ import { join, relative } from "node:path";
 
 /** The form of a crate's file the map reads, the driver's `VERSION`
  * (scripts/edges/src/main.rs): one of another is no file. */
-export const edgesVersion = 1;
+export const edgesVersion = 2;
 
 /** A crate's file, as the driver writes it. */
 type CrateEdges = {
@@ -22,7 +22,14 @@ type CrateEdges = {
   sources: { file: string; hash: string }[];
   defs: { id: string; file: string; lines: [number, number]; kind: string; name: string }[];
   edges: [string, string][];
+  /** The name of each definition of another crate it names. */
+  names: Record<string, string>;
 };
+
+/** What the edges' records give the map: its definitions, the edges
+ * between them, and, by each name, the definitions that name one of that
+ * name, of the checkout's or another crate's. */
+export type Recorded = { defs: Def[]; edges: string; names: Record<string, number[]> };
 
 /** A definition of the map's: its file, its lines, and the map's functions
  * whose code is in it, a function's own and its closures'. */
@@ -46,7 +53,7 @@ export function recordedEdges(
   root: string,
   functions: { file: string; spans: [number, number][] }[],
   read: (file: string) => Buffer | undefined = (file) => (existsSync(file) ? readFileSync(file) : undefined),
-): { defs: Def[]; edges: string } | string {
+): Recorded | string {
   const said: CrateEdges[] = [];
   for (const crate of crates) {
     if (existsSync(join(dir, `${crate}.failed`))) return `the walk of ${crate} failed`;
@@ -101,7 +108,25 @@ export function recordedEdges(
       flat.push(from, to);
     }
   }
-  return { defs, edges: Buffer.from(new Int32Array(flat).buffer).toString("base64") };
+  // By each name, what names one of that name: what a new item of it, or a
+  // `use` that brings it in, may take the place of, a glob's or the
+  // prelude's, as rustc resolves a name to the nearest.
+  const nameOf = new Map<string, string>();
+  for (const one of said) {
+    for (const def of one.defs) if (def.name) nameOf.set(def.id, def.name);
+    for (const [at, name] of Object.entries(one.names)) nameOf.set(at, name);
+  }
+  const named = new Map<string, Set<number>>();
+  for (const { edges } of said) {
+    for (const [namer, to] of edges) {
+      const from = index.get(namer);
+      const name = nameOf.get(to);
+      if (from === undefined || name === undefined) continue;
+      (named.get(name) ?? named.set(name, new Set()).get(name)!).add(from);
+    }
+  }
+  const names = Object.fromEntries([...named].sort(([a], [b]) => (a < b ? -1 : 1)).map(([name, of]) => [name, [...of].sort((a, b) => a - b)]));
+  return { defs, edges: Buffer.from(new Int32Array(flat).buffer).toString("base64"), names };
 }
 
 /** Whether `file`, an absolute path, is under `root`. */
@@ -121,8 +146,13 @@ export function edgePairs(edges: string): Int32Array {
  * `to`, the innermost definition holding both, as of a line added between
  * two. `undefined` of a line no definition holds; none where the map has
  * no edges. */
-export function edgeReach(map: { paths?: string[]; defs?: { file: number; lines: [number, number]; fns?: number[] }[]; edges?: string | null }): ((file: string, from: number, to?: number) => number[] | undefined) | undefined {
-  const { paths, defs, edges } = map;
+export function edgeReach(map: {
+  paths?: string[];
+  defs?: { file: number; lines: [number, number]; fns?: number[] }[];
+  edges?: string | null;
+  edgeNames?: Record<string, number[]>;
+}): (((file: string, from: number, to?: number) => number[] | undefined) & { named: (names: string[]) => number[] | undefined; inFile: (file: string) => number[] }) | undefined {
+  const { paths, defs, edges, edgeNames } = map;
   if (paths === undefined || defs === undefined || typeof edges !== "string") return undefined;
   const byFile = new Map<string, number[]>();
   defs.forEach((def, at) => {
@@ -132,23 +162,36 @@ export function edgeReach(map: { paths?: string[]; defs?: { file: number; lines:
   const namers: number[][] = defs.map(() => []);
   const pairs = edgePairs(edges);
   for (let at = 0; at < pairs.length; at += 2) namers[pairs[at + 1]!]!.push(pairs[at]!);
-  return (file, from, to = from) => {
+  // The functions of each of `starts` and, backwards along the edges, of
+  // each definition that names one, the walk going on past a function only
+  // from `own`, the line's own definition.
+  const walked = (starts: number[], own?: number) => {
+    const reached = new Set<number>();
+    const seen = new Set(starts);
+    const queue = [...starts];
+    while (queue.length > 0) {
+      const at = queue.shift()!;
+      const fns = defs[at]!.fns ?? [];
+      for (const fn of fns) reached.add(fn);
+      if (at !== own && fns.length > 0) continue;
+      for (const namer of namers[at]!) if (!seen.has(namer)) (seen.add(namer), queue.push(namer));
+    }
+    return [...reached];
+  };
+  const at = (file: string, from: number, to = from) => {
     let inner: number | undefined;
     for (const at of byFile.get(file) ?? []) {
       const [start, end] = defs[at]!.lines;
       if (start <= from && to <= end && (inner === undefined || end - start < defs[inner]!.lines[1] - defs[inner]!.lines[0])) inner = at;
     }
-    if (inner === undefined) return undefined;
-    const reached = new Set<number>();
-    const seen = new Set([inner]);
-    const queue = [inner];
-    while (queue.length > 0) {
-      const at = queue.shift()!;
-      const fns = defs[at]!.fns ?? [];
-      for (const fn of fns) reached.add(fn);
-      if (at !== inner && fns.length > 0) continue;
-      for (const namer of namers[at]!) if (!seen.has(namer)) (seen.add(namer), queue.push(namer));
-    }
-    return [...reached];
+    return inner === undefined ? undefined : walked([inner], inner);
   };
+  // Of `names`, a new item's or a `use`'s, what names a definition of one
+  // of them, whose name may now resolve to the new one: its functions, and
+  // what reaches each that's no function. None where the map has no names.
+  const named = (names: string[]) => (edgeNames === undefined ? undefined : walked([...new Set(names.flatMap((name) => edgeNames[name] ?? []))]));
+  // The functions of each definition of `file`, what a module's glob may
+  // change the names of.
+  const inFile = (file: string) => (byFile.get(file) ?? []).flatMap((at) => defs[at]!.fns ?? []);
+  return Object.assign(at, { named, inFile });
 }

@@ -322,3 +322,58 @@ Next, as the lead set them: the remaining "everything"s above. After
 about 30 pushes and the nightly selector audit with none missed comes the
 switch. At the switch, the name search, its valves and the SCIP item layer
 are deleted, with no fallback.
+
+## Amendment (2026-11-28, #2608): a new item's name, by what names a definition of it
+
+The replay above left 4 commits selecting everything by the edges, each
+for lines added at a module's top level. A new item, or a `use`, brings in
+a name. Code that named a definition of that name, a glob's or the
+prelude's, may now resolve to the new one, and no edge of the map's commit
+says which code that is. Now:
+
+- **The driver records names.** For each definition of another crate that
+  a crate names, it records the name (`names` in a crate's record;
+  `VERSION` 2). The map keeps `edgeNames`: for each name, the definitions
+  that name a definition of that name, of the checkout's or another
+  crate's.
+- **What a hunk brings in** (`introducedBy`): the items its lines define
+  (`definedIn`), and each `use`'s leaves, an `as` by its alias. A hunk
+  outside any function's code selects the functions of each definition
+  `edgeNames` lists for those names, and of what reaches each one that's
+  no function (`named`), besides what reaches its own lines.
+  - A glob's `use` added to a module may take the place of the prelude's
+    names there. It selects each function of its file (`inFile`).
+  - In a new file, its globs are seen in it alone.
+  - A macro called at a module's top level may write any item, so it
+    selects everything, said.
+  - A hunk wholly inside a function's code is that function's alone. An
+    item written there is seen only there.
+- **The crate's unit tests.** The counting build compiles none of the code
+  in an item marked `#[cfg(test)]`, so no definition holds it, and no test
+  of the map's runs it. The edges' rule selects nothing for it
+  (`unitTestsOnly`): the nearest enclosing item header, by indentation,
+  with its attributes. The same goes for an `include_str!` read there.
+
+The replay of the same 17 commits, against the same map:
+
+| | today | the layer | the edges |
+|---|---|---|---|
+| selects everything | 13 | 6 | 2 |
+| picks | 4 | 11 | 15 |
+
+The 2 that the edges still select everything for are a change to the
+selector and one to std's package, which every test runs under. Where
+today picks, the edges pick the same files: 0 missed, 0 extra. The new
+picks hold 232 to 467 of 467 files, as central code does.
+
+Mutations: `edges-driver-names-unrecorded` (scripts/mutations/edges.ts),
+`edges-names-unread` (scripts/mutations/testMapEdges.ts),
+`edges-names-unasked`, `edges-glob-not-its-file`,
+`edges-unit-tests-selected` and `edges-use-leaves-unnamed`
+(scripts/mutations/test-map.ts). Tests: test/test-map-edges.test.ts' two
+tests of the record and of `pick`.
+
+What's left before the switch is the shadow: about 30 pushes with
+`[edges: …, missed 0]`, and the nightly audit (`bun
+scripts/selector-audit.ts <dir> --shadow=edges`). Then the switch deletes
+the name search, its valves and the item layer.

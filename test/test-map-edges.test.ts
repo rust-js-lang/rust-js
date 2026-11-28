@@ -55,6 +55,10 @@ pub fn calls(h: &mut Holder) -> f64 {
     h.bump();
     h.shape.area()
 }
+
+pub fn shown(x: &dyn std::fmt::Display) -> String {
+    x.to_string()
+}
 `;
 
 /** The fixture crate compiled by the driver: its record, each edge by its
@@ -120,6 +124,10 @@ test("a crate's record is read where its sources are the tree's; none of a crate
   const reads = read.defs.findIndex((def) => def.lines[0] === 38);
   const bump = read.defs.findIndex((def) => def.lines[0] === 27);
   expect([read.defs[reads]!.fns, read.defs[bump]!.fns, read.defs.every((def) => def.file === "lib.rs")]).toEqual([[0], [1], true]);
+  // By each name, what names one of it, another crate's too: what a new
+  // item of the name may take the place of.
+  const shown = read.defs.findIndex((def) => def.lines[0] === 47);
+  expect([read.names.Display, read.names.to_string, read.names.Holder]).toEqual([[shown], [shown], expect.arrayContaining([read.defs.findIndex((def) => def.lines[0] === 42)])]);
   const pairs = edgePairs(read.edges);
   expect(pairs.length % 2).toBe(0);
   expect(pairs.length).toBeGreaterThan(20);
@@ -193,6 +201,30 @@ test("a change outside any function selects, by the edges, the functions that re
   // holds: everything.
   expect(at([[45, 1]])).toMatchObject({ kind: "picked", functions: [] });
   expect(at([[47, 1]])).toEqual({ kind: "all", why: "src/a.rs's change at line 47 is outside any function's counted code and any definition the edges know" });
+  // A new item or `use` at a module's top level: what names a definition
+  // of its name, which may resolve to it now, a glob's or the prelude's.
+  const named = { ...map, edgeNames: { Fresh: [3], Bar: [2] } };
+  const added = (lines: string[]) => pick(named, [{ file: "src/a.rs", hunks: [[47, 0, lines, []]] }], files, [], sources);
+  expect(added(["pub struct Fresh;"])).toMatchObject({ kind: "picked", functions: [1] });
+  expect(added(["use crate::other::{Bar, Baz as Qux};"])).toMatchObject({ kind: "picked", functions: [0] });
+  expect(added(["pub fn unnamed() {}"])).toMatchObject({ kind: "picked", functions: [] });
+  // A glob's names no edge says: each function of its module's file, whose
+  // prelude's names it may take the place of; a macro's call there may
+  // write any item: everything.
+  expect(added(["use crate::other::*;"])).toMatchObject({ kind: "picked", functions: [0, 1] });
+  expect(added(["thread_local! { static X: u8 = 0; }"]).kind).toBe("all");
+  // The crate's unit tests', which the counting build compiles none of:
+  // nothing, a line of a `#[cfg(test)]` function's or of its module's.
+  const tested = Array.from({ length: 50 }, (_, i) => `    let x${i + 1} = ${i + 1};`);
+  tested[45] = "#[cfg(test)]";
+  tested[46] = "mod tests {";
+  tested[47] = "    #[test]";
+  tested[48] = "    fn checks() {";
+  const inTests: Sources = { text: () => tested.join("\n"), naming: () => [] };
+  expect(pick(named, [{ file: "src/a.rs", hunks: [[50, 1], [47, 1]] }], files, [], inTests)).toMatchObject({ kind: "picked", functions: [] });
+  expect(pick(named, [{ file: "src/a.rs", hunks: [[47, 0, ["    fn more() {}"], []]] }], files, [], inTests)).toMatchObject({ kind: "picked", functions: [] });
+  // A map whose edges have no names can't say: everything.
+  expect(pick(map, [{ file: "src/a.rs", hunks: [[47, 0, ["pub struct Fresh;"], []]] }], files, [], sources).kind).toBe("all");
   // Without edges, a map selects as before: here, by the names, everything.
   expect(pick({ ...map, edges: null }, [{ file: "src/a.rs", hunks: [[25, 1]] }], files, [], sources).kind).toBe("all");
 });

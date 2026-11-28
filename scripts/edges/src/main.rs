@@ -30,7 +30,7 @@ extern crate rustc_interface;
 extern crate rustc_middle;
 extern crate rustc_span;
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -47,7 +47,7 @@ use rustc_span::{FileName, Span};
 
 /// What it writes, its form and its rules: a map reads only a crate's
 /// file of this version (scripts/testMapEdges.ts's `edgesVersion`).
-const VERSION: u32 = 1;
+const VERSION: u32 = 2;
 
 struct Record {
     dir: PathBuf,
@@ -86,6 +86,7 @@ fn written(tcx: TyCtxt<'_>) -> String {
         owner: None,
         results: None,
         edges: BTreeSet::new(),
+        names: BTreeMap::new(),
     };
     tcx.hir_visit_all_item_likes_in_crate(&mut walk);
     let mut defs = String::new();
@@ -182,9 +183,15 @@ fn written(tcx: TyCtxt<'_>) -> String {
         )
         .unwrap();
     }
+    let names = walk
+        .names
+        .iter()
+        .map(|(id, name)| format!("\"{id}\":{}", json(name)))
+        .collect::<Vec<_>>()
+        .join(",");
     let krate = tcx.crate_name(rustc_span::def_id::LOCAL_CRATE).to_string();
     format!(
-        "{{\"version\":{VERSION},\"crate\":{},\"sources\":[{sources}],\"defs\":[{defs}],\"edges\":[{edges}]}}\n",
+        "{{\"version\":{VERSION},\"crate\":{},\"sources\":[{sources}],\"defs\":[{defs}],\"edges\":[{edges}],\"names\":{{{names}}}}}\n",
         json(&krate)
     )
 }
@@ -263,6 +270,9 @@ struct Walk<'tcx> {
     owner: Option<LocalDefId>,
     results: Option<&'tcx TypeckResults<'tcx>>,
     edges: BTreeSet<(String, String)>,
+    /// The name of each definition of another crate it names: what a new
+    /// item of that name may shadow, a glob's or the prelude's.
+    names: BTreeMap<String, String>,
 }
 
 impl<'tcx> Walk<'tcx> {
@@ -279,6 +289,11 @@ impl<'tcx> Walk<'tcx> {
             | DefKind::OpaqueTy => return,
             _ => named,
         };
+        if !named.is_local()
+            && let Some(name) = self.tcx.opt_item_name(named)
+        {
+            self.names.insert(id(self.tcx, named), name.to_string());
+        }
         self.edges
             .insert((id(self.tcx, owner.to_def_id()), id(self.tcx, named)));
     }

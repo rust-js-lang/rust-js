@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "edges-walk-past-functions",
     breaks: "the walk back along the edges goes on past each function it reaches, to its callers, whose tests already run it, so a constant's change selects every caller's",
     file: reader,
-    find: "      if (at !== inner && fns.length > 0) continue;\n",
+    find: "      if (at !== own && fns.length > 0) continue;\n",
     replace: "",
     tests: ["test/test-map-edges.test.ts", "-t", "by the edges"],
   },
@@ -45,5 +45,13 @@ export const mutations: Mutation[] = [
     find: "      if (start <= from && to <= end && (inner === undefined || end - start < defs[inner]!.lines[1] - defs[inner]!.lines[0])) inner = at;\n",
     replace: "      if (start <= from && to <= end && (inner === undefined || end - start > defs[inner]!.lines[1] - defs[inner]!.lines[0])) inner = at;\n",
     tests: ["test/test-map-edges.test.ts", "-t", "by the edges"],
+  },
+  {
+    name: "edges-names-unread",
+    breaks: "the names of what another crate's a definition names are left out of the map's names, so a new item of the prelude's name reaches none of what names the prelude's",
+    file: reader,
+    find: "    for (const [at, name] of Object.entries(one.names)) nameOf.set(at, name);\n",
+    replace: "",
+    tests: read,
   },
 ];

@@ -96,4 +96,12 @@ export const mutations: Mutation[] = [
     replace: "    let _ = cwd;\n    path.to_string_lossy().into_owned()\n",
     tests: read,
   },
+  {
+    name: "edges-driver-names-unrecorded",
+    breaks: "the driver records no name of what another crate's it names, so a new item of the prelude's or a glob's name, which may take its place, reaches none of what names it",
+    file: driver,
+    find: "            self.names.insert(id(self.tcx, named), name.to_string());\n",
+    replace: "            let _ = name;\n",
+    tests: read,
+  },
 ];

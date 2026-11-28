@@ -63,7 +63,7 @@ import { compilerCrates, compilerSourceDirs, crateOf, cratesBuilding, isCompiler
 import { readJobTimes } from "./jobTimes";
 import { recording, unitLoads } from "./testMapLoads";
 import { type ItemLayer, implBodyAt, inUnitTests, itemLayer, scipIndex, touchedByItem, touchedByNewFile } from "./testMapItems";
-import { type Def, edgePairs, edgeReach, edgesDriver, recordedEdges } from "./testMapEdges";
+import { edgePairs, edgeReach, edgesDriver, type Recorded, recordedEdges } from "./testMapEdges";
 import { balanced, caseShardParts, machine, pushSuiteFiles, shard, shardArg } from "./shard";
 
 const root = join(import.meta.dir, "..");
@@ -146,6 +146,10 @@ export type TestMap = {
    * indices, the namer then the named, base64 as `units`' bits are; `null`
    * where the driver's record isn't whole, so no change is placed by it. */
   edges?: string | null;
+  /** With `edges`: by each name, the `defs` that name a definition of that
+   * name, of the checkout's or another crate's, what a new item of it may
+   * take the place of. */
+  edgeNames?: Record<string, number[]>;
 };
 
 /** How far an incremental recording carries from: a map at most this many
@@ -767,16 +771,29 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
   // a `use`'s or a `mod`'s, which selects nothing, or new items nothing
   // names yet; anything else there, everything, said.
   const byEdges = (reach: NonNullable<ReturnType<typeof edgeReach>>, file: string, from: number, count: number, added: string[]): number[] | string => {
-    if (count === 0) {
-      if (added.every(commentOnly)) return [];
-      const inside = holding(file, from).filter((f) => holding(file, from + 1).includes(f));
-      if (inside.length > 0) return inside;
-      const reached = reach(file, from, from + 1);
-      if (reached !== undefined) return reached;
-      if (useOrMod(added) || unreferencedOnly(added)) return [];
-      return `${file}'s change between lines ${from} and ${from + 1} is outside any definition, and not only new items, a \`use\` or a \`mod\``;
+    // Inside a function's code alone, its own; an item written there is
+    // seen in it alone.
+    const lines = count === 0 ? [from, from + 1] : Array.from({ length: count }, (_, at) => from + at);
+    if (count === 0 ? holding(file, from).some((f) => holding(file, from + 1).includes(f)) : lines.every((line) => holding(file, line).length > 0)) {
+      return count === 0 ? holding(file, from).filter((f) => holding(file, from + 1).includes(f)) : lines.flatMap((line) => holding(file, line));
     }
-    const found: number[] = [];
+    // What names a definition of a name the added lines bring in, an
+    // item's or a `use`'s, which may now resolve to theirs (`named`).
+    const introduced = introducedBy(added);
+    if (typeof introduced === "string") return `${file}'s change at line ${from}: ${introduced}`;
+    const named = introduced.names.length === 0 ? [] : reach.named(introduced.names);
+    if (named === undefined) return `${file}'s change at line ${from} brings in ${introduced.names.join(", ")}, and the map's edges have no names to say what they may take the place of`;
+    // A glob's names, which no edge says, may take the place of the
+    // prelude's in its module: each of its file's functions.
+    const shadowed = introduced.glob ? [...named, ...reach.inFile(file)] : named;
+    if (count === 0) {
+      if (added.every(commentOnly) || unitTestsOnly(file, from)) return [];
+      const reached = reach(file, from, from + 1);
+      if (reached !== undefined) return [...reached, ...shadowed];
+      // At a module's top level: items, `use`s and `mod`s, by their names.
+      return shadowed;
+    }
+    const found: number[] = [...shadowed];
     for (let line = from; line < from + count; line++) {
       const counted = holding(file, line);
       if (counted.length > 0) {
@@ -791,9 +808,49 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
         continue;
       }
       if (text !== undefined && useOrMod([text])) continue;
+      // The crate's unit tests', which the counting build compiles none of,
+      // nor runs any test of the map's.
+      if (unitTestsOnly(file, line)) continue;
       return `${file}'s change at line ${line} is outside any function's counted code and any definition the edges know`;
     }
     return found;
+  };
+  // Whether `line` of `file` is in an item marked `#[cfg(test)]`, or one
+  // inside such an item: an enclosing item's header is the nearest line,
+  // its own or above it, indented no more that opens an item, its
+  // attributes above it.
+  const unitTestsOnly = (file: string, line: number) => {
+    const lines = linesRead(file);
+    if (lines === undefined) return false;
+    const indent = (text: string) => text.length - text.trimStart().length;
+    let under = indent(lines[line - 1] ?? "") + 1;
+    for (let at = line; at >= 1 && under > 0; at--) {
+      const text = lines[at - 1]!;
+      if (text.trim() === "" || indent(text) >= under || !/^\s*(?:pub(?:\([^)]*\))?\s+)?(?:(?:unsafe|async|const)\s+)*(?:fn|mod|impl|struct|enum|trait|const|static)\b/.test(text)) continue;
+      for (let above = at - 1; above >= 1 && /^\s*(?:#\[|\/\/)/.test(lines[above - 1]!); above--) if (/^\s*#\[cfg\(test\)\]/.test(lines[above - 1]!)) return true;
+      under = indent(text);
+    }
+    return false;
+  };
+  // The names `lines` bring in, of the items they define and the `use`s
+  // they write, and whether one is a glob's; or why they can't be said: a
+  // macro's call at a module's top level, which may write any item.
+  const introducedBy = (lines: string[]): { names: string[]; glob: boolean } | string => {
+    let glob = false;
+    const names = definedIn(lines);
+    const text = lines.filter((line) => !commentOnly(line)).join("\n");
+    for (const [, tree] of text.matchAll(/(?:^|\n)\s*(?:pub(?:\([^)]*\))?\s+)?use\s+([^;]*);/g)) {
+      if (/\*/.test(tree!)) glob = true;
+      for (const leaf of tree!.split(/[{},]/)) {
+        const said = /(?:::)?\s*([A-Za-z_]\w*)(?:\s+as\s+([A-Za-z_]\w*))?\s*$/.exec(leaf.trim());
+        if (said === null) continue;
+        const name = said[2] ?? said[1]!;
+        if (name !== "self" && name !== "_") names.push(name);
+      }
+    }
+    const called = lines.find((line) => /^[A-Za-z_][\w:]*!\s*[({[]/.test(line) && !/^macro_rules!/.test(line));
+    if (called !== undefined) return `\`${called.trim()}\` calls a macro at a module's top level, which may write any item`;
+    return { names: [...new Set(names)], glob };
   };
   // Where the item `name` that `file` declares can be named (#2608): by
   // its crate and module path, as rustc resolves it, not wherever its bare
@@ -1197,6 +1254,9 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     if (sites !== undefined && hunks !== "new") {
       for (const { file: at, line } of sites) {
         const found = holding(at, line);
+        // Read by the crate's unit tests alone, by the edges' rule: no test
+        // of the map's runs them (#2608).
+        if (found.length === 0 && reach !== undefined && unitTestsOnly(at, line)) continue;
         if (found.length === 0) return { kind: "all", why: `${file} is read at ${at}:${line}, outside any function's counted code` };
         for (const f of found) touched.add(f);
       }
@@ -1207,6 +1267,15 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
       // A new module of items nothing referred to: its `mod` line, a pure
       // addition, and the functions changed to use it select its tests.
       const text = existsSync(join(root, file)) ? readFileSync(join(root, file), "utf8") : undefined;
+      // By the edges: what names a definition of a name it brings in.
+      if (reach !== undefined && text !== undefined) {
+        // Its own globs' names are seen in it alone, all new.
+        const introduced = introducedBy(text.split("\n"));
+        const shadowed = typeof introduced === "string" ? introduced : reach.named(introduced.names);
+        if (typeof shadowed === "string" || shadowed === undefined) return { kind: "all", why: `${file} is new since the map's commit${typeof shadowed === "string" ? `: ${shadowed}` : ", and the map's edges have no names"}` };
+        for (const f of shadowed) touched.add(f);
+        continue;
+      }
       if (text !== undefined && unreferencedModule(text)) continue;
       // What moved there, by name, and what reaches the items it defines,
       // where the map knows them (#2288).
@@ -1984,7 +2053,7 @@ export type Plan = {
   items?: ItemLayer;
   /** rustc's resolved references of its commit (scripts/testMapEdges.ts),
    * definitions by their file's path; or why there are none. */
-  edges?: { defs: Def[]; edges: string } | string;
+  edges?: Recorded | string;
 };
 
 /** Where `build` writes the plan and each part's recording is, the merge's
@@ -2433,18 +2502,18 @@ export function mergeRecordings(plan: Plan, parts: string[], made: number, from?
   const { version, commit, toolchain, functions, includes, corpusReaders, names, items } = plan;
   const base = plan.carry?.base ?? { commit, made };
   const carried = plan.carry === undefined ? {} : { carried: { from: plan.carry.from, recorded: Object.keys(units).length - carriedCount, carried: carriedCount } };
-  const { all, defs, edges } = withDefs(paths, plan.edges);
-  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders, noCompiler, names, base, ...carried, ...(items === undefined ? {} : { items }), paths: all, loads: reindexed(loads, paths, all), defs, edges }, always };
+  const { all, defs, edges, edgeNames } = withDefs(paths, plan.edges);
+  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders, noCompiler, names, base, ...carried, ...(items === undefined ? {} : { items }), paths: all, loads: reindexed(loads, paths, all), defs, edges, ...(edgeNames === undefined ? {} : { edgeNames }) }, always };
 }
 
 /** `paths`, the loads' table, with each definition's file, sorted, and the
  * definitions by an index of it; no definitions and `null` edges where the
  * plan has none (`Plan.edges`' why). */
-export function withDefs(paths: string[], recorded: Plan["edges"]): { all: string[]; defs: NonNullable<TestMap["defs"]>; edges: string | null } {
+export function withDefs(paths: string[], recorded: Plan["edges"]): { all: string[]; defs: NonNullable<TestMap["defs"]>; edges: string | null; edgeNames?: Record<string, number[]> } {
   if (recorded === undefined || typeof recorded === "string") return { all: paths, defs: [], edges: null };
   const all = [...new Set([...paths, ...recorded.defs.map((def) => def.file)])].sort();
   const index = new Map(all.map((path, at) => [path, at]));
-  return { all, defs: recorded.defs.map((def) => ({ ...def, file: index.get(def.file)! })), edges: recorded.edges };
+  return { all, defs: recorded.defs.map((def) => ({ ...def, file: index.get(def.file)! })), edges: recorded.edges, edgeNames: recorded.names };
 }
 
 /** `loads`, each file an index of `from`, by its index of `to`. */

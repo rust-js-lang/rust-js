@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-28 (#2608, ADR 1210 amended): test/test-map-edges.test.ts' record test holds the names of what another crate's a definition names, and its `pick` test a new item's and a `use`'s names, a glob's file, a macro's call and the crate's unit tests; 7 mutations.
+
 Changed on 2026-11-28 (#2608, ADR 1210 amended): test/test-map-edges.test.ts, new, three tests: the edges' driver records each kind of reference rustc resolved; a crate's record is read where its sources are the tree's, none of a crate unrecorded, failed or stale; a change outside any function selects, by the edges, the functions that reach its definition. test/testMap-items.test.ts' "the selection that runs is the map's without its item layer" holds the edges' shadow too; test/source-mutations.test.ts names what builds each compiled source (`builderOf`); 19 mutations.
 
 Changed on 2026-11-27 (#2403's push): test/support.test.ts gains "an apps seed is its compiler's own"; mutation `apps-seed-shared-by-compilers`.
