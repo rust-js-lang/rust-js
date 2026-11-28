@@ -211,10 +211,17 @@ test("the layer's selection in shadow: what it would leave out of what failed, a
 });
 
 // The selection that runs is the map's without its item layer, the layer's
-// beside it in shadow, until the switch (#2288); and the loads' (#2482).
+// beside it in shadow, until the switch (#2288); the loads' (#2482); and
+// the edges' (#2608).
 test("the selection that runs is the map's without its item layer", () => {
   const source = require("node:fs").readFileSync(require("node:path").join(import.meta.dir, "..", "scripts", "select.ts"), "utf8") as string;
-  expect(source).toContain("const ran = selectOf(map === undefined ? undefined : { ...map, items: undefined }, base, sanity, rule, on, given);");
-  expect(source).toContain("if (map?.items !== undefined) shadows.items = selectOf(map, base, sanity, rule, on, given);");
-  expect(source).toContain("if (!on && map?.loads !== undefined) shadows.loads = selectOf({ ...map, items: undefined }, base, sanity, rule, true, given);");
+  expect(source).toContain("const plain = map === undefined ? undefined : { ...map, items: undefined, edges: undefined };");
+  expect(source).toContain("const ran = selectOf(plain, base, sanity, rule, on, given);");
+  expect(source).toContain("if (map?.items !== undefined) shadows.items = selectOf({ ...map, edges: undefined }, base, sanity, rule, on, given);");
+  expect(source).toContain("if (!on && plain?.loads !== undefined) shadows.loads = selectOf(plain, base, sanity, rule, true, given);");
+  // And the edges' (#2608), by a map without the layer.
+  expect(source).toContain('if (typeof map?.edges === "string") shadows.edges = selectOf({ ...map, items: undefined }, base, sanity, rule, on, given);');
+  // An incremental recording's carry asks the map without its edges too.
+  const recording = require("node:fs").readFileSync(require("node:path").join(import.meta.dir, "..", "scripts", "testMap.ts"), "utf8") as string;
+  expect(recording).toContain("const selection = fullSelection({ ...from, edges: undefined });");
 });

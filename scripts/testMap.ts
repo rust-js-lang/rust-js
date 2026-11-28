@@ -63,6 +63,7 @@ import { compilerCrates, compilerSourceDirs, crateOf, cratesBuilding, isCompiler
 import { readJobTimes } from "./jobTimes";
 import { recording, unitLoads } from "./testMapLoads";
 import { type ItemLayer, implBodyAt, inUnitTests, itemLayer, scipIndex, touchedByItem, touchedByNewFile } from "./testMapItems";
+import { type Def, edgePairs, edgeReach, edgesDriver, recordedEdges } from "./testMapEdges";
 import { balanced, caseShardParts, machine, pushSuiteFiles, shard, shardArg } from "./shard";
 
 const root = join(import.meta.dir, "..");
@@ -72,7 +73,7 @@ export const mapDir = join(root, "target", "test-map");
 /** Where maps are kept, the machine's, every worktree's (#932). */
 export const mapStore = join(machineStore, "test-maps");
 /** The layout's version, which a change to it or to what's recorded bumps. */
-export const mapVersion = 5;
+export const mapVersion = 6;
 /** The most maps kept: one a commit of `main` CI records (ADR 1101,
  * amended), each superseded by the next, so held by their count. */
 export const keptMaps = 8;
@@ -136,14 +137,14 @@ export type TestMap = {
    * environment no recorder follows, so it runs on every change a load
    * selects by. A map without it selects as before. */
   loads?: { of: Record<string, number[] | null> };
-  /** Reserved for rustc's resolved references (#2608, worker-02's, ADR
-   * 1210's edges), not recorded yet: each of the compiler's definitions, its
-   * file an index of `paths`, its lines, and its function's index in
-   * `functions` where it's one. */
-  defs?: { file: number; lines: [start: number, end: number]; fn?: number }[];
-  /** Reserved with `defs`: each reference, an `Int32Array` of pairs of
-   * `defs` indices, the namer then the named, base64 as `units`' bits are;
-   * `null` where the pass didn't run, so no change is placed by it. */
+  /** rustc's resolved references (#2608, ADR 1210's edges,
+   * scripts/testMapEdges.ts): each of the compiler's definitions, its file
+   * an index of `paths`, its lines, and, of a function, the indices in
+   * `functions` of its code and its closures'. */
+  defs?: { file: number; lines: [start: number, end: number]; fns?: number[] }[];
+  /** With `defs`: each reference, an `Int32Array` of pairs of `defs`
+   * indices, the namer then the named, base64 as `units`' bits are; `null`
+   * where the driver's record isn't whole, so no change is placed by it. */
   edges?: string | null;
 };
 
@@ -656,6 +657,7 @@ export function readsSources(file: string): boolean {
  * What every other path runs is the selector's (scripts/select.ts). */
 export function pick(map: TestMap, changes: Change[], files: string[], cases: string[], sources: Sources = sourcesAt(map.commit)): Picked {
   const touched = new Set<number>();
+  const reach = edgeReach(map);
   // Each function's spans, by file, and the lines from its first to its last.
   const spans = new Map<string, { at: number; from: number; to: number }[]>();
   const extent = map.functions.map(({ spans: of }) => [of[0]?.[0] ?? 0, of.at(-1)?.[1] ?? -1] as const);
@@ -758,6 +760,41 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     return texts.get(at);
   };
   const linesOf = (at: string) => linesRead(at) ?? [""];
+  // A hunk's functions by the edges (`edgeReach`): each line's in a
+  // function's counted code, none of a comment's, and of any other, what
+  // reaches the innermost definition holding it; of lines added between
+  // two, what reaches the one holding both. A line no definition holds is
+  // a `use`'s or a `mod`'s, which selects nothing, or new items nothing
+  // names yet; anything else there, everything, said.
+  const byEdges = (reach: NonNullable<ReturnType<typeof edgeReach>>, file: string, from: number, count: number, added: string[]): number[] | string => {
+    if (count === 0) {
+      if (added.every(commentOnly)) return [];
+      const inside = holding(file, from).filter((f) => holding(file, from + 1).includes(f));
+      if (inside.length > 0) return inside;
+      const reached = reach(file, from, from + 1);
+      if (reached !== undefined) return reached;
+      if (useOrMod(added) || unreferencedOnly(added)) return [];
+      return `${file}'s change between lines ${from} and ${from + 1} is outside any definition, and not only new items, a \`use\` or a \`mod\``;
+    }
+    const found: number[] = [];
+    for (let line = from; line < from + count; line++) {
+      const counted = holding(file, line);
+      if (counted.length > 0) {
+        found.push(...counted);
+        continue;
+      }
+      const text = linesRead(file)?.[line - 1];
+      if (text !== undefined && (commentOnly(text) || /^\s*#!\[/.test(text))) continue;
+      const reached = reach(file, line);
+      if (reached !== undefined) {
+        found.push(...reached);
+        continue;
+      }
+      if (text !== undefined && useOrMod([text])) continue;
+      return `${file}'s change at line ${line} is outside any function's counted code and any definition the edges know`;
+    }
+    return found;
+  };
   // Where the item `name` that `file` declares can be named (#2608): by
   // its crate and module path, as rustc resolves it, not wherever its bare
   // name is a word, which an item of a crate that can't see it shares, or
@@ -1181,6 +1218,14 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     for (const [from, count, added = [], removed] of hunks) {
       // Comments alone, or blank lines, change nothing a test runs.
       if (removed !== undefined && [...added, ...removed].every(commentOnly)) continue;
+      // Of a map with edges, each line outside any function's code by what
+      // rustc resolved reaching it, no name searched (#2608, ADR 1210).
+      if (reach !== undefined) {
+        const reached = byEdges(reach, file, from, count, added);
+        if (typeof reached === "string") return { kind: "all", why: reached };
+        for (const f of reached) touched.add(f);
+        continue;
+      }
       // A pure addition of items nothing referred to before, a `mod`, a
       // `fn` or a type, outside any function's code: nothing until a
       // function is changed to use it, whose own hunk selects its tests.
@@ -1937,6 +1982,9 @@ export type Plan = {
   carry?: { from: string; base: { commit: string; made: number }; recorded: string[]; cases: string[]; forms: string[] };
   /** The item layer of its commit, or none where its index failed. */
   items?: ItemLayer;
+  /** rustc's resolved references of its commit (scripts/testMapEdges.ts),
+   * definitions by their file's path; or why there are none. */
+  edges?: { defs: Def[]; edges: string } | string;
 };
 
 /** Where `build` writes the plan and each part's recording is, the merge's
@@ -2015,6 +2063,11 @@ function recordItems(functions: TestMap["functions"]): ItemLayer | undefined {
   return layer;
 }
 
+/** Where the edges' driver writes each crate's record, kept between
+ * recordings as the counting build's target is: a crate Cargo doesn't
+ * compile again keeps its last compile's (`recordedEdges` checks it). */
+const edgesDir = join(mapDir, "edges");
+
 async function build(shards: number, carry?: (names: string[], files: string[], caseNames: string[]) => Promise<NonNullable<Plan["carry"]> | string>): Promise<Plan> {
   if (git(["status", "--porcelain"]).out.trim() !== "") throw new Error(unclean);
   const started = Date.now();
@@ -2039,12 +2092,26 @@ async function build(shards: number, carry?: (names: string[], files: string[], 
   // those still built by the machine's cache.
   const counting = join(root, "scripts", "counting-rustc.sh");
   const cache = process.env.RUSTC_WRAPPER ?? Bun.which("sccache") ?? "";
-  const counted = compilerCrates().map((crate) => crate.name).join(" ");
-  const built = Bun.spawnSync(
-    ["cargo", "rustc", "--locked", "--quiet", "--target-dir", build, "--bin", "rust-js", "--", "-C", `link-arg=${join(mapDir, "lost.o")}`],
-    { cwd: root, env: { ...env, RUSTC_WRAPPER: counting, RUST_JS_COUNTED_CRATES: counted, RUST_JS_CACHE_WRAPPER: cache }, stdout: "inherit", stderr: "inherit" },
-  );
-  if (built.exitCode !== 0) process.exit(1);
+  const crates = compilerCrates();
+  const counted = crates.map((crate) => crate.name);
+  // And each is compiled by the edges' driver, which writes what it names
+  // (scripts/edges, #2608), where the driver builds.
+  mkdirSync(edgesDir, { recursive: true });
+  const driver = edgesDriver(root, join(mapDir, "edges-build"));
+  const countingBuild = () =>
+    Bun.spawnSync(["cargo", "rustc", "--locked", "--quiet", "--target-dir", build, "--bin", "rust-js", "--", "-C", `link-arg=${join(mapDir, "lost.o")}`], {
+      cwd: root,
+      env: { ...env, RUSTC_WRAPPER: counting, RUST_JS_COUNTED_CRATES: counted.join(" "), RUST_JS_CACHE_WRAPPER: cache, ...(typeof driver === "string" ? {} : { RUST_JS_EDGES_DRIVER: driver.path, RUST_JS_EDGES_DIR: edgesDir }) },
+      stdout: "inherit",
+      stderr: "inherit",
+    });
+  if (countingBuild().exitCode !== 0) process.exit(1);
+  // A crate whose last compile wasn't the driver's, or not of the tree as
+  // it is, compiled again, once: the edges are every crate's or none.
+  if (typeof driver !== "string" && typeof recordedEdges(edgesDir, counted, root, []) === "string") {
+    if (Bun.spawnSync(["cargo", "clean", "--quiet", "--target-dir", build, ...crates.flatMap((crate) => ["-p", crate.package])], { cwd: root, env, stdout: "inherit", stderr: "inherit" }).exitCode !== 0) process.exit(1);
+    if (countingBuild().exitCode !== 0) process.exit(1);
+  }
   console.log(`the counting build: ${((Date.now() - started) / 1000).toFixed(0)} s`);
 
   rmSync(recordings, { recursive: true, force: true });
@@ -2054,6 +2121,8 @@ async function build(shards: number, carry?: (names: string[], files: string[], 
   const { names, functions } = functionTable(countingBinary, table, tools);
   rmSync(table, { recursive: true, force: true });
   const items = recordItems(functions);
+  const edges = typeof driver === "string" ? driver : recordedEdges(edgesDir, counted, root, functions);
+  console.log(typeof edges === "string" ? `⚠ the map has no edges: ${edges}; a change outside any function selects as before` : `the edges: ${edges.defs.length} definitions, ${edgePairs(edges.edges).length / 2} references`);
 
   const perShard = machine().cores;
   const parts = shards * perShard;
@@ -2091,6 +2160,7 @@ async function build(shards: number, carry?: (names: string[], files: string[], 
     units,
     ...(carrying === undefined ? {} : { carry: carrying }),
     ...(items === undefined ? {} : { items }),
+    edges,
   };
   writeFileSync(planFile, JSON.stringify(plan));
   return plan;
@@ -2129,7 +2199,8 @@ export async function planCarry(names: string[], files: string[], caseNames: str
   const baseBehind = Number(git(["rev-list", "--count", `${base.commit}..HEAD`]).out.trim());
   if (Date.now() - base.made > baseDays * 86_400_000 || baseBehind > baseCommits) return `its chain's full recording, ${base.commit.slice(0, 9)}, is past ${baseDays} day or ${baseCommits} commits`;
   const { fullSelection } = await import("./select");
-  const selection = fullSelection(from);
+  // Not by the edges, in shadow until their switch (#2608).
+  const selection = fullSelection({ ...from, edges: undefined });
   if (selection.all) return `the selector's full rule selects everything since ${from.commit.slice(0, 9)}: ${selection.why}`;
   return carryOf(from, selection, files, caseNames, base);
 }
@@ -2362,7 +2433,25 @@ export function mergeRecordings(plan: Plan, parts: string[], made: number, from?
   const { version, commit, toolchain, functions, includes, corpusReaders, names, items } = plan;
   const base = plan.carry?.base ?? { commit, made };
   const carried = plan.carry === undefined ? {} : { carried: { from: plan.carry.from, recorded: Object.keys(units).length - carriedCount, carried: carriedCount } };
-  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders, noCompiler, names, base, ...carried, ...(items === undefined ? {} : { items }), paths, loads }, always };
+  const { all, defs, edges } = withDefs(paths, plan.edges);
+  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders, noCompiler, names, base, ...carried, ...(items === undefined ? {} : { items }), paths: all, loads: reindexed(loads, paths, all), defs, edges }, always };
+}
+
+/** `paths`, the loads' table, with each definition's file, sorted, and the
+ * definitions by an index of it; no definitions and `null` edges where the
+ * plan has none (`Plan.edges`' why). */
+export function withDefs(paths: string[], recorded: Plan["edges"]): { all: string[]; defs: NonNullable<TestMap["defs"]>; edges: string | null } {
+  if (recorded === undefined || typeof recorded === "string") return { all: paths, defs: [], edges: null };
+  const all = [...new Set([...paths, ...recorded.defs.map((def) => def.file)])].sort();
+  const index = new Map(all.map((path, at) => [path, at]));
+  return { all, defs: recorded.defs.map((def) => ({ ...def, file: index.get(def.file)! })), edges: recorded.edges };
+}
+
+/** `loads`, each file an index of `from`, by its index of `to`. */
+function reindexed(loads: NonNullable<TestMap["loads"]>, from: string[], to: string[]): NonNullable<TestMap["loads"]> {
+  if (from === to) return loads;
+  const index = new Map(to.map((path, at) => [path, at]));
+  return { of: Object.fromEntries(Object.entries(loads.of).map(([file, files]) => [file, files === null ? null : files.map((at) => index.get(from[at]!)!)])) };
 }
 
 /** What each test file of `plan` loaded, its parts' lists together

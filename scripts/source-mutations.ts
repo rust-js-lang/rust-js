@@ -113,24 +113,30 @@ export function sourceWasLoaded(marker: string, name: string): boolean {
   );
 }
 
-/** The bindings crates' handwritten Rust, the js, webapi and react crates'
- * sources, which a test compiles into its own target as it starts, of its
- * workspace's files, by `buildReact` (test/support.ts), whose inputs they
- * are (#2105). */
-const bindingsSources = ["builtins/src/", "webapi/src/", "react/src/"];
+/** The handwritten Rust a test compiles of its workspace's files as it
+ * runs, each folder by what builds it: the bindings crates', the js, webapi
+ * and react crates' sources, by `buildReact` (test/support.ts), whose
+ * inputs they are (#2105); the test map's edges' driver, by `edgesDriver`
+ * (scripts/testMapEdges.ts, #2608). */
+const compiledSources: { dir: string; builder: string }[] = [
+  { dir: "builtins/src/", builder: "buildReact" },
+  { dir: "webapi/src/", builder: "buildReact" },
+  { dir: "react/src/", builder: "buildReact" },
+  { dir: "scripts/edges/src/", builder: "edgesDriver" },
+];
 
-/** Whether `file` is the bindings crates' Rust (`bindingsSources`): a
- * mutant of it is compiled, not loaded, so no mark of its load is written
- * in it; it's proved compiled as each of its tests builds the crates. */
-export function ofBindingsCrate(file: string): boolean {
-  return file.endsWith(".rs") && bindingsSources.some((dir) => file.startsWith(dir));
+/** What builds `file` where it's Rust a test compiles (`compiledSources`):
+ * a mutant of it is compiled, not loaded, so no mark of its load is written
+ * in it; it's proved compiled as each of its tests builds it. */
+export function builderOf(file: string): string | undefined {
+  return file.endsWith(".rs") ? compiledSources.find(({ dir }) => file.startsWith(dir))?.builder : undefined;
 }
 
 /** Of `tests`, a mutation's, as `root` holds them, each test file that
- * doesn't build the bindings crates (`buildReact`), where a mutant of their
- * Rust would never be compiled, its tests passing whatever it is. */
-export function unbuiltBy(root: string, tests: string[]): string[] {
-  return tests.filter((arg) => /^test\/.*\.test\.tsx?$/.test(arg) && !readFileSync(join(root, arg), "utf8").includes("buildReact"));
+ * doesn't call `builder`, where a mutant of the Rust it builds would never
+ * be compiled, its tests passing whatever it is. */
+export function unbuiltBy(root: string, tests: string[], builder: string): string[] {
+  return tests.filter((arg) => /^test\/.*\.test\.tsx?$/.test(arg) && !readFileSync(join(root, arg), "utf8").includes(builder));
 }
 
 /** What the wasm build made, which git doesn't track, so no workspace
@@ -173,17 +179,18 @@ export async function sourceMutation(
   bytes: number;
 }> {
   // The bindings crates' Rust, compiled where a test builds them (#2105).
-  const compiled = ofBindingsCrate(mutation.file);
+  const builder = builderOf(mutation.file);
+  const compiled = builder !== undefined;
   if (!compiled && !/\.(m?[jt]s|[jt]sx)$/.test(mutation.file))
     throw new Error(`source load proof is not supported for ${mutation.file}`);
   let build = 0,
     tests = 0,
     peak = 0;
   let output = "";
-  const unbuilt = compiled ? unbuiltBy(root, mutation.tests ?? []) : [];
+  const unbuilt = builder !== undefined ? unbuiltBy(root, mutation.tests ?? [], builder) : [];
   if (compiled && unbuilt.length > 0)
     return {
-      result: `INCONCLUSIVE: ${unbuilt.join(", ")} doesn't build the bindings crates (\`buildReact\`), so the mutant of ${mutation.file} is never compiled`,
+      result: `INCONCLUSIVE: ${unbuilt.join(", ")} doesn't build it (\`${builder}\`), so the mutant of ${mutation.file} is never compiled`,
       output,
       build,
       tests,

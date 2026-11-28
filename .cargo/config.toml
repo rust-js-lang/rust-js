@@ -1,6 +1,7 @@
 # rust-js links rustc's internal crates, which a stable release has too, in
 # its `rustc-dev` component, but lets only a nightly use (ADR 0109). This lets
-# rust-js's own crate, and no other, use them; and clippy's, which
-# `rust-js clippy` links (ADR 0888).
+# rust-js's own crate, and no other, use them; clippy's, which
+# `rust-js clippy` links (ADR 0888); and the test map's edges' driver,
+# scripts/edges (ADR 1210).
 [env]
-RUSTC_BOOTSTRAP = "rust_js,rust_js_lower,rust_js_mir,rust_js_jsx,clippy_config,clippy_lints,clippy_utils,declare_clippy_lint"
+RUSTC_BOOTSTRAP = "rust_js,rust_js_edges,rust_js_lower,rust_js_mir,rust_js_jsx,clippy_config,clippy_lints,clippy_utils,declare_clippy_lint"

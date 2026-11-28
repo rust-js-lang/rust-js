@@ -188,3 +188,137 @@ heuristic with those behind it.
     `loads-vite-config-unmapped` and `loads-lost-child-unsaid`
     (test-map-loads-shared.ts), `loads-failed-test-known`,
     `loads-parts-not-joined` and `loads-not-carried` (test-map.ts).
+
+## Amendment (2026-11-28, #2608): the edges are recorded
+
+The lead approved worker-02's design on 2026-11-28
+(https://github.com/rust-js-lang/rust-js/issues/2608#issuecomment-7235927433):
+take what reaches an item outside any function from rustc's resolution,
+not from its name searched as text. This step records the edges with the
+map. Nothing reads them yet; the next step asks them in shadow.
+
+**The driver, scripts/edges.** It is a rustc driver in a Cargo package of
+its own, outside the compiler's workspace, built for the checkout's
+toolchain into the map's target (`edgesDriver`). The counting build's
+wrapper (scripts/counting-rustc.sh) runs it in place of rustc for each of
+the compiler's crates, with `-C instrument-coverage` as before. It compiles
+the crate as rustc does. After analysis it walks the crate's HIR and
+writes one file per crate, `<crate>.json`, to `RUST_JS_EDGES_DIR`. The
+file holds:
+- each definition: its `DefPathHash`, which is the same in every crate's
+  session that names it; its file; its lines, taken at the macro's call
+  where a macro wrote it; its kind and its name. These cover the
+  item-likes, and each variant and field of an enum, struct or union;
+- each edge, as a pair of a namer and what it names:
+  - a path's `Res::Def`;
+  - a method or associated item a type decides, from `typeck`'s
+    type-dependent defs;
+  - a field read, by its struct's field;
+  - a `type` alias, through the paths it's written of;
+  - a macro's call, from every span its expansion wrote, to the macro;
+  - an `impl`: its trait to it, each trait item to the impl's own, and
+    its self type to it;
+  - a parent to each variant, field and associated item;
+- each source file it read, by rustc's hash of it.
+
+A walk that panics writes `<crate>.failed`.
+
+**Read into the map (scripts/testMapEdges.ts, `recordedEdges`).** Cargo
+compiles a crate only where it changed, so a crate's file is its last
+compile's. It's read only where each source it names under the checkout
+hashes as the tree has it now. A crate with no file is compiled again
+once, its package cleaned in the map's target; so is a crate whose file
+is stale. If any crate's record is missing, failed, stale or of another
+version, the map has no edges (`edges: null`) and says why. It is never
+part of a graph.
+
+`defs` keeps each definition in a file of the checkout once, its file an
+index of `paths`, which now holds the definitions' files as well as the
+loads'. A function's definition holds `fns`: the indices of the map's
+functions whose code it holds innermost, its own and its closures'. The
+reserved `fn?: number` became `fns?: number[]`, because a closure is a
+function of the map's of its own. `edges` holds the pairs of `defs`
+indices, an `Int32Array`'s bytes in base64. The map is version 6.
+
+**What it costs, and what it finds** (worker-01, M6 12 cores, a quiet
+machine: load 1.5–4.4 at the start; the map of ac9716c758, CI's, v4).
+- **Recording.** The counting build of the compiler's six crates (deps
+  warm, the crates cleaned) took 38 s with the driver and 38 s without it.
+  The walk is lost in the noise, against the SCIP step's 38–46 s and 4 GB.
+  The driver builds in seconds once.
+- **Size.** 30,335 definitions and 122,979 edges: 2.5 MB of the map's
+  JSON, against the item layer's 168 MB of its 174 MB. Reading the six
+  crates' records (24 MB, rust-js-lower's 15 MB) takes 0.1 s. 25,442 of the
+  map's 25,824 functions are in a definition; the rest are code no item
+  holds (a `const`'s closure, a generated body).
+- **The replay** (`sideSelection` of each commit's own change against the
+  map, as a push selects it; the 16 compiler commits after ac9716c758 that
+  the design cites, dedb8fc2fe among them, and #2623's 590bf56b8):
+
+  | | today, without the layer | the layer, in shadow | the edges, in shadow |
+  |---|---|---|---|
+  | selects everything | 13 | 6 | 8 |
+  | picks | 4 | 11 | 9 |
+
+  Where today picks (4 commits), the edges pick the same files: 0 missed,
+  0 extra. The 5 commits the edges turn from everything into picks select
+  456–465 of 467 files. That's central code, as the layer found
+  (1101's #2288 amendment). The 8 that still select everything are:
+  - 2 of no compiler code, the selector and std's package;
+  - 2 of a new file, `iterators/tests.rs` and `compiled_std/walk.rs`,
+    which no map's edges hold yet;
+  - 4 of lines added outside any definition, at a module's top level: a
+    `use` (dedb8fc2fe's `use crate::drops::call_once::OnceDrop;`), a new
+    `impl` block (261274b81e) or a new `struct` with its doc
+    (facf153277), and a test module's lines (cca798a674). A new item can
+    shadow a glob's or the prelude's of its name, which no edge of the
+    map's commit says. These are the next step's: the definitions' names,
+    and the edges' names of what the crate names outside the checkout,
+    answer which functions name what a new item may shadow.
+  The layer picks 3 the edges don't yet: the 2 new files, by the names
+  they define (`touchedByNewFile`), and dedb8fc2fe's `use`. The edges pick
+  1 the layer doesn't, 7df707f35c. Each pick takes 0.02–0.25 s, about what
+  today's takes.
+
+Tests: test/test-map-edges.test.ts' "the driver records each kind of
+reference rustc resolved …" (a fixture crate compiled by the driver, an
+edge of each kind) and "a crate's record is read where its sources are
+the tree's …". The mutation runner now builds a test's Rust by what
+builds it (`compiledSources` in scripts/source-mutations.ts: `buildReact`
+for the bindings crates, `edgesDriver` for the driver). That lets the
+driver's mutations, one per edge kind, run in scripts/mutations/edges.ts:
+`edges-path-unrecorded`, `edges-method-unrecorded`,
+`edges-field-unrecorded`, `edges-alias-unwalked`,
+`edges-macro-call-unrecorded`, `edges-impl-of-its-trait-unrecorded`,
+`edges-impl-item-of-its-trait-item-unrecorded`,
+`edges-impl-of-its-type-unrecorded`, `edges-parent-unrecorded` and
+`edges-variants-and-fields-undefined`. `edges-relative-paths-kept` holds the records to the checkout's paths:
+Cargo names a workspace's sources from the workspace, and the probe's
+first run read no definition at all. The reader's, in scripts/mutations/testMapEdges.ts, are
+`edges-stale-record-read`, `edges-failed-walk-read` and
+`edges-closure-not-its-functions`. The shadow's, in its files' lists, are `edges-reach-unasked`,
+`edges-walk-past-functions` and `edges-innermost-outermost` (test/test-map-edges.test.ts'
+"a change outside any function selects, by the edges, …"), and
+`edges-shadow-not-computed` and `edges-in-the-carry`
+(test/testMap-items.test.ts).
+
+**In shadow from this change.** `pick` places a line outside any
+function's counted code by the edges where its map has them (`edgeReach`):
+- the innermost definition holding the line, or holding both lines around
+  an addition;
+- backwards along the edges, each definition that names it, and each of
+  their functions. The walk stops at a function other than the line's own,
+  since a test that runs its namers runs it.
+A comment, or a definition nothing names (a `use`), selects nothing. New
+items nothing names yet (`unreferencedOnly`), or a `mod` line, at a
+module's top level, select nothing either. A line no definition holds that isn't
+one of those selects everything, said. `selectChange` computes it as
+`Selection.shadows.edges`, beside the items' and the loads' shadows, and
+each push's line says it with its misses (`[edges: …, missed n]`). The
+running selection, CI's carry (`carryOf`'s `fullSelection`) and the
+items' shadow get the map without its edges.
+
+Next, as the lead set them: the remaining "everything"s above. After
+about 30 pushes and the nightly selector audit with none missed comes the
+switch. At the switch, the name search, its valves and the SCIP item layer
+are deleted, with no fallback.

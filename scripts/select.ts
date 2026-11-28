@@ -404,13 +404,16 @@ export function selectChange(base = "origin/main", sanity?: string, rule: Rule =
   const files = suiteFiles();
   const given = { files, cases: corpusCases(), reach: reachOf([...files, caseFiles[1]]) };
   const on = loadsArm === "on";
-  // The selection that runs is the map's without its item layer, and of
-  // a folder tests build an app from, everything; beside it, in shadow
-  // until each one's switch, the layer's (#2288) and the loads' (#2482).
-  const ran = selectOf(map === undefined ? undefined : { ...map, items: undefined }, base, sanity, rule, on, given);
+  // The selection that runs is the map's without its item layer or its
+  // edges, and of a folder tests build an app from, everything; beside it,
+  // in shadow until each one's switch, the layer's (#2288), the loads'
+  // (#2482) and the edges' (#2608).
+  const plain = map === undefined ? undefined : { ...map, items: undefined, edges: undefined };
+  const ran = selectOf(plain, base, sanity, rule, on, given);
   const shadows: NonNullable<Selection["shadows"]> = {};
-  if (map?.items !== undefined) shadows.items = selectOf(map, base, sanity, rule, on, given);
-  if (!on && map?.loads !== undefined) shadows.loads = selectOf({ ...map, items: undefined }, base, sanity, rule, true, given);
+  if (map?.items !== undefined) shadows.items = selectOf({ ...map, edges: undefined }, base, sanity, rule, on, given);
+  if (!on && plain?.loads !== undefined) shadows.loads = selectOf(plain, base, sanity, rule, true, given);
+  if (typeof map?.edges === "string") shadows.edges = selectOf({ ...map, items: undefined }, base, sanity, rule, on, given);
   return Object.keys(shadows).length === 0 ? ran : { ...ran, shadows };
 }
 

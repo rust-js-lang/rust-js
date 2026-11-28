@@ -191,8 +191,8 @@ export const mutations: Mutation[] = [
     name: "shadow-selection-run",
     breaks: "the item layer's selection runs before its switch, not in shadow beside the one that runs (#2288)",
     file: "scripts/select.ts",
-    find: "  const ran = selectOf(map === undefined ? undefined : { ...map, items: undefined }, base, sanity, rule, on, given);\n",
-    replace: "  const ran = selectOf(map, base, sanity, rule, on, given);\n",
+    find: "  const plain = map === undefined ? undefined : { ...map, items: undefined, edges: undefined };\n",
+    replace: "  const plain = map;\n",
     tests: ["test/testMap-items.test.ts"],
   },
   {
@@ -207,8 +207,16 @@ export const mutations: Mutation[] = [
     name: "loads-shadow-not-logged",
     breaks: "the loads' selection isn't computed in shadow beside the one that runs, so no push or night says its misses before the switch (#2482)",
     file: "scripts/select.ts",
-    find: "  if (!on && map?.loads !== undefined) shadows.loads = selectOf({ ...map, items: undefined }, base, sanity, rule, true, given);\n",
+    find: "  if (!on && plain?.loads !== undefined) shadows.loads = selectOf(plain, base, sanity, rule, true, given);\n",
     replace: "",
     tests: ["test/testMap-items.test.ts"],
+  },
+  {
+    name: "edges-shadow-not-computed",
+    breaks: "the edges' selection isn't computed in shadow beside the one that runs, so no push says its misses before the switch (#2608)",
+    file: "scripts/select.ts",
+    find: "  if (typeof map?.edges === \"string\") shadows.edges = selectOf({ ...map, items: undefined }, base, sanity, rule, on, given);\n",
+    replace: "",
+    tests: ["test/testMap-items.test.ts", "-t", "the selection that runs is the map's without its item layer"],
   },
 ];

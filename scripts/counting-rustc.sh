@@ -7,7 +7,9 @@
 # cache keyed on what it's told would hand back a build that doesn't count;
 # any other's, a dependency's or a build script's, goes to
 # `RUST_JS_CACHE_WRAPPER` (sccache, where the machine has it), as it would
-# without this.
+# without this. A counted one is compiled by `RUST_JS_EDGES_DRIVER` where
+# it's given, scripts/edges, which compiles it as rustc does and writes
+# what each of its definitions names (#2608, ADR 1210).
 crate=""
 previous=""
 for arg in "$@"; do
@@ -15,7 +17,9 @@ for arg in "$@"; do
   previous="$arg"
 done
 case " $RUST_JS_COUNTED_CRATES " in
-  *" $crate "*) if [ -n "$crate" ]; then exec "$@" -C instrument-coverage; fi ;;
+  *" $crate "*)
+    if [ -n "$crate" ] && [ -n "$RUST_JS_EDGES_DRIVER" ]; then exec "$RUST_JS_EDGES_DRIVER" "$@" -C instrument-coverage; fi
+    if [ -n "$crate" ]; then exec "$@" -C instrument-coverage; fi ;;
 esac
 if [ -n "$RUST_JS_CACHE_WRAPPER" ]; then exec "$RUST_JS_CACHE_WRAPPER" "$@"; fi
 exec "$@"

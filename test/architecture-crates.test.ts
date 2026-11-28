@@ -52,8 +52,10 @@ test("no crate but the binary, the lowering's and JSX's uses rustc", () => {
     .filter((file) => crateOf(file) !== binary && !rustcs.has(crateOf(file)?.package ?? ""))
     .filter((file) => /\brustc_(?!hash::)\w+|#!\[feature|extern crate/.test(readFileSync(join(root, file), "utf8").replace(/\/\/.*$/gm, "")));
   expect(strays).toEqual([]);
-  // The binary's, the lowering's and JSX's crates alone (#2299, #2294).
-  expect(readFileSync(join(root, ".cargo/config.toml"), "utf8").match(/rust_js_\w+/g)).toEqual(["rust_js_lower", "rust_js_mir", "rust_js_jsx"]);
+  // The binary's, the lowering's and JSX's crates alone (#2299, #2294),
+  // and the test map's edges' driver, a rustc driver of the map's, no
+  // crate of the compiler's (scripts/edges, #2608).
+  expect(readFileSync(join(root, ".cargo/config.toml"), "utf8").match(/rust_js_\w+/g)).toEqual(["rust_js_edges", "rust_js_lower", "rust_js_mir", "rust_js_jsx"]);
 });
 
 // Every Cargo package in the checkout is the binary, a member, its own

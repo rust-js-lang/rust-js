@@ -644,4 +644,20 @@ export const mutations: Mutation[] = [
     replace: "        const text = found.length === 0 ? linesOf(file)[line - 1] : undefined;\n",
     tests: ["test/test-map.test.ts", "-t", "a change the map can't say runs what the check runs without it"],
   },
+  {
+    name: "edges-reach-unasked",
+    breaks: "a map's edges are recorded and never asked, so a line outside any function is searched by its name as before, in the edges' shadow too",
+    file: "scripts/testMap.ts",
+    find: "  const reach = edgeReach(map);\n",
+    replace: "  const reach = undefined as ReturnType<typeof edgeReach>;\n",
+    tests: ["test/test-map-edges.test.ts", "-t", "by the edges"],
+  },
+  {
+    name: "edges-in-the-carry",
+    breaks: "an incremental recording carries by the edges' selection, in shadow everywhere else, so a miss of theirs goes unrecorded before the switch",
+    file: "scripts/testMap.ts",
+    find: "  const selection = fullSelection({ ...from, edges: undefined });\n",
+    replace: "  const selection = fullSelection(from);\n",
+    tests: ["test/testMap-items.test.ts", "-t", "the selection that runs is the map's without its item layer"],
+  },
 ];

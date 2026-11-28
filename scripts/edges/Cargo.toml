@@ -1,0 +1,18 @@
+# The test map's recorder of rustc's resolved references (ADR 1210, #2608):
+# a rustc driver the map's counting build compiles the compiler's crates
+# with (scripts/counting-rustc.sh), which compiles each as rustc does and,
+# after its analysis, writes each of its definitions and each definition
+# another names, as rustc resolved them. A package of its own, outside the
+# compiler's workspace: it's a tool of the map, not the compiler's.
+[package]
+name = "rust-js-edges"
+version = "0.0.0"
+edition = "2024"
+publish = false
+# Its rpath to rustc's libraries (the checkout's script).
+build = "../../rustc-rpath.rs"
+
+[package.metadata.rust-analyzer]
+rustc_private = true
+
+[workspace]

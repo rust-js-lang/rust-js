@@ -6,7 +6,7 @@ import {
   cloneTree,
   makeSourceWorkspace,
   markSourceLoad,
-  ofBindingsCrate,
+  builderOf,
   sourceFilesOf,
   sourceWasLoaded,
 } from "../scripts/source-mutations";
@@ -274,12 +274,12 @@ function bindingsSource(name: string, testSource: string) {
 }
 
 test("a mutant of the bindings crates' Rust is judged by the tests that build them, and inconclusive where none does", async () => {
-  expect([ofBindingsCrate("builtins/src/lib.rs"), ofBindingsCrate("webapi/src/a.rs"), ofBindingsCrate("builtins/build.sh"), ofBindingsCrate("crates/rust-js-lower/src/lib.rs")]).toEqual([true, true, false, false]);
+  expect(["builtins/src/lib.rs", "webapi/src/a.rs", "scripts/edges/src/main.rs", "builtins/build.sh", "crates/rust-js-lower/src/lib.rs"].map(builderOf)).toEqual(["buildReact", "buildReact", "edgesDriver", undefined, undefined]);
   const caught = bindingsSource("source-mutation-bindings", builtTest);
   expect((await executeSource(caught, bindingsMutation)).result).toBe("caught");
   const unbuilt = bindingsSource("source-mutation-bindings-unbuilt", builtTest.replaceAll("buildReact", "read"));
   expect((await executeSource(unbuilt, bindingsMutation)).result).toBe(
-    "INCONCLUSIVE: test/owner.test.ts doesn't build the bindings crates (`buildReact`), so the mutant of builtins/src/lib.rs is never compiled",
+    "INCONCLUSIVE: test/owner.test.ts doesn't build it (`buildReact`), so the mutant of builtins/src/lib.rs is never compiled",
   );
 });
 
