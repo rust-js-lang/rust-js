@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "scripts/parts.ts",
     find: "  if (others.length > 0) return",
     replace: "  if (false) return",
-    tests: ["test/ci.test.ts", "-t", "parts.ts runs one file of cases in parts"],
+    tests: ["test/parts.test.ts", "-t", "parts.ts runs one file of cases in parts"],
   },
   {
     name: "parts-file-of-no-cases-run-whole",
@@ -16,6 +16,6 @@ export const mutations: Mutation[] = [
     file: "scripts/parts.ts",
     find: "  if (!/process\\.env\\.RUST_JS_CASES\\b|\\bcaseShard\\(/.test(source)) {\n",
     replace: "  if (false) {\n",
-    tests: ["test/ci.test.ts", "-t", "parts.ts runs one file of cases in parts"],
+    tests: ["test/parts.test.ts", "-t", "parts.ts runs one file of cases in parts"],
   },
 ];

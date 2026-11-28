@@ -21,8 +21,7 @@ import { unrerunnable } from "../scripts/attribute";
 import { changedCases, PORT_DOES_NOT_COMPILE, ROWS_MOST_SHARDS, ROWS_PARTS, rowsShards, runs, sliceReport, sliceReports, touchesAsync, touchesConsumers, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
 import * as slices from "../scripts/iteratorSlice";
 import { browsers, drivesBrowser, junitReport, junitReports } from "../scripts/shard";
-import { loadScale, underLoad } from "../scripts/timing";
-import { caseOf, partsOf, runParts, unparted, verdict } from "../scripts/parts";
+import { loadScale } from "../scripts/timing";
 import { jobs as localNightly } from "../scripts/nightly";
 import { harness, nightly, parts, pooledParts, shard } from "../scripts/shard";
 import { programFlags, root } from "./support";
@@ -708,73 +707,6 @@ test("the vendored oxc_formatter_core and oxc_formatter are both compilers' and 
   expect(manifest("Cargo.toml")).toContain('[patch."https://github.com/oxc-project/oxc"]\noxc_formatter_core = { path = "vendor/oxc_formatter_core" }\noxc_formatter = { path = "vendor/oxc_formatter" }');
   expect(manifest("wasm/Cargo.toml")).toContain('[patch."https://github.com/oxc-project/oxc"]\noxc_formatter_core = { path = "../vendor/oxc_formatter_core" }\noxc_formatter = { path = "../vendor/oxc_formatter" }');
 });
-
-// The nightly runs a test file in parts by scripts/parts.ts alone (#1306):
-// each part's lines as they come, its peak memory and what held it, and a
-// part the machine kills said so, with where it was. A shell loop of
-// `bun test ... &` printed nothing till every part ended, and nightly
-// 42884008739's metamorphic net ended in a bare exit 143.
-test("a workflow runs a test file in parts by scripts/parts.ts alone", () => {
-  for (const file of readdirSync(join(root, ".github/workflows")).filter((name) => name.endsWith(".yml"))) {
-    const text = readFileSync(join(root, ".github/workflows", file), "utf8");
-    expect(text, file).not.toMatch(/bun test[^\n]*&\s*$/m);
-  }
-});
-
-test("a part's spec names its parts, and a part's line says how it ended", () => {
-  expect(partsOf("4")).toEqual({ parts: [1, 2, 3, 4], count: 4 });
-  expect(partsOf("5-8/24")).toEqual({ parts: [5, 6, 7, 8], count: 24 });
-  for (const bad of ["0", "3-2/8", "7-9/8", "4/2", "x"]) expect(() => partsOf(bad), bad).toThrow();
-  expect(caseOf("(pass) seed 3 group 14: 16 cases [43707.03ms]")).toBe("seed 3 group 14: 16 cases");
-  expect(caseOf("(fail) a, rewritten")).toBe("a, rewritten");
-  expect(caseOf(" 53 pass")).toBeUndefined();
-  expect(verdict(0, null, "(pass) a\n 1 pass\n 0 fail\n")).toBe("passed");
-  expect(verdict(1, null, "(fail) a\n 0 pass\n 1 fail\n")).toBe("failed");
-  expect(verdict(1, null, 'Test filter "x" had no matches\n')).toBe("failed");
-  expect(verdict(null, "SIGKILL", "(pass) a\n")).toBe("killed (memory?)");
-  expect(verdict(143, null, "(pass) a\n")).toBe("killed (memory?)");
-});
-
-// A file in parts is one of cases each part takes its share of: a file of
-// none, or a second file among the flags, ran whole in every part, and the
-// suite's files in 10 parts filled the disk with 20 GiB of fixtures. Each
-// file a workflow runs in parts is one. (The sources below are built, so
-// this file reads as one of no cases, which it is.)
-test("parts.ts runs one file of cases in parts, and refuses another, naming check:fast", () => {
-  const cases = ["RUST", "JS", "CASES"].join("_");
-  const sharded = `const [part, parts] = (process.env.${cases} ?? "1/1").split("/").map(Number);`;
-  expect(unparted("test/a.test.ts", sharded, ["--timeout=60000"])).toBeUndefined();
-  expect(unparted("test/a.test.ts", `for (const name of ${"caseShard"}(cases)) test(name, () => {});`, [])).toBeUndefined();
-  expect(unparted("test/ci.test.ts", readFileSync(join(root, "test/ci.test.ts"), "utf8"), [])).toContain("each part would run it whole: run the suite with `bun run check:fast`");
-  expect(unparted("test/a.test.ts", sharded, ["test/b.test.ts", "--timeout=1"])).toContain("test/b.test.ts: one test file runs in parts");
-  const workflows = readdirSync(join(root, ".github/workflows")).filter((name) => name.endsWith(".yml"));
-  const runs = workflows.flatMap((name) => [...readFileSync(join(root, ".github/workflows", name), "utf8").matchAll(/bun scripts\/parts\.ts .*?(test\/\S+\.test\.tsx?)([^\n]*)/g)]);
-  expect(runs.length).toBeGreaterThan(0);
-  for (const [, file, flags] of runs) expect(unparted(file!, readFileSync(join(root, file!), "utf8"), flags!.trim().split(/\s+/).filter(Boolean)), file).toBeUndefined();
-});
-
-test("a part the machine kills is said killed, with what it ran and its peak", async () => {
-  // Outside test/, where this checkout's `bun test` finds no file.
-  const dir = mkdtempSync(join(tmpdir(), "parts-"));
-  try {
-    writeFileSync(join(dir, "killed.test.ts"), 'import { test } from "bun:test";\ntest("first", () => {});\ntest("second", async () => {\n  await Bun.sleep(1500);\n  process.kill(process.pid, "SIGKILL");\n});\n');
-    const said: string[] = [];
-    const log = console.log;
-    console.log = (line: string) => said.push(line);
-    try {
-      expect(await runParts("./killed.test.ts", partsOf("1"), 1, [], dir)).toBe(false);
-    } finally {
-      console.log = log;
-    }
-    // `bun test` holds a file's lines till it ends where its output is a
-    // pipe, but streams them under GitHub Actions, where it prints its
-    // `::group::`s: the last case said is none, or the one before the kill.
-    const ended = said.find((line) => line.startsWith("── part 1/1 killed (memory?)"));
-    expect(ended, said.join("\n")).toMatch(/at most \d+\.\d GB.*; the last case it said ended (none|first)$/);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-}, underLoad(60_000));
 
 // check:fast installs again where the manifests changed since its last
 // install (#1817): a rebase over a new workspace, `@rust-js/webapi`, left
